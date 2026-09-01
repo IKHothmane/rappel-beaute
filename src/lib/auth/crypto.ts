@@ -1,4 +1,7 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { getSessionSecret } from "./env";
+
+export { getSessionSecret } from "./env";
 
 const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 };
 const KEY_LEN = 64;
@@ -71,13 +74,4 @@ export function verifyJwt<T extends Record<string, unknown>>(
   }
 }
 
-export function getSessionSecret(): string {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret || secret.length < 32) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("SESSION_SECRET must be set (min 32 chars) in production.");
-    }
-    return "dev-only-insecure-secret-change-me-32chars";
-  }
-  return secret;
-}
+// getSessionSecret → ./env.ts

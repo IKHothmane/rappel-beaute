@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { signJwt, verifyJwt, getSessionSecret } from "@/lib/auth/crypto";
 import { parseSessionToken } from "@/lib/auth/session";
+import { verifyJwtEdge } from "@/lib/auth/session-edge";
 import { SESSION_MAX_AGE_SEC } from "@/lib/auth/types";
 
 describe("Auth — JWT & session", () => {
@@ -57,6 +58,27 @@ describe("Auth — JWT & session", () => {
     const session = parseSessionToken(token);
     expect(session?.scope).toBe("app");
     expect(session && "organizationId" in session && session.organizationId).toBe("org1");
+  });
+
+  it("verifyJwtEdge compatible avec tokens signJwt (middleware Edge)", async () => {
+    const token = signJwt(
+      {
+        id: "u1",
+        email: "owner@test.local",
+        firstName: "O",
+        lastName: "W",
+        role: "OWNER",
+        organizationId: "org1",
+        orgName: "Institut",
+        orgSlug: "institut",
+        scope: "app",
+        accountType: "ORGANIZATION",
+      },
+      secret,
+      SESSION_MAX_AGE_SEC,
+    );
+    const payload = await verifyJwtEdge(token, secret);
+    expect(payload?.id).toBe("u1");
   });
 
   it("Platform scope ≠ App scope", () => {

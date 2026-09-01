@@ -1,4 +1,4 @@
-import { parseSessionToken } from "@/lib/auth/session";
+import { parseSessionTokenEdge } from "@/lib/auth/session-edge";
 import { SESSION_COOKIE } from "@/lib/auth/types";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -36,13 +36,19 @@ function isPublicPath(domain: Domain, path: string): boolean {
   return list.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
-function getSession(request: NextRequest) {
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  return parseSessionToken(token);
+function preserveHostParam(url: URL, domain: Domain) {
+  if (domain !== "www") {
+    url.searchParams.set(QUERY_HOST, domain);
+  }
 }
 
-export function middleware(request: NextRequest) {
+async function getSession(request: NextRequest) {
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+  return parseSessionTokenEdge(token);
+}
+
+export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   if (
@@ -63,7 +69,7 @@ export function middleware(request: NextRequest) {
   const headers = new Headers(request.headers);
   headers.set("x-rappel-domain", domain);
 
-  const session = getSession(request);
+  const session = await getSession(request);
 
   if (domain === "app") {
     const isPublic = isPublicPath(domain, path) || path === "/book" || path.startsWith("/book/");
@@ -72,11 +78,13 @@ export function middleware(request: NextRequest) {
         const loginUrl = request.nextUrl.clone();
         loginUrl.pathname = "/login/";
         loginUrl.searchParams.set("next", path);
+        preserveHostParam(loginUrl, domain);
         return NextResponse.redirect(loginUrl);
       }
       if (session.scope === "platform") {
         const forbidden = request.nextUrl.clone();
         forbidden.pathname = "/login/";
+        preserveHostParam(forbidden, domain);
         return NextResponse.redirect(forbidden);
       }
     }
@@ -88,11 +96,13 @@ export function middleware(request: NextRequest) {
       if (!session || session.scope !== "platform") {
         const loginUrl = request.nextUrl.clone();
         loginUrl.pathname = "/login/";
+        preserveHostParam(loginUrl, domain);
         return NextResponse.redirect(loginUrl);
       }
     } else if (session?.scope === "platform" && path.startsWith("/login")) {
       const dash = request.nextUrl.clone();
       dash.pathname = "/dashboard/";
+      preserveHostParam(dash, domain);
       return NextResponse.redirect(dash);
     }
   }

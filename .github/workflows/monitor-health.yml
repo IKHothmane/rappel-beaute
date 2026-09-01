@@ -6,6 +6,9 @@ on:
     # Toutes les 15 minutes — brancher sur staging puis production
     - cron: "*/15 * * * *"
 
+permissions:
+  contents: read
+
 jobs:
   health-check:
     name: Health + alertes

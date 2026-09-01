@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: staging-${{ github.ref }}
   cancel-in-progress: false
@@ -64,6 +67,7 @@ jobs:
       - run: npm run build
       - run: npm run test:e2e
         env:
+          CI: true
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
 
   deploy-staging:

@@ -1312,6 +1312,7 @@ model LoyaltyAccount {
   redemptions  LoyaltyRedemption[]
 
   @@unique([organizationId, customerId])
+  @@unique([customerId])
   @@index([organizationId])
   @@index([organizationId, level])
   @@index([organizationId, balance])
@@ -1491,7 +1492,7 @@ model Promotion {
   usages       PromotionUsage[]
   appointments Appointment[]
   invoices     Invoice[]
-  campaignRecipients CampaignRecipient[]
+  campaigns    Campaign[]
 
   @@unique([organizationId, code])
   @@index([organizationId])

@@ -8,6 +8,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 concurrency:
   group: production-deploy
   cancel-in-progress: false
@@ -30,7 +33,6 @@ jobs:
     name: Verify CI
     needs: gate
     uses: ./.github/workflows/ci.yml
-    secrets: inherit
     secrets: inherit
 
   migrate:

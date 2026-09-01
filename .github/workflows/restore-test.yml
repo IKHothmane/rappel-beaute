@@ -6,6 +6,9 @@ on:
     # Lundi 04:00 UTC — valide que la restauration fonctionne encore
     - cron: "0 4 * * 1"
 
+permissions:
+  contents: read
+
 concurrency:
   group: restore-test
   cancel-in-progress: true
@@ -88,8 +91,10 @@ jobs:
           DATABASE_URL: ${{ env.RESTORE_DATABASE_URL }}
 
       - name: Alerte si échec (staging)
-        if: failure() && secrets.ALERT_WEBHOOK_URL != ''
+        if: failure() && vars.ALERT_ON_RESTORE_FAIL == 'true'
         run: |
-          curl -sf -X POST "${{ secrets.ALERT_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{"severity":"critical","title":"Restore test CI échoué","source":"github-actions/restore-test"}'
+          if [ -n "${{ secrets.ALERT_WEBHOOK_URL }}" ]; then
+            curl -sf -X POST "${{ secrets.ALERT_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d '{"severity":"critical","title":"Restore test CI échoué","source":"github-actions/restore-test"}'
+          fi

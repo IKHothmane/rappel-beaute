@@ -83,7 +83,7 @@ export function LoginForm() {
       ) : null}
 
       <p className="mt-5 text-xs leading-relaxed text-ink/45">
-        Le message d'erreur est volontairement générique. Nous ne confirmons
+        Le message d&apos;erreur est volontairement générique. Nous ne confirmons
         jamais si un e-mail existe.
       </p>
     </form>

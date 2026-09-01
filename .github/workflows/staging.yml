@@ -1,0 +1,90 @@
+name: Staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: staging-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  verify:
+    name: Verify (same as CI)
+    uses: ./.github/workflows/ci.yml
+
+  e2e:
+    name: E2E Playwright
+    needs: verify
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rappel_beaute_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rappel_beaute_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rappel_beaute_e2e?schema=public
+      REDIS_URL: redis://localhost:6379
+      SESSION_SECRET: e2e-staging-session-secret-min-32-chars-long
+      ENCRYPTION_KEY: e2e-staging-encryption-key-32chars!!
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [verify, e2e]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: staging
+      url: https://app-staging.rappelbeaute.ma
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy placeholder
+        run: |
+          echo "Staging deploy — connectez votre hébergeur (Vercel, Railway, VM…) ici."
+          echo "Étapes : build artifact → migrate deploy → start app"
+          echo "Secrets via GitHub Environment « staging » — jamais dans le repo."
+
+      - name: Post-deploy migrate (staging only)
+        run: echo "npx prisma migrate deploy avec DATABASE_URL du secret staging"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

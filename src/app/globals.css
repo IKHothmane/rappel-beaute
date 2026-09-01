@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #e31c5f;
+  --color-primary-dark: #b8134a;
+  --color-primary-light: #fdeaf0;
+  --color-paper: #fffbf9;
+  --color-ink: #241a22;
+  --color-line: #f0e3e6;
+  --color-institut: #171018;
+  --color-gold: #c79a3b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-paper font-sans text-ink antialiased;
+}
+
+::selection {
+  background: #fdeaf0;
+  color: #241a22;
+}
+
+@layer components {
+  .container-rb {
+    @apply mx-auto w-full max-w-6xl px-5 md:px-8;
+  }
+
+  .btn-primary {
+    @apply inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary;
+  }
+
+  .btn-ghost {
+    @apply inline-flex shrink-0 items-center justify-center rounded-lg border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-primary/30 hover:bg-primary-light/50;
+  }
+
+  .surface {
+    @apply rounded-xl border border-line bg-white shadow-soft;
+  }
+
+  .eyebrow {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-primary;
+  }
+
+  .admin-console {
+    --admin-bg: #fffbf9;
+    --admin-panel: #ffffff;
+    --admin-card: #ffffff;
+    --admin-line: #f0e3e6;
+    --admin-text: #241a22;
+    --admin-muted: rgba(36, 26, 34, 0.55);
+    --admin-accent: #e31c5f;
+    --admin-accent-dim: #fdeaf0;
+    --admin-ok: #059669;
+    --admin-warn: #b45309;
+    --admin-bad: #dc2626;
+  }
+
+  .admin-console .ac-card {
+    @apply rounded-xl border border-line bg-white shadow-soft;
+  }
+
+  .admin-console .ac-btn {
+    @apply inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark;
+  }
+
+  .admin-console .ac-btn-ghost {
+    @apply inline-flex items-center justify-center rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-primary/30 hover:bg-primary-light/50;
+  }
+
+  .admin-console .ac-input {
+    @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none placeholder:text-ink/40 focus:border-primary;
+  }
+}

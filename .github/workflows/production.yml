@@ -1,0 +1,78 @@
+name: Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Tapez DEPLOY pour confirmer la production"
+        required: true
+        type: string
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  gate:
+    name: Confirmation manuelle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier confirmation
+        if: github.event.inputs.confirm != 'DEPLOY'
+        run: |
+          echo "Confirmation invalide. Saisissez DEPLOY pour continuer."
+          exit 1
+
+  verify:
+    name: Verify CI
+    needs: gate
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+    secrets: inherit
+
+  migrate:
+    name: Migrations production
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma generate
+
+      - name: prisma migrate deploy (production)
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  deploy:
+    name: Deploy Production
+    needs: migrate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://app.rappelbeaute.ma
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy placeholder
+        run: |
+          echo "Production deploy — artefact build + redémarrage rolling."
+          echo "Rollback : redéployer le tag/commit précédent (sans migration destructive)."
+          echo "Cloudflare : www / app / admin → origine Next.js"
+
+      - name: Health check post-deploy
+        run: |
+          echo "curl -f https://app.rappelbeaute.ma/api/health/ || exit 1"

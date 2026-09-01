@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/lib/logger.ts",
+    "src/lib/http/**/*.ts",
+    "src/lib/redis/**/*.ts",
+    "src/lib/rate-limit/**/*.ts",
+    "src/lib/auth/api-guard.ts",
+    "src/app/api/health/**/*.ts",
+    "src/app/api/auth/login/route.ts",
+    "src/app/api/auth/logout/route.ts",
+    "src/app/api/auth/activate/route.ts",
+    "tests/security/**/*.ts",
+    "tests/helpers/session.ts"
+  ]
+}

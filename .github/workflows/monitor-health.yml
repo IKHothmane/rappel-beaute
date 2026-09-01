@@ -1,0 +1,30 @@
+name: Monitor Health
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Toutes les 15 minutes — brancher sur staging puis production
+    - cron: "*/15 * * * *"
+
+jobs:
+  health-check:
+    name: Health + alertes
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Vérifier endpoints
+        run: npx tsx scripts/ops/monitor-health.ts
+        env:
+          HEALTH_BASE_URL: ${{ vars.HEALTH_BASE_URL }}
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+          APP_ENV: staging

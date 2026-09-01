@@ -2,6 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { useSession } from "@/components/auth/session-provider";
+import { isAppSession } from "@/lib/auth/types";
 import { Header } from "./header";
 import { MobileNav } from "./mobile-nav";
 import { Sidebar } from "./sidebar";
@@ -20,6 +22,7 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const path = normalize(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, loading } = useSession();
 
   const bare =
     path.startsWith("/login") ||
@@ -28,6 +31,14 @@ export function AppShell({ children }: AppShellProps) {
     path.startsWith("/book");
 
   if (bare) return <>{children}</>;
+
+  if (loading || !user || !isAppSession(user)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper text-sm text-ink/60">
+        Chargement…
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">

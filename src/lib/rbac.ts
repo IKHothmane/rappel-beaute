@@ -5,6 +5,12 @@ export type AppRole =
   | "CASHIER"
   | "ACCOUNTANT";
 
+const APP_ROLES: AppRole[] = ["OWNER", "MANAGER", "STAFF", "CASHIER", "ACCOUNTANT"];
+
+export function isAppRole(role: string | undefined | null): role is AppRole {
+  return Boolean(role && APP_ROLES.includes(role as AppRole));
+}
+
 export type AccessLevel = "write" | "read" | "limited" | "none";
 
 export type AppFeature =
@@ -406,8 +412,10 @@ export function canViewStaffPerformanceFull(role: AppRole): boolean {
   return getFeatureAccess(role, "staff") === "write" || role === "ACCOUNTANT";
 }
 
-export function canAccessNav(role: AppRole, navKey: string): boolean {
+export function canAccessNav(role: AppRole | string | undefined, navKey: string): boolean {
+  if (!isAppRole(role)) return false;
   const allowed = ROLE_NAV[role];
+  if (!allowed) return false;
   if (allowed.includes("*")) return true;
   if (allowed.includes(navKey)) return true;
 

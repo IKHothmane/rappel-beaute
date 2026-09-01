@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useSession } from "@/components/auth/session-provider";
 
 export function AppLoginForm() {
   const router = useRouter();
+  const { refresh } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -31,6 +33,7 @@ export function AppLoginForm() {
         return;
       }
 
+      await refresh();
       router.push("/dashboard/");
       router.refresh();
     } catch {

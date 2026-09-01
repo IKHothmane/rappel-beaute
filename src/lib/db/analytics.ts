@@ -526,7 +526,7 @@ export async function getCustomerAnalytics(
     [orgId],
   );
 
-  const { rows: retRows } = await pool.query<{ returning: string; newc: string }>(
+  const { rows: retRows } = await pool.query<{ returningCount: string; newc: string }>(
     `WITH first_in_period AS (
       SELECT DISTINCT a."customerId"
       FROM "Appointment" a
@@ -538,7 +538,7 @@ export async function getCustomerAnalytics(
             AND prev."startAt" < $2
         )
     ),
-    returning AS (
+    repeat_visitors AS (
       SELECT DISTINCT a."customerId"
       FROM "Appointment" a
       WHERE a."organizationId" = $1 AND a.status = 'COMPLETED'
@@ -550,12 +550,12 @@ export async function getCustomerAnalytics(
         )
     )
     SELECT
-      (SELECT COUNT(*)::text FROM returning) AS returning,
+      (SELECT COUNT(*)::text FROM repeat_visitors) AS "returningCount",
       (SELECT COUNT(*)::text FROM first_in_period) AS newc`,
     [orgId, p.start, p.end],
   );
 
-  const returning = parseInt(retRows[0]?.returning ?? "0", 10);
+  const returning = parseInt(retRows[0]?.returningCount ?? "0", 10);
   const newCustomers = parseInt(retRows[0]?.newc ?? "0", 10);
   const retTotal = returning + newCustomers;
 
@@ -919,8 +919,12 @@ export async function getLoyaltyAnalytics(
     sessions: string;
   }>(
     `SELECT
-      COALESCE(SUM(points) FILTER (WHERE type = 'EARN' AND "createdAt" >= $2 AND "createdAt" <= $3), 0)::text AS earned,
-      COALESCE(SUM(ABS(points)) FILTER (WHERE type = 'REDEEM' AND "createdAt" >= $2 AND "createdAt" <= $3), 0)::text AS redeemed,
+      (SELECT COALESCE(SUM(lt.points), 0)::text FROM "LoyaltyTransaction" lt
+       WHERE lt."organizationId" = $1 AND lt.type = 'EARN'
+         AND lt."createdAt" >= $2 AND lt."createdAt" <= $3) AS earned,
+      (SELECT COALESCE(SUM(ABS(lt.points)), 0)::text FROM "LoyaltyTransaction" lt
+       WHERE lt."organizationId" = $1 AND lt.type = 'REDEEM'
+         AND lt."createdAt" >= $2 AND lt."createdAt" <= $3) AS redeemed,
       (SELECT COUNT(*)::text FROM "LoyaltyTransaction"
        WHERE "organizationId" = $1 AND type = 'REDEEM'
          AND reason ILIKE '%récompense%' AND "createdAt" >= $2 AND "createdAt" <= $3) AS rewards,

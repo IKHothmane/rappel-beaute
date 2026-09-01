@@ -33,7 +33,8 @@ export async function getWhatsAppDashboard(view: "pending" | "sent" = "pending")
 }> {
   const q = new URLSearchParams({ view });
   const res = await fetch(`/api/whatsapp/?${q}`, fetchOpts);
-  return parseJson(res);
+  const body = await parseJson<{ data?: WhatsAppTaskItem[]; items?: WhatsAppTaskItem[]; kpis: WhatsAppKpis }>(res);
+  return { items: body.data ?? body.items ?? [], kpis: body.kpis };
 }
 
 export async function markWhatsAppSent(taskId: string) {
@@ -74,8 +75,8 @@ export async function recordWhatsAppOutcome(taskId: string, outcome: WhatsAppSta
 
 export async function listWhatsAppTemplates(): Promise<WhatsAppTemplateItem[]> {
   const res = await fetch("/api/whatsapp/templates/", fetchOpts);
-  const data = await parseJson<{ data: WhatsAppTemplateItem[] }>(res);
-  return data.data;
+  const data = await parseJson<{ data?: WhatsAppTemplateItem[] }>(res);
+  return data.data ?? [];
 }
 
 export async function createWhatsAppTemplate(input: CreateWhatsAppTemplateInput) {

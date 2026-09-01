@@ -9,8 +9,9 @@ import {
   useState,
 } from "react";
 import type { PublicSession } from "@/lib/auth/types";
+import { isAppSession } from "@/lib/auth/types";
 import type { AppRole } from "@/lib/rbac";
-import { canAccessNav, ROLE_LABEL } from "@/lib/rbac";
+import { canAccessNav, isAppRole, ROLE_LABEL } from "@/lib/rbac";
 
 type SessionContextValue = {
   user: PublicSession | null;
@@ -76,10 +77,11 @@ export function useCurrentUser(): PublicSession {
       orgName: "",
       orgSlug: "",
       scope: "app",
+      accountType: "ORGANIZATION",
     };
   }
-  if (!user) {
-    throw new Error("No authenticated user");
+  if (!user || !isAppSession(user) || !isAppRole(user.role)) {
+    throw new Error("No authenticated app user");
   }
   return user;
 }

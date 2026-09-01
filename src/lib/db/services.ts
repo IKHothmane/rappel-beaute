@@ -68,7 +68,7 @@ const LIST_SELECT = `
     s."createdAt",
     s."updatedAt",
     COUNT(DISTINCT ss."staffId")::text AS "staffCount",
-    COALESCE(array_agg(DISTINCT TRIM(CONCAT(st."firstName", ' ', NULLIF(st."lastName", ''))) FILTER (WHERE st."firstName" IS NOT NULL), '{}') AS "staffNames",
+    COALESCE(array_agg(DISTINCT TRIM(CONCAT(st."firstName", ' ', NULLIF(st."lastName", '')))) FILTER (WHERE st."firstName" IS NOT NULL), '{}') AS "staffNames",
     COUNT(DISTINCT sr."resourceId")::text AS "resourceCount",
     COUNT(DISTINCT sp."productId")::text AS "productCount"
   FROM "Service" s

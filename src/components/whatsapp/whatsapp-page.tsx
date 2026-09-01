@@ -66,11 +66,11 @@ export function WhatsappPageView() {
       const currentView = tab === "Envoyés" ? "sent" : "pending";
       setView(currentView);
       const res = await getWhatsAppDashboard(currentView);
-      setTasks(res.items);
-      setKpis(res.kpis);
+      setTasks(res.items ?? []);
+      setKpis(res.kpis ?? null);
       if (canEditTemplates) {
         const tpls = await listWhatsAppTemplates();
-        setTemplates(tpls);
+        setTemplates(tpls ?? []);
       }
     } catch {
       toast("Impossible de charger WhatsApp.", "error");
@@ -190,7 +190,7 @@ export function WhatsappPageView() {
         <p className="text-sm text-ink/50">Chargement…</p>
       ) : tab === "Modèles" ? (
         <ul className="space-y-3">
-          {templates.map((tpl) => (
+          {(templates ?? []).map((tpl) => (
             <li key={tpl.id} className="surface p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -210,7 +210,7 @@ export function WhatsappPageView() {
             </li>
           ))}
         </ul>
-      ) : tasks.length === 0 ? (
+      ) : (tasks ?? []).length === 0 ? (
         <div className="surface p-8 text-center text-sm text-ink/50">
           {view === "pending"
             ? "Aucun message à envoyer pour le moment."
@@ -218,7 +218,7 @@ export function WhatsappPageView() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {tasks.map((task) => (
+          {(tasks ?? []).map((task) => (
             <li key={task.id} className="surface p-5">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className={`text-xs font-mono uppercase tracking-wide ${typeBadgeClass(task.type)}`}>

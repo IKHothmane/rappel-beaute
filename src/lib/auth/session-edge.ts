@@ -2,11 +2,12 @@ import { getSessionSecret } from "./env";
 import type { SessionPayload, SessionUser } from "./types";
 import { payloadToSession } from "./session-payload";
 
-function base64UrlToBytes(input: string): Uint8Array {
+function base64UrlToBytes(input: string): Uint8Array<ArrayBuffer> {
   const pad = input.length % 4 === 0 ? "" : "=".repeat(4 - (input.length % 4));
   const b64 = input.replace(/-/g, "+").replace(/_/g, "/") + pad;
   const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
 }

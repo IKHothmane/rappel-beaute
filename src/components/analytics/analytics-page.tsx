@@ -236,7 +236,7 @@ export function AnalyticsPageView() {
                 <BarChart data={revenue.daily}>
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number) => formatMad(v)} />
+                  <Tooltip formatter={(v) => formatMad(Number(v ?? 0))} />
                   <Bar dataKey="revenue" fill="var(--color-primary, #7c3aed)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

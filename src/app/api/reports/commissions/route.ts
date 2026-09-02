@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireSession } from "@/lib/auth/api-guard";
+import { requireAppSession } from "@/lib/auth/api-guard";
 import { canUseFeature } from "@/lib/subscriptions/limits";
 import {
   buildCommissionsCsv,
@@ -12,7 +12,7 @@ import { canExportCommissions, getFeatureAccess } from "@/lib/rbac";
 import { parseCommissionListQuery } from "@/lib/validation/commission";
 
 export async function GET(request: NextRequest) {
-  const auth = requireSession(request);
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const plan = await canUseFeature(auth.session.organizationId, "commissions");

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireSession } from "@/lib/auth/api-guard";
+import { requireAppSession } from "@/lib/auth/api-guard";
 import { canUseFeature } from "@/lib/subscriptions/limits";
 import {
   getStaffCommissionSummary,
@@ -11,7 +11,7 @@ import { getFeatureAccess } from "@/lib/rbac";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const auth = requireSession(request);
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const plan = await canUseFeature(auth.session.organizationId, "commissions");

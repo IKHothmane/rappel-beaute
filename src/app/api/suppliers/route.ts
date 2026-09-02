@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   requireFeatureWrite,
-  requireSession,
+  requireAppSession,
   stripOrganizationId,
 } from "@/lib/auth/api-guard";
 import { canReadFeature } from "@/lib/rbac";
@@ -16,7 +16,7 @@ import {
 } from "@/lib/validation/procurement";
 
 export async function GET(request: NextRequest) {
-  const auth = requireSession(request);
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth.response;
   if (
     !canReadFeature(auth.session.role, "stock") &&

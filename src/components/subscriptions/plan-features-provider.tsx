@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { PlanFeatureKey, PlanFeatures } from "@/types/subscription";
 import { isPlanFeatureEnabled } from "@/lib/subscriptions/nav-features";
+import { isAppSession } from "@/lib/auth/types";
 import { useSession } from "@/components/auth/session-provider";
 
 type PlanFeaturesContextValue = {
@@ -32,8 +33,10 @@ export function PlanFeaturesProvider({ children }: { children: ReactNode }) {
   const [planCode, setPlanCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const orgId = user && isAppSession(user) ? user.organizationId : undefined;
+
   const refresh = useCallback(async () => {
-    if (!user?.organizationId) {
+    if (!orgId) {
       setFeatures(null);
       setPlanName(null);
       setPlanCode(null);
@@ -72,7 +75,7 @@ export function PlanFeaturesProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [user?.organizationId]);
+  }, [orgId]);
 
   useEffect(() => {
     if (sessionLoading) return;

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireSession } from "@/lib/auth/api-guard";
+import { requireAppSession } from "@/lib/auth/api-guard";
 import { listNotifications } from "@/lib/db/notifications";
 import { parseNotificationListParams } from "@/lib/validation/notifications";
 
 export async function GET(request: NextRequest) {
-  const auth = requireSession(request);
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const sp = new URL(request.url).searchParams;

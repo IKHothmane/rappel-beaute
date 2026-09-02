@@ -7,6 +7,7 @@ import { ONBOARDING_STEPS } from "@/lib/app-mock";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
+  const current = ONBOARDING_STEPS[step]!;
   const progress = Math.round(((step + 1) / ONBOARDING_STEPS.length) * 100);
 
   return (
@@ -24,7 +25,7 @@ export default function OnboardingPage() {
       <div className="mb-6 surface p-4">
         <div className="mb-2 flex justify-between text-sm">
           <span>
-            Étape {step + 1} / {ONBOARDING_STEPS.length} — {ONBOARDING_STEPS[step]}
+            Étape {step + 1} / {ONBOARDING_STEPS.length} — {current.title}
           </span>
           <span className="font-mono text-ink/45">{progress} %</span>
         </div>
@@ -34,13 +35,13 @@ export default function OnboardingPage() {
       </div>
 
       <div className="surface max-w-xl space-y-4 p-6">
-        <h2 className="font-display text-xl font-semibold">{ONBOARDING_STEPS[step]}</h2>
+        <h2 className="font-display text-xl font-semibold">{current.title}</h2>
         <p className="text-sm text-ink/60">
-          Formulaire de démonstration pour l’étape « {ONBOARDING_STEPS[step]} ».
+          Formulaire de démonstration pour l’étape « {current.title} ».
         </p>
         <input
           className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-primary"
-          placeholder={`Renseigner ${ONBOARDING_STEPS[step].toLowerCase()}…`}
+          placeholder={`Renseigner ${current.title.toLowerCase()}…`}
         />
         <div className="flex flex-wrap gap-2 pt-2">
           {step > 0 ? (

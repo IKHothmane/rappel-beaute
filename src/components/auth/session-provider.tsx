@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { PublicSession } from "@/lib/auth/types";
+import type { AppSessionUser, PublicSession } from "@/lib/auth/types";
 import { isAppSession } from "@/lib/auth/types";
 import type { AppRole } from "@/lib/rbac";
 import { canAccessNav, isAppRole, ROLE_LABEL } from "@/lib/rbac";
@@ -64,7 +64,7 @@ export function useSession() {
   return ctx;
 }
 
-export function useCurrentUser(): PublicSession {
+export function useCurrentUser(): AppSessionUser {
   const { user, loading } = useSession();
   if (loading) {
     return {

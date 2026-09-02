@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   requireFeatureWrite,
-  requireSession,
+  requireAppSession,
   stripOrganizationId,
 } from "@/lib/auth/api-guard";
 import {
@@ -17,7 +17,7 @@ import { validateCommissionAdjustment } from "@/lib/validation/commission";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const auth = requireSession(request);
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const level = getFeatureAccess(auth.session.role, "commissions");

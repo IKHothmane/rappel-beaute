@@ -5,10 +5,10 @@ import { resolveStaffIdForUser } from "@/lib/db/commissions";
 import { getAnalyticsScope, type AnalyticsScope } from "@/lib/rbac";
 import { parseAnalyticsFilters } from "@/lib/validation/analytics";
 import type { AnalyticsFilters } from "@/types/analytics";
-import type { SessionUser } from "@/lib/auth/types";
+import type { AppSessionUser } from "@/lib/auth/types";
 
 export type AnalyticsContext = {
-  session: SessionUser;
+  session: AppSessionUser;
   filters: AnalyticsFilters;
   scope: AnalyticsScope;
 };
@@ -71,7 +71,7 @@ export async function resolveAnalyticsContext(
   };
 }
 
-export function withScope<T extends { scope?: AnalyticsScope }>(
+export function withScope<T>(
   data: T,
   scope: AnalyticsScope,
 ): T & { scope: AnalyticsScope } {

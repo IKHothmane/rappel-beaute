@@ -1,6 +1,7 @@
 import type { PlanCode, SubscriptionStatus } from "@/types/subscription";
 
 export type { PlanCode, SubscriptionStatus };
+export type SubscriptionPlan = PlanCode;
 export { PLAN_LABEL } from "@/types/subscription";
 
 export type PlatformRole = "SUPER_ADMIN" | "SUPPORT";

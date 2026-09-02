@@ -82,11 +82,12 @@ export function PlanBadge({ plan }: { plan: SubscriptionPlan }) {
 }
 
 const SUB_STATUS_LABEL: Record<SubscriptionStatus, string> = {
+  TRIAL: "Essai",
   ACTIVE: "Actif",
-  PENDING: "En attente",
-  EXPIRED: "Expiré",
-  CANCELLED: "Annulé",
   PAST_DUE: "Impayé",
+  PAUSED: "En pause",
+  CANCELLED: "Annulé",
+  EXPIRED: "Expiré",
 };
 
 export function SubBadge({ status }: { status: SubscriptionStatus }) {

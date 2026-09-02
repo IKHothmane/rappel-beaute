@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { PlanBadge, StatusBadge } from "@/components/admin/AdminUi";
+import type { OrganizationStatus } from "@/types/platform";
 import {
   PLAN_PRICES,
   USERS,
@@ -20,6 +21,12 @@ const TABS = [
   "Sécurité",
 ] as const;
 
+function toOrgStatus(status: Organization["status"]): OrganizationStatus {
+  if (status === "SUSPENDED") return "SUSPENDED";
+  if (status === "EXPIRED") return "ARCHIVED";
+  return "ACTIVE";
+}
+
 export function OrgDetailView({ org }: { org: Organization }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Vue générale");
   const orgUsers = USERS.filter((u) => u.orgId === org.id);
@@ -34,7 +41,7 @@ export function OrgDetailView({ org }: { org: Organization }) {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-display text-2xl font-semibold md:text-3xl">{org.name}</h1>
-            <StatusBadge status={org.status} />
+            <StatusBadge status={toOrgStatus(org.status)} />
           </div>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">
             {org.city} · {org.email}

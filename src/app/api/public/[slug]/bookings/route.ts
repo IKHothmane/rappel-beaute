@@ -66,7 +66,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const phoneRl = await checkRateLimit({
-      key: bookingCompositeRateLimitKey(ip, slug, parsed.data.phone),
+      key: bookingCompositeRateLimitKey(ip, slug, parsed.data.customer.phone),
       ...PUBLIC_RATE_LIMITS.bookingsPerPhone,
     });
     if (!phoneRl.allowed) {

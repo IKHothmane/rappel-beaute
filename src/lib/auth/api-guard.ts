@@ -22,21 +22,9 @@ export type AuthResult =
   | { ok: true; session: SessionUser }
   | { ok: false; response: NextResponse };
 
-type AppAuthResult =
+export type AppAuthResult =
   | { ok: true; session: AppSessionUser }
   | { ok: false; response: NextResponse };
-
-function requireAppSessionNarrowed(request: NextRequest): AppAuthResult {
-  const auth = requireAppSession(request);
-  if (!auth.ok) return auth;
-  if (!isAppSession(auth.session)) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "Accès réservé aux instituts." }, { status: 403 }),
-    };
-  }
-  return { ok: true, session: auth.session };
-}
 
 export function requireSession(request: NextRequest): AuthResult {
   const session = getSessionFromRequest(request);
@@ -49,7 +37,7 @@ export function requireSession(request: NextRequest): AuthResult {
   return { ok: true, session };
 }
 
-export function requireAppSession(request: NextRequest): AuthResult {
+export function requireAppSession(request: NextRequest): AppAuthResult {
   const auth = requireSession(request);
   if (!auth.ok) return auth;
   if (!isAppSession(auth.session)) {
@@ -58,7 +46,7 @@ export function requireAppSession(request: NextRequest): AuthResult {
       response: NextResponse.json({ error: "Accès réservé aux instituts." }, { status: 403 }),
     };
   }
-  return auth;
+  return { ok: true, session: auth.session };
 }
 
 export function requirePlatformSession(
@@ -79,7 +67,7 @@ async function enforcePlanForAppFeature(
   organizationId: string,
   feature: AppFeature,
   planOverride?: PlanFeatureKey,
-): Promise<AuthResult | null> {
+): Promise<{ ok: false; response: NextResponse } | null> {
   const planFeature = planOverride ?? planFeatureForAppFeature(feature);
   if (!planFeature) return null;
 
@@ -108,8 +96,8 @@ export async function requireFeatureRead(
   request: NextRequest,
   feature: AppFeature,
   planOverride?: PlanFeatureKey,
-): Promise<AuthResult> {
-  const auth = requireAppSessionNarrowed(request);
+): Promise<AppAuthResult> {
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth;
   if (!canReadFeature(auth.session.role, feature)) {
     return {
@@ -130,8 +118,8 @@ export async function requireFeatureWrite(
   request: NextRequest,
   feature: AppFeature,
   planOverride?: PlanFeatureKey,
-): Promise<AuthResult> {
-  const auth = requireAppSessionNarrowed(request);
+): Promise<AppAuthResult> {
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth;
   if (!canWriteFeature(auth.session.role, feature)) {
     return {
@@ -152,8 +140,8 @@ export async function requireFeatureWriteLimited(
   request: NextRequest,
   feature: AppFeature,
   planOverride?: PlanFeatureKey,
-): Promise<AuthResult> {
-  const auth = requireAppSessionNarrowed(request);
+): Promise<AppAuthResult> {
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth;
   if (!canWriteFeatureLimited(auth.session.role, feature)) {
     return {

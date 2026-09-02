@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import {
   requireFeatureRead,
   requireFeatureWrite,
-  stripOrganizationId,
 } from "@/lib/auth/api-guard";
 import { enforceCreateAppointment } from "@/lib/subscriptions/guards";
 import {
@@ -49,9 +48,10 @@ export async function POST(request: NextRequest) {
   if (!limitAuth.ok) return limitAuth.response;
 
   try {
-    const body = stripOrganizationId(
-      (await request.json()) as CreateAppointmentInput & { organizationId?: string },
-    ) as CreateAppointmentInput;
+    const raw = (await request.json()) as CreateAppointmentInput & {
+      organizationId?: string;
+    };
+    const { organizationId: _ignored, ...body } = raw;
 
     if (body.resourceId) {
       await assertResourceBookable({

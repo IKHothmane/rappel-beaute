@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireSession } from "@/lib/auth/api-guard";
+import { requireAppSession } from "@/lib/auth/api-guard";
 import { markAllNotificationsRead } from "@/lib/db/notifications";
 
 export async function POST(request: NextRequest) {
-  const auth = requireSession(request);
+  const auth = requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   try {

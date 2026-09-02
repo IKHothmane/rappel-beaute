@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { AppFeature } from "@/lib/rbac";
 import { requireAppSession, type AuthResult } from "@/lib/auth/api-guard";
+import { isAppSession } from "@/lib/auth/types";
 import {
   canCreateAppointment,
   canCreateCustomer,
@@ -12,7 +13,9 @@ import {
 import { planFeatureForAppFeature, type PlanFeatureKey } from "@/lib/subscriptions/features";
 import type { PlanLimitKey } from "@/types/subscription";
 
-function limitResponse(check: LimitCheckResult) {
+type LimitDenied = Extract<LimitCheckResult, { ok: false }>;
+
+function limitResponse(check: LimitDenied) {
   return NextResponse.json(
     {
       error: check.message,
@@ -23,7 +26,7 @@ function limitResponse(check: LimitCheckResult) {
       planCode: check.planCode,
       planName: check.planName,
     },
-    { status: check.code === "LIMIT_REACHED" ? 403 : 403 },
+    { status: 403 },
   );
 }
 
@@ -58,6 +61,12 @@ export async function enforceAppFeatureWithPlan(
   rbacAuth: AuthResult,
 ): Promise<AuthResult> {
   if (!rbacAuth.ok) return rbacAuth;
+  if (!isAppSession(rbacAuth.session)) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Accès réservé aux instituts." }, { status: 403 }),
+    };
+  }
   const planFeature = planFeatureForAppFeature(appFeature);
   if (!planFeature) return rbacAuth;
   const check = await canUseFeature(rbacAuth.session.organizationId, planFeature);

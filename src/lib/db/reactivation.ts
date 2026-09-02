@@ -445,7 +445,7 @@ export async function buildReactivationMessage(
     lastVisitAt: Date;
     lastServiceName: string;
     daysSince: number;
-    bucket: ReactivationBucket;
+    status: string;
   }>(
     `${CUSTOMER_REACTIVATION_CTE}
      SELECT
@@ -464,7 +464,7 @@ export async function buildReactivationMessage(
   const row = rows[0];
   if (!row) return null;
 
-  const bucket = bucketFromDays(Number(row.daysSince), row.status as string);
+  const bucket = bucketFromDays(Number(row.daysSince), row.status);
   const promo = promoForBucket(bucket, settings);
   const org = await loadOrg(organizationId);
   const tpl = await getDefaultReactivationTemplate(organizationId);

@@ -38,7 +38,8 @@ export class S3StorageService implements StorageService {
         "Content-Length": String(input.data.length),
         Authorization: `Bearer ${accessKey}:${secretKey}`,
       },
-      body: input.data,
+      // Buffer → Uint8Array : fetch BodyInit n'accepte pas Buffer sous typings DOM/Node 22
+      body: new Uint8Array(input.data),
     });
 
     if (!res.ok) {

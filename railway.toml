@@ -1,8 +1,10 @@
 # Railway — Rappel Beauté (Node.js, pas Workers)
 # https://docs.railway.app/guides/deployments
+# Important : garder builder = nixpacks (Node 22 via nixpacks.toml).
+# Ne pas basculer sur Railpack tant que Node/Prisma n'est pas validé.
 
 [build]
-builder = "nixpacks"
+builder = "NIXPACKS"
 # Nixpacks exécute déjà `npm ci` en phase install — ne pas le relancer (EBUSY sur .cache)
 buildCommand = "npm run build"
 

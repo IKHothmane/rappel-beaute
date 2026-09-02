@@ -832,12 +832,14 @@ export async function refundPayment(
   try {
     const { notifyRefundCreated } = await import("@/lib/notifications/emitter");
     const { PAYMENT_METHOD_LABEL } = await import("@/types/analytics");
-    await notifyRefundCreated(organizationId, {
-      paymentId: created.id,
-      appointmentId: original.appointmentId,
-      amount: created.amount,
-      method: PAYMENT_METHOD_LABEL[created.method] ?? created.method,
-    });
+    if (original.appointmentId) {
+      await notifyRefundCreated(organizationId, {
+        paymentId: created.id,
+        appointmentId: original.appointmentId,
+        amount: created.amount,
+        method: PAYMENT_METHOD_LABEL[created.method] ?? created.method,
+      });
+    }
   } catch (e) {
     console.error("[refundPayment] notification", e);
   }

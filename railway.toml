@@ -3,7 +3,8 @@
 
 [build]
 builder = "nixpacks"
-buildCommand = "npm ci && npx prisma generate && npm run build"
+# Nixpacks exécute déjà `npm ci` en phase install — ne pas le relancer (EBUSY sur .cache)
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm run start"

@@ -8,3 +8,6 @@ NIXPACKS_NODE_VERSION = "22"
 nixPkgs = ["nodejs_22", "npm-10_x", "openssl"]
 # Node 22.13.1 — commit nixpkgs confirmé Railway/Nixpacks
 nixpkgsArchive = "51ad838b03a05b1de6f9f2a0fffecee64a9788ee"
+
+[phases.build]
+cmds = ["npm run build"]

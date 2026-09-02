@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "22"
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rappel_beaute_ci?schema=public
   REDIS_URL: redis://localhost:6379
   SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long

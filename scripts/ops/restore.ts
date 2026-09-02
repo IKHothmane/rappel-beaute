@@ -46,9 +46,10 @@ if (ext === ".dump") {
     });
   }
 } else if (file.endsWith(".sql.gz")) {
+  const shell = process.platform === "win32" ? "cmd.exe" : "/bin/bash";
   execSync(`gunzip -c "${file}" | psql "${target}" -v ON_ERROR_STOP=1`, {
     stdio: "inherit",
-    shell: true,
+    shell,
     env: process.env,
   });
 } else {

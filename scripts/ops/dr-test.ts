@@ -15,12 +15,14 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
+const shell = process.platform === "win32" ? "cmd.exe" : "/bin/bash";
+
 function run(cmd: string, env: Record<string, string | undefined> = {}) {
   console.log(`\n→ ${cmd}`);
   execSync(cmd, {
     stdio: "inherit",
     env: { ...process.env, ...env },
-    shell: true,
+    shell,
   });
 }
 

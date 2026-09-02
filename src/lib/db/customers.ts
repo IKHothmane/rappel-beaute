@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import type {
   CreateCustomerInput,
   CustomerAppointmentHistory,
@@ -18,6 +18,8 @@ import {
 import { normalizePhone } from "@/lib/validation/customer";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+type DbClient = Pool | PoolClient;
 
 type CustomerStatsRow = {
   id: string;
@@ -377,7 +379,7 @@ export async function createCustomer(
 export async function findCustomerByPhone(
   organizationId: string,
   phone: string,
-  client?: import("pg").PoolClient,
+  client?: DbClient,
 ): Promise<{ id: string; marketingWhatsapp: boolean; marketingEmail: boolean } | null> {
   const c = client ?? pool;
   const normalized = normalizePhone(phone);
@@ -405,7 +407,7 @@ export async function findOrCreateCustomerByPhone(
     email?: string | null;
     marketingOptIn?: boolean;
   },
-  client?: import("pg").PoolClient,
+  client?: DbClient,
 ): Promise<{ customerId: string; created: boolean }> {
   const c = client ?? pool;
   const phone = normalizePhone(input.phone);

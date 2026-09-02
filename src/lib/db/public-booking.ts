@@ -273,7 +273,7 @@ export async function getPublicAvailabilitySlots(
     for (const s of slots) allTimes.add(s.time);
   }
 
-  return [...allTimes]
+  return Array.from(allTimes)
     .sort((a, b) => a.localeCompare(b))
     .map((time) => ({ time, available: slotMap.get(time) ?? false }));
 }

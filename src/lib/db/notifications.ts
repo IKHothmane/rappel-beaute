@@ -205,7 +205,7 @@ export async function emitNotification(input: EmitNotificationInput): Promise<nu
   }
 
   let created = 0;
-  for (const userId of userIds) {
+  for (const userId of Array.from(userIds)) {
     const result = await createNotificationForUser({
       organizationId: input.organizationId,
       userId,

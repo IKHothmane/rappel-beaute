@@ -1,7 +1,7 @@
 /**
  * Cloudflare Worker — admin.rappelbeauty.com → Railway
  *
- * OBLIGATOIRE : ces headers, sinon Next.js voit Host=*.railway.app → vitrine.
+ * Body POST lu en arrayBuffer pour éviter les body vides (cause fréquente de 401).
  */
 export default {
   async fetch(request) {
@@ -10,7 +10,11 @@ export default {
     originUrl.pathname = incomingUrl.pathname;
     originUrl.search = incomingUrl.search;
 
-    if (!originUrl.searchParams.has("__host")) {
+    // __host seulement pour les pages (pas les API)
+    if (
+      !incomingUrl.pathname.startsWith("/api/") &&
+      !originUrl.searchParams.has("__host")
+    ) {
       originUrl.searchParams.set("__host", "admin");
     }
 
@@ -21,16 +25,16 @@ export default {
     headers.set("X-Rappel-Domain", "admin");
     headers.set("X-Forwarded-Proto", "https");
 
-    return fetch(
-      new Request(originUrl.toString(), {
-        method: request.method,
-        headers,
-        body:
-          request.method === "GET" || request.method === "HEAD"
-            ? undefined
-            : request.body,
-        redirect: "manual",
-      }),
-    );
+    const init = {
+      method: request.method,
+      headers,
+      redirect: "manual",
+    };
+
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      init.body = await request.arrayBuffer();
+    }
+
+    return fetch(originUrl.toString(), init);
   },
 };

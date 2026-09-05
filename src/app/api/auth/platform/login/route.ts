@@ -7,11 +7,29 @@ import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { AUTH_RATE_LIMITS, authRateLimitKey, checkRateLimit } from "@/lib/rate-limit";
 
+function errorDetails(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      cause: error.cause ? String(error.cause) : undefined,
+    };
+  }
+  return { message: String(error) };
+}
+
 export async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
   try {
-    const body = (await request.json()) as { email?: string; password?: string };
+    let body: { email?: string; password?: string };
+    try {
+      body = (await request.json()) as { email?: string; password?: string };
+    } catch {
+      logger.warn("platform login invalid json", { route: "/api/auth/platform/login", ip });
+      return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+    }
+
     const email = body.email?.trim();
     const password = body.password;
 
@@ -56,14 +74,17 @@ export async function POST(request: NextRequest) {
     res.cookies.set(createSessionCookie(session));
     return res;
   } catch (error) {
-    logger.error("platform login error", { error: String(error) });
-    // Ne pas masquer une panne DB / Redis comme « identifiants invalides »
-    const msg = String(error);
+    logger.error("platform login error", {
+      route: "/api/auth/platform/login",
+      ...errorDetails(error),
+    });
+    const msg = error instanceof Error ? error.message : String(error);
     if (
       msg.includes("AggregateError") ||
       msg.includes("ECONNREFUSED") ||
       msg.includes("P1001") ||
-      msg.includes("connect")
+      msg.includes("connect") ||
+      msg.includes("SESSION_SECRET")
     ) {
       return NextResponse.json(
         { error: "Service indisponible. Réessayez plus tard." },

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = stripOrganizationId(
       (await request.json()) as CreateAppointmentInput & Record<string, unknown>,
-    ) as CreateAppointmentInput;
+    ) as unknown as CreateAppointmentInput;
 
     if (body.resourceId) {
       await assertResourceBookable({

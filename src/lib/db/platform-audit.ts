@@ -47,7 +47,7 @@ export async function listPlatformAuditLogs(opts: {
   let where = "";
   if (opts.organizationId) {
     params.push(opts.organizationId);
-    where = `WHERE "organizationId" = $1`;
+    where = `WHERE a."organizationId" = $1`;
   }
   params.push(limit);
 
@@ -55,6 +55,7 @@ export async function listPlatformAuditLogs(opts: {
     id: string;
     platformUserName: string | null;
     organizationId: string | null;
+    organizationName: string | null;
     entityType: string;
     entityId: string;
     action: string;
@@ -62,13 +63,25 @@ export async function listPlatformAuditLogs(opts: {
     after: unknown;
     createdAt: Date;
   }>(
-    `SELECT id, "platformUserName", "organizationId", "entityType", "entityId",
-            action, "before", "after", "createdAt"
-     FROM "PlatformAuditLog"
+    `SELECT a.id, a."platformUserName", a."organizationId", o.name AS "organizationName",
+            a."entityType", a."entityId", a.action, a."before", a."after", a."createdAt"
+     FROM "PlatformAuditLog" a
+     LEFT JOIN "Organization" o ON o.id = a."organizationId"
      ${where}
-     ORDER BY "createdAt" DESC
+     ORDER BY a."createdAt" DESC
      LIMIT $${params.length}`,
     params,
   );
-  return rows;
+  return rows.map((r) => ({
+    id: r.id,
+    platformUserName: r.platformUserName,
+    organizationId: r.organizationId,
+    organizationName: r.organizationName,
+    entityType: r.entityType,
+    entityId: r.entityId,
+    action: r.action,
+    before: r.before,
+    after: r.after,
+    createdAt: r.createdAt.toISOString(),
+  }));
 }

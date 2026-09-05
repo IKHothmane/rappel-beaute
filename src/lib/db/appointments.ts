@@ -9,13 +9,13 @@ export type AppointmentRow = {
   id: string;
   organizationId: string;
   customerId: string;
-  customerFirstName: string;
-  customerLastName: string;
+  customerFirstName: string | null;
+  customerLastName: string | null;
   serviceId: string;
-  serviceName: string;
+  serviceName: string | null;
   staffId: string;
-  staffFirstName: string;
-  staffLastName: string;
+  staffFirstName: string | null;
+  staffLastName: string | null;
   resourceId: string | null;
   resourceName: string | null;
   startAt: Date;
@@ -47,22 +47,31 @@ const SELECT = `
     a.status,
     a.notes
   FROM "Appointment" a
-  JOIN "Customer" c ON c.id = a."customerId"
-  JOIN "Service" s ON s.id = a."serviceId"
-  JOIN "Staff" st ON st.id = a."staffId"
+  LEFT JOIN "Customer" c ON c.id = a."customerId"
+  LEFT JOIN "Service" s ON s.id = a."serviceId"
+  LEFT JOIN "Staff" st ON st.id = a."staffId"
   LEFT JOIN "Resource" r ON r.id = a."resourceId"
 `;
+
+function personName(
+  first: string | null,
+  last: string | null,
+  fallback: string,
+): string {
+  const name = `${first ?? ""} ${last ?? ""}`.trim();
+  return name || fallback;
+}
 
 export function rowToDto(row: AppointmentRow): Appointment {
   return {
     id: row.id,
     organizationId: row.organizationId,
     customerId: row.customerId,
-    customerName: `${row.customerFirstName} ${row.customerLastName}`.trim(),
+    customerName: personName(row.customerFirstName, row.customerLastName, "Cliente inconnue"),
     serviceId: row.serviceId,
-    serviceName: row.serviceName,
+    serviceName: row.serviceName?.trim() || "Service inconnu",
     staffId: row.staffId,
-    staffName: `${row.staffFirstName} ${row.staffLastName}`.trim(),
+    staffName: personName(row.staffFirstName, row.staffLastName, "Employée inconnue"),
     resourceId: row.resourceId ?? undefined,
     resourceName: row.resourceName ?? undefined,
     startAt: row.startAt.toISOString(),

@@ -2,8 +2,12 @@ import type {
   CreateOrganizationInput,
   OrganizationDetail,
   OrganizationListItem,
+  PlatformAnalytics,
+  PlatformBillingSnapshot,
   PlatformDashboardStats,
+  PlatformOrgUser,
   SubscriptionPlan,
+  SupportSessionListItem,
 } from "@/types/platform";
 
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -24,6 +28,68 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function fetchAdminDashboard() {
   return adminFetch<{ stats: PlatformDashboardStats; audit: unknown[] }>("/api/admin/dashboard/");
+}
+
+export async function fetchAdminAnalytics() {
+  return adminFetch<PlatformAnalytics>("/api/admin/analytics/");
+}
+
+export async function fetchAdminBilling() {
+  return adminFetch<PlatformBillingSnapshot>("/api/admin/billing/");
+}
+
+export async function fetchAdminUsers(params?: { search?: string; role?: string }) {
+  const sp = new URLSearchParams();
+  if (params?.search) sp.set("search", params.search);
+  if (params?.role) sp.set("role", params.role);
+  const q = sp.toString();
+  return adminFetch<{ items: PlatformOrgUser[] }>(
+    `/api/admin/users/${q ? `?${q}` : ""}`,
+  );
+}
+
+export async function fetchAdminAudit(limit = 100) {
+  return adminFetch<{
+    items: {
+      id: string;
+      platformUserName: string | null;
+      organizationId: string | null;
+      organizationName: string | null;
+      entityType: string;
+      entityId: string;
+      action: string;
+      before: unknown;
+      after: unknown;
+      createdAt: string;
+    }[];
+  }>(`/api/admin/audit/?limit=${limit}`);
+}
+
+export async function fetchSupportSessions(opts?: { openOnly?: boolean }) {
+  const q = opts?.openOnly ? "?open=1" : "";
+  return adminFetch<{ items: SupportSessionListItem[]; openCount: number }>(
+    `/api/admin/support-sessions/${q}`,
+  );
+}
+
+export async function fetchSupportSession(id: string) {
+  return adminFetch<{ item: SupportSessionListItem }>(
+    `/api/admin/support-sessions/?id=${encodeURIComponent(id)}`,
+  );
+}
+
+export async function startSupportSessionApi(organizationId: string, reason: string) {
+  return adminFetch<{ sessionId: string }>("/api/admin/support-sessions/", {
+    method: "POST",
+    body: JSON.stringify({ organizationId, reason }),
+  });
+}
+
+export async function endSupportSessionApi(sessionId: string) {
+  return adminFetch<{ ok: boolean }>("/api/admin/support-sessions/", {
+    method: "POST",
+    body: JSON.stringify({ sessionId, action: "end" }),
+  });
 }
 
 export async function fetchOrganizations(params?: {
@@ -93,7 +159,17 @@ export async function platformLogout() {
 export async function fetchAdminSession() {
   const res = await fetch("/api/auth/session/", { credentials: "include" });
   if (!res.ok) return null;
-  const data = (await res.json()) as { user: { accountType?: string; scope?: string } | null };
+  const data = (await res.json()) as {
+    user: {
+      accountType?: string;
+      scope?: string;
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      role?: string;
+      id?: string;
+    } | null;
+  };
   if (!data.user || data.user.accountType !== "PLATFORM") return null;
   return data.user;
 }

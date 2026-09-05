@@ -6,14 +6,19 @@ import { Button } from "@/components/ui/button";
 import { FieldGroup, Label, Select, Textarea } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/empty-state";
-import { CUSTOMERS } from "@/lib/app-mock";
+import { listCustomers } from "@/modules/customers/service";
 import { getAvailableSlots, isStaffAvailableOnDate, isResourceAvailableOnDate } from "@/modules/appointments/availability";
 import type { ServiceAgendaOption } from "@/types/service";
 import type { ServiceFormOptions } from "@/types/service";
 import type { StaffAgendaContext } from "@/types/staff";
 import type { ResourceAgendaContext } from "@/types/resource";
 import { RESOURCE_TYPE_LABEL } from "@/types/resource";
+import type { CustomerListItem } from "@/types/customer";
 import type { Appointment, CreateAppointmentInput } from "@/types/appointment";
+
+function todayIsoLocal(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
+}
 
 type AppointmentFormProps = {
   appointments: Appointment[];
@@ -44,7 +49,7 @@ export function AppointmentForm({
   const [resourceId, setResourceId] = useState(initial?.resourceId ?? "");
   const [date, setDate] = useState(() => {
     if (initial?.startAt) return initial.startAt.slice(0, 10);
-    return "2026-08-30";
+    return todayIsoLocal();
   });
   const [time, setTime] = useState(() => {
     if (initial?.startAt) {
@@ -56,6 +61,25 @@ export function AppointmentForm({
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [deposit, setDeposit] = useState(initial?.deposit?.toString() ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await listCustomers({ limit: 200 });
+        if (!cancelled) setCustomers(res.data);
+      } catch {
+        if (!cancelled) setCustomers([]);
+      } finally {
+        if (!cancelled) setCustomersLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const service = services.find((s) => s.id === serviceId);
 
@@ -158,14 +182,24 @@ export function AppointmentForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <FieldGroup>
         <Label>Cliente</Label>
-        <Select value={customerId} onChange={(e) => setCustomerId(e.target.value)} required>
-          <option value="">Rechercher une cliente…</option>
-          {CUSTOMERS.map((c) => (
+        <Select
+          value={customerId}
+          onChange={(e) => setCustomerId(e.target.value)}
+          required
+          disabled={customersLoading}
+        >
+          <option value="">
+            {customersLoading ? "Chargement des clientes…" : "Choisir une cliente…"}
+          </option>
+          {customers.map((c) => (
             <option key={c.id} value={c.id}>
               {c.firstName} {c.lastName}
             </option>
           ))}
         </Select>
+        {!customersLoading && customers.length === 0 ? (
+          <p className="mt-1 text-xs text-amber-700">Aucune cliente en base pour cet institut.</p>
+        ) : null}
       </FieldGroup>
 
       <FieldGroup>

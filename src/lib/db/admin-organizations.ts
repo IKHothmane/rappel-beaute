@@ -679,3 +679,140 @@ export async function endSupportSession(actor: PlatformSessionUser, sessionId: s
     action: "SUPPORT_SESSION_ENDED",
   });
 }
+
+export async function listAllOrganizationUsers(opts?: {
+  search?: string;
+  role?: string;
+  limit?: number;
+}): Promise<import("@/types/platform").PlatformOrgUser[]> {
+  const limit = Math.min(opts?.limit ?? 200, 500);
+  const params: unknown[] = [];
+  const conds: string[] = [];
+
+  if (opts?.search?.trim()) {
+    params.push(`%${opts.search.trim().toLowerCase()}%`);
+    conds.push(
+      `(LOWER(u.email) LIKE $${params.length} OR LOWER(u."firstName") LIKE $${params.length} OR LOWER(u."lastName") LIKE $${params.length} OR LOWER(o.name) LIKE $${params.length})`,
+    );
+  }
+  if (opts?.role) {
+    params.push(opts.role);
+    conds.push(`u.role = $${params.length}::"UserRole"`);
+  }
+  params.push(limit);
+
+  const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
+  const { rows } = await pool.query<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    status: string;
+    organizationId: string;
+    organizationName: string;
+    createdAt: Date;
+  }>(
+    `SELECT u.id, u.email, u."firstName", u."lastName", u.role::text, u.status::text,
+            u."organizationId", o.name AS "organizationName", u."createdAt"
+     FROM "User" u
+     JOIN "Organization" o ON o.id = u."organizationId"
+     ${where}
+     ORDER BY o.name, u."lastName", u."firstName"
+     LIMIT $${params.length}`,
+    params,
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    email: r.email,
+    firstName: r.firstName,
+    lastName: r.lastName,
+    role: r.role,
+    status: r.status,
+    organizationId: r.organizationId,
+    organizationName: r.organizationName,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+export async function listSupportSessions(opts?: {
+  openOnly?: boolean;
+  limit?: number;
+}): Promise<import("@/types/platform").SupportSessionListItem[]> {
+  const limit = Math.min(opts?.limit ?? 50, 200);
+  const params: unknown[] = [];
+  let where = "";
+  if (opts?.openOnly) {
+    where = `WHERE ss."endedAt" IS NULL`;
+  }
+  params.push(limit);
+
+  const { rows } = await pool.query<{
+    id: string;
+    organizationId: string;
+    organizationName: string;
+    platformUserName: string;
+    reason: string | null;
+    startedAt: Date;
+    endedAt: Date | null;
+  }>(
+    `SELECT ss.id, ss."organizationId", o.name AS "organizationName",
+            TRIM(CONCAT(pu."firstName", ' ', pu."lastName")) AS "platformUserName",
+            ss.reason, ss."startedAt", ss."endedAt"
+     FROM "SupportSession" ss
+     JOIN "Organization" o ON o.id = ss."organizationId"
+     JOIN "PlatformUser" pu ON pu.id = ss."platformUserId"
+     ${where}
+     ORDER BY ss."startedAt" DESC
+     LIMIT $${params.length}`,
+    params,
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    organizationId: r.organizationId,
+    organizationName: r.organizationName,
+    platformUserName: r.platformUserName,
+    reason: r.reason,
+    startedAt: r.startedAt.toISOString(),
+    endedAt: r.endedAt?.toISOString() ?? null,
+    open: r.endedAt == null,
+  }));
+}
+
+export async function getSupportSessionById(
+  id: string,
+): Promise<import("@/types/platform").SupportSessionListItem | null> {
+  const { rows } = await pool.query<{
+    id: string;
+    organizationId: string;
+    organizationName: string;
+    platformUserName: string;
+    reason: string | null;
+    startedAt: Date;
+    endedAt: Date | null;
+  }>(
+    `SELECT ss.id, ss."organizationId", o.name AS "organizationName",
+            TRIM(CONCAT(pu."firstName", ' ', pu."lastName")) AS "platformUserName",
+            ss.reason, ss."startedAt", ss."endedAt"
+     FROM "SupportSession" ss
+     JOIN "Organization" o ON o.id = ss."organizationId"
+     JOIN "PlatformUser" pu ON pu.id = ss."platformUserId"
+     WHERE ss.id = $1
+     LIMIT 1`,
+    [id],
+  );
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    id: r.id,
+    organizationId: r.organizationId,
+    organizationName: r.organizationName,
+    platformUserName: r.platformUserName,
+    reason: r.reason,
+    startedAt: r.startedAt.toISOString(),
+    endedAt: r.endedAt?.toISOString() ?? null,
+    open: r.endedAt == null,
+  };
+}

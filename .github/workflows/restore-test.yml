@@ -52,8 +52,17 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: PostgreSQL client (pg_dump / pg_restore)
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      # Client major = service Postgres (17) — évite échec custom-format dump/restore
+      - name: PostgreSQL client 17 (pg_dump / pg_restore)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl ca-certificates gnupg lsb-release
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+          echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          pg_dump --version
+          pg_restore --version
 
       - run: npm ci
       - run: npx prisma generate
@@ -71,9 +80,9 @@ jobs:
       - name: Restore
         run: |
           DUMP=$(cat backups/LATEST)
+          test -f "backups/$DUMP"
           CONFIRM=yes DATABASE_URL="$RESTORE_DATABASE_URL" npx tsx scripts/ops/restore.ts "backups/$DUMP"
-        continue-on-error: false
-        # restore.ts gère pg_restore exit 1 (avertissements --no-owner)
+        # restore.ts tolère les warnings pg_restore (--no-owner) puis vérifie Organization
 
       - name: Migrations post-restore
         run: npx prisma migrate deploy
@@ -89,6 +98,28 @@ jobs:
         run: npm run test:security && npm run test:subscriptions
         env:
           DATABASE_URL: ${{ env.RESTORE_DATABASE_URL }}
+
+      - name: Preuve restore (artifact)
+        if: success()
+        run: |
+          mkdir -p artifacts
+          {
+            echo "restore_test=ok"
+            echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "dump=$(cat backups/LATEST)"
+            echo "source_db=rappel_beaute"
+            echo "target_db=rappel_beaute_restore"
+            CONFIRM=yes DATABASE_URL="$RESTORE_DATABASE_URL" npx tsx scripts/ops/verify-restore.ts | tee artifacts/verify-restore.json
+          } > artifacts/restore-proof.txt
+          ls -la backups/
+          cp backups/LATEST artifacts/LATEST.txt
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: restore-test-proof
+          path: artifacts/
+          retention-days: 30
 
       - name: Alerte si échec (staging)
         if: failure() && vars.ALERT_ON_RESTORE_FAIL == 'true'

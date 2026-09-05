@@ -1,7 +1,6 @@
 # Reproduit localement le job CI « Backup → Restore Test »
 # Prérequis : Docker Desktop démarré
 #
-#   docker compose up -d postgres
 #   .\scripts\ops\run-restore-test-local.ps1
 
 $ErrorActionPreference = "Stop"
@@ -10,7 +9,12 @@ Set-Location $PSScriptRoot\..\..
 Write-Host "=== Restore Test (local, miroir CI) ===" -ForegroundColor Cyan
 
 docker compose up -d postgres
-Start-Sleep -Seconds 5
+$deadline = (Get-Date).AddSeconds(60)
+do {
+  Start-Sleep -Seconds 2
+  $ready = docker exec rappel_beaute_db pg_isready -U postgres -d rappel_beaute 2>$null
+} while (-not $ready -and (Get-Date) -lt $deadline)
+if (-not $ready) { throw "PostgreSQL non prêt" }
 
 $env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/rappel_beaute?schema=public"
 $env:RESTORE_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/rappel_beaute_restore?schema=public"
@@ -18,20 +22,10 @@ $env:SESSION_SECRET = "restore-test-session-secret-min-32-chars"
 $env:ENCRYPTION_KEY = "restore-test-encryption-key-32chars!!"
 $env:PGUSER = "postgres"
 $env:PGPASSWORD = "postgres"
-
-# pg_dump via conteneur Docker si absent sur l'hôte
-function Invoke-PgDump {
-  param([string]$Args)
-  $pgDump = Get-Command pg_dump -ErrorAction SilentlyContinue
-  if ($pgDump) {
-    & pg_dump @Args
-  } else {
-    docker exec rappel_beaute_db pg_dump @Args
-  }
-}
+$env:PG_DOCKER_CONTAINER = "rappel_beaute_db"
+$env:CONFIRM = "yes"
 
 Write-Host "`n→ migrate + seed" -ForegroundColor Yellow
-npm ci
 npx prisma generate
 npx prisma migrate deploy
 npm run db:seed
@@ -43,18 +37,10 @@ Write-Host "`n→ DB vierge restore" -ForegroundColor Yellow
 docker exec rappel_beaute_db psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS rappel_beaute_restore;"
 docker exec rappel_beaute_db psql -U postgres -d postgres -c "CREATE DATABASE rappel_beaute_restore;"
 
-$dump = Get-Content backups\LATEST
+$dump = (Get-Content backups\LATEST).Trim()
 Write-Host "`n→ restore $dump" -ForegroundColor Yellow
-$env:CONFIRM = "yes"
 $env:DATABASE_URL = $env:RESTORE_DATABASE_URL
-# pg_restore via conteneur si absent
-$pgRestore = Get-Command pg_restore -ErrorAction SilentlyContinue
-if ($pgRestore) {
-  npx tsx scripts/ops/restore.ts "backups\$dump"
-} else {
-  docker cp "backups\$dump" rappel_beaute_db:/tmp/restore.dump
-  docker exec rappel_beaute_db pg_restore --dbname="postgresql://postgres:postgres@localhost:5432/rappel_beaute_restore" --no-owner --no-acl --clean --if-exists /tmp/restore.dump
-}
+npx tsx scripts/ops/restore.ts "backups\$dump"
 
 Write-Host "`n→ migrate post-restore" -ForegroundColor Yellow
 $env:DATABASE_URL = $env:RESTORE_DATABASE_URL
@@ -67,4 +53,4 @@ Write-Host "`n→ tests" -ForegroundColor Yellow
 npm run test:security
 npm run test:subscriptions
 
-Write-Host "`n=== ✅ RESTORE TEST LOCAL RÉUSSI ===" -ForegroundColor Green
+Write-Host "`n=== RESTORE TEST LOCAL REUSSI ===" -ForegroundColor Green

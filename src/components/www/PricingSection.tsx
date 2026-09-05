@@ -32,7 +32,7 @@ export function PricingSection({ headingId = "tarifs" }: { headingId?: string })
               >
                 {"share" in plan ? (
                   <span className="absolute -top-3 left-6 rounded-md bg-gold px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[#171018]">
-                    Populaire · {plan.share}
+                    {plan.share === "recommandé" ? "Recommandé" : `Populaire · ${plan.share}`}
                   </span>
                 ) : null}
 

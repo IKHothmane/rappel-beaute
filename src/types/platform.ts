@@ -52,6 +52,92 @@ export type PlatformDashboardStats = {
   customers: number;
 };
 
+export type PlatformAnalytics = PlatformDashboardStats & {
+  planShare: Record<PlanCode, number>;
+  mrrSeries: { label: string; value: number }[];
+  mrrGrowthPercent: number;
+  arpu: number;
+  services: number;
+  customersTotal: number;
+  staffTotal: number;
+};
+
+export type PlatformBillingLine = {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  amount: number;
+  plan: PlanCode;
+  periodStart: string;
+  status: string;
+};
+
+export type PlatformBillingSnapshot = {
+  mrr: number;
+  arr: number;
+  mrrGrowthPercent: number;
+  activeSubs: number;
+  mrrSeries: { label: string; value: number }[];
+  planShare: Record<PlanCode, number>;
+  lines: PlatformBillingLine[];
+};
+
+export type PlatformOrgUser = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  status: string;
+  organizationId: string;
+  organizationName: string;
+  createdAt: string;
+};
+
+export type SupportSessionListItem = {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  platformUserName: string;
+  reason: string | null;
+  startedAt: string;
+  endedAt: string | null;
+  open: boolean;
+};
+
+export const PLATFORM_ROLE_LABEL: Record<PlatformRole, string> = {
+  SUPER_ADMIN: "Super administrateur",
+  SUPPORT: "Support",
+};
+
+export const ORG_USER_ROLE_LABEL: Record<string, string> = {
+  OWNER: "Propriétaire",
+  MANAGER: "Responsable",
+  STAFF: "Employée",
+  CASHIER: "Caisse",
+  ACCOUNTANT: "Comptable",
+};
+
+export const PLATFORM_AUDIT_ACTION_LABEL: Record<string, string> = {
+  ORGANIZATION_CREATED: "Institut créé",
+  ORGANIZATION_SUSPENDED: "Institut suspendu",
+  ORGANIZATION_REACTIVATED: "Institut réactivé",
+  ORGANIZATION_ARCHIVED: "Institut archivé",
+  USER_DISABLED: "Utilisateur désactivé",
+  USER_REACTIVATED: "Utilisateur réactivé",
+  OWNER_ACCESS_RESET: "Accès propriétaire réinitialisé",
+  SUBSCRIPTION_PLAN_CHANGED: "Formule modifiée",
+  SUBSCRIPTION_STATUS_CHANGED: "Statut abonnement modifié",
+  SUPPORT_SESSION_STARTED: "Session assistance démarrée",
+  SUPPORT_SESSION_ENDED: "Session assistance terminée",
+  PLATFORM_LOGIN: "Connexion plateforme",
+  PLATFORM_LOGOUT: "Déconnexion plateforme",
+};
+
+export function platformAuditActionLabel(action: string): string {
+  return PLATFORM_AUDIT_ACTION_LABEL[action] ?? action.replace(/_/g, " ");
+}
+
 export type OrganizationDetail = OrganizationListItem & {
   address: string | null;
   ownerPhone: string | null;

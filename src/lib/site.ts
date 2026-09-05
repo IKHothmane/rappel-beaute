@@ -1,62 +1,103 @@
 export const SITE = {
-  name: "Rappel Beauté",
+  name: "Rappel Beauty",
   version: "V1.2",
   url: "https://www.rappelbeaute.ma",
-  tagline: "Le logiciel de gestion n°1 des instituts de beauté au Maroc.",
+  appUrl: "https://app.rappelbeaute.ma",
+  tagline: "Le logiciel de gestion pensé pour les instituts de beauté.",
   email: "contact@rappelbeaute.ma",
   phone: "+212 5 22 00 00 00",
 } as const;
+
+/** Connexion SaaS — jamais sur le site www (marketing) */
+export const APP_LOGIN_HREF =
+  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")
+    ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/login/`
+    : process.env.NODE_ENV === "production"
+      ? `${SITE.appUrl}/login/`
+      : "/login/?__host=app";
+
+/**
+ * Architecture marketing figée — 12 pages.
+ * Prix plans (vérité unique avec moteur abonnement) : 299 / 499 / 899 MAD.
+ */
+export const MARKETING_PAGES = [
+  { path: "/", group: "nav" },
+  { path: "/fonctionnalites/", group: "nav" },
+  { path: "/tarifs/", group: "nav" },
+  { path: "/a-propos/", group: "nav" },
+  { path: "/essai/", group: "conversion" },
+  { path: "/demo/", group: "conversion" },
+  { path: "/contact/", group: "conversion" },
+  { path: "/faq/", group: "seo" },
+  { path: "/whatsapp/", group: "seo" },
+  { path: "/solutions/institut-beaute/", group: "seo" },
+  { path: "/mentions-legales/", group: "legal" },
+  { path: "/confidentialite/", group: "legal" },
+] as const;
 
 export const NAV = [
   { href: "/", label: "Accueil" },
   { href: "/fonctionnalites/", label: "Fonctionnalités" },
   { href: "/tarifs/", label: "Tarifs" },
   { href: "/a-propos/", label: "À propos" },
-  { href: "/ressources/", label: "Ressources" },
 ] as const;
 
 export const FEATURES = [
   {
-    id: "agenda",
-    title: "Agenda intelligent",
-    href: "/fonctionnalites/#agenda",
+    id: "rdv",
+    title: "Rendez-vous",
+    href: "/fonctionnalites/#rdv",
     text: "Planning staff et cabines sans double-réservation. La base refuse le chevauchement.",
   },
   {
     id: "clientes",
-    title: "Gestion clientes",
+    title: "Clientes",
     href: "/fonctionnalites/#clientes",
     text: "Fiches, historique, notes et fidélité — sans photos clientes en V1.",
   },
   {
-    id: "stock",
-    title: "Stock & Achats",
-    href: "/fonctionnalites/#stock",
-    text: "Ledger des mouvements, alertes rupture, fournisseurs et bons d’achat.",
-  },
-  {
     id: "caisse",
-    title: "Caisse & Paiements",
+    title: "Caisse & paiements",
     href: "/fonctionnalites/#caisse",
     text: "Encaissements, tickets et historique immuable. Montants en Decimal, jamais en Float.",
   },
   {
+    id: "stock",
+    title: "Stock",
+    href: "/fonctionnalites/#stock",
+    text: "Ledger des mouvements, alertes rupture, fournisseurs et bons d’achat.",
+  },
+  {
     id: "fidelite",
-    title: "Fidélité & Marketing",
+    title: "Fidélité",
     href: "/fonctionnalites/#fidelite",
     text: "Points, forfaits, promotions. Campagnes WhatsApp préparées, envoi humain.",
   },
   {
+    id: "whatsapp",
+    title: "WhatsApp",
+    href: "/fonctionnalites/#whatsapp",
+    text: "Messages préparés, envoi manuel via wa.me. Aucun bot en V1.",
+  },
+  {
+    id: "avis",
+    title: "Avis",
+    href: "/fonctionnalites/#avis",
+    text: "Demandes d’avis après RDV, suivi des retours clientes.",
+  },
+  {
     id: "analytics",
-    title: "Analytics & Rapports",
+    title: "Analytics & rapports",
     href: "/fonctionnalites/#analytics",
     text: "CA, taux de remplissage, top services. Décisions sur des chiffres justes.",
   },
 ] as const;
 
+/** Vérité prix = moteur Plan (prisma) : STARTER 299 · INSTITUT 499 · PREMIUM 899 */
 export const PLANS = [
   {
     id: "starter",
+    code: "STARTER" as const,
     name: "Starter",
     price: 299,
     quota: "150 RDV / mois",
@@ -67,29 +108,31 @@ export const PLANS = [
       "Agenda & disponibilités",
       "Fiches clientes",
       "WhatsApp manuel assisté",
-      "1 utilisatrice propriétaire",
+      "Réservation en ligne",
       "Assistance par e-mail",
     ],
   },
   {
     id: "institut",
+    code: "INSTITUT" as const,
     name: "Institut",
     price: 499,
     quota: "300 RDV / mois",
     sites: "1 site",
     popular: true,
-    share: "80 %",
+    share: "recommandé",
     variant: "dark" as const,
     features: [
       "Tout Starter",
       "Stock, achats, caisse",
       "Fidélité & marketing",
-      "Analytics & rapports",
+      "Avis & analytics",
       "Rôles employée / caisse",
     ],
   },
   {
     id: "premium",
+    code: "PREMIUM" as const,
     name: "Premium",
     price: 899,
     quota: "RDV illimités",
@@ -125,7 +168,7 @@ export const FAQ_ITEMS = [
     a: "Oui, sans carte bancaire. Vous remplissez une demande d’essai : votre accès est activé sous 24 h par notre équipe. Pas de création de compte en libre-service en V1.",
   },
   {
-    q: "Rappel Beauté envoie-t-il des WhatsApp tout seul ?",
+    q: "Rappel Beauty envoie-t-il des WhatsApp tout seul ?",
     a: "Non. V1 est 100 % manuel assisté : le logiciel prépare le message, vous l’envoyez via wa.me, puis vous marquez « envoyé ». Aucun bot, aucune API Business.",
   },
   {
@@ -138,10 +181,10 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Comment fonctionne la connexion ?",
-    a: "Un e-mail = un compte Rappel Beauté. Vous vous connectez sur rappelbeaute.ma/login. Le serveur ouvre l’espace institut ou l’espace admin — jamais les deux.",
+    a: "Un e-mail = un compte Rappel Beauty. Vous vous connectez sur app.rappelbeaute.ma — l’espace institut. Le site www est uniquement commercial (pas de login marketing).",
   },
   {
-    q: "Les données restent-elles au Maroc / isolées par institut ?",
+    q: "Les données restent-elles isolées par institut ?",
     a: "Chaque institut est isolé (organizationId + RLS PostgreSQL). Un institut ne voit jamais les clientes, RDV ou caisse d’un autre.",
   },
 ] as const;

@@ -1,76 +1,66 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminUi";
-import { NOTIFICATIONS, type NotifKind } from "@/lib/admin-mock";
+import { fetchAdminAudit } from "@/modules/admin/client";
+import { platformAuditActionLabel } from "@/types/platform";
 
-const FILTERS: { id: NotifKind | "ALL"; label: string }[] = [
-  { id: "ALL", label: "Toutes" },
-  { id: "SYSTEM", label: "Système" },
-  { id: "PAYMENT", label: "Paiement" },
-  { id: "SECURITY", label: "Sécurité" },
-  { id: "ORG", label: "Instituts" },
-  { id: "SUPPORT", label: "Assistance" },
-];
+type AuditRow = Awaited<ReturnType<typeof fetchAdminAudit>>["items"][number];
 
 export default function NotificationsPage() {
-  const [filter, setFilter] = useState<NotifKind | "ALL">("ALL");
+  const [items, setItems] = useState<AuditRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const rows = useMemo(
-    () =>
-      NOTIFICATIONS.filter((n) => (filter === "ALL" ? true : n.kind === filter)),
-    [filter],
-  );
+  useEffect(() => {
+    fetchAdminAudit(40)
+      .then((res) => setItems(res.items))
+      .catch((e) => setError(e instanceof Error ? e.message : "Erreur"))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <>
       <AdminPageHeader
-        title="Notifications"
-        description="Alertes plateforme : paiements, expirations, système."
+        title="Activité plateforme"
+        description="Flux basé sur PlatformAuditLog (pas de notifications fictives)."
       />
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => setFilter(f.id)}
-            className={`rounded-lg px-3 py-1.5 text-sm ${
-              filter === f.id
-                ? "bg-[var(--admin-accent-dim)] text-[var(--admin-accent)]"
-                : "border border-[var(--admin-line)] text-[var(--admin-muted)]"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      {loading ? <p className="text-sm text-[var(--admin-muted)]">Chargement…</p> : null}
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <ul className="ac-card divide-y divide-[var(--admin-line)]">
-        {rows.map((n) => (
-          <li key={n.id} className="flex items-start gap-3 px-5 py-4 text-sm">
-            <span
-              className={
-                n.tone === "red"
-                  ? "text-[var(--admin-bad)]"
-                  : n.tone === "yellow"
-                    ? "text-[var(--admin-warn)]"
-                    : "text-[var(--admin-ok)]"
-              }
-            >
-              ●
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className={n.read ? "text-[var(--admin-muted)]" : "font-medium"}>
-                {n.title}
-              </p>
-              <p className="mt-1 font-mono text-[10px] text-[var(--admin-muted)]">
-                {n.at}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {!loading && items.length === 0 ? (
+        <p className="ac-card p-6 text-sm text-[var(--admin-muted)]">Aucune activité récente.</p>
+      ) : (
+        <ul className="ac-card divide-y divide-[var(--admin-line)]">
+          {items.map((n) => (
+            <li key={n.id} className="flex items-start gap-3 px-5 py-4 text-sm">
+              <span className="text-[var(--admin-accent)]">●</span>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{platformAuditActionLabel(n.action)}</p>
+                <p className="mt-1 text-xs text-[var(--admin-muted)]">
+                  {n.platformUserName ?? "Système"}
+                  {n.organizationId ? (
+                    <>
+                      {" · "}
+                      <Link
+                        href={`/organizations/${n.organizationId}/`}
+                        className="text-[var(--admin-accent)]"
+                      >
+                        {n.organizationName ?? n.organizationId}
+                      </Link>
+                    </>
+                  ) : null}
+                </p>
+                <p className="mt-1 font-mono text-[10px] text-[var(--admin-muted)]">
+                  {new Date(n.createdAt).toLocaleString("fr-FR")}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }

@@ -8,7 +8,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/ui/dropdown";
 import { Tabs } from "@/components/ui/tabs";
-import { STAFF } from "@/lib/app-mock";
+
+type StaffOption = { id: string; name: string };
 
 type AgendaMobileProps = {
   date: Date;
@@ -19,6 +20,7 @@ type AgendaMobileProps = {
   onToday: () => void;
   staffFilter: string;
   onStaffFilter: (id: string) => void;
+  staffOptions: StaffOption[];
   appointments: Appointment[];
   onAppointmentClick: (id: string) => void;
   onCreate: () => void;
@@ -33,6 +35,7 @@ export function AgendaMobile({
   onToday,
   staffFilter,
   onStaffFilter,
+  staffOptions,
   appointments,
   onAppointmentClick,
   onCreate,
@@ -91,7 +94,7 @@ export function AgendaMobile({
         onChange={onStaffFilter}
         options={[
           { value: "ALL", label: "Toutes les employées" },
-          ...STAFF.map((s) => ({ value: s.id, label: s.name })),
+          ...staffOptions.map((s) => ({ value: s.id, label: s.name })),
         ]}
       />
 

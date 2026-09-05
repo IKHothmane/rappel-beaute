@@ -6,8 +6,9 @@ import {
   AGENDA_SLOT_HEIGHT_PX,
   AGENDA_SLOT_MINUTES,
 } from "@/modules/appointments/constants";
-import { STAFF_BLOCKS } from "@/data/mock-agenda";
 import type { Appointment } from "@/types/appointment";
+import type { StaffAgendaContext } from "@/types/staff";
+import { LEAVE_TYPE_LABEL } from "@/types/staff";
 import { AppointmentCard } from "@/components/agenda/appointment-card";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ type AgendaGridProps = {
   date: Date;
   staff: StaffCol[];
   appointments: Appointment[];
+  staffContexts?: StaffAgendaContext[];
   onAppointmentClick: (id: string) => void;
   onSlotDrop?: (staffId: string, hour: number, minute: number, appointmentId: string) => void;
 };
@@ -35,6 +37,7 @@ export function AgendaGrid({
   date,
   staff,
   appointments,
+  staffContexts = [],
   onAppointmentClick,
   onSlotDrop,
 }: AgendaGridProps) {
@@ -114,30 +117,40 @@ export function AgendaGrid({
                     />
                   ))}
 
-                  {/* Staff blocks (pause/congé) */}
-                  {STAFF_BLOCKS.filter((b) => b.staffId === col.id).map((block) => {
-                    const bStart = new Date(block.startAt);
-                    if (
-                      bStart.getFullYear() !== date.getFullYear() ||
-                      bStart.getMonth() !== date.getMonth() ||
-                      bStart.getDate() !== date.getDate()
-                    ) {
-                      return null;
-                    }
-                    const bEnd = new Date(block.endAt);
-                    return (
-                      <div
-                        key={block.label}
-                        className="absolute inset-x-1 rounded-lg border border-dashed border-amber-300 bg-amber-50/80 px-2 py-1 text-[10px] font-medium text-amber-800"
-                        style={{
-                          top: slotTop(bStart) + 2,
-                          height: slotHeight(bStart, bEnd),
-                        }}
-                      >
-                        {block.label}
-                      </div>
-                    );
-                  })}
+                  {/* Congés / absences approuvés (Staff réel) */}
+                  {(staffContexts.find((c) => c.id === col.id)?.leaves ?? [])
+                    .filter((leave) => {
+                      const start = new Date(leave.startAt);
+                      const end = new Date(leave.endAt);
+                      const dayStart = new Date(date);
+                      dayStart.setHours(0, 0, 0, 0);
+                      const dayEnd = new Date(date);
+                      dayEnd.setHours(23, 59, 59, 999);
+                      return start <= dayEnd && end >= dayStart;
+                    })
+                    .map((leave) => {
+                      const bStart = new Date(leave.startAt);
+                      const bEnd = new Date(leave.endAt);
+                      const dayStart = new Date(date);
+                      dayStart.setHours(AGENDA_OPEN_HOUR, 0, 0, 0);
+                      const dayEnd = new Date(date);
+                      dayEnd.setHours(AGENDA_CLOSE_HOUR, 0, 0, 0);
+                      const clipStart = bStart < dayStart ? dayStart : bStart;
+                      const clipEnd = bEnd > dayEnd ? dayEnd : bEnd;
+                      if (clipEnd <= clipStart) return null;
+                      return (
+                        <div
+                          key={leave.id}
+                          className="absolute inset-x-1 rounded-lg border border-dashed border-amber-300 bg-amber-50/80 px-2 py-1 text-[10px] font-medium text-amber-800"
+                          style={{
+                            top: slotTop(clipStart) + 2,
+                            height: slotHeight(clipStart, clipEnd),
+                          }}
+                        >
+                          {LEAVE_TYPE_LABEL[leave.type] ?? "Absence"}
+                        </div>
+                      );
+                    })}
 
                   {colAppts.map((apt) => {
                     const start = new Date(apt.startAt);

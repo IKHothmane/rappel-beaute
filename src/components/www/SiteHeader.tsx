@@ -2,27 +2,16 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { NAV } from "@/lib/site";
+import { BrandLogo } from "@/components/www/BrandLogo";
+import { APP_LOGIN_HREF, NAV } from "@/lib/site";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/80 bg-paper/90 backdrop-blur-md">
-      <div className="container-rb flex h-[4.25rem] items-center justify-between gap-3">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary font-display text-lg font-semibold text-white">
-            R
-          </span>
-          <span className="leading-tight">
-            <span className="block font-display text-[15px] font-semibold tracking-tight text-ink">
-              RAPPEL BEAUTÉ
-            </span>
-            <span className="font-mono text-[10px] tracking-[0.16em] text-primary">
-              V1.2
-            </span>
-          </span>
-        </Link>
+      <div className="container-rb flex h-[5.5rem] items-center justify-between gap-3 md:h-24">
+        <BrandLogo height={72} className="max-h-16 md:max-h-[4.5rem]" priority />
 
         <nav
           className="hidden items-center gap-7 lg:flex"
@@ -41,11 +30,11 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2.5">
           <div className="hidden items-center gap-2.5 lg:flex">
-            <Link href="/login/" className="btn-ghost px-4 py-2">
-              Se connecter
+            <Link href={APP_LOGIN_HREF} className="btn-ghost px-4 py-2">
+              Espace institut
             </Link>
-            <Link href="/demo/" className="btn-primary px-4 py-2">
-              Demander une démo
+            <Link href="/essai/" className="btn-primary px-4 py-2">
+              Essayer 14 jours
             </Link>
           </div>
 
@@ -80,18 +69,18 @@ export function SiteHeader() {
               </Link>
             ))}
             <Link
-              href="/login/"
+              href={APP_LOGIN_HREF}
               className="btn-ghost mt-2 w-full"
               onClick={() => setOpen(false)}
             >
-              Se connecter
+              Espace institut
             </Link>
             <Link
-              href="/demo/"
+              href="/essai/"
               className="btn-primary w-full"
               onClick={() => setOpen(false)}
             >
-              Demander une démo
+              Essayer 14 jours
             </Link>
           </nav>
         </div>

@@ -1,11 +1,13 @@
 /**
  * Restore PostgreSQL depuis .dump (pg_restore) ou .sql.gz (psql).
- * Usage: DATABASE_URL=... npx tsx scripts/ops/restore.ts backups/rappel_beaute_xxx.dump
- * CI: CONFIRM=yes pour skip prompt interactif
+ * Usage: DATABASE_URL=... CONFIRM=yes npx tsx scripts/ops/restore.ts backups/xxx.dump
+ *
+ * Fallback Docker : PG_DOCKER_CONTAINER=rappel_beaute_db
  */
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import { URL } from "url";
 
 const file = process.argv[2];
 const target = process.env.DATABASE_URL;
@@ -29,24 +31,103 @@ if (!confirm && process.stdin.isTTY) {
   process.exit(1);
 }
 
-const ext = path.extname(file).toLowerCase();
-
-if (ext === ".dump") {
+function hasBin(bin: string): boolean {
   try {
-    execSync(
-      `pg_restore --dbname="${target}" --no-owner --no-acl --clean --if-exists "${file}"`,
-      { stdio: "inherit", env: process.env },
-    );
+    execSync(`${bin} --version`, { stdio: "ignore" });
+    return true;
   } catch {
-    // pg_restore exit 1 = avertissements fréquents (--no-owner) — on valide après
-    console.warn("pg_restore a signalé des avertissements — vérification post-restore…");
-    execSync(`psql "${target}" -c "SELECT 1 FROM \\"Organization\\" LIMIT 1;"`, {
+    return false;
+  }
+}
+
+function parseDb(url: string) {
+  const u = new URL(url);
+  return {
+    host: u.hostname,
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, "").split("?")[0],
+  };
+}
+
+function isLoopback(host: string) {
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+function verifyOrganizationTable(url: string) {
+  const db = parseDb(url);
+  if (hasBin("psql")) {
+    execSync(`psql "${url}" -c "SELECT 1 FROM \\"Organization\\" LIMIT 1;"`, {
       stdio: "inherit",
       env: process.env,
     });
+    return;
   }
+  const container = process.env.PG_DOCKER_CONTAINER;
+  if (!container) throw new Error("psql introuvable pour vérification post-restore");
+  execSync(
+    `docker exec -e PGPASSWORD=${db.password} ${container} psql -U ${db.user} -d ${db.database} -c "SELECT 1 FROM \\"Organization\\" LIMIT 1;"`,
+    { stdio: "inherit", env: process.env },
+  );
+}
+
+function runPgRestore(url: string, dumpFile: string) {
+  if (hasBin("pg_restore")) {
+    try {
+      execSync(
+        `pg_restore --dbname="${url}" --no-owner --no-acl --clean --if-exists "${dumpFile}"`,
+        { stdio: "inherit", env: process.env },
+      );
+    } catch {
+      console.warn("pg_restore a signalé des avertissements — vérification post-restore…");
+      verifyOrganizationTable(url);
+    }
+    return;
+  }
+
+  const container = process.env.PG_DOCKER_CONTAINER;
+  if (!container) {
+    console.error(
+      "pg_restore introuvable. Installez postgresql-client ou définissez PG_DOCKER_CONTAINER=rappel_beaute_db",
+    );
+    process.exit(1);
+  }
+
+  const db = parseDb(url);
+  const remote = `/tmp/restore_${Date.now()}.dump`;
+  console.log(`pg_restore via docker exec ${container}`);
+  execSync(`docker cp "${dumpFile}" ${container}:${remote}`, { stdio: "inherit" });
+
+  try {
+    if (isLoopback(db.host)) {
+      execSync(
+        `docker exec -e PGPASSWORD=${db.password} ${container} pg_restore -U ${db.user} -d ${db.database} --no-owner --no-acl --clean --if-exists "${remote}"`,
+        { stdio: "inherit", env: process.env },
+      );
+    } else {
+      execSync(
+        `docker exec ${container} pg_restore --dbname="${url}" --no-owner --no-acl --clean --if-exists "${remote}"`,
+        { stdio: "inherit", env: process.env },
+      );
+    }
+  } catch {
+    console.warn("pg_restore (docker) a signalé des avertissements — vérification…");
+    verifyOrganizationTable(url);
+  } finally {
+    execSync(`docker exec ${container} rm -f "${remote}"`, { stdio: "ignore" });
+  }
+}
+
+const ext = path.extname(file).toLowerCase();
+
+if (ext === ".dump") {
+  runPgRestore(target, file);
 } else if (file.endsWith(".sql.gz")) {
   const shell = process.platform === "win32" ? "cmd.exe" : "/bin/bash";
+  if (!hasBin("psql") || !hasBin("gunzip")) {
+    console.error(".sql.gz nécessite psql + gunzip sur PATH");
+    process.exit(1);
+  }
   execSync(`gunzip -c "${file}" | psql "${target}" -v ON_ERROR_STOP=1`, {
     stdio: "inherit",
     shell,

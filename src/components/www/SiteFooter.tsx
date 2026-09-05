@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { SITE } from "@/lib/site";
+import { BrandLogo } from "@/components/www/BrandLogo";
+import { APP_LOGIN_HREF, SITE } from "@/lib/site";
 
 const COLS = [
   {
@@ -8,24 +9,24 @@ const COLS = [
       { href: "/fonctionnalites/", label: "Fonctionnalités" },
       { href: "/tarifs/", label: "Tarifs" },
       { href: "/whatsapp/", label: "WhatsApp manuel" },
-      { href: "/essai/", label: "Demande d’essai" },
+      { href: "/essai/", label: "Essai 14 jours" },
     ],
   },
   {
     title: "Solutions",
     links: [
       { href: "/solutions/institut-beaute/", label: "Institut de beauté" },
-      { href: "/gestion-rendez-vous/", label: "Gestion des rendez-vous" },
-      { href: "/gestion-stock/", label: "Gestion de stock" },
-      { href: "/gestion-clientes/", label: "Gestion des clientes" },
+      { href: "/fonctionnalites/#rdv", label: "Rendez-vous" },
+      { href: "/fonctionnalites/#clientes", label: "Clientes" },
+      { href: "/fonctionnalites/#stock", label: "Stock" },
     ],
   },
   {
-    title: "Ressources",
+    title: "Entreprise",
     links: [
-      { href: "/ressources/", label: "Centre de ressources" },
-      { href: "/faq/", label: "FAQ" },
       { href: "/a-propos/", label: "À propos" },
+      { href: "/faq/", label: "FAQ" },
+      { href: "/demo/", label: "Demander une démo" },
       { href: "/contact/", label: "Contact" },
     ],
   },
@@ -34,7 +35,7 @@ const COLS = [
     links: [
       { href: "/mentions-legales/", label: "Mentions légales" },
       { href: "/confidentialite/", label: "Confidentialité" },
-      { href: "/login/", label: "Connexion" },
+      { href: APP_LOGIN_HREF, label: "Espace institut", external: true },
     ],
   },
 ] as const;
@@ -44,18 +45,13 @@ export function SiteFooter() {
     <footer className="mt-8 border-t border-line bg-[#FBF4F6]">
       <div className="container-rb grid gap-10 py-14 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <div className="lg:col-span-1">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary font-display font-semibold text-white">
-              R
-            </span>
-            <span className="font-display text-sm font-semibold">RAPPEL BEAUTÉ</span>
-          </Link>
+          <BrandLogo height={72} />
           <p className="mt-4 max-w-[16rem] text-sm leading-relaxed text-ink/65">
             Le logiciel des instituts de beauté au Maroc. Agenda, caisse, stock,
             WhatsApp manuel.
           </p>
           <p className="mt-4 font-mono text-[11px] tracking-wider text-ink/45">
-            {SITE.version} · www.rappelbeaute.ma
+            {SITE.version} · Starter {299} · Institut {499} · Premium {899} MAD
           </p>
         </div>
 
@@ -70,6 +66,9 @@ export function SiteFooter() {
                   <Link
                     href={link.href}
                     className="text-sm text-ink/70 transition hover:text-primary"
+                    {...("external" in link && link.external
+                      ? { rel: "noopener noreferrer" }
+                      : {})}
                   >
                     {link.label}
                   </Link>
@@ -81,7 +80,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-line/80">
         <div className="container-rb flex flex-col gap-2 py-5 text-xs text-ink/45 sm:flex-row sm:justify-between">
-          <p>© 2026 Rappel Beauté. Tous droits réservés.</p>
+          <p>© 2026 {SITE.name}. Tous droits réservés.</p>
           <p>Conçu pour les instituts au Maroc · MAD · FR</p>
         </div>
       </div>

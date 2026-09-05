@@ -94,7 +94,9 @@ Spec : `e2e/commercial-flow.spec.ts`
 
 Voir `infra/cloudflare/README.md`
 
-Hosts : `www`, `app`, `admin`, apex `rappelbeaute.ma`
+Hosts cibles (domaine acheté) : `rappelbeauty.com` / `www` (marketing), `app` (institut), `admin` (Super Admin), `book` (réservation publique).
+
+Ne pas pointer les DNS avant de figer l’hébergeur (Railway / Vercel / VPS).
 
 Vérifier : HTTPS, cookies Secure, CSP, booking public, rate limiting.
 

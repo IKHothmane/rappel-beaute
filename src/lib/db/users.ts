@@ -79,3 +79,56 @@ export async function setUserPasswordHash(userId: string, passwordHash: string) 
     userId,
   ]);
 }
+
+export type OrgUserListItem = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  role: AppRole;
+  status: "ACTIVE" | "DISABLED";
+  createdAt: string;
+};
+
+/** Utilisateurs de l'organisation — organizationId toujours côté serveur / session */
+export async function listUsersByOrganization(
+  organizationId: string,
+): Promise<OrgUserListItem[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    role: AppRole;
+    status: "ACTIVE" | "DISABLED";
+    createdAt: Date;
+  }>(
+    `SELECT id, email, "firstName", "lastName", phone, role, status, "createdAt"
+     FROM "User"
+     WHERE "organizationId" = $1
+     ORDER BY
+       CASE role
+         WHEN 'OWNER' THEN 0
+         WHEN 'MANAGER' THEN 1
+         WHEN 'STAFF' THEN 2
+         WHEN 'CASHIER' THEN 3
+         ELSE 4
+       END,
+       "lastName",
+       "firstName"`,
+    [organizationId],
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    email: r.email,
+    firstName: r.firstName,
+    lastName: r.lastName,
+    phone: r.phone,
+    role: r.role,
+    status: r.status,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}

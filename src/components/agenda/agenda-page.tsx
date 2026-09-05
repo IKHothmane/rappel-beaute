@@ -49,7 +49,7 @@ export function AgendaPage() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [view, setView] = useState<AgendaView>("day");
-  const [date, setDate] = useState(new Date(2026, 7, 30));
+  const [date, setDate] = useState(() => new Date());
   const [drawer, setDrawer] = useState<DrawerMode>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -247,7 +247,7 @@ export function AgendaPage() {
         dateLabel={dateLabel}
         onPrev={() => shiftDate(-1)}
         onNext={() => shiftDate(1)}
-        onToday={() => setDate(new Date(2026, 7, 30))}
+        onToday={() => setDate(new Date())}
         staffFilter={staffFilter}
         serviceFilter={serviceFilter}
         resourceFilter={resourceFilter}
@@ -318,6 +318,7 @@ export function AgendaPage() {
                   date={date}
                   staff={staffColumns}
                   appointments={filtered}
+                  staffContexts={staffContexts}
                   onAppointmentClick={(id) => {
                     setSelectedId(id);
                     setDrawer("detail");
@@ -334,6 +335,7 @@ export function AgendaPage() {
                     date={date}
                     staff={staffColumns}
                     appointments={filtered}
+                    staffContexts={staffContexts}
                     onAppointmentClick={(id) => {
                       setSelectedId(id);
                       setDrawer("detail");
@@ -350,9 +352,10 @@ export function AgendaPage() {
               onViewChange={setView}
               onPrev={() => shiftDate(-1)}
               onNext={() => shiftDate(1)}
-              onToday={() => setDate(new Date(2026, 7, 30))}
+              onToday={() => setDate(new Date())}
               staffFilter={staffFilter}
               onStaffFilter={setStaffFilter}
+              staffOptions={staffColumns}
               appointments={filtered}
               onAppointmentClick={(id) => {
                 setSelectedId(id);

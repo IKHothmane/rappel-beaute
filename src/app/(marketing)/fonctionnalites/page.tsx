@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero } from "@/components/www/PageHero";
-import { FEATURES } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -13,8 +12,8 @@ export const metadata: Metadata = {
 
 const DETAILS = [
   {
-    id: "agenda",
-    title: "Agenda intelligent",
+    id: "rdv",
+    title: "Rendez-vous",
     lead: "Le planning tient la journée — sans double-réservation.",
     points: [
       "Vue jour / semaine par employée et par cabine.",
@@ -25,7 +24,7 @@ const DETAILS = [
   },
   {
     id: "clientes",
-    title: "Gestion clientes",
+    title: "Clientes",
     lead: "La mémoire de l’institut, sans photos en V1.",
     points: [
       "Fiche : coordonnées, historique RDV, notes internes.",
@@ -35,19 +34,8 @@ const DETAILS = [
     ],
   },
   {
-    id: "stock",
-    title: "Stock & Achats",
-    lead: "Un ledger, pas un chiffre qu’on écrase.",
-    points: [
-      "Mouvements append-only : achat, vente, usage, perte.",
-      "Le stock affiché est un cache recalculable.",
-      "Fournisseurs, commandes, alertes de rupture.",
-      "Consommation liée à la prestation terminée.",
-    ],
-  },
-  {
     id: "caisse",
-    title: "Caisse & Paiements",
+    title: "Caisse & paiements",
     lead: "Chaque dirham a une trace. Rien n’est réécrit.",
     points: [
       "Montants en Decimal — jamais de Float.",
@@ -57,24 +45,65 @@ const DETAILS = [
     ],
   },
   {
-    id: "fidelite",
-    title: "Fidélité & Marketing",
-    lead: "Faire revenir sans spammer, sans bot.",
+    id: "stock",
+    title: "Stock",
+    lead: "Un ledger, pas un chiffre qu’on écrase.",
     points: [
-      "Points, forfaits, promotions, cartes cadeaux.",
-      "Campagnes : le message est préparé, vous envoyez.",
-      "Aucun envoi WhatsApp automatique en V1.",
-      "Avis clientes demandés après la prestation — toujours à la main.",
+      "Mouvements append-only : achat, vente, usage, perte.",
+      "Le stock affiché est un cache recalculable.",
+      "Fournisseurs, commandes, alertes de rupture.",
+      "Consommation liée à la prestation terminée.",
+    ],
+  },
+  {
+    id: "fidelite",
+    title: "Fidélité",
+    lead: "Faire revenir sans spammer.",
+    points: [
+      "Points, forfaits, cartes cadeaux.",
+      "Règles claires par plan (Institut / Premium).",
+      "Historique des mouvements de points.",
+    ],
+  },
+  {
+    id: "promotions",
+    title: "Promotions",
+    lead: "Offres contrôlées, pas de bricolage en caisse.",
+    points: [
+      "Codes promo et remises paramétrables.",
+      "Campagnes préparées pour WhatsApp manuel.",
+      "Traçabilité sur le ticket / paiement.",
+    ],
+  },
+  {
+    id: "whatsapp",
+    title: "WhatsApp",
+    lead: "Préparez. Envoyez. Marquez. Aucun bot en V1.",
+    points: [
+      "Rappels RDV, confirmations, avis, réactivation.",
+      "Message préparé → ouverture wa.me → envoi humain.",
+      "Respect de l’opt-in marketing.",
+      "Aucun envoi automatique WhatsApp Business API en V1.",
+    ],
+  },
+  {
+    id: "avis",
+    title: "Avis",
+    lead: "Demander l’avis après le soin — toujours à la main.",
+    points: [
+      "Demande d’avis post-RDV préparée.",
+      "Suivi des retours clientes.",
+      "Lien Google / fiche institut selon config.",
     ],
   },
   {
     id: "analytics",
-    title: "Analytics & Rapports",
+    title: "Analytics & rapports",
     lead: "Le CA du jour, le remplissage, les services qui portent.",
     points: [
       "Tableau de bord du matin pour la patronne.",
       "Rapports exportables (rôle ACCOUNTANT inclus).",
-      "Multi-sites consolidé sur Premium.",
+      "Multi-sites consolidé sur Premium (899 MAD).",
       "Les chiffres suivent la caisse, pas un tableur parallèle.",
     ],
   },
@@ -85,11 +114,11 @@ export default function FonctionnalitesPage() {
     <>
       <PageHero
         eyebrow="Fonctionnalités"
-        title="Six modules, un institut qui tient."
-        text="Chaque bloc ci-dessous a une ancre. Partagez le lien à votre équipe."
+        title="Tout pour tenir l’institut — dans une seule plateforme."
+        text="Rendez-vous, clientes, caisse, stock, fidélité, WhatsApp et rapports. Ancres SEO prêtes à partager."
       />
       <div className="container-rb flex flex-wrap gap-2 py-8">
-        {FEATURES.map((f) => (
+        {DETAILS.map((f) => (
           <a
             key={f.id}
             href={`#${f.id}`}

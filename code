@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rappel Beauté | Réservez vos soins beauté et bien-être au Maroc</title>
+<!-- Google Fonts: Inter & Playfair Display for editorial elegance -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;family=Playfair+Display:ital,wght@0,500;0,600;1,400&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Forms & Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+          },
+          colors: {
+            primary: {
+              DEFAULT: '#E31C5F',
+              dark: '#B8134A',
+              light: '#FDEAF0',
+            },
+            paper: '#FFFBF9',
+            ink: {
+              DEFAULT: '#241A22',
+              muted: '#6B5864',
+            },
+            line: '#F0E3E6',
+            institut: '#171018',
+            gold: '#C79A3B',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for pristine luxury editorial accents -->
+<style data-purpose="custom-typography">
+    .font-serif-soft {
+      font-family: 'Playfair Display', serif;
+      letter-spacing: -0.01em;
+    }
+    .hero-gradient {
+      background: linear-gradient(180deg, rgba(23,16,24,0.4) 0%, rgba(23,16,24,0.7) 100%);
+    }
+    details > summary {
+      list-style: none;
+    }
+    details > summary::-webkit-details-marker {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-paper text-ink antialiased selection:bg-primary selection:text-white font-sans">
+<!-- BEGIN: TopHeader -->
+<header class="sticky top-0 z-50 bg-paper/95 backdrop-blur-md border-b border-line transition-all">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+<!-- Brand Logo and Primary Navigation -->
+<div class="flex items-center space-x-10">
+<a class="flex flex-col tracking-widest leading-none" href="#">
+<span class="text-xl font-bold tracking-[0.25em] text-ink">RAPPEL BEAUTÉ</span>
+<span class="text-[9px] tracking-[0.35em] text-primary font-medium mt-0.5 uppercase">Maroc Prestige</span>
+</a>
+<!-- Service category links -->
+<nav class="hidden xl:flex items-center space-x-7 text-[13.5px] font-medium text-ink/80 tracking-wide">
+<a class="hover:text-primary transition-colors" href="#explore">Coiffeur</a>
+<a class="hover:text-primary transition-colors" href="#explore">Barbier</a>
+<a class="hover:text-primary transition-colors" href="#explore">Manucure</a>
+<a class="hover:text-primary transition-colors" href="#explore">Institut de beauté</a>
+<a class="hover:text-primary transition-colors" href="#explore">Bien-être &amp; Spa</a>
+</nav>
+</div>
+<!-- User & Pro Action Buttons -->
+<div class="flex items-center space-x-3 sm:space-x-4">
+<a class="hidden sm:inline-flex items-center justify-center px-4 py-2.5 text-xs uppercase tracking-wider font-semibold rounded-full border border-line text-ink hover:border-primary hover:bg-primary-light hover:text-primary transition-all duration-200" href="#pro">
+          Je suis un professionnel
+        </a>
+<a class="inline-flex items-center justify-center space-x-2 px-4 py-2.5 text-xs font-semibold rounded-full bg-primary text-white hover:bg-primary-dark transition-all duration-200 shadow-sm" href="#account">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="hidden md:inline">Mon compte</span>
+</a>
+</div>
+</div>
+</header>
+<!-- END: TopHeader -->
+<main>
+<!-- BEGIN: HeroSection -->
+<section class="relative min-h-[640px] lg:min-h-[720px] flex items-center justify-center bg-institut text-white overflow-hidden" data-purpose="hero-banner">
+<!-- Background editorial atmosphere -->
+<div class="absolute inset-0 z-0">
+<img alt="Atmosphère salon de beauté de luxe" class="w-full h-full object-cover object-center scale-105 filter brightness-75 transition-transform duration-1000" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsdpWrCeBcRo25PASMsrTR3U_6jkBWJJ8AlyWLA38hG4WfRJp1NbpY5jUf1HlRP_S3NXiDxrED3VpT5FTGQXtr_WSWN_f5YJObwoWuvc0eMbHvz2T4Gze8k4u72MUygiO4aOlRcntO9A_4eKdM7J7dhAqgnLiCBvWym3ADxI2YqNG02sh4zTVRUy-fmA0GQ11sPpXX6fs0bTlDKHY16WFA3LPHlWpVF-95enj4Wd2G74l8-U-4HYxc5w"/>
+<div class="absolute inset-0 bg-gradient-to-t from-institut/90 via-institut/50 to-institut/70"></div>
+</div>
+<!-- Hero Content & Search Bar -->
+<div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center flex flex-col items-center">
+<p class="text-xs uppercase tracking-[0.3em] font-semibold text-gold mb-3">La référence beauté au Maroc</p>
+<h1 class="text-4xl sm:text-6xl md:text-7xl font-light font-serif tracking-tight text-white mb-3">
+          Réservez en beauté
+        </h1>
+<p class="text-sm sm:text-base font-normal tracking-wide text-white/90 mb-10 flex items-center justify-center space-x-3">
+<span>Simple</span>
+<span class="inline-block w-1 h-1 rounded-full bg-primary"></span>
+<span>Immédiat</span>
+<span class="inline-block w-1 h-1 rounded-full bg-primary"></span>
+<span>24h/24 &amp; 7j/7</span>
+</p>
+<!-- Search Bar Component Inspired by Planity -->
+<div class="w-full max-w-4xl bg-paper rounded-2xl md:rounded-full p-2 md:p-2.5 shadow-2xl backdrop-blur-md text-ink border border-line">
+<form class="flex flex-col md:flex-row items-stretch md:items-center divide-y md:divide-y-0 md:divide-x divide-line" onsubmit="event.preventDefault();">
+<!-- What: Treatment or Salon -->
+<div class="flex-1 flex items-center px-4 py-3 md:py-1">
+<svg class="w-5 h-5 text-primary mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<div class="text-left w-full">
+<label class="block text-[10px] uppercase font-bold text-ink-muted tracking-wider" for="treatment-input">Que cherchez-vous ?</label>
+<input class="w-full p-0 border-none text-sm text-ink font-medium placeholder-ink-muted/60 focus:ring-0 bg-transparent" id="treatment-input" placeholder="Nom du salon, coupe, balayage, soin visage..." type="text"/>
+</div>
+</div>
+<!-- Where: Location -->
+<div class="flex-1 flex items-center px-4 py-3 md:py-1">
+<svg class="w-5 h-5 text-primary mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<div class="text-left w-full">
+<label class="block text-[10px] uppercase font-bold text-ink-muted tracking-wider" for="location-input">Où ?</label>
+<input class="w-full p-0 border-none text-sm text-ink font-medium placeholder-ink-muted/60 focus:ring-0 bg-transparent" id="location-input" placeholder="Casablanca, Rabat, Marrakech, Tanger..." type="text"/>
+</div>
+</div>
+<!-- Action Button -->
+<div class="p-1 md:p-0">
+<button class="w-full md:w-auto px-8 py-3.5 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-xl md:rounded-full transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm" type="submit">
+<span>Rechercher</span>
+</button>
+</div>
+</form>
+</div>
+<!-- Quick location chips -->
+<div class="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/80">
+<span class="text-gold font-medium">Populaires :</span>
+<a class="bg-institut/50 hover:bg-primary/30 border border-line/20 backdrop-blur-sm px-3 py-1 rounded-full transition text-white" href="#">Casablanca Gauthier</a>
+<a class="bg-institut/50 hover:bg-primary/30 border border-line/20 backdrop-blur-sm px-3 py-1 rounded-full transition text-white" href="#">Rabat Agdal</a>
+<a class="bg-institut/50 hover:bg-primary/30 border border-line/20 backdrop-blur-sm px-3 py-1 rounded-full transition text-white" href="#">Marrakech Guéliz</a>
+<a class="bg-institut/50 hover:bg-primary/30 border border-line/20 backdrop-blur-sm px-3 py-1 rounded-full transition text-white" href="#">Tanger Malabata</a>
+</div>
+</div>
+</section>
+<!-- END: HeroSection -->
+<!-- BEGIN: DiscoverProfessionals -->
+<section class="py-24 bg-paper overflow-hidden" data-purpose="editorial-showcase" id="explore">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+<!-- Image 1: Texture & Polish (Editorial vibe) -->
+<div class="hidden lg:block lg:col-span-3">
+<div class="aspect-[3/4] rounded-2xl overflow-hidden shadow-sm bg-primary-light border border-line">
+<img alt="Pinceau vernis à ongles texture" class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0fvsDZQJS45sn9q57hA70EzY7OTfqUwQK_SXkzaaGePQ1dolTSzXOzbhXFC1s0KLBoecVlYqHWKxB_dra0hRbprTMVZahTn-RKhrjB5XBD4F_4mwmGg_CD1hBhiEmSuC-UO52SQaMH7LGuoxEvKkR5WoPy_VM6ICX4kuz8Mpdmsieg2gzGYxuscwYM5FWPQIz4lckMtHKXZqFndlcUFkF3Fb5qlUG8gQLhZRjPwgEe3ehZfGqq648Dg"/>
+</div>
+</div>
+<!-- Image 2: Gold glitter cream / serum drop -->
+<div class="lg:col-span-3">
+<div class="aspect-[4/5] rounded-2xl overflow-hidden shadow-sm bg-primary-light border border-line">
+<img alt="Texture de crème cosmétique de prestige" class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcr3LZiHds53F9XMiXpa6ZKppvM6zsqgOQYgop1ObTceSpw6a6CUgrkaC6t2uLUoZzjaB29fxHNImvX7auo_CqPVJH307keRZn_P2tQLTvUjqVr37aGP03L1h-IyElFo_cD56FP3Lfg_WpLR3V-1rNikHfF60NoLFUZin-ylI_1CcFrX-RF1rEjt3SI4kaihrHGRA0JKd8BcvJPgFeF9hbETG6FtN34mf-t4rh1fm-9GV2aLmI68L5Cw"/>
+</div>
+</div>
+<!-- Center Content Block -->
+<div class="lg:col-span-4 px-2 lg:px-6 flex flex-col justify-center">
+<span class="h-0.5 w-12 bg-primary mb-6"></span>
+<h2 class="text-3xl sm:text-4xl font-normal text-ink tracking-tight mb-6">
+              Découvrez nos <br/><span class="font-serif italic text-primary">Professionnels</span>
+</h2>
+<div class="space-y-4">
+<h3 class="text-lg font-bold text-ink">Institut de beauté</h3>
+<p class="text-ink-muted text-sm leading-relaxed">
+                Vos envies de bien-être ont besoin d'être assouvies rapidement et sereinement. Retrouvez les adresses les plus renommées pour vos rituels spa, hammams traditionnels marocains et soins dermo-esthétiques.
+              </p>
+<div class="pt-2">
+<a class="inline-flex items-center text-sm font-semibold text-primary hover:text-primary-dark hover:underline underline-offset-4 group" href="#">
+                  Voir plus
+                  <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</a>
+</div>
+</div>
+<!-- Carousel Navigation Arrows -->
+<div class="flex items-center space-x-3 mt-8">
+<button aria-label="Précédent" class="w-10 h-10 rounded-full border border-line bg-paper flex items-center justify-center hover:border-primary hover:text-primary transition-colors text-ink">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+</svg>
+</button>
+<button aria-label="Suivant" class="w-10 h-10 rounded-full border border-line bg-paper flex items-center justify-center hover:border-primary hover:text-primary transition-colors text-ink">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Image 3: Pipette serum luxury oil -->
+<div class="hidden lg:block lg:col-span-2">
+<div class="aspect-[2/3] rounded-2xl overflow-hidden shadow-sm bg-primary-light border border-line">
+<img alt="Flacon de sérum précieux" class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDLiMyu3xOkmnr-lZxYA0O_oPqkqIUu1q726zQ6orRGGV8GGi0qcXaCHTu1aYmrsvgC-fAxrwSWHg0ak-TU5-Qn_7RHODDRRLC493c9OdMcPpwIDE-y7WS-6wAHaiKXPvm22Njcwj6t4M5SlCe_po_O1i57iraQ9YREX-H7GqwyMEZRAltYN6koDlbVmr0uxF5aM2zxlpn1S5FLd4Q8r0uHTVk7U4Jk6lnY96zhUMERAen4lh7qCzUMw"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: DiscoverProfessionals -->
+<!-- BEGIN: PressSection -->
+<section class="bg-institut py-16 text-white border-y border-line/10" data-purpose="press-mentions">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+<p class="text-[11px] uppercase tracking-[0.25em] text-gold mb-8 font-semibold">PRESSE</p>
+<h3 class="text-2xl font-light text-white mb-12 tracking-wide font-serif">Ils parlent de nous</h3>
+<!-- Media Logos Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 items-center justify-items-center max-w-4xl mx-auto opacity-80">
+<!-- VOGUE -->
+<div class="py-2 hover:opacity-100 hover:text-primary transition-all">
+<span class="text-2xl md:text-3xl font-serif tracking-[0.3em] font-semibold text-white hover:text-primary-light">VOGUE</span>
+</div>
+<!-- GRAZIA -->
+<div class="py-2 hover:opacity-100 hover:text-primary transition-all">
+<span class="text-2xl md:text-3xl font-serif tracking-[0.25em] font-semibold text-line hover:text-primary-light">GRAZIA</span>
+</div>
+<!-- ELLE -->
+<div class="py-2 hover:opacity-100 hover:text-primary transition-all">
+<span class="text-2xl md:text-3xl font-serif tracking-[0.35em] font-bold text-white hover:text-primary-light">ELLE</span>
+</div>
+<!-- MARIE CLAIRE -->
+<div class="py-2 hover:opacity-100 hover:text-primary transition-all">
+<span class="text-xl md:text-2xl font-serif lowercase italic tracking-widest text-line hover:text-primary-light">marie claire</span>
+</div>
+</div>
+</div>
+</section>
+<!-- END: PressSection -->
+<!-- BEGIN: B2BStatsSection -->
+<section class="py-24 bg-paper" data-purpose="b2b-growth-kpis" id="pro">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+<!-- Header -->
+<div class="mb-14 text-left">
+<p class="text-[11px] font-bold tracking-[0.2em] text-primary uppercase mb-2">UNE FORTE CROISSANCE</p>
+<h2 class="text-3xl sm:text-4xl lg:text-5xl font-normal text-ink tracking-tight">
+            Vous êtes un professionnel de la beauté ?<br/>
+<span class="font-medium text-primary">Découvrez la prise de RDV en ligne !</span>
+</h2>
+</div>
+<!-- 6 Metrics Box with Clean Planity Borders -->
+<div class="grid grid-cols-1 md:grid-cols-3 border border-line rounded-2xl overflow-hidden bg-paper shadow-sm">
+<!-- Stat 1 -->
+<div class="p-8 sm:p-10 border-b md:border-b md:border-r border-line hover:bg-primary-light/40 transition-colors">
+<div class="text-3xl sm:text-4xl font-semibold text-primary tracking-tight mb-2">+ 50%</div>
+<p class="text-sm text-ink-muted leading-relaxed font-normal">
+              de fréquence sur les rendez-vous pris en ligne par vos clients réguliers.
+            </p>
+</div>
+<!-- Stat 2 -->
+<div class="p-8 sm:p-10 border-b md:border-b md:border-r border-line hover:bg-primary-light/40 transition-colors">
+<div class="text-3xl sm:text-4xl font-semibold text-primary tracking-tight mb-2">4x</div>
+<p class="text-sm text-ink-muted leading-relaxed font-normal">
+              moins d'oublis et de no-shows grâce aux rappels instantanés SMS &amp; WhatsApp.
+            </p>
+</div>
+<!-- Stat 3 -->
+<div class="p-8 sm:p-10 border-b border-line hover:bg-primary-light/40 transition-colors">
+<div class="text-3xl sm:text-4xl font-semibold text-primary tracking-tight mb-2">50%</div>
+<p class="text-sm text-ink-muted leading-relaxed font-normal">
+              des rdv en ligne réservés en dehors de vos heures d'ouverture de boutique.
+            </p>
+</div>
+<!-- Stat 4 -->
+<div class="p-8 sm:p-10 border-b md:border-b-0 md:border-r border-line hover:bg-primary-light/40 transition-colors">
+<div class="text-3xl sm:text-4xl font-semibold text-primary tracking-tight mb-2">+60 000</div>
+<p class="text-sm text-ink-muted leading-relaxed font-normal">
+              Salons, spas &amp; instituts partenaires équipés de notre logiciel de caisse et agenda.
+            </p>
+</div>
+<!-- Stat 5 -->
+<div class="p-8 sm:p-10 border-b md:border-b-0 md:border-r border-line hover:bg-primary-light/40 transition-colors">
+<div class="text-3xl sm:text-4xl font-semibold text-primary tracking-tight mb-2">6 RDV</div>
+<p class="text-sm text-ink-muted leading-relaxed font-normal">
+              Pris toutes les secondes sur notre écosystème mobile et web.
+            </p>
+</div>
+<!-- Stat 6 -->
+<div class="p-8 sm:p-10 hover:bg-primary-light/40 transition-colors">
+<div class="text-3xl sm:text-4xl font-semibold text-gold tracking-tight mb-2">&gt; 5 milliards MAD</div>
+<p class="text-sm text-ink-muted leading-relaxed font-normal">
+              De volume d'affaires de rendez-vous générés pour nos partenaires.
+            </p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: B2BStatsSection -->
+<!-- BEGIN: BrandTeamSection -->
+<section class="py-20 bg-primary-light/30 border-y border-line" data-purpose="team-recruitment-banner">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<!-- Monochrome Team Photography -->
+<div class="lg:col-span-6">
+<div class="rounded-2xl overflow-hidden shadow-md border border-line">
+<img alt="Équipe Rappel Beauté réunie au siège" class="w-full h-80 sm:h-96 object-cover filter grayscale contrast-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFhUzBzZyEDmlRWBfs132JbWm6oPBjQ_j55gAPJ-fHbMaUXWnD9SFVHdN_PvLcWlUL133kBM3qj2FkYn06AP3XO3mJO8TcCseN-tmE9jIzeVZ0vbWniAMVjsUcDYkVZ5MRBIcCSBy2WEhKMAjyoYCgqaX9L5eH87MxirsyXB-Lm7P9ZnSS8a4DFg2wbSh4sGh-whiTwqJbAc0fUzdobPh29GYX32tLLflX_REso12068rZNhbzDQ6K-A"/>
+</div>
+</div>
+<!-- Editorial text & quote -->
+<div class="lg:col-span-6 space-y-6">
+<span class="text-[11px] uppercase tracking-[0.2em] font-semibold text-primary">PROFESSIONNEL &amp; TALENTS</span>
+<h2 class="text-3xl sm:text-4xl font-normal text-ink tracking-tight leading-snug">
+              Rappel Beauté recrute et déploie ses équipes pour digitaliser le secteur de la beauté au Maroc.
+            </h2>
+<p class="text-sm text-ink-muted leading-relaxed">
+              Nous accompagnons chaque gérant de salon, barbier indépendant et institut haut de gamme avec un service client basé à Casablanca et une assistance dédiée 6j/7.
+            </p>
+<div class="pt-2">
+<p class="text-xs uppercase tracking-wider text-gold font-semibold">Direction Générale — Casablanca</p>
+</div>
+<div class="pt-4">
+<a class="inline-flex items-center justify-center px-7 py-3 text-sm font-semibold rounded-full bg-primary text-white hover:bg-primary-dark transition shadow-sm" href="#pro">
+                Découvrir nos offres pro
+              </a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: BrandTeamSection -->
+<!-- BEGIN: SeoDirectory -->
+<section class="py-24 bg-paper" data-purpose="national-seo-directory">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="mb-14">
+<p class="text-[11px] font-bold tracking-[0.2em] text-primary uppercase mb-2">PARTOUT AU MAROC</p>
+<h2 class="text-3xl sm:text-4xl font-normal text-ink tracking-tight">
+            Trouvez votre établissement beauté <br class="hidden sm:inline"/>partout au Maroc
+          </h2>
+</div>
+<!-- Directory Columns -->
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 text-xs leading-loose">
+<!-- Column 1: Coiffeur -->
+<div>
+<h3 class="font-bold text-sm text-ink mb-1">Coiffeur</h3>
+<p class="text-ink-muted text-[11px] mb-3">Salons populaires au Maroc</p>
+<ul class="space-y-1 text-ink-muted">
+<li><a class="hover:text-primary transition" href="#">Casablanca Anfa</a></li>
+<li><a class="hover:text-primary transition" href="#">Rabat Hay Riad</a></li>
+<li><a class="hover:text-primary transition" href="#">Marrakech Hivernage</a></li>
+<li><a class="hover:text-primary transition" href="#">Tanger Centre</a></li>
+<li><a class="hover:text-primary transition" href="#">Fès Ville Nouvelle</a></li>
+<li><a class="hover:text-primary transition" href="#">Agadir Baie</a></li>
+<li><a class="hover:text-primary transition" href="#">Mohammedia</a></li>
+</ul>
+</div>
+<!-- Column 2: Barbier -->
+<div>
+<h3 class="font-bold text-sm text-ink mb-1">Barbier</h3>
+<p class="text-ink-muted text-[11px] mb-3">Barbershops tendance</p>
+<ul class="space-y-1 text-ink-muted">
+<li><a class="hover:text-primary transition" href="#">Casablanca Gauthier</a></li>
+<li><a class="hover:text-primary transition" href="#">Rabat Agdal</a></li>
+<li><a class="hover:text-primary transition" href="#">Marrakech Guéliz</a></li>
+<li><a class="hover:text-primary transition" href="#">Tanger Malabata</a></li>
+<li><a class="hover:text-primary transition" href="#">Kénitra</a></li>
+<li><a class="hover:text-primary transition" href="#">Meknès</a></li>
+<li><a class="hover:text-primary transition" href="#">El Jadida</a></li>
+</ul>
+</div>
+<!-- Column 3: Manucure -->
+<div>
+<h3 class="font-bold text-sm text-ink mb-1">Manucure &amp; Ongles</h3>
+<p class="text-ink-muted text-[11px] mb-3">Nail bars &amp; prothésie</p>
+<ul class="space-y-1 text-ink-muted">
+<li><a class="hover:text-primary transition" href="#">Casablanca Maarif</a></li>
+<li><a class="hover:text-primary transition" href="#">Rabat Hassan</a></li>
+<li><a class="hover:text-primary transition" href="#">Marrakech Targa</a></li>
+<li><a class="hover:text-primary transition" href="#">Tanger Boubana</a></li>
+<li><a class="hover:text-primary transition" href="#">Fès Atlas</a></li>
+<li><a class="hover:text-primary transition" href="#">Agadir Sonaba</a></li>
+<li><a class="hover:text-primary transition" href="#">Bouskoura</a></li>
+</ul>
+</div>
+<!-- Column 4: Institut & Spa -->
+<div>
+<h3 class="font-bold text-sm text-ink mb-1">Institut de beauté</h3>
+<p class="text-ink-muted text-[11px] mb-3">Soins visage &amp; hammams</p>
+<ul class="space-y-1 text-ink-muted">
+<li><a class="hover:text-primary transition" href="#">Casablanca Bourgogne</a></li>
+<li><a class="hover:text-primary transition" href="#">Rabat Souissi</a></li>
+<li><a class="hover:text-primary transition" href="#">Marrakech Palmeraie</a></li>
+<li><a class="hover:text-primary transition" href="#">Tanger Marshan</a></li>
+<li><a class="hover:text-primary transition" href="#">Agadir Founty</a></li>
+<li><a class="hover:text-primary transition" href="#">Tétouan</a></li>
+<li><a class="hover:text-primary transition" href="#">Dar Bouazza</a></li>
+</ul>
+</div>
+<!-- Column 5: Massages & Bien-être -->
+<div>
+<h3 class="font-bold text-sm text-ink mb-1">Massages &amp; Rituel</h3>
+<p class="text-ink-muted text-[11px] mb-3">Hammam &amp; relaxation</p>
+<ul class="space-y-1 text-ink-muted">
+<li><a class="hover:text-primary transition" href="#">Casablanca Ain Diab</a></li>
+<li><a class="hover:text-primary transition" href="#">Rabat Aviation</a></li>
+<li><a class="hover:text-primary transition" href="#">Marrakech Medina</a></li>
+<li><a class="hover:text-primary transition" href="#">Tanger Iberia</a></li>
+<li><a class="hover:text-primary transition" href="#">Essaouira Mogador</a></li>
+<li><a class="hover:text-primary transition" href="#">Taghazout Bay</a></li>
+<li><a class="hover:text-primary transition" href="#">Oujda</a></li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<!-- END: SeoDirectory -->
+<!-- BEGIN: FaqAccordionSection -->
+<section class="py-24 bg-primary-light/20 border-t border-line" data-purpose="faq-section">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-12">
+<p class="text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-2">FAQ</p>
+<h2 class="text-3xl font-light text-ink font-serif">Les questions fréquentes</h2>
+</div>
+<!-- FAQ Items with Native Details/Summary for perfect robustness -->
+<div class="space-y-4">
+<details class="group bg-paper rounded-xl border border-line p-5 cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm">
+<summary class="flex justify-between items-center font-medium text-ink text-sm sm:text-base group-hover:text-primary transition-colors">
+<span>Qu'est-ce que Rappel Beauté ?</span>
+<span class="ml-4 transform group-open:rotate-180 transition-transform text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</span>
+</summary>
+<p class="mt-4 text-xs sm:text-sm text-ink-muted leading-relaxed">
+              Rappel Beauté est la plateforme marocaine de réservation de prestations beauté et bien-être en ligne. Elle permet aux clients de trouver un salon ou un institut vérifié, de consulter ses tarifs et disponibilités en temps réel, et de réserver gratuitement 24h/24 sans téléphoner.
+            </p>
+</details>
+<details class="group bg-paper rounded-xl border border-line p-5 cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm">
+<summary class="flex justify-between items-center font-medium text-ink text-sm sm:text-base group-hover:text-primary transition-colors">
+<span>Comment prendre rendez-vous sur la plateforme ?</span>
+<span class="ml-4 transform group-open:rotate-180 transition-transform text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</span>
+</summary>
+<p class="mt-4 text-xs sm:text-sm text-ink-muted leading-relaxed">
+              Indiquez la prestation désirée ainsi que votre ville (ex. Casablanca, Rabat, Marrakech). Sélectionnez l’établissement de votre choix, le collaborateur souhaité et le créneau idéal. Votre confirmation et rappel sont reçus instantanément par SMS et WhatsApp.
+            </p>
+</details>
+<details class="group bg-paper rounded-xl border border-line p-5 cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm">
+<summary class="flex justify-between items-center font-medium text-ink text-sm sm:text-base group-hover:text-primary transition-colors">
+<span>Est-ce que je dois payer en ligne sur Rappel Beauté ?</span>
+<span class="ml-4 transform group-open:rotate-180 transition-transform text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</span>
+</summary>
+<p class="mt-4 text-xs sm:text-sm text-ink-muted leading-relaxed">
+              La majorité des établissements encaissent directement sur place (espèces, carte bancaire TPE). Certains salons proposent également le prépaiement ou acompte sécurisé par carte CMI pour bloquer les créneaux VIP.
+            </p>
+</details>
+<details class="group bg-paper rounded-xl border border-line p-5 cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm">
+<summary class="flex justify-between items-center font-medium text-ink text-sm sm:text-base group-hover:text-primary transition-colors">
+<span>Comment gérer ou reporter mes rendez-vous ?</span>
+<span class="ml-4 transform group-open:rotate-180 transition-transform text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</span>
+</summary>
+<p class="mt-4 text-xs sm:text-sm text-ink-muted leading-relaxed">
+              Connectez-vous à votre espace personnel avec votre numéro de téléphone ou cliquez directement sur le lien sécurisé inclus dans votre confirmation SMS pour décaler ou annuler votre séance en un clic, dans le respect du délai d'annulation du salon.
+            </p>
+</details>
+<details class="group bg-paper rounded-xl border border-line p-5 cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm">
+<summary class="flex justify-between items-center font-medium text-ink text-sm sm:text-base group-hover:text-primary transition-colors">
+<span>Comment faire apparaître mon salon ou mon institut sur Rappel Beauté ?</span>
+<span class="ml-4 transform group-open:rotate-180 transition-transform text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</span>
+</summary>
+<p class="mt-4 text-xs sm:text-sm text-ink-muted leading-relaxed">
+              Cliquez simplement sur l'onglet « Je suis un professionnel » en haut de page. Un conseiller commercial basé au Maroc prendra attache avec votre salon pour configurer votre planning, votre logiciel de caisse et lancer votre fiche en moins de 48h.
+            </p>
+</details>
+</div>
+</div>
+</section>
+<!-- END: FaqAccordionSection -->
+</main>
+<!-- BEGIN: LuxuryFooter -->
+<footer class="bg-institut text-white pt-20 pb-12 border-t border-line/10" data-purpose="global-footer">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-12 pb-16 border-b border-line/10">
+<!-- Left: Logo & Socials -->
+<div class="md:col-span-4 space-y-6">
+<a class="inline-block" href="#">
+<span class="text-xl font-bold tracking-[0.25em] text-white">RAPPEL BEAUTÉ</span>
+<p class="text-xs text-line/70 tracking-wider mt-1">Plateforme de réservation beauté &amp; bien-être</p>
+</a>
+<div class="flex items-center space-x-3 text-line">
+<!-- Facebook Icon -->
+<a aria-label="Facebook" class="w-9 h-9 rounded-full bg-line/10 hover:bg-primary hover:text-white flex items-center justify-center transition-colors" href="#">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
+<path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"></path>
+</svg>
+</a>
+<!-- Instagram Icon -->
+<a aria-label="Instagram" class="w-9 h-9 rounded-full bg-line/10 hover:bg-primary hover:text-white flex items-center justify-center transition-colors" href="#">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path>
+</svg>
+</a>
+<!-- LinkedIn Icon -->
+<a aria-label="LinkedIn" class="w-9 h-9 rounded-full bg-line/10 hover:bg-primary hover:text-white flex items-center justify-center transition-colors" href="#">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
+<path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path>
+</svg>
+</a>
+</div>
+<p class="text-xs text-line/60 pt-3">
+            Conforme aux normes CNDP de protection des données à caractère personnel (Loi 09-08).
+          </p>
+</div>
+<!-- Column: À propos -->
+<div class="md:col-span-3 space-y-3">
+<p class="text-xs font-bold uppercase tracking-wider text-gold">À propos de nous</p>
+<ul class="space-y-2 text-xs text-line/80">
+<li><a class="hover:text-primary transition" href="#pro">Je suis un professionnel de beauté</a></li>
+<li><a class="hover:text-primary transition" href="#">Rejoignez notre équipe Maroc</a></li>
+<li><a class="hover:text-primary transition" href="#">Conditions Générales d'Utilisation</a></li>
+<li><a class="hover:text-primary transition" href="#">Politique de confidentialité</a></li>
+<li><a class="hover:text-primary transition" href="#">Gestion des cookies</a></li>
+<li><a class="hover:text-primary transition" href="#">Mentions Légales &amp; CNDP</a></li>
+</ul>
+</div>
+<!-- Column: Trouvez votre prestation -->
+<div class="md:col-span-3 space-y-3">
+<p class="text-xs font-bold uppercase tracking-wider text-gold">Trouvez votre prestation</p>
+<ul class="space-y-2 text-xs text-line/80">
+<li><a class="hover:text-primary transition" href="#">Coiffure femme &amp; balayage</a></li>
+<li><a class="hover:text-primary transition" href="#">Barbier &amp; taille de barbe</a></li>
+<li><a class="hover:text-primary transition" href="#">Institut de beauté &amp; cils</a></li>
+<li><a class="hover:text-primary transition" href="#">Manucure &amp; beauté des pieds</a></li>
+<li><a class="hover:text-primary transition" href="#">Hammam traditionnel marocain</a></li>
+<li><a class="hover:text-primary transition" href="#">Massage relaxant &amp; spa</a></li>
+</ul>
+</div>
+<!-- Column: Recherches fréquentes -->
+<div class="md:col-span-2 space-y-3">
+<p class="text-xs font-bold uppercase tracking-wider text-gold">Top Villes</p>
+<ul class="space-y-2 text-xs text-line/80">
+<li><a class="hover:text-primary transition" href="#">Coiffeur Casablanca</a></li>
+<li><a class="hover:text-primary transition" href="#">Institut Rabat</a></li>
+<li><a class="hover:text-primary transition" href="#">Barbier Marrakech</a></li>
+<li><a class="hover:text-primary transition" href="#">Spa &amp; Hammam Tanger</a></li>
+<li><a class="hover:text-primary transition" href="#">Salon de beauté Agadir</a></li>
+<li><a class="hover:text-primary transition" href="#">Coiffeur Fès</a></li>
+</ul>
+</div>
+</div>
+<!-- Copyright Bottom Bar -->
+<div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-line/60">
+<div>
+          Copyright © 2026 Rappel Beauté Maroc. Tous droits réservés.
+        </div>
+<div class="mt-4 sm:mt-0 flex space-x-6">
+<a class="hover:text-primary transition" href="#">Plan du site</a>
+<a class="hover:text-primary transition" href="#">Sécurité des paiements</a>
+<a class="hover:text-primary transition" href="#">Support Client</a>
+</div>
+</div>
+</div>
+</footer>
+<!-- END: LuxuryFooter -->
+<!-- JavaScript for Interactive Polish -->
+<script data-purpose="ui-interactions">
+    document.addEventListener('DOMContentLoaded', () => {
+      // Subtle auto-close previous accordion items for smooth single-open feel
+      const accordions = document.querySelectorAll('details');
+      accordions.forEach((targetDetail) => {
+        targetDetail.addEventListener('click', () => {
+          accordions.forEach((detail) => {
+            if (detail !== targetDetail) {
+              detail.removeAttribute('open');
+            }
+          });
+        });
+      });
+    });
+  </script>
+</body></html>

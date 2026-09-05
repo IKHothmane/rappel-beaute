@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { PLATFORM_USER, platformStats } from "@/lib/admin-mock";
+import { useEffect, useState } from "react";
+import { fetchAdminAudit, fetchAdminSession, platformLogout } from "@/modules/admin/client";
 
 type NavItem = { href: string; label: string };
 type NavGroup = { title?: string; items: NavItem[] };
@@ -37,13 +37,13 @@ const NAV: NavGroup[] = [
   {
     title: "Assistance",
     items: [
-      { href: "/support/", label: "Tickets" },
+      { href: "/support/", label: "Sessions" },
       { href: "/support/mode/", label: "Mode assistance" },
     ],
   },
   {
     items: [
-      { href: "/notifications/", label: "Notifications" },
+      { href: "/notifications/", label: "Activité" },
       { href: "/settings/", label: "Paramètres" },
     ],
   },
@@ -72,7 +72,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const path = normalizePath(pathname);
   const [open, setOpen] = useState(false);
-  const unread = platformStats().unreadNotifs;
+  const [firstName, setFirstName] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [recentCount, setRecentCount] = useState(0);
+
+  useEffect(() => {
+    fetchAdminSession().then((u) => {
+      if (!u) return;
+      setFirstName(u.firstName ?? "");
+      setDisplayName(`${u.firstName ?? ""} ${u.lastName ?? ""}`.trim());
+    });
+    fetchAdminAudit(20)
+      .then((res) => setRecentCount(res.items.length))
+      .catch(() => setRecentCount(0));
+  }, []);
 
   if (path.startsWith("/login")) {
     return <>{children}</>;
@@ -140,15 +153,23 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="border-t border-line p-4">
-            <p className="text-xs font-medium">{PLATFORM_USER.name}</p>
+            <p className="text-xs font-medium">{displayName || "…"}</p>
             <p className="text-[11px] text-ink/45">Super administrateur</p>
             <div className="mt-3 flex flex-col gap-1.5">
               <Link href="/profile/" className="text-xs font-semibold text-primary">
                 Mon profil
               </Link>
-              <Link href="/login/" className="text-xs text-ink/50 hover:text-ink">
+              <button
+                type="button"
+                className="text-left text-xs text-ink/50 hover:text-ink"
+                onClick={() =>
+                  void platformLogout().then(() => {
+                    window.location.href = "/login/";
+                  })
+                }
+              >
                 Déconnexion
-              </Link>
+              </button>
               <Link href="/?__host=www" className="text-xs text-ink/50 hover:text-ink">
                 ← Retour vitrine
               </Link>
@@ -184,17 +205,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <Link
                 href="/notifications/"
                 className="relative rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm"
-                aria-label="Notifications"
+                aria-label="Activité récente"
               >
-                Notif.
-                {unread > 0 ? (
+                Activité
+                {recentCount > 0 ? (
                   <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] text-white">
-                    {unread}
+                    {Math.min(recentCount, 99)}
                   </span>
                 ) : null}
               </Link>
               <Link href="/profile/" className="hidden text-sm text-ink/60 hover:text-ink sm:inline">
-                {PLATFORM_USER.firstName}
+                {firstName || "Profil"}
               </Link>
             </div>
           </header>

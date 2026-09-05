@@ -1,117 +1,110 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   AdminPageHeader,
   MiniBars,
   PlanBadge,
   StatTile,
 } from "@/components/admin/AdminUi";
-import { MRR_SERIES, PAYMENTS, platformStats } from "@/lib/admin-mock";
+import { fetchAdminBilling } from "@/modules/admin/client";
+import type { PlatformBillingSnapshot } from "@/types/platform";
 
-export const metadata: Metadata = { title: "Facturation" };
+function mad(n: number) {
+  return `${n.toLocaleString("fr-MA")} MAD`;
+}
 
 export default function BillingPage() {
-  const s = platformStats();
+  const [data, setData] = useState<PlatformBillingSnapshot | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAdminBilling()
+      .then(setData)
+      .catch((e) => setError(e instanceof Error ? e.message : "Erreur"));
+  }, []);
 
   return (
     <>
       <AdminPageHeader
         title="Revenus / Facturation"
-        description="Argent du SaaS Rappel Beauté — pas la caisse des instituts."
+        description="MRR SaaS dérivé des abonnements PostgreSQL (pas la caisse institut)."
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="CA SaaS" value={`${s.mrr.toLocaleString("fr-MA")} MAD`} />
-        <StatTile label="Ce mois" value={`+${s.revenueGrowth} %`} />
-        <StatTile label="Paiements réussis" value={String(s.paySuccess)} />
-        <StatTile label="Paiements échoués" value={String(s.payFailed)} />
-      </div>
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {!data && !error ? (
+        <p className="text-sm text-[var(--admin-muted)]">Chargement…</p>
+      ) : null}
 
-      <section className="ac-card mt-6 p-4 sm:p-5">
-        <h2 className="font-display text-lg font-semibold">Évolution du MRR</h2>
-        <div className="mt-4 overflow-x-auto">
-          <MiniBars
-            data={MRR_SERIES.map((p) => p.value)}
-            labels={MRR_SERIES.map((p) => p.label)}
-          />
-        </div>
-      </section>
+      {data ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatTile label="MRR" value={mad(data.mrr)} />
+            <StatTile label="ARR" value={mad(data.arr)} />
+            <StatTile
+              label="Croissance MRR"
+              value={`${data.mrrGrowthPercent > 0 ? "+" : ""}${data.mrrGrowthPercent} %`}
+            />
+            <StatTile label="Abonnements actifs" value={String(data.activeSubs)} />
+          </div>
 
-      <section className="ac-card mt-6">
-        <div className="border-b border-[var(--admin-line)] px-4 py-4 sm:px-5">
-          <h2 className="font-display text-lg font-semibold">Historique</h2>
-        </div>
-
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--admin-muted)]">
-              <tr>
-                <th className="px-4 py-3 font-medium">Institut</th>
-                <th className="px-4 py-3 font-medium">Montant</th>
-                <th className="px-4 py-3 font-medium">Formule</th>
-                <th className="px-4 py-3 font-medium">Date</th>
-                <th className="px-4 py-3 font-medium">Statut</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--admin-line)]">
-              {PAYMENTS.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3">{p.orgName}</td>
-                  <td className="px-4 py-3 font-mono">
-                    {p.amount.toLocaleString("fr-MA")}
-                  </td>
-                  <td className="px-4 py-3">
-                    <PlanBadge plan={p.plan} />
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs">{p.date}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={
-                        p.status === "SUCCESS"
-                          ? "text-[var(--admin-ok)]"
-                          : "text-[var(--admin-bad)]"
-                      }
-                    >
-                      {p.status === "SUCCESS" ? "Réussi" : "Échoué"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="grid gap-3 p-4 md:hidden">
-          {PAYMENTS.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-xl border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{p.orgName}</p>
-                  <p className="mt-0.5 text-xs text-[var(--admin-muted)]">
-                    {p.date} · <PlanBadge plan={p.plan} />
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="font-mono text-sm font-semibold">
-                    {p.amount.toLocaleString("fr-MA")} MAD
-                  </p>
-                  <p
-                    className={
-                      p.status === "SUCCESS"
-                        ? "text-xs text-[var(--admin-ok)]"
-                        : "text-xs text-[var(--admin-bad)]"
-                    }
-                  >
-                    {p.status === "SUCCESS" ? "Réussi" : "Échoué"}
-                  </p>
-                </div>
-              </div>
+          <section className="ac-card mt-6 p-4 sm:p-5">
+            <h2 className="font-display text-lg font-semibold">Évolution du MRR</h2>
+            <div className="mt-4 overflow-x-auto">
+              {data.mrrSeries.every((p) => p.value === 0) ? (
+                <p className="text-sm text-[var(--admin-muted)]">Aucun MRR sur la période.</p>
+              ) : (
+                <MiniBars
+                  data={data.mrrSeries.map((p) => p.value)}
+                  labels={data.mrrSeries.map((p) => p.label)}
+                />
+              )}
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
+
+          <section className="ac-card mt-6">
+            <div className="border-b border-[var(--admin-line)] px-4 py-4 sm:px-5">
+              <h2 className="font-display text-lg font-semibold">Abonnements (période en cours)</h2>
+              <p className="mt-1 text-xs text-[var(--admin-muted)]">
+                Pas de ledger paiement SaaS séparé — lignes = Subscription réelle.
+              </p>
+            </div>
+
+            {data.lines.length === 0 ? (
+              <p className="p-5 text-sm text-[var(--admin-muted)]">Aucun abonnement.</p>
+            ) : (
+              <div className="hidden overflow-x-auto md:block">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Institut</th>
+                      <th className="px-4 py-3 font-medium">Montant</th>
+                      <th className="px-4 py-3 font-medium">Formule</th>
+                      <th className="px-4 py-3 font-medium">Période</th>
+                      <th className="px-4 py-3 font-medium">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--admin-line)]">
+                    {data.lines.map((p) => (
+                      <tr key={p.id}>
+                        <td className="px-4 py-3">{p.organizationName}</td>
+                        <td className="px-4 py-3 font-mono">{p.amount.toLocaleString("fr-MA")}</td>
+                        <td className="px-4 py-3">
+                          <PlanBadge plan={p.plan} />
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs">
+                          {new Date(p.periodStart).toLocaleDateString("fr-FR")}
+                        </td>
+                        <td className="px-4 py-3">{p.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      ) : null}
     </>
   );
 }

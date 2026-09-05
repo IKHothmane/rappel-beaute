@@ -108,6 +108,18 @@ export async function middleware(request: NextRequest) {
   }
 
   if (domain === "www") {
+    // Pas de login sur le site marketing → espace institut (app)
+    if (path === "/login" || path === "/login/") {
+      const appLogin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+      if (appLogin && process.env.NODE_ENV === "production") {
+        return NextResponse.redirect(`${appLogin}/login/`, 308);
+      }
+      const local = request.nextUrl.clone();
+      local.pathname = "/login/";
+      local.searchParams.set(QUERY_HOST, "app");
+      return NextResponse.redirect(local, 308);
+    }
+
     const res = NextResponse.next({ request: { headers } });
     if (queryHost) {
       res.cookies.set(COOKIE_HOST, queryHost, { path: "/", sameSite: "lax" });

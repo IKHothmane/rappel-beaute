@@ -1,31 +1,66 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminUi";
-import { AUDIT_LOG, auditActionLabel } from "@/lib/admin-mock";
+import { fetchAdminAudit } from "@/modules/admin/client";
+import { platformAuditActionLabel } from "@/types/platform";
+
+type AuditRow = Awaited<ReturnType<typeof fetchAdminAudit>>["items"][number];
+
+function fmtJson(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  try {
+    return JSON.stringify(v, null, 2);
+  } catch {
+    return String(v);
+  }
+}
 
 export default function AuditPage() {
   const [q, setQ] = useState("");
-  const [selected, setSelected] = useState(AUDIT_LOG[0]?.id ?? "");
+  const [items, setItems] = useState<AuditRow[]>([]);
+  const [selected, setSelected] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchAdminAudit(100);
+        if (cancelled) return;
+        setItems(res.items);
+        setSelected(res.items[0]?.id ?? "");
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Erreur");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const rows = useMemo(() => {
     const needle = q.toLowerCase();
-    if (!needle) return AUDIT_LOG;
-    return AUDIT_LOG.filter((a) =>
-      `${auditActionLabel(a.action)} ${a.target} ${a.actor} ${a.orgName ?? ""}`
+    if (!needle) return items;
+    return items.filter((a) =>
+      `${platformAuditActionLabel(a.action)} ${a.entityId} ${a.platformUserName ?? ""} ${a.organizationName ?? ""}`
         .toLowerCase()
         .includes(needle),
     );
-  }, [q]);
+  }, [q, items]);
 
-  const detail = AUDIT_LOG.find((a) => a.id === selected) ?? rows[0];
+  const detail = items.find((a) => a.id === selected) ?? rows[0];
 
   return (
     <>
       <AdminPageHeader
         title="Audit et activité"
-        description="Journal de sécurité de toute la plateforme."
+        description="Journal PostgreSQL PlatformAuditLog."
       />
 
       <input
@@ -35,113 +70,117 @@ export default function AuditPage() {
         className="ac-input mb-4 w-full max-w-md"
       />
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="ac-card">
-          <div className="hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="border-b border-[var(--admin-line)] font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--admin-muted)]">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium">Utilisateur</th>
-                  <th className="px-4 py-3 font-medium">Action</th>
-                  <th className="px-4 py-3 font-medium">Institut</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--admin-line)]">
-                {rows.map((a) => (
-                  <tr
-                    key={a.id}
-                    className={`cursor-pointer hover:bg-[#FBF4F6] ${
-                      selected === a.id ? "bg-[var(--admin-accent-dim)]" : ""
-                    }`}
-                    onClick={() => setSelected(a.id)}
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-[var(--admin-muted)]">
-                      {a.at.slice(11, 16)}
-                    </td>
-                    <td className="px-4 py-3">{a.actor}</td>
-                    <td className="px-4 py-3">{auditActionLabel(a.action)}</td>
-                    <td className="px-4 py-3 text-[var(--admin-muted)]">
-                      {a.orgName ?? "—"}
-                    </td>
+      {loading ? <p className="text-sm text-[var(--admin-muted)]">Chargement…</p> : null}
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
+      {!loading && !error && items.length === 0 ? (
+        <p className="ac-card p-6 text-sm text-[var(--admin-muted)]">Aucun événement d&apos;audit.</p>
+      ) : null}
+
+      {items.length > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="ac-card">
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="border-b border-[var(--admin-line)] font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Date</th>
+                    <th className="px-4 py-3 font-medium">Utilisateur</th>
+                    <th className="px-4 py-3 font-medium">Action</th>
+                    <th className="px-4 py-3 font-medium">Institut</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[var(--admin-line)]">
+                  {rows.map((a) => (
+                    <tr
+                      key={a.id}
+                      className={`cursor-pointer hover:bg-[#FBF4F6] ${
+                        selected === a.id ? "bg-[var(--admin-accent-dim)]" : ""
+                      }`}
+                      onClick={() => setSelected(a.id)}
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-[var(--admin-muted)]">
+                        {new Date(a.createdAt).toLocaleString("fr-FR")}
+                      </td>
+                      <td className="px-4 py-3">{a.platformUserName ?? "—"}</td>
+                      <td className="px-4 py-3">{platformAuditActionLabel(a.action)}</td>
+                      <td className="px-4 py-3 text-[var(--admin-muted)]">
+                        {a.organizationName ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="grid gap-2 p-3 md:hidden">
-            {rows.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => setSelected(a.id)}
-                className={`rounded-xl border p-3 text-left transition ${
-                  selected === a.id
-                    ? "border-[var(--admin-accent)] bg-[var(--admin-accent-dim)]"
-                    : "border-[var(--admin-line)] bg-[var(--admin-bg)]"
-                }`}
-              >
-                <p className="text-sm font-medium">{auditActionLabel(a.action)}</p>
-                <p className="mt-1 text-xs text-[var(--admin-muted)]">
-                  {a.actor} · {a.orgName ?? "Plateforme"} · {a.at.slice(11, 16)}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {detail ? (
-          <aside className="ac-card space-y-3 p-4 text-sm sm:p-5">
-            <h2 className="font-display text-lg font-semibold">Détail</h2>
-            <p>
-              <span className="text-[var(--admin-muted)]">Action : </span>
-              {auditActionLabel(detail.action)}
-            </p>
-            <p>
-              <span className="text-[var(--admin-muted)]">Utilisateur : </span>
-              {detail.actor}
-            </p>
-            <p>
-              <span className="text-[var(--admin-muted)]">Institut : </span>
-              {detail.orgId ? (
-                <Link
-                  href={`/organizations/${detail.orgId}/`}
-                  className="text-[var(--admin-accent)]"
+            <div className="grid gap-2 p-3 md:hidden">
+              {rows.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setSelected(a.id)}
+                  className={`rounded-xl border p-3 text-left transition ${
+                    selected === a.id
+                      ? "border-[var(--admin-accent)] bg-[var(--admin-accent-dim)]"
+                      : "border-[var(--admin-line)] bg-[var(--admin-bg)]"
+                  }`}
                 >
-                  {detail.orgName}
-                </Link>
-              ) : (
-                "—"
-              )}
-            </p>
-            {detail.before ? (
-              <div>
-                <p className="text-[var(--admin-muted)]">Avant</p>
-                <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--admin-bg)] p-2 font-mono text-[11px]">
-                  {detail.before}
-                </pre>
-              </div>
-            ) : null}
-            {detail.after ? (
-              <div>
-                <p className="text-[var(--admin-muted)]">Après</p>
-                <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--admin-bg)] p-2 font-mono text-[11px]">
-                  {detail.after}
-                </pre>
-              </div>
-            ) : null}
-            {detail.ip ? (
-              <p className="font-mono text-xs text-[var(--admin-muted)]">
-                IP : {detail.ip}
+                  <p className="text-sm font-medium">{platformAuditActionLabel(a.action)}</p>
+                  <p className="mt-1 text-xs text-[var(--admin-muted)]">
+                    {a.platformUserName ?? "—"} · {a.organizationName ?? "Plateforme"}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {detail ? (
+            <aside className="ac-card space-y-3 p-4 text-sm sm:p-5">
+              <h2 className="font-display text-lg font-semibold">Détail</h2>
+              <p>
+                <span className="text-[var(--admin-muted)]">Action : </span>
+                {platformAuditActionLabel(detail.action)}
               </p>
-            ) : null}
-            <p className="font-mono text-xs text-[var(--admin-muted)]">
-              {detail.at.replace("T", " ")}
-            </p>
-          </aside>
-        ) : null}
-      </div>
+              <p>
+                <span className="text-[var(--admin-muted)]">Utilisateur : </span>
+                {detail.platformUserName ?? "—"}
+              </p>
+              <p>
+                <span className="text-[var(--admin-muted)]">Institut : </span>
+                {detail.organizationId ? (
+                  <Link
+                    href={`/organizations/${detail.organizationId}/`}
+                    className="text-[var(--admin-accent)]"
+                  >
+                    {detail.organizationName}
+                  </Link>
+                ) : (
+                  "—"
+                )}
+              </p>
+              {detail.before != null ? (
+                <div>
+                  <p className="text-[var(--admin-muted)]">Avant</p>
+                  <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--admin-bg)] p-2 font-mono text-[11px]">
+                    {fmtJson(detail.before)}
+                  </pre>
+                </div>
+              ) : null}
+              {detail.after != null ? (
+                <div>
+                  <p className="text-[var(--admin-muted)]">Après</p>
+                  <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--admin-bg)] p-2 font-mono text-[11px]">
+                    {fmtJson(detail.after)}
+                  </pre>
+                </div>
+              ) : null}
+              <p className="font-mono text-xs text-[var(--admin-muted)]">
+                {new Date(detail.createdAt).toLocaleString("fr-FR")}
+              </p>
+            </aside>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }

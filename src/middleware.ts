@@ -1,82 +1,37 @@
 import { parseSessionTokenEdge } from "@/lib/auth/session-edge";
 import { SESSION_COOKIE } from "@/lib/auth/types";
+import {
+  COOKIE_HOST,
+  HEADER_DOMAIN,
+  QUERY_HOST,
+  parseDomainParam,
+  resolveDomainFromHostname,
+  resolvePublicHostname,
+  type RappelDomain,
+} from "@/lib/domain";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const QUERY_HOST = "__host";
-const COOKIE_HOST = "__rappel_host";
-
-type Domain = "www" | "app" | "admin";
-
-function parseDomain(value: string | null | undefined): Domain | null {
-  if (value === "www" || value === "app" || value === "admin") return value;
-  return null;
-}
-
-/** Host public (Cloudflare Worker / proxy) prioritaire sur Host Railway. */
-function publicHostname(request: NextRequest): string {
-  const forwarded = request.headers
-    .get("x-forwarded-host")
-    ?.split(",")[0]
-    ?.trim();
-  const raw = forwarded || request.headers.get("host") || "";
-  return raw.split(":")[0].toLowerCase();
-}
-
-function domainFromHostname(hostname: string): Domain {
-  if (hostname.startsWith("app.")) return "app";
-  if (hostname.startsWith("admin.")) return "admin";
-  return "www";
-}
+type Domain = RappelDomain;
 
 function isAppOrAdminHostname(hostname: string): boolean {
   return hostname.startsWith("app.") || hostname.startsWith("admin.");
 }
 
-/** Pages vitrine — sur localhost, ne pas laisser le cookie app les masquer. */
-const WWW_PATH_PREFIXES = [
-  "/fonctionnalites",
-  "/tarifs",
-  "/a-propos",
-  "/essai",
-  "/professionnel",
-  "/connexion",
-  "/demo",
-  "/contact",
-  "/faq",
-  "/whatsapp",
-  "/solutions",
-  "/mentions-legales",
-  "/confidentialite",
-  "/ressources",
-  "/blog",
-  "/gestion-rendez-vous",
-  "/gestion-stock",
-  "/gestion-clientes",
-] as const;
-
-function isWwwMarketingPath(path: string): boolean {
-  if (path === "/" || path === "") return true;
-  return WWW_PATH_PREFIXES.some(
-    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
-  );
-}
-
 function resolveDomain(request: NextRequest): Domain {
-  const explicit = parseDomain(request.nextUrl.searchParams.get(QUERY_HOST));
+  // 1) Query localhost / Worker (?__host=admin)
+  const explicit = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
   if (explicit) return explicit;
 
-  const hostname = publicHostname(request);
-  const hostDomain = domainFromHostname(hostname);
-  if (hostDomain !== "www") return hostDomain;
+  // 2) Header posé par le Cloudflare Worker
+  const fromWorker = parseDomainParam(request.headers.get(HEADER_DOMAIN));
+  if (fromWorker) return fromWorker;
 
-  // Origine partagée (localhost) : les URLs vitrine restent www même si
-  // le cookie __rappel_host=app est encore présent.
-  const path = request.nextUrl.pathname;
-  if (isWwwMarketingPath(path)) return "www";
-
-  return (
-    parseDomain(request.cookies.get(COOKIE_HOST)?.value) ?? hostDomain
+  // 3) X-Forwarded-Host prioritaire sur Host Railway
+  return resolveDomainFromHostname(
+    request.headers.get("host"),
+    request.headers.get("x-forwarded-host") ??
+      request.headers.get("x-rappel-public-host"),
   );
 }
 
@@ -89,17 +44,11 @@ function isPublicPath(domain: Domain, path: string): boolean {
 }
 
 function preserveHostParam(url: URL, domain: Domain, hostname: string) {
-  // Prod : app.rappelbeauty.com / admin.… suffisent — pas besoin de ?__host=
-  // Localhost (origine partagée) : garder ?__host=app|admin
   if (domain !== "www" && !isAppOrAdminHostname(hostname)) {
     url.searchParams.set(QUERY_HOST, domain);
   }
 }
 
-/**
- * Redirection sur le hostname public (X-Forwarded-Host),
- * jamais sur *.up.railway.app — sinon on quitte admin./app.
- */
 function publicRedirect(
   request: NextRequest,
   pathname: string,
@@ -110,7 +59,22 @@ function publicRedirect(
 ) {
   const proto =
     request.headers.get("x-forwarded-proto") === "http" ? "http" : "https";
-  const url = new URL(`${proto}://${hostname}${pathname}`);
+
+  const usePublic =
+    Boolean(hostname) &&
+    !hostname.includes("up.railway.app") &&
+    hostname !== "localhost" &&
+    !hostname.startsWith("127.");
+
+  const url = usePublic
+    ? new URL(`${proto}://${hostname}${pathname}`)
+    : (() => {
+        const u = request.nextUrl.clone();
+        u.pathname = pathname;
+        u.search = "";
+        return u;
+      })();
+
   url.searchParams.delete(QUERY_HOST);
   if (extraSearch) {
     for (const [key, value] of Object.entries(extraSearch)) {
@@ -121,6 +85,22 @@ function publicRedirect(
   return NextResponse.redirect(url, status);
 }
 
+/** /admin → /domains/admin/dashboard ; /admin/users → /domains/admin/users */
+function adminInternalPath(path: string): string {
+  if (path === "/" || path === "") return "/domains/admin/dashboard";
+  if (path === "/admin" || path === "/admin/") return "/domains/admin/dashboard";
+  if (path.startsWith("/admin/")) {
+    const rest = path.slice("/admin".length);
+    const joined = `/domains/admin${rest === "/" ? "/dashboard" : rest}`.replace(
+      /\/$/,
+      "",
+    );
+    return joined || "/domains/admin/dashboard";
+  }
+  if (path.startsWith("/domains/admin")) return path;
+  return `/domains/admin${path}`.replace(/\/$/, "");
+}
+
 async function getSession(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -129,7 +109,11 @@ async function getSession(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const hostname = publicHostname(request);
+  const hostname = resolvePublicHostname(
+    request.headers.get("host"),
+    request.headers.get("x-forwarded-host"),
+    request.headers.get("x-rappel-public-host"),
+  );
 
   if (
     process.env.NODE_ENV === "production" &&
@@ -144,15 +128,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const queryHost = parseDomain(request.nextUrl.searchParams.get(QUERY_HOST));
+  const queryHost = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
   const domain = resolveDomain(request);
   const headers = new Headers(request.headers);
-  headers.set("x-rappel-domain", domain);
+  headers.set(HEADER_DOMAIN, domain);
 
   const session = await getSession(request);
 
   if (domain === "app") {
-    const isPublic = isPublicPath(domain, path) || path === "/book" || path.startsWith("/book/");
+    const isPublic =
+      isPublicPath(domain, path) || path === "/book" || path.startsWith("/book/");
     if (!isPublic) {
       if (!session) {
         return publicRedirect(
@@ -171,18 +156,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (domain === "admin") {
-    // /admin et /admin/* → chemins Super Admin (pas la vitrine)
-    if (path === "/admin" || path === "/admin/" || path.startsWith("/admin/")) {
-      const stripped = path.replace(/^\/admin\/?/, "/");
-      const destPath =
-        stripped === "/" || stripped === ""
-          ? "/dashboard/"
-          : stripped.endsWith("/")
-            ? stripped
-            : `${stripped}/`;
-      return publicRedirect(request, destPath, domain, hostname);
-    }
-
     const isPublic = isPublicPath(domain, path);
     if (!isPublic) {
       if (!session || session.scope !== "platform") {
@@ -198,10 +171,16 @@ export async function middleware(request: NextRequest) {
     } else if (session?.scope === "platform" && path.startsWith("/login")) {
       return publicRedirect(request, "/dashboard/", domain, hostname);
     }
+
+    // Rewrite interne — /admin → Super Admin (pas la vitrine)
+    const url = request.nextUrl.clone();
+    url.pathname = adminInternalPath(path);
+    const res = NextResponse.rewrite(url, { request: { headers } });
+    res.cookies.set(COOKIE_HOST, "admin", { path: "/", sameSite: "lax" });
+    return res;
   }
 
   if (domain === "www") {
-    // Pas de login sur le site marketing → espace institut (app)
     if (path === "/login" || path === "/login/") {
       const appLogin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
       if (appLogin && process.env.NODE_ENV === "production") {
@@ -214,36 +193,22 @@ export async function middleware(request: NextRequest) {
     }
 
     const res = NextResponse.next({ request: { headers } });
-    // Accueil / pages vitrine : réinitialiser le cookie pour ne plus coller en mode app
-    if (
-      isWwwMarketingPath(path) &&
-      !queryHost &&
-      !isAppOrAdminHostname(hostname)
-    ) {
+    if (!queryHost) {
       res.cookies.set(COOKIE_HOST, "www", { path: "/", sameSite: "lax" });
-    } else if (queryHost) {
+    } else {
       res.cookies.set(COOKIE_HOST, queryHost, { path: "/", sameSite: "lax" });
     }
     return res;
   }
 
+  // domain === app → rewrite
   const url = request.nextUrl.clone();
-
-  if (domain === "admin") {
-    url.pathname =
-      path === "/" || path === ""
-        ? "/domains/admin/dashboard"
-        : path.startsWith("/domains/admin")
-          ? path
-          : `/domains/admin${path}`;
-  } else {
-    url.pathname =
-      path === "/" || path === ""
-        ? "/domains/app/dashboard"
-        : path.startsWith("/domains/app")
-          ? path
-          : `/domains/app${path}`;
-  }
+  url.pathname =
+    path === "/" || path === ""
+      ? "/domains/app/dashboard"
+      : path.startsWith("/domains/app")
+        ? path
+        : `/domains/app${path}`;
 
   const res = NextResponse.rewrite(url, { request: { headers } });
   if (queryHost) {
@@ -254,7 +219,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
     "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)",
+    "/",
   ],
 };

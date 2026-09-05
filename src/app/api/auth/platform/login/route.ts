@@ -57,6 +57,19 @@ export async function POST(request: NextRequest) {
     return res;
   } catch (error) {
     logger.error("platform login error", { error: String(error) });
+    // Ne pas masquer une panne DB / Redis comme « identifiants invalides »
+    const msg = String(error);
+    if (
+      msg.includes("AggregateError") ||
+      msg.includes("ECONNREFUSED") ||
+      msg.includes("P1001") ||
+      msg.includes("connect")
+    ) {
+      return NextResponse.json(
+        { error: "Service indisponible. Réessayez plus tard." },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
   }
 }

@@ -79,8 +79,10 @@ function isPublicPath(domain: Domain, path: string): boolean {
   return list.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
-function preserveHostParam(url: URL, domain: Domain) {
-  if (domain !== "www") {
+function preserveHostParam(url: URL, domain: Domain, hostHeader: string | null) {
+  // Prod : app.rappelbeauty.com / admin.… suffisent — pas besoin de ?__host=
+  // Localhost (origine partagée) : garder ?__host=app|admin
+  if (domain !== "www" && !isAppOrAdminHostname(hostHeader)) {
     url.searchParams.set(QUERY_HOST, domain);
   }
 }
@@ -120,14 +122,18 @@ export async function middleware(request: NextRequest) {
       if (!session) {
         const loginUrl = request.nextUrl.clone();
         loginUrl.pathname = "/login/";
-        loginUrl.searchParams.set("next", path);
-        preserveHostParam(loginUrl, domain);
+        if (path !== "/" && path !== "") {
+          loginUrl.searchParams.set("next", path);
+        }
+        loginUrl.searchParams.delete(QUERY_HOST);
+        preserveHostParam(loginUrl, domain, request.headers.get("host"));
         return NextResponse.redirect(loginUrl);
       }
       if (session.scope === "platform") {
         const forbidden = request.nextUrl.clone();
         forbidden.pathname = "/login/";
-        preserveHostParam(forbidden, domain);
+        forbidden.searchParams.delete(QUERY_HOST);
+        preserveHostParam(forbidden, domain, request.headers.get("host"));
         return NextResponse.redirect(forbidden);
       }
     }
@@ -139,13 +145,18 @@ export async function middleware(request: NextRequest) {
       if (!session || session.scope !== "platform") {
         const loginUrl = request.nextUrl.clone();
         loginUrl.pathname = "/login/";
-        preserveHostParam(loginUrl, domain);
+        if (path !== "/" && path !== "") {
+          loginUrl.searchParams.set("next", path);
+        }
+        loginUrl.searchParams.delete(QUERY_HOST);
+        preserveHostParam(loginUrl, domain, request.headers.get("host"));
         return NextResponse.redirect(loginUrl);
       }
     } else if (session?.scope === "platform" && path.startsWith("/login")) {
       const dash = request.nextUrl.clone();
       dash.pathname = "/dashboard/";
-      preserveHostParam(dash, domain);
+      dash.searchParams.delete(QUERY_HOST);
+      preserveHostParam(dash, domain, request.headers.get("host"));
       return NextResponse.redirect(dash);
     }
   }

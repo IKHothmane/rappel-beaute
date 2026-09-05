@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { BrandLogo } from "@/components/www/BrandLogo";
 import { fetchAdminAudit, fetchAdminSession, platformLogout } from "@/modules/admin/client";
 
 type NavItem = { href: string; label: string };
@@ -101,15 +102,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         >
           <div className="flex h-14 items-center justify-between gap-2 border-b border-line px-4">
             <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary font-display text-sm font-semibold text-white">
-                R
-              </span>
-              <div className="leading-tight">
-                <p className="font-display text-sm font-semibold">Rappel Beauté</p>
-                <p className="font-mono text-[10px] tracking-[0.16em] text-primary">
-                  SUPER ADMIN
-                </p>
-              </div>
+              <BrandLogo href="/dashboard/" height={40} className="max-h-10" />
+              <p className="shrink-0 font-mono text-[10px] tracking-[0.16em] text-primary">
+                SUPER ADMIN
+              </p>
             </div>
             <button
               type="button"
@@ -197,9 +193,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               >
                 Menu
               </button>
-              <p className="hidden font-display text-sm font-semibold sm:block">
-                Rappel Beauté
-              </p>
+              <BrandLogo href="/dashboard/" height={36} className="hidden max-h-9 sm:inline-flex" />
             </div>
             <div className="flex items-center gap-3">
               <Link

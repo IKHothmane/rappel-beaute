@@ -1,29 +1,36 @@
 /**
  * Cloudflare Worker — admin.rappelbeauty.com → Railway
- *
- * Body POST lu en arrayBuffer pour éviter les body vides (cause fréquente de 401).
+ * Coller dans Cloudflare → Deploy
  */
 export default {
   async fetch(request) {
-    const incomingUrl = new URL(request.url);
-    const originUrl = new URL("https://rappel-beaute-staging.up.railway.app");
-    originUrl.pathname = incomingUrl.pathname;
-    originUrl.search = incomingUrl.search;
+    const url = new URL(request.url);
 
-    // __host seulement pour les pages (pas les API)
+    const originUrl = new URL(
+      "https://rappel-beaute-staging.up.railway.app",
+    );
+
+    originUrl.pathname = url.pathname;
+    originUrl.search = url.search;
+
+    // Pages only — pas les API
     if (
-      !incomingUrl.pathname.startsWith("/api/") &&
+      !url.pathname.startsWith("/api/") &&
       !originUrl.searchParams.has("__host")
     ) {
       originUrl.searchParams.set("__host", "admin");
     }
 
     const headers = new Headers(request.headers);
-    headers.set("Host", originUrl.host);
+
+    // Next.js doit voir le hostname public admin
     headers.set("X-Forwarded-Host", "admin.rappelbeauty.com");
     headers.set("X-Rappel-Public-Host", "admin.rappelbeauty.com");
     headers.set("X-Rappel-Domain", "admin");
     headers.set("X-Forwarded-Proto", "https");
+
+    // Railway attend son propre Host
+    headers.set("Host", originUrl.host);
 
     const init = {
       method: request.method,
@@ -31,10 +38,17 @@ export default {
       redirect: "manual",
     };
 
+    // Lire le body en mémoire — évite body vide sur POST login
     if (request.method !== "GET" && request.method !== "HEAD") {
       init.body = await request.arrayBuffer();
     }
 
-    return fetch(originUrl.toString(), init);
+    const response = await fetch(originUrl.toString(), init);
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
   },
 };

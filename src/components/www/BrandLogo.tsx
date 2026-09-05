@@ -5,7 +5,8 @@ type BrandLogoProps = {
   /** Hauteur du logo en px (header ≈ 44–52, footer ≈ 64–80) */
   height?: number;
   className?: string;
-  href?: string;
+  /** `null` = image seule, sans lien */
+  href?: string | null;
   priority?: boolean;
 };
 
@@ -31,7 +32,7 @@ export function BrandLogo({
     />
   );
 
-  if (!href) return img;
+  if (href == null || href === "") return img;
 
   return (
     <Link href={href} className="inline-flex shrink-0 items-center" aria-label="Rappel Beauty — Accueil">

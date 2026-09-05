@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { BrandLogo } from "@/components/www/BrandLogo";
 import { platformLogin } from "@/modules/admin/client";
 
 export default function AdminLoginPage() {
@@ -32,14 +33,9 @@ export default function AdminLoginPage() {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(227,28,95,0.12),_transparent_50%)]"
       />
       <form onSubmit={onSubmit} className="surface relative w-full max-w-md p-8">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary font-display font-semibold text-white">
-            R
-          </span>
-          <div>
-            <p className="font-display font-semibold">Rappel Beauté</p>
-            <p className="font-mono text-[10px] tracking-[0.16em] text-primary">SUPER ADMIN</p>
-          </div>
+        <div className="flex flex-col items-start gap-2">
+          <BrandLogo href={null} height={56} className="max-h-14" />
+          <p className="font-mono text-[10px] tracking-[0.16em] text-primary">SUPER ADMIN</p>
         </div>
         <h1 className="mt-8 font-display text-2xl font-semibold">Connexion</h1>
         <p className="mt-2 text-sm text-ink/60">Espace plateforme uniquement.</p>

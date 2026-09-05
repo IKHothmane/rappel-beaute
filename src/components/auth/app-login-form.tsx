@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSession } from "@/components/auth/session-provider";
+import { BrandLogo } from "@/components/www/BrandLogo";
 
 export function AppLoginForm() {
   const router = useRouter();
@@ -45,12 +46,7 @@ export function AppLoginForm() {
 
   return (
     <form className="surface relative w-full max-w-md p-8" onSubmit={onSubmit}>
-      <div className="flex items-center gap-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary font-display font-semibold text-white">
-          R
-        </span>
-        <span className="font-display font-semibold">Rappel Beauté</span>
-      </div>
+      <BrandLogo href={null} height={56} className="max-h-14" />
       <h1 className="mt-8 font-display text-3xl font-semibold">Bienvenue</h1>
       <p className="mt-2 text-sm text-ink/60">
         Connexion institut — le serveur détermine votre rôle et votre organisation.

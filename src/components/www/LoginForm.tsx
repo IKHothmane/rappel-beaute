@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { BrandLogo } from "@/components/www/BrandLogo";
 
 export function LoginForm() {
   const router = useRouter();
@@ -41,6 +42,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="surface mx-auto max-w-md p-6 sm:p-8">
+      <BrandLogo href={null} height={56} className="mb-6 max-h-14" />
       <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
         Se connecter
       </h1>

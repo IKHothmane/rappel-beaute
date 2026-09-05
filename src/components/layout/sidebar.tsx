@@ -31,6 +31,7 @@ import {
   useCurrentUser,
 } from "@/components/auth/session-provider";
 import { usePlanFeatures } from "@/components/subscriptions/plan-features-provider";
+import { BrandLogo } from "@/components/www/BrandLogo";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -147,12 +148,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         )}
       >
         <div className="flex h-[72px] items-center justify-between border-b border-line px-5">
-          <Link href="/dashboard/" className="flex items-center gap-3" onClick={onClose}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-gold font-display text-lg font-bold text-white shadow-soft">
-              R
-            </div>
-            <div>
-              <div className="font-display text-lg font-semibold leading-tight">
+          <Link href="/dashboard/" className="flex min-w-0 items-center gap-2.5" onClick={onClose}>
+            <BrandLogo href={null} height={40} className="max-h-10 shrink-0" />
+            <div className="min-w-0">
+              <div className="truncate font-display text-sm font-semibold leading-tight">
                 {user.orgName}
               </div>
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink/40">

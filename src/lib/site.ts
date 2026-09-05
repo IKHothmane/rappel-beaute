@@ -1,10 +1,10 @@
 export const SITE = {
   name: "Rappel Beauty",
   version: "V1.2",
-  url: "https://www.rappelbeaute.ma",
-  appUrl: "https://app.rappelbeaute.ma",
+  url: "https://www.rappelbeauty.com",
+  appUrl: "https://app.rappelbeauty.com",
   tagline: "Le logiciel de gestion pensé pour les instituts de beauté.",
-  email: "contact@rappelbeaute.ma",
+  email: "contact@rappelbeauty.com",
   phone: "+212 5 22 00 00 00",
 } as const;
 
@@ -26,6 +26,8 @@ export const MARKETING_PAGES = [
   { path: "/tarifs/", group: "nav" },
   { path: "/a-propos/", group: "nav" },
   { path: "/essai/", group: "conversion" },
+  { path: "/professionnel/", group: "conversion" },
+  { path: "/connexion/", group: "conversion" },
   { path: "/demo/", group: "conversion" },
   { path: "/contact/", group: "conversion" },
   { path: "/faq/", group: "seo" },
@@ -181,7 +183,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Comment fonctionne la connexion ?",
-    a: "Un e-mail = un compte Rappel Beauty. Vous vous connectez sur app.rappelbeaute.ma — l’espace institut. Le site www est uniquement commercial (pas de login marketing).",
+    a: "Un e-mail = un compte Rappel Beauty. Vous vous connectez sur app.rappelbeauty.com — l’espace institut. Le site www est uniquement commercial (pas de login marketing).",
   },
   {
     q: "Les données restent-elles isolées par institut ?",

@@ -167,7 +167,9 @@ Dupliquer le projet Railway :
 | PostgreSQL | instance dédiée | **autre** instance |
 | Redis | instance dédiée | **autre** instance |
 | Secrets | uniques | **nouveaux** secrets |
-| Domaine | `app-staging…` | `app.rappelbeaute.ma` |
+| Domaine | `app-staging…` | `app.rappelbeauty.com` |
+
+Guide détaillé production : `infra/railway/PRODUCTION.md`
 
 ---
 

@@ -24,7 +24,7 @@ const IMG_SERUM =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBDLiMyu3xOkmnr-lZxYA0O_oPqkqIUu1q726zQ6orRGGV8GGi0qcXaCHTu1aYmrsvgC-fAxrwSWHg0ak-TU5-Qn_7RHODDRRLC493c9OdMcPpwIDE-y7WS-6wAHaiKXPvm22Njcwj6t4M5SlCe_po_O1i57iraQ9YREX-H7GqwyMEZRAltYN6koDlbVmr0uxF5aM2zxlpn1S5FLd4Q8r0uHTVk7U4Jk6lnY96zhUMERAen4lh7qCzUMw";
 
 const IMG_TEAM =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDFhUzBzZyEDmlRWBfs132JbWm6oPBjQ_j55gAPJ-fHbMaUXWnD9SFVHdN_PvLcWlUL133kBM3qj2FkYn06AP3XO3mJO8TcCseN-tmE9jIzeVZ0vbWniAMVjsUcDYkVZ5MRBIcCSBy2WEhKMAjyoYCgqaX9L5eH87MxirsyXB-Lm7P9ZnSS8a4DFg2wbSh4sGh-whiTwqJbAc0fUzdobPh29GYX32tLLflX_REso12068rZNhbzDQ6K-A";
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuC9KWOqyPHDc8iLYIRJQNfBnWYhC0yNkiP4RUSQH-hxumtb2O4ftFN1oEpqckC9D2Z1U9lRDGFoKxydDrYIh0hrpDFiZtIoz00FQq_ARFi_mbm88OncR4Vxp7OORmnnKZ916HcCkhY-XnTQUXRr5agPJ1sbbhVRdvaxi-xk_980pU7OoRIs2OnqdCk469J30eOHypI4BXYvyPq-PjUSzeWpJiMgftuP4_pKBGpFTkHfJ9OJCXhow0ZMvA";
 
 const POPULAR_CITIES = [
   "Casablanca Gauthier",
@@ -322,9 +322,10 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-line bg-paper shadow-sm md:grid-cols-3">
             {STATS.map((stat, i) => (
-              <div
+              <Link
                 key={stat.value}
-                className={`border-line p-8 transition-colors hover:bg-primary-light/40 sm:p-10 ${
+                href="/professionnel/"
+                className={`group relative border-line p-8 transition-colors hover:bg-primary-light/40 sm:p-10 ${
                   i < 3 ? "border-b" : ""
                 } ${i % 3 !== 2 ? "md:border-r" : ""} ${i >= 3 && i < 5 ? "md:border-b-0 border-b md:border-b-0" : ""} ${
                   i === 3 || i === 4 ? "border-b md:border-b-0" : ""
@@ -338,14 +339,11 @@ export default function HomePage() {
                   {stat.value}
                 </div>
                 <p className="text-sm font-normal leading-relaxed text-ink/55">{stat.text}</p>
-              </div>
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/90 px-4 text-center text-sm font-semibold text-white opacity-0 transition duration-200 group-hover:opacity-100">
+                  Je suis un professionnel
+                </span>
+              </Link>
             ))}
-          </div>
-
-          <div className="mt-10">
-            <Link href="/essai/" className="btn-primary">
-              Je suis un professionnel
-            </Link>
           </div>
         </div>
       </section>
@@ -359,7 +357,7 @@ export default function HomePage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   alt={`Équipe ${SITE.name}`}
-                  className="h-80 w-full object-cover contrast-110 grayscale sm:h-96"
+                  className="h-80 w-full object-cover sm:h-96"
                   src={IMG_TEAM}
                 />
               </div>

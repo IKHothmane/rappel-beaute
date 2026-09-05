@@ -20,11 +20,54 @@ function domainFromHost(hostHeader: string | null): Domain {
   return "www";
 }
 
+function isAppOrAdminHostname(hostHeader: string | null): boolean {
+  const hostname = (hostHeader ?? "").split(":")[0].toLowerCase();
+  return hostname.startsWith("app.") || hostname.startsWith("admin.");
+}
+
+/** Pages vitrine — sur localhost, ne pas laisser le cookie app les masquer. */
+const WWW_PATH_PREFIXES = [
+  "/fonctionnalites",
+  "/tarifs",
+  "/a-propos",
+  "/essai",
+  "/professionnel",
+  "/connexion",
+  "/demo",
+  "/contact",
+  "/faq",
+  "/whatsapp",
+  "/solutions",
+  "/mentions-legales",
+  "/confidentialite",
+  "/ressources",
+  "/blog",
+  "/gestion-rendez-vous",
+  "/gestion-stock",
+  "/gestion-clientes",
+] as const;
+
+function isWwwMarketingPath(path: string): boolean {
+  if (path === "/" || path === "") return true;
+  return WWW_PATH_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+}
+
 function resolveDomain(request: NextRequest): Domain {
+  const explicit = parseDomain(request.nextUrl.searchParams.get(QUERY_HOST));
+  if (explicit) return explicit;
+
+  const hostDomain = domainFromHost(request.headers.get("host"));
+  if (hostDomain !== "www") return hostDomain;
+
+  // Origine partagée (localhost) : les URLs vitrine restent www même si
+  // le cookie __rappel_host=app est encore présent.
+  const path = request.nextUrl.pathname;
+  if (isWwwMarketingPath(path)) return "www";
+
   return (
-    parseDomain(request.nextUrl.searchParams.get(QUERY_HOST)) ??
-    parseDomain(request.cookies.get(COOKIE_HOST)?.value) ??
-    domainFromHost(request.headers.get("host"))
+    parseDomain(request.cookies.get(COOKIE_HOST)?.value) ?? hostDomain
   );
 }
 
@@ -64,8 +107,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const domain = resolveDomain(request);
   const queryHost = parseDomain(request.nextUrl.searchParams.get(QUERY_HOST));
+  const domain = resolveDomain(request);
   const headers = new Headers(request.headers);
   headers.set("x-rappel-domain", domain);
 
@@ -121,7 +164,14 @@ export async function middleware(request: NextRequest) {
     }
 
     const res = NextResponse.next({ request: { headers } });
-    if (queryHost) {
+    // Accueil / pages vitrine : réinitialiser le cookie pour ne plus coller en mode app
+    if (
+      isWwwMarketingPath(path) &&
+      !queryHost &&
+      !isAppOrAdminHostname(request.headers.get("host"))
+    ) {
+      res.cookies.set(COOKIE_HOST, "www", { path: "/", sameSite: "lax" });
+    } else if (queryHost) {
       res.cookies.set(COOKIE_HOST, queryHost, { path: "/", sameSite: "lax" });
     }
     return res;

@@ -42,7 +42,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="surface mx-auto max-w-md p-6 sm:p-8">
       <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-        Connexion
+        Se connecter
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-ink/65">
         Un e-mail, un mot de passe.{" "}

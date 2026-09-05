@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/www/BrandLogo";
-import { APP_LOGIN_HREF, SITE } from "@/lib/site";
+import { SITE } from "@/lib/site";
 
 const COLS = [
   {
@@ -35,7 +35,8 @@ const COLS = [
     links: [
       { href: "/mentions-legales/", label: "Mentions légales" },
       { href: "/confidentialite/", label: "Confidentialité" },
-      { href: APP_LOGIN_HREF, label: "Espace institut", external: true },
+      { href: "/professionnel/", label: "Je suis un professionnel" },
+      { href: "/connexion/", label: "Se connecter" },
     ],
   },
 ] as const;
@@ -66,9 +67,6 @@ export function SiteFooter() {
                   <Link
                     href={link.href}
                     className="text-sm text-ink/70 transition hover:text-primary"
-                    {...("external" in link && link.external
-                      ? { rel: "noopener noreferrer" }
-                      : {})}
                   >
                     {link.label}
                   </Link>

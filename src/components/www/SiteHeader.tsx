@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { BrandLogo } from "@/components/www/BrandLogo";
-import { APP_LOGIN_HREF, NAV } from "@/lib/site";
+import { NAV } from "@/lib/site";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -30,11 +30,11 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2.5">
           <div className="hidden items-center gap-2.5 lg:flex">
-            <Link href={APP_LOGIN_HREF} className="btn-ghost px-4 py-2">
-              Espace institut
+            <Link href="/professionnel/" className="btn-ghost px-4 py-2">
+              Je suis un professionnel
             </Link>
-            <Link href="/essai/" className="btn-primary px-4 py-2">
-              Essayer 14 jours
+            <Link href="/connexion/" className="btn-primary px-4 py-2">
+              Se connecter
             </Link>
           </div>
 
@@ -69,18 +69,18 @@ export function SiteHeader() {
               </Link>
             ))}
             <Link
-              href={APP_LOGIN_HREF}
+              href="/professionnel/"
               className="btn-ghost mt-2 w-full"
               onClick={() => setOpen(false)}
             >
-              Espace institut
+              Je suis un professionnel
             </Link>
             <Link
-              href="/essai/"
+              href="/connexion/"
               className="btn-primary w-full"
               onClick={() => setOpen(false)}
             >
-              Essayer 14 jours
+              Se connecter
             </Link>
           </nav>
         </div>

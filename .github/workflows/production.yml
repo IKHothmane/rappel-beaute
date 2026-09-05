@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://app.rappelbeaute.ma
+      url: https://app.rappelbeauty.com
 
     steps:
       - uses: actions/checkout@v4
@@ -77,4 +77,4 @@ jobs:
 
       - name: Health check post-deploy
         run: |
-          echo "curl -f https://app.rappelbeaute.ma/api/health/ || exit 1"
+          echo "curl -f https://app.rappelbeauty.com/api/health/ || exit 1"

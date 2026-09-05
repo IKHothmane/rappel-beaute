@@ -12,17 +12,13 @@ export function parseDomainParam(value: string | null | undefined): RappelDomain
 export function resolveDomainFromHostname(hostHeader: string | null): RappelDomain {
   const hostname = (hostHeader ?? "").split(":")[0].toLowerCase();
 
-  if (
-    hostname === "app.rappelbeaute.ma" ||
-    hostname.startsWith("app.")
-  ) {
+  // Production : app.rappelbeauty.com / admin.rappelbeauty.com
+  // (préfixe app. / admin. — marche aussi en staging)
+  if (hostname.startsWith("app.")) {
     return "app";
   }
 
-  if (
-    hostname === "admin.rappelbeaute.ma" ||
-    hostname.startsWith("admin.")
-  ) {
+  if (hostname.startsWith("admin.")) {
     return "admin";
   }
 

@@ -1,6 +1,6 @@
-# Cloudflare — DNS & HTTPS
+# Cloudflare — DNS & HTTPS (`rappelbeauty.com`)
 
-Configuration cible pour Rappel Beauté (étape 41).
+Configuration cible pour Rappel Beauty (étape 41) — **Railway + Cloudflare**.
 
 ## Schéma
 
@@ -9,43 +9,43 @@ Configuration cible pour Rappel Beauté (étape 41).
                               │
         ┌─────────────────────┼─────────────────────┐
         ↓                     ↓                     ↓
-  www.rappelbeaute.ma   app.rappelbeaute.ma   admin.rappelbeaute.ma
+  www.rappelbeauty.com  app.rappelbeauty.com  admin.rappelbeauty.com
         │                     │                     │
      Vitrine              Application           Super Admin
         │                     │                     │
         └─────────────────────┴─────────────────────┘
                               ↓
-                         Next.js (1 deploy)
+                    Railway — Next.js (1 deploy)
                               │
-                    PostgreSQL + Redis
+                    PostgreSQL + Redis (privés)
 ```
 
-## Enregistrements DNS (exemple)
+## Enregistrements DNS (après health Railway OK)
+
+Remplacer `xxx.up.railway.app` par le CNAME affiché dans Railway → Custom Domain.
 
 | Type | Nom | Contenu | Proxy |
 |------|-----|---------|-------|
-| CNAME | `@` | `cname.vercel-dns.com` ou IP VM | ✅ Proxied |
-| CNAME | `www` | même origine | ✅ Proxied |
-| CNAME | `app` | même origine | ✅ Proxied |
-| CNAME | `admin` | même origine | ✅ Proxied |
+| CNAME | `www` | `xxx.up.railway.app` | ✅ Proxied |
+| CNAME | `app` | `xxx.up.railway.app` | ✅ Proxied |
+| CNAME | `admin` | `xxx.up.railway.app` | ✅ Proxied |
+| CNAME | `@` | `xxx.up.railway.app` (ou redirect → www) | ✅ Proxied |
 
-`rappelbeaute.ma` (apex) → vitrine (redirect ou même app avec domaine `www`).
+⚠️ Ne pas créer ces records tant que `https://xxx.up.railway.app/api/health/` n’est pas vert.
 
 ## Booking public
 
 Phase 1 (actuelle) :
 
 ```
-https://app.rappelbeaute.ma/book/institut-royal/
+https://app.rappelbeauty.com/book/institut-royal/
 ```
 
-Phase 2 (isolation backend public) :
+Phase 2 (optionnel) :
 
 ```
-https://rappelbeaute.ma/book/institut-royal/
+https://book.rappelbeauty.com/institut-royal/
 ```
-
-Le middleware route déjà via `x-rappel-domain` / sous-domaines.
 
 ## SSL/TLS
 
@@ -62,14 +62,14 @@ En production (`NODE_ENV=production`) :
 
 - `HttpOnly`
 - `Secure`
-- `SameSite=Lax` (ou `Strict` admin)
+- `SameSite=Lax`
 
-## Page Rules / Redirect Rules
+## Redirect Rules
 
 | Règle | Action |
 |-------|--------|
-| `http://*rappelbeaute.ma/*` | Redirect 301 → HTTPS |
-| `www.rappelbeaute.ma` | Canonique (optionnel apex → www) |
+| `http://*rappelbeauty.com/*` | Redirect 301 → HTTPS |
+| `rappelbeauty.com/*` | Redirect 301 → `https://www.rappelbeauty.com/$1` (optionnel) |
 
 ## Rate limiting Cloudflare (couche edge)
 
@@ -82,16 +82,16 @@ Complète le rate limit Redis applicatif :
 
 ```
 S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com
-S3_PUBLIC_URL=https://assets.rappelbeaute.ma
-S3_BUCKET=rappel-beaute-prod
+S3_PUBLIC_URL=https://assets.rappelbeauty.com
+S3_BUCKET=rappel-beauty-prod
 ```
-
-Bucket public en lecture seule pour logos ; uploads via API Next.js uniquement.
 
 ## Checklist go-live
 
-- [ ] DNS propagé (4 enregistrements)
+- [ ] DNS propagé (www / app / admin / apex)
 - [ ] Certificat SSL actif sur tous les hosts
-- [ ] `HEALTH_BASE_URL` configuré dans GitHub Environment
+- [ ] `HEALTH_BASE_URL=https://app.rappelbeauty.com`
 - [ ] Test booking public en HTTPS
-- [ ] Test login app + admin en HTTPS
+- [ ] Test login app + admin en HTTPS (sans `?__host=`)
+
+Voir aussi : `infra/railway/PRODUCTION.md`

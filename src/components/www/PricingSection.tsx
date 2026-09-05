@@ -1,20 +1,32 @@
 import Link from "next/link";
 import { PLANS } from "@/lib/site";
 
-export function PricingSection({ headingId = "tarifs" }: { headingId?: string }) {
+export function PricingSection({
+  headingId = "tarifs",
+  showIntro = true,
+}: {
+  headingId?: string;
+  showIntro?: boolean;
+}) {
   return (
     <section id={headingId} className="scroll-mt-24 py-20 md:py-28">
       <div className="container-rb">
-        <p className="eyebrow">Tarifs</p>
-        <h2 className="mt-3 max-w-xl font-display text-3xl font-semibold tracking-tight md:text-4xl">
-          Trois plans, en MAD, sans surprise.
-        </h2>
-        <p className="mt-3 max-w-lg text-ink/65">
-          14 jours pour essayer, sans carte bancaire. Votre accès est activé sous
-          24 h — pas de création libre en V1.
-        </p>
+        {showIntro ? (
+          <>
+            <p className="eyebrow">Tarifs</p>
+            <h2 className="mt-3 max-w-xl font-display text-3xl font-semibold tracking-tight md:text-4xl">
+              Trois plans, en MAD, sans surprise.
+            </h2>
+            <p className="mt-3 max-w-lg text-ink/65">
+              14 jours pour essayer, sans carte bancaire. Votre accès est activé sous
+              24 h — pas de création libre en V1.
+            </p>
+          </>
+        ) : null}
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div
+          className={`grid gap-5 md:grid-cols-2 lg:grid-cols-3 ${showIntro ? "mt-12" : ""}`}
+        >
           {PLANS.map((plan) => {
             const dark = plan.variant === "dark";
             const rose = plan.variant === "rose";
@@ -32,14 +44,20 @@ export function PricingSection({ headingId = "tarifs" }: { headingId?: string })
               >
                 {"share" in plan ? (
                   <span className="absolute -top-3 left-6 rounded-md bg-gold px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[#171018]">
-                    {plan.share === "recommandé" ? "Recommandé" : `Populaire · ${plan.share}`}
+                    {plan.share === "recommandé"
+                      ? "Recommandé"
+                      : `Populaire · ${plan.share}`}
                   </span>
                 ) : null}
 
                 <h3 className="font-display text-xl font-semibold">{plan.name}</h3>
-                <p className={`mt-4 font-mono text-4xl font-semibold tabular-nums ${dark ? "text-white" : "text-ink"}`}>
+                <p
+                  className={`mt-4 font-mono text-4xl font-semibold tabular-nums ${dark ? "text-white" : "text-ink"}`}
+                >
                   {plan.price}
-                  <span className={`ml-1 text-sm font-medium ${dark ? "text-white/50" : "text-ink/40"}`}>
+                  <span
+                    className={`ml-1 text-sm font-medium ${dark ? "text-white/50" : "text-ink/40"}`}
+                  >
                     MAD
                   </span>
                 </p>

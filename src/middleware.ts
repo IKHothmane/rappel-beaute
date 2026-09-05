@@ -96,6 +96,31 @@ function preserveHostParam(url: URL, domain: Domain, hostname: string) {
   }
 }
 
+/**
+ * Redirection sur le hostname public (X-Forwarded-Host),
+ * jamais sur *.up.railway.app — sinon on quitte admin./app.
+ */
+function publicRedirect(
+  request: NextRequest,
+  pathname: string,
+  domain: Domain,
+  hostname: string,
+  status: 307 | 308 = 308,
+  extraSearch?: Record<string, string>,
+) {
+  const proto =
+    request.headers.get("x-forwarded-proto") === "http" ? "http" : "https";
+  const url = new URL(`${proto}://${hostname}${pathname}`);
+  url.searchParams.delete(QUERY_HOST);
+  if (extraSearch) {
+    for (const [key, value] of Object.entries(extraSearch)) {
+      url.searchParams.set(key, value);
+    }
+  }
+  preserveHostParam(url, domain, hostname);
+  return NextResponse.redirect(url, status);
+}
+
 async function getSession(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -110,8 +135,8 @@ export async function middleware(request: NextRequest) {
     process.env.NODE_ENV === "production" &&
     request.headers.get("x-forwarded-proto") === "http"
   ) {
-    const httpsUrl = request.nextUrl.clone();
-    httpsUrl.protocol = "https:";
+    const httpsUrl = new URL(`https://${hostname}${path}`);
+    httpsUrl.search = request.nextUrl.search;
     return NextResponse.redirect(httpsUrl, 308);
   }
 
@@ -130,56 +155,48 @@ export async function middleware(request: NextRequest) {
     const isPublic = isPublicPath(domain, path) || path === "/book" || path.startsWith("/book/");
     if (!isPublic) {
       if (!session) {
-        const loginUrl = request.nextUrl.clone();
-        loginUrl.pathname = "/login/";
-        if (path !== "/" && path !== "") {
-          loginUrl.searchParams.set("next", path);
-        }
-        loginUrl.searchParams.delete(QUERY_HOST);
-        preserveHostParam(loginUrl, domain, hostname);
-        return NextResponse.redirect(loginUrl);
+        return publicRedirect(
+          request,
+          "/login/",
+          domain,
+          hostname,
+          308,
+          path !== "/" && path !== "" ? { next: path } : undefined,
+        );
       }
       if (session.scope === "platform") {
-        const forbidden = request.nextUrl.clone();
-        forbidden.pathname = "/login/";
-        forbidden.searchParams.delete(QUERY_HOST);
-        preserveHostParam(forbidden, domain, hostname);
-        return NextResponse.redirect(forbidden);
+        return publicRedirect(request, "/login/", domain, hostname);
       }
     }
   }
 
   if (domain === "admin") {
-    // Ancienne URL /admin → racine Super Admin
+    // /admin et /admin/* → chemins Super Admin (pas la vitrine)
     if (path === "/admin" || path === "/admin/" || path.startsWith("/admin/")) {
-      const dest = request.nextUrl.clone();
-      dest.pathname =
-        path === "/admin" || path === "/admin/"
+      const stripped = path.replace(/^\/admin\/?/, "/");
+      const destPath =
+        stripped === "/" || stripped === ""
           ? "/dashboard/"
-          : path.replace(/^\/admin/, "") || "/dashboard/";
-      dest.searchParams.delete(QUERY_HOST);
-      preserveHostParam(dest, domain, hostname);
-      return NextResponse.redirect(dest, 308);
+          : stripped.endsWith("/")
+            ? stripped
+            : `${stripped}/`;
+      return publicRedirect(request, destPath, domain, hostname);
     }
 
     const isPublic = isPublicPath(domain, path);
     if (!isPublic) {
       if (!session || session.scope !== "platform") {
-        const loginUrl = request.nextUrl.clone();
-        loginUrl.pathname = "/login/";
-        if (path !== "/" && path !== "") {
-          loginUrl.searchParams.set("next", path);
-        }
-        loginUrl.searchParams.delete(QUERY_HOST);
-        preserveHostParam(loginUrl, domain, hostname);
-        return NextResponse.redirect(loginUrl);
+        return publicRedirect(
+          request,
+          "/login/",
+          domain,
+          hostname,
+          308,
+          path !== "/" && path !== "" ? { next: path } : undefined,
+        );
       }
     } else if (session?.scope === "platform" && path.startsWith("/login")) {
-      const dash = request.nextUrl.clone();
-      dash.pathname = "/dashboard/";
-      dash.searchParams.delete(QUERY_HOST);
-      preserveHostParam(dash, domain, hostname);
-      return NextResponse.redirect(dash);
+      return publicRedirect(request, "/dashboard/", domain, hostname);
     }
   }
 

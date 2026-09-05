@@ -13,7 +13,7 @@ export function resolveDomainFromHostname(hostHeader: string | null): RappelDoma
   const hostname = (hostHeader ?? "").split(":")[0].toLowerCase();
 
   // Production : app.rappelbeauty.com / admin.rappelbeauty.com
-  // (préfixe app. / admin. — marche aussi en staging)
+  // (aussi via X-Forwarded-Host derrière Cloudflare Worker)
   if (hostname.startsWith("app.")) {
     return "app";
   }

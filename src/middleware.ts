@@ -13,15 +13,23 @@ function parseDomain(value: string | null | undefined): Domain | null {
   return null;
 }
 
-function domainFromHost(hostHeader: string | null): Domain {
-  const hostname = (hostHeader ?? "").split(":")[0].toLowerCase();
+/** Host public (Cloudflare Worker / proxy) prioritaire sur Host Railway. */
+function publicHostname(request: NextRequest): string {
+  const forwarded = request.headers
+    .get("x-forwarded-host")
+    ?.split(",")[0]
+    ?.trim();
+  const raw = forwarded || request.headers.get("host") || "";
+  return raw.split(":")[0].toLowerCase();
+}
+
+function domainFromHostname(hostname: string): Domain {
   if (hostname.startsWith("app.")) return "app";
   if (hostname.startsWith("admin.")) return "admin";
   return "www";
 }
 
-function isAppOrAdminHostname(hostHeader: string | null): boolean {
-  const hostname = (hostHeader ?? "").split(":")[0].toLowerCase();
+function isAppOrAdminHostname(hostname: string): boolean {
   return hostname.startsWith("app.") || hostname.startsWith("admin.");
 }
 
@@ -58,7 +66,8 @@ function resolveDomain(request: NextRequest): Domain {
   const explicit = parseDomain(request.nextUrl.searchParams.get(QUERY_HOST));
   if (explicit) return explicit;
 
-  const hostDomain = domainFromHost(request.headers.get("host"));
+  const hostname = publicHostname(request);
+  const hostDomain = domainFromHostname(hostname);
   if (hostDomain !== "www") return hostDomain;
 
   // Origine partagée (localhost) : les URLs vitrine restent www même si
@@ -79,10 +88,10 @@ function isPublicPath(domain: Domain, path: string): boolean {
   return list.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
-function preserveHostParam(url: URL, domain: Domain, hostHeader: string | null) {
+function preserveHostParam(url: URL, domain: Domain, hostname: string) {
   // Prod : app.rappelbeauty.com / admin.… suffisent — pas besoin de ?__host=
   // Localhost (origine partagée) : garder ?__host=app|admin
-  if (domain !== "www" && !isAppOrAdminHostname(hostHeader)) {
+  if (domain !== "www" && !isAppOrAdminHostname(hostname)) {
     url.searchParams.set(QUERY_HOST, domain);
   }
 }
@@ -95,6 +104,7 @@ async function getSession(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const hostname = publicHostname(request);
 
   if (
     process.env.NODE_ENV === "production" &&
@@ -126,20 +136,32 @@ export async function middleware(request: NextRequest) {
           loginUrl.searchParams.set("next", path);
         }
         loginUrl.searchParams.delete(QUERY_HOST);
-        preserveHostParam(loginUrl, domain, request.headers.get("host"));
+        preserveHostParam(loginUrl, domain, hostname);
         return NextResponse.redirect(loginUrl);
       }
       if (session.scope === "platform") {
         const forbidden = request.nextUrl.clone();
         forbidden.pathname = "/login/";
         forbidden.searchParams.delete(QUERY_HOST);
-        preserveHostParam(forbidden, domain, request.headers.get("host"));
+        preserveHostParam(forbidden, domain, hostname);
         return NextResponse.redirect(forbidden);
       }
     }
   }
 
   if (domain === "admin") {
+    // Ancienne URL /admin → racine Super Admin
+    if (path === "/admin" || path === "/admin/" || path.startsWith("/admin/")) {
+      const dest = request.nextUrl.clone();
+      dest.pathname =
+        path === "/admin" || path === "/admin/"
+          ? "/dashboard/"
+          : path.replace(/^\/admin/, "") || "/dashboard/";
+      dest.searchParams.delete(QUERY_HOST);
+      preserveHostParam(dest, domain, hostname);
+      return NextResponse.redirect(dest, 308);
+    }
+
     const isPublic = isPublicPath(domain, path);
     if (!isPublic) {
       if (!session || session.scope !== "platform") {
@@ -149,14 +171,14 @@ export async function middleware(request: NextRequest) {
           loginUrl.searchParams.set("next", path);
         }
         loginUrl.searchParams.delete(QUERY_HOST);
-        preserveHostParam(loginUrl, domain, request.headers.get("host"));
+        preserveHostParam(loginUrl, domain, hostname);
         return NextResponse.redirect(loginUrl);
       }
     } else if (session?.scope === "platform" && path.startsWith("/login")) {
       const dash = request.nextUrl.clone();
       dash.pathname = "/dashboard/";
       dash.searchParams.delete(QUERY_HOST);
-      preserveHostParam(dash, domain, request.headers.get("host"));
+      preserveHostParam(dash, domain, hostname);
       return NextResponse.redirect(dash);
     }
   }
@@ -179,7 +201,7 @@ export async function middleware(request: NextRequest) {
     if (
       isWwwMarketingPath(path) &&
       !queryHost &&
-      !isAppOrAdminHostname(request.headers.get("host"))
+      !isAppOrAdminHostname(hostname)
     ) {
       res.cookies.set(COOKIE_HOST, "www", { path: "/", sameSite: "lax" });
     } else if (queryHost) {

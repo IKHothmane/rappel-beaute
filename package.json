@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "npx prisma generate && next build",
-    "start": "next start",
+    "start": "npx prisma migrate deploy && next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",

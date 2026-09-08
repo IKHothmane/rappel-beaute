@@ -1023,27 +1023,55 @@ export async function createAIWhatsAppTask(
 
   const taskId = newId("wtask");
   const idempotencyKey = `wa:ai_marketing:${taskId}`;
-  await pool.query(
-    `INSERT INTO "WhatsAppTask" (
-      id, "organizationId", "customerId", "appointmentId", "templateId",
-      type, status, "messageSnapshot", "phoneSnapshot", "scheduledFor",
-      "idempotencyKey", "attributionSource", "updatedAt"
-    ) VALUES (
-      $1,$2,$3,$4,NULL,$5::"WhatsAppTaskType",'PENDING'::"WhatsAppTaskStatus",
-      $6,$7,NOW(),$8,$9,NOW()
-    )`,
-    [
-      taskId,
-      organizationId,
-      input.customerId,
-      input.appointmentId ?? null,
-      input.type,
-      input.message,
-      customer.phone,
-      idempotencyKey,
-      input.attributionSource,
-    ],
-  );
+  try {
+    await pool.query(
+      `INSERT INTO "WhatsAppTask" (
+        id, "organizationId", "customerId", "appointmentId", "templateId",
+        type, status, "messageSnapshot", "phoneSnapshot", "scheduledFor",
+        "idempotencyKey", "attributionSource", "updatedAt"
+      ) VALUES (
+        $1,$2,$3,$4,NULL,$5::"WhatsAppTaskType",'PENDING'::"WhatsAppTaskStatus",
+        $6,$7,NOW(),$8,$9,NOW()
+      )`,
+      [
+        taskId,
+        organizationId,
+        input.customerId,
+        input.appointmentId ?? null,
+        input.type,
+        input.message,
+        customer.phone,
+        idempotencyKey,
+        input.attributionSource,
+      ],
+    );
+  } catch (err) {
+    // Si la colonne attributionSource n'a pas encore été migrée en DB
+    if (err instanceof Error && err.message.includes("attributionSource")) {
+      await pool.query(
+        `INSERT INTO "WhatsAppTask" (
+          id, "organizationId", "customerId", "appointmentId", "templateId",
+          type, status, "messageSnapshot", "phoneSnapshot", "scheduledFor",
+          "idempotencyKey", "updatedAt"
+        ) VALUES (
+          $1,$2,$3,$4,NULL,$5::"WhatsAppTaskType",'PENDING'::"WhatsAppTaskStatus",
+          $6,$7,NOW(),$8,NOW()
+        )`,
+        [
+          taskId,
+          organizationId,
+          input.customerId,
+          input.appointmentId ?? null,
+          input.type,
+          input.message,
+          customer.phone,
+          idempotencyKey,
+        ],
+      );
+    } else {
+      throw err;
+    }
+  }
 
   await writeAuditLog({
     organizationId,

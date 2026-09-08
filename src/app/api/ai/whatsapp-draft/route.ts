@@ -54,17 +54,30 @@ export async function POST(request: NextRequest) {
 
     // Si envoi direct demandé : appel immédiat à l'API Meta sans ouvrir WhatsApp Web
     if (parsed.data.sendDirect) {
-      const directResult = await sendDirectWhatsAppTask(
-        waAuth.session.organizationId,
-        task.id,
-        actor,
-      );
-      return NextResponse.json({
-        task: directResult.task,
-        autoSent: true,
-        messageId: directResult.messageId,
-        marketingKind: isMarketingMessageKind(parsed.data.kind),
-      });
+      try {
+        const directResult = await sendDirectWhatsAppTask(
+          waAuth.session.organizationId,
+          task.id,
+          actor,
+        );
+        return NextResponse.json({
+          task: directResult.task,
+          autoSent: true,
+          messageId: directResult.messageId,
+          marketingKind: isMarketingMessageKind(parsed.data.kind),
+        });
+      } catch (directErr) {
+        const msg = directErr instanceof Error ? directErr.message : "Échec d'envoi WhatsApp API";
+        return NextResponse.json(
+          {
+            error: msg,
+            task,
+            autoSent: false,
+            fallbackToManual: true,
+          },
+          { status: 400 },
+        );
+      }
     }
 
     return NextResponse.json({
@@ -93,6 +106,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Rendez-vous introuvable." }, { status: 404 });
     }
     console.error("[POST /api/ai/whatsapp-draft]", error);
-    return NextResponse.json({ error: "Impossible de préparer WhatsApp." }, { status: 500 });
+    return NextResponse.json(
+      { error: code ? `Erreur WhatsApp : ${code}` : "Impossible de préparer WhatsApp." },
+      { status: 500 },
+    );
   }
 }

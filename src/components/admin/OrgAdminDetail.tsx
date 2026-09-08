@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PlanBadge, StatusBadge, SubBadge } from "@/components/admin/AdminUi";
 import { PLAN_LABEL } from "@/types/subscription";
 import type { OrganizationDetail } from "@/types/platform";
@@ -23,14 +23,15 @@ export function OrgAdminDetail() {
     { id: string; firstName: string; lastName: string; email: string; role: string; status: string }[]
   >([]);
 
-  async function reload() {
+  const reload = useCallback(async () => {
+    if (!id) return;
     const { organization } = await fetchOrganization(id);
     setOrg(organization);
-  }
+  }, [id]);
 
   useEffect(() => {
     reload().catch(console.error);
-  }, [id]);
+  }, [reload]);
 
   useEffect(() => {
     if (tab !== "users" || !id) return;

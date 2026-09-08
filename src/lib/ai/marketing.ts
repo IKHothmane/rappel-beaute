@@ -586,7 +586,7 @@ export function buildMockVariants(
     }
   }
 
-  const unique = [...new Set(drafts.map((d) => d.trim()).filter(Boolean))];
+  const unique = Array.from(new Set(drafts.map((d) => d.trim()).filter(Boolean)));
   while (unique.length < count && unique.length > 0) {
     unique.push(unique[unique.length % drafts.length] ?? unique[0]);
   }
@@ -693,8 +693,6 @@ export async function generateMarketingVariants(
       code === "AI_PROVIDER_NOT_CONFIGURED" ||
       code === "AI_PROVIDER_TIMEOUT"
     ) {
-      const fb = new MockAIProvider();
-      void fb;
       return {
         variants: mock,
         provider: "mock",

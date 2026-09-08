@@ -193,7 +193,7 @@ export function inferToolsFromQuestion(question: string): AIToolName[] {
   }
 
   if (tools.length === 0) tools.push("getDashboard");
-  return [...new Set(tools)];
+  return Array.from(new Set(tools));
 }
 
 export function summarizeToolResults(results: AIToolResult[]): string {

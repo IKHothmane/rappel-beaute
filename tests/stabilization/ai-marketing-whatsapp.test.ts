@@ -245,7 +245,7 @@ run("43.7 — isolation + funnel (db)", () => {
       `INSERT INTO "Appointment" (
         id, "organizationId", "customerId", "serviceId", "staffId",
         "startAt", "endAt", price, status, "attributionSource", "updatedAt"
-      ) VALUES ($1,$2,'c1','s1','e2', NOW(), NOW() + INTERVAL '1 hour', 400,
+      ) VALUES ($1,$2,'c1','s1','e2', NOW() - INTERVAL '6 days', NOW() - INTERVAL '6 days' + INTERVAL '1 hour', 400,
         'COMPLETED'::"AppointmentStatus", 'ai_marketing', NOW())`,
       [aptId, orgId],
     );

@@ -27,6 +27,7 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   trailingSlash: true,
+  skipTrailingSlashRedirect: true,
   poweredByHeader: false,
   async redirects() {
     return [

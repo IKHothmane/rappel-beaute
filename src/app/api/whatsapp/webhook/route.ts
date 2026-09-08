@@ -15,16 +15,16 @@ import {
 export async function GET(request: NextRequest) {
   const result = verifyMetaWebhookChallenge(request.nextUrl.searchParams);
   if (!result.ok) {
-    return new Response(result.status === 500 ? "Configuration error" : "Forbidden", {
+    return new Response(result.message ?? "Forbidden", {
       status: result.status,
-      headers: { "Content-Type": "text/plain" },
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   }
 
   // Meta attend impérativement le challenge en texte brut (Content-Type: text/plain) avec HTTP 200
   return new Response(result.challenge, {
     status: 200,
-    headers: { "Content-Type": "text/plain" },
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 }
 

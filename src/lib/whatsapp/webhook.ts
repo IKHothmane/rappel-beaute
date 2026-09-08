@@ -49,22 +49,45 @@ export type WhatsAppWebhookPayload = {
 export function verifyMetaWebhookChallenge(
   searchParams: URLSearchParams,
   expectedToken = process.env.WHATSAPP_VERIFY_TOKEN,
-): { ok: true; challenge: string } | { ok: false; status: number } {
+): { ok: true; challenge: string } | { ok: false; status: number; message?: string } {
   const mode = searchParams.get("hub.mode");
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  const configured = expectedToken?.trim();
-  if (!configured) {
-    console.warn("[WhatsApp Webhook] WHATSAPP_VERIFY_TOKEN non configuré");
-    return { ok: false, status: 500 };
+  // Si aucun paramètre n'est fourni (ex. test direct dans le navigateur sans query string)
+  if (!mode && !token && !challenge) {
+    return {
+      ok: false,
+      status: 200,
+      message:
+        "Rappel Beauty — Webhook WhatsApp opérationnel. En attente des paramètres Meta (hub.mode, hub.verify_token, hub.challenge).",
+    };
   }
 
-  if (mode === "subscribe" && token && token === configured && challenge) {
+  const configured = expectedToken?.trim().replace(/^["']|["']$/g, "");
+  if (!configured) {
+    console.warn("[WhatsApp Webhook] Variable d'environnement WHATSAPP_VERIFY_TOKEN non configurée");
+    return {
+      ok: false,
+      status: 500,
+      message: "Configuration error: WHATSAPP_VERIFY_TOKEN is missing on server",
+    };
+  }
+
+  const cleanToken = token?.trim().replace(/^["']|["']$/g, "");
+  if (mode === "subscribe" && cleanToken && cleanToken === configured && challenge) {
+    console.log("[WhatsApp Webhook] ✅ Challenge Meta validé avec succès");
     return { ok: true, challenge };
   }
 
-  return { ok: false, status: 403 };
+  console.warn(
+    `[WhatsApp Webhook] ❌ Refus de vérification Meta (mode=${mode}, tokenMatch=${cleanToken === configured}, challengePresent=${Boolean(challenge)})`,
+  );
+  return {
+    ok: false,
+    status: 403,
+    message: "Forbidden: verify_token incorrect ou paramètres invalides",
+  };
 }
 
 /**

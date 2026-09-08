@@ -43,13 +43,14 @@ function formatMetaErrorMessage(status: number, errObj: Record<string, unknown> 
   const subcode = Number(err.error_subcode);
   const msg = String(err.message || "");
 
-  // Identifiant incorrect (confondu avec WABA ID ou App ID au lieu de Phone number ID)
+  // Permissions manquantes ou token non associé à ce numéro de téléphone
   if (
     msg.includes("Unsupported post request") ||
     msg.includes("does not support this operation") ||
+    msg.includes("missing permissions") ||
     (code === 100 && err.type === "GraphMethodException")
   ) {
-    return "Identifiant de numéro de téléphone incorrect dans Railway : vous avez configuré l'« Identifiant de compte WhatsApp Business (WABA ID) » ou l'« ID de l'application » au lieu de l'« Identifiant du numéro de téléphone » (Phone number ID). Dans Meta for Developers > WhatsApp > Démarrage rapide (ou Configuration de l'API), copiez la valeur du champ « Identifiant du numéro de téléphone » et mettez-la dans WHATSAPP_PHONE_NUMBER_ID.";
+    return "Erreur d'autorisation Meta : le jeton d'accès (WHATSAPP_ACCESS_TOKEN) n'a pas les permissions requises ou n'est pas associé à ce numéro de téléphone. Dans Meta for Developers : 1) Assurez-vous que votre numéro est sélectionné dans le menu déroulant « De » avant de copier/générer le jeton. 2) Vérifiez que le jeton possède la permission 'whatsapp_business_messaging'. 3) Dans Meta Business Suite, vérifiez que votre compte WhatsApp est bien associé à cette application.";
   }
 
   // Destinataire non autorisé (mode sandbox / dev Meta)

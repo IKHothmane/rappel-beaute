@@ -41,6 +41,14 @@ async function seedPlatformUser() {
 }
 
 async function seedOrgSubscription(orgId: string) {
+  // S'assure que le plan Institut et Premium ont la feature AI activée (roadmap 43.14)
+  await pool.query(`
+    UPDATE "Plan"
+    SET "features" = jsonb_set("features", '{ai}', 'true'::jsonb),
+        "updatedAt" = NOW()
+    WHERE "code" IN ('INSTITUT', 'PREMIUM');
+  `).catch(() => null);
+
   const now = new Date();
   const periodEnd = new Date(now);
   periodEnd.setMonth(periodEnd.getMonth() + 1);

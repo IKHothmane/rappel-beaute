@@ -257,3 +257,139 @@ export async function sendDirectWhatsAppTask(
 
   return { task: updatedTask, messageId: sendResult.messageId };
 }
+
+/**
+ * Diagnostic complet de la connexion WhatsApp Meta Cloud API.
+ * Interroge en temps réel les endpoints Meta pour vérifier la validité du token et l'accès au numéro.
+ */
+export async function diagnoseMetaWhatsAppConnection(): Promise<{
+  configured: boolean;
+  phoneNumberId: string | null;
+  apiVersion: string;
+  hasAccessToken: boolean;
+  maskedToken: string | null;
+  phoneCheck: {
+    ok: boolean;
+    data?: Record<string, unknown>;
+    error?: string;
+    rawError?: unknown;
+  };
+  tokenOwner?: Record<string, unknown>;
+  tokenDebug?: Record<string, unknown>;
+  verdict: string;
+  nextSteps: string[];
+}> {
+  const config = getMetaWhatsAppConfig();
+  if (!config.isConfigured || !config.phoneNumberId || !config.accessToken) {
+    return {
+      configured: false,
+      phoneNumberId: config.phoneNumberId,
+      apiVersion: config.apiVersion,
+      hasAccessToken: Boolean(config.accessToken),
+      maskedToken: null,
+      phoneCheck: { ok: false, error: "Variables manquantes sur le serveur" },
+      verdict: "Variables d'environnement non configurées sur Railway.",
+      nextSteps: [
+        "Définir WHATSAPP_PHONE_NUMBER_ID dans Railway",
+        "Définir WHATSAPP_ACCESS_TOKEN dans Railway",
+      ],
+    };
+  }
+
+  const maskedToken = `${config.accessToken.slice(0, 7)}...${config.accessToken.slice(-4)}`;
+
+  // 1. Tester l'accès au numéro de téléphone
+  const phoneEndpoint = `https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}?fields=id,display_phone_number,verified_name,code_verification_status,quality_rating`;
+
+  let phoneCheck: {
+    ok: boolean;
+    data?: Record<string, unknown>;
+    error?: string;
+    rawError?: unknown;
+  } = { ok: false };
+
+  try {
+    const res = await fetch(phoneEndpoint, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${config.accessToken}`,
+      },
+    });
+    const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+    if (res.ok && data && !data.error) {
+      phoneCheck = { ok: true, data };
+    } else {
+      phoneCheck = {
+        ok: false,
+        error: (data?.error as Record<string, unknown>)?.message as string || `Erreur HTTP ${res.status}`,
+        rawError: data?.error,
+      };
+    }
+  } catch (e) {
+    phoneCheck = {
+      ok: false,
+      error: e instanceof Error ? e.message : "Erreur réseau vers Meta",
+    };
+  }
+
+  // 2. Tenter de lire l'identité du token via /me
+  let tokenOwner: Record<string, unknown> | undefined;
+  try {
+    const meRes = await fetch(
+      `https://graph.facebook.com/${config.apiVersion}/me?access_token=${config.accessToken}`,
+    );
+    const meData = (await meRes.json().catch(() => null)) as Record<string, unknown> | null;
+    if (meRes.ok && meData && !meData.error) {
+      tokenOwner = meData;
+    }
+  } catch {
+    // silence
+  }
+
+  // 3. Tenter debug_token
+  let tokenDebug: Record<string, unknown> | undefined;
+  try {
+    const debugRes = await fetch(
+      `https://graph.facebook.com/${config.apiVersion}/debug_token?input_token=${config.accessToken}&access_token=${config.accessToken}`,
+    );
+    const debugData = (await debugRes.json().catch(() => null)) as Record<string, unknown> | null;
+    if (debugRes.ok && debugData && !debugData.error) {
+      tokenDebug = (debugData.data as Record<string, unknown>) || debugData;
+    }
+  } catch {
+    // silence
+  }
+
+  // 4. Synthèse et verdict
+  if (phoneCheck.ok) {
+    return {
+      configured: true,
+      phoneNumberId: config.phoneNumberId,
+      apiVersion: config.apiVersion,
+      hasAccessToken: true,
+      maskedToken,
+      phoneCheck,
+      tokenOwner,
+      tokenDebug,
+      verdict: "✅ Connexion Meta WhatsApp opérationnelle ! Le numéro et le token sont autorisés.",
+      nextSteps: ["Vous pouvez envoyer directement les messages WhatsApp aux clients."],
+    };
+  }
+
+  return {
+    configured: true,
+    phoneNumberId: config.phoneNumberId,
+    apiVersion: config.apiVersion,
+    hasAccessToken: true,
+    maskedToken,
+    phoneCheck,
+    tokenOwner,
+    tokenDebug,
+    verdict: "❌ Le jeton Meta ne dispose pas des droits pour agir sur le numéro ID " + config.phoneNumberId,
+    nextSteps: [
+      "Dans Meta for Developers > WhatsApp > Configuration de l'API : vérifiez que votre numéro est bien sélectionné dans le menu déroulant « De » avant de générer le jeton.",
+      "Ou créez un jeton permanent dans Meta Business Suite (business.facebook.com/settings/system-users) : Utilisateur Système avec rôle Admin, attribuez le compte WhatsApp avec Contrôle total, puis générez un jeton avec whatsapp_business_messaging et whatsapp_business_management.",
+    ],
+  };
+}
+

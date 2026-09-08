@@ -12,6 +12,7 @@ import {
   recordWhatsAppOutcome,
   skipWhatsAppTask,
 } from "@/lib/db/whatsapp";
+import { sendDirectWhatsAppTask } from "@/lib/whatsapp/send";
 import { canSendWhatsapp } from "@/lib/rbac";
 import { parseWhatsAppAction, parseWhatsAppListQuery } from "@/lib/validation/whatsapp";
 
@@ -55,6 +56,20 @@ export async function POST(request: NextRequest) {
 
     if (parsed.action === "invalid") {
       return NextResponse.json({ error: "Action invalide." }, { status: 400 });
+    }
+
+    if (parsed.action === "sendDirect") {
+      try {
+        const { task, messageId } = await sendDirectWhatsAppTask(
+          auth.session.organizationId,
+          parsed.taskId,
+          actor,
+        );
+        return NextResponse.json({ ok: true, task, messageId });
+      } catch (sendErr) {
+        const msg = sendErr instanceof Error ? sendErr.message : "Échec d'envoi WhatsApp API";
+        return NextResponse.json({ error: msg }, { status: 400 });
+      }
     }
 
     if (parsed.action === "markSent") {

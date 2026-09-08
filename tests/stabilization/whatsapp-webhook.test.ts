@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createHmac } from "crypto";
 import {
   verifyMetaSignature,
@@ -6,6 +6,10 @@ import {
   processWhatsAppWebhookEvent,
   type WhatsAppWebhookPayload,
 } from "@/lib/whatsapp/webhook";
+import {
+  getMetaWhatsAppConfig,
+  sendWhatsAppMessageViaMetaApi,
+} from "@/lib/whatsapp/send";
 
 describe("WhatsApp Meta Webhook — Challenge & Signature", () => {
   it("GET challenge valide avec hub.mode=subscribe et token correct", () => {
@@ -127,5 +131,90 @@ describe("WhatsApp Meta Webhook — Challenge & Signature", () => {
     const statusEvent = events.find((e) => e.type === "status");
     expect(statusEvent).toBeDefined();
     expect(statusEvent?.messageId).toBe("wamid.sent123");
+  });
+});
+
+describe("WhatsApp Meta Cloud API — Envoi direct sans WhatsApp Web", () => {
+  it("retourne une erreur explicite si les variables ne sont pas configurées", async () => {
+    const origPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const origToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    delete process.env.WHATSAPP_PHONE_NUMBER_ID;
+    delete process.env.WHATSAPP_ACCESS_TOKEN;
+
+    const config = getMetaWhatsAppConfig();
+    expect(config.isConfigured).toBe(false);
+
+    const result = await sendWhatsAppMessageViaMetaApi({
+      toPhone: "0661223344",
+      message: "Bonjour",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("WHATSAPP_PHONE_NUMBER_ID");
+    }
+
+    if (origPhoneId) process.env.WHATSAPP_PHONE_NUMBER_ID = origPhoneId;
+    if (origToken) process.env.WHATSAPP_ACCESS_TOKEN = origToken;
+  });
+
+  it("envoie avec succès via fetch vers Meta Graph API", async () => {
+    process.env.WHATSAPP_PHONE_NUMBER_ID = "123456789";
+    process.env.WHATSAPP_ACCESS_TOKEN = "EAABtest_token";
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        messaging_product: "whatsapp",
+        contacts: [{ input: "212661223344", wa_id: "212661223344" }],
+        messages: [{ id: "wamid.TEST_DIRECT_SEND_123" }],
+      }),
+    } as Response);
+
+    const result = await sendWhatsAppMessageViaMetaApi({
+      toPhone: "0661223344",
+      message: "Votre rendez-vous est confirmé.",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.messageId).toBe("wamid.TEST_DIRECT_SEND_123");
+    }
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const calledUrl = fetchMock.mock.calls[0][0];
+    expect(calledUrl).toContain("graph.facebook.com/v19.0/123456789/messages");
+
+    fetchMock.mockRestore();
+  });
+
+  it("traduit l'erreur 131030 (numéro non autorisé en dev) en message compréhensible", async () => {
+    process.env.WHATSAPP_PHONE_NUMBER_ID = "123456789";
+    process.env.WHATSAPP_ACCESS_TOKEN = "EAABtest_token";
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: {
+          message: "(#131030) Recipient phone number not in allowed list",
+          type: "OAuthException",
+          code: 131030,
+          error_subcode: 2494010,
+        },
+      }),
+    } as Response);
+
+    const result = await sendWhatsAppMessageViaMetaApi({
+      toPhone: "0661223344",
+      message: "Test",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("destinataires autorisés");
+    }
+
+    fetchMock.mockRestore();
   });
 });

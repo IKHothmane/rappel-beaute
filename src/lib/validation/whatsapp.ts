@@ -72,13 +72,14 @@ const OUTCOMES = new Set<WhatsAppStaffOutcome>([
 
 export function parseWhatsAppAction(raw: Record<string, unknown>):
   | { action: "markSent"; taskId: string }
+  | { action: "sendDirect"; taskId: string }
   | { action: "skip"; taskId: string }
   | { action: "recordOutcome"; taskId: string; outcome: WhatsAppStaffOutcome }
   | { action: "createTemplate"; data: CreateWhatsAppTemplateInput }
   | { action: "updateTemplate"; data: UpdateWhatsAppTemplateInput }
   | { action: "invalid" } {
   const action = str(raw.action);
-  if (action === "markSent" || action === "skip") {
+  if (action === "markSent" || action === "skip" || action === "sendDirect") {
     const taskId = str(raw.taskId);
     if (!taskId) return { action: "invalid" };
     return { action, taskId };

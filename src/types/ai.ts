@@ -204,6 +204,8 @@ export type AICommitWhatsAppInput = {
   message: string;
   kind: AIMessageKind;
   appointmentId?: string | null;
+  /** Si vrai, envoie le message directement au client via l'API Meta sans ouvrir WhatsApp Web */
+  sendDirect?: boolean;
 };
 
 export type AIProviderChatInput = {

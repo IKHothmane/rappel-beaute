@@ -20,6 +20,7 @@ import {
   listWhatsAppTemplates,
   markWhatsAppSent,
   recordWhatsAppOutcome,
+  sendDirectWhatsApp,
   skipWhatsAppTask,
   updateWhatsAppTemplate,
   WHATSAPP_OUTCOME_LABEL,
@@ -94,6 +95,20 @@ export function WhatsappPageView() {
       return;
     }
     toast("Marqué comme envoyé.", "success");
+    setPreview(null);
+    refresh();
+  }
+
+  async function handleDirectSend(taskId: string) {
+    if (!canSend) return;
+    setSubmitting(true);
+    const result = await sendDirectWhatsApp(taskId);
+    setSubmitting(false);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    toast("🚀 Message envoyé directement au client via WhatsApp !", "success");
     setPreview(null);
     refresh();
   }
@@ -278,13 +293,22 @@ export function WhatsappPageView() {
                 </button>
                 {canSend && task.status === "PENDING" ? (
                   <>
+                    <button
+                      type="button"
+                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                      disabled={submitting}
+                      onClick={() => handleDirectSend(task.id)}
+                    >
+                      🚀 Envoyer direct
+                    </button>
                     <a
                       href={task.waLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn-primary"
+                      className="btn-ghost text-xs"
+                      title="Ouvrir manuellement sur WhatsApp Web"
                     >
-                      WhatsApp
+                      Ouvrir wa.me
                     </a>
                     <button
                       type="button"
@@ -349,16 +373,26 @@ export function WhatsappPageView() {
             </p>
             {canSend ? (
               <div className="flex flex-col gap-2 sm:flex-row">
+                {preview.status === "PENDING" ? (
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={submitting}
+                    onClick={() => handleDirectSend(preview.id)}
+                  >
+                    🚀 Envoyer directement au client
+                  </Button>
+                ) : null}
                 <a
                   href={preview.waLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn-primary text-center"
+                  className="btn-ghost text-center text-xs"
                 >
-                  Ouvrir WhatsApp
+                  Ouvrir wa.me (secours)
                 </a>
                 {preview.status === "PENDING" ? (
                   <Button
+                    variant="secondary"
                     disabled={submitting}
                     onClick={() => handleMarkSent(preview)}
                   >

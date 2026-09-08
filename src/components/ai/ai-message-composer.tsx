@@ -45,6 +45,7 @@ export function AIMessageComposer({ customerId: lockedCustomerId, customerLabel,
   const [customerName, setCustomerName] = useState(customerLabel ?? "");
   const [loading, setLoading] = useState(false);
   const [committing, setCommitting] = useState(false);
+  const [sendingDirect, setSendingDirect] = useState(false);
   const [result, setResult] = useState<AIGenerateMessageResult | null>(null);
   const [selected, setSelected] = useState(0);
   const [draft, setDraft] = useState("");
@@ -92,6 +93,29 @@ export function AIMessageComposer({ customerId: lockedCustomerId, customerLabel,
       setLoading(false);
     }
   }, [canGenerate, kind, tone, language, promotion, objective, customerId, toast]);
+
+  /**
+   * Envoi direct au client via l'API officielle Meta Cloud.
+   * N'ouvre JAMAIS WhatsApp Web.
+   */
+  async function sendDirectlyToClient() {
+    if (!canOpenWa || !customerId || !draft.trim()) return;
+    setSendingDirect(true);
+    try {
+      const { task } = await commitAIWhatsAppDraft({
+        customerId,
+        message: draft.trim(),
+        kind,
+        sendDirect: true,
+      });
+      toast("🚀 Message envoyé avec succès directement sur le WhatsApp du client !", "success");
+      onTaskCreated?.(task);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Échec d'envoi WhatsApp API.", "error");
+    } finally {
+      setSendingDirect(false);
+    }
+  }
 
   async function confirmAndOpenWhatsApp() {
     if (!canOpenWa || !customerId || !draft.trim()) return;
@@ -266,12 +290,22 @@ export function AIMessageComposer({ customerId: lockedCustomerId, customerLabel,
           <p className="text-xs text-ink/40">{result.disclaimer}</p>
 
           {canOpenWa && customerId ? (
-            <Button
-              disabled={committing || !draft.trim()}
-              onClick={() => void confirmAndOpenWhatsApp()}
-            >
-              {committing ? "Préparation…" : "Valider et ouvrir WhatsApp"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <Button
+                disabled={sendingDirect || committing || !draft.trim()}
+                onClick={() => void sendDirectlyToClient()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {sendingDirect ? "Envoi direct en cours…" : "🚀 Envoyer directement par WhatsApp"}
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={committing || sendingDirect || !draft.trim()}
+                onClick={() => void confirmAndOpenWhatsApp()}
+              >
+                {committing ? "Préparation…" : "Ouvrir WhatsApp Web (manuel)"}
+              </Button>
+            </div>
           ) : canOpenWa && !customerId ? (
             <p className="text-xs text-amber-700">
               Choisissez une cliente pour créer la tâche WhatsApp après validation.

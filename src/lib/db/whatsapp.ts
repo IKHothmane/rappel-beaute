@@ -957,7 +957,7 @@ export function isMarketingWhatsAppType(type: WhatsAppTaskType): boolean {
   return WHATSAPP_MARKETING_TYPES.has(type);
 }
 
-async function loadMappedTask(taskId: string): Promise<WhatsAppTaskItem | null> {
+export async function getWhatsAppTaskById(taskId: string): Promise<WhatsAppTaskItem | null> {
   const { rows } = await pool.query(
     `SELECT t.*,
             c."firstName" || ' ' || c."lastName" AS "customerName",
@@ -974,6 +974,8 @@ async function loadMappedTask(taskId: string): Promise<WhatsAppTaskItem | null> 
   if (!rows[0]) return null;
   return mapTask(rows[0] as Record<string, unknown>);
 }
+
+const loadMappedTask = getWhatsAppTaskById;
 
 /**
  * Crée une tâche PENDING après validation humaine (43.7).

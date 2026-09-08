@@ -112,7 +112,8 @@ export async function commitAIWhatsAppDraft(input: {
   message: string;
   kind: AIGenerateMessageInput["kind"];
   appointmentId?: string | null;
-}): Promise<{ task: WhatsAppTaskItem; autoSent: false }> {
+  sendDirect?: boolean;
+}): Promise<{ task: WhatsAppTaskItem; autoSent: boolean; messageId?: string }> {
   const res = await fetch("/api/ai/whatsapp-draft/", {
     method: "POST",
     credentials: "include",

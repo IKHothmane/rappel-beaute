@@ -37,6 +37,18 @@ export async function getWhatsAppDashboard(view: "pending" | "sent" = "pending")
   return { items: body.data ?? body.items ?? [], kpis: body.kpis };
 }
 
+export async function sendDirectWhatsApp(taskId: string) {
+  const res = await fetch("/api/whatsapp/", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "sendDirect", taskId }),
+  });
+  const data = await res.json();
+  if (!res.ok) return { ok: false as const, error: data.error ?? "Échec d'envoi WhatsApp API" };
+  return { ok: true as const, task: data.task as WhatsAppTaskItem, messageId: data.messageId as string };
+}
+
 export async function markWhatsAppSent(taskId: string) {
   const res = await fetch("/api/whatsapp/", {
     method: "POST",

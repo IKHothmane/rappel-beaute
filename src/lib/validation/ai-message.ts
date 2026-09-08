@@ -83,6 +83,7 @@ export function parseCommitWhatsAppBody(
   if (!message) return { ok: false, error: "Message requis." };
   if (message.length > 2000) return { ok: false, error: "Message trop long." };
   if (!kind) return { ok: false, error: "Type de message requis." };
+  const sendDirect = raw.sendDirect === true;
   return {
     ok: true,
     data: {
@@ -90,6 +91,7 @@ export function parseCommitWhatsAppBody(
       message,
       kind,
       appointmentId: str(raw.appointmentId) ?? null,
+      sendDirect,
     },
   };
 }

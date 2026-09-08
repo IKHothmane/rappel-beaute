@@ -7,13 +7,15 @@ import {
 } from "@/lib/ai/marketing";
 import { requireFeatureWriteLimited } from "@/lib/auth/api-guard";
 import { createAIWhatsAppTask } from "@/lib/db/whatsapp";
+import { sendDirectWhatsAppTask } from "@/lib/whatsapp/send";
 import { canSendWhatsapp } from "@/lib/rbac";
 import { AI_MARKETING_ATTRIBUTION } from "@/types/ai";
 import { parseCommitWhatsAppBody } from "@/lib/validation/ai-message";
 
 /**
- * Valide un brouillon IA et crée une WhatsAppTask PENDING.
- * N'envoie rien — l'employée ouvre wa.me ensuite.
+ * Valide un brouillon IA et crée une WhatsAppTask.
+ * Si sendDirect === true : envoie immédiatement via l'API officielle Meta (sans ouvrir WhatsApp Web).
+ * Sinon : crée la tâche en statut PENDING.
  */
 export async function POST(request: NextRequest) {
   const aiAuth = await requireAIWrite(request);
@@ -49,6 +51,21 @@ export async function POST(request: NextRequest) {
       },
       actor,
     );
+
+    // Si envoi direct demandé : appel immédiat à l'API Meta sans ouvrir WhatsApp Web
+    if (parsed.data.sendDirect) {
+      const directResult = await sendDirectWhatsAppTask(
+        waAuth.session.organizationId,
+        task.id,
+        actor,
+      );
+      return NextResponse.json({
+        task: directResult.task,
+        autoSent: true,
+        messageId: directResult.messageId,
+        marketingKind: isMarketingMessageKind(parsed.data.kind),
+      });
+    }
 
     return NextResponse.json({
       task,

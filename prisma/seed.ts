@@ -874,6 +874,9 @@ async function main() {
     )
     ON CONFLICT (id) DO UPDATE SET
       "startAt" = EXCLUDED."startAt",
+      "endAt" = EXCLUDED."endAt",
+      price = EXCLUDED.price,
+      deposit = EXCLUDED.deposit,
       status = EXCLUDED.status,
       "updatedAt" = NOW()`,
     [orgId],

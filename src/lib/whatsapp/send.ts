@@ -43,6 +43,15 @@ function formatMetaErrorMessage(status: number, errObj: Record<string, unknown> 
   const subcode = Number(err.error_subcode);
   const msg = String(err.message || "");
 
+  // Identifiant incorrect (confondu avec WABA ID ou App ID au lieu de Phone number ID)
+  if (
+    msg.includes("Unsupported post request") ||
+    msg.includes("does not support this operation") ||
+    (code === 100 && err.type === "GraphMethodException")
+  ) {
+    return "Identifiant de numéro de téléphone incorrect dans Railway : vous avez configuré l'« Identifiant de compte WhatsApp Business (WABA ID) » ou l'« ID de l'application » au lieu de l'« Identifiant du numéro de téléphone » (Phone number ID). Dans Meta for Developers > WhatsApp > Démarrage rapide (ou Configuration de l'API), copiez la valeur du champ « Identifiant du numéro de téléphone » et mettez-la dans WHATSAPP_PHONE_NUMBER_ID.";
+  }
+
   // Destinataire non autorisé (mode sandbox / dev Meta)
   if (code === 131030 || subcode === 2494010) {
     return "Le numéro du client n'est pas dans la liste des destinataires autorisés dans Meta for Developers (section WhatsApp > Démarrage rapide > Gérer les numéros de test).";

@@ -30,7 +30,9 @@ export type AppFeature =
   | "marketing"
   | "reviews"
   | "analytics"
-  | "settings";
+  | "settings"
+  | "support"
+  | "ai";
 
 /** Matrice V1 — permissions métier par rôle */
 export const FEATURE_ACCESS: Record<AppRole, Record<AppFeature, AccessLevel>> = {
@@ -52,6 +54,8 @@ export const FEATURE_ACCESS: Record<AppRole, Record<AppFeature, AccessLevel>> = 
     reviews: "write",
     analytics: "write",
     settings: "write",
+    support: "write",
+    ai: "write",
   },
   MANAGER: {
     agenda: "write",
@@ -71,6 +75,8 @@ export const FEATURE_ACCESS: Record<AppRole, Record<AppFeature, AccessLevel>> = 
     reviews: "write",
     analytics: "write",
     settings: "limited",
+    support: "write",
+    ai: "write",
   },
   STAFF: {
     agenda: "write",
@@ -90,6 +96,8 @@ export const FEATURE_ACCESS: Record<AppRole, Record<AppFeature, AccessLevel>> = 
     reviews: "limited",
     analytics: "limited",
     settings: "none",
+    support: "limited",
+    ai: "limited",
   },
   CASHIER: {
     agenda: "none",
@@ -109,6 +117,8 @@ export const FEATURE_ACCESS: Record<AppRole, Record<AppFeature, AccessLevel>> = 
     reviews: "none",
     analytics: "limited",
     settings: "none",
+    support: "none",
+    ai: "limited",
   },
   ACCOUNTANT: {
     agenda: "read",
@@ -128,6 +138,8 @@ export const FEATURE_ACCESS: Record<AppRole, Record<AppFeature, AccessLevel>> = 
     reviews: "read",
     analytics: "write",
     settings: "none",
+    support: "none",
+    ai: "write",
   },
 };
 
@@ -153,11 +165,14 @@ export const ROLE_NAV: Record<AppRole, string[]> = {
     "loyalty",
     "promotions",
     "whatsapp",
+    "waiting-list",
     "reactivation",
     "marketing",
     "reviews",
     "analytics",
     "notifications",
+    "support",
+    "ai",
     "profile",
     "security",
   ],
@@ -172,6 +187,7 @@ export const ROLE_NAV: Record<AppRole, string[]> = {
     "promotions",
     "gift-cards",
     "analytics",
+    "ai",
     "notifications",
     "profile",
     "security",
@@ -194,6 +210,7 @@ export const ROLE_NAV: Record<AppRole, string[]> = {
     "gift-cards",
     "analytics",
     "reports",
+    "ai",
     "notifications",
     "profile",
     "security",
@@ -202,6 +219,7 @@ export const ROLE_NAV: Record<AppRole, string[]> = {
 
 const NAV_FEATURE: Record<string, AppFeature | null> = {
   agenda: "agenda",
+  planning: "agenda",
   customers: "customers",
   services: "services",
   staff: "staff",
@@ -212,6 +230,7 @@ const NAV_FEATURE: Record<string, AppFeature | null> = {
   purchases: "stock",
   suppliers: "stock",
   "cash-register": "cash-register",
+  pos: "cash-register",
   payments: "cash-register",
   invoices: "cash-register",
   expenses: "expenses",
@@ -220,13 +239,17 @@ const NAV_FEATURE: Record<string, AppFeature | null> = {
   promotions: "promotions",
   "gift-cards": "promotions",
   whatsapp: "whatsapp",
+  "waiting-list": "agenda",
   reactivation: "reactivation",
+  "post-visit": "marketing",
   marketing: "marketing",
   reviews: "reviews",
   analytics: "analytics",
   reports: "analytics",
   settings: "settings",
   users: "settings",
+  support: "support",
+  ai: "ai",
 };
 
 export function getFeatureAccess(role: AppRole, feature: AppFeature): AccessLevel {

@@ -45,6 +45,33 @@ export async function notifyAppointmentCreated(
   }
 }
 
+export async function notifyAppointmentRescheduled(
+  organizationId: string,
+  appointment: Appointment,
+  previous: { startAt: string; staffId: string; staffName?: string },
+): Promise<void> {
+  try {
+    await emitNotification({
+      organizationId,
+      type: "APPOINTMENT_RESCHEDULED",
+      eventKey: "appointment_rescheduled",
+      title: "Rendez-vous déplacé",
+      message: `${customerLabel(appointment)} — ${formatDateTime(previous.startAt)} → ${formatDateTime(appointment.startAt)}`,
+      entityType: "Appointment",
+      entityId: appointment.id,
+      alsoStaffId: appointment.staffId,
+      metadata: {
+        previousStartAt: previous.startAt,
+        previousStaffId: previous.staffId,
+        startAt: appointment.startAt,
+        staffId: appointment.staffId,
+      },
+    });
+  } catch (e) {
+    console.error("[notifyAppointmentRescheduled]", e);
+  }
+}
+
 export async function notifyAppointmentStatusChange(
   organizationId: string,
   appointment: Appointment,

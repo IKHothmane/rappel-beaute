@@ -2,6 +2,7 @@ export type NotificationType =
   | "APPOINTMENT_CREATED"
   | "APPOINTMENT_CANCELLED"
   | "APPOINTMENT_NO_SHOW"
+  | "APPOINTMENT_RESCHEDULED"
   | "PAYMENT_RECEIVED"
   | "REFUND_CREATED"
   | "EXPENSE_CREATED"
@@ -13,6 +14,7 @@ export type NotificationType =
   | "PACKAGE_EXPIRING"
   | "LOYALTY_REWARD"
   | "CAMPAIGN_READY"
+  | "SUPPORT_MESSAGE"
   | "SYSTEM";
 
 export type NotificationSeverity = "INFO" | "WARNING" | "CRITICAL" | "SUCCESS";
@@ -48,6 +50,7 @@ export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   APPOINTMENT_CREATED: "Nouveau rendez-vous",
   APPOINTMENT_CANCELLED: "Rendez-vous annulé",
   APPOINTMENT_NO_SHOW: "No-show",
+  APPOINTMENT_RESCHEDULED: "Rendez-vous déplacé",
   PAYMENT_RECEIVED: "Paiement reçu",
   REFUND_CREATED: "Remboursement",
   EXPENSE_CREATED: "Dépense enregistrée",
@@ -59,5 +62,6 @@ export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   PACKAGE_EXPIRING: "Forfait expirant",
   LOYALTY_REWARD: "Récompense fidélité",
   CAMPAIGN_READY: "Campagne prête",
+  SUPPORT_MESSAGE: "Message support",
   SYSTEM: "Système",
 };

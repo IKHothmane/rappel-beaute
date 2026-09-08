@@ -33,6 +33,8 @@ export type CustomerDetail = CustomerListItem & {
   marketingEmail: boolean;
   marketingSms: boolean;
   updatedAt: string;
+  noShowCount?: number;
+  noShowRisk?: "NONE" | "WARN" | "REQUIRE_DEPOSIT" | "STRICT";
 };
 
 export type CustomerAppointmentHistory = {

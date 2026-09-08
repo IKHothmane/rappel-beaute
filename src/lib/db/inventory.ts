@@ -475,8 +475,9 @@ export async function createInventoryMovement(
       unit: ProductUnit;
       name: string;
       sku: string;
+      stock: string;
     }>(
-      `SELECT id, unit, name, sku FROM "Product"
+      `SELECT id, unit, name, sku, stock::text FROM "Product"
        WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL
        FOR UPDATE`,
       [input.productId, organizationId],
@@ -484,6 +485,10 @@ export async function createInventoryMovement(
     if (!product.rows[0]) throw new Error("PRODUCT_NOT_FOUND");
 
     const signedQty = movementSign(input.type, input.quantity);
+    const currentStock = parseFloat(product.rows[0].stock) || 0;
+    if (signedQty < 0 && currentStock + signedQty < -0.0001) {
+      throw new Error("INSUFFICIENT_STOCK");
+    }
     const id = newId("mov");
 
     await c.query(

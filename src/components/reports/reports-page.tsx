@@ -454,10 +454,11 @@ export function ReportsPageView() {
         <>
           <h2 className="mb-3 text-lg font-semibold">RAPPORT STOCK (ledger)</h2>
           {inventorySummary ? (
-            <div className="mb-6 grid gap-3 sm:grid-cols-3">
+            <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Achats" value={formatMad(inventorySummary.purchasesValue)} />
               <Kpi label="Consommations" value={formatMad(inventorySummary.consumptionValue)} />
               <Kpi label="Pertes" value={formatMad(inventorySummary.lossesValue)} />
+              <Kpi label="CA produits POS" value={formatMad(inventorySummary.posRevenue ?? 0)} />
             </div>
           ) : null}
           <SimpleTable

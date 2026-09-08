@@ -46,6 +46,8 @@ export type PublicBookingInput = {
     marketingOptIn?: boolean;
   };
   notes?: string | null;
+  /** Attribution ex. qr — jamais de prix/durée */
+  attributionSource?: string | null;
 };
 
 export type PublicBookingResult = {
@@ -58,6 +60,9 @@ export type PublicBookingResult = {
   startAt: string;
   endAt: string;
   price: number;
+  deposit: number | null;
+  depositState: string;
+  depositAwaiting: boolean;
   durationMin: number;
   source: "ONLINE_BOOKING";
 };

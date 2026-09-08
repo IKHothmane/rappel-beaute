@@ -7,6 +7,8 @@ import type {
   InventoryAnalytics,
   LoyaltyAnalytics,
   MarketingAnalyticsRow,
+  PostVisitAnalyticsSummary,
+  AIMarketingAnalyticsSummary,
   RevenueAnalytics,
   ReviewAnalytics,
   ServiceAnalyticsRow,
@@ -108,7 +110,12 @@ export async function getAnalyticsInventory(
 
 export async function getAnalyticsMarketing(
   filters: Partial<AnalyticsFilters> & { preset?: AnalyticsPeriodPreset },
-): Promise<{ items: MarketingAnalyticsRow[]; scope: AnalyticsScope }> {
+): Promise<{
+  items: MarketingAnalyticsRow[];
+  postVisit: PostVisitAnalyticsSummary;
+  aiMarketing?: AIMarketingAnalyticsSummary;
+  scope: AnalyticsScope;
+}> {
   const res = await fetch(`/api/analytics/marketing/?${queryString(filters)}`, fetchOpts);
   return parseJson(res);
 }

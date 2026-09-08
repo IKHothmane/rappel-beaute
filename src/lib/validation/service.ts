@@ -62,6 +62,10 @@ export function validateCreateService(body: unknown): ValidationResult<CreateSer
       prepTimeMin: parseNum(raw.prepTimeMin, "prepTimeMin", errors) ?? 0,
       cleanupTimeMin: parseNum(raw.cleanupTimeMin, "cleanupTimeMin", errors) ?? 0,
       deposit: parseNum(raw.deposit, "deposit", errors) ?? undefined,
+      recommendedReturnDays:
+        raw.recommendedReturnDays === null || raw.recommendedReturnDays === ""
+          ? null
+          : parseNum(raw.recommendedReturnDays, "recommendedReturnDays", errors, 1) ?? undefined,
       active: raw.active !== false,
       staffIds: Array.isArray(raw.staffIds) ? raw.staffIds.map(String) : [],
       resources: Array.isArray(raw.resources)
@@ -115,6 +119,14 @@ export function validateUpdateService(body: unknown): ValidationResult<UpdateSer
     data.cleanupTimeMin = parseNum(raw.cleanupTimeMin, "cleanupTimeMin", errors) ?? 0;
   }
   if (raw.deposit !== undefined) data.deposit = parseNum(raw.deposit, "deposit", errors) ?? undefined;
+  if (raw.recommendedReturnDays !== undefined) {
+    if (raw.recommendedReturnDays === null || raw.recommendedReturnDays === "") {
+      data.recommendedReturnDays = null;
+    } else {
+      data.recommendedReturnDays =
+        parseNum(raw.recommendedReturnDays, "recommendedReturnDays", errors, 1) ?? null;
+    }
+  }
   if (raw.description !== undefined) data.description = String(raw.description).trim() || undefined;
   if (raw.category !== undefined) data.category = String(raw.category).trim() || undefined;
   if (raw.active !== undefined) data.active = Boolean(raw.active);

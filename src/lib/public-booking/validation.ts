@@ -82,6 +82,7 @@ export function parsePublicBookingBody(
         marketingOptIn: c.marketingOptIn === true,
       },
       notes: str(raw.notes) ?? null,
+      attributionSource: str(raw.attributionSource)?.slice(0, 40) ?? null,
     },
   };
 }

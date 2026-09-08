@@ -308,7 +308,25 @@ export async function getCustomerById(
     GROUP BY c.id`,
     [organizationId, id],
   );
-  return rows[0] ? rowToDetail(rows[0]) : null;
+  const detail = rows[0] ? rowToDetail(rows[0]) : null;
+  if (!detail) return null;
+
+  try {
+    const {
+      countCustomerNoShows,
+      getOrCreateBookingPolicy,
+      noShowRiskLevel,
+    } = await import("@/lib/db/booking-policy");
+    const noShowCount = await countCustomerNoShows(organizationId, id);
+    const policy = await getOrCreateBookingPolicy(organizationId);
+    detail.noShowCount = noShowCount;
+    detail.noShowRisk = noShowRiskLevel(noShowCount, policy);
+  } catch {
+    detail.noShowCount = 0;
+    detail.noShowRisk = "NONE";
+  }
+
+  return detail;
 }
 
 export async function getCustomerHistory(
@@ -373,6 +391,24 @@ export async function createCustomer(
 
   const detail = await getCustomerById(id, organizationId);
   if (!detail) throw new Error("Cliente créée introuvable.");
+
+  try {
+    const { writeAuditLog } = await import("@/lib/db/audit");
+    await writeAuditLog({
+      organizationId,
+      entityType: "Customer",
+      entityId: id,
+      action: "CREATE",
+      after: {
+        firstName: detail.firstName,
+        lastName: detail.lastName,
+        phone: detail.phone,
+      },
+    });
+  } catch {
+    /* non bloquant */
+  }
+
   return detail;
 }
 
@@ -460,6 +496,9 @@ export async function updateCustomer(
   organizationId: string,
   input: UpdateCustomerInput,
 ): Promise<CustomerDetail | null> {
+  const before = await getCustomerById(id, organizationId);
+  if (!before && !input.archived) return null;
+
   if (input.archived) {
     await pool.query(
       `UPDATE "Customer"
@@ -467,6 +506,19 @@ export async function updateCustomer(
        WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
       [id, organizationId],
     );
+    try {
+      const { writeAuditLog } = await import("@/lib/db/audit");
+      await writeAuditLog({
+        organizationId,
+        entityType: "Customer",
+        entityId: id,
+        action: "ARCHIVE",
+        before: before ? { status: before.status } : undefined,
+        after: { status: "ARCHIVED" },
+      });
+    } catch {
+      /* non bloquant */
+    }
     return getCustomerById(id, organizationId);
   }
 
@@ -506,7 +558,35 @@ export async function updateCustomer(
   );
 
   if (result.rowCount === 0) return null;
-  return getCustomerById(id, organizationId);
+  const after = await getCustomerById(id, organizationId);
+  try {
+    const { writeAuditLog } = await import("@/lib/db/audit");
+    await writeAuditLog({
+      organizationId,
+      entityType: "Customer",
+      entityId: id,
+      action: "UPDATE",
+      before: before
+        ? {
+            firstName: before.firstName,
+            lastName: before.lastName,
+            phone: before.phone,
+            status: before.status,
+          }
+        : undefined,
+      after: after
+        ? {
+            firstName: after.firstName,
+            lastName: after.lastName,
+            phone: after.phone,
+            status: after.status,
+          }
+        : undefined,
+    });
+  } catch {
+    /* non bloquant */
+  }
+  return after;
 }
 
 export function isUniqueViolation(error: unknown): boolean {

@@ -10,6 +10,8 @@ import type {
   KpiWithCompare,
   LoyaltyAnalytics,
   MarketingAnalyticsRow,
+  PostVisitAnalyticsSummary,
+  AIMarketingAnalyticsSummary,
   RevenueAnalytics,
   ReviewAnalytics,
   ServiceAnalyticsRow,
@@ -780,6 +782,126 @@ export async function getInventoryAnalytics(
     value: Math.round((byType[reason] ?? 0) * 100) / 100,
   }));
 
+  // Ventes POS → alimentent CA produits / catégorie / employée / moyen de paiement (serveur)
+  const { rows: posRevRows } = await pool.query<{ rev: string; margin: string }>(
+    `SELECT
+       COALESCE((
+         SELECT SUM(s.total) FROM "PosSale" s
+         WHERE s."organizationId" = $1
+           AND s.status = 'COMPLETED'::"PosSaleStatus"
+           AND s."createdAt" >= $2 AND s."createdAt" <= $3
+       ), 0)::text AS rev,
+       COALESCE((
+         SELECT SUM(ii.total - ii.quantity * COALESCE(pr."purchasePrice", 0))
+         FROM "PosSale" s
+         JOIN "InvoiceItem" ii ON ii."invoiceId" = s."invoiceId"
+         LEFT JOIN "Product" pr ON pr.id = ii."productId"
+         WHERE s."organizationId" = $1
+           AND s.status = 'COMPLETED'::"PosSaleStatus"
+           AND s."createdAt" >= $2 AND s."createdAt" <= $3
+       ), 0)::text AS margin`,
+    [orgId, p.start, p.end],
+  );
+
+  const { rows: posStockRows } = await pool.query<{ qty: string }>(
+    `SELECT COALESCE(SUM(ABS(im.quantity)), 0)::text AS qty
+     FROM "InventoryMovement" im
+     WHERE im."organizationId" = $1
+       AND im.type = 'SALE'::"MovementType"
+       AND im."createdAt" >= $2 AND im."createdAt" <= $3`,
+    [orgId, p.start, p.end],
+  );
+
+  const { rows: topPosRows } = await pool.query<{
+    productId: string;
+    productName: string;
+    qty: string;
+    revenue: string;
+    margin: string;
+  }>(
+    `SELECT COALESCE(ii."productId", 'unknown') AS "productId",
+            ii."nameSnapshot" AS "productName",
+            SUM(ii.quantity)::text AS qty,
+            SUM(ii.total)::text AS revenue,
+            SUM(ii.total - ii.quantity * COALESCE(pr."purchasePrice", 0))::text AS margin
+     FROM "PosSale" s
+     JOIN "InvoiceItem" ii ON ii."invoiceId" = s."invoiceId"
+     LEFT JOIN "Product" pr ON pr.id = ii."productId"
+     WHERE s."organizationId" = $1
+       AND s.status = 'COMPLETED'::"PosSaleStatus"
+       AND s."createdAt" >= $2 AND s."createdAt" <= $3
+     GROUP BY ii."productId", ii."nameSnapshot"
+     ORDER BY SUM(ii.total) DESC
+     LIMIT 10`,
+    [orgId, p.start, p.end],
+  );
+
+  const { rows: posCatRows } = await pool.query<{
+    category: string;
+    qty: string;
+    revenue: string;
+  }>(
+    `SELECT COALESCE(pr.category::text, 'AUTRE') AS category,
+            SUM(ii.quantity)::text AS qty,
+            SUM(ii.total)::text AS revenue
+     FROM "PosSale" s
+     JOIN "InvoiceItem" ii ON ii."invoiceId" = s."invoiceId"
+     LEFT JOIN "Product" pr ON pr.id = ii."productId"
+     WHERE s."organizationId" = $1
+       AND s.status = 'COMPLETED'::"PosSaleStatus"
+       AND s."createdAt" >= $2 AND s."createdAt" <= $3
+     GROUP BY pr.category
+     ORDER BY SUM(ii.total) DESC`,
+    [orgId, p.start, p.end],
+  );
+
+  const { rows: posStaffRows } = await pool.query<{
+    staffId: string;
+    staffName: string;
+    cnt: string;
+    revenue: string;
+  }>(
+    `SELECT COALESCE(s."soldById", 'unknown') AS "staffId",
+            COALESCE(
+              NULLIF(TRIM(CONCAT(u."firstName", ' ', u."lastName")), ''),
+              'Non attribué'
+            ) AS "staffName",
+            COUNT(*)::text AS cnt,
+            COALESCE(SUM(s.total), 0)::text AS revenue
+     FROM "PosSale" s
+     LEFT JOIN "User" u ON u.id = s."soldById"
+     WHERE s."organizationId" = $1
+       AND s.status = 'COMPLETED'::"PosSaleStatus"
+       AND s."createdAt" >= $2 AND s."createdAt" <= $3
+     GROUP BY s."soldById", u."firstName", u."lastName"
+     ORDER BY SUM(s.total) DESC
+     LIMIT 10`,
+    [orgId, p.start, p.end],
+  );
+
+  const { rows: posMethodRows } = await pool.query<{
+    method: string;
+    cnt: string;
+    amount: string;
+  }>(
+    `SELECT s."paymentMethod"::text AS method,
+            COUNT(*)::text AS cnt,
+            COALESCE(SUM(s.total), 0)::text AS amount
+     FROM "PosSale" s
+     WHERE s."organizationId" = $1
+       AND s.status = 'COMPLETED'::"PosSaleStatus"
+       AND s."createdAt" >= $2 AND s."createdAt" <= $3
+     GROUP BY s."paymentMethod"
+     ORDER BY SUM(s.total) DESC`,
+    [orgId, p.start, p.end],
+  );
+
+  const posRevenue = Math.round(parseFloat(posRevRows[0]?.rev ?? "0") * 100) / 100;
+  const posMarginRaw = parseFloat(posRevRows[0]?.margin ?? "0");
+  const posMargin = Number.isFinite(posMarginRaw)
+    ? Math.round(posMarginRaw * 100) / 100
+    : null;
+
   return {
     stockValue: Math.round(parseFloat(stockRows[0]?.val ?? "0") * 100) / 100,
     consumptionValue: Math.round((byType.SERVICE_CONSUMPTION ?? 0) * 100) / 100,
@@ -799,6 +921,32 @@ export async function getInventoryAnalytics(
       unit: r.unit,
     })),
     lossesByReason,
+    posRevenue,
+    posMargin,
+    posStockConsumed: Math.round(parseFloat(posStockRows[0]?.qty ?? "0") * 100) / 100,
+    topPosProducts: topPosRows.map((r) => ({
+      productId: r.productId,
+      productName: r.productName,
+      quantity: Math.round(parseFloat(r.qty) * 100) / 100,
+      revenue: Math.round(parseFloat(r.revenue) * 100) / 100,
+      margin: Math.round(parseFloat(r.margin) * 100) / 100,
+    })),
+    posByCategory: posCatRows.map((r) => ({
+      category: r.category,
+      quantity: Math.round(parseFloat(r.qty) * 100) / 100,
+      revenue: Math.round(parseFloat(r.revenue) * 100) / 100,
+    })),
+    posByStaff: posStaffRows.map((r) => ({
+      staffId: r.staffId,
+      staffName: r.staffName,
+      salesCount: parseInt(r.cnt, 10),
+      revenue: Math.round(parseFloat(r.revenue) * 100) / 100,
+    })),
+    posByPaymentMethod: posMethodRows.map((r) => ({
+      method: r.method,
+      count: parseInt(r.cnt, 10),
+      amount: Math.round(parseFloat(r.amount) * 100) / 100,
+    })),
   };
 }
 
@@ -848,6 +996,63 @@ export async function getMarketingAnalytics(
     associatedAppointments: parseInt(r.appts, 10),
     associatedRevenue: Math.round(parseFloat(r.revenue) * 100) / 100,
   }));
+}
+
+export async function getPostVisitAnalyticsSummary(
+  orgId: string,
+  filters: AnalyticsFilters,
+): Promise<PostVisitAnalyticsSummary> {
+  const p = baseParams(filters, orgId);
+  const { getPostVisitAnalytics } = await import("@/lib/db/post-visit");
+  return getPostVisitAnalytics(orgId, { start: p.start, end: p.end });
+}
+
+export async function getAIMarketingAnalytics(
+  orgId: string,
+  filters: AnalyticsFilters,
+): Promise<AIMarketingAnalyticsSummary> {
+  const p = baseParams(filters, orgId);
+
+  const { rows: genRows } = await pool.query<{ n: string }>(
+    `SELECT COUNT(*)::text AS n FROM "WhatsAppTask"
+     WHERE "organizationId" = $1
+       AND "attributionSource" = 'ai_marketing'
+       AND "createdAt" >= $2 AND "createdAt" <= $3`,
+    [orgId, p.start, p.end],
+  );
+
+  const { rows: sentRows } = await pool.query<{ n: string }>(
+    `SELECT COUNT(*)::text AS n FROM "WhatsAppTask"
+     WHERE "organizationId" = $1
+       AND "attributionSource" = 'ai_marketing'
+       AND status = 'SENT'::"WhatsAppTaskStatus"
+       AND "sentAt" >= $2 AND "sentAt" <= $3`,
+    [orgId, p.start, p.end],
+  );
+
+  const { rows: bookRows } = await pool.query<{ n: string }>(
+    `SELECT COUNT(*)::text AS n FROM "Appointment"
+     WHERE "organizationId" = $1
+       AND "attributionSource" = 'ai_marketing'
+       AND "createdAt" >= $2 AND "createdAt" <= $3`,
+    [orgId, p.start, p.end],
+  );
+
+  const { rows: doneRows } = await pool.query<{ n: string }>(
+    `SELECT COUNT(*)::text AS n FROM "Appointment"
+     WHERE "organizationId" = $1
+       AND "attributionSource" = 'ai_marketing'
+       AND status = 'COMPLETED'
+       AND "startAt" >= $2 AND "startAt" <= $3`,
+    [orgId, p.start, p.end],
+  );
+
+  return {
+    generated: parseInt(genRows[0]?.n ?? "0", 10),
+    sent: parseInt(sentRows[0]?.n ?? "0", 10),
+    bookings: parseInt(bookRows[0]?.n ?? "0", 10),
+    completed: parseInt(doneRows[0]?.n ?? "0", 10),
+  };
 }
 
 export async function getReviewAnalytics(

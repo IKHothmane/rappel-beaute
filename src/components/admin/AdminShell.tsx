@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/www/BrandLogo";
 import { fetchAdminAudit, fetchAdminSession, platformLogout } from "@/modules/admin/client";
+import { fetchSupportTickets } from "@/modules/admin/support-tickets";
 
 type NavItem = { href: string; label: string };
 type NavGroup = { title?: string; items: NavItem[] };
@@ -38,6 +39,7 @@ const NAV: NavGroup[] = [
   {
     title: "Assistance",
     items: [
+      { href: "/support/tickets/", label: "Tickets support" },
       { href: "/support/", label: "Sessions" },
       { href: "/support/mode/", label: "Mode assistance" },
     ],
@@ -63,8 +65,15 @@ function isActive(pathname: string, href: string) {
   if (href === "/organizations/") {
     return path.startsWith("/organizations") && !path.startsWith("/organizations/new");
   }
+  if (href === "/support/tickets/") {
+    return path.startsWith("/support/tickets");
+  }
   if (href === "/support/") {
-    return path.startsWith("/support") && !path.startsWith("/support/mode");
+    return (
+      (path === "/support/" || path === "/support" || path.startsWith("/support/")) &&
+      !path.startsWith("/support/mode") &&
+      !path.startsWith("/support/tickets")
+    );
   }
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
@@ -76,6 +85,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [firstName, setFirstName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [recentCount, setRecentCount] = useState(0);
+  const [openTickets, setOpenTickets] = useState(0);
 
   useEffect(() => {
     fetchAdminSession().then((u) => {
@@ -86,6 +96,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     fetchAdminAudit(20)
       .then((res) => setRecentCount(res.items.length))
       .catch(() => setRecentCount(0));
+    fetchSupportTickets({ status: "OPEN" })
+      .then((res) => setOpenTickets(res.kpis.open))
+      .catch(() => setOpenTickets(0));
   }, []);
 
   if (path.startsWith("/login")) {
@@ -196,6 +209,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <BrandLogo href="/dashboard/" height={36} className="hidden max-h-9 sm:inline-flex" />
             </div>
             <div className="flex items-center gap-3">
+              <Link
+                href="/support/tickets/"
+                className="relative rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm"
+                aria-label="Tickets support"
+              >
+                Support
+                {openTickets > 0 ? (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] text-white">
+                    {Math.min(openTickets, 99)}
+                  </span>
+                ) : null}
+              </Link>
               <Link
                 href="/notifications/"
                 className="relative rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm"

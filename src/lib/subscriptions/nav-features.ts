@@ -4,6 +4,7 @@ import type { PlanFeatureKey } from "@/types/subscription";
 export const NAV_PLAN_FEATURE: Record<string, PlanFeatureKey | null> = {
   dashboard: null,
   agenda: "agenda",
+  planning: "agenda",
   customers: "customers",
   services: "services",
   staff: "staff",
@@ -13,6 +14,7 @@ export const NAV_PLAN_FEATURE: Record<string, PlanFeatureKey | null> = {
   suppliers: "inventory",
   purchases: "purchases",
   "cash-register": "cashRegister",
+  pos: "cashRegister",
   payments: "cashRegister",
   invoices: "invoices",
   expenses: "expenses",
@@ -21,12 +23,16 @@ export const NAV_PLAN_FEATURE: Record<string, PlanFeatureKey | null> = {
   promotions: "marketing",
   "gift-cards": "marketing",
   whatsapp: "whatsappManual",
+  "waiting-list": "agenda",
   reactivation: "marketing",
+  "post-visit": "marketing",
   marketing: "marketing",
   reviews: "reviews",
   analytics: "analytics",
   reports: "analytics",
   notifications: null,
+  support: null,
+  ai: "ai",
   settings: null,
   profile: null,
   security: null,
@@ -39,6 +45,7 @@ export function pathnameToNavKey(pathname: string): string | null {
   if (!segment) return "dashboard";
   const map: Record<string, string> = {
     agenda: "agenda",
+    planning: "agenda",
     customers: "customers",
     services: "services",
     staff: "staff",
@@ -48,6 +55,7 @@ export function pathnameToNavKey(pathname: string): string | null {
     suppliers: "suppliers",
     purchases: "purchases",
     "cash-register": "cash-register",
+    pos: "pos",
     payments: "payments",
     invoices: "invoices",
     expenses: "expenses",
@@ -56,12 +64,16 @@ export function pathnameToNavKey(pathname: string): string | null {
     promotions: "promotions",
     "gift-cards": "gift-cards",
     whatsapp: "whatsapp",
+    "waiting-list": "waiting-list",
     reactivation: "reactivation",
+    "post-visit": "post-visit",
     marketing: "marketing",
     reviews: "reviews",
     analytics: "analytics",
     reports: "reports",
     notifications: "notifications",
+    support: "support",
+    ai: "ai",
     settings: "settings",
     profile: "profile",
     security: "security",
@@ -73,6 +85,11 @@ export function isPlanFeatureEnabled(
   features: Record<string, boolean> | null | undefined,
   navKey: string,
 ): boolean {
+  // POS = caisse + stock (pas de 2ᵉ feature plan dédiée)
+  if (navKey === "pos") {
+    if (!features) return true;
+    return features.cashRegister === true && features.inventory === true;
+  }
   const required = NAV_PLAN_FEATURE[navKey];
   if (!required) return true;
   if (!features) return true;

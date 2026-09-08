@@ -28,6 +28,7 @@ const GROUPS = [
     title: "Croissance",
     links: [
       { href: "/whatsapp/", label: "WhatsApp" },
+      { href: "/waiting-list/", label: "Liste d'attente" },
       { href: "/loyalty/", label: "Fidélité" },
       { href: "/marketing/", label: "Marketing" },
       { href: "/promotions/", label: "Promotions" },
@@ -41,6 +42,7 @@ const GROUPS = [
       { href: "/analytics/", label: "Analytics" },
       { href: "/reports/", label: "Rapports" },
       { href: "/notifications/", label: "Notifications" },
+      { href: "/support/", label: "Aide & Support" },
       { href: "/settings/", label: "Paramètres" },
       { href: "/settings/users/", label: "Utilisateurs" },
       { href: "/onboarding/", label: "Onboarding" },

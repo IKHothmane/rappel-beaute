@@ -18,6 +18,7 @@ import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { StockAlerts } from "@/components/dashboard/stock-alerts";
 import { TodayAppointments } from "@/components/dashboard/today-appointments";
+import { DashboardAiInsights } from "@/components/dashboard/ai-insights";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { KPI_DEFINITIONS } from "@/lib/analytics/kpi-definitions";
@@ -214,6 +215,8 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-6">
+          <DashboardAiInsights />
+
           <section className="rounded-2xl bg-gradient-to-br from-primary via-primary to-gold p-6 text-white shadow-soft">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
               <Sparkles size={21} />

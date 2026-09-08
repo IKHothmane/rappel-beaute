@@ -22,6 +22,8 @@ export type AppointmentRow = {
   endAt: Date;
   price: string;
   deposit: string | null;
+  depositState: string;
+  depositDueAt: Date | null;
   status: Appointment["status"];
   notes: string | null;
 };
@@ -44,6 +46,8 @@ const SELECT = `
     a."endAt",
     a.price::text,
     a.deposit::text,
+    a."depositState"::text AS "depositState",
+    a."depositDueAt",
     a.status,
     a.notes
   FROM "Appointment" a
@@ -78,6 +82,8 @@ export function rowToDto(row: AppointmentRow): Appointment {
     endAt: row.endAt.toISOString(),
     price: Number(row.price),
     deposit: row.deposit != null ? Number(row.deposit) : undefined,
+    depositState: (row.depositState as Appointment["depositState"]) ?? "NOT_REQUIRED",
+    depositDueAt: row.depositDueAt?.toISOString() ?? null,
     status: row.status,
     notes: row.notes ?? undefined,
   };
@@ -93,6 +99,12 @@ export async function getOrgIdBySlug(slug: string): Promise<string> {
 }
 
 export async function listAppointmentsByOrg(organizationId: string): Promise<Appointment[]> {
+  try {
+    const { expireOverdueDepositAppointments } = await import("@/lib/db/booking-policy");
+    await expireOverdueDepositAppointments(organizationId);
+  } catch {
+    /* ignore */
+  }
   const { rows } = await pool.query<AppointmentRow>(
     `${SELECT} WHERE a."organizationId" = $1 ORDER BY a."startAt" ASC`,
     [organizationId],
@@ -105,11 +117,46 @@ export async function createAppointmentRow(
   input: CreateAppointmentInput,
 ): Promise<Appointment> {
   const id = `apt-${Date.now()}`;
+
+  let depositAmount = input.deposit ?? null;
+  let depositState = "NOT_REQUIRED";
+  let depositDueAt: Date | null = null;
+
+  try {
+    const { resolveDepositRequirement } = await import("@/lib/db/booking-policy");
+    let serviceDeposit = input.deposit ?? null;
+    if (serviceDeposit == null) {
+      const svc = await pool.query<{ deposit: string | null }>(
+        `SELECT deposit::text FROM "Service" WHERE id = $1 AND "organizationId" = $2`,
+        [input.serviceId, organizationId],
+      );
+      serviceDeposit =
+        svc.rows[0]?.deposit != null ? parseFloat(svc.rows[0].deposit) : null;
+    }
+    const req = await resolveDepositRequirement({
+      organizationId,
+      customerId: input.customerId,
+      serviceDeposit,
+      price: input.price,
+    });
+    if (req.amount > 0) {
+      depositAmount = req.amount;
+      depositState = req.state;
+      depositDueAt = req.dueAt;
+    }
+  } catch (e) {
+    console.error("[createAppointmentRow] deposit resolve", e);
+  }
+
   await pool.query(
     `INSERT INTO "Appointment" (
       id, "organizationId", "customerId", "serviceId", "staffId", "resourceId",
-      "startAt", "endAt", price, deposit, status, source, notes, "updatedAt"
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'PENDING',$11::"AppointmentSource",$12,NOW())`,
+      "startAt", "endAt", price, deposit, "depositState", "depositDueAt",
+      status, source, notes, "updatedAt"
+    ) VALUES (
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::"DepositState",$12,
+      'PENDING',$13::"AppointmentSource",$14,NOW()
+    )`,
     [
       id,
       organizationId,
@@ -120,7 +167,9 @@ export async function createAppointmentRow(
       new Date(input.startAt),
       new Date(input.endAt),
       input.price,
-      input.deposit ?? null,
+      depositAmount,
+      depositState,
+      depositDueAt,
       input.source ?? "MANUAL",
       input.notes ?? null,
     ],
@@ -154,6 +203,10 @@ export async function updateAppointmentRow(
   id: string,
   organizationId: string,
   patch: Partial<CreateAppointmentInput & { status: Appointment["status"] }>,
+  opts?: {
+    actor?: { id: string; name?: string | null };
+    cancelledByInstitute?: boolean;
+  },
 ): Promise<Appointment | null> {
   const previous = await getAppointmentById(id, organizationId);
 
@@ -195,6 +248,52 @@ export async function updateAppointmentRow(
   );
   const appointment = rows[0] ? rowToDto(rows[0]) : null;
 
+  if (appointment && previous) {
+    const moved =
+      (patch.startAt && patch.startAt !== previous.startAt) ||
+      (patch.endAt && patch.endAt !== previous.endAt) ||
+      (patch.staffId && patch.staffId !== previous.staffId) ||
+      (patch.resourceId !== undefined && patch.resourceId !== previous.resourceId);
+
+    if (moved) {
+      try {
+        const { writeAuditLog } = await import("@/lib/db/audit");
+        await writeAuditLog({
+          organizationId,
+          actorId: opts?.actor?.id ?? "system",
+          actorName: opts?.actor?.name,
+          entityType: "Appointment",
+          entityId: id,
+          action: "APPOINTMENT_RESCHEDULED",
+          before: {
+            startAt: previous.startAt,
+            endAt: previous.endAt,
+            staffId: previous.staffId,
+            resourceId: previous.resourceId,
+          },
+          after: {
+            startAt: appointment.startAt,
+            endAt: appointment.endAt,
+            staffId: appointment.staffId,
+            resourceId: appointment.resourceId,
+          },
+        });
+      } catch (e) {
+        console.error("[updateAppointmentRow] audit move", e);
+      }
+      try {
+        const { notifyAppointmentRescheduled } = await import("@/lib/notifications/emitter");
+        await notifyAppointmentRescheduled(organizationId, appointment, {
+          startAt: previous.startAt,
+          staffId: previous.staffId,
+          staffName: previous.staffName,
+        });
+      } catch (e) {
+        console.error("[updateAppointmentRow] notify move", e);
+      }
+    }
+  }
+
   if (appointment && previous && patch.status && patch.status !== previous.status) {
     try {
       const { notifyAppointmentStatusChange } = await import("@/lib/notifications/emitter");
@@ -202,9 +301,40 @@ export async function updateAppointmentRow(
     } catch (e) {
       console.error("[updateAppointmentRow] notification", e);
     }
+    try {
+      const { applyDepositOnStatusChange } = await import("@/lib/db/booking-policy");
+      await applyDepositOnStatusChange({
+        organizationId,
+        appointmentId: id,
+        previousStatus: previous.status,
+        nextStatus: patch.status,
+        cancelledByInstitute:
+          opts?.cancelledByInstitute ??
+          (patch.status === "CANCELLED" || patch.status === "NO_SHOW"),
+        actor: opts?.actor ?? { id: "system", name: "Système" },
+      });
+    } catch (e) {
+      console.error("[updateAppointmentRow] deposit policy", e);
+    }
+
+    if (patch.status === "CANCELLED" && previous.status !== "CANCELLED") {
+      try {
+        const { notifyWaitingListOnCancellation } = await import("@/lib/db/waiting-list");
+        await notifyWaitingListOnCancellation({
+          organizationId,
+          appointmentId: id,
+          serviceId: previous.serviceId,
+          staffId: previous.staffId,
+          startAt: new Date(previous.startAt),
+          actor: opts?.actor ?? { id: "system", name: "Système" },
+        });
+      } catch (e) {
+        console.error("[updateAppointmentRow] waiting list", e);
+      }
+    }
   }
 
-  return appointment;
+  return appointment ? await getAppointmentById(id, organizationId) : null;
 }
 
 export function isExclusionViolation(error: unknown): boolean {

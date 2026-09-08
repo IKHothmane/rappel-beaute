@@ -5,12 +5,13 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { AppPageHeader, Kpi, Tabs } from "@/components/app/AppUi";
 import { useCurrentUser } from "@/components/auth/session-provider";
+import { AIMessageComposer } from "@/components/ai/ai-message-composer";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { canSendWhatsapp, canWriteWhatsappTemplates } from "@/lib/rbac";
+import { canSendWhatsapp, canWriteFeatureLimited, canWriteWhatsappTemplates } from "@/lib/rbac";
 import {
   createWhatsAppTemplate,
   formatAppointmentWhen,
@@ -46,6 +47,7 @@ export function WhatsappPageView() {
   const user = useCurrentUser();
   const canSend = canSendWhatsapp(user.role);
   const canEditTemplates = canWriteWhatsappTemplates(user.role);
+  const canGenerateAi = canWriteFeatureLimited(user.role, "ai");
 
   const [tab, setTab] = useState("À envoyer");
   const [view, setView] = useState<"pending" | "sent">("pending");
@@ -154,9 +156,12 @@ export function WhatsappPageView() {
     refresh();
   }
 
-  const tabs = canEditTemplates
-    ? ["À envoyer", "Envoyés", "Modèles"]
-    : ["À envoyer", "Envoyés"];
+  const tabs = [
+    "À envoyer",
+    "Envoyés",
+    ...(canGenerateAi ? ["Générer IA"] : []),
+    ...(canEditTemplates ? ["Modèles"] : []),
+  ];
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
@@ -186,8 +191,17 @@ export function WhatsappPageView() {
 
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
 
-      {loading ? (
+      {loading && tab !== "Générer IA" ? (
         <p className="text-sm text-ink/50">Chargement…</p>
+      ) : tab === "Générer IA" ? (
+        <div className="surface p-5">
+          <AIMessageComposer
+            onTaskCreated={() => {
+              setTab("À envoyer");
+              refresh();
+            }}
+          />
+        </div>
       ) : tab === "Modèles" ? (
         <ul className="space-y-3">
           {(templates ?? []).map((tpl) => (
@@ -223,6 +237,7 @@ export function WhatsappPageView() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className={`text-xs font-mono uppercase tracking-wide ${typeBadgeClass(task.type)}`}>
                   {WHATSAPP_TASK_TYPE_LABEL[task.type]}
+                  {task.attributionSource === "ai_marketing" ? " · IA" : ""}
                 </p>
                 <span className="text-xs text-ink/45">
                   {task.status === "SENT" && task.sentAt

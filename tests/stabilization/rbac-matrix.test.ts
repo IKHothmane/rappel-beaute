@@ -131,6 +131,13 @@ const EXPECTED: Record<AppFeature, Record<AppRole, Level>> = {
     CASHIER: "none",
     ACCOUNTANT: "none",
   },
+  support: {
+    OWNER: "write",
+    MANAGER: "write",
+    STAFF: "limited",
+    CASHIER: "none",
+    ACCOUNTANT: "none",
+  },
 };
 
 const ROLES: AppRole[] = ["OWNER", "MANAGER", "STAFF", "CASHIER", "ACCOUNTANT"];

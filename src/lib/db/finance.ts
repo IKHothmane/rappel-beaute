@@ -697,6 +697,19 @@ export async function createPayments(
     console.error("[createPayments] notification", e);
   }
 
+  // Acompte : confirmation auto si montant couvert
+  if (payments.some((p) => p.kind === "DEPOSIT")) {
+    try {
+      const { applyDepositPaymentEffects } = await import("@/lib/db/booking-policy");
+      await applyDepositPaymentEffects(organizationId, input.appointmentId, {
+        id: userId,
+        name: null,
+      });
+    } catch (e) {
+      console.error("[createPayments] deposit effects", e);
+    }
+  }
+
   return { payments, summary };
 }
 

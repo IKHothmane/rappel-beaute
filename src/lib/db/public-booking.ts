@@ -11,6 +11,7 @@ import {
   isStaffAvailableOnDate,
 } from "@/modules/appointments/availability";
 import { enforcePublicBookingLimits } from "@/lib/subscriptions/guards";
+import { slugifyLabel } from "@/lib/booking-qr";
 import type { Appointment } from "@/types/appointment";
 import type {
   PublicAvailabilitySlot,
@@ -46,10 +47,82 @@ function dayBounds(date: string): { start: Date; end: Date } {
 export async function resolveOrganizationBySlug(slug: string): Promise<PublicOrganizationProfile | null> {
   const { rows } = await pool.query<PublicOrganizationProfile>(
     `SELECT id, slug, name, address, phone, email
-     FROM "Organization" WHERE slug = $1 LIMIT 1`,
+     FROM "Organization"
+     WHERE slug = $1 AND status = 'ACTIVE'::"OrganizationStatus"
+     LIMIT 1`,
     [slug],
   );
   return rows[0] ?? null;
+}
+
+/** Résout ?service=id|slug-name → service actif de l'org (prix serveur). */
+export async function resolvePublicServiceRef(
+  organizationId: string,
+  ref: string,
+): Promise<PublicServiceItem | null> {
+  const services = await getPublicServices(organizationId);
+  const needle = ref.trim().toLowerCase();
+  if (!needle) return null;
+  return (
+    services.find((s) => s.id.toLowerCase() === needle) ??
+    services.find((s) => slugifyLabel(s.name) === needle) ??
+    null
+  );
+}
+
+/** Résout ?staff=id|prenom → employée ACTIVE compatible (optionnellement avec service). */
+export async function resolvePublicStaffRef(
+  organizationId: string,
+  ref: string,
+  serviceId?: string | null,
+): Promise<PublicStaffItem | null> {
+  if (!serviceId) {
+    const { items } = await listStaff(organizationId, {
+      page: 1,
+      limit: 100,
+      agenda: true,
+    });
+    const staff = (items as StaffAgendaContext[]).filter((s) => s.status === "ACTIVE");
+    return matchStaffRef(staff, ref);
+  }
+  const list = await getPublicStaffForService(organizationId, serviceId);
+  return matchStaffRef(
+    list.map((s) => ({
+      id: s.id,
+      firstName: s.displayName.split(" ")[0] ?? s.displayName,
+      lastName: s.displayName.split(" ").slice(1).join(" "),
+      status: "ACTIVE" as const,
+      displayName: s.displayName,
+      available: s.available,
+    })),
+    ref,
+  );
+}
+
+function matchStaffRef(
+  staff: Array<{
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    available?: boolean;
+    status?: string;
+  }>,
+  ref: string,
+): PublicStaffItem | null {
+  const needle = ref.trim().toLowerCase();
+  if (!needle) return null;
+  const hit =
+    staff.find((s) => s.id.toLowerCase() === needle) ??
+    staff.find((s) => slugifyLabel(s.firstName ?? "") === needle) ??
+    staff.find((s) => slugifyLabel(s.displayName ?? `${s.firstName} ${s.lastName}`) === needle);
+  if (!hit) return null;
+  return {
+    id: hit.id,
+    displayName:
+      hit.displayName ?? `${hit.firstName ?? ""} ${hit.lastName ?? ""}`.trim(),
+    available: hit.available ?? true,
+  };
 }
 
 export async function getPublicServices(organizationId: string): Promise<PublicServiceItem[]> {
@@ -135,7 +208,9 @@ async function loadAppointmentsForDay(
       a."serviceId", s.name AS "serviceName",
       a."staffId", st."firstName" AS "staffFirstName", st."lastName" AS "staffLastName",
       a."resourceId", r.name AS "resourceName",
-      a."startAt", a."endAt", a.price::text, a.deposit::text, a.status, a.notes
+      a."startAt", a."endAt", a.price::text, a.deposit::text,
+      a."depositState"::text AS "depositState", a."depositDueAt",
+      a.status, a.notes
      FROM "Appointment" a
      JOIN "Customer" c ON c.id = a."customerId"
      JOIN "Service" s ON s.id = a."serviceId"
@@ -225,10 +300,17 @@ export async function getPublicAvailabilitySlots(
   const service = await getServiceOption(organizationId, opts.serviceId);
   if (!service) throw new Error("SERVICE_NOT_FOUND");
 
+  const dateObj = new Date(`${opts.date}T12:00:00+01:00`);
+  const dayStart = new Date(`${opts.date}T00:00:00+01:00`);
+  const dayEnd = new Date(`${opts.date}T23:59:59+01:00`);
+
+  const { isOrganizationClosed } = await import("@/lib/db/planning");
+  const closure = await isOrganizationClosed(organizationId, dayStart, dayEnd);
+  if (closure.closed) return [];
+
   const staffList = await loadStaffContexts(organizationId, opts.serviceId);
   const resources = await loadResourceContexts(organizationId, opts.serviceId);
   const appointments = await loadAppointmentsForDay(organizationId, opts.date);
-  const dateObj = new Date(`${opts.date}T12:00:00+01:00`);
 
   const staffToCheck = opts.staffId
     ? staffList.filter((s) => s.id === opts.staffId)
@@ -326,6 +408,10 @@ export async function createPublicBooking(
     throw new Error("SLOT_PAST");
   }
 
+  const { isOrganizationClosed } = await import("@/lib/db/planning");
+  const closure = await isOrganizationClosed(organizationId, startAt, endAt);
+  if (closure.closed) throw new Error("SLOT_UNAVAILABLE");
+
   const staffList = await loadStaffContexts(organizationId, input.serviceId);
   const resources = await loadResourceContexts(organizationId, input.serviceId);
   const appointments = await loadAppointmentsForDay(organizationId, input.date);
@@ -373,12 +459,23 @@ export async function createPublicBooking(
       client,
     );
 
+    const { resolveDepositRequirement } = await import("@/lib/db/booking-policy");
+    const depositReq = await resolveDepositRequirement({
+      organizationId,
+      customerId,
+      serviceDeposit: service.deposit,
+      price: service.price,
+      client,
+    });
+
     await client.query(
       `INSERT INTO "Appointment" (
         id, "organizationId", "customerId", "serviceId", "staffId", "resourceId",
-        "startAt", "endAt", price, deposit, status, source, notes, "updatedAt"
+        "startAt", "endAt", price, deposit, "depositState", "depositDueAt",
+        status, source, "attributionSource", notes, "updatedAt"
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'PENDING','ONLINE_BOOKING'::"AppointmentSource",$11,NOW()
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::"DepositState",$12,
+        'PENDING','ONLINE_BOOKING'::"AppointmentSource",$13,$14,NOW()
       )`,
       [
         appointmentId,
@@ -390,7 +487,10 @@ export async function createPublicBooking(
         startAt,
         endAt,
         service.price,
-        service.deposit,
+        depositReq.amount > 0 ? depositReq.amount : null,
+        depositReq.state,
+        depositReq.dueAt,
+        input.attributionSource?.trim().slice(0, 40) || null,
         input.notes ?? null,
       ],
     );
@@ -404,7 +504,9 @@ export async function createPublicBooking(
         a."serviceId", s.name AS "serviceName",
         a."staffId", st."firstName" AS "staffFirstName", st."lastName" AS "staffLastName",
         a."resourceId", r.name AS "resourceName",
-        a."startAt", a."endAt", a.price::text, a.deposit::text, a.status, a.notes
+        a."startAt", a."endAt", a.price::text, a.deposit::text,
+        a."depositState"::text AS "depositState", a."depositDueAt",
+        a.status, a.notes
        FROM "Appointment" a
        JOIN "Customer" c ON c.id = a."customerId"
        JOIN "Service" s ON s.id = a."serviceId"
@@ -429,6 +531,22 @@ export async function createPublicBooking(
       console.error("[createPublicBooking] whatsapp", e);
     }
 
+    if (input.attributionSource) {
+      try {
+        const { recordPublicBookingEvent } = await import("@/lib/db/public-booking-events");
+        await recordPublicBookingEvent({
+          organizationId,
+          eventType: "BOOKED",
+          source: input.attributionSource,
+          serviceId: service.id,
+          staffId: assignment.staffId,
+          appointmentId,
+        });
+      } catch (e) {
+        console.error("[createPublicBooking] attribution event", e);
+      }
+    }
+
     return {
       appointmentId,
       customerId,
@@ -439,6 +557,9 @@ export async function createPublicBooking(
       startAt: apt.startAt,
       endAt: apt.endAt,
       price: service.price,
+      deposit: depositReq.amount > 0 ? depositReq.amount : null,
+      depositState: depositReq.state,
+      depositAwaiting: depositReq.state === "AWAITING",
       durationMin: service.durationMin,
       source: "ONLINE_BOOKING",
     };

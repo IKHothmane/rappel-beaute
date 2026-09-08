@@ -22,12 +22,15 @@ export default async function BookingConfirmationPage({ params, searchParams }: 
   }
 
   const apt = await getAppointmentById(id, org.id);
+  const awaitingDeposit = apt?.depositState === "AWAITING";
 
   return (
     <div className="min-h-screen bg-paper px-4 py-10">
       <div className="mx-auto max-w-md surface p-6 text-center">
-        <p className="text-3xl">✅</p>
-        <h1 className="mt-2 font-display text-2xl font-semibold">Rendez-vous confirmé</h1>
+        <p className="text-3xl">{awaitingDeposit ? "⏳" : "✅"}</p>
+        <h1 className="mt-2 font-display text-2xl font-semibold">
+          {awaitingDeposit ? "Demande enregistrée" : "Rendez-vous confirmé"}
+        </h1>
         {apt ? (
           <>
             <p className="mt-4 text-sm">
@@ -37,6 +40,12 @@ export default async function BookingConfirmationPage({ params, searchParams }: 
               {formatBookingDate(apt.startAt)} à {formatBookingTime(apt.startAt)}
             </p>
             <p className="font-mono text-sm text-ink/55">{formatMad(apt.price)}</p>
+            {awaitingDeposit && apt.deposit ? (
+              <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-left text-xs text-amber-900">
+                Acompte : {formatMad(apt.deposit)}. L&apos;institut vous confirmera après
+                encaissement hors ligne (espèces, carte, virement…). Aucun paiement en ligne.
+              </p>
+            ) : null}
             <p className="mt-2 text-xs text-ink/45">{org.name}</p>
           </>
         ) : (

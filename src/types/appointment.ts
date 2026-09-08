@@ -32,6 +32,8 @@ export interface Appointment {
 
   price: number;
   deposit?: number;
+  depositState?: import("@/types/booking-policy").DepositState;
+  depositDueAt?: string | null;
 
   status: AppointmentStatus;
   source?: AppointmentSource;

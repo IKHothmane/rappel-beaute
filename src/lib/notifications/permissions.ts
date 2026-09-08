@@ -11,6 +11,7 @@ export function rolesForNotificationType(type: NotificationType): AppRole[] {
     case "APPOINTMENT_CREATED":
     case "APPOINTMENT_CANCELLED":
     case "APPOINTMENT_NO_SHOW":
+    case "APPOINTMENT_RESCHEDULED":
     case "STAFF_LEAVE":
     case "REVIEW_PENDING":
     case "CAMPAIGN_READY":
@@ -22,6 +23,8 @@ export function rolesForNotificationType(type: NotificationType): AppRole[] {
       return ["OWNER", "ACCOUNTANT"];
     case "PACKAGE_EXPIRING":
     case "LOYALTY_REWARD":
+      return ["OWNER", "MANAGER"];
+    case "SUPPORT_MESSAGE":
       return ["OWNER", "MANAGER"];
     case "SYSTEM":
       return ["OWNER", "MANAGER", "STAFF", "CASHIER", "ACCOUNTANT"];
@@ -38,6 +41,7 @@ export function severityForType(type: NotificationType): NotificationSeverity {
     case "STOCK_LOW":
     case "PRODUCT_EXPIRING":
     case "APPOINTMENT_CANCELLED":
+    case "APPOINTMENT_RESCHEDULED":
     case "REFUND_CREATED":
       return "WARNING";
     case "PAYMENT_RECEIVED":
@@ -53,7 +57,7 @@ export type NotificationFilterCategory = "all" | "unread" | "agenda" | "finance"
 export function typesForCategory(category: NotificationFilterCategory): NotificationType[] | null {
   switch (category) {
     case "agenda":
-      return ["APPOINTMENT_CREATED", "APPOINTMENT_CANCELLED", "APPOINTMENT_NO_SHOW", "STAFF_LEAVE"];
+      return ["APPOINTMENT_CREATED", "APPOINTMENT_CANCELLED", "APPOINTMENT_NO_SHOW", "APPOINTMENT_RESCHEDULED", "STAFF_LEAVE"];
     case "finance":
       return ["PAYMENT_RECEIVED", "REFUND_CREATED", "EXPENSE_CREATED"];
     case "stock":
@@ -82,6 +86,8 @@ export function buildNotificationHref(
       return `/reviews/?requestId=${entityId}`;
     case "Campaign":
       return `/marketing/?campaignId=${entityId}`;
+    case "SupportTicket":
+      return `/support/${entityId}/`;
     default:
       return typeof metadata?.href === "string" ? metadata.href : null;
   }
@@ -106,6 +112,8 @@ export function notificationIcon(type: NotificationType): string {
       return "⭐";
     case "CAMPAIGN_READY":
       return "📣";
+    case "SUPPORT_MESSAGE":
+      return "💬";
     case "LOYALTY_REWARD":
     case "PACKAGE_EXPIRING":
       return "🎁";

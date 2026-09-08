@@ -158,6 +158,51 @@ export async function requireFeatureWriteLimited(
   return auth;
 }
 
+/**
+ * POS Produits (41.23) : RBAC caisse + plan cashRegister + plan inventory.
+ */
+export async function requirePosRead(request: NextRequest): Promise<AppAuthResult> {
+  const auth = await requireFeatureRead(request, "cash-register");
+  if (!auth.ok) return auth;
+  const inv = await canUseFeature(auth.session.organizationId, "inventory");
+  if (!inv.ok) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: inv.message,
+          code: inv.code,
+          planCode: inv.planCode,
+          planName: inv.planName,
+        },
+        { status: 403 },
+      ),
+    };
+  }
+  return auth;
+}
+
+export async function requirePosWrite(request: NextRequest): Promise<AppAuthResult> {
+  const auth = await requireFeatureWrite(request, "cash-register");
+  if (!auth.ok) return auth;
+  const inv = await canUseFeature(auth.session.organizationId, "inventory");
+  if (!inv.ok) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: inv.message,
+          code: inv.code,
+          planCode: inv.planCode,
+          planName: inv.planName,
+        },
+        { status: 403 },
+      ),
+    };
+  }
+  return auth;
+}
+
 export function stripOrganizationId<T extends Record<string, unknown>>(body: T): Omit<T, "organizationId"> {
   const { organizationId: _ignored, ...rest } = body;
   return rest;

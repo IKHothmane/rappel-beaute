@@ -55,6 +55,7 @@ export const APP_FEATURE_TO_PLAN: Partial<Record<AppFeature, PlanFeatureKey>> = 
   analytics: "analytics",
   whatsapp: "whatsappManual",
   reactivation: "marketing",
+  ai: "ai",
 };
 
 export function planFeatureForAppFeature(feature: AppFeature): PlanFeatureKey | null {
@@ -85,4 +86,12 @@ export const INSTITUT_EXTRA_FEATURES: PlanFeatureKey[] = [
   "marketing",
   "reviews",
   "analytics",
+  "ai",
+];
+
+/** PREMIUM = Institut + multi-sites / API / automation (analyses IA avancées = même flag ai V1) */
+export const PREMIUM_EXTRA_FEATURES: PlanFeatureKey[] = [
+  "multiSite",
+  "api",
+  "automation",
 ];

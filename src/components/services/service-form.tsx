@@ -36,6 +36,9 @@ export function ServiceForm({
   const [prepTimeMin, setPrepTimeMin] = useState(initial?.prepTimeMin?.toString() ?? "0");
   const [cleanupTimeMin, setCleanupTimeMin] = useState(initial?.cleanupTimeMin?.toString() ?? "0");
   const [deposit, setDeposit] = useState(initial?.deposit?.toString() ?? "");
+  const [recommendedReturnDays, setRecommendedReturnDays] = useState(
+    initial?.recommendedReturnDays?.toString() ?? "",
+  );
   const [staffIds, setStaffIds] = useState<string[]>(initial?.staff?.map((s) => s.staffId) ?? []);
   const [resources, setResources] = useState<ResourceLink[]>(
     initial?.resources?.map((r) => ({ resourceId: r.resourceId, quantity: r.quantity })) ?? [],
@@ -70,6 +73,9 @@ export function ServiceForm({
       prepTimeMin: Number(prepTimeMin) || 0,
       cleanupTimeMin: Number(cleanupTimeMin) || 0,
       deposit: deposit ? Number(deposit) : undefined,
+      recommendedReturnDays: recommendedReturnDays
+        ? Number(recommendedReturnDays)
+        : null,
       staffIds,
       resources,
       products,
@@ -153,6 +159,20 @@ export function ServiceForm({
           <Input type="number" min={0} value={deposit} onChange={(e) => setDeposit(e.target.value)} />
         </label>
       </div>
+
+      <label className="block text-sm">
+        <span className="mb-1.5 block font-medium">Relance post-prestation (jours)</span>
+        <Input
+          type="number"
+          min={1}
+          placeholder="Ex. 30 — vide = délai institut"
+          value={recommendedReturnDays}
+          onChange={(e) => setRecommendedReturnDays(e.target.value)}
+        />
+        <span className="mt-1 block text-xs text-ink/45">
+          Après un RDV COMPLETED, propose une relance WhatsApp à J+N.
+        </span>
+      </label>
 
       <div>
         <span className="mb-1.5 block text-sm font-medium">Employées autorisées</span>

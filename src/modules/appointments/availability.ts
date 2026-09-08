@@ -52,20 +52,40 @@ function checkStaffAvailability(
     return conflicts;
   }
 
+  // Remplacement actif → employée absente sur la période
+  for (const rep of staff.replacementsAsAbsent ?? []) {
+    const rStart = parseDate(rep.startAt);
+    const rEnd = parseDate(rep.endAt);
+    if (overlaps(start, end, rStart, rEnd)) {
+      conflicts.push(
+        `${staff.displayName} remplacée par ${rep.substituteName} sur ce créneau.`,
+      );
+      return conflicts;
+    }
+  }
+
   const day = start.getDay();
   const schedule = staff.schedules.find((s) => s.dayOfWeek === day && s.active);
+  const coveredByOt = (staff.overtimes ?? []).some((ot) => {
+    const oStart = parseDate(ot.startAt);
+    const oEnd = parseDate(ot.endAt);
+    return start >= oStart && end <= oEnd;
+  });
 
-  if (!schedule) {
+  if (!schedule && !coveredByOt) {
     conflicts.push(`${staff.displayName} ne travaille pas ce jour.`);
     return conflicts;
   }
 
-  const workStart = parseTimeOnDate(start, schedule.startTime);
-  const workEnd = parseTimeOnDate(start, schedule.endTime);
-  if (start < workStart || end > workEnd) {
-    conflicts.push(
-      `Hors horaires de ${staff.displayName} (${schedule.startTime}–${schedule.endTime}).`,
-    );
+  if (schedule) {
+    const workStart = parseTimeOnDate(start, schedule.startTime);
+    const workEnd = parseTimeOnDate(start, schedule.endTime);
+    const withinSchedule = start >= workStart && end <= workEnd;
+    if (!withinSchedule && !coveredByOt) {
+      conflicts.push(
+        `Hors horaires de ${staff.displayName} (${schedule.startTime}–${schedule.endTime}).`,
+      );
+    }
   }
 
   for (const brk of staff.breaks) {
@@ -113,7 +133,8 @@ function checkResourceAvailability(
 }
 
 /**
- * Vérification frontend — le backend devra revérifier en transaction + EXCLUDE.
+ * Vérification dispo (client + serveur via assertAppointmentBookable).
+ * Le navigateur ne doit jamais écrire le stock / RDV sans repasser par l'API.
  */
 export function checkAvailability(
   appointments: Appointment[],
@@ -174,16 +195,31 @@ export function getAvailableSlots(
   const slots: { time: string; available: boolean; reason?: string }[] = [];
   const day = params.date.getDay();
   const schedule = params.staffContext?.schedules.find((s) => s.dayOfWeek === day && s.active);
+  const overtimes = params.staffContext?.overtimes ?? [];
 
-  const openHour = schedule
+  let openHour = schedule
     ? parseInt(schedule.startTime.split(":")[0], 10)
     : AGENDA_OPEN_HOUR;
-  const closeHour = schedule
+  let closeHour = schedule
     ? parseInt(schedule.endTime.split(":")[0], 10) +
       (parseInt(schedule.endTime.split(":")[1], 10) > 0 ? 1 : 0)
     : AGENDA_CLOSE_HOUR;
 
-  if (params.staffContext && !schedule) return slots;
+  // Étendre la fenêtre de slots avec les heures supplémentaires du jour
+  for (const ot of overtimes) {
+    const oStart = parseDate(ot.startAt);
+    const oEnd = parseDate(ot.endAt);
+    if (!sameDay(oStart, params.date) && !sameDay(oEnd, params.date)) {
+      if (!(oStart <= params.date && oEnd >= params.date)) continue;
+    }
+    openHour = Math.min(openHour, oStart.getHours());
+    closeHour = Math.max(closeHour, oEnd.getHours() + (oEnd.getMinutes() > 0 ? 1 : 0));
+  }
+
+  openHour = Math.max(AGENDA_OPEN_HOUR, Math.min(openHour, AGENDA_CLOSE_HOUR - 1));
+  closeHour = Math.min(AGENDA_CLOSE_HOUR, Math.max(closeHour, openHour + 1));
+
+  if (params.staffContext && !schedule && overtimes.length === 0) return slots;
 
   for (let h = openHour; h < closeHour; h++) {
     for (let m = 0; m < 60; m += AGENDA_SLOT_MINUTES) {
@@ -193,7 +229,14 @@ export function getAvailableSlots(
 
       if (schedule) {
         const workEnd = parseTimeOnDate(params.date, schedule.endTime);
-        if (end > workEnd) continue;
+        const workStart = parseTimeOnDate(params.date, schedule.startTime);
+        const withinSchedule = start >= workStart && end <= workEnd;
+        const coveredByOt = overtimes.some((ot) => {
+          const oStart = parseDate(ot.startAt);
+          const oEnd = parseDate(ot.endAt);
+          return start >= oStart && end <= oEnd;
+        });
+        if (!withinSchedule && !coveredByOt) continue;
       }
 
       const result = checkAvailability(
@@ -280,12 +323,19 @@ export function isStaffAvailableOnDate(
 ): boolean {
   if (staff.status !== "ACTIVE") return false;
   const day = date.getDay();
-  if (!staff.schedules.some((s) => s.dayOfWeek === day && s.active)) return false;
-
+  const hasSchedule = staff.schedules.some((s) => s.dayOfWeek === day && s.active);
   const dayStart = new Date(date);
   dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(date);
   dayEnd.setHours(23, 59, 59, 999);
+
+  const hasOt = (staff.overtimes ?? []).some((ot) => {
+    const oStart = parseDate(ot.startAt);
+    const oEnd = parseDate(ot.endAt);
+    return overlaps(dayStart, dayEnd, oStart, oEnd);
+  });
+
+  if (!hasSchedule && !hasOt) return false;
 
   for (const leave of staff.leaves) {
     if (leave.status !== "APPROVED") continue;
@@ -293,6 +343,12 @@ export function isStaffAvailableOnDate(
     const lEnd = parseDate(leave.endAt);
     lEnd.setHours(23, 59, 59, 999);
     if (overlaps(dayStart, dayEnd, lStart, lEnd)) return false;
+  }
+
+  for (const rep of staff.replacementsAsAbsent ?? []) {
+    if (overlaps(dayStart, dayEnd, parseDate(rep.startAt), parseDate(rep.endAt))) {
+      return false;
+    }
   }
   return true;
 }

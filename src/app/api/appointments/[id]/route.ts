@@ -10,6 +10,7 @@ import {
   isExclusionViolation,
   updateAppointmentRow,
 } from "@/lib/db/appointments";
+import { assertAppointmentBookable } from "@/lib/db/planning";
 import { assertResourceBookable } from "@/lib/db/resources";
 import { onAppointmentCompleted } from "@/lib/db/invoices";
 import type { AppointmentStatus, CreateAppointmentInput } from "@/types/appointment";
@@ -23,6 +24,14 @@ function resourceBookingError(error: unknown) {
     RESOURCE_MAINTENANCE: "Cette ressource est en maintenance sur ce créneau.",
   };
   return map[error.message] ?? null;
+}
+
+function availabilityError(error: unknown) {
+  if (!(error instanceof Error) || error.message !== "AVAILABILITY_CONFLICT") return null;
+  const conflicts = (error as Error & { conflicts?: string[] }).conflicts;
+  return conflicts?.length
+    ? conflicts.join(" ")
+    : "Créneau hors disponibilité (horaires, pause, congé ou fermeture).";
 }
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -69,14 +78,41 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const bookingChanged = Boolean(
       body.resourceId !== undefined ||
         body.serviceId ||
+        body.staffId ||
         body.startAt ||
         body.endAt,
     );
 
-    const resourceId = body.resourceId ?? existing.resourceId;
+    if (body.status && body.status !== existing.status) {
+      const { assertCanConfirmWithoutDeposit, expireOverdueDepositAppointments } =
+        await import("@/lib/db/booking-policy");
+      await expireOverdueDepositAppointments(auth.session.organizationId);
+      const gate = await assertCanConfirmWithoutDeposit({
+        organizationId: auth.session.organizationId,
+        appointmentId: id,
+        nextStatus: body.status,
+      });
+      if (!gate.ok) {
+        return NextResponse.json({ error: gate.error }, { status: 409 });
+      }
+    }
+
+    const resourceId = body.resourceId !== undefined ? body.resourceId : existing.resourceId;
     const serviceId = body.serviceId ?? existing.serviceId;
+    const staffId = body.staffId ?? existing.staffId;
     const startAt = body.startAt ?? existing.startAt;
     const endAt = body.endAt ?? existing.endAt;
+
+    if (bookingChanged) {
+      await assertAppointmentBookable({
+        organizationId: auth.session.organizationId,
+        staffId,
+        resourceId,
+        startAt,
+        endAt,
+        excludeAppointmentId: id,
+      });
+    }
 
     if (bookingChanged && resourceId) {
       await assertResourceBookable({
@@ -92,17 +128,20 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       id,
       auth.session.organizationId,
       body,
+      {
+        actor: {
+          id: auth.session.id,
+          name: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
+        },
+        cancelledByInstitute: true,
+      },
     );
 
     if (!appointment) {
       return NextResponse.json({ error: "Rendez-vous introuvable." }, { status: 404 });
     }
 
-    // Effets COMPLETED idempotents : stock + facture + commission
-    if (
-      body.status === "COMPLETED" &&
-      existing.status !== "COMPLETED"
-    ) {
+    if (body.status === "COMPLETED" && existing.status !== "COMPLETED") {
       await onAppointmentCompleted({
         organizationId: auth.session.organizationId,
         appointmentId: appointment.id,
@@ -121,6 +160,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         },
         { status: 409 },
       );
+    }
+    const availMsg = availabilityError(error);
+    if (availMsg) {
+      return NextResponse.json({ error: availMsg }, { status: 409 });
     }
     const resourceMsg = resourceBookingError(error);
     if (resourceMsg) {

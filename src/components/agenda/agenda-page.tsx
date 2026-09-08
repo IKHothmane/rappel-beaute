@@ -41,6 +41,8 @@ import type {
   AppointmentStatus,
   CreateAppointmentInput,
 } from "@/types/appointment";
+import type { AgendaColumnMode } from "@/types/planning";
+import Link from "next/link";
 
 type DrawerMode = "create" | "detail" | "edit" | null;
 
@@ -81,6 +83,7 @@ export function AgendaPage() {
   const [resourceFilter, setResourceFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
+  const [columnMode, setColumnMode] = useState<AgendaColumnMode>("staff");
 
   const refresh = useCallback(async () => {
     try {
@@ -124,14 +127,29 @@ export function AgendaPage() {
     return list;
   }, [appointments, date, staffFilter, serviceFilter, resourceFilter, statusFilter, search]);
 
-  const staffColumns = useMemo(() => {
+  const gridColumns = useMemo(() => {
+    if (columnMode === "resource") {
+      const allRes = formOptions?.resources ?? [];
+      if (resourceFilter !== "ALL") {
+        const r = allRes.find((x) => x.id === resourceFilter);
+        return r
+          ? [{ id: r.id, name: r.name }]
+          : allRes.map((x) => ({ id: x.id, name: x.name }));
+      }
+      return allRes.map((x) => ({ id: x.id, name: x.name }));
+    }
     const allStaff = formOptions?.staff ?? [];
     if (staffFilter !== "ALL") {
       const s = allStaff.find((x) => x.id === staffFilter);
-      return s ? [{ id: s.id, name: s.name }] : allStaff.map((s) => ({ id: s.id, name: s.name }));
+      return s ? [{ id: s.id, name: s.name }] : allStaff.map((x) => ({ id: x.id, name: x.name }));
     }
     return allStaff.map((s) => ({ id: s.id, name: s.name }));
-  }, [staffFilter, formOptions]);
+  }, [columnMode, staffFilter, resourceFilter, formOptions]);
+
+  const staffColumns = useMemo(() => {
+    const allStaff = formOptions?.staff ?? [];
+    return allStaff.map((s) => ({ id: s.id, name: s.name }));
+  }, [formOptions]);
 
   const weekDates = useMemo(() => getWeekDates(date), [date]);
   const monthDates = useMemo(() => getMonthGrid(date), [date]);
@@ -199,7 +217,7 @@ export function AgendaPage() {
   }
 
   async function handleDrop(
-    staffId: string,
+    columnId: string,
     hour: number,
     minute: number,
     appointmentId: string,
@@ -212,11 +230,20 @@ export function AgendaPage() {
     start.setHours(hour, minute, 0, 0);
     const end = new Date(start.getTime() + duration * 60_000);
 
-    const result = await updateAppointment(appointmentId, {
-      staffId,
-      startAt: start.toISOString(),
-      endAt: end.toISOString(),
-    });
+    const patch =
+      columnMode === "resource"
+        ? {
+            resourceId: columnId,
+            startAt: start.toISOString(),
+            endAt: end.toISOString(),
+          }
+        : {
+            staffId: columnId,
+            startAt: start.toISOString(),
+            endAt: end.toISOString(),
+          };
+
+    const result = await updateAppointment(appointmentId, patch);
 
     if (!result.ok) {
       toast(result.error, "error");
@@ -240,6 +267,31 @@ export function AgendaPage() {
       transition={{ duration: 0.35 }}
     >
       <AgendaHeader dateLabel={dateLabel} onCreate={() => setDrawer("create")} />
+
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-ink/45">Colonnes :</span>
+        <button
+          type="button"
+          onClick={() => setColumnMode("staff")}
+          className={`rounded-lg border px-3 py-1.5 text-xs ${
+            columnMode === "staff" ? "border-primary bg-primary-light" : "border-line"
+          }`}
+        >
+          Employées
+        </button>
+        <button
+          type="button"
+          onClick={() => setColumnMode("resource")}
+          className={`rounded-lg border px-3 py-1.5 text-xs ${
+            columnMode === "resource" ? "border-primary bg-primary-light" : "border-line"
+          }`}
+        >
+          Cabines / ressources
+        </button>
+        <Link href="/planning/" className="ml-auto text-xs text-ink/50 underline">
+          Fermetures · OT · Remplacements
+        </Link>
+      </div>
 
       <AgendaToolbar
         view={view}
@@ -316,9 +368,10 @@ export function AgendaPage() {
               ) : (
                 <AgendaGrid
                   date={date}
-                  staff={staffColumns}
+                  staff={gridColumns}
                   appointments={filtered}
                   staffContexts={staffContexts}
+                  columnMode={columnMode}
                   onAppointmentClick={(id) => {
                     setSelectedId(id);
                     setDrawer("detail");
@@ -333,9 +386,10 @@ export function AgendaPage() {
                 {view === "week" ? (
                   <AgendaGrid
                     date={date}
-                    staff={staffColumns}
+                    staff={gridColumns}
                     appointments={filtered}
                     staffContexts={staffContexts}
+                    columnMode={columnMode}
                     onAppointmentClick={(id) => {
                       setSelectedId(id);
                       setDrawer("detail");

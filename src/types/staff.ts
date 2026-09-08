@@ -92,6 +92,16 @@ export type StaffAgendaContext = {
   schedules: StaffScheduleSlot[];
   breaks: StaffBreakSlot[];
   leaves: StaffLeaveItem[];
+  /** Heures supp. qui étendent la dispo hors horaires */
+  overtimes: { id: string; startAt: string; endAt: string; reason: string | null }[];
+  /** Périodes où cette employée est absente (remplacée) */
+  replacementsAsAbsent: {
+    id: string;
+    startAt: string;
+    endAt: string;
+    substituteStaffId: string;
+    substituteName: string;
+  }[];
 };
 
 export type CreateStaffInput = {

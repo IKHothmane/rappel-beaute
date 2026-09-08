@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import {
   APPOINTMENT_STATUS_LABEL,
@@ -8,6 +9,7 @@ import {
 } from "@/modules/appointments/constants";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DEPOSIT_STATE_LABEL } from "@/types/booking-policy";
 
 type AppointmentDetailsProps = {
   appointment: Appointment;
@@ -25,6 +27,8 @@ export function AppointmentDetails({
   const s = APPOINTMENT_STATUS_STYLE[appointment.status];
   const start = new Date(appointment.startAt);
   const transitions = STATUS_TRANSITIONS[appointment.status] ?? [];
+  const depositState = appointment.depositState ?? "NOT_REQUIRED";
+  const awaitingDeposit = depositState === "AWAITING";
 
   return (
     <div className="space-y-5">
@@ -55,7 +59,21 @@ export function AppointmentDetails({
         </p>
         {appointment.deposit ? (
           <p className="mt-1 text-xs text-ink/45">
-            Acompte : {appointment.deposit.toLocaleString("fr-MA")} MAD
+            Acompte exigé : {appointment.deposit.toLocaleString("fr-MA")} MAD
+          </p>
+        ) : null}
+        {depositState !== "NOT_REQUIRED" ? (
+          <p
+            className={cn(
+              "mt-2 inline-flex rounded-lg px-2 py-1 text-[11px] font-semibold",
+              awaitingDeposit
+                ? "bg-amber-100 text-amber-900"
+                : depositState === "PAID"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-ink/5 text-ink/60",
+            )}
+          >
+            {DEPOSIT_STATE_LABEL[depositState]}
           </p>
         ) : null}
       </div>
@@ -70,6 +88,22 @@ export function AppointmentDetails({
         <span className={cn("h-2 w-2 rounded-full", s.dot)} />
         {APPOINTMENT_STATUS_LABEL[appointment.status]}
       </div>
+
+      {awaitingDeposit ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+          <p className="font-medium">Acompte en attente</p>
+          <p className="mt-1">
+            Enregistrez un paiement de type Acompte (DEPOSIT) en caisse pour confirmer
+            automatiquement ce RDV.
+          </p>
+          <Link
+            href={`/cash-register/?appointmentId=${appointment.id}&kind=DEPOSIT`}
+            className="mt-2 inline-block font-semibold text-primary underline"
+          >
+            Enregistrer l&apos;acompte →
+          </Link>
+        </div>
+      ) : null}
 
       {appointment.notes ? (
         <p className="text-sm text-ink/60">{appointment.notes}</p>
@@ -115,9 +149,10 @@ export function AppointmentDetails({
             type="button"
             variant="soft"
             className="w-full"
+            disabled={awaitingDeposit}
             onClick={() => onStatusChange("CONFIRMED")}
           >
-            Confirmer
+            {awaitingDeposit ? "Confirmer (acompte requis)" : "Confirmer"}
           </Button>
         ) : null}
         {transitions.includes("NO_SHOW") ? (

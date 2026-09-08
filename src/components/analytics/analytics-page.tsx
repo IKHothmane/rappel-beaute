@@ -38,7 +38,9 @@ import type {
   CustomerAnalytics,
   InventoryAnalytics,
   LoyaltyAnalytics,
+  AIMarketingAnalyticsSummary,
   MarketingAnalyticsRow,
+  PostVisitAnalyticsSummary,
   RevenueAnalytics,
   ReviewAnalytics,
   ServiceAnalyticsRow,
@@ -96,6 +98,8 @@ export function AnalyticsPageView() {
   const [staff, setStaff] = useState<StaffAnalyticsRow[]>([]);
   const [inventory, setInventory] = useState<InventoryAnalytics | null>(null);
   const [marketing, setMarketing] = useState<MarketingAnalyticsRow[]>([]);
+  const [postVisit, setPostVisit] = useState<PostVisitAnalyticsSummary | null>(null);
+  const [aiMarketing, setAiMarketing] = useState<AIMarketingAnalyticsSummary | null>(null);
   const [loyalty, setLoyalty] = useState<LoyaltyAnalytics | null>(null);
   const [reviews, setReviews] = useState<ReviewAnalytics | null>(null);
 
@@ -119,7 +123,10 @@ export function AnalyticsPageView() {
       } else if (tab === "Stock") {
         setInventory(await getAnalyticsInventory(filters));
       } else if (tab === "Marketing") {
-        setMarketing((await getAnalyticsMarketing(filters)).items);
+        const m = await getAnalyticsMarketing(filters);
+        setMarketing(m.items);
+        setPostVisit(m.postVisit ?? null);
+        setAiMarketing(m.aiMarketing ?? null);
       } else if (tab === "Fidélité") {
         setLoyalty(await getAnalyticsLoyalty(filters));
       } else if (tab === "Avis") {
@@ -387,7 +394,29 @@ export function AnalyticsPageView() {
             <Kpi label="Consommation" value={formatMad(inventory.consumptionValue)} />
             <Kpi label="Achats" value={formatMad(inventory.purchasesValue)} />
             <Kpi label="Pertes" value={formatMad(inventory.lossesValue)} />
+            <Kpi label="CA produits POS" value={formatMad(inventory.posRevenue ?? 0)} />
+            <Kpi
+              label="Marge POS"
+              value={
+                inventory.posMargin != null ? formatMad(inventory.posMargin) : "—"
+              }
+            />
+            <Kpi label="Stock vendu (qty)" value={String(inventory.posStockConsumed ?? 0)} />
           </div>
+          {(inventory.topPosProducts?.length ?? 0) > 0 ? (
+            <>
+              <h3 className="mb-2 font-medium">Top ventes POS</h3>
+              <ul className="surface mb-6 divide-y divide-line text-sm">
+                {inventory.topPosProducts.map((p) => (
+                  <ListRow
+                    key={p.productId}
+                    left={p.productName}
+                    right={`${p.quantity} · ${formatMad(p.revenue)}`}
+                  />
+                ))}
+              </ul>
+            </>
+          ) : null}
           <h3 className="mb-2 font-medium">Top consommation</h3>
           <ul className="surface divide-y divide-line text-sm">
             {inventory.topConsumption.map((p) => (
@@ -402,17 +431,41 @@ export function AnalyticsPageView() {
       ) : null}
 
       {!loading && tab === "Marketing" ? (
-        <ul className="surface divide-y divide-line text-sm">
-          {marketing.map((c) => (
-            <li key={c.campaignId} className="p-4">
-              <p className="font-medium">{c.campaignName}</p>
-              <p className="mt-1 text-ink/60">
-                Ciblées {c.targeted} · Envoyées {c.sent} · RDV associés {c.associatedAppointments}{" "}
-                · CA associé {formatMad(c.associatedRevenue)}
+        <>
+          {aiMarketing ? (
+            <div className="mb-6">
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/40">
+                IA Marketing (attribution ai_marketing)
               </p>
-            </li>
-          ))}
-        </ul>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Kpi label="Messages générés" value={String(aiMarketing.generated)} hint="Tâches validées" />
+                <Kpi label="Messages envoyés" value={String(aiMarketing.sent)} hint="Marqués envoyés" />
+                <Kpi label="Réservations" value={String(aiMarketing.bookings)} />
+                <Kpi label="COMPLETED" value={String(aiMarketing.completed)} />
+              </div>
+            </div>
+          ) : null}
+          {postVisit ? (
+            <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <Kpi label="Post-visite éligibles" value={String(postVisit.eligible)} />
+              <Kpi label="Préparées" value={String(postVisit.prepared)} />
+              <Kpi label="Envoyées" value={String(postVisit.sent)} />
+              <Kpi label="Réservations après" value={String(postVisit.bookingsAfter)} />
+              <Kpi label="COMPLETED après" value={String(postVisit.completedAfter)} />
+            </div>
+          ) : null}
+          <ul className="surface divide-y divide-line text-sm">
+            {marketing.map((c) => (
+              <li key={c.campaignId} className="p-4">
+                <p className="font-medium">{c.campaignName}</p>
+                <p className="mt-1 text-ink/60">
+                  Ciblées {c.targeted} · Envoyées {c.sent} · RDV associés {c.associatedAppointments}{" "}
+                  · CA associé {formatMad(c.associatedRevenue)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : null}
 
       {!loading && tab === "Fidélité" && loyalty ? (

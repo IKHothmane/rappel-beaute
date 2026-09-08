@@ -128,6 +128,22 @@ export type InventoryAnalytics = {
   lowStockCount: number;
   topConsumption: { productId: string; productName: string; quantity: number; unit: string }[];
   lossesByReason: { reason: string; value: number }[];
+  /** CA net ventes POS produits (paiements COMPLETED liés à PosSale) */
+  posRevenue: number;
+  /** Marge estimée si coût d'achat connu */
+  posMargin: number | null;
+  /** Quantité stock sortie via mouvements SALE */
+  posStockConsumed: number;
+  topPosProducts: {
+    productId: string;
+    productName: string;
+    quantity: number;
+    revenue: number;
+    margin: number | null;
+  }[];
+  posByCategory: { category: string; quantity: number; revenue: number }[];
+  posByStaff: { staffId: string; staffName: string; salesCount: number; revenue: number }[];
+  posByPaymentMethod: { method: string; count: number; amount: number }[];
 };
 
 export type MarketingAnalyticsRow = {
@@ -137,6 +153,22 @@ export type MarketingAnalyticsRow = {
   sent: number;
   associatedAppointments: number;
   associatedRevenue: number;
+};
+
+export type PostVisitAnalyticsSummary = {
+  eligible: number;
+  prepared: number;
+  sent: number;
+  bookingsAfter: number;
+  completedAfter: number;
+};
+
+/** Funnel 43.7 — même source Appointment.attributionSource = ai_marketing */
+export type AIMarketingAnalyticsSummary = {
+  generated: number;
+  sent: number;
+  bookings: number;
+  completed: number;
 };
 
 export type ReviewAnalytics = {

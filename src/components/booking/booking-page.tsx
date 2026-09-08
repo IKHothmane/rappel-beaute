@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { slugifyLabel } from "@/lib/booking-qr";
 import {
   formatBookingDate,
   formatBookingTime,
@@ -24,8 +25,44 @@ import type {
 
 type Step = "intro" | "service" | "staff" | "date" | "slot" | "info" | "confirm" | "done";
 
-export function BookingPageView({ slug }: { slug: string }) {
+type Props = {
+  slug: string;
+  initialServiceRef?: string | null;
+  initialStaffRef?: string | null;
+  attributionSource?: string | null;
+};
+
+function matchService(services: PublicServiceItem[], ref: string | null | undefined) {
+  if (!ref?.trim()) return null;
+  const needle = ref.trim().toLowerCase();
+  return (
+    services.find((s) => s.id.toLowerCase() === needle) ??
+    services.find((s) => slugifyLabel(s.name) === needle) ??
+    null
+  );
+}
+
+function matchStaff(staff: PublicStaffItem[], ref: string | null | undefined) {
+  if (!ref?.trim()) return null;
+  const needle = ref.trim().toLowerCase();
+  return (
+    staff.find((s) => s.id.toLowerCase() === needle) ??
+    staff.find((s) => slugifyLabel(s.displayName.split(" ")[0] ?? "") === needle) ??
+    staff.find((s) => slugifyLabel(s.displayName) === needle) ??
+    null
+  );
+}
+
+export function BookingPageView({
+  slug,
+  initialServiceRef,
+  initialStaffRef,
+  attributionSource,
+}: Props) {
   const router = useRouter();
+  const viewTracked = useRef(false);
+  const qrPrefillDone = useRef(false);
+
   const [step, setStep] = useState<Step>("intro");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -60,24 +97,77 @@ export function BookingPageView({ slug }: { slug: string }) {
       const [o, s] = await Promise.all([getPublicOrganization(slug), getPublicServices(slug)]);
       setOrg(o);
       setServices(s);
-      if (!serviceId && s[0]) setServiceId(s[0].id);
     } catch {
       setError("Institut introuvable ou indisponible.");
+      setOrg(null);
+      setServices([]);
     } finally {
       setLoading(false);
     }
-  }, [slug, serviceId]);
+  }, [slug]);
 
   useEffect(() => {
     refreshBase();
   }, [refreshBase]);
 
+  /** Tracking VIEW réel uniquement si source=qr (et org résolue). */
+  useEffect(() => {
+    if (!org || viewTracked.current) return;
+    if (attributionSource !== "qr") return;
+    viewTracked.current = true;
+    void fetch(`/api/public/${encodeURIComponent(slug)}/events/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventType: "VIEW",
+        source: "qr",
+        service: initialServiceRef || undefined,
+        staff: initialStaffRef || undefined,
+      }),
+    }).catch(() => {
+      /* non bloquant */
+    });
+  }, [org, slug, attributionSource, initialServiceRef, initialStaffRef]);
+
+  /** Préremplissage service/staff depuis query (prix/durée restent serveur). */
+  useEffect(() => {
+    if (!services.length || qrPrefillDone.current) return;
+    qrPrefillDone.current = true;
+
+    const matched = matchService(services, initialServiceRef);
+    if (matched) {
+      setServiceId(matched.id);
+      setStep(initialStaffRef ? "staff" : "staff");
+      return;
+    }
+
+    if (initialServiceRef) {
+      setError("Ce service n’est plus disponible. Choisissez une autre prestation.");
+    }
+    if (!serviceId && services[0]) setServiceId(services[0].id);
+  }, [services, initialServiceRef, initialStaffRef, serviceId]);
+
   useEffect(() => {
     if (!serviceId || step === "intro") return;
     getPublicStaff(slug, serviceId, date || undefined)
-      .then(setStaff)
+      .then((list) => {
+        setStaff(list);
+        if (initialStaffRef && staffId === "any") {
+          const hit = matchStaff(list, initialStaffRef);
+          if (hit?.available) {
+            setStaffId(hit.id);
+            setStep("date");
+          } else if (initialStaffRef) {
+            setError(
+              hit
+                ? "Cette employée n’est pas disponible pour ce service."
+                : "Employée introuvable ou incompatible avec ce service.",
+            );
+          }
+        }
+      })
       .catch(() => setStaff([]));
-  }, [slug, serviceId, date, step]);
+  }, [slug, serviceId, date, step, initialStaffRef, staffId]);
 
   useEffect(() => {
     if (!serviceId || !date) return;
@@ -123,6 +213,7 @@ export function BookingPageView({ slug }: { slug: string }) {
           email: email || null,
           marketingOptIn,
         },
+        attributionSource: attributionSource?.trim() || null,
       });
       setResult(booking);
       setStep("done");
@@ -222,6 +313,11 @@ export function BookingPageView({ slug }: { slug: string }) {
                           {formatMad(s.price)} · {formatDuration(s.durationMin)}
                         </span>
                       </div>
+                      {s.deposit != null && s.deposit > 0 ? (
+                        <p className="mt-1 text-xs text-amber-700">
+                          Acompte : {formatMad(s.deposit)} (encaissement par l&apos;institut)
+                        </p>
+                      ) : null}
                       {s.description ? (
                         <p className="mt-1 text-xs text-ink/50 line-clamp-2">{s.description}</p>
                       ) : null}
@@ -376,6 +472,13 @@ export function BookingPageView({ slug }: { slug: string }) {
                 <p>{date} · {time}</p>
                 <p>{selectedService ? formatDuration(selectedService.durationMin) : ""}</p>
                 <p className="font-mono text-base">{selectedService ? formatMad(selectedService.price) : ""}</p>
+                {selectedService?.deposit != null && selectedService.deposit > 0 ? (
+                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    Acompte demandé : {formatMad(selectedService.deposit)}. Votre RDV restera en
+                    attente jusqu&apos;à l&apos;encaissement hors ligne par l&apos;institut (espèces,
+                    carte, virement…). Aucun paiement en ligne.
+                  </p>
+                ) : null}
                 <p className="text-ink/55">{org.name}</p>
                 <p className="text-ink/55">{org.address}</p>
               </div>
@@ -397,12 +500,20 @@ export function BookingPageView({ slug }: { slug: string }) {
 
           {step === "done" && result ? (
             <div className="surface p-6 text-center">
-              <p className="text-2xl">✅</p>
-              <h2 className="mt-2 font-display text-xl font-semibold">Rendez-vous confirmé</h2>
+              <p className="text-2xl">{result.depositAwaiting ? "⏳" : "✅"}</p>
+              <h2 className="mt-2 font-display text-xl font-semibold">
+                {result.depositAwaiting ? "Demande enregistrée" : "Rendez-vous confirmé"}
+              </h2>
               <p className="mt-2 text-sm text-ink/60">
                 Votre rendez-vous est prévu le {formatBookingDate(result.startAt)} à{" "}
                 {formatBookingTime(result.startAt)}.
               </p>
+              {result.depositAwaiting && result.deposit ? (
+                <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  Acompte : {formatMad(result.deposit)} — confirmation après encaissement par
+                  l&apos;institut.
+                </p>
+              ) : null}
               <Link
                 href={`/book/${slug}/confirmation/?id=${result.appointmentId}`}
                 className="btn-ghost mt-4 inline-block text-xs"

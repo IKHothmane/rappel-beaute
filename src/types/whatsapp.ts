@@ -8,7 +8,8 @@ export type WhatsAppTaskType =
   | "PROMOTION"
   | "PACKAGE_EXPIRING"
   | "LOYALTY_REWARD"
-  | "WAITING_LIST";
+  | "WAITING_LIST"
+  | "POST_VISIT";
 
 export type WhatsAppTaskStatus = "PENDING" | "SENT" | "SKIPPED" | "CANCELLED";
 
@@ -28,6 +29,7 @@ export const WHATSAPP_TASK_TYPES: WhatsAppTaskType[] = [
   "PACKAGE_EXPIRING",
   "LOYALTY_REWARD",
   "WAITING_LIST",
+  "POST_VISIT",
 ];
 
 export const WHATSAPP_TASK_TYPE_LABEL: Record<WhatsAppTaskType, string> = {
@@ -41,6 +43,7 @@ export const WHATSAPP_TASK_TYPE_LABEL: Record<WhatsAppTaskType, string> = {
   PACKAGE_EXPIRING: "Forfait expirant",
   LOYALTY_REWARD: "Récompense fidélité",
   WAITING_LIST: "Liste d'attente",
+  POST_VISIT: "Post-prestation",
 };
 
 export const WHATSAPP_TASK_STATUS_LABEL: Record<WhatsAppTaskStatus, string> = {
@@ -63,6 +66,7 @@ export const WHATSAPP_MARKETING_TYPES = new Set<WhatsAppTaskType>([
   "PROMOTION",
   "LOYALTY_REWARD",
   "PACKAGE_EXPIRING",
+  "POST_VISIT",
 ]);
 
 export type WhatsAppTemplateItem = {
@@ -93,6 +97,8 @@ export type WhatsAppTaskItem = {
   serviceName: string | null;
   servicePrice: number | null;
   templateId: string | null;
+  /** Ex. ai_marketing — même valeur que Appointment.attributionSource */
+  attributionSource: string | null;
 };
 
 export type WhatsAppKpis = {
@@ -137,4 +143,6 @@ export const WHATSAPP_TEMPLATE_VARIABLES = [
   "{{lastVisit.date}}",
   "{{lastVisit.days}}",
   "{{lastService.name}}",
+  "{{recommendedDate}}",
+  "{{bookingUrl}}",
 ] as const;

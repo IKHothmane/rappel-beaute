@@ -19,8 +19,15 @@ type AgendaGridProps = {
   staff: StaffCol[];
   appointments: Appointment[];
   staffContexts?: StaffAgendaContext[];
+  /** staff = colonnes employées ; resource = colonnes cabines (DnD change resourceId) */
+  columnMode?: "staff" | "resource";
   onAppointmentClick: (id: string) => void;
-  onSlotDrop?: (staffId: string, hour: number, minute: number, appointmentId: string) => void;
+  onSlotDrop?: (
+    columnId: string,
+    hour: number,
+    minute: number,
+    appointmentId: string,
+  ) => void;
 };
 
 function slotTop(date: Date) {
@@ -38,6 +45,7 @@ export function AgendaGrid({
   staff,
   appointments,
   staffContexts = [],
+  columnMode = "staff",
   onAppointmentClick,
   onSlotDrop,
 }: AgendaGridProps) {
@@ -92,7 +100,13 @@ export function AgendaGrid({
             </div>
 
             {staff.map((col) => {
-              const colAppts = appointments.filter((a) => a.staffId === col.id);
+              const colAppts = appointments.filter((a) =>
+                columnMode === "resource" ? a.resourceId === col.id : a.staffId === col.id,
+              );
+              const ctx =
+                columnMode === "staff"
+                  ? staffContexts.find((c) => c.id === col.id)
+                  : undefined;
 
               return (
                 <div
@@ -117,40 +131,67 @@ export function AgendaGrid({
                     />
                   ))}
 
+                  {/* Pauses (StaffBreak) */}
+                  {columnMode === "staff"
+                    ? (ctx?.breaks ?? [])
+                        .filter((brk) => brk.dayOfWeek === date.getDay())
+                        .map((brk) => {
+                          const bStart = new Date(date);
+                          const [sh, sm] = brk.startTime.split(":").map(Number);
+                          const [eh, em] = brk.endTime.split(":").map(Number);
+                          bStart.setHours(sh, sm, 0, 0);
+                          const bEnd = new Date(date);
+                          bEnd.setHours(eh, em, 0, 0);
+                          return (
+                            <div
+                              key={`brk-${brk.id ?? brk.startTime}`}
+                              className="pointer-events-none absolute inset-x-1 z-[1] rounded-md bg-ink/[0.04]"
+                              style={{
+                                top: slotTop(bStart) + 2,
+                                height: slotHeight(bStart, bEnd),
+                              }}
+                              title={`Pause ${brk.startTime}–${brk.endTime}`}
+                            />
+                          );
+                        })
+                    : null}
+
                   {/* Congés / absences approuvés (Staff réel) */}
-                  {(staffContexts.find((c) => c.id === col.id)?.leaves ?? [])
-                    .filter((leave) => {
-                      const start = new Date(leave.startAt);
-                      const end = new Date(leave.endAt);
-                      const dayStart = new Date(date);
-                      dayStart.setHours(0, 0, 0, 0);
-                      const dayEnd = new Date(date);
-                      dayEnd.setHours(23, 59, 59, 999);
-                      return start <= dayEnd && end >= dayStart;
-                    })
-                    .map((leave) => {
-                      const bStart = new Date(leave.startAt);
-                      const bEnd = new Date(leave.endAt);
-                      const dayStart = new Date(date);
-                      dayStart.setHours(AGENDA_OPEN_HOUR, 0, 0, 0);
-                      const dayEnd = new Date(date);
-                      dayEnd.setHours(AGENDA_CLOSE_HOUR, 0, 0, 0);
-                      const clipStart = bStart < dayStart ? dayStart : bStart;
-                      const clipEnd = bEnd > dayEnd ? dayEnd : bEnd;
-                      if (clipEnd <= clipStart) return null;
-                      return (
-                        <div
-                          key={leave.id}
-                          className="absolute inset-x-1 rounded-lg border border-dashed border-amber-300 bg-amber-50/80 px-2 py-1 text-[10px] font-medium text-amber-800"
-                          style={{
-                            top: slotTop(clipStart) + 2,
-                            height: slotHeight(clipStart, clipEnd),
-                          }}
-                        >
-                          {LEAVE_TYPE_LABEL[leave.type] ?? "Absence"}
-                        </div>
-                      );
-                    })}
+                  {columnMode === "staff"
+                    ? (ctx?.leaves ?? [])
+                        .filter((leave) => {
+                          const start = new Date(leave.startAt);
+                          const end = new Date(leave.endAt);
+                          const dayStart = new Date(date);
+                          dayStart.setHours(0, 0, 0, 0);
+                          const dayEnd = new Date(date);
+                          dayEnd.setHours(23, 59, 59, 999);
+                          return start <= dayEnd && end >= dayStart;
+                        })
+                        .map((leave) => {
+                          const bStart = new Date(leave.startAt);
+                          const bEnd = new Date(leave.endAt);
+                          const dayStart = new Date(date);
+                          dayStart.setHours(AGENDA_OPEN_HOUR, 0, 0, 0);
+                          const dayEnd = new Date(date);
+                          dayEnd.setHours(AGENDA_CLOSE_HOUR, 0, 0, 0);
+                          const clipStart = bStart < dayStart ? dayStart : bStart;
+                          const clipEnd = bEnd > dayEnd ? dayEnd : bEnd;
+                          if (clipEnd <= clipStart) return null;
+                          return (
+                            <div
+                              key={leave.id}
+                              className="absolute inset-x-1 z-[2] rounded-lg border border-dashed border-amber-300 bg-amber-50/80 px-2 py-1 text-[10px] font-medium text-amber-800"
+                              style={{
+                                top: slotTop(clipStart) + 2,
+                                height: slotHeight(clipStart, clipEnd),
+                              }}
+                            >
+                              {LEAVE_TYPE_LABEL[leave.type] ?? "Absence"}
+                            </div>
+                          );
+                        })
+                    : null}
 
                   {colAppts.map((apt) => {
                     const start = new Date(apt.startAt);

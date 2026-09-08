@@ -44,6 +44,8 @@ type TemplateContext = {
   loyalty?: { points: string };
   lastVisit?: { date: string; days: string };
   lastService?: { name: string };
+  bookingUrl?: string;
+  recommendedDate?: string;
 };
 
 export function renderTemplateBody(body: string, ctx: TemplateContext): string {
@@ -66,6 +68,8 @@ export function renderTemplateBody(body: string, ctx: TemplateContext): string {
     "{{lastVisit.date}}": ctx.lastVisit?.date ?? "",
     "{{lastVisit.days}}": ctx.lastVisit?.days ?? "",
     "{{lastService.name}}": ctx.lastService?.name ?? ctx.service?.name ?? "",
+    "{{bookingUrl}}": ctx.bookingUrl ?? "",
+    "{{recommendedDate}}": ctx.recommendedDate ?? "",
   };
   let out = body;
   for (const [key, value] of Object.entries(vars)) {
@@ -127,6 +131,7 @@ function mapTask(r: Record<string, unknown>): WhatsAppTaskItem {
     serviceName: (r.serviceName as string) ?? null,
     servicePrice: r.servicePrice != null ? parseFloat(String(r.servicePrice)) : null,
     templateId: (r.templateId as string) ?? null,
+    attributionSource: (r.attributionSource as string) ?? null,
   };
 }
 
@@ -184,6 +189,28 @@ Votre avis nous ferait très plaisir ❤️
 ⭐ Laisser un avis Google :
 {{organization.googleReviewUrl}}`,
   },
+  {
+    name: "Liste d'attente",
+    type: "WAITING_LIST",
+    body: `Bonjour {{customer.firstName}} 👋
+
+Une place vient de se libérer pour {{service.name}}
+le {{appointment.date}} à {{appointment.time}} à {{organization.name}}.
+
+Souhaitez-vous la réserver ?
+{{bookingUrl}}`,
+  },
+  {
+    name: "Post-prestation",
+    type: "POST_VISIT",
+    body: `Bonjour {{customer.firstName}} 👋
+
+Nous espérons que vous avez apprécié votre {{lastService.name}}.
+Votre prochaine séance pourrait être recommandée autour du {{recommendedDate}}.
+
+Souhaitez-vous prendre rendez-vous ?
+{{bookingUrl}}`,
+  },
 ];
 
 export async function ensureDefaultTemplates(organizationId: string): Promise<void> {
@@ -239,20 +266,23 @@ async function upsertTask(
     phoneSnapshot: string;
     scheduledFor: Date;
     idempotencyKey: string;
+    attributionSource?: string | null;
   },
-): Promise<void> {
-  await pool.query(
+): Promise<string | null> {
+  const id = newId("wtask");
+  const { rows } = await pool.query<{ id: string }>(
     `INSERT INTO "WhatsAppTask" (
       id, "organizationId", "customerId", "appointmentId", "templateId",
       type, status, "messageSnapshot", "phoneSnapshot", "scheduledFor",
-      "idempotencyKey", "updatedAt"
+      "idempotencyKey", "attributionSource", "updatedAt"
     ) VALUES (
       $1,$2,$3,$4,$5,$6::"WhatsAppTaskType",'PENDING'::"WhatsAppTaskStatus",
-      $7,$8,$9,$10,NOW()
+      $7,$8,$9,$10,$11,NOW()
     )
-    ON CONFLICT ("organizationId", "idempotencyKey") DO NOTHING`,
+    ON CONFLICT ("organizationId", "idempotencyKey") DO NOTHING
+    RETURNING id`,
     [
-      newId("wtask"),
+      id,
       organizationId,
       input.customerId,
       input.appointmentId ?? null,
@@ -262,8 +292,10 @@ async function upsertTask(
       input.phoneSnapshot,
       input.scheduledFor,
       input.idempotencyKey,
+      input.attributionSource ?? null,
     ],
   );
+  return rows[0]?.id ?? null;
 }
 
 /** Génère automatiquement les tâches du jour (idempotent) */
@@ -395,6 +427,10 @@ export async function syncWhatsAppTasks(organizationId: string): Promise<void> {
   // Réactivation — moteur configurable (étape 31)
   const { syncReactivationWhatsAppTasks } = await import("@/lib/db/reactivation");
   await syncReactivationWhatsAppTasks(organizationId);
+
+  // Relance post-prestation (41.20) — distinct de la réactivation
+  const { syncPostVisitTasks } = await import("@/lib/db/post-visit");
+  await syncPostVisitTasks(organizationId);
 
   // Anniversaires (marketing opt-in)
   const bdayTpl = await getDefaultTemplate(organizationId, "BIRTHDAY");
@@ -854,6 +890,175 @@ export async function enqueueOnlineBookingConfirmation(
   });
 }
 
+/** Offre liste d'attente après libération d'un créneau — envoi manuel via /whatsapp */
+export async function enqueueWaitingListOffer(input: {
+  organizationId: string;
+  customerId: string;
+  appointmentId: string;
+  waitingListEntryId: string;
+  serviceId: string;
+  startAt: Date;
+}): Promise<void> {
+  await ensureDefaultTemplates(input.organizationId);
+  const tpl = await getDefaultTemplate(input.organizationId, "WAITING_LIST");
+  if (!tpl) return;
+
+  const { rows } = await pool.query<{
+    phone: string;
+    firstName: string;
+    lastName: string;
+    serviceName: string;
+    price: string;
+    slug: string;
+  }>(
+    `SELECT c.phone, c."firstName", c."lastName",
+            s.name AS "serviceName", s.price::text,
+            o.slug
+     FROM "Customer" c
+     JOIN "Service" s ON s.id = $3
+     JOIN "Organization" o ON o.id = $1
+     WHERE c.id = $2 AND c."organizationId" = $1
+       AND c.phone IS NOT NULL AND c.phone <> ''`,
+    [input.organizationId, input.customerId, input.serviceId],
+  );
+  const row = rows[0];
+  if (!row) return;
+
+  const org = await loadOrg(input.organizationId);
+  const bookingUrl = `https://app.rappelbeauty.com/book/${row.slug}/`;
+  const message = renderTemplateBody(tpl.body, {
+    customer: { firstName: row.firstName, lastName: row.lastName },
+    appointment: {
+      date: formatDateFr(input.startAt),
+      time: formatTimeFr(input.startAt),
+    },
+    service: { name: row.serviceName, price: `${row.price} MAD` },
+    organization: {
+      name: org.name,
+      phone: org.phone ?? "",
+      address: org.address ?? "",
+    },
+    bookingUrl,
+  });
+
+  await upsertTask(input.organizationId, {
+    customerId: input.customerId,
+    appointmentId: input.appointmentId,
+    templateId: tpl.id,
+    type: "WAITING_LIST",
+    messageSnapshot: message,
+    phoneSnapshot: row.phone,
+    scheduledFor: new Date(),
+    idempotencyKey: `wa:waiting_list:${input.waitingListEntryId}:${input.appointmentId}`,
+  });
+}
+
 export function isMarketingWhatsAppType(type: WhatsAppTaskType): boolean {
   return WHATSAPP_MARKETING_TYPES.has(type);
+}
+
+async function loadMappedTask(taskId: string): Promise<WhatsAppTaskItem | null> {
+  const { rows } = await pool.query(
+    `SELECT t.*,
+            c."firstName" || ' ' || c."lastName" AS "customerName",
+            a."startAt" AS "appointmentStartAt",
+            s.name AS "serviceName",
+            a.price::text AS "servicePrice"
+     FROM "WhatsAppTask" t
+     JOIN "Customer" c ON c.id = t."customerId"
+     LEFT JOIN "Appointment" a ON a.id = t."appointmentId"
+     LEFT JOIN "Service" s ON s.id = a."serviceId"
+     WHERE t.id = $1`,
+    [taskId],
+  );
+  if (!rows[0]) return null;
+  return mapTask(rows[0] as Record<string, unknown>);
+}
+
+/**
+ * Crée une tâche PENDING après validation humaine (43.7).
+ * Jamais SENT automatiquement — l'employée ouvre wa.me puis marque envoyé.
+ */
+export async function createAIWhatsAppTask(
+  organizationId: string,
+  input: {
+    customerId: string;
+    message: string;
+    type: WhatsAppTaskType;
+    appointmentId?: string | null;
+    attributionSource: string;
+  },
+  actor: { id: string; name?: string | null },
+): Promise<WhatsAppTaskItem> {
+  const { rows: custRows } = await pool.query<{
+    phone: string | null;
+    marketingWhatsapp: boolean;
+    firstName: string;
+  }>(
+    `SELECT phone, "marketingWhatsapp", "firstName"
+     FROM "Customer"
+     WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
+    [input.customerId, organizationId],
+  );
+  const customer = custRows[0];
+  if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
+  if (!customer.phone?.trim()) throw new Error("CUSTOMER_NO_PHONE");
+  if (isMarketingWhatsAppType(input.type) && !customer.marketingWhatsapp) {
+    throw new Error("CUSTOMER_NO_MARKETING_OPTIN");
+  }
+
+  if (input.appointmentId) {
+    const { rows: aptRows } = await pool.query<{ customerId: string }>(
+      `SELECT "customerId" FROM "Appointment"
+       WHERE id = $1 AND "organizationId" = $2`,
+      [input.appointmentId, organizationId],
+    );
+    if (!aptRows[0]) throw new Error("APPOINTMENT_NOT_FOUND");
+    if (aptRows[0].customerId !== input.customerId) {
+      throw new Error("APPOINTMENT_MISMATCH");
+    }
+  }
+
+  const taskId = newId("wtask");
+  const idempotencyKey = `wa:ai_marketing:${taskId}`;
+  await pool.query(
+    `INSERT INTO "WhatsAppTask" (
+      id, "organizationId", "customerId", "appointmentId", "templateId",
+      type, status, "messageSnapshot", "phoneSnapshot", "scheduledFor",
+      "idempotencyKey", "attributionSource", "updatedAt"
+    ) VALUES (
+      $1,$2,$3,$4,NULL,$5::"WhatsAppTaskType",'PENDING'::"WhatsAppTaskStatus",
+      $6,$7,NOW(),$8,$9,NOW()
+    )`,
+    [
+      taskId,
+      organizationId,
+      input.customerId,
+      input.appointmentId ?? null,
+      input.type,
+      input.message,
+      customer.phone,
+      idempotencyKey,
+      input.attributionSource,
+    ],
+  );
+
+  await writeAuditLog({
+    organizationId,
+    entityType: "WhatsAppTask",
+    entityId: taskId,
+    action: "AI_WHATSAPP_DRAFT",
+    actorId: actor.id,
+    actorName: actor.name,
+    after: {
+      type: input.type,
+      attributionSource: input.attributionSource,
+      customerId: input.customerId,
+      autoSent: false,
+    },
+  });
+
+  const task = await loadMappedTask(taskId);
+  if (!task) throw new Error("TASK_CREATE_FAILED");
+  return task;
 }

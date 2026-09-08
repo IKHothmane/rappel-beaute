@@ -25,12 +25,17 @@ export default function SupportPage() {
   return (
     <>
       <AdminPageHeader
-        title="Support"
-        description="Sessions d'assistance journalisées (SupportSession) — pas de tickets fictifs."
+        title="Sessions assistance"
+        description="Mode assistance journalisé (SupportSession) — distinct des tickets SaaS."
         action={
-          <Link href="/support/mode/" className="ac-btn-ghost">
-            Mode assistance
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/support/tickets/" className="ac-btn">
+              Tickets support
+            </Link>
+            <Link href="/support/mode/" className="ac-btn-ghost">
+              Mode assistance
+            </Link>
+          </div>
         }
       />
 

@@ -48,6 +48,8 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     items: [
       { label: "Tableau de bord", href: "/dashboard/", icon: LayoutDashboard, key: "dashboard" },
       { label: "Agenda", href: "/agenda/", icon: CalendarDays, key: "agenda" },
+      { label: "Planning", href: "/planning/", icon: ClipboardList, key: "planning" },
+      { label: "Assistant IA", href: "/ai/", icon: Sparkles, key: "ai" },
       { label: "Clientes", href: "/customers/", icon: Users, key: "customers" },
     ],
   },
@@ -72,6 +74,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     title: "Finance",
     items: [
       { label: "Caisse", href: "/cash-register/", icon: WalletCards, key: "cash-register" },
+      { label: "POS Produits", href: "/pos/", icon: ShoppingCart, key: "pos" },
       { label: "Paiements", href: "/payments/", icon: CircleDollarSign, key: "payments" },
       { label: "Dépenses", href: "/expenses/", icon: CircleDollarSign, key: "expenses" },
       { label: "Commissions", href: "/commissions/", icon: CircleDollarSign, key: "commissions" },
@@ -82,7 +85,9 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     title: "Croissance",
     items: [
       { label: "WhatsApp", href: "/whatsapp/", icon: MessageCircle, key: "whatsapp", badge: "V1" },
+      { label: "Liste d'attente", href: "/waiting-list/", icon: Users, key: "waiting-list" },
       { label: "Réactivation", href: "/reactivation/", icon: Users, key: "reactivation" },
+      { label: "Post-prestation", href: "/post-visit/", icon: MessageCircle, key: "post-visit" },
       { label: "Fidélité", href: "/loyalty/", icon: Gift, key: "loyalty" },
       { label: "Promotions", href: "/promotions/", icon: Megaphone, key: "promotions" },
       { label: "Cartes cadeaux", href: "/gift-cards/", icon: Gift, key: "gift-cards" },
@@ -96,6 +101,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
       { label: "Analytics", href: "/analytics/", icon: BarChart3, key: "analytics" },
       { label: "Rapports", href: "/reports/", icon: FileText, key: "reports" },
       { label: "Notifications", href: "/notifications/", icon: Bell, key: "notifications" },
+      { label: "Aide & Support", href: "/support/", icon: MessageCircle, key: "support" },
       { label: "Paramètres", href: "/settings/", icon: Settings, key: "settings" },
     ],
   },

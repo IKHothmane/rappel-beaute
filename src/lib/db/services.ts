@@ -25,6 +25,7 @@ type ServiceRow = {
   prepTimeMin: number;
   cleanupTimeMin: number;
   deposit: string | null;
+  recommendedReturnDays: number | null;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -45,6 +46,7 @@ function rowToListItem(row: ServiceRow): ServiceListItem {
     prepTimeMin: row.prepTimeMin,
     cleanupTimeMin: row.cleanupTimeMin,
     deposit: row.deposit != null ? parseFloat(row.deposit) : null,
+    recommendedReturnDays: row.recommendedReturnDays,
     active: row.active,
     staffCount: parseInt(row.staffCount, 10) || 0,
     staffNames: row.staffNames ?? [],
@@ -64,6 +66,7 @@ const LIST_SELECT = `
     s."prepTimeMin",
     s."cleanupTimeMin",
     s.deposit::text,
+    s."recommendedReturnDays",
     s.active,
     s."createdAt",
     s."updatedAt",
@@ -377,8 +380,8 @@ export async function createService(
     await client.query(
       `INSERT INTO "Service" (
         id, "organizationId", name, description, category, price, "durationMin",
-        "prepTimeMin", "cleanupTimeMin", deposit, active, "updatedAt"
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
+        "prepTimeMin", "cleanupTimeMin", deposit, "recommendedReturnDays", active, "updatedAt"
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())`,
       [
         id,
         organizationId,
@@ -390,6 +393,9 @@ export async function createService(
         input.prepTimeMin ?? 0,
         input.cleanupTimeMin ?? 0,
         input.deposit ?? null,
+        input.recommendedReturnDays != null && input.recommendedReturnDays > 0
+          ? input.recommendedReturnDays
+          : null,
         input.active !== false,
       ],
     );
@@ -461,6 +467,14 @@ export async function updateService(
     if (input.prepTimeMin !== undefined) setField("prepTimeMin", input.prepTimeMin);
     if (input.cleanupTimeMin !== undefined) setField("cleanupTimeMin", input.cleanupTimeMin);
     if (input.deposit !== undefined) setField("deposit", input.deposit ?? null);
+    if (input.recommendedReturnDays !== undefined) {
+      setField(
+        "recommendedReturnDays",
+        input.recommendedReturnDays != null && input.recommendedReturnDays > 0
+          ? input.recommendedReturnDays
+          : null,
+      );
+    }
     if (input.active !== undefined) setField("active", input.active);
 
     if (sets.length > 0) {

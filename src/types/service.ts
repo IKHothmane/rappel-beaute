@@ -10,6 +10,7 @@ export type ServiceListItem = {
   prepTimeMin: number;
   cleanupTimeMin: number;
   deposit: number | null;
+  recommendedReturnDays: number | null;
   active: boolean;
   staffCount: number;
   staffNames: string[];
@@ -76,6 +77,7 @@ export type CreateServiceInput = {
   prepTimeMin?: number;
   cleanupTimeMin?: number;
   deposit?: number;
+  recommendedReturnDays?: number | null;
   active?: boolean;
   staffIds?: string[];
   resources?: { resourceId: string; quantity?: number }[];

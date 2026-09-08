@@ -11,6 +11,7 @@ import {
   isExclusionViolation,
   listAppointmentsByOrg,
 } from "@/lib/db/appointments";
+import { assertAppointmentBookable } from "@/lib/db/planning";
 import { assertResourceBookable } from "@/lib/db/resources";
 import type { CreateAppointmentInput } from "@/types/appointment";
 
@@ -23,6 +24,14 @@ function resourceBookingError(error: unknown) {
     RESOURCE_MAINTENANCE: "Cette ressource est en maintenance sur ce créneau.",
   };
   return map[error.message] ?? null;
+}
+
+function availabilityError(error: unknown) {
+  if (!(error instanceof Error) || error.message !== "AVAILABILITY_CONFLICT") return null;
+  const conflicts = (error as Error & { conflicts?: string[] }).conflicts;
+  return conflicts?.length
+    ? conflicts.join(" ")
+    : "Créneau hors disponibilité (horaires, pause, congé ou fermeture).";
 }
 
 export async function GET(request: NextRequest) {
@@ -53,6 +62,14 @@ export async function POST(request: NextRequest) {
       (await request.json()) as CreateAppointmentInput & Record<string, unknown>,
     ) as unknown as CreateAppointmentInput;
 
+    await assertAppointmentBookable({
+      organizationId: auth.session.organizationId,
+      staffId: body.staffId,
+      resourceId: body.resourceId,
+      startAt: body.startAt,
+      endAt: body.endAt,
+    });
+
     if (body.resourceId) {
       await assertResourceBookable({
         organizationId: auth.session.organizationId,
@@ -74,6 +91,10 @@ export async function POST(request: NextRequest) {
         },
         { status: 409 },
       );
+    }
+    const availMsg = availabilityError(error);
+    if (availMsg) {
+      return NextResponse.json({ error: availMsg }, { status: 409 });
     }
     const resourceMsg = resourceBookingError(error);
     if (resourceMsg) {

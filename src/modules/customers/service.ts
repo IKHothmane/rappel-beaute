@@ -6,6 +6,11 @@ import type {
   CustomerSegment,
   UpdateCustomerInput,
 } from "@/types/customer";
+import type {
+  Customer360Stats,
+  CustomerNoteItem,
+  CustomerTimelineEvent,
+} from "@/types/customer-360";
 
 async function parseJson<T>(res: Response): Promise<T> {
   const data = await res.json();
@@ -119,4 +124,77 @@ export function formatSegmentLabel(segment: CustomerSegment): string {
 
 export function formatStatusLabel(segment: CustomerSegment): string {
   return formatSegmentLabel(segment);
+}
+
+export async function getCustomerStats(id: string): Promise<Customer360Stats> {
+  const res = await fetch(`/api/customers/${id}/stats/`, fetchOpts);
+  return parseJson(res);
+}
+
+export async function getCustomerTimeline(id: string): Promise<CustomerTimelineEvent[]> {
+  const res = await fetch(`/api/customers/${id}/timeline/`, fetchOpts);
+  const data = await parseJson<{ data: CustomerTimelineEvent[] }>(res);
+  return data.data;
+}
+
+export async function listCustomerNotes(id: string): Promise<CustomerNoteItem[]> {
+  const res = await fetch(`/api/customers/${id}/notes/`, fetchOpts);
+  const data = await parseJson<{ data: CustomerNoteItem[] }>(res);
+  return data.data;
+}
+
+export async function createCustomerNoteApi(
+  id: string,
+  content: string,
+): Promise<{ ok: true; note: CustomerNoteItem } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/customers/${id}/notes/`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
+    return { ok: true, note: data as CustomerNoteItem };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
+  }
+}
+
+export async function updateCustomerNoteApi(
+  customerId: string,
+  noteId: string,
+  content: string,
+): Promise<{ ok: true; note: CustomerNoteItem } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/customers/${customerId}/notes/${noteId}/`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
+    return { ok: true, note: data as CustomerNoteItem };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
+  }
+}
+
+export async function deleteCustomerNoteApi(
+  customerId: string,
+  noteId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/customers/${customerId}/notes/${noteId}/`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
+  }
 }

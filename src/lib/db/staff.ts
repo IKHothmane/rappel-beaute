@@ -136,10 +136,12 @@ export async function listStaff(
 
     const items: StaffAgendaContext[] = [];
     for (const row of rows) {
-      const [schedules, breaks, leaves] = await Promise.all([
+      const [schedules, breaks, leaves, overtimes, replacementsAsAbsent] = await Promise.all([
         loadSchedules(row.id),
         loadBreaks(row.id),
         loadLeaves(row.id, organizationId),
+        loadOvertimes(row.id, organizationId),
+        loadReplacementsAsAbsent(row.id, organizationId),
       ]);
       items.push({
         id: row.id,
@@ -150,6 +152,8 @@ export async function listStaff(
         schedules,
         breaks,
         leaves: leaves.filter((l) => l.status === "APPROVED"),
+        overtimes,
+        replacementsAsAbsent,
       });
     }
     return { items, total: items.length };
@@ -264,6 +268,61 @@ async function loadLeaves(staffId: string, organizationId: string): Promise<Staf
     reason: r.reason,
     status: r.status as StaffLeaveItem["status"],
     createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+async function loadOvertimes(staffId: string, organizationId: string) {
+  const from = new Date();
+  from.setDate(from.getDate() - 7);
+  const to = new Date();
+  to.setDate(to.getDate() + 90);
+  const { rows } = await pool.query<{
+    id: string;
+    startAt: Date;
+    endAt: Date;
+    reason: string | null;
+  }>(
+    `SELECT id, "startAt", "endAt", reason FROM "StaffOvertime"
+     WHERE "staffId" = $1 AND "organizationId" = $2
+       AND "endAt" >= $3 AND "startAt" <= $4
+     ORDER BY "startAt"`,
+    [staffId, organizationId, from, to],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    startAt: r.startAt.toISOString(),
+    endAt: r.endAt.toISOString(),
+    reason: r.reason,
+  }));
+}
+
+async function loadReplacementsAsAbsent(staffId: string, organizationId: string) {
+  const from = new Date();
+  from.setDate(from.getDate() - 7);
+  const to = new Date();
+  to.setDate(to.getDate() + 90);
+  const { rows } = await pool.query<{
+    id: string;
+    startAt: Date;
+    endAt: Date;
+    substituteStaffId: string;
+    substituteName: string;
+  }>(
+    `SELECT r.id, r."startAt", r."endAt", r."substituteStaffId",
+            CONCAT(s."firstName", ' ', s."lastName") AS "substituteName"
+     FROM "StaffReplacement" r
+     JOIN "Staff" s ON s.id = r."substituteStaffId"
+     WHERE r."absentStaffId" = $1 AND r."organizationId" = $2 AND r.active = true
+       AND r."endAt" >= $3 AND r."startAt" <= $4
+     ORDER BY r."startAt"`,
+    [staffId, organizationId, from, to],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    startAt: r.startAt.toISOString(),
+    endAt: r.endAt.toISOString(),
+    substituteStaffId: r.substituteStaffId,
+    substituteName: r.substituteName.trim(),
   }));
 }
 

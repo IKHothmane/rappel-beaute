@@ -37,6 +37,7 @@ export type OrganizationListItem = {
   ownerEmail: string | null;
   createdAt: string;
   mrr: number;
+  usersCount: number;
 };
 
 export type PlatformDashboardStats = {

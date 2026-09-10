@@ -134,6 +134,28 @@ export async function reactivateOrganizationApi(id: string) {
   });
 }
 
+export async function archiveOrganizationApi(id: string) {
+  return adminFetch<{ ok: boolean }>(`/api/admin/organizations/${id}/archive/`, {
+    method: "POST",
+  });
+}
+
+export async function updateOrganizationApi(
+  id: string,
+  input: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    city?: string;
+  },
+) {
+  return adminFetch<{ organization: OrganizationDetail }>(
+    `/api/admin/organizations/${id}/`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+}
+
 export async function resetOwnerAccessApi(id: string) {
   return adminFetch<{ ok: boolean; activationUrl: string }>(
     `/api/admin/organizations/${id}/reset-access/`,

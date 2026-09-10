@@ -107,6 +107,7 @@ type OrgRow = {
   ownerFirst: string | null;
   ownerLast: string | null;
   ownerEmail: string | null;
+  usersCount: string;
 };
 
 function mapOrgRow(r: OrgRow): OrganizationListItem {
@@ -124,6 +125,7 @@ function mapOrgRow(r: OrgRow): OrganizationListItem {
     ownerEmail: r.ownerEmail,
     createdAt: r.createdAt.toISOString(),
     mrr: r.subPrice ? parseFloat(r.subPrice) : 0,
+    usersCount: parseInt(r.usersCount ?? "0", 10),
   };
 }
 
@@ -131,7 +133,8 @@ const ORG_SELECT = `
   SELECT
     o.id, o.name, o.slug, o.city, o.phone, o.email, o.status, o."createdAt",
     p.code AS plan, s."priceSnapshot"::text AS "subPrice",
-    u."firstName" AS "ownerFirst", u."lastName" AS "ownerLast", u.email AS "ownerEmail"
+    u."firstName" AS "ownerFirst", u."lastName" AS "ownerLast", u.email AS "ownerEmail",
+    (SELECT COUNT(*)::text FROM "User" WHERE "organizationId" = o.id) AS "usersCount"
   FROM "Organization" o
   LEFT JOIN LATERAL (
     SELECT "planId", "priceSnapshot" FROM "Subscription"
@@ -157,7 +160,12 @@ export async function listOrganizations(opts?: {
   if (opts?.search) {
     params.push(`%${opts.search.trim()}%`);
     clauses.push(
-      `(o.name ILIKE $${params.length} OR o.slug ILIKE $${params.length} OR u.email ILIKE $${params.length})`,
+      `(o.name ILIKE $${params.length}
+        OR o.slug ILIKE $${params.length}
+        OR o.email ILIKE $${params.length}
+        OR o.city ILIKE $${params.length}
+        OR u.email ILIKE $${params.length}
+        OR CONCAT(u."firstName", ' ', u."lastName") ILIKE $${params.length})`,
     );
   }
   if (opts?.status) {
@@ -185,7 +193,8 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
       o.id, o.name, o.slug, o.city, o.phone, o.email, o.status, o.address, o."createdAt",
       p.code AS plan, s."priceSnapshot"::text AS "subPrice",
       u."firstName" AS "ownerFirst", u."lastName" AS "ownerLast", u.email AS "ownerEmail",
-      u.phone AS "ownerPhone"
+      u.phone AS "ownerPhone",
+      (SELECT COUNT(*)::text FROM "User" WHERE "organizationId" = o.id) AS "usersCount"
     FROM "Organization" o
     LEFT JOIN LATERAL (
       SELECT "planId", "priceSnapshot" FROM "Subscription"

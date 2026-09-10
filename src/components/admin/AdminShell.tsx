@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/www/BrandLogo";
+import { adminHref } from "@/lib/admin/href";
 import { fetchAdminAudit, fetchAdminSession, platformLogout } from "@/modules/admin/client";
 import { fetchSupportTickets } from "@/modules/admin/support-tickets";
 
@@ -78,14 +79,6 @@ function isActive(pathname: string, href: string) {
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
 
-/** Garder ?__host=admin (nécessaire sur rappelbeauty.com / localhost apex). */
-function withAdminHost(href: string): string {
-  const [pathAndQuery, hash] = href.split("#");
-  const u = new URL(pathAndQuery || "/", "https://local.invalid");
-  u.searchParams.set("__host", "admin");
-  return `${u.pathname}${u.search}${hash ? `#${hash}` : ""}`;
-}
-
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const path = normalizePath(pathname);
@@ -94,7 +87,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [displayName, setDisplayName] = useState("");
   const [recentCount, setRecentCount] = useState(0);
   const [openTickets, setOpenTickets] = useState(0);
-  const href = (to: string) => withAdminHost(to);
+  const href = adminHref;
 
   useEffect(() => {
     fetchAdminSession().then((u) => {

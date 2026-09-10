@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminUi";
+import { adminHref } from "@/lib/admin/href";
 import { CITIES } from "@/lib/site";
 import { createOrganizationApi } from "@/modules/admin/client";
 import type { SubscriptionPlan } from "@/types/platform";
@@ -99,7 +100,7 @@ export default function NewOrganizationPage() {
         </p>
         <p className="mt-2 break-all rounded bg-[#FBF4F6] p-2 font-mono text-[10px]">{done.activationUrl}</p>
         <div className="mt-8 flex flex-col gap-2">
-          <Link href={`/organizations/${done.orgId}/`} className="ac-btn text-center">
+          <Link href={adminHref(`/organizations/${done.orgId}/`)} className="ac-btn text-center">
             Ouvrir l&apos;institut
           </Link>
           <button

@@ -18,8 +18,34 @@ function isAppOrAdminHostname(hostname: string): boolean {
   return hostname.startsWith("app.") || hostname.startsWith("admin.");
 }
 
+/** Pages vitrine : le cookie admin/app ne doit pas les détourner. */
+function isMarketingPath(path: string): boolean {
+  if (path === "/" || path === "") return true;
+  const prefixes = [
+    "/fonctionnalites",
+    "/tarifs",
+    "/a-propos",
+    "/professionnel",
+    "/connexion",
+    "/contact",
+    "/gestion-rendez-vous",
+    "/gestion-clientes",
+    "/gestion-stock",
+    "/demo",
+    "/essai",
+    "/faq",
+    "/whatsapp",
+    "/blog",
+    "/ressources",
+    "/solutions",
+    "/confidentialite",
+    "/mentions-legales",
+  ];
+  return prefixes.some((p) => path === p || path.startsWith(`${p}/`));
+}
+
 function resolveDomain(request: NextRequest): Domain {
-  // 1) Query localhost / Worker (?__host=admin)
+  // 1) Query localhost / apex (?__host=admin)
   const explicit = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
   if (explicit) return explicit;
 
@@ -27,12 +53,23 @@ function resolveDomain(request: NextRequest): Domain {
   const fromWorker = parseDomainParam(request.headers.get(HEADER_DOMAIN));
   if (fromWorker) return fromWorker;
 
-  // 3) X-Forwarded-Host prioritaire sur Host Railway
-  return resolveDomainFromHostname(
+  // 3) Vrais sous-domaines app.* / admin.* (prioritaires sur le cookie)
+  const fromHost = resolveDomainFromHostname(
     request.headers.get("host"),
     request.headers.get("x-forwarded-host") ??
       request.headers.get("x-rappel-public-host"),
   );
+  if (fromHost === "app" || fromHost === "admin") return fromHost;
+
+  // 4) Cookie posé lors d’une navigation admin/app sur le domaine apex
+  //    (ex. rappelbeauty.com/dashboard/?__host=admin → puis /organizations/)
+  const path = request.nextUrl.pathname;
+  if (!isMarketingPath(path)) {
+    const fromCookie = parseDomainParam(request.cookies.get(COOKIE_HOST)?.value);
+    if (fromCookie === "app" || fromCookie === "admin") return fromCookie;
+  }
+
+  return fromHost;
 }
 
 const APP_PUBLIC_PATHS = [

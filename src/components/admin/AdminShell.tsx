@@ -78,6 +78,14 @@ function isActive(pathname: string, href: string) {
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
 
+/** Garder ?__host=admin (nécessaire sur rappelbeauty.com / localhost apex). */
+function withAdminHost(href: string): string {
+  const [pathAndQuery, hash] = href.split("#");
+  const u = new URL(pathAndQuery || "/", "https://local.invalid");
+  u.searchParams.set("__host", "admin");
+  return `${u.pathname}${u.search}${hash ? `#${hash}` : ""}`;
+}
+
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const path = normalizePath(pathname);
@@ -86,6 +94,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [displayName, setDisplayName] = useState("");
   const [recentCount, setRecentCount] = useState(0);
   const [openTickets, setOpenTickets] = useState(0);
+  const href = (to: string) => withAdminHost(to);
 
   useEffect(() => {
     fetchAdminSession().then((u) => {
@@ -115,7 +124,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         >
           <div className="flex h-14 items-center justify-between gap-2 border-b border-line px-4">
             <div className="flex min-w-0 items-center gap-2.5">
-              <BrandLogo href="/dashboard/" height={40} className="max-h-10" />
+              <BrandLogo href={href("/dashboard/")} height={40} className="max-h-10" />
               <p className="shrink-0 font-mono text-[10px] tracking-[0.16em] text-primary">
                 SUPER ADMIN
               </p>
@@ -144,7 +153,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     return (
                       <Link
                         key={item.href}
-                        href={item.href}
+                        href={href(item.href)}
                         onClick={() => setOpen(false)}
                         className={`rounded-lg px-3 py-2 text-sm transition ${
                           active
@@ -165,7 +174,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <p className="text-xs font-medium">{displayName || "…"}</p>
             <p className="text-[11px] text-ink/45">Super administrateur</p>
             <div className="mt-3 flex flex-col gap-1.5">
-              <Link href="/profile/" className="text-xs font-semibold text-primary">
+              <Link href={href("/profile/")} className="text-xs font-semibold text-primary">
                 Mon profil
               </Link>
               <button
@@ -173,7 +182,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 className="text-left text-xs text-ink/50 hover:text-ink"
                 onClick={() =>
                   void platformLogout().then(() => {
-                    window.location.href = "/login/";
+                    window.location.href = href("/login/");
                   })
                 }
               >
@@ -206,11 +215,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               >
                 Menu
               </button>
-              <BrandLogo href="/dashboard/" height={36} className="hidden max-h-9 sm:inline-flex" />
+              <BrandLogo
+                href={href("/dashboard/")}
+                height={36}
+                className="hidden max-h-9 sm:inline-flex"
+              />
             </div>
             <div className="flex items-center gap-3">
               <Link
-                href="/support/tickets/"
+                href={href("/support/tickets/")}
                 className="relative rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm"
                 aria-label="Tickets support"
               >
@@ -222,7 +235,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 ) : null}
               </Link>
               <Link
-                href="/notifications/"
+                href={href("/notifications/")}
                 className="relative rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm"
                 aria-label="Activité récente"
               >
@@ -233,7 +246,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   </span>
                 ) : null}
               </Link>
-              <Link href="/profile/" className="hidden text-sm text-ink/60 hover:text-ink sm:inline">
+              <Link
+                href={href("/profile/")}
+                className="hidden text-sm text-ink/60 hover:text-ink sm:inline"
+              >
                 {firstName || "Profil"}
               </Link>
             </div>

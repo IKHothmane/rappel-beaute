@@ -45,7 +45,6 @@ export function AIMessageComposer({ customerId: lockedCustomerId, customerLabel,
   const [customerName, setCustomerName] = useState(customerLabel ?? "");
   const [loading, setLoading] = useState(false);
   const [committing, setCommitting] = useState(false);
-  const [sendingDirect, setSendingDirect] = useState(false);
   const [result, setResult] = useState<AIGenerateMessageResult | null>(null);
   const [selected, setSelected] = useState(0);
   const [draft, setDraft] = useState("");
@@ -95,28 +94,9 @@ export function AIMessageComposer({ customerId: lockedCustomerId, customerLabel,
   }, [canGenerate, kind, tone, language, promotion, objective, customerId, toast]);
 
   /**
-   * Envoi direct au client via l'API officielle Meta Cloud.
-   * N'ouvre JAMAIS WhatsApp Web.
+   * Prépare la tâche WhatsApp puis ouvre wa.me (envoi manuel).
+   * Aucun appel API Meta.
    */
-  async function sendDirectlyToClient() {
-    if (!canOpenWa || !customerId || !draft.trim()) return;
-    setSendingDirect(true);
-    try {
-      const { task } = await commitAIWhatsAppDraft({
-        customerId,
-        message: draft.trim(),
-        kind,
-        sendDirect: true,
-      });
-      toast("🚀 Message envoyé avec succès directement sur le WhatsApp du client !", "success");
-      onTaskCreated?.(task);
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Échec d'envoi WhatsApp API.", "error");
-    } finally {
-      setSendingDirect(false);
-    }
-  }
-
   async function confirmAndOpenWhatsApp() {
     if (!canOpenWa || !customerId || !draft.trim()) return;
     setCommitting(true);
@@ -126,7 +106,7 @@ export function AIMessageComposer({ customerId: lockedCustomerId, customerLabel,
         message: draft.trim(),
         kind,
       });
-      toast("Message préparé. WhatsApp s'ouvre — aucun envoi automatique.", "success");
+      toast("Message préparé. WhatsApp s'ouvre — validez l'envoi vous-même.", "success");
       onTaskCreated?.(task);
       if (task.waLink) {
         window.open(task.waLink, "_blank", "noopener,noreferrer");
@@ -292,18 +272,11 @@ export function AIMessageComposer({ customerId: lockedCustomerId, customerLabel,
           {canOpenWa && customerId ? (
             <div className="flex flex-wrap items-center gap-2 pt-2">
               <Button
-                disabled={sendingDirect || committing || !draft.trim()}
-                onClick={() => void sendDirectlyToClient()}
+                disabled={committing || !draft.trim()}
+                onClick={() => void confirmAndOpenWhatsApp()}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                {sendingDirect ? "Envoi direct en cours…" : "🚀 Envoyer directement par WhatsApp"}
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={committing || sendingDirect || !draft.trim()}
-                onClick={() => void confirmAndOpenWhatsApp()}
-              >
-                {committing ? "Préparation…" : "Ouvrir WhatsApp Web (manuel)"}
+                {committing ? "Préparation…" : "Ouvrir WhatsApp"}
               </Button>
             </div>
           ) : canOpenWa && !customerId ? (

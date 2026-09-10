@@ -5,7 +5,7 @@ import { getOrganizationSubscription } from "@/lib/subscriptions/subscription-se
 import { PLAN_FEATURE_LABELS, type PlanFeatureKey } from "@/types/subscription";
 
 export async function GET(request: NextRequest) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const sub = await getOrganizationSubscription(auth.session.organizationId);

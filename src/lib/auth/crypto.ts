@@ -25,6 +25,33 @@ export function demoPasswordHash(): string {
   return hashPassword("demo1234");
 }
 
+/**
+ * Mot de passe temporaire lisible (jamais stocké en clair — uniquement renvoyé une fois à l'admin).
+ * Ex. : Rb-84Kp!29Xm
+ */
+export function generateTemporaryPassword(): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%&*";
+  const all = upper + lower + digits + symbols;
+
+  const pick = (alphabet: string) => alphabet[randomBytes(1)[0]! % alphabet.length]!;
+
+  const required = [pick(upper), pick(lower), pick(digits), pick(symbols)];
+  const rest: string[] = [];
+  for (let i = 0; i < 8; i++) rest.push(pick(all));
+
+  const chars = [...required, ...rest];
+  // Fisher–Yates via crypto
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomBytes(1)[0]! % (i + 1);
+    [chars[i], chars[j]] = [chars[j]!, chars[i]!];
+  }
+
+  return `${chars.slice(0, 2).join("")}-${chars.slice(2, 6).join("")}${chars.slice(6, 8).join("")}${chars.slice(8).join("")}`;
+}
+
 function base64UrlEncode(input: string | Buffer): string {
   return Buffer.from(input)
     .toString("base64")

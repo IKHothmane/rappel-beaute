@@ -62,7 +62,9 @@ export async function POST(request: NextRequest) {
         orgSlug: session.orgSlug,
         accountType: session.accountType,
         scope: session.scope,
+        mustChangePassword: session.mustChangePassword,
       },
+      mustChangePassword: session.mustChangePassword,
     });
 
     const cookie = createSessionCookie(session);
@@ -70,6 +72,18 @@ export async function POST(request: NextRequest) {
     return res;
   } catch (error) {
     logger.error("login error", { route: "/api/auth/login", error: String(error) });
+    const msg = error instanceof Error ? error.message : String(error);
+    if (
+      msg.includes("ECONNREFUSED") ||
+      msg.includes("AggregateError") ||
+      msg.includes("P1001") ||
+      msg.includes("connect")
+    ) {
+      return NextResponse.json(
+        { error: "Base de données indisponible. Démarrez PostgreSQL puis réessayez." },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
   }
 }

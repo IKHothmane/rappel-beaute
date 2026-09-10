@@ -5,7 +5,7 @@ import { listNotifications } from "@/lib/db/notifications";
 import { parseNotificationListParams } from "@/lib/validation/notifications";
 
 export async function GET(request: NextRequest) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const sp = new URL(request.url).searchParams;

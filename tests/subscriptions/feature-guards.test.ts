@@ -61,7 +61,7 @@ run("40A.1 — Feature guards STARTER", () => {
   it("STARTER → stock (inventory) interdit", async () => {
     expect((await canUseFeature(orgId, "inventory")).ok).toBe(false);
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/products"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/products"),
       "stock",
     );
     expect(auth.ok).toBe(false);
@@ -74,7 +74,7 @@ run("40A.1 — Feature guards STARTER", () => {
   it("STARTER → caisse interdite", async () => {
     expect((await canUseFeature(orgId, "cashRegister")).ok).toBe(false);
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/cash-register"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/cash-register"),
       "cash-register",
     );
     expect(auth.ok).toBe(false);
@@ -87,7 +87,7 @@ run("40A.1 — Feature guards STARTER", () => {
   it("STARTER → marketing interdit", async () => {
     expect((await canUseFeature(orgId, "marketing")).ok).toBe(false);
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/campaigns"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/campaigns"),
       "marketing",
     );
     expect(auth.ok).toBe(false);
@@ -100,7 +100,7 @@ run("40A.1 — Feature guards STARTER", () => {
   it("STARTER → analytics interdit", async () => {
     expect((await canUseFeature(orgId, "analytics")).ok).toBe(false);
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/analytics/overview"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/analytics/overview"),
       "analytics",
     );
     expect(auth.ok).toBe(false);
@@ -112,14 +112,14 @@ run("40A.1 — Feature guards STARTER", () => {
 
   it("STARTER → agenda autorisé (OWNER)", async () => {
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/appointments"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/appointments"),
       "agenda",
     );
     expect(auth.ok).toBe(true);
   });
 
   it("API GET /api/products bloquée pour STARTER", async () => {
-    const req = mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/products");
+    const req = mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/products");
     const res = await productsGet(req);
     expect(res.status).toBe(403);
     const body = await res.json();
@@ -138,7 +138,7 @@ run("40A.1 — Feature guards INSTITUT", () => {
   it("INSTITUT → stock autorisé (OWNER)", async () => {
     expect((await canUseFeature(orgId, "inventory")).ok).toBe(true);
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/products"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/products"),
       "stock",
     );
     expect(auth.ok).toBe(true);
@@ -147,7 +147,7 @@ run("40A.1 — Feature guards INSTITUT", () => {
   it("INSTITUT → caisse autorisée (OWNER)", async () => {
     expect((await canUseFeature(orgId, "cashRegister")).ok).toBe(true);
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/cash-register"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/cash-register"),
       "cash-register",
     );
     expect(auth.ok).toBe(true);
@@ -155,21 +155,21 @@ run("40A.1 — Feature guards INSTITUT", () => {
 
   it("INSTITUT → marketing autorisé (OWNER)", async () => {
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/campaigns"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/campaigns"),
       "marketing",
     );
     expect(auth.ok).toBe(true);
   });
 
   it("OWNER + INSTITUT → API products OK", async () => {
-    const req = mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/products");
+    const req = mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/products");
     const res = await productsGet(req);
     expect(res.status).not.toBe(403);
   });
 
   it("STAFF + INSTITUT → stock refusé (RBAC, pas plan)", async () => {
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId, "STAFF"), "http://localhost/api/products"),
+      mockAppRequest(await mockOwnerSession(orgId, "STAFF"), "http://localhost/api/products"),
       "stock",
     );
     expect(auth.ok).toBe(false);
@@ -182,7 +182,7 @@ run("40A.1 — Feature guards INSTITUT", () => {
 
   it("CASHIER + INSTITUT → caisse autorisée", async () => {
     const auth = await requireFeatureWrite(
-      mockAppRequest(mockOwnerSession(orgId, "CASHIER"), "http://localhost/api/cash-register/open"),
+      mockAppRequest(await mockOwnerSession(orgId, "CASHIER"), "http://localhost/api/cash-register/open"),
       "cash-register",
     );
     expect(auth.ok).toBe(true);
@@ -190,7 +190,7 @@ run("40A.1 — Feature guards INSTITUT", () => {
 
   it("CASHIER + INSTITUT → marketing refusé (RBAC)", async () => {
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId, "CASHIER"), "http://localhost/api/campaigns"),
+      mockAppRequest(await mockOwnerSession(orgId, "CASHIER"), "http://localhost/api/campaigns"),
       "marketing",
     );
     expect(auth.ok).toBe(false);
@@ -216,7 +216,7 @@ run("40A.1 — Feature guards PREMIUM", () => {
 
   it("PREMIUM → API analytics overview accessible", async () => {
     const req = mockAppRequest(
-      mockOwnerSession(orgId),
+      await mockOwnerSession(orgId),
       "http://localhost/api/analytics/overview?period=30d",
     );
     const res = await analyticsOverviewGet(req);
@@ -241,7 +241,7 @@ run("40A.1 — Abonnement suspendu / expiré", () => {
   it("subscription PAUSED → FEATURE guard bloque même INSTITUT", async () => {
     await setSubscriptionStatus(platformActor(), subId, "PAUSED", "SUBSCRIPTION_SUSPENDED");
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/products"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/products"),
       "stock",
     );
     expect(auth.ok).toBe(false);
@@ -254,7 +254,7 @@ run("40A.1 — Abonnement suspendu / expiré", () => {
   it("réactivation restaure accès INSTITUT", async () => {
     await setSubscriptionStatus(platformActor(), subId, "ACTIVE", "SUBSCRIPTION_REACTIVATED");
     const auth = await requireFeatureRead(
-      mockAppRequest(mockOwnerSession(orgId), "http://localhost/api/products"),
+      mockAppRequest(await mockOwnerSession(orgId), "http://localhost/api/products"),
       "stock",
     );
     expect(auth.ok).toBe(true);
@@ -276,7 +276,7 @@ run("40A.1 — Isolation multi-tenant", () => {
   });
 
   it("session STARTER ne peut pas accéder stock même si autre org INSTITUT existe", async () => {
-    const req = mockAppRequest(mockOwnerSession(starterOrg), "http://localhost/api/stock");
+    const req = mockAppRequest(await mockOwnerSession(starterOrg), "http://localhost/api/stock");
     const res = await productsGet(req);
     expect(res.status).toBe(403);
   });
@@ -315,7 +315,7 @@ run("40A.1 — Routes API directes", () => {
 
   it("GET /api/cash-register → 403 STARTER", async () => {
     const res = await cashRegisterGet(
-      mockAppRequest(mockOwnerSession(starterOrg), "http://localhost/api/cash-register"),
+      mockAppRequest(await mockOwnerSession(starterOrg), "http://localhost/api/cash-register"),
     );
     expect(res.status).toBe(403);
     expect((await res.json()).code).toBe("FEATURE_NOT_INCLUDED");
@@ -323,14 +323,14 @@ run("40A.1 — Routes API directes", () => {
 
   it("GET /api/campaigns → 403 STARTER", async () => {
     const res = await marketingGet(
-      mockAppRequest(mockOwnerSession(starterOrg), "http://localhost/api/campaigns"),
+      mockAppRequest(await mockOwnerSession(starterOrg), "http://localhost/api/campaigns"),
     );
     expect(res.status).toBe(403);
   });
 
   it("GET /api/campaigns → OK INSTITUT OWNER", async () => {
     const res = await marketingGet(
-      mockAppRequest(mockOwnerSession(institutOrg), "http://localhost/api/campaigns"),
+      mockAppRequest(await mockOwnerSession(institutOrg), "http://localhost/api/campaigns"),
     );
     expect(res.status).not.toBe(403);
   });

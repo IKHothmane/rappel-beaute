@@ -15,6 +15,10 @@ export type AppSessionUser = {
   orgSlug: string;
   scope: "app";
   accountType: "ORGANIZATION";
+  /** true après un reset admin — accès limité à /changer-mot-de-passe */
+  mustChangePassword: boolean;
+  /** Doit correspondre à User.sessionVersion sinon session invalidée */
+  sessionVersion: number;
 };
 
 export type PlatformSessionUser = {

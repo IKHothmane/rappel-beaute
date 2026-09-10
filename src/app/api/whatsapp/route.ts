@@ -12,7 +12,11 @@ import {
   recordWhatsAppOutcome,
   skipWhatsAppTask,
 } from "@/lib/db/whatsapp";
-import { sendDirectWhatsAppTask } from "@/lib/whatsapp/send";
+import {
+  isWhatsAppDirectSendEnabled,
+  sendDirectWhatsAppTask,
+  WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
+} from "@/lib/whatsapp/send";
 import { canSendWhatsapp } from "@/lib/rbac";
 import { parseWhatsAppAction, parseWhatsAppListQuery } from "@/lib/validation/whatsapp";
 
@@ -59,6 +63,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (parsed.action === "sendDirect") {
+      if (!isWhatsAppDirectSendEnabled()) {
+        return NextResponse.json(
+          {
+            error: WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
+            disabled: true,
+            mode: "manual_wa_me",
+          },
+          { status: 503 },
+        );
+      }
       try {
         const { task, messageId } = await sendDirectWhatsAppTask(
           auth.session.organizationId,

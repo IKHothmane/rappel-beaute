@@ -32,6 +32,9 @@ export function payloadToSession(payload: SessionPayload): SessionUser | null {
       orgSlug: payload.orgSlug,
       scope: "app",
       accountType: "ORGANIZATION",
+      mustChangePassword: Boolean(payload.mustChangePassword),
+      sessionVersion:
+        typeof payload.sessionVersion === "number" ? payload.sessionVersion : 0,
     };
   }
   if (payload.organizationId && payload.orgName && payload.orgSlug) {
@@ -46,6 +49,13 @@ export function payloadToSession(payload: SessionPayload): SessionUser | null {
       orgSlug: payload.orgSlug,
       scope: "app",
       accountType: "ORGANIZATION",
+      mustChangePassword: Boolean(
+        (payload as { mustChangePassword?: unknown }).mustChangePassword,
+      ),
+      sessionVersion:
+        typeof (payload as { sessionVersion?: unknown }).sessionVersion === "number"
+          ? ((payload as { sessionVersion: number }).sessionVersion)
+          : 0,
     };
   }
   return null;

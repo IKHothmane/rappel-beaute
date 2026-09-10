@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
 import { useSession } from "@/components/auth/session-provider";
 import { isAppSession } from "@/lib/auth/types";
 import { Header } from "./header";
@@ -20,6 +20,7 @@ function normalize(pathname: string) {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const path = normalize(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, loading } = useSession();
@@ -28,7 +29,16 @@ export function AppShell({ children }: AppShellProps) {
     path.startsWith("/login") ||
     path.startsWith("/forgot-password") ||
     path.startsWith("/reset-password") ||
+    path.startsWith("/changer-mot-de-passe") ||
+    path.startsWith("/activate") ||
     path.startsWith("/book");
+
+  useEffect(() => {
+    if (loading || bare) return;
+    if (user && isAppSession(user) && user.mustChangePassword) {
+      router.replace("/changer-mot-de-passe/");
+    }
+  }, [loading, bare, user, router]);
 
   if (bare) return <>{children}</>;
 
@@ -36,6 +46,14 @@ export function AppShell({ children }: AppShellProps) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper text-sm text-ink/60">
         Chargement…
+      </div>
+    );
+  }
+
+  if (user.mustChangePassword) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper text-sm text-ink/60">
+        Redirection…
       </div>
     );
   }

@@ -17,7 +17,7 @@ import {
 } from "@/lib/validation/commission";
 
 export async function GET(request: NextRequest) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const level = getFeatureAccess(auth.session.role, "commissions");

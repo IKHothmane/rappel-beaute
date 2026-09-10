@@ -12,7 +12,7 @@ import { canExportCommissions, getFeatureAccess } from "@/lib/rbac";
 import { parseCommissionListQuery } from "@/lib/validation/commission";
 
 export async function GET(request: NextRequest) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const plan = await canUseFeature(auth.session.organizationId, "commissions");

@@ -4,7 +4,7 @@ import { requireAppSession } from "@/lib/auth/api-guard";
 import { getUnreadNotificationCount } from "@/lib/db/notifications";
 
 export async function GET(request: NextRequest) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   try {

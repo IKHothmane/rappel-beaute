@@ -16,7 +16,7 @@ import {
 } from "@/lib/validation/procurement";
 
 export async function GET(request: NextRequest) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
   if (
     !canReadFeature(auth.session.role, "stock") &&

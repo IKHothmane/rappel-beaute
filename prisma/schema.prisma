@@ -518,6 +518,10 @@ model User {
   role           UserRole      @default(STAFF)
   status         OrgUserStatus @default(ACTIVE)
   passwordHash   String?
+  /// Force un changement de MDP à la prochaine connexion (reset admin temporaire)
+  mustChangePassword Boolean   @default(false)
+  /// Incrémente à chaque reset/changement de MDP pour invalider les JWT existants
+  sessionVersion Int           @default(0)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

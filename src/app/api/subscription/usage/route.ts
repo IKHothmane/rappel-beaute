@@ -4,7 +4,7 @@ import { requireAppSession } from "@/lib/auth/api-guard";
 import { getSubscriptionUsage } from "@/lib/subscriptions/usage";
 
 export async function GET(request: NextRequest) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const usage = await getSubscriptionUsage(auth.session.organizationId);

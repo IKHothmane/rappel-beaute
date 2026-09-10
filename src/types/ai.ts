@@ -204,7 +204,7 @@ export type AICommitWhatsAppInput = {
   message: string;
   kind: AIMessageKind;
   appointmentId?: string | null;
-  /** Si vrai, envoie le message directement au client via l'API Meta sans ouvrir WhatsApp Web */
+  /** @deprecated V1 : envoi Meta désactivé. Ignoré sauf si WHATSAPP_DIRECT_SEND_ENABLED=true */
   sendDirect?: boolean;
 };
 

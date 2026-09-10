@@ -11,7 +11,7 @@ import { getFeatureAccess } from "@/lib/rbac";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const plan = await canUseFeature(auth.session.organizationId, "commissions");

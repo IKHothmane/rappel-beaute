@@ -9,7 +9,7 @@ import {
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const { id } = await context.params;

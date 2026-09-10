@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "crypto";
 import {
   verifyMetaSignature,
@@ -135,6 +135,41 @@ describe("WhatsApp Meta Webhook — Challenge & Signature", () => {
 });
 
 describe("WhatsApp Meta Cloud API — Envoi direct sans WhatsApp Web", () => {
+  const origDirectFlag = process.env.WHATSAPP_DIRECT_SEND_ENABLED;
+
+  beforeEach(() => {
+    // Les tests unitaires du client Meta nécessitent le flag explicitement activé
+    process.env.WHATSAPP_DIRECT_SEND_ENABLED = "true";
+  });
+
+  afterEach(() => {
+    if (origDirectFlag === undefined) {
+      delete process.env.WHATSAPP_DIRECT_SEND_ENABLED;
+    } else {
+      process.env.WHATSAPP_DIRECT_SEND_ENABLED = origDirectFlag;
+    }
+  });
+
+  it("refuse l'appel Meta si WHATSAPP_DIRECT_SEND_ENABLED n'est pas true", async () => {
+    delete process.env.WHATSAPP_DIRECT_SEND_ENABLED;
+    process.env.WHATSAPP_PHONE_NUMBER_ID = "123456789";
+    process.env.WHATSAPP_ACCESS_TOKEN = "EAABtest_token";
+
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    const result = await sendWhatsAppMessageViaMetaApi({
+      toPhone: "0661223344",
+      message: "Bonjour",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("désactivé");
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+    fetchMock.mockRestore();
+  });
+
   it("retourne une erreur explicite si les variables ne sont pas configurées", async () => {
     const origPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
     const origToken = process.env.WHATSAPP_ACCESS_TOKEN;

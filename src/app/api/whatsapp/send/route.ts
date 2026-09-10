@@ -2,20 +2,35 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureWriteLimited, stripOrganizationId } from "@/lib/auth/api-guard";
 import { canSendWhatsapp } from "@/lib/rbac";
-import { sendDirectWhatsAppTask } from "@/lib/whatsapp/send";
+import {
+  isWhatsAppDirectSendEnabled,
+  sendDirectWhatsAppTask,
+  WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
+} from "@/lib/whatsapp/send";
 import { createAIWhatsAppTask } from "@/lib/db/whatsapp";
 import { WHATSAPP_TASK_TYPES, type WhatsAppTaskType } from "@/types/whatsapp";
 
 /**
  * POST /api/whatsapp/send
- * Envoie un message directement au client via l'API officielle WhatsApp Cloud de Meta.
- * Ne déclenche AUCUNE ouverture de WhatsApp Web.
+ * Envoi via Meta Cloud API — désactivé par défaut (V1 manuel).
+ * Réactivation : WHATSAPP_DIRECT_SEND_ENABLED=true + token Meta.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "whatsapp");
   if (!auth.ok) return auth.response;
   if (!canSendWhatsapp(auth.session.role)) {
     return NextResponse.json({ error: "Accès refusé pour l'envoi WhatsApp." }, { status: 403 });
+  }
+
+  if (!isWhatsAppDirectSendEnabled()) {
+    return NextResponse.json(
+      {
+        error: WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
+        disabled: true,
+        mode: "manual_wa_me",
+      },
+      { status: 503 },
+    );
   }
 
   try {
@@ -50,7 +65,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Créer la tâche
     const createdTask = await createAIWhatsAppTask(
       auth.session.organizationId,
       {
@@ -63,7 +77,6 @@ export async function POST(request: NextRequest) {
       actor,
     );
 
-    // Expédier directement sans ouvrir WhatsApp Web
     const result = await sendDirectWhatsAppTask(
       auth.session.organizationId,
       createdTask.id,

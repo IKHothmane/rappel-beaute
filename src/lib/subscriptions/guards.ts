@@ -30,11 +30,11 @@ function limitResponse(check: LimitDenied) {
   );
 }
 
-export function requirePlanFeature(
+export async function requirePlanFeature(
   request: NextRequest,
   feature: PlanFeatureKey,
-): AuthResult | { ok: false; response: NextResponse } {
-  const auth = requireAppSession(request);
+): Promise<AuthResult | { ok: false; response: NextResponse }> {
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth;
   return { ok: true, session: auth.session, _feature: feature } as AuthResult & {
     _feature: PlanFeatureKey;
@@ -45,7 +45,7 @@ export async function enforcePlanFeature(
   request: NextRequest,
   feature: PlanFeatureKey,
 ): Promise<AuthResult> {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth;
 
   const check = await canUseFeature(auth.session.organizationId, feature);
@@ -80,7 +80,7 @@ export async function enforcePlanLimit(
   request: NextRequest,
   limit: PlanLimitKey,
 ): Promise<AuthResult> {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth;
 
   const check =

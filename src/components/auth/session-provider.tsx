@@ -78,6 +78,8 @@ export function useCurrentUser(): AppSessionUser {
       orgSlug: "",
       scope: "app",
       accountType: "ORGANIZATION",
+      mustChangePassword: false,
+      sessionVersion: 0,
     };
   }
   if (!user || !isAppSession(user) || !isAppRole(user.role)) {

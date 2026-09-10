@@ -35,8 +35,18 @@ function resolveDomain(request: NextRequest): Domain {
   );
 }
 
-const APP_PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/activate"];
+const APP_PUBLIC_PATHS = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/activate",
+];
 const ADMIN_PUBLIC_PATHS = ["/login", "/403"];
+const CHANGE_PASSWORD_PATH = "/changer-mot-de-passe";
+
+function isChangePasswordPath(path: string): boolean {
+  return path === CHANGE_PASSWORD_PATH || path.startsWith(`${CHANGE_PASSWORD_PATH}/`);
+}
 
 function isPublicPath(domain: Domain, path: string): boolean {
   const list = domain === "admin" ? ADMIN_PUBLIC_PATHS : APP_PUBLIC_PATHS;
@@ -152,6 +162,22 @@ export async function middleware(request: NextRequest) {
       if (session.scope === "platform") {
         return publicRedirect(request, "/login/", domain, hostname);
       }
+      // Reset admin : accès limité à la page de changement de MDP
+      if (
+        session.scope === "app" &&
+        "mustChangePassword" in session &&
+        session.mustChangePassword &&
+        !isChangePasswordPath(path)
+      ) {
+        return publicRedirect(request, `${CHANGE_PASSWORD_PATH}/`, domain, hostname);
+      }
+    } else if (
+      session?.scope === "app" &&
+      "mustChangePassword" in session &&
+      session.mustChangePassword &&
+      path.startsWith("/login")
+    ) {
+      return publicRedirect(request, `${CHANGE_PASSWORD_PATH}/`, domain, hostname);
     }
   }
 

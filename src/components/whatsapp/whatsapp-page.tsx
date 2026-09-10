@@ -20,7 +20,6 @@ import {
   listWhatsAppTemplates,
   markWhatsAppSent,
   recordWhatsAppOutcome,
-  sendDirectWhatsApp,
   skipWhatsAppTask,
   updateWhatsAppTemplate,
   WHATSAPP_OUTCOME_LABEL,
@@ -63,34 +62,6 @@ export function WhatsappPageView() {
   const [tplType, setTplType] = useState<WhatsAppTaskType>("APPOINTMENT_REMINDER");
   const [tplBody, setTplBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [diagOpen, setDiagOpen] = useState(false);
-  const [diagLoading, setDiagLoading] = useState(false);
-  const [diagResult, setDiagResult] = useState<{
-    configured: boolean;
-    phoneNumberId: string | null;
-    maskedToken: string | null;
-    verdict: string;
-    phoneCheck: {
-      ok: boolean;
-      data?: Record<string, unknown>;
-      error?: string;
-    };
-    nextSteps: string[];
-  } | null>(null);
-
-  async function runDiagnostic() {
-    setDiagOpen(true);
-    setDiagLoading(true);
-    try {
-      const res = await fetch("/api/whatsapp/diagnostics/", { credentials: "include" });
-      const data = await res.json();
-      setDiagResult(data);
-    } catch {
-      toast("Impossible de contacter l'API de diagnostic.", "error");
-    } finally {
-      setDiagLoading(false);
-    }
-  }
 
   const refresh = useCallback(async () => {
     try {
@@ -123,20 +94,6 @@ export function WhatsappPageView() {
       return;
     }
     toast("Marqué comme envoyé.", "success");
-    setPreview(null);
-    refresh();
-  }
-
-  async function handleDirectSend(taskId: string) {
-    if (!canSend) return;
-    setSubmitting(true);
-    const result = await sendDirectWhatsApp(taskId);
-    setSubmitting(false);
-    if (!result.ok) {
-      toast(result.error, "error");
-      return;
-    }
-    toast("🚀 Message envoyé directement au client via WhatsApp !", "success");
     setPreview(null);
     refresh();
   }
@@ -210,21 +167,11 @@ export function WhatsappPageView() {
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
       <AppPageHeader
         title="WhatsApp"
-        description="Manuel assisté V1 — ouverture wa.me, aucun statut lu / livré / répondu."
+        description="Manuel assisté V1 — le message est préparé, vous ouvrez WhatsApp et validez l'envoi."
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void runDiagnostic()}
-              className="text-xs"
-            >
-              🔍 Tester connexion Meta
-            </Button>
-            {canEditTemplates && tab === "Modèles" ? (
-              <Button onClick={openCreateTemplate}>Nouveau modèle</Button>
-            ) : null}
-          </div>
+          canEditTemplates && tab === "Modèles" ? (
+            <Button onClick={openCreateTemplate}>Nouveau modèle</Button>
+          ) : null
         }
       />
 
@@ -331,23 +278,22 @@ export function WhatsappPageView() {
                 </button>
                 {canSend && task.status === "PENDING" ? (
                   <>
-                    <button
-                      type="button"
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                      disabled={submitting}
-                      onClick={() => handleDirectSend(task.id)}
-                    >
-                      🚀 Envoyer direct
-                    </button>
                     <a
                       href={task.waLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn-ghost text-xs"
-                      title="Ouvrir manuellement sur WhatsApp Web"
+                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
                     >
-                      Ouvrir wa.me
+                      Ouvrir WhatsApp
                     </a>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      disabled={submitting}
+                      onClick={() => handleMarkSent(task)}
+                    >
+                      ✓ Marquer envoyé
+                    </button>
                     <button
                       type="button"
                       className="btn-ghost"
@@ -412,22 +358,15 @@ export function WhatsappPageView() {
             {canSend ? (
               <div className="flex flex-col gap-2 sm:flex-row">
                 {preview.status === "PENDING" ? (
-                  <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                    disabled={submitting}
-                    onClick={() => handleDirectSend(preview.id)}
+                  <a
+                    href={preview.waLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
                   >
-                    🚀 Envoyer directement au client
-                  </Button>
+                    Ouvrir WhatsApp
+                  </a>
                 ) : null}
-                <a
-                  href={preview.waLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-ghost text-center text-xs"
-                >
-                  Ouvrir wa.me (secours)
-                </a>
                 {preview.status === "PENDING" ? (
                   <Button
                     variant="secondary"
@@ -479,78 +418,6 @@ export function WhatsappPageView() {
           <Button disabled={submitting || !tplName.trim() || !tplBody.trim()} onClick={handleSaveTemplate}>
             Enregistrer
           </Button>
-        </div>
-      </Drawer>
-
-      <Drawer
-        open={diagOpen}
-        onClose={() => setDiagOpen(false)}
-        title="Diagnostic Meta WhatsApp Cloud API"
-      >
-        <div className="space-y-4">
-          {diagLoading ? (
-            <div className="py-8 text-center text-sm text-ink/60">
-              <span className="inline-block animate-spin mr-2">⚙️</span>
-              Vérification en temps réel auprès des serveurs Meta...
-            </div>
-          ) : diagResult ? (
-            <>
-              <div
-                className={`rounded-xl p-4 text-sm ${
-                  diagResult.phoneCheck?.ok
-                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                    : "bg-amber-50 text-amber-800 border border-amber-200"
-                }`}
-              >
-                <p className="font-semibold">{diagResult.verdict}</p>
-                {diagResult.phoneCheck?.data?.display_phone_number ? (
-                  <p className="mt-2 text-xs">
-                    📱 Numéro reconnu par Meta :{" "}
-                    <strong>{String(diagResult.phoneCheck.data.display_phone_number)}</strong>
-                    {diagResult.phoneCheck.data.verified_name
-                      ? ` (${String(diagResult.phoneCheck.data.verified_name)})`
-                      : ""}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="rounded-xl border border-ink/10 bg-surface p-4 text-xs space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-ink/60">ID Numéro (WHATSAPP_PHONE_NUMBER_ID) :</span>
-                  <span className="font-mono font-medium">{diagResult.phoneNumberId || "Non configuré"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink/60">Jeton d'accès (WHATSAPP_ACCESS_TOKEN) :</span>
-                  <span className="font-mono font-medium">{diagResult.maskedToken || "Non configuré"}</span>
-                </div>
-                {diagResult.phoneCheck?.error ? (
-                  <div className="mt-3 border-t border-ink/10 pt-2">
-                    <span className="text-red-600 font-semibold block mb-1">Réponse exacte reçue de Meta :</span>
-                    <pre className="whitespace-pre-wrap font-mono text-[11px] bg-red-50 text-red-700 p-2 rounded">
-                      {diagResult.phoneCheck.error}
-                    </pre>
-                  </div>
-                ) : null}
-              </div>
-
-              {diagResult.nextSteps && diagResult.nextSteps.length > 0 ? (
-                <div className="rounded-xl bg-ink/[0.03] p-4 text-xs space-y-2">
-                  <p className="font-semibold text-ink/80">Procédure de résolution :</p>
-                  <ul className="list-disc pl-4 space-y-1 text-ink/70">
-                    {diagResult.nextSteps.map((step, idx) => (
-                      <li key={idx}>{step}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              <div className="pt-2">
-                <Button variant="secondary" className="w-full" onClick={() => void runDiagnostic()}>
-                  🔄 Relancer la vérification
-                </Button>
-              </div>
-            </>
-          ) : null}
         </div>
       </Drawer>
     </motion.div>

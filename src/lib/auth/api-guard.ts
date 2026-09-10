@@ -17,6 +17,7 @@ import {
 import { canUseFeature } from "@/lib/subscriptions/limits";
 import { planFeatureForAppFeature } from "@/lib/subscriptions/features";
 import type { PlanFeatureKey } from "@/types/subscription";
+import { getUserSessionState } from "@/lib/db/users";
 
 export type AuthResult =
   | { ok: true; session: SessionUser }
@@ -25,6 +26,19 @@ export type AuthResult =
 export type AppAuthResult =
   | { ok: true; session: AppSessionUser }
   | { ok: false; response: NextResponse };
+
+const MUST_CHANGE_PASSWORD_ALLOWLIST = [
+  "/api/auth/change-password",
+  "/api/auth/logout",
+  "/api/auth/session",
+];
+
+function isMustChangePasswordAllowed(pathname: string): boolean {
+  const path = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+  return MUST_CHANGE_PASSWORD_ALLOWLIST.some(
+    (p) => path === p || path.startsWith(`${p}/`),
+  );
+}
 
 export function requireSession(request: NextRequest): AuthResult {
   const session = getSessionFromRequest(request);
@@ -37,7 +51,10 @@ export function requireSession(request: NextRequest): AuthResult {
   return { ok: true, session };
 }
 
-export function requireAppSession(request: NextRequest): AppAuthResult {
+/**
+ * Session institut validée contre la DB (sessionVersion + mustChangePassword).
+ */
+export async function requireAppSession(request: NextRequest): Promise<AppAuthResult> {
   const auth = requireSession(request);
   if (!auth.ok) return auth;
   if (!isAppSession(auth.session)) {
@@ -46,7 +63,46 @@ export function requireAppSession(request: NextRequest): AppAuthResult {
       response: NextResponse.json({ error: "Accès réservé aux instituts." }, { status: 403 }),
     };
   }
-  return { ok: true, session: auth.session };
+
+  const state = await getUserSessionState(auth.session.id);
+  if (!state || state.status !== "ACTIVE") {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Session expirée." }, { status: 401 }),
+    };
+  }
+
+  const jwtVersion = auth.session.sessionVersion ?? 0;
+  if (jwtVersion !== state.sessionVersion) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Session invalidée. Reconnectez-vous.", code: "SESSION_REVOKED" },
+        { status: 401 },
+      ),
+    };
+  }
+
+  const session: AppSessionUser = {
+    ...auth.session,
+    mustChangePassword: state.mustChangePassword,
+    sessionVersion: state.sessionVersion,
+  };
+
+  if (state.mustChangePassword && !isMustChangePasswordAllowed(request.nextUrl.pathname)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Vous devez changer votre mot de passe avant de continuer.",
+          code: "MUST_CHANGE_PASSWORD",
+        },
+        { status: 403 },
+      ),
+    };
+  }
+
+  return { ok: true, session };
 }
 
 export function requirePlatformSession(
@@ -97,7 +153,7 @@ export async function requireFeatureRead(
   feature: AppFeature,
   planOverride?: PlanFeatureKey,
 ): Promise<AppAuthResult> {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth;
   if (!canReadFeature(auth.session.role, feature)) {
     return {
@@ -119,7 +175,7 @@ export async function requireFeatureWrite(
   feature: AppFeature,
   planOverride?: PlanFeatureKey,
 ): Promise<AppAuthResult> {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth;
   if (!canWriteFeature(auth.session.role, feature)) {
     return {
@@ -141,7 +197,7 @@ export async function requireFeatureWriteLimited(
   feature: AppFeature,
   planOverride?: PlanFeatureKey,
 ): Promise<AppAuthResult> {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth;
   if (!canWriteFeatureLimited(auth.session.role, feature)) {
     return {

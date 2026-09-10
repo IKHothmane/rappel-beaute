@@ -4,7 +4,7 @@ import { requireAppSession } from "@/lib/auth/api-guard";
 import { listPlans } from "@/lib/subscriptions/plans";
 
 export async function GET(request: NextRequest) {
-  const auth = requireAppSession(request);
+  const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
   const plans = await listPlans(true);

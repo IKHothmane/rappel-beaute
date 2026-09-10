@@ -46,11 +46,27 @@ const config: Config = {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-8px)" },
         },
+        kenburns: {
+          "0%": { transform: "scale(1)" },
+          "100%": { transform: "scale(1.08)" },
+        },
+        scrollLine: {
+          "0%": { transform: "scaleY(0)", transformOrigin: "top", opacity: "0" },
+          "40%": { transform: "scaleY(1)", opacity: "1" },
+          "100%": { transform: "scaleY(1)", transformOrigin: "bottom", opacity: "0" },
+        },
+        softShine: {
+          "0%": { backgroundPosition: "200% center" },
+          "100%": { backgroundPosition: "-200% center" },
+        },
       },
       animation: {
         rise: "rise 0.7s ease-out both",
         "pulse-dot": "pulseDot 1.6s ease-in-out infinite",
         floaty: "floaty 6s ease-in-out infinite",
+        kenburns: "kenburns 18s ease-out forwards",
+        "scroll-line": "scrollLine 1.8s ease-in-out infinite",
+        "soft-shine": "softShine 4s linear infinite",
       },
     },
   },

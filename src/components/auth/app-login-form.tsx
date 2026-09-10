@@ -34,8 +34,13 @@ export function AppLoginForm() {
         return;
       }
 
+      const data = (await res.json()) as { mustChangePassword?: boolean };
       await refresh();
-      router.push("/dashboard/");
+      if (data.mustChangePassword) {
+        router.push("/changer-mot-de-passe/");
+      } else {
+        router.push("/dashboard/");
+      }
       router.refresh();
     } catch {
       setError("Identifiants invalides.");

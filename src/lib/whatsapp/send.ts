@@ -10,6 +10,18 @@ export type SendWhatsAppApiResult =
   | { ok: false; error: string; details?: unknown };
 
 /**
+ * Envoi automatique via Meta Cloud API.
+ * Désactivé par défaut (V1 = WhatsApp assisté manuel via wa.me).
+ * Pour réactiver plus tard : WHATSAPP_DIRECT_SEND_ENABLED=true + WHATSAPP_ACCESS_TOKEN.
+ */
+export function isWhatsAppDirectSendEnabled(): boolean {
+  return process.env.WHATSAPP_DIRECT_SEND_ENABLED === "true";
+}
+
+export const WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE =
+  "L'envoi automatique WhatsApp via Meta est désactivé. Utilisez « Ouvrir WhatsApp » pour un envoi manuel.";
+
+/**
  * Récupère et valide la configuration WhatsApp Cloud API de Meta.
  */
 export function getMetaWhatsAppConfig(): {
@@ -90,6 +102,11 @@ export async function sendWhatsAppMessageViaMetaApi(options: {
   message: string;
   previewUrl?: boolean;
 }): Promise<SendWhatsAppApiResult> {
+  // Garde-fou : aucun appel graph.facebook.com/.../messages tant que le flag est off
+  if (!isWhatsAppDirectSendEnabled()) {
+    return { ok: false, error: WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE };
+  }
+
   const config = getMetaWhatsAppConfig();
   if (!config.isConfigured || !config.phoneNumberId || !config.accessToken) {
     return {
@@ -171,6 +188,10 @@ export async function sendDirectWhatsAppTask(
   taskId: string,
   actor: { id: string; name?: string | null },
 ): Promise<{ task: WhatsAppTaskItem; messageId: string }> {
+  if (!isWhatsAppDirectSendEnabled()) {
+    throw new Error(WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE);
+  }
+
   const { rows } = await pool.query<{
     id: string;
     organizationId: string;

@@ -77,3 +77,66 @@ body {
     @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none placeholder:text-ink/40 focus:border-primary;
   }
 }
+
+@keyframes rb-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.rb-marquee-track {
+  width: max-content;
+  animation: rb-marquee linear infinite;
+  will-change: transform;
+}
+
+.rb-marquee-paused .rb-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb-marquee-track {
+    animation: none !important;
+  }
+
+  .animate-kenburns,
+  .animate-floaty,
+  .animate-pulse-dot,
+  .animate-scroll-line,
+  .animate-rise,
+  .animate-soft-shine {
+    animation: none !important;
+  }
+}
+
+/* Features page — grille décorative + pills scroll */
+.bg-grid-soft {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(240, 227, 230, 0.45) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(240, 227, 230, 0.45) 1px, transparent 1px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.bg-mesh-subtle {
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(227, 28, 95, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 85% 20%, rgba(199, 154, 59, 0.09) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, rgba(227, 28, 95, 0.05) 0%, transparent 50%);
+}
+
+.bg-rose-aurora {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(227, 28, 95, 0.14) 0%, rgba(255, 240, 245, 0.6) 42%, rgba(255, 247, 249, 0) 75%),
+    radial-gradient(circle at 85% 30%, rgba(199, 154, 59, 0.1) 0%, rgba(255, 247, 249, 0) 50%);
+}

@@ -19,3 +19,23 @@ export async function listOrgUsers(): Promise<OrgUserListItem[]> {
   const data = await parseJson<{ items: OrgUserListItem[] }>(res);
   return data.items;
 }
+
+export type ResetPasswordResult = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  temporaryPassword: string;
+  mustChangePassword: boolean;
+  loginUrl: string;
+  messageTemplate: string;
+};
+
+export async function resetUserTemporaryPassword(
+  userId: string,
+): Promise<ResetPasswordResult> {
+  const res = await fetch(`/api/users/${encodeURIComponent(userId)}/reset-password/`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return parseJson<ResetPasswordResult>(res);
+}

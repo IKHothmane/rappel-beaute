@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { HomeSearch } from "@/components/www/HomeSearch";
+import { HomeHero } from "@/components/www/HomeHero";
+import { MobileAutoCarousel } from "@/components/www/MobileAutoCarousel";
+import { Reveal, RevealItem, RevealStagger } from "@/components/www/Reveal";
 import { SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
@@ -24,14 +26,7 @@ const IMG_SERUM =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBDLiMyu3xOkmnr-lZxYA0O_oPqkqIUu1q726zQ6orRGGV8GGi0qcXaCHTu1aYmrsvgC-fAxrwSWHg0ak-TU5-Qn_7RHODDRRLC493c9OdMcPpwIDE-y7WS-6wAHaiKXPvm22Njcwj6t4M5SlCe_po_O1i57iraQ9YREX-H7GqwyMEZRAltYN6koDlbVmr0uxF5aM2zxlpn1S5FLd4Q8r0uHTVk7U4Jk6lnY96zhUMERAen4lh7qCzUMw";
 
 const IMG_TEAM =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuC9KWOqyPHDc8iLYIRJQNfBnWYhC0yNkiP4RUSQH-hxumtb2O4ftFN1oEpqckC9D2Z1U9lRDGFoKxydDrYIh0hrpDFiZtIoz00FQq_ARFi_mbm88OncR4Vxp7OORmnnKZ916HcCkhY-XnTQUXRr5agPJ1sbbhVRdvaxi-xk_980pU7OoRIs2OnqdCk469J30eOHypI4BXYvyPq-PjUSzeWpJiMgftuP4_pKBGpFTkHfJ9OJCXhow0ZMvA";
-
-const POPULAR_CITIES = [
-  "Casablanca Gauthier",
-  "Rabat Agdal",
-  "Marrakech Guéliz",
-  "Tanger Malabata",
-];
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuBMz86RbBst2uEKW0W6aJCA_J2kvT2tULe700qf0jqyT28soEeagVbEjtrA1w9rWDFCZBkBIc5VV5yHpZvLcIlikKPb5BW58fLp-Q0KwvF6ZMXJvd7kHEIHusLemKkjgT1Nn4czy-KMk7vyjeZ3hTeZcq-1Ubqun9W0JQwmFgWLnmuOaKz4lQEEngJAoyN8g-PNv4T5vvbt1FVXSBFGXDJkLKMKn7W056yAclfaa6q-uWzEyS1pihUsuA";
 
 const STATS = [
   {
@@ -155,55 +150,87 @@ const FAQ = [
 export default function HomePage() {
   return (
     <>
-      {/* Hero */}
-      <section className="relative flex min-h-[640px] items-center justify-center overflow-hidden bg-institut text-white lg:min-h-[720px]">
-        <div className="absolute inset-0 z-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            alt=""
-            className="h-full w-full scale-105 object-cover object-center brightness-75"
-            src={HERO_IMG}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-institut/90 via-institut/50 to-institut/70" />
-        </div>
-
-        <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 py-20 text-center sm:px-6 lg:px-8">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-gold">
-            La référence beauté au Maroc
-          </p>
-          <h1 className="mb-3 font-display text-4xl font-light tracking-tight text-white sm:text-6xl md:text-7xl">
-            Réservez en beauté
-          </h1>
-          <p className="mb-10 flex items-center justify-center space-x-3 text-sm font-normal tracking-wide text-white/90 sm:text-base">
-            <span>Simple</span>
-            <span className="inline-block h-1 w-1 rounded-full bg-primary" />
-            <span>Immédiat</span>
-            <span className="inline-block h-1 w-1 rounded-full bg-primary" />
-            <span>24h/24 &amp; 7j/7</span>
-          </p>
-
-          <HomeSearch />
-
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/80">
-            <span className="font-medium text-gold">Populaires :</span>
-            {POPULAR_CITIES.map((city) => (
-              <Link
-                key={city}
-                href="/#explore"
-                className="rounded-full border border-line/20 bg-institut/50 px-3 py-1 text-white backdrop-blur-sm transition hover:bg-primary/30"
-              >
-                {city}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HomeHero imageSrc={HERO_IMG} />
 
       {/* Découvrir les professionnels */}
-      <section className="overflow-hidden bg-paper py-24" id="explore">
+      <section className="overflow-hidden bg-paper py-14 sm:py-24" id="explore">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12">
-            <div className="hidden lg:col-span-3 lg:block">
+          <Reveal className="mb-6 flex flex-col justify-center px-1 sm:mb-8 sm:px-2 lg:hidden">
+            <span className="mb-4 h-0.5 w-10 origin-left animate-rise bg-primary sm:mb-6 sm:w-12" />
+            <h2 className="mb-4 text-2xl font-normal tracking-tight text-ink sm:mb-6 sm:text-4xl">
+              Découvrez nos <br />
+              <span className="font-display italic text-primary">Professionnels</span>
+            </h2>
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base font-bold text-ink sm:text-lg">Institut de beauté</h3>
+              <p className="text-xs leading-relaxed text-ink/55 sm:text-sm">
+                Vos envies de bien-être ont besoin d&apos;être assouvies rapidement et
+                sereinement. Retrouvez les adresses les plus renommées pour vos
+                rituels spa, hammams traditionnels marocains et soins
+                dermo-esthétiques.
+              </p>
+              <div className="pt-1 sm:pt-2">
+                <Link
+                  href="/solutions/institut-beaute/"
+                  className="group inline-flex items-center text-xs font-semibold text-primary hover:text-primary-dark hover:underline hover:underline-offset-4 sm:text-sm"
+                >
+                  Voir plus
+                  <svg
+                    className="ml-1 h-4 w-4 transform transition-transform group-hover:translate-x-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      d="M9 5l7 7-7 7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Mobile : carrousel auto */}
+          <MobileAutoCarousel hideFrom="lg:hidden" durationSec={18} trackClassName="gap-3 pe-3">
+            <div className="w-[70vw] max-w-[240px]">
+              <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt="Texture vernis"
+                  className="h-full w-full object-cover"
+                  src={IMG_NAIL}
+                />
+              </div>
+            </div>
+            <div className="w-[70vw] max-w-[240px]">
+              <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt="Texture cosmétique"
+                  className="h-full w-full object-cover"
+                  src={IMG_CREAM}
+                />
+              </div>
+            </div>
+            <div className="w-[70vw] max-w-[240px]">
+              <div className="aspect-[2/3] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt="Sérum"
+                  className="h-full w-full object-cover"
+                  src={IMG_SERUM}
+                />
+              </div>
+            </div>
+          </MobileAutoCarousel>
+
+          {/* Desktop : grille d’origine */}
+          <div className="hidden items-center gap-8 lg:grid lg:grid-cols-12">
+            <Reveal className="lg:col-span-3" delay={0.05} x={-16}>
               <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -212,9 +239,9 @@ export default function HomePage() {
                   src={IMG_NAIL}
                 />
               </div>
-            </div>
+            </Reveal>
 
-            <div className="lg:col-span-3">
+            <Reveal className="lg:col-span-3" delay={0.15}>
               <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -223,11 +250,11 @@ export default function HomePage() {
                   src={IMG_CREAM}
                 />
               </div>
-            </div>
+            </Reveal>
 
-            <div className="flex flex-col justify-center px-2 lg:col-span-4 lg:px-6">
+            <Reveal className="flex flex-col justify-center px-2 lg:col-span-4 lg:px-6" delay={0.1}>
               <span className="mb-6 h-0.5 w-12 bg-primary" />
-              <h2 className="mb-6 text-3xl font-normal tracking-tight text-ink sm:text-4xl">
+              <h2 className="mb-6 text-4xl font-normal tracking-tight text-ink">
                 Découvrez nos <br />
                 <span className="font-display italic text-primary">Professionnels</span>
               </h2>
@@ -262,9 +289,9 @@ export default function HomePage() {
                   </Link>
                 </div>
               </div>
-            </div>
+            </Reveal>
 
-            <div className="hidden lg:col-span-2 lg:block">
+            <Reveal className="lg:col-span-2" delay={0.2} x={16}>
               <div className="aspect-[2/3] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -273,31 +300,52 @@ export default function HomePage() {
                   src={IMG_SERUM}
                 />
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
       {/* Presse */}
-      <section className="border-y border-line/10 bg-institut py-16 text-white">
+      <section className="border-y border-line/10 bg-institut py-10 text-white sm:py-16">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="mb-8 text-[11px] font-semibold uppercase tracking-[0.25em] text-gold">
-            Presse
-          </p>
-          <h3 className="mb-12 font-display text-2xl font-light tracking-wide text-white">
-            Ils parlent de nous
-          </h3>
-          <div className="mx-auto grid max-w-4xl grid-cols-2 items-center justify-items-center gap-8 opacity-80 md:grid-cols-4 md:gap-12">
-            <span className="font-display text-2xl font-semibold tracking-[0.3em] text-white md:text-3xl">
+          <Reveal>
+            <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-gold sm:mb-8 sm:text-[11px] sm:tracking-[0.25em]">
+              Presse
+            </p>
+            <h3 className="mb-8 font-display text-xl font-light tracking-wide text-white sm:mb-12 sm:text-2xl">
+              Ils parlent de nous
+            </h3>
+          </Reveal>
+          <MobileAutoCarousel
+            hideFrom="md:hidden"
+            durationSec={14}
+            trackClassName="gap-8 pe-8 items-center opacity-80 sm:gap-10 sm:pe-10"
+          >
+            <span className="font-display text-lg font-semibold tracking-[0.25em] text-white sm:text-2xl sm:tracking-[0.3em]">
               VOGUE
             </span>
-            <span className="font-display text-2xl font-semibold tracking-[0.25em] text-line md:text-3xl">
+            <span className="font-display text-lg font-semibold tracking-[0.2em] text-line sm:text-2xl sm:tracking-[0.25em]">
               GRAZIA
             </span>
-            <span className="font-display text-2xl font-bold tracking-[0.35em] text-white md:text-3xl">
+            <span className="font-display text-lg font-bold tracking-[0.3em] text-white sm:text-2xl sm:tracking-[0.35em]">
               ELLE
             </span>
-            <span className="font-display text-xl lowercase italic tracking-widest text-line md:text-2xl">
+            <span className="font-display text-base lowercase italic tracking-wider text-line sm:text-xl sm:tracking-widest">
+              marie claire
+            </span>
+          </MobileAutoCarousel>
+
+          <div className="mx-auto hidden max-w-4xl items-center justify-center gap-12 opacity-80 md:flex">
+            <span className="font-display text-3xl font-semibold tracking-[0.3em] text-white">
+              VOGUE
+            </span>
+            <span className="font-display text-3xl font-semibold tracking-[0.25em] text-line">
+              GRAZIA
+            </span>
+            <span className="font-display text-3xl font-bold tracking-[0.35em] text-white">
+              ELLE
+            </span>
+            <span className="font-display text-2xl lowercase italic tracking-widest text-line">
               marie claire
             </span>
           </div>
@@ -305,112 +353,137 @@ export default function HomePage() {
       </section>
 
       {/* B2B Stats */}
-      <section className="bg-paper py-24" id="pro">
+      <section className="bg-paper py-14 sm:py-24" id="pro">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-14 text-left">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+          <Reveal className="mb-8 text-left sm:mb-14">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:mb-2 sm:text-[11px] sm:tracking-[0.2em]">
               Une forte croissance
             </p>
-            <h2 className="text-3xl font-normal tracking-tight text-ink sm:text-4xl lg:text-5xl">
+            <h2 className="text-xl font-normal tracking-tight text-ink sm:text-4xl lg:text-5xl">
               Vous êtes un professionnel de la beauté ?
               <br />
               <span className="font-medium text-primary">
                 Découvrez la prise de RDV en ligne !
               </span>
             </h2>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-line bg-paper shadow-sm md:grid-cols-3">
-            {STATS.map((stat, i) => (
+          {/* Mobile : carrousel auto des cartes */}
+          <MobileAutoCarousel hideFrom="md:hidden" durationSec={22} trackClassName="gap-3 pe-3">
+            {STATS.map((stat) => (
               <Link
-                key={stat.value}
+                key={`m-${stat.value}`}
                 href="/professionnel/"
-                className={`group relative border-line p-8 transition-colors hover:bg-primary-light/40 sm:p-10 ${
-                  i < 3 ? "border-b" : ""
-                } ${i % 3 !== 2 ? "md:border-r" : ""} ${i >= 3 && i < 5 ? "md:border-b-0 border-b md:border-b-0" : ""} ${
-                  i === 3 || i === 4 ? "border-b md:border-b-0" : ""
-                }`}
+                className="group relative block w-[78vw] max-w-[300px] overflow-hidden rounded-2xl border border-line bg-paper p-5 shadow-sm transition-colors hover:bg-primary-light/40 sm:p-7"
               >
                 <div
-                  className={`mb-2 text-3xl font-semibold tracking-tight sm:text-4xl ${
+                  className={`mb-1.5 text-2xl font-semibold tracking-tight sm:mb-2 sm:text-3xl ${
                     stat.gold ? "text-gold" : "text-primary"
                   }`}
                 >
                   {stat.value}
                 </div>
-                <p className="text-sm font-normal leading-relaxed text-ink/55">{stat.text}</p>
-                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/90 px-4 text-center text-sm font-semibold text-white opacity-0 transition duration-200 group-hover:opacity-100">
+                <p className="text-xs font-normal leading-relaxed text-ink/55 sm:text-sm">{stat.text}</p>
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/90 px-4 text-center text-xs font-semibold text-white opacity-0 transition duration-200 group-hover:opacity-100 sm:text-sm">
                   Je suis un professionnel
                 </span>
               </Link>
             ))}
-          </div>
+          </MobileAutoCarousel>
+
+          {/* Desktop : grille 3 colonnes */}
+          <RevealStagger className="hidden overflow-hidden rounded-2xl border border-line bg-paper shadow-sm md:grid md:grid-cols-3" stagger={0.06}>
+            {STATS.map((stat, i) => (
+              <RevealItem key={stat.value} className="h-full">
+                <Link
+                  href="/professionnel/"
+                  className={`group relative flex h-full flex-col border-line p-8 transition-colors hover:bg-primary-light/40 sm:p-10 ${
+                    i < 3 ? "border-b" : ""
+                  } ${i % 3 !== 2 ? "md:border-r" : ""} ${i >= 3 && i < 5 ? "md:border-b-0 border-b md:border-b-0" : ""} ${
+                    i === 3 || i === 4 ? "border-b md:border-b-0" : ""
+                  }`}
+                >
+                  <div
+                    className={`mb-2 text-3xl font-semibold tracking-tight sm:text-4xl ${
+                      stat.gold ? "text-gold" : "text-primary"
+                    }`}
+                  >
+                    {stat.value}
+                  </div>
+                  <p className="text-sm font-normal leading-relaxed text-ink/55">{stat.text}</p>
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/90 px-4 text-center text-sm font-semibold text-white opacity-0 transition duration-200 group-hover:opacity-100">
+                    Je suis un professionnel
+                  </span>
+                </Link>
+              </RevealItem>
+            ))}
+          </RevealStagger>
         </div>
       </section>
 
       {/* Équipe */}
-      <section className="border-y border-line bg-primary-light/30 py-20">
+      <section className="border-y border-line bg-primary-light/30 py-12 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-            <div className="lg:col-span-6">
+          <div className="grid grid-cols-1 items-center gap-8 sm:gap-12 lg:grid-cols-12">
+            <Reveal className="lg:col-span-6" x={-20}>
               <div className="overflow-hidden rounded-2xl border border-line shadow-md">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   alt={`Équipe ${SITE.name}`}
-                  className="h-80 w-full object-cover sm:h-96"
+                  className="h-56 w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-96"
                   src={IMG_TEAM}
                 />
               </div>
-            </div>
-            <div className="space-y-6 lg:col-span-6">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+            </Reveal>
+            <Reveal className="space-y-4 sm:space-y-6 lg:col-span-6" delay={0.12} x={20}>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary sm:text-[11px] sm:tracking-[0.2em]">
                 Professionnel &amp; talents
               </span>
-              <h2 className="text-3xl font-normal leading-snug tracking-tight text-ink sm:text-4xl">
+              <h2 className="text-xl font-normal leading-snug tracking-tight text-ink sm:text-4xl">
                 {SITE.name} recrute et déploie ses équipes pour digitaliser le
                 secteur de la beauté au Maroc.
               </h2>
-              <p className="text-sm leading-relaxed text-ink/55">
+              <p className="text-xs leading-relaxed text-ink/55 sm:text-sm">
                 Nous accompagnons chaque gérant de salon, barbier indépendant et
                 institut haut de gamme avec un service client basé à Casablanca et
                 une assistance dédiée 6j/7.
               </p>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gold">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gold sm:text-xs">
                 Direction Générale — Casablanca
               </p>
-              <div className="pt-2">
+              <div className="pt-1 sm:pt-2">
                 <Link
                   href="/essai/"
-                  className="inline-flex items-center justify-center rounded-full bg-primary px-7 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+                  className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:scale-[1.03] hover:bg-primary-dark sm:px-7 sm:py-3 sm:text-sm"
                 >
                   Découvrir nos offres pro
                 </Link>
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
       {/* Annuaire SEO */}
-      <section className="bg-paper py-24">
+      <section className="bg-paper py-14 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-14">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+          <Reveal className="mb-8 sm:mb-14">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:mb-2 sm:text-[11px] sm:tracking-[0.2em]">
               Partout au Maroc
             </p>
-            <h2 className="text-3xl font-normal tracking-tight text-ink sm:text-4xl">
+            <h2 className="text-xl font-normal tracking-tight text-ink sm:text-4xl">
               Trouvez votre établissement beauté{" "}
               <br className="hidden sm:inline" />
               partout au Maroc
             </h2>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-2 gap-8 text-xs leading-loose sm:grid-cols-3 md:grid-cols-5">
+          <RevealStagger className="grid grid-cols-2 gap-5 text-[11px] leading-relaxed sm:grid-cols-3 sm:gap-8 sm:text-xs sm:leading-loose md:grid-cols-5" stagger={0.07}>
             {DIRECTORY.map((col) => (
-              <div key={col.title}>
-                <h3 className="mb-1 text-sm font-bold text-ink">{col.title}</h3>
-                <p className="mb-3 text-[11px] text-ink/55">{col.subtitle}</p>
-                <ul className="space-y-1 text-ink/55">
+              <RevealItem key={col.title}>
+                <h3 className="mb-1 text-xs font-bold text-ink sm:text-sm">{col.title}</h3>
+                <p className="mb-2 text-[10px] text-ink/55 sm:mb-3 sm:text-[11px]">{col.subtitle}</p>
+                <ul className="space-y-0.5 text-ink/55 sm:space-y-1">
                   {col.links.map((link) => (
                     <li key={link}>
                       <Link href="/#explore" className="transition hover:text-primary">
@@ -419,61 +492,60 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </RevealItem>
             ))}
-          </div>
+          </RevealStagger>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="border-t border-line bg-primary-light/20 py-24">
+      <section className="border-t border-line bg-primary-light/20 py-14 sm:py-24">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 text-center">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+          <Reveal className="mb-8 text-center sm:mb-12">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:mb-2 sm:text-[11px] sm:tracking-[0.2em]">
               FAQ
             </p>
-            <h2 className="font-display text-3xl font-light text-ink">
+            <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
               Les questions fréquentes
             </h2>
-          </div>
+          </Reveal>
 
-          <div className="space-y-4">
+          <RevealStagger className="space-y-3 sm:space-y-4" stagger={0.05}>
             {FAQ.map((item) => (
-              <details
-                key={item.q}
-                className="group cursor-pointer rounded-xl border border-line bg-paper p-5 transition-all hover:border-primary/40 hover:shadow-sm"
-              >
-                <summary className="flex items-center justify-between text-sm font-medium text-ink transition-colors group-hover:text-primary sm:text-base">
-                  <span>{item.q}</span>
-                  <span className="ml-4 transform text-primary transition-transform group-open:rotate-180">
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden
-                    >
-                      <path
-                        d="M19 9l-7 7-7-7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.8"
-                      />
-                    </svg>
-                  </span>
-                </summary>
-                <p className="mt-4 text-xs leading-relaxed text-ink/55 sm:text-sm">{item.a}</p>
-              </details>
+              <RevealItem key={item.q}>
+                <details className="group cursor-pointer rounded-xl border border-line bg-paper p-4 transition-all hover:border-primary/40 hover:shadow-sm sm:p-5">
+                  <summary className="flex items-center justify-between text-xs font-medium text-ink transition-colors group-hover:text-primary sm:text-base">
+                    <span>{item.q}</span>
+                    <span className="ml-3 transform text-primary transition-transform group-open:rotate-180 sm:ml-4">
+                      <svg
+                        className="h-4 w-4 sm:h-5 sm:w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden
+                      >
+                        <path
+                          d="M19 9l-7 7-7-7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.8"
+                        />
+                      </svg>
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-[11px] leading-relaxed text-ink/55 sm:mt-4 sm:text-sm">{item.a}</p>
+                </details>
+              </RevealItem>
             ))}
-          </div>
+          </RevealStagger>
 
-          <p className="mt-8 text-center text-sm text-ink/55">
+          <Reveal className="mt-6 text-center text-xs text-ink/55 sm:mt-8 sm:text-sm" delay={0.1}>
             Plus de réponses sur notre{" "}
             <Link href="/faq/" className="font-semibold text-primary hover:text-primary-dark">
               page FAQ
             </Link>
             .
-          </p>
+          </Reveal>
         </div>
       </section>
     </>

@@ -37,7 +37,7 @@ type Props = {
   insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
-  searchRef: RefObject<HTMLInputElement | null>;
+  searchRef: RefObject<HTMLInputElement>;
   status: StatusFilter;
   onStatus: (s: StatusFilter) => void;
   rows: SupplierListItem[];

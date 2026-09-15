@@ -44,7 +44,7 @@ type ResourcesMobileProps = {
   insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
-  searchRef: RefObject<HTMLInputElement | null>;
+  searchRef: RefObject<HTMLInputElement>;
   typeFilter: ResourceType | "";
   onTypeFilter: (type: ResourceType | "") => void;
   statusFilter: StatusFilter;

@@ -421,7 +421,7 @@ export function CommissionsMobile({
           </p>
         ) : (
           <div className="space-y-2">
-            {(top && tab !== "history" ? rest : rows).map((row) => (
+            {(top ? rest : rows).map((row) => (
               <StaffCard
                 key={row.staffId}
                 row={row}

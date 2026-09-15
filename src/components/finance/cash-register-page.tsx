@@ -271,7 +271,7 @@ export function CashRegisterPageView() {
                 {session?.openedByName ? ` · ${session.openedByName}` : ""}
               </span>
               <span className="rounded-full bg-[#FFEFF8] px-2.5 py-1 text-[11px] font-semibold text-ink/55">
-                Fond {formatMad(session?.openingFloat ?? Number(float) || 0)}
+                Fond {formatMad(session?.openingFloat ?? (Number(float) || 0))}
               </span>
             </div>
             <div>

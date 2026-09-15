@@ -33,8 +33,8 @@ type Props = {
 function stockHint(catalog: ProductListItem[], productId: string) {
   const p = catalog.find((x) => x.id === productId);
   if (!p) return null;
-  if (p.alertLevel === "OUT") return { label: `Stock : 0 (rupture)`, tone: "error" as const };
-  if (p.alertLevel === "LOW") {
+  if (p.alert === "OUT") return { label: `Stock : 0 (rupture)`, tone: "error" as const };
+  if (p.alert === "LOW") {
     return {
       label: `Stock : ${p.stock}${p.minStock != null ? ` (min ${p.minStock})` : ""}`,
       tone: "warn" as const,

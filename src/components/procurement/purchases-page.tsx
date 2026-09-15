@@ -136,7 +136,7 @@ export function PurchasesPageView() {
   }, [rows, selectedId]);
 
   const selected = rows.find((r) => r.id === selectedId) ?? null;
-  const lowStockCount = catalog.filter((p) => p.alertLevel === "LOW" || p.alertLevel === "OUT").length;
+  const lowStockCount = catalog.filter((p) => p.alert === "LOW" || p.alert === "OUT").length;
   const insight = useMemo(() => purchaseInsight(kpis, lowStockCount), [kpis, lowStockCount]);
 
   function handleTab(next: PurchasesTab) {

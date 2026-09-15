@@ -34,7 +34,7 @@ type ProductsMobileProps = {
   insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
-  searchRef: RefObject<HTMLInputElement | null>;
+  searchRef: RefObject<HTMLInputElement>;
   category: ProductCategory | "";
   onCategory: (c: ProductCategory | "") => void;
   alert: StockAlertLevel | "";

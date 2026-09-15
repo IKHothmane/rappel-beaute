@@ -25,7 +25,7 @@ type Props = {
   insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
-  searchRef: RefObject<HTMLInputElement | null>;
+  searchRef: RefObject<HTMLInputElement>;
   tab: PurchasesTab;
   onTab: (t: PurchasesTab) => void;
   status: PurchaseStatus | "";

@@ -39,7 +39,7 @@ type ServicesMobileProps = {
   insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
-  searchRef: RefObject<HTMLInputElement | null>;
+  searchRef: RefObject<HTMLInputElement>;
   category: string;
   activeFilter: ActiveFilter;
   onCategoryChange: (category: string) => void;

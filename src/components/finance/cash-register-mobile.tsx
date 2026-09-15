@@ -112,7 +112,7 @@ export function CashRegisterMobile({
             </span>
           </span>
           <span className="shrink-0 rounded-full bg-[#F0DDE9] px-2 py-0.5 text-[11px] font-semibold text-ink/60">
-            Fond {formatMad(session?.openingFloat ?? Number(float) || 0)}
+            Fond {formatMad(session?.openingFloat ?? (Number(float) || 0))}
           </span>
         </div>
         <div>

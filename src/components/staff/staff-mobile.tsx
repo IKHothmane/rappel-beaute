@@ -51,7 +51,7 @@ type StaffMobileProps = {
   insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
-  searchRef: RefObject<HTMLInputElement | null>;
+  searchRef: RefObject<HTMLInputElement>;
   filter: StaffFilter;
   onFilterChange: (filter: StaffFilter) => void;
   position: string;

@@ -1,22 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import type { RefObject } from "react";
+import type { Ref } from "react";
 import {
   AlertTriangle,
+  ArrowRight,
   ArrowUpRight,
+  BadgeCheck,
+  Bath,
+  CalendarCheck2,
   CalendarDays,
   ChevronDown,
+  CircleDollarSign,
   Download,
   FileSpreadsheet,
   FileText,
+  IdCard,
   Landmark,
+  MapPin,
+  Package,
   Printer,
   RefreshCw,
+  Scale,
   Settings2,
+  Share2,
+  Shield,
   Sparkles,
   Star,
+  Users,
   Wallet,
+  Zap,
 } from "lucide-react";
 import {
   PRESET_OPTIONS,
@@ -32,6 +45,7 @@ import {
   reviewScoreLabel,
   serviceShare,
   statusCount,
+  type ModuleCardDef,
   type ReportsViewModel,
 } from "@/components/reports/reports-helpers";
 import { cn } from "@/lib/utils";
@@ -53,7 +67,7 @@ export function ReportsDesktop({
   vm: ReportsViewModel;
   exportOpen: boolean;
   setExportOpen: (v: boolean) => void;
-  exportRef: RefObject<HTMLDivElement | null>;
+  exportRef: Ref<HTMLDivElement>;
   customerRows: CustomerReportRow[];
   ledger: StockLedgerReportRow[];
   loyalty: LoyaltyAnalytics | null;
@@ -78,51 +92,58 @@ export function ReportsDesktop({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#FFDEA4]">
+              <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#FFDEA4] shadow-sm">
+                <Shield className="h-3 w-3" fill="currentColor" />
                 {vm.roleLabel}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-on-surface">
-                Données live · {vm.orgName}
+                <BadgeCheck className="h-3 w-3 text-primary" />
+                Données live
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-secondary-fixed px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-on-secondary-fixed">
-                CNDP — consentements réels
+                <Scale className="h-3 w-3 text-secondary" />
+                Conforme CNDP Loi 09-08
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                <MapPin className="h-3 w-3 text-secondary" />
+                {vm.orgName}
               </span>
             </div>
-            <h1 className="text-[40px] font-bold leading-tight tracking-tight text-on-surface">
-              Rapports &amp; centre d&apos;audit{" "}
+            <h1 className="mt-1 text-[40px] font-bold leading-tight tracking-tight text-on-surface">
+              Rapports &amp; Centre d&apos;Audit Financier{" "}
               <span className="font-serif italic text-primary-container">— {vm.orgName}</span>
             </h1>
-            <p className="max-w-3xl text-[15px] text-on-surface-variant">
-              Analysez et exportez les rapports comptables et opérationnels consolidés (caisse, RDV, clientes, équipe,
-              prestations, stock). Aucun chiffre n&apos;est inventé.
+            <p className="max-w-4xl text-[15px] text-on-surface-variant">
+              Générez, analysez, comparez et exportez les rapports comptables et opérationnels consolidés (Livre de
+              Caisse, RDV, Clientes, Staff, Prestations, Stock).
             </p>
           </div>
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="relative flex items-center gap-2 print:hidden">
             <button
               type="button"
               onClick={vm.onAuto}
-              className="flex h-12 items-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold shadow-sm"
+              className="flex h-12 items-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container"
             >
-              <Settings2 className="h-4 w-4 text-secondary" />
-              Rapports automatisés
+              <Settings2 className="h-5 w-5 text-secondary" />
+              Rapports Automatisés
             </button>
             <div className="relative" ref={exportRef}>
               <button
                 type="button"
                 onClick={() => setExportOpen(!exportOpen)}
-                className="flex h-12 items-center gap-2 rounded-lg bg-primary-container px-5 text-sm font-bold text-on-primary-container shadow-md"
+                className="flex h-12 items-center gap-2 rounded-lg bg-primary-container px-5 text-sm font-bold text-on-primary-container shadow-md transition-all hover:bg-primary hover:shadow-lg"
               >
-                <Download className="h-4 w-4" />
-                Exporter le rapport
+                <Share2 className="h-5 w-5" />
+                Exporter le Rapport
                 <ChevronDown className="h-4 w-4" />
               </button>
               {exportOpen ? (
                 <div className="absolute right-0 z-50 mt-2 flex w-64 flex-col gap-1 rounded-xl bg-white p-2 shadow-2xl">
-                  <ExportItem icon={<FileText className="h-4 w-4" />} title="PDF" hint="Synthèse imprimable" onClick={() => vm.onExport("pdf")} />
-                  <ExportItem icon={<FileSpreadsheet className="h-4 w-4" />} title="Excel / XLSX" hint="Tableaux analysables" onClick={() => vm.onExport("xlsx")} />
-                  <ExportItem icon={<FileSpreadsheet className="h-4 w-4" />} title="CSV" hint="Export brut du module" onClick={() => vm.onExport("csv")} />
+                  <ExportItem icon={<FileText className="h-4 w-4" />} title="PDF Expert-Comptable" hint="Synthèse imprimable" onClick={() => vm.onExport("pdf")} />
+                  <ExportItem icon={<FileSpreadsheet className="h-4 w-4" />} title="Excel / XLSX Analytique" hint="Tableaux croisés dynamiques" onClick={() => vm.onExport("xlsx")} />
+                  <ExportItem icon={<FileSpreadsheet className="h-4 w-4" />} title="CSV Grand Livre" hint="Export brut transactions" onClick={() => vm.onExport("csv")} />
                   <div className="my-1 h-px bg-surface-container" />
-                  <ExportItem icon={<Printer className="h-4 w-4" />} title="Imprimer" hint="Format navigateur A4" onClick={vm.onPrint} />
+                  <ExportItem icon={<Printer className="h-4 w-4" />} title="Imprimer le Bilan" hint="Format A4 navigateur" onClick={vm.onPrint} />
                 </div>
               ) : null}
             </div>
@@ -211,35 +232,40 @@ export function ReportsDesktop({
                 <div className="flex items-center gap-2">
                   <span className="text-[22px] font-extrabold tracking-tight text-white">Copilote IA Prestige</span>
                   <span className="rounded-full bg-[#FFDEA4] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[#261900]">
-                    Lecture KPI · {PRESET_OPTIONS.find((o) => o.value === vm.preset)?.label}
+                    Audit Live · {PRESET_OPTIONS.find((o) => o.value === vm.preset)?.label}
                   </span>
                 </div>
-                <p className="text-[13px] text-[#E7D5E0]">Synthèse calculée sur les indicateurs de la période — sans modèle prédictif.</p>
+                <p className="text-[13px] text-[#E7D5E0]">
+                  Analyse des indicateurs et recommandations opérationnelles — {vm.orgName}
+                </p>
               </div>
             </div>
             <div className="flex gap-2 print:hidden">
               {vm.insight.href.startsWith("/") ? (
                 <Link
                   href={vm.insight.href}
-                  className="flex h-10 items-center gap-1.5 rounded-lg bg-primary-container px-4 text-sm font-bold text-white"
+                  className="flex h-10 items-center gap-1.5 rounded-lg bg-primary-container px-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary"
                 >
+                  <Zap className="h-4 w-4" />
                   {vm.insight.cta}
                 </Link>
               ) : (
                 <button
                   type="button"
                   onClick={() => vm.onSelectType("finance")}
-                  className="flex h-10 items-center gap-1.5 rounded-lg bg-primary-container px-4 text-sm font-bold text-white"
+                  className="flex h-10 items-center gap-1.5 rounded-lg bg-primary-container px-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary"
                 >
+                  <Zap className="h-4 w-4" />
                   {vm.insight.cta}
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => vm.onExport("pdf")}
-                className="flex h-10 items-center gap-1.5 rounded-lg bg-white/10 px-4 text-sm font-semibold text-white"
+                className="flex h-10 items-center gap-1.5 rounded-lg bg-white/10 px-4 text-sm font-semibold text-white transition-all hover:bg-white/20"
               >
-                Télécharger le PDF
+                <Download className="h-4 w-4" />
+                Télécharger l&apos;Audit IA
               </button>
             </div>
           </div>
@@ -247,18 +273,25 @@ export function ReportsDesktop({
             <p className="text-sm text-white/70">Chargement des indicateurs…</p>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="flex flex-col justify-between gap-2 rounded-lg bg-white/5 p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">Constat de performance</p>
+              <div className="flex flex-col justify-between gap-2 rounded-lg bg-white/5 p-4 backdrop-blur-md">
+                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
+                  <ArrowUpRight className="h-4 w-4" />
+                  Constat Clé de Performance
+                </p>
                 <p className="text-[15px] text-white">{vm.insight.performance}</p>
               </div>
-              <div className="flex flex-col justify-between gap-2 rounded-lg bg-white/5 p-4">
-                <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#FFDAD6]">
-                  <AlertTriangle className="h-4 w-4" /> Vigilance
+              <div className="flex flex-col justify-between gap-2 rounded-lg bg-white/5 p-4 backdrop-blur-md">
+                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#FFDAD6]">
+                  <AlertTriangle className="h-4 w-4" />
+                  Vigilance Opérationnelle
                 </p>
                 <p className="text-[15px] text-white">{vm.insight.vigilance}</p>
               </div>
-              <div className="flex flex-col justify-between gap-2 rounded-lg bg-white/5 p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFD9DE]">Recommandation</p>
+              <div className="flex flex-col justify-between gap-2 rounded-lg bg-white/5 p-4 backdrop-blur-md">
+                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#FFD9DE]">
+                  <Sparkles className="h-4 w-4" />
+                  Recommandation Tactique
+                </p>
                 <p className="text-[15px] text-white">{vm.insight.recommendation}</p>
               </div>
             </div>
@@ -268,54 +301,71 @@ export function ReportsDesktop({
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MacroCard
-          label="Chiffre d'affaires net"
+          label="Chiffre d'Affaires Net"
+          icon={<CircleDollarSign className="h-5 w-5" />}
+          iconClass="text-primary-container"
           value={ov ? ov.revenue.value.toLocaleString("fr-MA") : "—"}
-          unit="MAD"
+          unit="DH"
           delta={ov ? formatPct(ov.revenue.changePercent) : null}
           tone={ov?.revenue.changePercent ?? null}
           hint={ov?.revenue.previous != null ? `vs ${formatMad(ov.revenue.previous)}` : undefined}
-          foot={`Panier moyen ${ov ? formatMad(ov.averageTicket.value) : "—"}`}
+          footLabel="Panier moyen consolidé"
+          footValue={ov ? formatMad(ov.averageTicket.value) : "—"}
         />
         <MacroCard
-          label="Rendez-vous honorés"
+          label="Rendez-vous Honorés"
+          icon={<CalendarCheck2 className="h-5 w-5" />}
+          iconClass="text-secondary"
           value={vm.agenda ? String(completed) : ov ? String(ov.appointments.value) : "—"}
           unit="RDV"
           delta={ov ? formatPct(ov.appointments.changePercent) : null}
           tone={ov?.appointments.changePercent ?? null}
           hint={vm.agenda ? `${vm.agenda.total} RDV sur la période` : "Tous statuts"}
-          foot={presence != null ? `Taux de présence ${presence.toLocaleString("fr-MA")} %` : "Soins terminés"}
+          footLabel="Taux de présence effectif"
+          footValue={presence != null ? `${presence.toLocaleString("fr-MA")} %` : "—"}
         />
         <MacroCard
-          label="Clientes actives"
+          label="Clientes Accueillies"
+          icon={<Users className="h-5 w-5" />}
+          iconClass="text-primary"
           value={vm.customers ? String(vm.customers.kpis.active) : ov ? String(ov.customers.value) : "—"}
-          unit=""
+          unit="Actives"
           delta={null}
           tone={null}
           hint={vm.customers ? `${vm.customers.kpis.total} au fichier` : "Fenêtre 90 j"}
-          foot={
+          footLabel="Nouvelles adhésions"
+          footValue={
             vm.customers
-              ? `${vm.customers.kpis.newInPeriod} nouvelles · ${vm.customers.kpis.vip} VIP`
+              ? `+${vm.customers.kpis.newInPeriod} · ${vm.customers.kpis.vip} VIP`
               : "Base CRM"
           }
+          footAccent
         />
         <MacroCard
-          label="Ventes & prestations"
+          label="Ventes & Prestations"
+          icon={<Bath className="h-5 w-5" />}
+          iconClass="text-secondary"
           value={vm.services.length ? String(vm.services.reduce((s, r) => s + r.appointments, 0)) : "—"}
           unit="Actes"
           delta={null}
           tone={null}
           hint={marginPct != null ? `Marge estimée ${marginPct.toLocaleString("fr-MA")} %` : undefined}
-          foot={vm.inventory ? `Stock ${formatMad(vm.inventory.stockValue)}` : "Volume soins"}
+          footLabel="Valeur stock magasin"
+          footValue={vm.inventory ? formatMad(vm.inventory.stockValue) : "—"}
         />
       </section>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
         <div className="flex items-end justify-between">
           <div>
-            <h2 className="text-[22px] font-bold text-on-surface">Rapports opérationnels &amp; comptables</h2>
-            <p className="text-[13px] text-on-surface-variant">Modules disponibles selon votre rôle — clic pour le détail</p>
+            <h2 className="text-[22px] font-bold text-on-surface">Rapports Opérationnels &amp; Comptables Spécialisés</h2>
+            <p className="text-[13px] text-on-surface-variant">
+              Modules prêts pour consultation détaillée et extraction — selon votre rôle
+            </p>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">{vm.modules.length} modules</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+            {vm.modules.length} Modules Disponibles
+          </span>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {vm.modules.map((m) => (
@@ -324,18 +374,30 @@ export function ReportsDesktop({
               type="button"
               onClick={() => vm.onSelectType(m.type)}
               className={cn(
-                "flex flex-col justify-between gap-4 rounded-xl bg-white p-6 text-left shadow-sm transition-shadow hover:shadow-md",
+                "group flex flex-col justify-between gap-4 rounded-xl bg-white p-6 text-left shadow-sm transition-all hover:shadow-md",
                 vm.activeType === m.type && "ring-1 ring-primary-container",
               )}
             >
-              <div className="space-y-1">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-secondary">{m.badge}</p>
-                <h3 className="text-lg font-bold text-on-surface">{m.title}</h3>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", m.iconTone)}>
+                    <ModuleIcon name={m.icon} />
+                  </div>
+                  <span className={cn("text-[11px] font-bold uppercase tracking-widest", m.badgeTone)}>
+                    {m.badge}
+                  </span>
+                </div>
+                <h3 className="mt-1 text-lg font-bold text-on-surface transition-colors group-hover:text-primary-container">
+                  {m.title}
+                </h3>
                 <p className="text-[13px] text-on-surface-variant">{m.description}</p>
               </div>
-              <div className="space-y-1 rounded-lg bg-surface-container-low p-3 text-sm">
+              <div className="flex flex-col gap-1 rounded-lg bg-surface-container-low p-3 text-sm">
                 {moduleLines(m.type, vm).map((line) => (
-                  <div key={line.label} className="flex justify-between gap-2">
+                  <div
+                    key={line.label}
+                    className={cn("flex justify-between gap-2", line.strong && "border-t border-surface-container pt-1")}
+                  >
                     <span className="truncate text-on-surface-variant">{line.label}</span>
                     <span className={cn("shrink-0 font-semibold", line.strong && "font-bold text-primary-container")}>
                       {line.value}
@@ -343,8 +405,8 @@ export function ReportsDesktop({
                   </div>
                 ))}
               </div>
-              <span className="flex h-10 items-center justify-center gap-1 rounded-lg bg-surface-container text-sm font-bold">
-                {m.cta} <ArrowUpRight className="h-4 w-4" />
+              <span className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-surface-container text-sm font-bold transition-colors group-hover:bg-primary-container group-hover:text-white">
+                {m.cta} <ArrowRight className="h-4 w-4" />
               </span>
             </button>
           ))}
@@ -354,78 +416,135 @@ export function ReportsDesktop({
       <section id="rapport-detail" className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         <div className="flex flex-col gap-8 lg:col-span-8">
           <div className="flex flex-col gap-4 rounded-xl bg-white p-8 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
               <div>
-                <h3 className="text-[22px] font-bold">Ventilation du compte de résultat</h3>
-                <p className="text-[13px] text-on-surface-variant">CA brut, remboursements, charges — période filtrée</p>
+                <h3 className="text-[22px] font-bold text-on-surface">Ventilation du Compte de Résultat Simplifié</h3>
+                <p className="text-[13px] text-on-surface-variant">Synthèse comptable — période filtrée, chiffres réels</p>
               </div>
               <span className="rounded-full bg-secondary-fixed px-3 py-1 text-[11px] font-bold text-on-secondary-fixed">
                 {PRESET_OPTIONS.find((o) => o.value === vm.preset)?.label}
               </span>
             </div>
-            <div className="flex items-center justify-between rounded-lg bg-surface-container-low p-3">
-              <div>
-                <p className="font-bold">Chiffre d&apos;affaires brut encaissé</p>
-                <p className="text-[13px] text-on-surface-variant">Paiements de la période, hors lecture des remises</p>
-              </div>
-              <span className="text-[22px] font-extrabold">{vm.pnl.gross != null ? formatMad(vm.pnl.gross) : "—"}</span>
-            </div>
-            <div className="flex items-center justify-between px-4 py-1">
-              <span className="text-on-surface-variant">Avoirs accordés &amp; remboursements</span>
-              <span className="font-bold text-error">− {formatMad(vm.pnl.refunds)}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg bg-surface-container p-3">
-              <span className="text-lg font-bold">Chiffre d&apos;affaires net réalisé</span>
-              <span className="text-[22px] font-extrabold text-secondary">{formatMad(vm.pnl.net)}</span>
-            </div>
-            <div className="flex items-center justify-between px-4 py-1">
-              <span className="text-on-surface-variant">Dépenses d&apos;exploitation</span>
-              <span className="font-semibold">− {formatMad(vm.pnl.expenses)}</span>
-            </div>
-            <div className="flex items-center justify-between px-4 py-1">
-              <span className="text-on-surface-variant">Commissions praticiennes (si hors charges)</span>
-              <span className="font-semibold">− {formatMad(vm.pnl.commissions)}</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between rounded-xl bg-primary-container p-4 text-white shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
-                  <Landmark className="h-5 w-5" />
+            <div className="flex flex-col gap-1 text-[15px]">
+              <div className="flex items-center justify-between rounded-lg bg-surface-container-low p-3 transition-colors hover:bg-surface-container">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-high text-[11px] font-bold text-primary">
+                    01
+                  </span>
+                  <div>
+                    <p className="font-bold text-on-surface">Chiffre d&apos;Affaires Brut Encaissé</p>
+                    <p className="text-[13px] text-on-surface-variant">Prestations, hammam, coiffure et ventes boutique</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-primary-fixed">Marge d&apos;exploitation</p>
-                  <p className="text-[22px] font-bold">CA net − dépenses</p>
-                </div>
+                <span className="text-[22px] font-extrabold tracking-tight text-on-surface">
+                  {vm.pnl.gross != null ? formatMad(vm.pnl.gross) : "—"}
+                </span>
               </div>
-              <div className="text-right">
-                <p className="text-[40px] font-extrabold leading-none">{formatMad(vm.pnl.margin)}</p>
-                <p className="text-sm font-bold text-primary-fixed">
-                  {vm.pnl.marginRate != null ? `Taux ${vm.pnl.marginRate.toLocaleString("fr-MA")} %` : "—"}
-                </p>
+              <div className="flex items-center justify-between rounded-lg px-4 py-2 transition-colors hover:bg-surface-container-low/60">
+                <div className="flex items-center gap-3 pl-8">
+                  <span className="font-bold text-error">−</span>
+                  <span className="text-on-surface-variant">Avoirs accordés &amp; remboursements exceptionnels</span>
+                </div>
+                <span className="text-sm font-bold text-error">− {formatMad(vm.pnl.refunds)}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-surface-container p-3">
+                <div className="flex items-center gap-3">
+                  <ArrowRight className="h-5 w-5 text-secondary" />
+                  <span className="text-lg font-bold">Chiffre d&apos;Affaires Net Réalisé</span>
+                </div>
+                <span className="text-[22px] font-extrabold tracking-tight text-secondary">{formatMad(vm.pnl.net)}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg px-4 py-2 transition-colors hover:bg-surface-container-low/60">
+                <div className="flex items-center gap-3 pl-8">
+                  <span className="font-bold text-outline">−</span>
+                  <span className="text-on-surface-variant">Dépenses d&apos;exploitation directes</span>
+                </div>
+                <span className="text-sm font-bold text-on-surface">− {formatMad(vm.pnl.expenses)}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg px-4 py-2 transition-colors hover:bg-surface-container-low/60">
+                <div className="flex items-center gap-3 pl-8">
+                  <span className="font-bold text-outline">−</span>
+                  <span className="text-on-surface-variant">Rémunération variable &amp; commissions praticiennes</span>
+                </div>
+                <span className="text-sm font-bold text-on-surface">− {formatMad(vm.pnl.commissions)}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between rounded-xl bg-primary-container p-4 text-white shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+                    <BadgeCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-primary-fixed">
+                      Excédent Brut d&apos;Exploitation
+                    </p>
+                    <p className="text-[22px] font-bold">Marge d&apos;Exploitation Nette</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[40px] font-extrabold leading-none tracking-tight">{formatMad(vm.pnl.margin)}</p>
+                  <p className="text-sm font-bold text-primary-fixed">
+                    {vm.pnl.marginRate != null
+                      ? `Taux de marge : ${vm.pnl.marginRate.toLocaleString("fr-MA")} %`
+                      : "—"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-6 rounded-xl bg-white p-8 shadow-sm">
-            <div>
-              <h3 className="text-[22px] font-bold">Évolution du chiffre d&apos;affaires</h3>
-              <p className="text-[13px] text-on-surface-variant">
-                Points réels de la période{occ != null ? ` · occupation cabines ${occ} %` : ""}
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-[22px] font-bold text-on-surface">Évolution Mensuelle du Chiffre d&apos;Affaires</h3>
+                <p className="text-[13px] text-on-surface-variant">
+                  Progression de l&apos;activité sur la période filtrée
+                  {occ != null ? ` · occupation cabines ${occ} %` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-4 text-[11px] font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-primary-container" />
+                  CA Réalisé (DH)
+                </span>
+              </div>
             </div>
             {vm.bars.length === 0 ? (
               <p className="text-sm text-on-surface-variant">Pas de CA journalier sur cette période.</p>
             ) : (
               <div className="flex h-64 items-end justify-between gap-3 border-b border-surface-container pb-4 pt-8">
-                {vm.bars.map((b) => (
-                  <div key={b.key} className="flex flex-1 flex-col items-center gap-2">
-                    <span className="text-[11px] font-bold text-on-surface-variant">{formatMad(b.value)}</span>
-                    <div
-                      className="w-full max-w-[48px] rounded-t-lg bg-primary-container"
-                      style={{ height: `${b.heightPct}%` }}
-                    />
-                    <span className="text-sm font-bold">{b.label}</span>
-                  </div>
-                ))}
+                {vm.bars.map((b, i) => {
+                  const isLast = i === vm.bars.length - 1;
+                  return (
+                    <div key={b.key} className="group flex flex-1 flex-col items-center gap-2">
+                      <span
+                        className={cn(
+                          "text-[11px] font-bold transition-colors group-hover:text-primary",
+                          isLast ? "text-primary" : "text-on-surface-variant",
+                        )}
+                      >
+                        {formatMad(b.value)}
+                      </span>
+                      <div
+                        className={cn(
+                          "relative w-full max-w-[48px] rounded-t-lg transition-all",
+                          isLast ? "bg-secondary-fixed" : "bg-surface-container-high group-hover:bg-primary/40",
+                        )}
+                        style={{ height: `${b.heightPct}%` }}
+                      >
+                        <div
+                          className={cn(
+                            "absolute inset-x-0 bottom-0 rounded-t-lg",
+                            isLast ? "bg-primary-container" : "bg-primary/80",
+                          )}
+                          style={{ height: isLast ? "100%" : "90%" }}
+                        />
+                      </div>
+                      <span className={cn("text-sm font-bold", isLast && "font-extrabold text-primary-container")}>
+                        {b.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -498,27 +617,32 @@ export function ReportsDesktop({
         <div className="flex flex-col gap-8 lg:col-span-4">
           <div className="flex flex-col gap-4 rounded-xl bg-white p-8 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="text-[22px] font-bold">Audit caisse &amp; règlements</h3>
+              <h3 className="text-[22px] font-bold text-on-surface">Audit Caisse &amp; Règlements</h3>
               <Wallet className="h-5 w-5 text-secondary" />
             </div>
-            <p className="text-[13px] text-on-surface-variant">Répartition des encaissements de la période</p>
+            <p className="text-[13px] text-on-surface-variant">Traçabilité des encaissements de la période</p>
             {vm.payments.length === 0 ? (
               <p className="text-sm text-on-surface-variant">Aucun paiement.</p>
             ) : (
-              vm.payments.map((p) => (
-                <div key={p.method} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <span className={cn("h-3 w-3 rounded-full", paymentDotColor(p.method))} />
-                      {p.label} ({p.percent.toLocaleString("fr-MA")} %)
-                    </span>
-                    <span className="font-bold">{formatMad(p.amount)}</span>
+              <div className="flex flex-col gap-3 pt-1">
+                {vm.payments.map((p) => (
+                  <div key={p.method} className="flex flex-col gap-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="flex items-center gap-1.5 font-semibold text-on-surface">
+                        <span className={cn("h-3 w-3 rounded-full", paymentDotColor(p.method))} />
+                        {p.label} ({p.percent.toLocaleString("fr-MA")} %)
+                      </span>
+                      <span className="font-bold text-on-surface">{formatMad(p.amount)}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-surface-container">
+                      <div
+                        className={cn("h-full rounded-full", paymentBarColor(p.method))}
+                        style={{ width: `${Math.min(100, p.percent)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-surface-container">
-                    <div className={cn("h-full rounded-full", paymentBarColor(p.method))} style={{ width: `${Math.min(100, p.percent)}%` }} />
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
 
@@ -578,27 +702,83 @@ export function ReportsDesktop({
 
       <footer className="flex flex-col gap-6 rounded-xl bg-white p-8 shadow-sm print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-surface-container pb-4">
-          <div>
-            <h3 className="text-[22px] font-bold">Livrables &amp; exports</h3>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-primary" />
+              <h3 className="text-[22px] font-bold text-on-surface">Automatisation des Livrables &amp; Exports</h3>
+            </div>
             <p className="text-[13px] text-on-surface-variant">
-              Téléchargement à la demande du module sélectionné ({vm.activeType}). Pas d&apos;envoi comptable automatisé.
+              Téléchargez à la demande le module sélectionné ({vm.activeType}). Les envois planifiés vers un
+              expert-comptable ne sont pas encore disponibles.
             </p>
           </div>
-          <div className="flex gap-2">
-            <button type="button" onClick={() => vm.onExport("pdf")} className="h-10 rounded-lg bg-primary-container px-4 text-sm font-bold text-on-primary-container">
-              PDF
-            </button>
-            <button type="button" onClick={() => vm.onExport("xlsx")} className="h-10 rounded-lg bg-surface-container px-4 text-sm font-bold">
-              Excel
-            </button>
-            <button type="button" onClick={() => vm.onExport("csv")} className="h-10 rounded-lg bg-surface-container px-4 text-sm font-bold">
-              CSV
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-lg bg-surface-container-low px-3 py-1.5 text-sm font-semibold text-on-surface">
+              <span className="h-2 w-2 rounded-full bg-secondary" />
+              À la demande
+            </span>
+            <span className="flex items-center gap-1.5 rounded-lg bg-secondary-fixed px-3 py-1.5 text-sm font-bold text-on-secondary-fixed">
+              <BadgeCheck className="h-4 w-4" />
+              Module : {vm.activeType}
+            </span>
           </div>
         </div>
-        <p className="text-[11px] text-on-surface-variant">
-          Horodatage Casablanca : {vm.generatedAt}. Les exports ne portent pas d&apos;empreinte cryptographique inventée.
-        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <button
+            type="button"
+            onClick={() => vm.onExport("pdf")}
+            className="flex items-start gap-3 rounded-lg bg-surface-container-low p-4 text-left transition-colors hover:bg-surface-container"
+          >
+            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-primary-container" />
+            <span className="flex flex-col">
+              <span className="text-sm font-bold">PDF / Grand Livre</span>
+              <span className="text-[12px] text-on-surface-variant">Synthèse imprimable de la période</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => vm.onExport("xlsx")}
+            className="flex items-start gap-3 rounded-lg bg-surface-container-low p-4 text-left transition-colors hover:bg-surface-container"
+          >
+            <FileSpreadsheet className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+            <span className="flex flex-col">
+              <span className="text-sm font-bold">Excel Analytique</span>
+              <span className="text-[12px] text-on-surface-variant">Tableaux pour retraitement</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => vm.onExport("csv")}
+            className="flex items-start gap-3 rounded-lg bg-surface-container-low p-4 text-left transition-colors hover:bg-surface-container"
+          >
+            <FileSpreadsheet className="mt-0.5 h-4 w-4 shrink-0 text-on-surface-variant" />
+            <span className="flex flex-col">
+              <span className="text-sm font-bold">CSV Transactions</span>
+              <span className="text-[12px] text-on-surface-variant">Export brut du module actif</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={vm.onAuto}
+            className="flex items-start gap-3 rounded-lg bg-surface-container-low p-4 text-left transition-colors hover:bg-surface-container"
+          >
+            <Settings2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <span className="flex flex-col">
+              <span className="text-sm font-bold">Options d&apos;automatisation</span>
+              <span className="text-[12px] text-on-surface-variant">Paramètres et limites actuelles</span>
+            </span>
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 text-[11px] text-on-surface-variant">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-secondary" />
+            <span>
+              Exports générés à la demande — conformité CNDP (consentements réels). Aucune empreinte cryptographique
+              inventée.
+            </span>
+          </div>
+          <span className="text-outline">Horodatage Casablanca : {vm.generatedAt}</span>
+        </div>
       </footer>
     </div>
   );
@@ -628,37 +808,63 @@ function ExportItem({
 
 function MacroCard({
   label,
+  icon,
+  iconClass,
   value,
   unit,
   delta,
   tone,
   hint,
-  foot,
+  footLabel,
+  footValue,
+  footAccent,
 }: {
   label: string;
+  icon: React.ReactNode;
+  iconClass: string;
   value: string;
   unit: string;
   delta: string | null;
   tone: number | null;
   hint?: string;
-  foot: string;
+  footLabel: string;
+  footValue: string;
+  footAccent?: boolean;
 }) {
   return (
-    <div className="flex flex-col justify-between gap-3 rounded-xl bg-white p-6 shadow-sm">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">{label}</p>
+    <div className="flex flex-col justify-between gap-4 rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">{label}</span>
+        <div className={cn("flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-low", iconClass)}>
+          {icon}
+        </div>
+      </div>
       <div>
         <div className="flex items-baseline gap-2">
-          <span className="text-[40px] font-bold leading-none tracking-tight">{value}</span>
+          <span className="text-[40px] font-bold leading-none tracking-tight text-on-surface">{value}</span>
           {unit ? <span className="text-lg font-bold text-secondary">{unit}</span> : null}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          {delta ? <span className={cn("text-[11px] font-bold", deltaClass(tone))}>{delta}</span> : null}
+          {delta ? <span className={cn("inline-flex items-center text-[11px] font-bold", deltaClass(tone))}>{delta}</span> : null}
           {hint ? <span className="text-[13px] text-on-surface-variant">{hint}</span> : null}
         </div>
       </div>
-      <p className="text-[13px] text-on-surface-variant">{foot}</p>
+      <div className="flex items-center justify-between pt-1 text-[13px] text-on-surface-variant">
+        <span>{footLabel}</span>
+        <span className={cn("font-bold", footAccent ? "text-primary-container" : "text-on-surface")}>{footValue}</span>
+      </div>
     </div>
   );
+}
+
+function ModuleIcon({ name }: { name: ModuleCardDef["icon"] }) {
+  const cls = "h-5 w-5";
+  if (name === "finance") return <Landmark className={cls} />;
+  if (name === "agenda") return <CalendarDays className={cls} />;
+  if (name === "customers") return <Users className={cls} />;
+  if (name === "staff") return <IdCard className={cls} />;
+  if (name === "services") return <Sparkles className={cls} />;
+  return <Package className={cls} />;
 }
 
 function Shortcut({ href, title, hint }: { href: string; title: string; hint: string }) {

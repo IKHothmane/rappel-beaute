@@ -244,6 +244,8 @@ export async function listNotifications(
 
   if (category === "unread") {
     conditions.push(`n."readAt" IS NULL`);
+  } else if (category === "urgent") {
+    conditions.push(`n.severity::text = 'CRITICAL'`);
   } else {
     const types = typesForCategory(category);
     if (types?.length) {

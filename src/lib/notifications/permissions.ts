@@ -52,16 +52,39 @@ export function severityForType(type: NotificationType): NotificationSeverity {
   }
 }
 
-export type NotificationFilterCategory = "all" | "unread" | "agenda" | "finance" | "stock";
+export type NotificationFilterCategory =
+  | "all"
+  | "unread"
+  | "urgent"
+  | "agenda"
+  | "finance"
+  | "stock"
+  | "reviews"
+  | "crm"
+  | "marketing"
+  | "staff";
 
 export function typesForCategory(category: NotificationFilterCategory): NotificationType[] | null {
   switch (category) {
     case "agenda":
-      return ["APPOINTMENT_CREATED", "APPOINTMENT_CANCELLED", "APPOINTMENT_NO_SHOW", "APPOINTMENT_RESCHEDULED", "STAFF_LEAVE"];
+      return [
+        "APPOINTMENT_CREATED",
+        "APPOINTMENT_CANCELLED",
+        "APPOINTMENT_NO_SHOW",
+        "APPOINTMENT_RESCHEDULED",
+      ];
     case "finance":
       return ["PAYMENT_RECEIVED", "REFUND_CREATED", "EXPENSE_CREATED"];
     case "stock":
       return ["STOCK_LOW", "STOCK_OUT", "PRODUCT_EXPIRING"];
+    case "reviews":
+      return ["REVIEW_PENDING"];
+    case "crm":
+      return ["LOYALTY_REWARD", "PACKAGE_EXPIRING"];
+    case "marketing":
+      return ["CAMPAIGN_READY"];
+    case "staff":
+      return ["STAFF_LEAVE", "SUPPORT_MESSAGE", "SYSTEM"];
     default:
       return null;
   }

@@ -9,16 +9,89 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: "#E31C5F",
-          dark: "#B8134A",
-          light: "#FDEAF0",
-        },
+        // Legacy app tokens (marketing / admin)
         ink: "#241A22",
         paper: "#FFFBF9",
         line: "#F0E3E6",
         institut: "#171018",
         gold: "#C79A3B",
+
+        // Material Design 3 — Rappel Beauté Prestige (Stitch)
+        primary: {
+          DEFAULT: "#ba0049",
+          dark: "#900037",
+          light: "#FDEAF0",
+          container: "#e31c5f",
+          fixed: "#ffd9de",
+          "fixed-dim": "#ffb2bd",
+        },
+        "on-primary": {
+          DEFAULT: "#ffffff",
+          container: "#fffeff",
+          fixed: "#400014",
+          "fixed-variant": "#900037",
+        },
+        secondary: {
+          DEFAULT: "#7b5900",
+          container: "#fcca66",
+          fixed: "#ffdea4",
+          "fixed-dim": "#f0bf5c",
+        },
+        "on-secondary": {
+          DEFAULT: "#ffffff",
+          container: "#755400",
+          fixed: "#261900",
+          "fixed-variant": "#5d4200",
+        },
+        tertiary: {
+          DEFAULT: "#b61149",
+          container: "#d93260",
+          fixed: "#ffd9dd",
+          "fixed-dim": "#ffb2bd",
+        },
+        "on-tertiary": {
+          DEFAULT: "#ffffff",
+          container: "#fffeff",
+          fixed: "#400013",
+          "fixed-variant": "#900036",
+        },
+        error: {
+          DEFAULT: "#ba1a1a",
+          container: "#ffdad6",
+        },
+        "on-error": {
+          DEFAULT: "#ffffff",
+          container: "#93000a",
+        },
+        background: "#fff7f9",
+        "on-background": "#221820",
+        surface: {
+          DEFAULT: "#fff7f9",
+          bright: "#fff7f9",
+          dim: "#e7d5e0",
+          variant: "#f0dde9",
+          tint: "#bc004a",
+          container: {
+            DEFAULT: "#fce9f4",
+            high: "#f6e3ef",
+            highest: "#f0dde9",
+            low: "#ffeff8",
+            lowest: "#ffffff",
+          },
+        },
+        "on-surface": {
+          DEFAULT: "#221820",
+          variant: "#5b3f43",
+        },
+        outline: {
+          DEFAULT: "#8f6f73",
+          variant: "#e4bdc2",
+        },
+        inverse: {
+          surface: "#382d36",
+          "on-surface": "#feecf7",
+          primary: "#ffb2bd",
+        },
       },
       fontFamily: {
         display: ["var(--font-fraunces)", "Georgia", "serif"],

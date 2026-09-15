@@ -8,12 +8,14 @@ import {
   Boxes,
   CalendarDays,
   ChartColumn,
-  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleDollarSign,
   ClipboardList,
   FileText,
   Gift,
   LayoutDashboard,
+  Lock,
   Megaphone,
   MessageCircle,
   Package,
@@ -24,10 +26,8 @@ import {
   Users,
   WalletCards,
   X,
-  Lock,
 } from "lucide-react";
 import {
-  canAccessNav,
   ROLE_LABEL,
   useCurrentUser,
 } from "@/components/auth/session-provider";
@@ -40,12 +40,11 @@ type NavItem = {
   href: string;
   icon: typeof LayoutDashboard;
   key: string;
-  badge?: string;
 };
 
 const sections: { title: string | null; items: NavItem[] }[] = [
   {
-    title: null as string | null,
+    title: null,
     items: [
       { label: "Tableau de bord", href: "/dashboard/", icon: LayoutDashboard, key: "dashboard" },
       { label: "Agenda", href: "/agenda/", icon: CalendarDays, key: "agenda" },
@@ -85,10 +84,8 @@ const sections: { title: string | null; items: NavItem[] }[] = [
   {
     title: "Croissance",
     items: [
-      { label: "WhatsApp", href: "/whatsapp/", icon: MessageCircle, key: "whatsapp", badge: "V1" },
       { label: "Liste d'attente", href: "/waiting-list/", icon: Users, key: "waiting-list" },
       { label: "Réactivation", href: "/reactivation/", icon: Users, key: "reactivation" },
-      { label: "Post-prestation", href: "/post-visit/", icon: MessageCircle, key: "post-visit" },
       { label: "Fidélité", href: "/loyalty/", icon: Gift, key: "loyalty" },
       { label: "Promotions", href: "/promotions/", icon: Megaphone, key: "promotions" },
       { label: "Cartes cadeaux", href: "/gift-cards/", icon: Gift, key: "gift-cards" },
@@ -120,23 +117,22 @@ function isActive(pathname: string, href: string) {
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
 
-type SidebarProps = {
+type OwnerSidebarProps = {
   open: boolean;
   onClose: () => void;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 };
 
-export function Sidebar({ open, onClose }: SidebarProps) {
+export default function OwnerSidebar({
+  open,
+  onClose,
+  collapsed,
+  onCollapsedChange,
+}: OwnerSidebarProps) {
   const pathname = usePathname();
   const user = useCurrentUser();
-  const role = user.role;
   const { isNavEnabled, loading: planLoading } = usePlanFeatures();
-
-  const filtered = sections
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => canAccessNav(role, item.key)),
-    }))
-    .filter((section) => section.items.length > 0);
 
   return (
     <>
@@ -150,22 +146,41 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-screen w-[260px] flex-col border-r border-line bg-white transition-transform duration-300 lg:z-40 lg:translate-x-0",
+          "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-line bg-white transition-[width,transform] duration-300 lg:z-40 lg:translate-x-0",
+          collapsed ? "lg:w-[76px]" : "lg:w-[280px]",
+          "w-[280px]",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-[72px] items-center justify-between border-b border-line px-5">
-          <Link href="/dashboard/" className="flex min-w-0 items-center gap-2.5" onClick={onClose}>
+        <div
+          className={cn(
+            "flex h-[72px] items-center border-b border-line",
+            collapsed ? "justify-center gap-1 px-2" : "justify-between gap-2 px-5",
+          )}
+        >
+          <Link
+            href="/dashboard/"
+            className={cn("flex min-w-0 items-center gap-2.5", collapsed && "lg:hidden")}
+            onClick={onClose}
+          >
             <BrandLogo href={null} height={40} className="max-h-10 shrink-0" />
             <div className="min-w-0">
               <div className="truncate font-display text-sm font-semibold leading-tight">
                 {user.orgName}
               </div>
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink/40">
-                Institut
+                Propriétaire
               </div>
             </div>
           </Link>
+          <button
+            type="button"
+            className="hidden shrink-0 rounded-xl p-2 text-ink/50 transition hover:bg-[#FBF4F6] hover:text-ink lg:inline-flex"
+            onClick={() => onCollapsedChange(!collapsed)}
+            aria-label={collapsed ? "Développer le menu" : "Réduire le menu"}
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
           <button
             type="button"
             className="rounded-xl p-2 text-ink/50 hover:bg-[#FBF4F6] lg:hidden"
@@ -177,12 +192,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">
-          {filtered.map((section, index) => (
+          {sections.map((section, index) => (
             <div key={index} className="mb-6">
-              {section.title ? (
+              {section.title && !collapsed ? (
                 <div className="mb-2 px-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink/35">
                   {section.title}
                 </div>
+              ) : null}
+              {section.title && collapsed ? (
+                <div className="mb-2 hidden h-px bg-line lg:block" aria-hidden />
               ) : null}
               <div className="space-y-1">
                 {section.items.map((item) => {
@@ -194,8 +212,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                       key={item.href}
                       href={item.href}
                       onClick={onClose}
+                      title={collapsed ? item.label : undefined}
                       className={cn(
                         "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                        collapsed && "lg:justify-center lg:px-0",
                         planLocked
                           ? "text-ink/35 hover:bg-[#FBF4F6]"
                           : active
@@ -207,18 +227,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         size={18}
                         strokeWidth={active && !planLocked ? 2.3 : 1.8}
                         className={cn(
-                          "transition-transform duration-200 group-hover:scale-110",
+                          "shrink-0 transition-transform duration-200 group-hover:scale-110",
                           planLocked ? "text-ink/25" : active ? "text-primary" : "text-ink/35",
                         )}
                       />
-                      <span>{item.label}</span>
+                      <span className={cn(collapsed && "lg:hidden")}>{item.label}</span>
                       {planLocked ? (
-                        <Lock size={14} className="ml-auto text-ink/30" aria-label="Forfait supérieur requis" />
-                      ) : null}
-                      {!planLocked && item.badge ? (
-                        <span className="ml-auto rounded-full bg-primary-light px-1.5 py-0.5 text-[9px] font-bold text-primary">
-                          {item.badge}
-                        </span>
+                        <Lock
+                          size={14}
+                          className={cn("ml-auto text-ink/30", collapsed && "lg:hidden")}
+                          aria-label="Forfait supérieur requis"
+                        />
                       ) : null}
                     </Link>
                   );
@@ -232,18 +251,21 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <Link
             href="/profile/"
             onClick={onClose}
-            className="flex items-center gap-3 rounded-xl bg-[#FBF4F6] p-3 transition hover:bg-primary-light/60"
+            title={collapsed ? `${user.firstName} ${user.lastName}` : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-xl bg-[#FBF4F6] p-3 transition hover:bg-primary-light/60",
+              collapsed && "lg:justify-center lg:px-2",
+            )}
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-gold font-semibold text-white">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-gold font-semibold text-white">
               {user.firstName.charAt(0)}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
               <div className="truncate text-sm font-semibold">
                 {user.firstName} {user.lastName}
               </div>
               <div className="text-xs text-ink/45">{ROLE_LABEL[user.role]}</div>
             </div>
-            <ChevronDown size={16} className="text-ink/35" />
           </Link>
         </div>
       </aside>

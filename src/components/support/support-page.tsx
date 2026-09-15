@@ -1,54 +1,52 @@
 "use client";
 
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
-import { AppPageHeader } from "@/components/app/AppUi";
-import { useCurrentUser } from "@/components/auth/session-provider";
-import { canWriteFeatureLimited } from "@/lib/rbac";
-import { useToast } from "@/components/ui/toast";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { SupportDesktop } from "@/components/support/support-desktop";
 import {
-  listSupportTickets,
+  CREATE_CATEGORIES,
   SUPPORT_CATEGORY_LABEL,
-  SUPPORT_STATUS_LABEL,
+  avgFirstResponseMinutes,
+  buildSupportCounters,
+  filterTickets,
+  sortTickets,
+  type CreateModalMode,
+  type SortKey,
+  type SupportViewModel,
+  type TicketFilter,
+} from "@/components/support/support-helpers";
+import { SupportMobile } from "@/components/support/support-mobile";
+import { useToast } from "@/components/ui/toast";
+import type { SupportTicketCategory } from "@/lib/db/support-tickets";
+import { canWriteFeatureLimited } from "@/lib/rbac";
+import {
+  createSupportTicket,
+  getSupportTicket,
+  listSupportTickets,
+  replySupportTicket,
+  type SupportMessageItem,
   type SupportTicketListItem,
 } from "@/modules/support/service";
-
-function relativeTime(iso: string | null | undefined) {
-  if (!iso) return "—";
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "À l'instant";
-  if (mins < 60) return `Il y a ${mins} min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Il y a ${hours} h`;
-  const days = Math.floor(hours / 24);
-  return `Il y a ${days} j`;
-}
-
-function statusClass(status: string) {
-  switch (status) {
-    case "OPEN":
-      return "bg-amber-50 text-amber-800";
-    case "IN_PROGRESS":
-      return "bg-sky-50 text-sky-800";
-    case "WAITING_CUSTOMER":
-      return "bg-violet-50 text-violet-800";
-    case "RESOLVED":
-      return "bg-emerald-50 text-emerald-800";
-    case "CLOSED":
-      return "bg-ink/5 text-ink/50";
-    default:
-      return "bg-ink/5 text-ink/50";
-  }
-}
+import { Send } from "lucide-react";
 
 export function SupportPageView() {
   const { toast } = useToast();
   const user = useCurrentUser();
   const canWrite = canWriteFeatureLimited(user.role, "support");
+
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<SupportTicketListItem[]>([]);
+  const [filter, setFilter] = useState<TicketFilter>("all");
+  const [sort, setSort] = useState<SortKey>("recent");
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<SupportMessageItem[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<CreateModalMode>("ticket");
+  const [creating, setCreating] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -64,63 +62,271 @@ export function SupportPageView() {
     refresh().finally(() => setLoading(false));
   }, [refresh]);
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-      <AppPageHeader
-        title="Aide & Support"
-        description="Créez une demande et suivez la conversation avec l'équipe Rappel Beauty."
-        action={
-          canWrite ? (
-            <Link href="/support/new/" className="btn-primary">
-              Nouvelle demande
-            </Link>
-          ) : undefined
-        }
-      />
+  const filtered = useMemo(
+    () => sortTickets(filterTickets(items, filter, search), sort),
+    [items, filter, search, sort],
+  );
 
-      {loading ? (
-        <p className="text-sm text-ink/45">Chargement…</p>
-      ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-white p-8 text-center">
-          <p className="text-sm text-ink/55">Aucune demande pour le moment.</p>
-          {canWrite ? (
-            <Link href="/support/new/" className="btn-primary mt-4 inline-flex">
-              Créer une demande
-            </Link>
-          ) : null}
+  const counters = useMemo(() => buildSupportCounters(items), [items]);
+  const avgResponseMin = useMemo(() => avgFirstResponseMinutes(items), [items]);
+  const selected = useMemo(
+    () => items.find((t) => t.id === selectedId) ?? null,
+    [items, selectedId],
+  );
+
+  useEffect(() => {
+    if (!selectedId) {
+      setMessages([]);
+      return;
+    }
+    let cancelled = false;
+    setMessagesLoading(true);
+    getSupportTicket(selectedId)
+      .then((res) => {
+        if (cancelled) return;
+        setMessages(res.messages);
+        setItems((prev) =>
+          prev.map((t) => (t.id === res.ticket.id ? { ...t, ...res.ticket } : t)),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) toast("Impossible de charger la conversation.", "error");
+      })
+      .finally(() => {
+        if (!cancelled) setMessagesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, toast]);
+
+  async function onSendReply() {
+    if (!selectedId || !reply.trim()) return;
+    setSending(true);
+    try {
+      await replySupportTicket(selectedId, reply.trim());
+      setReply("");
+      toast("Message envoyé.", "success");
+      const res = await getSupportTicket(selectedId);
+      setMessages(res.messages);
+      await refresh();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Envoi impossible.", "error");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function onCreate(input: {
+    subject: string;
+    category: SupportTicketCategory;
+    message: string;
+    priority: string;
+  }) {
+    setCreating(true);
+    try {
+      const res = await createSupportTicket(input);
+      toast("Ticket créé.", "success");
+      setModalOpen(false);
+      await refresh();
+      setSelectedId(res.ticket.id);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Création impossible.", "error");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  const vm: SupportViewModel = {
+    orgName: user.orgName || "Institut",
+    roleLabel: ROLE_LABEL[user.role] ?? user.role,
+    userName: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email,
+    canWrite,
+    loading,
+    items,
+    filtered,
+    counters,
+    avgResponseMin,
+    filter,
+    sort,
+    search,
+    selectedId,
+    selected,
+    messages,
+    messagesLoading,
+    reply,
+    sending,
+    modalOpen,
+    modalMode,
+    creating,
+    onFilter: setFilter,
+    onSort: setSort,
+    onSearch: setSearch,
+    onSelect: setSelectedId,
+    onReplyChange: setReply,
+    onSendReply,
+    onOpenModal: (mode) => {
+      setModalMode(mode);
+      setModalOpen(true);
+    },
+    onCloseModal: () => setModalOpen(false),
+    onCreate,
+    onRefresh: () => {
+      setLoading(true);
+      refresh().finally(() => setLoading(false));
+    },
+  };
+
+  return (
+    <>
+      <SupportMobile vm={vm} />
+      <SupportDesktop vm={vm} />
+      {modalOpen ? (
+        <CreateTicketModal
+          orgName={vm.orgName}
+          mode={modalMode}
+          creating={creating}
+          onClose={() => setModalOpen(false)}
+          onCreate={onCreate}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function CreateTicketModal({
+  orgName,
+  mode,
+  creating,
+  onClose,
+  onCreate,
+}: {
+  orgName: string;
+  mode: CreateModalMode;
+  creating: boolean;
+  onClose: () => void;
+  onCreate: (input: {
+    subject: string;
+    category: SupportTicketCategory;
+    message: string;
+    priority: string;
+  }) => Promise<void>;
+}) {
+  const [subject, setSubject] = useState(
+    mode === "bug"
+      ? "Anomalie technique / Bug"
+      : mode === "feature"
+        ? "Proposition d'évolution métier"
+        : "",
+  );
+  const [category, setCategory] = useState<SupportTicketCategory>(
+    mode === "bug" ? "BUG" : mode === "feature" ? "FEATURE_REQUEST" : "TECHNICAL",
+  );
+  const [priority, setPriority] = useState(
+    mode === "bug" ? "HIGH" : mode === "feature" ? "LOW" : "NORMAL",
+  );
+  const [message, setMessage] = useState("");
+
+  const title =
+    mode === "bug"
+      ? "Signaler une Anomalie Technique / Bug"
+      : mode === "feature"
+        ? "Proposer une Évolution Métier"
+        : "Ouvrir un Nouveau Ticket d'Assistance";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/60 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-surface-container-lowest shadow-2xl">
+        <div className="flex items-center justify-between bg-surface-container px-6 py-4">
+          <div>
+            <h3 className="text-lg font-bold text-on-surface">{title}</h3>
+            <p className="text-[13px] text-on-surface-variant">{orgName}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg bg-surface-container-lowest px-3 py-1 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high"
+          >
+            Fermer
+          </button>
         </div>
-      ) : (
-        <ul className="space-y-3">
-          {items.map((t) => (
-            <li key={t.id}>
-              <Link
-                href={`/support/${t.id}/`}
-                className="block rounded-2xl border border-line bg-white p-5 transition hover:border-primary/30 hover:bg-[#FBF4F6]"
+        <form
+          className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await onCreate({ subject, category, message, priority });
+          }}
+        >
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase text-on-surface">Sujet *</span>
+            <input
+              required
+              maxLength={200}
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="h-11 rounded-lg bg-surface-container-low px-3 text-[13px] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </label>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold uppercase text-on-surface">Catégorie *</span>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as SupportTicketCategory)}
+                className="h-11 cursor-pointer rounded-lg bg-surface-container-low px-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium text-ink">{t.subject}</p>
-                    <p className="mt-1 text-sm text-ink/50">
-                      {SUPPORT_CATEGORY_LABEL[t.category]}
-                      {t.lastMessagePreview
-                        ? ` · ${t.lastMessagePreview}`
-                        : null}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold ${statusClass(t.status)}`}
-                  >
-                    {SUPPORT_STATUS_LABEL[t.status]}
-                  </span>
-                </div>
-                <p className="mt-2 font-mono text-[10px] text-ink/35">
-                  {relativeTime(t.lastMessageAt ?? t.updatedAt)}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </motion.div>
+                {CREATE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {SUPPORT_CATEGORY_LABEL[c]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold uppercase text-on-surface">Priorité *</span>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="h-11 cursor-pointer rounded-lg bg-surface-container-low px-3 text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="NORMAL">Normale</option>
+                <option value="HIGH">Haute</option>
+                <option value="URGENT">Urgente</option>
+                <option value="LOW">Faible</option>
+              </select>
+            </label>
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase text-on-surface">Description *</span>
+            <textarea
+              required
+              maxLength={5000}
+              rows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Décrivez la situation, les étapes et l'impact…"
+              className="rounded-lg bg-surface-container-low p-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </label>
+          <div className="flex items-center justify-end gap-2 border-t border-surface-container pt-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={creating}
+              className="flex items-center gap-2 rounded-lg bg-primary-container px-6 py-2.5 text-sm font-bold text-on-primary-container shadow-sm hover:bg-primary disabled:opacity-50"
+            >
+              <Send className="h-[18px] w-[18px]" />
+              {creating ? "Envoi…" : "Créer le ticket"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

@@ -7,7 +7,9 @@ import { isAppSession } from "@/lib/auth/types";
 import { Header } from "./header";
 import { MobileNav } from "./mobile-nav";
 import { Sidebar } from "./sidebar";
+import OwnerSidebar from "./OwnerSidebar";
 import { PlanFeatureRouteGuard } from "@/components/subscriptions/PlanFeatureRouteGuard";
+import { cn } from "@/lib/utils";
 
 type AppShellProps = {
   children: ReactNode;
@@ -23,6 +25,7 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const path = normalize(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const { user, loading } = useSession();
 
   const bare =
@@ -58,11 +61,31 @@ export function AppShell({ children }: AppShellProps) {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-paper text-ink">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+  const isOwner = user.role === "OWNER";
 
-      <div className="lg:pl-[260px]">
+  return (
+    <div className={cn("min-h-screen text-ink", isOwner ? "bg-[#FFF9FC]" : "bg-paper")}>
+      {isOwner ? (
+        <OwnerSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          collapsed={collapsed}
+          onCollapsedChange={setCollapsed}
+        />
+      ) : (
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      )}
+
+      <div
+        className={cn(
+          "min-h-screen transition-[margin] duration-300",
+          isOwner
+            ? collapsed
+              ? "lg:ml-[76px]"
+              : "lg:ml-[280px]"
+            : "lg:pl-[260px]",
+        )}
+      >
         <Header onMenuOpen={() => setSidebarOpen(true)} />
 
         <main className="min-h-[calc(100vh-64px)] px-4 pb-28 pt-5 sm:min-h-[calc(100vh-72px)] sm:px-6 lg:px-8 lg:pb-8">

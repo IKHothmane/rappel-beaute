@@ -26,6 +26,7 @@ export async function GET(request: NextRequest, context: Ctx) {
         createdAt: ticket.createdAt.toISOString(),
         updatedAt: ticket.updatedAt.toISOString(),
         resolvedAt: ticket.resolvedAt?.toISOString() ?? null,
+        firstResponseAt: ticket.firstResponseAt?.toISOString() ?? null,
       },
       messages: messages.map((m) => ({
         ...m,

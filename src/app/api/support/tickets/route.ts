@@ -9,6 +9,7 @@ import {
   createSupportTicket,
   listOrgSupportTickets,
   parseCategory,
+  parsePriority,
 } from "@/lib/db/support-tickets";
 
 export async function GET(request: NextRequest) {
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
         createdAt: t.createdAt.toISOString(),
         updatedAt: t.updatedAt.toISOString(),
         resolvedAt: t.resolvedAt?.toISOString() ?? null,
+        firstResponseAt: t.firstResponseAt?.toISOString() ?? null,
         lastMessageAt: t.lastMessageAt?.toISOString() ?? null,
       })),
     });
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
     const category = parseCategory(raw.category);
     const subject = String(raw.subject ?? "").trim();
     const message = String(raw.message ?? "").trim();
+    const priority = parsePriority(raw.priority) ?? "NORMAL";
 
     if (!category || !subject || !message) {
       return NextResponse.json(
@@ -58,6 +61,7 @@ export async function POST(request: NextRequest) {
       subject,
       category,
       message,
+      priority,
     });
 
     return NextResponse.json(
@@ -67,6 +71,7 @@ export async function POST(request: NextRequest) {
           createdAt: result.ticket.createdAt.toISOString(),
           updatedAt: result.ticket.updatedAt.toISOString(),
           resolvedAt: result.ticket.resolvedAt?.toISOString() ?? null,
+          firstResponseAt: result.ticket.firstResponseAt?.toISOString() ?? null,
         },
       },
       { status: 201 },

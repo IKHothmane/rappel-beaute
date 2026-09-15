@@ -30,6 +30,12 @@ export type ModuleCardDef = {
   badge: string;
   description: string;
   cta: string;
+  /** Lucide-style key used by desktop/mobile icon maps */
+  icon: "finance" | "agenda" | "customers" | "staff" | "services" | "inventory";
+  /** Fond + teinte icône (tokens maquette) */
+  iconTone: string;
+  /** Teinte du badge module */
+  badgeTone: string;
 };
 
 export const MODULE_CARDS: ModuleCardDef[] = [
@@ -37,43 +43,61 @@ export const MODULE_CARDS: ModuleCardDef[] = [
     type: "finance",
     title: "Rapport Financier & Trésorerie",
     badge: "Livre de caisse",
-    description: "Recettes, remboursements, charges et résultat d'exploitation.",
-    cta: "Consulter le grand livre",
+    description: "Ventilation des recettes, remboursements, charges et résultat net d'exploitation.",
+    cta: "Consulter le Grand Livre",
+    icon: "finance",
+    iconTone: "bg-primary-container/10 text-primary-container",
+    badgeTone: "text-secondary",
   },
   {
     type: "agenda",
     title: "Rapport Fréquentation & RDV",
     badge: "Fréquentation",
-    description: "Flux cabines, taux de remplissage, no-shows et annulations.",
-    cta: "Consulter les flux cabines",
+    description: "Analyse des flux cabines, taux de remplissage, no-shows et annulations.",
+    cta: "Consulter les Flux Cabines",
+    icon: "agenda",
+    iconTone: "bg-secondary-fixed text-on-secondary-fixed",
+    badgeTone: "text-on-surface-variant",
   },
   {
     type: "customers",
     title: "Rapport Clientes & Rétention",
     badge: "Base CRM",
-    description: "Cohortes, segmentation VIP et clientes inactives.",
-    cta: "Consulter les cohortes",
+    description: "Comportement d'achat, cohortes de fidélité, segmentation VIP et dormance.",
+    cta: "Consulter les Cohortes",
+    icon: "customers",
+    iconTone: "bg-surface-container-high text-primary",
+    badgeTone: "text-primary",
   },
   {
     type: "staff",
     title: "Rapport Équipe & Productivité",
     badge: "Ressources & RH",
-    description: "Volume de soins, CA généré et commissions dues.",
-    cta: "Consulter le tableau RH",
+    description: "Performance individuelle, volume de soins, CA généré et commissions.",
+    cta: "Consulter le Tableau RH",
+    icon: "staff",
+    iconTone: "bg-surface-container text-secondary",
+    badgeTone: "text-secondary",
   },
   {
     type: "services",
     title: "Rapport Services & Rentabilité",
     badge: "Mix prestations",
-    description: "CA par rituel, coût consommables et marge estimée.",
-    cta: "Consulter la matrice soins",
+    description: "Marge estimée par rituel, coût consommables et volume de cabine.",
+    cta: "Consulter la Matrice Soins",
+    icon: "services",
+    iconTone: "bg-primary-fixed text-on-primary-fixed",
+    badgeTone: "text-primary",
   },
   {
     type: "inventory",
     title: "Rapport Stock & Consommables",
     badge: "Inventaire",
-    description: "Valeur stock, alertes de seuil, pertes et ventes boutique.",
-    cta: "Consulter le grand inventaire",
+    description: "Rotation revente, consommation cabine et alertes de seuil.",
+    cta: "Consulter le Grand Inventaire",
+    icon: "inventory",
+    iconTone: "bg-surface-container-high text-secondary",
+    badgeTone: "text-on-surface-variant",
   },
 ];
 

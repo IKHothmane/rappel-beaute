@@ -3,9 +3,14 @@ import type { NotificationFilterCategory } from "@/lib/notifications/permissions
 const CATEGORIES = new Set<NotificationFilterCategory>([
   "all",
   "unread",
+  "urgent",
   "agenda",
   "finance",
   "stock",
+  "reviews",
+  "crm",
+  "marketing",
+  "staff",
 ]);
 
 function str(v: unknown): string | undefined {

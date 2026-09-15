@@ -5,6 +5,7 @@ import type {
 
 export type SupportTicketListItem = {
   id: string;
+  ticketNumber?: number;
   subject: string;
   category: SupportTicketCategory;
   status: SupportTicketStatus;
@@ -12,9 +13,11 @@ export type SupportTicketListItem = {
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;
+  firstResponseAt?: string | null;
   lastMessagePreview?: string | null;
   lastMessageAt?: string | null;
   lastSenderType?: "INSTITUT" | "PLATFORM" | null;
+  createdByName?: string | null;
 };
 
 export type SupportMessageItem = {
@@ -90,6 +93,7 @@ export async function createSupportTicket(input: {
   subject: string;
   category: SupportTicketCategory;
   message: string;
+  priority?: string;
 }) {
   return api<{ ticket: SupportTicketListItem }>("/api/support/tickets/", {
     method: "POST",

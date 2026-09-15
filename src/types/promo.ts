@@ -39,9 +39,14 @@ export type PromotionListItem = {
   value: number | null;
   serviceId: string | null;
   category: string | null;
+  customerId: string | null;
   minAmount: number | null;
   maxUses: number | null;
+  maxUsesPerCustomer: number | null;
   usageCount: number;
+  monthUses: number;
+  monthDiscount: number;
+  monthRevenue: number;
   startsAt: string | null;
   endsAt: string | null;
   timeStart: string | null;
@@ -55,6 +60,12 @@ export type PromotionKpis = {
   usedThisMonth: number;
   discountTotalMonth: number;
   estimatedRevenueMonth: number;
+  customersTouchedMonth: number;
+  usedPrevMonth: number;
+  discountPrevMonth: number;
+  revenuePrevMonth: number;
+  archivedCount: number;
+  totalCount: number;
 };
 
 export type CreatePromotionInput = {
@@ -95,6 +106,13 @@ export const GIFT_CARD_STATUS_LABEL: Record<GiftCardStatus, string> = {
   CANCELLED: "Annulée",
 };
 
+export const GIFT_CARD_TXN_LABEL: Record<GiftCardTxnType, string> = {
+  ISSUED: "Émission & Encaissement",
+  REDEEMED: "Débit Caisse",
+  ADJUSTMENT: "Ajustement",
+  REFUND: "Remboursement",
+};
+
 export type GiftCardListItem = {
   id: string;
   code: string;
@@ -103,8 +121,11 @@ export type GiftCardListItem = {
   status: GiftCardStatus;
   buyerName: string | null;
   beneficiaryName: string | null;
+  buyerPhone: string | null;
+  beneficiaryPhone: string | null;
   buyerCustomerId: string | null;
   beneficiaryCustomerId: string | null;
+  notes: string | null;
   expiresAt: string | null;
   createdAt: string;
 };
@@ -114,6 +135,27 @@ export type GiftCardKpis = {
   soldValue: number;
   redeemedValue: number;
   remainingBalance: number;
+  activeCount: number;
+  usedCount: number;
+  ritualCount: number;
+  soldThisMonth: number;
+  soldPrevMonth: number;
+  soldValueThisMonth: number;
+  expiringSoonCount: number;
+  expiringSoonBalance: number;
+};
+
+export type GiftCardJournalItem = {
+  id: string;
+  code: string;
+  type: GiftCardTxnType;
+  amount: number;
+  balanceAfter: number;
+  reason: string | null;
+  paymentId: string | null;
+  actorName: string | null;
+  createdAt: string;
+  proofHash: string;
 };
 
 export type CreateGiftCardInput = {

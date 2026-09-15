@@ -142,6 +142,7 @@ async function getPeriodStatus(
 function mapRow(r: Record<string, unknown>, periodClosed: boolean): CommissionListItem {
   const commissionAmount = parseFloat(String(r.commissionAmount)) || 0;
   const adjustmentsTotal = parseFloat(String(r.adjustmentsTotal ?? 0)) || 0;
+  const customerName = r.customerName != null ? String(r.customerName).trim() : "";
   return {
     id: String(r.id),
     appointmentId: String(r.appointmentId),
@@ -149,6 +150,7 @@ function mapRow(r: Record<string, unknown>, periodClosed: boolean): CommissionLi
     staffName: String(r.staffNameSnapshot ?? r.staffName ?? ""),
     serviceId: String(r.serviceId),
     serviceName: String(r.serviceNameSnapshot ?? r.serviceName ?? ""),
+    customerName: customerName || null,
     appointmentAt: new Date(r.appointmentAt as Date).toISOString(),
     baseAmount: parseFloat(String(r.baseAmount)) || 0,
     type: r.type as CommissionListItem["type"],
@@ -174,12 +176,14 @@ const SELECT_BASE = `
     cr."commissionAmount"::text, cr.paid, cr."paidAt",
     cr."createdAt",
     a."startAt" AS "appointmentAt",
+    NULLIF(TRIM(CONCAT(cu."firstName", ' ', cu."lastName")), '') AS "customerName",
     COALESCE((
       SELECT SUM(adj.amount) FROM "CommissionAdjustment" adj
       WHERE adj."commissionRecordId" = cr.id
     ), 0)::text AS "adjustmentsTotal"
   FROM "CommissionRecord" cr
   JOIN "Appointment" a ON a.id = cr."appointmentId"
+  LEFT JOIN "Customer" cu ON cu.id = a."customerId"
 `;
 
 export async function listCommissions(
@@ -237,7 +241,8 @@ export async function listCommissions(
   if (opts.paid === "unpaid") conditions.push(`cr.paid = false`);
   if (opts.search) {
     conditions.push(
-      `(cr."serviceNameSnapshot" ILIKE $${pi} OR cr."staffNameSnapshot" ILIKE $${pi})`,
+      `(cr."serviceNameSnapshot" ILIKE $${pi} OR cr."staffNameSnapshot" ILIKE $${pi}
+        OR CONCAT(cu."firstName", ' ', cu."lastName") ILIKE $${pi})`,
     );
     params.push(`%${opts.search}%`);
     pi++;
@@ -245,12 +250,15 @@ export async function listCommissions(
 
   const where = conditions.join(" AND ");
   const offset = (opts.page - 1) * opts.limit;
+  const fromJoin = `
+       FROM "CommissionRecord" cr
+       JOIN "Appointment" a ON a.id = cr."appointmentId"
+       LEFT JOIN "Customer" cu ON cu.id = a."customerId"`;
 
   const [countRes, listRes, kpiRes, byStaffRes] = await Promise.all([
     pool.query<{ total: number }>(
       `SELECT COUNT(*)::int AS total
-       FROM "CommissionRecord" cr
-       JOIN "Appointment" a ON a.id = cr."appointmentId"
+       ${fromJoin}
        WHERE ${where}`,
       params,
     ),
@@ -266,11 +274,19 @@ export async function listCommissions(
       baseTotal: string;
       count: number;
       weightedRate: string | null;
+      paidTotal: string;
+      unpaidTotal: string;
+      paidCount: number;
+      unpaidCount: number;
     }>(
       `SELECT
          COALESCE(SUM(cr."commissionAmount" + COALESCE(adj.t, 0)), 0)::text AS "commissionTotal",
          COALESCE(SUM(cr."baseAmount"), 0)::text AS "baseTotal",
          COUNT(*)::int AS count,
+         COALESCE(SUM(CASE WHEN cr.paid THEN cr."commissionAmount" + COALESCE(adj.t, 0) ELSE 0 END), 0)::text AS "paidTotal",
+         COALESCE(SUM(CASE WHEN NOT cr.paid THEN cr."commissionAmount" + COALESCE(adj.t, 0) ELSE 0 END), 0)::text AS "unpaidTotal",
+         COUNT(*) FILTER (WHERE cr.paid)::int AS "paidCount",
+         COUNT(*) FILTER (WHERE NOT cr.paid)::int AS "unpaidCount",
          CASE WHEN SUM(cr."baseAmount") > 0
            THEN (SUM(
              CASE WHEN cr.type = 'PERCENTAGE' AND cr."percentageSnapshot" IS NOT NULL
@@ -280,8 +296,7 @@ export async function listCommissions(
              CASE WHEN cr.type = 'PERCENTAGE' THEN cr."baseAmount" ELSE 0 END
            ), 0))::text
            ELSE NULL END AS "weightedRate"
-       FROM "CommissionRecord" cr
-       JOIN "Appointment" a ON a.id = cr."appointmentId"
+       ${fromJoin}
        LEFT JOIN LATERAL (
          SELECT SUM(amount) AS t FROM "CommissionAdjustment"
          WHERE "commissionRecordId" = cr.id
@@ -295,15 +310,18 @@ export async function listCommissions(
       commissionTotal: string;
       baseTotal: string;
       count: number;
+      paidTotal: string;
+      unpaidTotal: string;
     }>(
       `SELECT
          cr."staffId",
          cr."staffNameSnapshot" AS "staffName",
          COALESCE(SUM(cr."commissionAmount" + COALESCE(adj.t, 0)), 0)::text AS "commissionTotal",
          COALESCE(SUM(cr."baseAmount"), 0)::text AS "baseTotal",
-         COUNT(*)::int AS count
-       FROM "CommissionRecord" cr
-       JOIN "Appointment" a ON a.id = cr."appointmentId"
+         COUNT(*)::int AS count,
+         COALESCE(SUM(CASE WHEN cr.paid THEN cr."commissionAmount" + COALESCE(adj.t, 0) ELSE 0 END), 0)::text AS "paidTotal",
+         COALESCE(SUM(CASE WHEN NOT cr.paid THEN cr."commissionAmount" + COALESCE(adj.t, 0) ELSE 0 END), 0)::text AS "unpaidTotal"
+       ${fromJoin}
        LEFT JOIN LATERAL (
          SELECT SUM(amount) AS t FROM "CommissionAdjustment"
          WHERE "commissionRecordId" = cr.id
@@ -318,6 +336,8 @@ export async function listCommissions(
   const commissionTotal =
     Math.round((parseFloat(kpiRes.rows[0]?.commissionTotal ?? "0") || 0) * 100) / 100;
   const baseTotal = Math.round((parseFloat(kpiRes.rows[0]?.baseTotal ?? "0") || 0) * 100) / 100;
+  const paidTotal = Math.round((parseFloat(kpiRes.rows[0]?.paidTotal ?? "0") || 0) * 100) / 100;
+  const unpaidTotal = Math.round((parseFloat(kpiRes.rows[0]?.unpaidTotal ?? "0") || 0) * 100) / 100;
   const count = kpiRes.rows[0]?.count ?? 0;
   const avgRatePct =
     kpiRes.rows[0]?.weightedRate != null
@@ -334,12 +354,18 @@ export async function listCommissions(
       baseTotal,
       count,
       avgRatePct,
+      paidTotal,
+      unpaidTotal,
+      paidCount: kpiRes.rows[0]?.paidCount ?? 0,
+      unpaidCount: kpiRes.rows[0]?.unpaidCount ?? 0,
       byStaff: byStaffRes.rows.map((r) => ({
         staffId: r.staffId,
         staffName: r.staffName,
         commissionTotal: Math.round((parseFloat(r.commissionTotal) || 0) * 100) / 100,
         baseTotal: Math.round((parseFloat(r.baseTotal) || 0) * 100) / 100,
         count: r.count,
+        paidTotal: Math.round((parseFloat(r.paidTotal) || 0) * 100) / 100,
+        unpaidTotal: Math.round((parseFloat(r.unpaidTotal) || 0) * 100) / 100,
       })),
     },
     period: {
@@ -706,6 +732,38 @@ export async function closeCommissionPeriod(
   });
 
   return getPeriodStatus(organizationId, year, month);
+}
+
+export async function setCommissionsPaidBulk(
+  organizationId: string,
+  ids: string[],
+  actor: { id: string; name?: string | null },
+): Promise<{ updated: number }> {
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 200);
+  if (!unique.length) return { updated: 0 };
+
+  const { rows } = await pool.query<{ id: string }>(
+    `UPDATE "CommissionRecord"
+     SET paid = true, "paidAt" = NOW(), "updatedAt" = NOW()
+     WHERE "organizationId" = $1 AND paid = false AND id = ANY($2::text[])
+     RETURNING id`,
+    [organizationId, unique],
+  );
+
+  if (rows.length) {
+    await writeAuditLog({
+      organizationId,
+      actorId: actor.id,
+      actorName: actor.name,
+      entityType: "CommissionRecord",
+      entityId: rows[0].id,
+      action: "MARK_PAID_BULK",
+      before: { paid: false, count: rows.length },
+      after: { paid: true, ids: rows.map((r) => r.id) },
+    });
+  }
+
+  return { updated: rows.length };
 }
 
 export async function setCommissionPaid(

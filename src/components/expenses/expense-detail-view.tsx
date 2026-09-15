@@ -9,6 +9,7 @@ import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { canArchiveExpense, canWriteExpenses } from "@/lib/rbac";
+import { expenseShortId } from "@/components/expenses/expense-helpers";
 import {
   EXPENSE_CATEGORY_LABEL,
   EXPENSE_STATUS_LABEL,
@@ -95,18 +96,21 @@ export function ExpenseDetailView({ expenseId }: { expenseId: string }) {
   }
 
   return (
-    <div>
-      <Link href="/expenses/" className="mb-4 inline-block text-sm text-primary">
+    <div className="space-y-4">
+      <Link href="/expenses/" className="inline-block text-[13px] font-semibold text-primary">
         ← Dépenses
       </Link>
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl bg-white p-6 shadow-sm sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-semibold">
-            {EXPENSE_CATEGORY_LABEL[expense.category]}
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#7B5900]">
+            {expenseShortId(expense.id)}
+          </p>
+          <h1 className="mt-1 text-[22px] font-semibold">
+            {expense.description ?? EXPENSE_CATEGORY_LABEL[expense.category]}
           </h1>
-          <p className="font-mono text-xl">{formatMad(expense.amount)}</p>
-          <p className="text-sm text-ink/50">
+          <p className="mt-1 text-[22px] font-extrabold text-primary">{formatMad(expense.amount)}</p>
+          <p className="mt-1 text-[13px] text-ink/50">
             {EXPENSE_STATUS_LABEL[expense.status]} ·{" "}
             {new Date(expense.expenseDate).toLocaleDateString("fr-FR", {
               day: "numeric",
@@ -117,19 +121,23 @@ export function ExpenseDetailView({ expenseId }: { expenseId: string }) {
         </div>
         <div className="flex flex-wrap gap-2">
           {canEdit && expense.status === "RECORDED" ? (
-            <button type="button" className="btn-primary" onClick={() => setEditOpen(true)}>
+            <button
+              type="button"
+              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-[14px] font-semibold text-white"
+              onClick={() => setEditOpen(true)}
+            >
               Modifier
             </button>
           ) : null}
           {canArchive && expense.status === "RECORDED" ? (
             <Button type="button" variant="ghost" onClick={() => setVoidOpen(true)}>
-              Archiver
+              Annuler
             </Button>
           ) : null}
         </div>
       </div>
 
-      <div className="surface max-w-lg space-y-3 p-5 text-sm">
+      <div className="max-w-lg space-y-3 rounded-xl bg-white p-5 text-[13px] shadow-sm">
         <p>
           Fournisseur · <span className="font-medium">{expense.supplierName ?? "—"}</span>
         </p>

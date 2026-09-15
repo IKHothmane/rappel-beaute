@@ -93,9 +93,11 @@ const CUSTOMER_REACTIVATION_CTE = `
       a."startAt",
       a.price,
       s.name AS "serviceName",
+      NULLIF(TRIM(CONCAT(COALESCE(st."firstName", ''), ' ', COALESCE(st."lastName", ''))), '') AS "staffName",
       ROW_NUMBER() OVER (PARTITION BY a."customerId" ORDER BY a."startAt" DESC) AS rn
     FROM "Appointment" a
     JOIN "Service" s ON s.id = a."serviceId"
+    LEFT JOIN "Staff" st ON st.id = a."staffId"
     WHERE a."organizationId" = $1 AND a.status = 'COMPLETED'
   ),
   last_visit AS (
@@ -103,7 +105,8 @@ const CUSTOMER_REACTIVATION_CTE = `
       c."customerId",
       c."startAt" AS "lastVisitAt",
       c."serviceName" AS "lastServiceName",
-      c.price AS "lastServicePrice"
+      c.price AS "lastServicePrice",
+      c."staffName" AS "lastStaffName"
     FROM completed c
     WHERE c.rn = 1
   ),
@@ -118,6 +121,7 @@ const CUSTOMER_REACTIVATION_CTE = `
       lv."lastVisitAt",
       lv."lastServiceName",
       lv."lastServicePrice",
+      lv."lastStaffName",
       GREATEST(0, EXTRACT(DAY FROM NOW() - lv."lastVisitAt")::int) AS "daysSince",
       COUNT(a.id)::int AS visits,
       COALESCE(SUM(CASE WHEN a.status = 'COMPLETED' THEN a.price ELSE 0 END), 0)::float AS revenue
@@ -127,7 +131,7 @@ const CUSTOMER_REACTIVATION_CTE = `
     WHERE cu."organizationId" = $1
       AND cu."deletedAt" IS NULL
     GROUP BY cu.id, cu."firstName", cu."lastName", cu.phone, cu.status,
-             cu."marketingWhatsapp", lv."lastVisitAt", lv."lastServiceName", lv."lastServicePrice"
+             cu."marketingWhatsapp", lv."lastVisitAt", lv."lastServiceName", lv."lastServicePrice", lv."lastStaffName"
   ),
   last_marketing AS (
     SELECT DISTINCT ON (t."customerId")
@@ -253,6 +257,7 @@ type ReactivationRow = {
   marketingWhatsapp: boolean;
   lastVisitAt: Date;
   lastServiceName: string | null;
+  lastStaffName: string | null;
   lastServicePrice: string | null;
   daysSince: number;
   visits: number;
@@ -303,6 +308,7 @@ function mapRowToItem(
     daysSinceLastVisit: days,
     lastVisitAt: new Date(row.lastVisitAt).toISOString(),
     lastServiceName: row.lastServiceName,
+    lastStaffName: row.lastStaffName || null,
     lastServicePrice: row.lastServicePrice != null ? parseFloat(String(row.lastServicePrice)) : null,
     averageTicket,
     totalRevenue: revenue,
@@ -334,39 +340,91 @@ function bucketFilterSql(bucket: ReactivationBucket | null): string {
 }
 
 export async function getReactivationKpis(organizationId: string): Promise<ReactivationKpis> {
-  const { rows } = await pool.query<{
-    toRelance: number;
-    days30: number;
-    days45: number;
-    days60: number;
-    days90: number;
-    estimatedRevenue: string;
-  }>(
-    `${CUSTOMER_REACTIVATION_CTE}
-     SELECT
-       COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND NOT (sn."customerId" IS NOT NULL))::int AS "toRelance",
-       COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND cs."daysSince" < 45)::int AS "days30",
-       COUNT(*) FILTER (WHERE cs."daysSince" >= 45 AND cs."daysSince" < 60)::int AS "days45",
-       COUNT(*) FILTER (WHERE cs."daysSince" >= 60 AND cs."daysSince" < 90)::int AS "days60",
-       COUNT(*) FILTER (WHERE cs."daysSince" >= 90)::int AS "days90",
-       COALESCE(SUM(
-         CASE WHEN cs."daysSince" >= 30 AND NOT (sn."customerId" IS NOT NULL)
-         THEN CASE WHEN cs.visits > 0 THEN cs.revenue / cs.visits ELSE COALESCE(cs."lastServicePrice"::float, 0) END
-         ELSE 0 END
-       ), 0)::text AS "estimatedRevenue"
-     FROM customer_stats cs
-     LEFT JOIN snoozed sn ON sn."customerId" = cs.id`,
-    [organizationId, MARKETING_WA_TYPES],
-  );
+  const [agg, recovered] = await Promise.all([
+    pool.query<{
+      toRelance: number;
+      days30: number;
+      days45: number;
+      days60: number;
+      days90: number;
+      days180: number;
+      estimatedRevenue: string;
+      inactiveCount: number;
+      contactedCount: number;
+      pendingCount: number;
+      upcomingCount: number;
+      vipInactiveCount: number;
+      highSpenderCount: number;
+      firstVisitCount: number;
+    }>(
+      `${CUSTOMER_REACTIVATION_CTE}
+       SELECT
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND NOT (sn."customerId" IS NOT NULL))::int AS "toRelance",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND cs."daysSince" < 45)::int AS "days30",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 45 AND cs."daysSince" < 60)::int AS "days45",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 60 AND cs."daysSince" < 90)::int AS "days60",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 90)::int AS "days90",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 180)::int AS "days180",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30)::int AS "inactiveCount",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND lm."sentAt" IS NOT NULL)::int AS "contactedCount",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND pw."taskId" IS NOT NULL)::int AS "pendingCount",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND up."customerId" IS NOT NULL)::int AS "upcomingCount",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND cs.status = 'VIP')::int AS "vipInactiveCount",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND cs.revenue >= 3000)::int AS "highSpenderCount",
+         COUNT(*) FILTER (WHERE cs."daysSince" >= 30 AND cs.visits = 1)::int AS "firstVisitCount",
+         COALESCE(SUM(
+           CASE WHEN cs."daysSince" >= 30 AND NOT (sn."customerId" IS NOT NULL)
+           THEN CASE WHEN cs.visits > 0 THEN cs.revenue / cs.visits ELSE COALESCE(cs."lastServicePrice"::float, 0) END
+           ELSE 0 END
+         ), 0)::text AS "estimatedRevenue"
+       FROM customer_stats cs
+       LEFT JOIN snoozed sn ON sn."customerId" = cs.id
+       LEFT JOIN last_marketing lm ON lm."customerId" = cs.id
+       LEFT JOIN upcoming up ON up."customerId" = cs.id
+       LEFT JOIN pending_wa pw ON pw."customerId" = cs.id`,
+      [organizationId, MARKETING_WA_TYPES],
+    ),
+    pool.query<{ returned: number; recovered: string }>(
+      `SELECT
+         COUNT(DISTINCT a."customerId")::int AS returned,
+         COALESCE(SUM(a.price), 0)::text AS recovered
+       FROM "WhatsAppTask" t
+       JOIN "Appointment" a
+         ON a."customerId" = t."customerId"
+        AND a."organizationId" = t."organizationId"
+        AND a.status = 'COMPLETED'
+        AND a."startAt" > t."sentAt"
+       WHERE t."organizationId" = $1
+         AND t.type = 'REACTIVATION'::"WhatsAppTaskType"
+         AND t.status = 'SENT'::"WhatsAppTaskStatus"
+         AND t."sentAt" IS NOT NULL`,
+      [organizationId],
+    ),
+  ]);
 
-  const r = rows[0];
+  const r = agg.rows[0];
+  const rec = recovered.rows[0];
+  const contactedCount = r?.contactedCount ?? 0;
+  const returnedCount = rec?.returned ?? 0;
   return {
     toRelance: r?.toRelance ?? 0,
     days30: r?.days30 ?? 0,
     days45: r?.days45 ?? 0,
     days60: r?.days60 ?? 0,
     days90: r?.days90 ?? 0,
+    days180: r?.days180 ?? 0,
     estimatedRevenue: Math.round((parseFloat(r?.estimatedRevenue ?? "0") || 0) * 100) / 100,
+    inactiveCount: r?.inactiveCount ?? 0,
+    contactedCount,
+    pendingCount: r?.pendingCount ?? 0,
+    upcomingCount: r?.upcomingCount ?? 0,
+    returnedCount,
+    recoveredRevenue: Math.round((parseFloat(rec?.recovered ?? "0") || 0) * 100) / 100,
+    conversionPct:
+      contactedCount > 0 ? Math.round((returnedCount / contactedCount) * 1000) / 10 : null,
+    vipInactiveCount: r?.vipInactiveCount ?? 0,
+    highSpenderCount: r?.highSpenderCount ?? 0,
+    firstVisitCount: r?.firstVisitCount ?? 0,
   };
 }
 
@@ -389,6 +447,7 @@ export async function listReactivationCustomers(
        cs."marketingWhatsapp",
        cs."lastVisitAt",
        cs."lastServiceName",
+       cs."lastStaffName",
        cs."lastServicePrice",
        cs."daysSince",
        cs.visits,

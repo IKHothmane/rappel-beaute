@@ -90,9 +90,19 @@ export type PlatformOrgUser = {
   lastName: string;
   role: string;
   status: string;
-  organizationId: string;
-  organizationName: string;
+  organizationId: string | null;
+  organizationName: string | null;
   createdAt: string;
+  mustChangePassword: boolean;
+  accountKind: "ORG" | "PLATFORM";
+  lastLoginAt: string | null;
+};
+
+export type PlatformUsersKpis = {
+  total: number;
+  active: number;
+  disabled: number;
+  thisMonth: number;
 };
 
 export type SupportSessionListItem = {
@@ -112,6 +122,7 @@ export const PLATFORM_ROLE_LABEL: Record<PlatformRole, string> = {
 };
 
 export const ORG_USER_ROLE_LABEL: Record<string, string> = {
+  SUPER_ADMIN: "Super administrateur",
   OWNER: "Propriétaire",
   MANAGER: "Responsable",
   STAFF: "Employée",
@@ -126,13 +137,27 @@ export const PLATFORM_AUDIT_ACTION_LABEL: Record<string, string> = {
   ORGANIZATION_ARCHIVED: "Institut archivé",
   USER_DISABLED: "Utilisateur désactivé",
   USER_REACTIVATED: "Utilisateur réactivé",
+  USER_DELETED: "Utilisateur soft-supprimé",
+  USER_UPDATED: "Utilisateur modifié",
+  USER_ROLE_CHANGED: "Rôle modifié",
+  USER_PASSWORD_RESET: "Mot de passe réinitialisé",
+  USER_SESSIONS_INVALIDATED: "Sessions invalidées",
   OWNER_ACCESS_RESET: "Accès propriétaire réinitialisé",
   SUBSCRIPTION_PLAN_CHANGED: "Formule modifiée",
   SUBSCRIPTION_STATUS_CHANGED: "Statut abonnement modifié",
+  SUBSCRIPTION_CHANGED: "Plan abonnement modifié",
+  SUBSCRIPTION_PLAN_CHANGE_SCHEDULED: "Changement de plan planifié",
+  SUBSCRIPTION_SUSPENDED: "Abonnement suspendu",
+  SUBSCRIPTION_REACTIVATED: "Abonnement réactivé",
+  SUBSCRIPTION_CANCELLED: "Abonnement annulé",
+  SUBSCRIPTION_EXTENDED: "Abonnement prolongé",
+  SUBSCRIPTION_TRIAL_GRANTED: "Période gratuite accordée",
+  SUBSCRIPTION_CREATED: "Abonnement créé",
   SUPPORT_SESSION_STARTED: "Session assistance démarrée",
   SUPPORT_SESSION_ENDED: "Session assistance terminée",
   PLATFORM_LOGIN: "Connexion plateforme",
   PLATFORM_LOGOUT: "Déconnexion plateforme",
+  LOGIN: "Connexion",
 };
 
 export function platformAuditActionLabel(action: string): string {

@@ -1,20 +1,29 @@
 import type { NextRequest } from "next/server";
-import { adminJson, requireAdmin } from "@/lib/admin/api-helpers";
-import { getPlatformDashboardStats } from "@/lib/db/admin-organizations";
+import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { listPlatformAuditLogs } from "@/lib/db/platform-audit";
+import { getPlatformDashboardHome } from "@/lib/db/platform-metrics";
 
 export async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
-  const sp = request.nextUrl.searchParams;
-  const limit = parseInt(sp.get("limit") ?? "50", 10);
-  const organizationId = sp.get("organizationId") ?? undefined;
+  try {
+    const sp = request.nextUrl.searchParams;
+    const limit = parseInt(sp.get("limit") ?? "12", 10);
 
-  const [stats, audit] = await Promise.all([
-    getPlatformDashboardStats(),
-    listPlatformAuditLogs({ limit, organizationId }),
-  ]);
+    const [home, audit] = await Promise.all([
+      getPlatformDashboardHome(),
+      listPlatformAuditLogs({ limit }),
+    ]);
 
-  return adminJson({ stats, audit });
+    return adminJson({
+      ...home,
+      // rétrocompat tuiles anciennes
+      stats: home.stats,
+      audit,
+    });
+  } catch (error) {
+    console.error("[GET /api/admin/dashboard]", error);
+    return adminError("Impossible de charger le tableau de bord.", 500);
+  }
 }

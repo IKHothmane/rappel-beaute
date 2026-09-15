@@ -24,7 +24,14 @@ export function Header({ onMenuOpen }: HeaderProps) {
             <Menu size={22} />
           </button>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-[#FBF4F6]/80 px-3 py-2 md:max-w-[280px] md:flex-none">
+          <div className="min-w-0 flex-1 md:hidden">
+            <p className="truncate text-[10px] font-bold uppercase tracking-wider text-primary">
+              Rappel Beauté
+            </p>
+            <p className="truncate text-sm font-semibold text-ink">{user.orgName}</p>
+          </div>
+
+          <div className="hidden min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-[#FBF4F6]/80 px-3 py-2 md:flex md:max-w-[280px] md:flex-none">
             <Search size={17} className="shrink-0 text-ink/35" />
             <input
               placeholder="Rechercher…"

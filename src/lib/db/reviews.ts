@@ -13,6 +13,7 @@ import type {
   ReviewRequestStatus,
   ReviewSatisfaction,
   ReviewSettings,
+  StaffReviewScore,
   UpdateReviewSettingsInput,
 } from "@/types/review";
 import { REVIEW_SATISFACTION_SCORE } from "@/types/review";
@@ -263,29 +264,50 @@ export async function getReviewKpis(organizationId: string): Promise<ReviewKpis>
     recordedCount: number;
     avgScore: string | null;
     satisfiedPct: string | null;
+    recordedThisMonth: number;
+    recordedPrevMonth: number;
+    positiveCount: number;
+    sensitiveCount: number;
+    awaitingRecord: number;
+    skippedCount: number;
+    verySatisfiedCount: number;
+    satisfiedCount: number;
+    dissatisfiedCount: number;
   }>(
     `SELECT
-      (SELECT COUNT(*)::int FROM "ReviewRequest"
-       WHERE "organizationId" = $1 AND status = 'PENDING'::"ReviewRequestStatus") AS "pendingToSend",
-      (SELECT COUNT(*)::int FROM "ReviewRequest"
-       WHERE "organizationId" = $1 AND status = 'SENT'::"ReviewRequestStatus"
-         AND "sentAt" >= date_trunc('month', NOW())) AS "sentThisMonth",
-      (SELECT COUNT(*)::int FROM "ReviewRequest"
-       WHERE "organizationId" = $1 AND satisfaction IS NOT NULL) AS "recordedCount",
-      (SELECT AVG(
-         CASE satisfaction
-           WHEN 'VERY_SATISFIED' THEN 5
-           WHEN 'SATISFIED' THEN 4
-           WHEN 'DISSATISFIED' THEN 1
-         END
-       ) FROM "ReviewRequest"
-       WHERE "organizationId" = $1 AND satisfaction IS NOT NULL)::text AS "avgScore",
-      (SELECT
-         CASE WHEN COUNT(*) FILTER (WHERE satisfaction IS NOT NULL) = 0 THEN NULL
-         ELSE ROUND(100.0 * COUNT(*) FILTER (WHERE satisfaction IN ('VERY_SATISFIED','SATISFIED'))
-           / COUNT(*) FILTER (WHERE satisfaction IS NOT NULL), 0)
-         END
-       FROM "ReviewRequest" WHERE "organizationId" = $1)::text AS "satisfiedPct"`,
+      COUNT(*) FILTER (WHERE status = 'PENDING'::"ReviewRequestStatus")::int AS "pendingToSend",
+      COUNT(*) FILTER (
+        WHERE status = 'SENT'::"ReviewRequestStatus" AND "sentAt" >= date_trunc('month', NOW())
+      )::int AS "sentThisMonth",
+      COUNT(*) FILTER (WHERE satisfaction IS NOT NULL)::int AS "recordedCount",
+      AVG(
+        CASE satisfaction
+          WHEN 'VERY_SATISFIED' THEN 5
+          WHEN 'SATISFIED' THEN 4
+          WHEN 'DISSATISFIED' THEN 1
+        END
+      )::text AS "avgScore",
+      CASE WHEN COUNT(*) FILTER (WHERE satisfaction IS NOT NULL) = 0 THEN NULL
+        ELSE ROUND(100.0 * COUNT(*) FILTER (WHERE satisfaction IN ('VERY_SATISFIED','SATISFIED'))
+          / COUNT(*) FILTER (WHERE satisfaction IS NOT NULL), 1)
+      END::text AS "satisfiedPct",
+      COUNT(*) FILTER (
+        WHERE satisfaction IS NOT NULL AND "satisfactionRecordedAt" >= date_trunc('month', NOW())
+      )::int AS "recordedThisMonth",
+      COUNT(*) FILTER (
+        WHERE satisfaction IS NOT NULL
+          AND "satisfactionRecordedAt" >= date_trunc('month', NOW()) - interval '1 month'
+          AND "satisfactionRecordedAt" < date_trunc('month', NOW())
+      )::int AS "recordedPrevMonth",
+      COUNT(*) FILTER (WHERE satisfaction IN ('VERY_SATISFIED','SATISFIED'))::int AS "positiveCount",
+      COUNT(*) FILTER (WHERE satisfaction = 'DISSATISFIED')::int AS "sensitiveCount",
+      COUNT(*) FILTER (WHERE status = 'SENT'::"ReviewRequestStatus")::int AS "awaitingRecord",
+      COUNT(*) FILTER (WHERE status = 'SKIPPED'::"ReviewRequestStatus")::int AS "skippedCount",
+      COUNT(*) FILTER (WHERE satisfaction = 'VERY_SATISFIED')::int AS "verySatisfiedCount",
+      COUNT(*) FILTER (WHERE satisfaction = 'SATISFIED')::int AS "satisfiedCount",
+      COUNT(*) FILTER (WHERE satisfaction = 'DISSATISFIED')::int AS "dissatisfiedCount"
+     FROM "ReviewRequest"
+     WHERE "organizationId" = $1`,
     [organizationId],
   );
 
@@ -297,7 +319,62 @@ export async function getReviewKpis(organizationId: string): Promise<ReviewKpis>
     recordedCount: r?.recordedCount ?? 0,
     averageScore: avg != null ? Math.round(avg * 10) / 10 : null,
     satisfiedPercent: r?.satisfiedPct != null ? Number(r.satisfiedPct) : null,
+    recordedThisMonth: r?.recordedThisMonth ?? 0,
+    recordedPrevMonth: r?.recordedPrevMonth ?? 0,
+    positiveCount: r?.positiveCount ?? 0,
+    sensitiveCount: r?.sensitiveCount ?? 0,
+    awaitingRecord: r?.awaitingRecord ?? 0,
+    skippedCount: r?.skippedCount ?? 0,
+    verySatisfiedCount: r?.verySatisfiedCount ?? 0,
+    satisfiedCount: r?.satisfiedCount ?? 0,
+    dissatisfiedCount: r?.dissatisfiedCount ?? 0,
   };
+}
+
+export async function listStaffReviewScores(organizationId: string): Promise<StaffReviewScore[]> {
+  const { rows } = await pool.query<{
+    staffId: string;
+    firstName: string;
+    lastName: string;
+    reviewCount: number;
+    avgScore: string | null;
+  }>(
+    `SELECT st.id AS "staffId", st."firstName", st."lastName",
+            COUNT(*)::int AS "reviewCount",
+            AVG(
+              CASE rr.satisfaction
+                WHEN 'VERY_SATISFIED' THEN 5
+                WHEN 'SATISFIED' THEN 4
+                WHEN 'DISSATISFIED' THEN 1
+              END
+            )::text AS "avgScore"
+     FROM "ReviewRequest" rr
+     JOIN "Appointment" a ON a.id = rr."appointmentId"
+     JOIN "Staff" st ON st.id = a."staffId"
+     WHERE rr."organizationId" = $1 AND rr.satisfaction IS NOT NULL
+     GROUP BY st.id, st."firstName", st."lastName"
+     ORDER BY AVG(
+       CASE rr.satisfaction
+         WHEN 'VERY_SATISFIED' THEN 5
+         WHEN 'SATISFIED' THEN 4
+         WHEN 'DISSATISFIED' THEN 1
+       END
+     ) DESC NULLS LAST, COUNT(*) DESC
+     LIMIT 8`,
+    [organizationId],
+  );
+  return rows.map((r) => {
+    const first = r.firstName?.trim() || "";
+    const last = r.lastName?.trim() || "";
+    const avg = r.avgScore != null ? parseFloat(r.avgScore) : null;
+    return {
+      staffId: r.staffId,
+      staffName: `${first} ${last}`.trim() || "Praticienne",
+      initials: `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || "—",
+      reviewCount: r.reviewCount,
+      averageScore: avg != null ? Math.round(avg * 10) / 10 : null,
+    };
+  });
 }
 
 function mapReviewItem(
@@ -313,6 +390,7 @@ function mapReviewItem(
     customerName: String(r.customerName),
     appointmentId: String(r.appointmentId),
     serviceName: String(r.serviceName),
+    staffName: r.staffName ? String(r.staffName) : null,
     completedAt: new Date(r.completedAt as Date).toISOString(),
     hoursSinceCompleted: Math.max(0, Math.floor(Number(r.hoursSince) || 0)),
     messageSnapshot: message,
@@ -331,7 +409,12 @@ function mapReviewItem(
 export async function listReviewRequests(
   organizationId: string,
   opts: { status?: ReviewRequestStatus | "ALL" } = {},
-): Promise<{ items: ReviewRequestItem[]; kpis: ReviewKpis; settings: ReviewSettings }> {
+): Promise<{
+  items: ReviewRequestItem[];
+  kpis: ReviewKpis;
+  settings: ReviewSettings;
+  staffScores: StaffReviewScore[];
+}> {
   await syncReviewRequests(organizationId);
   const settings = await getOrCreateReviewSettings(organizationId);
 
@@ -340,14 +423,13 @@ export async function listReviewRequests(
   if (opts.status && opts.status !== "ALL") {
     conditions.push(`rr.status = $2::"ReviewRequestStatus"`);
     params.push(opts.status);
-  } else if (!opts.status) {
-    conditions.push(`rr.status = 'PENDING'::"ReviewRequestStatus"`);
   }
 
   const { rows } = await pool.query(
     `SELECT rr.*,
             c."firstName" || ' ' || c."lastName" AS "customerName",
             s.name AS "serviceName",
+            NULLIF(TRIM(COALESCE(st."firstName", '') || ' ' || COALESCE(st."lastName", '')), '') AS "staffName",
             a."endAt" AS "completedAt",
             EXTRACT(EPOCH FROM (NOW() - a."endAt")) / 3600 AS "hoursSince",
             wt."messageSnapshot",
@@ -357,18 +439,23 @@ export async function listReviewRequests(
      JOIN "Customer" c ON c.id = rr."customerId"
      JOIN "Appointment" a ON a.id = rr."appointmentId"
      JOIN "Service" s ON s.id = a."serviceId"
+     LEFT JOIN "Staff" st ON st.id = a."staffId"
      LEFT JOIN "WhatsAppTask" wt ON wt.id = rr."whatsappTaskId"
      WHERE ${conditions.join(" AND ")}
-     ORDER BY rr."scheduledFor" ASC
-     LIMIT 100`,
+     ORDER BY COALESCE(rr."satisfactionRecordedAt", rr."sentAt", rr."scheduledFor") DESC
+     LIMIT 120`,
     params,
   );
 
-  const kpis = await getReviewKpis(organizationId);
+  const [kpis, staffScores] = await Promise.all([
+    getReviewKpis(organizationId),
+    listStaffReviewScores(organizationId),
+  ]);
   return {
     items: rows.map((r) => mapReviewItem(r as Record<string, unknown>, settings)),
     kpis,
     settings,
+    staffScores,
   };
 }
 

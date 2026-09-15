@@ -37,6 +37,7 @@ export type InvoiceListItem = {
   number: string;
   customerId: string;
   customerName: string;
+  customerPhone: string | null;
   appointmentId: string | null;
   status: InvoiceStatus;
   subtotal: number;
@@ -47,6 +48,8 @@ export type InvoiceListItem = {
   issuedAt: string | null;
   createdAt: string;
   paymentMethods: string[];
+  firstItemName: string | null;
+  staffName: string | null;
 };
 
 export type InvoiceDetail = InvoiceListItem & {
@@ -72,6 +75,15 @@ export type InvoiceKpis = {
   paidTotal: number;
   unpaidTotal: number;
   monthCount: number;
+  prevMonthBilled: number;
+  evolutionPct: number | null;
+  voidMonthTotal: number;
+  voidMonthCount: number;
+  paidCount: number;
+  partialCount: number;
+  unpaidCount: number;
+  avgBasket: number | null;
+  recoveryPct: number | null;
 };
 
 export type InvoiceListResponse = {

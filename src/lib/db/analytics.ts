@@ -720,6 +720,44 @@ export async function getAppointmentAnalytics(
     };
   });
 
+  const { rows: hourRows } = await pool.query<{ hour: string; cnt: string }>(
+    `SELECT EXTRACT(HOUR FROM a."startAt" AT TIME ZONE 'Africa/Casablanca')::int AS hour,
+            COUNT(*)::text AS cnt
+     FROM "Appointment" a
+     WHERE ${conds.join(" AND ")}
+       AND a.status NOT IN ('CANCELLED')
+     GROUP BY 1
+     ORDER BY 1`,
+    params,
+  );
+
+  const byHour = Array.from({ length: 14 }, (_, i) => {
+    const hour = i + 8; // 8h–21h
+    const row = hourRows.find((r) => parseInt(r.hour, 10) === hour);
+    return {
+      hour,
+      label: `${String(hour).padStart(2, "0")}h`,
+      count: parseInt(row?.cnt ?? "0", 10),
+    };
+  });
+
+  const { rows: heatRows } = await pool.query<{ dow: string; hour: string; cnt: string }>(
+    `SELECT EXTRACT(DOW FROM a."startAt" AT TIME ZONE 'Africa/Casablanca')::int AS dow,
+            EXTRACT(HOUR FROM a."startAt" AT TIME ZONE 'Africa/Casablanca')::int AS hour,
+            COUNT(*)::text AS cnt
+     FROM "Appointment" a
+     WHERE ${conds.join(" AND ")}
+       AND a.status NOT IN ('CANCELLED')
+     GROUP BY 1, 2`,
+    params,
+  );
+
+  const heatmap = heatRows.map((r) => ({
+    weekday: parseInt(r.dow, 10),
+    hour: parseInt(r.hour, 10),
+    count: parseInt(r.cnt, 10),
+  }));
+
   return {
     total: statusRows.reduce((s, r) => s + parseInt(r.cnt, 10), 0),
     byStatus: statusRows.map((r) => ({ status: r.status, count: parseInt(r.cnt, 10) })),
@@ -729,6 +767,8 @@ export async function getAppointmentAnalytics(
       rate: concerned > 0 ? Math.round((noShow / concerned) * 1000) / 10 : null,
     },
     occupationByWeekday,
+    byHour,
+    heatmap,
   };
 }
 

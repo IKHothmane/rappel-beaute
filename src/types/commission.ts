@@ -23,6 +23,7 @@ export type CommissionListItem = {
   staffName: string;
   serviceId: string;
   serviceName: string;
+  customerName: string | null;
   appointmentAt: string;
   baseAmount: number;
   type: CommissionType;
@@ -56,6 +57,8 @@ export type CommissionStaffAgg = {
   commissionTotal: number;
   baseTotal: number;
   count: number;
+  paidTotal: number;
+  unpaidTotal: number;
 };
 
 export type CommissionKpis = {
@@ -63,6 +66,10 @@ export type CommissionKpis = {
   baseTotal: number;
   count: number;
   avgRatePct: number | null;
+  paidTotal: number;
+  unpaidTotal: number;
+  paidCount: number;
+  unpaidCount: number;
   byStaff: CommissionStaffAgg[];
 };
 

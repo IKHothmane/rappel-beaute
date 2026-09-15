@@ -420,15 +420,19 @@ export async function listProductSuppliersForProduct(
 
 export async function getPurchaseKpis(organizationId: string): Promise<PurchaseKpis> {
   const { rows } = await pool.query<{
+    purchaseCount: string;
     draftCount: string;
     orderedCount: string;
     awaitingReceiptCount: string;
+    receivedCount: string;
     monthTotal: string;
   }>(
     `SELECT
+      COUNT(*)::text AS "purchaseCount",
       COUNT(*) FILTER (WHERE status = 'DRAFT')::text AS "draftCount",
       COUNT(*) FILTER (WHERE status = 'ORDERED')::text AS "orderedCount",
       COUNT(*) FILTER (WHERE status IN ('ORDERED','PARTIALLY_RECEIVED'))::text AS "awaitingReceiptCount",
+      COUNT(*) FILTER (WHERE status = 'RECEIVED')::text AS "receivedCount",
       COALESCE((
         SELECT SUM(pi."quantityOrdered" * pi."unitPrice")
         FROM "PurchaseItem" pi
@@ -443,9 +447,11 @@ export async function getPurchaseKpis(organizationId: string): Promise<PurchaseK
   );
   const r = rows[0];
   return {
+    purchaseCount: parseInt(r.purchaseCount, 10) || 0,
     draftCount: parseInt(r.draftCount, 10) || 0,
     orderedCount: parseInt(r.orderedCount, 10) || 0,
     awaitingReceiptCount: parseInt(r.awaitingReceiptCount, 10) || 0,
+    receivedCount: parseInt(r.receivedCount, 10) || 0,
     monthTotal: Math.round(parseFloat(r.monthTotal) * 100) / 100 || 0,
   };
 }

@@ -8,12 +8,15 @@ import { ServiceCommissionForm, type CommissionLink } from "@/components/service
 import { ServiceProductSelector, type ProductLink } from "@/components/services/service-product-selector";
 import { ServiceResourceSelector, type ResourceLink } from "@/components/services/service-resource-selector";
 import { ServiceStaffSelector } from "@/components/services/service-staff-selector";
+import { DURATION_PRESETS } from "@/components/services/services-helpers";
+import { cn } from "@/lib/utils";
 import type { CreateServiceInput, ServiceDetail, ServiceFormOptions } from "@/types/service";
 import { SERVICE_CATEGORIES } from "@/types/service";
 
 type ServiceFormProps = {
   initial?: Partial<ServiceDetail>;
   options: ServiceFormOptions;
+  extraCategories?: string[];
   canEditPrice?: boolean;
   submitting?: boolean;
   onSubmit: (data: CreateServiceInput) => void;
@@ -23,6 +26,7 @@ type ServiceFormProps = {
 export function ServiceForm({
   initial,
   options,
+  extraCategories = [],
   canEditPrice = true,
   submitting,
   onSubmit,
@@ -61,6 +65,11 @@ export function ServiceForm({
   const [showAdvanced, setShowAdvanced] = useState(
     Boolean(initial?.resources?.length || initial?.products?.length || initial?.commissions?.length),
   );
+  const [active, setActive] = useState(initial?.active ?? true);
+
+  const categoryOptions = Array.from(
+    new Set([...SERVICE_CATEGORIES, ...extraCategories, category].filter(Boolean)),
+  );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,6 +85,7 @@ export function ServiceForm({
       recommendedReturnDays: recommendedReturnDays
         ? Number(recommendedReturnDays)
         : null,
+      active,
       staffIds,
       resources,
       products,
@@ -94,14 +104,11 @@ export function ServiceForm({
         <span className="mb-1.5 block font-medium">Catégorie</span>
         <Select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="">—</option>
-          {SERVICE_CATEGORIES.map((c) => (
+          {categoryOptions.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
           ))}
-          {category && !SERVICE_CATEGORIES.includes(category as (typeof SERVICE_CATEGORIES)[number]) ? (
-            <option value={category}>{category}</option>
-          ) : null}
         </Select>
       </label>
 
@@ -128,8 +135,25 @@ export function ServiceForm({
             disabled={!canEditPrice}
           />
         </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Durée (min) *</span>
+        <label className="block text-sm sm:col-span-2">
+          <span className="mb-1.5 block font-medium">Durée calibrée pour l’agenda *</span>
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {DURATION_PRESETS.map((min) => (
+              <button
+                key={min}
+                type="button"
+                onClick={() => setDurationMin(String(min))}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-[12px] font-semibold",
+                  Number(durationMin) === min
+                    ? "bg-primary text-white shadow-sm"
+                    : "bg-[#FCE9F4] text-ink hover:bg-[#F6E3EF]",
+                )}
+              >
+                {min} min
+              </button>
+            ))}
+          </div>
           <Input
             type="number"
             min={1}
@@ -176,7 +200,34 @@ export function ServiceForm({
 
       <div>
         <span className="mb-1.5 block text-sm font-medium">Employées autorisées</span>
+        <p className="mb-2 text-[11px] text-ink/45">
+          Seules les employées cochées seront proposées à la prise de rendez-vous pour ce soin.
+        </p>
         <ServiceStaffSelector options={options.staff} value={staffIds} onChange={setStaffIds} />
+      </div>
+
+      <div className="flex items-center justify-between rounded-xl bg-[#FFEFF8] p-3">
+        <div>
+          <p className="text-sm font-semibold text-ink">Statut du service</p>
+          <p className="text-[12px] text-ink/50">Visible dans l’agenda et le catalogue s’il est actif.</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={active}
+          onClick={() => setActive((v) => !v)}
+          className={cn(
+            "relative h-6 w-11 rounded-full transition-colors",
+            active ? "bg-emerald-600" : "bg-ink/20",
+          )}
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+              active ? "translate-x-5" : "translate-x-0.5",
+            )}
+          />
+        </button>
       </div>
 
       <button

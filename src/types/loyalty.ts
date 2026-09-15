@@ -35,6 +35,12 @@ export type LoyaltyAccountSummary = {
   lifetimePoints: number;
   level: LoyaltyLevel;
   updatedAt: string;
+  phone?: string | null;
+  birthDate?: string | null;
+  memberSince?: string;
+  lastVisitAt?: string | null;
+  lastServiceName?: string | null;
+  lastServicePrice?: number | null;
 };
 
 export type LoyaltyTxnItem = {
@@ -45,6 +51,21 @@ export type LoyaltyTxnItem = {
   reason: string | null;
   paymentId: string | null;
   createdAt: string;
+};
+
+export type LoyaltyJournalItem = LoyaltyTxnItem & {
+  customerId: string;
+  customerName: string;
+  operatorName: string | null;
+};
+
+export type LoyaltyBirthdayItem = {
+  customerId: string;
+  customerName: string;
+  phone: string | null;
+  birthDate: string;
+  balance: number;
+  level: LoyaltyLevel;
 };
 
 export type LoyaltyRewardItem = {
@@ -70,11 +91,26 @@ export type CustomerLoyaltyView = {
   redeemableRewards?: LoyaltyRewardItem[];
 };
 
+export type LoyaltyLevelCounts = {
+  BRONZE: number;
+  SILVER: number;
+  GOLD: number;
+  VIP: number;
+};
+
 export type LoyaltyKpis = {
   membersCount: number;
+  membersThisMonth: number;
   pointsDistributed: number;
   pointsRedeemed: number;
+  pointsActive: number;
   rewardsUsed: number;
+  rewardsReady: number;
+  active30d: number;
+  memberRevenue: number;
+  memberAvgTicket: number;
+  activePackages: number;
+  levelCounts: LoyaltyLevelCounts;
 };
 
 export type PackageListItem = {

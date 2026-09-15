@@ -58,12 +58,19 @@ export type CampaignListItem = {
   sentCount: number;
   promotionId: string | null;
   promotionName: string | null;
+  promotionCode: string | null;
+  attributedRevenue: number;
+  scheduledFor: string | null;
   preparedAt: string | null;
   createdAt: string;
 };
 
 export type CampaignKpis = {
   activeCampaigns: number;
+  draftCampaigns: number;
+  pausedCampaigns: number;
+  scheduledCampaigns: number;
+  totalCampaigns: number;
   targetedCustomers: number;
   pendingMessages: number;
   sentMessages: number;
@@ -73,9 +80,7 @@ export type CampaignKpis = {
 export type CampaignDetail = CampaignListItem & {
   messageTemplate: string;
   segmentFilters: CampaignSegmentFilters;
-  scheduledFor: string | null;
   skippedCount: number;
-  attributedRevenue: number;
 };
 
 export type CampaignPreviewResult = {

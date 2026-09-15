@@ -5,6 +5,7 @@ import type {
   ReviewRequestStatus,
   ReviewSatisfaction,
   ReviewSettings,
+  StaffReviewScore,
   UpdateReviewSettingsInput,
 } from "@/types/review";
 import {
@@ -34,9 +35,11 @@ export async function getReviewsDashboard(params?: {
   kpis: ReviewKpis;
   settings: ReviewSettings;
   alerts: ReviewAlertItem[];
+  staffScores: StaffReviewScore[];
 }> {
   const q = new URLSearchParams();
   if (params?.status) q.set("status", params.status);
+  else q.set("status", "ALL");
   const res = await fetch(`/api/reviews/?${q}`, fetchOpts);
   return parseJson(res);
 }

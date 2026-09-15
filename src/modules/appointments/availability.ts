@@ -279,9 +279,22 @@ export function filterAppointmentsForDay(
     status?: Appointment["status"] | "ALL";
   },
 ) {
+  return filterAppointmentsForDates(appointments, [date], filters);
+}
+
+export function filterAppointmentsForDates(
+  appointments: Appointment[],
+  dates: Date[],
+  filters: {
+    staffId?: string;
+    serviceId?: string;
+    resourceId?: string;
+    status?: Appointment["status"] | "ALL";
+  },
+) {
   return appointments.filter((apt) => {
     const start = parseDate(apt.startAt);
-    if (!sameDay(start, date)) return false;
+    if (!dates.some((d) => sameDay(start, d))) return false;
     if (filters.staffId && apt.staffId !== filters.staffId) return false;
     if (filters.serviceId && apt.serviceId !== filters.serviceId) return false;
     if (filters.resourceId && apt.resourceId !== filters.resourceId) return false;

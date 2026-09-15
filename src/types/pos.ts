@@ -52,6 +52,7 @@ export type PosProductItem = {
   category: ProductCategory;
   salePrice: number;
   stock: number;
+  minStock: number;
   unit: string;
   brand: string | null;
 };

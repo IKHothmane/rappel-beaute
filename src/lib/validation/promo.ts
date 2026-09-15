@@ -88,7 +88,7 @@ export function validateCreateGiftCard(
 export function parseGiftCardListQuery(sp: URLSearchParams) {
   return {
     page: Math.max(1, Number(sp.get("page")) || 1),
-    limit: Math.min(100, Math.max(1, Number(sp.get("limit")) || 40)),
+    limit: Math.min(200, Math.max(1, Number(sp.get("limit")) || 40)),
     status: sp.get("status")?.trim() || null,
     search: sp.get("search")?.trim() || "",
   };

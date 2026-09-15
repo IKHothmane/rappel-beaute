@@ -26,9 +26,14 @@ function mapPromo(r: Record<string, unknown>): PromotionListItem {
     value: r.value != null ? parseFloat(String(r.value)) : null,
     serviceId: (r.serviceId as string) ?? null,
     category: (r.category as string) ?? null,
+    customerId: (r.customerId as string) ?? null,
     minAmount: r.minAmount != null ? parseFloat(String(r.minAmount)) : null,
     maxUses: r.maxUses != null ? Number(r.maxUses) : null,
+    maxUsesPerCustomer: r.maxUsesPerCustomer != null ? Number(r.maxUsesPerCustomer) : null,
     usageCount: Number(r.usageCount) || 0,
+    monthUses: Number(r.monthUses) || 0,
+    monthDiscount: r.monthDiscount != null ? parseFloat(String(r.monthDiscount)) : 0,
+    monthRevenue: r.monthRevenue != null ? parseFloat(String(r.monthRevenue)) : 0,
     startsAt: r.startsAt ? new Date(r.startsAt as Date).toISOString() : null,
     endsAt: r.endsAt ? new Date(r.endsAt as Date).toISOString() : null,
     timeStart: (r.timeStart as string) ?? null,
@@ -44,10 +49,21 @@ export async function getPromotionKpis(organizationId: string): Promise<Promotio
     usedThisMonth: number;
     discountTotalMonth: string;
     estimatedRevenueMonth: string;
+    customersTouchedMonth: number;
+    usedPrevMonth: number;
+    discountPrevMonth: string;
+    revenuePrevMonth: string;
+    archivedCount: number;
+    totalCount: number;
   }>(
     `SELECT
       (SELECT COUNT(*)::int FROM "Promotion"
        WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "deletedAt" IS NULL) AS "activeCount",
+      (SELECT COUNT(*)::int FROM "Promotion"
+       WHERE "organizationId" = $1 AND "deletedAt" IS NULL) AS "totalCount",
+      (SELECT COUNT(*)::int FROM "Promotion"
+       WHERE "organizationId" = $1 AND "deletedAt" IS NULL
+         AND status IN ('INACTIVE','EXPIRED')) AS "archivedCount",
       (SELECT COUNT(*)::int FROM "PromotionUsage"
        WHERE "organizationId" = $1
          AND "createdAt" >= date_trunc('month', NOW())) AS "usedThisMonth",
@@ -57,7 +73,24 @@ export async function getPromotionKpis(organizationId: string): Promise<Promotio
       COALESCE((SELECT SUM(i.total) FROM "Invoice" i
         WHERE i."organizationId" = $1 AND i."promotionId" IS NOT NULL
           AND i."issuedAt" >= date_trunc('month', NOW())
-          AND i.status <> 'VOID'), 0)::text AS "estimatedRevenueMonth"`,
+          AND i.status <> 'VOID'), 0)::text AS "estimatedRevenueMonth",
+      (SELECT COUNT(DISTINCT "customerId")::int FROM "PromotionUsage"
+       WHERE "organizationId" = $1
+         AND "createdAt" >= date_trunc('month', NOW())
+         AND "customerId" IS NOT NULL) AS "customersTouchedMonth",
+      (SELECT COUNT(*)::int FROM "PromotionUsage"
+       WHERE "organizationId" = $1
+         AND "createdAt" >= date_trunc('month', NOW()) - interval '1 month'
+         AND "createdAt" < date_trunc('month', NOW())) AS "usedPrevMonth",
+      COALESCE((SELECT SUM("discountAmount") FROM "PromotionUsage"
+        WHERE "organizationId" = $1
+          AND "createdAt" >= date_trunc('month', NOW()) - interval '1 month'
+          AND "createdAt" < date_trunc('month', NOW())), 0)::text AS "discountPrevMonth",
+      COALESCE((SELECT SUM(i.total) FROM "Invoice" i
+        WHERE i."organizationId" = $1 AND i."promotionId" IS NOT NULL
+          AND i."issuedAt" >= date_trunc('month', NOW()) - interval '1 month'
+          AND i."issuedAt" < date_trunc('month', NOW())
+          AND i.status <> 'VOID'), 0)::text AS "revenuePrevMonth"`,
     [organizationId],
   );
   return {
@@ -66,6 +99,12 @@ export async function getPromotionKpis(organizationId: string): Promise<Promotio
     discountTotalMonth: Math.round((parseFloat(rows[0]?.discountTotalMonth ?? "0") || 0) * 100) / 100,
     estimatedRevenueMonth:
       Math.round((parseFloat(rows[0]?.estimatedRevenueMonth ?? "0") || 0) * 100) / 100,
+    customersTouchedMonth: rows[0]?.customersTouchedMonth ?? 0,
+    usedPrevMonth: rows[0]?.usedPrevMonth ?? 0,
+    discountPrevMonth: Math.round((parseFloat(rows[0]?.discountPrevMonth ?? "0") || 0) * 100) / 100,
+    revenuePrevMonth: Math.round((parseFloat(rows[0]?.revenuePrevMonth ?? "0") || 0) * 100) / 100,
+    archivedCount: rows[0]?.archivedCount ?? 0,
+    totalCount: rows[0]?.totalCount ?? 0,
   };
 }
 
@@ -73,16 +112,16 @@ export async function listPromotions(
   organizationId: string,
   opts: { page: number; limit: number; status?: string | null; search?: string },
 ): Promise<{ items: PromotionListItem[]; total: number; kpis: PromotionKpis }> {
-  const conditions = [`"organizationId" = $1`, `"deletedAt" IS NULL`];
+  const conditions = [`p."organizationId" = $1`, `p."deletedAt" IS NULL`];
   const params: unknown[] = [organizationId];
   let pi = 2;
   if (opts.status) {
-    conditions.push(`status = $${pi}::"PromotionStatus"`);
+    conditions.push(`p.status = $${pi}::"PromotionStatus"`);
     params.push(opts.status);
     pi++;
   }
   if (opts.search) {
-    conditions.push(`(name ILIKE $${pi} OR COALESCE(code,'') ILIKE $${pi})`);
+    conditions.push(`(p.name ILIKE $${pi} OR COALESCE(p.code,'') ILIKE $${pi})`);
     params.push(`%${opts.search}%`);
     pi++;
   }
@@ -90,15 +129,33 @@ export async function listPromotions(
   const offset = (opts.page - 1) * opts.limit;
   const [countRes, listRes, kpis] = await Promise.all([
     pool.query<{ total: number }>(
-      `SELECT COUNT(*)::int AS total FROM "Promotion" WHERE ${where}`,
+      `SELECT COUNT(*)::int AS total FROM "Promotion" p WHERE ${where}`,
       params,
     ),
     pool.query(
-      `SELECT id, name, code, type::text, status::text, value::text, "serviceId", category,
-              "minAmount"::text, "maxUses", "usageCount", "startsAt", "endsAt",
-              "timeStart", "timeEnd", weekdays, description
-       FROM "Promotion" WHERE ${where}
-       ORDER BY "createdAt" DESC
+      `SELECT p.id, p.name, p.code, p.type::text, p.status::text, p.value::text, p."serviceId", p.category,
+              p."minAmount"::text, p."maxUses", p."maxUsesPerCustomer", p."usageCount", p."startsAt", p."endsAt",
+              p."timeStart", p."timeEnd", p.weekdays, p.description, p."customerId",
+              COALESCE(u."monthUses", 0)::int AS "monthUses",
+              COALESCE(u."monthDiscount", 0)::text AS "monthDiscount",
+              COALESCE(inv."monthRevenue", 0)::text AS "monthRevenue"
+       FROM "Promotion" p
+       LEFT JOIN (
+         SELECT "promotionId", COUNT(*)::int AS "monthUses", SUM("discountAmount") AS "monthDiscount"
+         FROM "PromotionUsage"
+         WHERE "organizationId" = $1 AND "createdAt" >= date_trunc('month', NOW())
+         GROUP BY "promotionId"
+       ) u ON u."promotionId" = p.id
+       LEFT JOIN (
+         SELECT "promotionId", SUM(total) AS "monthRevenue"
+         FROM "Invoice"
+         WHERE "organizationId" = $1 AND "promotionId" IS NOT NULL
+           AND "issuedAt" >= date_trunc('month', NOW())
+           AND status <> 'VOID'
+         GROUP BY "promotionId"
+       ) inv ON inv."promotionId" = p.id
+       WHERE ${where}
+       ORDER BY p."createdAt" DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,
       [...params, opts.limit, offset],
     ),
@@ -183,8 +240,8 @@ export async function setPromotionStatus(
   });
   const { rows } = await pool.query(
     `SELECT id, name, code, type::text, status::text, value::text, "serviceId", category,
-            "minAmount"::text, "maxUses", "usageCount", "startsAt", "endsAt",
-            "timeStart", "timeEnd", weekdays, description
+            "minAmount"::text, "maxUses", "maxUsesPerCustomer", "usageCount", "startsAt", "endsAt",
+            "timeStart", "timeEnd", weekdays, description, "customerId"
      FROM "Promotion" WHERE id = $1 AND "organizationId" = $2`,
     [promotionId, organizationId],
   );

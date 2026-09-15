@@ -106,21 +106,39 @@ export function MiniBars({
   labels?: string[];
 }) {
   const max = Math.max(...data, 1);
+  const chartH = 112; // px — évite height % sur parent flex sans hauteur définie
   return (
-    <div className="flex h-36 min-w-[280px] items-end gap-1 sm:gap-1.5">
-      {data.map((v, i) => (
-        <div key={i} className="flex flex-1 flex-col items-center gap-1">
-          <div
-            className="w-full rounded-t bg-primary/80"
-            style={{ height: `${(v / max) * 100}%`, minHeight: 4 }}
-          />
-          {labels?.[i] ? (
-            <span className="hidden font-mono text-[9px] text-ink/40 sm:inline">
-              {labels[i]}
+    <div className="w-full min-w-[280px]">
+      <div className="flex items-end gap-1.5" style={{ height: chartH }}>
+        {data.map((v, i) => {
+          const h = Math.max(Math.round((v / max) * chartH), v > 0 ? 6 : 2);
+          return (
+            <div
+              key={i}
+              className="flex flex-1 flex-col items-center justify-end"
+              style={{ height: chartH }}
+              title={labels?.[i] ? `${labels[i]} : ${v.toLocaleString("fr-MA")}` : String(v)}
+            >
+              <div
+                className="w-full rounded-t bg-primary/80 transition-all"
+                style={{ height: h }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      {labels?.length ? (
+        <div className="mt-1.5 flex gap-1.5">
+          {labels.map((label, i) => (
+            <span
+              key={i}
+              className="flex-1 truncate text-center font-mono text-[9px] text-ink/40"
+            >
+              {label}
             </span>
-          ) : null}
+          ))}
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }

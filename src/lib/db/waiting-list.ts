@@ -13,12 +13,12 @@ function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;
 }
 
+function mapDateOnly(value: Date | string): string {
+  if (typeof value === "string") return value.slice(0, 10);
+  return value.toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
+}
+
 function mapRow(r: Record<string, unknown>): WaitingListEntry {
-  const preferredDate = r.preferredDate as Date | string;
-  const dateStr =
-    preferredDate instanceof Date
-      ? preferredDate.toISOString().slice(0, 10)
-      : String(preferredDate).slice(0, 10);
   return {
     id: String(r.id),
     organizationId: String(r.organizationId),
@@ -31,7 +31,7 @@ function mapRow(r: Record<string, unknown>): WaitingListEntry {
     staffName: r.staffFirstName
       ? `${r.staffFirstName} ${r.staffLastName ?? ""}`.trim()
       : null,
-    preferredDate: dateStr,
+    preferredDate: mapDateOnly(r.preferredDate as Date | string),
     preferredTimeFrom: (r.preferredTimeFrom as string) ?? null,
     preferredTimeTo: (r.preferredTimeTo as string) ?? null,
     status: r.status as WaitingListStatus,

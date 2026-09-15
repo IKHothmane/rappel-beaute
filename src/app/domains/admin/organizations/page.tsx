@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader, PlanBadge, StatusBadge } from "@/components/admin/AdminUi";
+import {
+  AdminActionsMenu,
+  adminMenuItemClass,
+} from "@/components/admin/AdminActionsMenu";
 import { adminHref } from "@/lib/admin/href";
 import {
   archiveOrganizationApi,
@@ -23,25 +27,15 @@ function OrgRowActions({
   org: OrganizationListItem;
   onChanged: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const detailHref = adminHref(`/organizations/${org.id}/`);
 
-  useEffect(() => {
-    if (!open) return;
-    function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
-  async function run(action: () => Promise<false | void>) {
+  async function run(action: () => Promise<false | void>, close: () => void) {
     setBusy(true);
     try {
       const result = await action();
       if (result === false) return;
-      setOpen(false);
+      close();
       onChanged();
     } catch (e) {
       console.error(e);
@@ -51,39 +45,18 @@ function OrgRowActions({
     }
   }
 
-  const itemCls =
-    "block w-full px-3 py-2 text-left text-sm text-ink/80 hover:bg-[#FBF4F6] disabled:opacity-50";
-
   return (
-    <div ref={rootRef} className="relative inline-block text-left">
-      <button
-        type="button"
-        className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-ink/70 hover:text-ink"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        disabled={busy}
-        onClick={() => setOpen((v) => !v)}
-      >
-        Actions
-      </button>
-      {open ? (
-        <div
-          role="menu"
-          className="absolute right-0 z-30 mt-1 w-52 overflow-hidden rounded-lg border border-line bg-white shadow-sm"
-        >
-          <Link
-            href={adminHref(`/organizations/${org.id}/`)}
-            className={itemCls}
-            role="menuitem"
-            onClick={() => setOpen(false)}
-          >
+    <AdminActionsMenu>
+      {(close) => (
+        <>
+          <Link href={detailHref} className={adminMenuItemClass} role="menuitem" onClick={close}>
             Voir
           </Link>
           <Link
             href={adminHref(`/organizations/${org.id}/?edit=1`)}
-            className={itemCls}
+            className={adminMenuItemClass}
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={close}
           >
             Modifier
           </Link>
@@ -91,13 +64,13 @@ function OrgRowActions({
             <button
               type="button"
               role="menuitem"
-              className={itemCls}
+              className={adminMenuItemClass}
               disabled={busy}
               onClick={() =>
                 void run(async () => {
                   if (!confirm(`Suspendre « ${org.name} » ?`)) return false;
                   await suspendOrganizationApi(org.id);
-                })
+                }, close)
               }
             >
               Suspendre
@@ -106,12 +79,12 @@ function OrgRowActions({
             <button
               type="button"
               role="menuitem"
-              className={itemCls}
+              className={adminMenuItemClass}
               disabled={busy}
               onClick={() =>
                 void run(async () => {
                   await reactivateOrganizationApi(org.id);
-                })
+                }, close)
               }
             >
               Réactiver
@@ -119,25 +92,25 @@ function OrgRowActions({
           ) : null}
           <Link
             href={adminHref(`/organizations/${org.id}/?tab=users`)}
-            className={itemCls}
+            className={adminMenuItemClass}
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={close}
           >
             Voir utilisateurs
           </Link>
           <Link
             href={adminHref(`/organizations/${org.id}/?tab=subscription`)}
-            className={itemCls}
+            className={adminMenuItemClass}
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={close}
           >
             Voir abonnement
           </Link>
           <Link
             href={adminHref(`/organizations/${org.id}/?tab=stats`)}
-            className={itemCls}
+            className={adminMenuItemClass}
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={close}
           >
             Voir statistiques
           </Link>
@@ -145,7 +118,7 @@ function OrgRowActions({
             <button
               type="button"
               role="menuitem"
-              className={`${itemCls} text-red-700`}
+              className={`${adminMenuItemClass} text-red-700`}
               disabled={busy}
               onClick={() =>
                 void run(async () => {
@@ -157,15 +130,15 @@ function OrgRowActions({
                     return false;
                   }
                   await archiveOrganizationApi(org.id);
-                })
+                }, close)
               }
             >
               Désactiver
             </button>
           ) : null}
-        </div>
-      ) : null}
-    </div>
+        </>
+      )}
+    </AdminActionsMenu>
   );
 }
 
@@ -251,32 +224,33 @@ export default function OrganizationsPage() {
 
       {/* Mobile */}
       <ul className="space-y-3 md:hidden">
-        {items.map((org) => (
-          <li key={org.id} className="ac-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <Link
-                  href={adminHref(`/organizations/${org.id}/`)}
-                  className="font-medium text-ink hover:text-primary"
-                >
-                  {org.name}
-                </Link>
-                <p className="mt-0.5 text-xs text-[var(--admin-muted)]">
-                  {org.city ?? "—"} · {org.usersCount} utilisateur
-                  {org.usersCount === 1 ? "" : "s"}
-                </p>
+        {items.map((org) => {
+          const href = adminHref(`/organizations/${org.id}/`);
+          return (
+            <li key={org.id} className="ac-card relative p-4">
+              <Link href={href} className="absolute inset-0 z-0" aria-label={`Ouvrir ${org.name}`} />
+              <div className="relative z-10 flex items-start justify-between gap-3 pointer-events-none">
+                <div className="min-w-0">
+                  <p className="font-medium text-ink">{org.name}</p>
+                  <p className="mt-0.5 text-xs text-[var(--admin-muted)]">
+                    {org.city ?? "—"} · {org.usersCount} utilisateur
+                    {org.usersCount === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <div className="pointer-events-auto">
+                  <OrgRowActions org={org} onChanged={load} />
+                </div>
               </div>
-              <OrgRowActions org={org} onChanged={load} />
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {org.plan ? <PlanBadge plan={org.plan} /> : null}
-              <StatusBadge status={org.status} />
-              <span className="font-mono text-[10px] text-[var(--admin-muted)]">
-                {formatCreated(org.createdAt)}
-              </span>
-            </div>
-          </li>
-        ))}
+              <div className="relative z-10 mt-3 flex flex-wrap items-center gap-2 pointer-events-none">
+                {org.plan ? <PlanBadge plan={org.plan} /> : null}
+                <StatusBadge status={org.status} />
+                <span className="font-mono text-[10px] text-[var(--admin-muted)]">
+                  {formatCreated(org.createdAt)}
+                </span>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       {/* Desktop */}
@@ -293,34 +267,41 @@ export default function OrganizationsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--admin-line)]">
-            {items.map((org) => (
-              <tr key={org.id} className="hover:bg-[#FBF4F6]/50">
-                <td className="px-4 py-3">
-                  <Link
-                    href={adminHref(`/organizations/${org.id}/`)}
-                    className="font-medium hover:text-primary"
+            {items.map((org) => {
+              const href = adminHref(`/organizations/${org.id}/`);
+              return (
+                <tr
+                  key={org.id}
+                  className="cursor-pointer hover:bg-[#FBF4F6]/50"
+                  onClick={() => {
+                    window.location.href = href;
+                  }}
+                >
+                  <td className="px-4 py-3">
+                    <span className="font-medium">{org.name}</span>
+                    {org.city || org.ownerEmail ? (
+                      <p className="mt-0.5 text-xs text-[var(--admin-muted)]">
+                        {[org.city, org.ownerEmail].filter(Boolean).join(" · ")}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-3">{org.plan ? <PlanBadge plan={org.plan} /> : "—"}</td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={org.status} />
+                  </td>
+                  <td className="px-4 py-3 font-mono tabular-nums">{org.usersCount}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-[var(--admin-muted)]">
+                    {formatCreated(org.createdAt)}
+                  </td>
+                  <td
+                    className="px-4 py-3 text-right"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {org.name}
-                  </Link>
-                  {org.city || org.ownerEmail ? (
-                    <p className="mt-0.5 text-xs text-[var(--admin-muted)]">
-                      {[org.city, org.ownerEmail].filter(Boolean).join(" · ")}
-                    </p>
-                  ) : null}
-                </td>
-                <td className="px-4 py-3">{org.plan ? <PlanBadge plan={org.plan} /> : "—"}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={org.status} />
-                </td>
-                <td className="px-4 py-3 font-mono tabular-nums">{org.usersCount}</td>
-                <td className="px-4 py-3 font-mono text-xs text-[var(--admin-muted)]">
-                  {formatCreated(org.createdAt)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <OrgRowActions org={org} onChanged={load} />
-                </td>
-              </tr>
-            ))}
+                    <OrgRowActions org={org} onChanged={load} />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

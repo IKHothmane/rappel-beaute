@@ -3,11 +3,13 @@ import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
 import type {
   CreateExpenseInput,
+  ExpenseCategory,
   ExpenseDetail,
   ExpenseKpis,
   ExpenseListItem,
   UpdateExpenseInput,
 } from "@/types/expense";
+import { EXPENSE_CATEGORY_LABEL } from "@/types/expense";
 import type { PaymentMethod } from "@/types/finance";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -59,48 +61,111 @@ const SELECT = `
 `;
 
 export async function getExpenseKpis(organizationId: string): Promise<ExpenseKpis> {
-  const { rows } = await pool.query<{
-    monthTotal: string;
-    todayTotal: string;
-    prevMonthTotal: string;
-  }>(
-    `SELECT
-      COALESCE(SUM(amount) FILTER (
-        WHERE status = 'RECORDED'
-          AND "expenseDate" >= date_trunc('month', NOW())
-          AND "expenseDate" < date_trunc('month', NOW()) + INTERVAL '1 month'
-          AND "deletedAt" IS NULL
-      ), 0)::text AS "monthTotal",
-      COALESCE(SUM(amount) FILTER (
-        WHERE status = 'RECORDED'
-          AND "expenseDate" >= date_trunc('day', NOW())
-          AND "expenseDate" < date_trunc('day', NOW()) + INTERVAL '1 day'
-          AND "deletedAt" IS NULL
-      ), 0)::text AS "todayTotal",
-      COALESCE(SUM(amount) FILTER (
-        WHERE status = 'RECORDED'
-          AND "expenseDate" >= date_trunc('month', NOW()) - INTERVAL '1 month'
-          AND "expenseDate" < date_trunc('month', NOW())
-          AND "deletedAt" IS NULL
-      ), 0)::text AS "prevMonthTotal"
-     FROM "Expense"
-     WHERE "organizationId" = $1`,
-    [organizationId],
-  );
-  const monthTotal = parseFloat(rows[0]?.monthTotal ?? "0") || 0;
-  const todayTotal = parseFloat(rows[0]?.todayTotal ?? "0") || 0;
-  const prevMonthTotal = parseFloat(rows[0]?.prevMonthTotal ?? "0") || 0;
+  const [aggRes, mixRes, todayRes] = await Promise.all([
+    pool.query<{
+      monthTotal: string;
+      monthCount: string;
+      todayTotal: string;
+      todayCount: string;
+      prevMonthTotal: string;
+      voidMonthTotal: string;
+      voidMonthCount: string;
+    }>(
+      `SELECT
+        COALESCE(SUM(amount) FILTER (
+          WHERE status = 'RECORDED'
+            AND "expenseDate" >= date_trunc('month', NOW())
+            AND "expenseDate" < date_trunc('month', NOW()) + INTERVAL '1 month'
+        ), 0)::text AS "monthTotal",
+        COALESCE(COUNT(*) FILTER (
+          WHERE status = 'RECORDED'
+            AND "expenseDate" >= date_trunc('month', NOW())
+            AND "expenseDate" < date_trunc('month', NOW()) + INTERVAL '1 month'
+        ), 0)::text AS "monthCount",
+        COALESCE(SUM(amount) FILTER (
+          WHERE status = 'RECORDED'
+            AND "expenseDate" >= date_trunc('day', NOW())
+            AND "expenseDate" < date_trunc('day', NOW()) + INTERVAL '1 day'
+        ), 0)::text AS "todayTotal",
+        COALESCE(COUNT(*) FILTER (
+          WHERE status = 'RECORDED'
+            AND "expenseDate" >= date_trunc('day', NOW())
+            AND "expenseDate" < date_trunc('day', NOW()) + INTERVAL '1 day'
+        ), 0)::text AS "todayCount",
+        COALESCE(SUM(amount) FILTER (
+          WHERE status = 'RECORDED'
+            AND "expenseDate" >= date_trunc('month', NOW()) - INTERVAL '1 month'
+            AND "expenseDate" < date_trunc('month', NOW())
+        ), 0)::text AS "prevMonthTotal",
+        COALESCE(SUM(amount) FILTER (
+          WHERE status = 'VOID'
+            AND "expenseDate" >= date_trunc('month', NOW())
+            AND "expenseDate" < date_trunc('month', NOW()) + INTERVAL '1 month'
+        ), 0)::text AS "voidMonthTotal",
+        COALESCE(COUNT(*) FILTER (
+          WHERE status = 'VOID'
+            AND "expenseDate" >= date_trunc('month', NOW())
+            AND "expenseDate" < date_trunc('month', NOW()) + INTERVAL '1 month'
+        ), 0)::text AS "voidMonthCount"
+       FROM "Expense"
+       WHERE "organizationId" = $1 AND "deletedAt" IS NULL`,
+      [organizationId],
+    ),
+    pool.query<{ category: string; amount: string; count: string }>(
+      `SELECT category::text, COALESCE(SUM(amount), 0)::text AS amount, COUNT(*)::text AS count
+       FROM "Expense"
+       WHERE "organizationId" = $1 AND "deletedAt" IS NULL AND status = 'RECORDED'
+         AND "expenseDate" >= date_trunc('month', NOW())
+         AND "expenseDate" < date_trunc('month', NOW()) + INTERVAL '1 month'
+       GROUP BY category
+       ORDER BY SUM(amount) DESC`,
+      [organizationId],
+    ),
+    pool.query<{ label: string }>(
+      `SELECT COALESCE(NULLIF(description, ''), category::text) AS label
+       FROM "Expense"
+       WHERE "organizationId" = $1 AND "deletedAt" IS NULL AND status = 'RECORDED'
+         AND "expenseDate" >= date_trunc('day', NOW())
+         AND "expenseDate" < date_trunc('day', NOW()) + INTERVAL '1 day'
+       ORDER BY "expenseDate" DESC, "createdAt" DESC
+       LIMIT 3`,
+      [organizationId],
+    ),
+  ]);
+
+  const row = aggRes.rows[0];
+  const monthTotal = parseFloat(row?.monthTotal ?? "0") || 0;
+  const todayTotal = parseFloat(row?.todayTotal ?? "0") || 0;
+  const prevMonthTotal = parseFloat(row?.prevMonthTotal ?? "0") || 0;
+  const voidMonthTotal = parseFloat(row?.voidMonthTotal ?? "0") || 0;
   const evolutionPct =
     prevMonthTotal > 0
       ? Math.round(((monthTotal - prevMonthTotal) / prevMonthTotal) * 1000) / 10
-      : monthTotal > 0
-        ? 100
-        : null;
+      : null;
+
   return {
     monthTotal: Math.round(monthTotal * 100) / 100,
+    monthCount: parseInt(row?.monthCount ?? "0", 10) || 0,
     todayTotal: Math.round(todayTotal * 100) / 100,
+    todayCount: parseInt(row?.todayCount ?? "0", 10) || 0,
+    todayLabels: todayRes.rows
+      .map((r) => {
+        const raw = r.label;
+        if (raw && raw in EXPENSE_CATEGORY_LABEL) {
+          return EXPENSE_CATEGORY_LABEL[raw as ExpenseCategory];
+        }
+        return raw;
+      })
+      .filter(Boolean),
     prevMonthTotal: Math.round(prevMonthTotal * 100) / 100,
     evolutionPct,
+    voidMonthTotal: Math.round(voidMonthTotal * 100) / 100,
+    voidMonthCount: parseInt(row?.voidMonthCount ?? "0", 10) || 0,
+    byCategory: mixRes.rows.map((r) => ({
+      category: r.category as ExpenseListItem["category"],
+      amount: Math.round((parseFloat(r.amount) || 0) * 100) / 100,
+      count: parseInt(r.count, 10) || 0,
+    })),
   };
 }
 

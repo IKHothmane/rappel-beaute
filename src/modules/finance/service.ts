@@ -13,6 +13,7 @@ import {
   CASH_TXN_LABEL,
   PAYMENT_KIND_LABEL,
   PAYMENT_METHOD_LABEL,
+  PAYMENT_STATUS_LABEL,
 } from "@/types/finance";
 
 const fetchOpts = { credentials: "include" as const, cache: "no-store" as const };
@@ -180,4 +181,9 @@ export function newIdempotencyKey(prefix = "pay"): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export { CASH_TXN_LABEL, PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL };
+export {
+  CASH_TXN_LABEL,
+  PAYMENT_KIND_LABEL,
+  PAYMENT_METHOD_LABEL,
+  PAYMENT_STATUS_LABEL,
+};

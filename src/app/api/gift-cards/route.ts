@@ -6,9 +6,11 @@ import {
   stripOrganizationId,
 } from "@/lib/auth/api-guard";
 import {
+  cancelGiftCard,
   getGiftCardByCode,
   getGiftCardById,
   issueGiftCard,
+  listGiftCardJournal,
   listGiftCards,
 } from "@/lib/db/gift-cards";
 import { canWritePromotions } from "@/lib/rbac";
@@ -42,19 +44,23 @@ export async function GET(request: NextRequest) {
     }
 
     const q = parseGiftCardListQuery(url.searchParams);
-    const { items, total, kpis } = await listGiftCards(auth.session.organizationId, {
-      ...q,
-      search: q.search || undefined,
-    });
+    const [listed, journal] = await Promise.all([
+      listGiftCards(auth.session.organizationId, {
+        ...q,
+        search: q.search || undefined,
+      }),
+      listGiftCardJournal(auth.session.organizationId, 24),
+    ]);
     return NextResponse.json({
-      data: items,
+      data: listed.items,
       pagination: {
         page: q.page,
         limit: q.limit,
-        total,
-        totalPages: Math.max(1, Math.ceil(total / q.limit)),
+        total: listed.total,
+        totalPages: Math.max(1, Math.ceil(listed.total / q.limit)),
       },
-      kpis,
+      kpis: listed.kpis,
+      journal,
     });
   } catch (error) {
     console.error("[GET /api/gift-cards]", error);
@@ -74,6 +80,33 @@ export async function POST(request: NextRequest) {
 
   try {
     const raw = stripOrganizationId((await request.json()) as Record<string, unknown>);
+    const actor = {
+      id: auth.session.id,
+      name: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
+    };
+
+    if (raw.action === "cancel") {
+      const id = typeof raw.id === "string" ? raw.id.trim() : "";
+      if (!id) {
+        return NextResponse.json({ error: "Identifiant manquant." }, { status: 400 });
+      }
+      try {
+        const card = await cancelGiftCard(auth.session.organizationId, id, actor);
+        return NextResponse.json(card);
+      } catch (error) {
+        if (error instanceof Error && error.message === "NOT_FOUND") {
+          return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
+        }
+        if (error instanceof Error && error.message === "GIFT_CARD_INACTIVE") {
+          return NextResponse.json(
+            { error: "Seule une carte active peut être suspendue." },
+            { status: 409 },
+          );
+        }
+        throw error;
+      }
+    }
+
     const validated = validateCreateGiftCard(raw);
     if (!validated.ok) {
       return NextResponse.json(
@@ -81,13 +114,10 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const card = await issueGiftCard(auth.session.organizationId, validated.data, {
-      id: auth.session.id,
-      name: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
-    });
+    const card = await issueGiftCard(auth.session.organizationId, validated.data, actor);
     return NextResponse.json(card, { status: 201 });
   } catch (error) {
     console.error("[POST /api/gift-cards]", error);
-    return NextResponse.json({ error: "Impossible de créer la carte." }, { status: 500 });
+    return NextResponse.json({ error: "Impossible de traiter la carte." }, { status: 500 });
   }
 }

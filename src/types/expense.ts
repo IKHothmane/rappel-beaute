@@ -68,11 +68,23 @@ export type ExpenseDetail = ExpenseListItem & {
   updatedAt: string;
 };
 
+export type ExpenseCategoryMix = {
+  category: ExpenseCategory;
+  amount: number;
+  count: number;
+};
+
 export type ExpenseKpis = {
   monthTotal: number;
+  monthCount: number;
   todayTotal: number;
+  todayCount: number;
+  todayLabels: string[];
   prevMonthTotal: number;
   evolutionPct: number | null;
+  voidMonthTotal: number;
+  voidMonthCount: number;
+  byCategory: ExpenseCategoryMix[];
 };
 
 export type ExpenseListResponse = {

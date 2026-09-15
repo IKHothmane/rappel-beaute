@@ -28,6 +28,7 @@ type AgendaGridProps = {
     minute: number,
     appointmentId: string,
   ) => void;
+  onEmptySlotClick?: (columnId: string, hour: number, minute: number) => void;
 };
 
 function slotTop(date: Date) {
@@ -48,6 +49,7 @@ export function AgendaGrid({
   columnMode = "staff",
   onAppointmentClick,
   onSlotDrop,
+  onEmptySlotClick,
 }: AgendaGridProps) {
   const slots = Array.from(
     { length: ((AGENDA_CLOSE_HOUR - AGENDA_OPEN_HOUR) * 60) / AGENDA_SLOT_MINUTES },
@@ -62,7 +64,7 @@ export function AgendaGrid({
   const totalHeight = slots.length * AGENDA_SLOT_HEIGHT_PX;
 
   return (
-    <div className="hidden overflow-hidden rounded-2xl border border-line bg-white shadow-soft md:block">
+    <div className="hidden overflow-hidden rounded-xl bg-white shadow-soft md:block">
       <div className="overflow-x-auto">
         <div className="min-w-[640px]">
           <div
@@ -123,11 +125,14 @@ export function AgendaGrid({
                     if (slot && aptId) onSlotDrop?.(col.id, slot.h, slot.m, aptId);
                   }}
                 >
-                  {slots.map((_, i) => (
-                    <div
+                  {slots.map((slot, i) => (
+                    <button
                       key={i}
-                      className="absolute left-0 right-0 border-t border-line/50"
-                      style={{ top: i * AGENDA_SLOT_HEIGHT_PX }}
+                      type="button"
+                      aria-label={`Créneau ${slot.label} ${col.name}`}
+                      className="absolute left-0 right-0 border-t border-line/50 hover:bg-primary/[0.04]"
+                      style={{ top: i * AGENDA_SLOT_HEIGHT_PX, height: AGENDA_SLOT_HEIGHT_PX }}
+                      onClick={() => onEmptySlotClick?.(col.id, slot.h, slot.m)}
                     />
                   ))}
 
@@ -281,7 +286,7 @@ export function AgendaMonthGrid({
   onSelectDay: (d: Date) => void;
 }) {
   return (
-    <div className="hidden rounded-2xl border border-line bg-white p-4 shadow-soft md:block">
+    <div className="hidden rounded-xl bg-white p-4 shadow-soft md:block">
       <div className="mb-3 grid grid-cols-7 gap-1 font-mono text-[10px] uppercase text-ink/40">
         {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((d) => (
           <div key={d} className="py-2 text-center">

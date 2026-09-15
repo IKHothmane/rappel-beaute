@@ -42,6 +42,23 @@ export type ReviewKpis = {
   recordedCount: number;
   averageScore: number | null;
   satisfiedPercent: number | null;
+  recordedThisMonth: number;
+  recordedPrevMonth: number;
+  positiveCount: number;
+  sensitiveCount: number;
+  awaitingRecord: number;
+  skippedCount: number;
+  verySatisfiedCount: number;
+  satisfiedCount: number;
+  dissatisfiedCount: number;
+};
+
+export type StaffReviewScore = {
+  staffId: string;
+  staffName: string;
+  initials: string;
+  reviewCount: number;
+  averageScore: number | null;
 };
 
 export type ReviewRequestItem = {
@@ -51,6 +68,7 @@ export type ReviewRequestItem = {
   customerName: string;
   appointmentId: string;
   serviceName: string;
+  staffName: string | null;
   completedAt: string;
   hoursSinceCompleted: number;
   messageSnapshot: string;

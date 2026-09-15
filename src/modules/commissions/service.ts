@@ -89,6 +89,24 @@ export async function markCommissionPaid(
   }
 }
 
+export async function markCommissionsPaidBulk(
+  ids: string[],
+): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
+  try {
+    const res = await fetch("/api/commissions/", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "markPaidBulk", ids }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
+    return { ok: true, updated: Number(data.updated) || 0 };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
+  }
+}
+
 export async function closeCommissionPeriod(
   year: number,
   month: number,

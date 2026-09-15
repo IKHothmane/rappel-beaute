@@ -47,8 +47,21 @@ export type ReactivationKpis = {
   days45: number;
   days60: number;
   days90: number;
+  days180: number;
   estimatedRevenue: number;
+  inactiveCount: number;
+  contactedCount: number;
+  pendingCount: number;
+  upcomingCount: number;
+  returnedCount: number;
+  recoveredRevenue: number;
+  conversionPct: number | null;
+  vipInactiveCount: number;
+  highSpenderCount: number;
+  firstVisitCount: number;
 };
+
+export const REACTIVATION_HIGH_SPEND = 3000;
 
 export type ReactivationCustomerItem = {
   id: string;
@@ -61,6 +74,7 @@ export type ReactivationCustomerItem = {
   daysSinceLastVisit: number;
   lastVisitAt: string;
   lastServiceName: string | null;
+  lastStaffName: string | null;
   lastServicePrice: number | null;
   averageTicket: number;
   totalRevenue: number;

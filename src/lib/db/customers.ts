@@ -39,6 +39,7 @@ type CustomerStatsRow = {
   updatedAt: Date;
   deletedAt: Date | null;
   visits: string;
+  noShowCount: string;
   revenue: string;
   lastVisitAt: Date | null;
 };
@@ -82,6 +83,7 @@ function computeSegment(row: {
 
 function rowToListItem(row: CustomerStatsRow): CustomerListItem {
   const visits = parseInt(row.visits, 10) || 0;
+  const noShowCount = parseInt(row.noShowCount, 10) || 0;
   const revenue = parseFloat(row.revenue) || 0;
   const averageTicket = visits > 0 ? Math.round((revenue / visits) * 100) / 100 : 0;
 
@@ -93,6 +95,7 @@ function rowToListItem(row: CustomerStatsRow): CustomerListItem {
     email: row.email,
     status: row.status,
     visits,
+    noShowCount,
     revenue,
     averageTicket,
     lastVisitAt: row.lastVisitAt?.toISOString() ?? null,
@@ -130,7 +133,7 @@ function segmentFilterSql(segment: CustomerSegment, paramOffset: number): string
   switch (segment) {
     case "VIP":
       return `HAVING (
-        COALESCE(SUM(a.price), 0) >= ${VIP_MIN_REVENUE}
+        COALESCE(SUM(a.price) FILTER (WHERE a.status = 'COMPLETED'), 0) >= ${VIP_MIN_REVENUE}
         OR COUNT(a.id) FILTER (WHERE a.status = 'COMPLETED') >= ${VIP_MIN_VISITS}
       )`;
     case "NEW":
@@ -225,10 +228,11 @@ export async function listCustomers(
       c."updatedAt",
       c."deletedAt",
       COUNT(a.id) FILTER (WHERE a.status = 'COMPLETED')::text AS visits,
+      COUNT(a.id) FILTER (WHERE a.status = 'NO_SHOW')::text AS "noShowCount",
       COALESCE(SUM(a.price) FILTER (WHERE a.status = 'COMPLETED'), 0)::text AS revenue,
       MAX(a."startAt") FILTER (WHERE a.status = 'COMPLETED') AS "lastVisitAt"
     FROM "Customer" c
-    LEFT JOIN "Appointment" a ON a."customerId" = c.id AND a.status = 'COMPLETED'
+    LEFT JOIN "Appointment" a ON a."customerId" = c.id
     WHERE ${where}
     GROUP BY c.id
     ${having}
@@ -241,24 +245,31 @@ export async function listCustomers(
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE seg = 'NEW')::int AS "newCount",
       COUNT(*) FILTER (WHERE seg = 'VIP')::int AS "vipCount",
-      COUNT(*) FILTER (WHERE seg = 'INACTIVE')::int AS "inactiveCount"
+      COUNT(*) FILTER (WHERE seg = 'INACTIVE')::int AS "inactiveCount",
+      COUNT(*) FILTER (WHERE seg = 'ACTIVE')::int AS "activeCount",
+      COUNT(*) FILTER (WHERE seg = 'AT_RISK')::int AS "atRiskCount"
     FROM (
       SELECT
         c.id,
         CASE
           WHEN c.status IN ('INACTIVE', 'ARCHIVED') THEN 'INACTIVE'
+          WHEN c.status = 'AT_RISK' THEN 'AT_RISK'
           WHEN c.status = 'NEW' OR (c."createdAt" >= NOW() - INTERVAL '${NEW_CUSTOMER_DAYS} days'
             AND COALESCE(v.visits, 0) <= 1) THEN 'NEW'
           WHEN COALESCE(v.revenue, 0) >= ${VIP_MIN_REVENUE} OR COALESCE(v.visits, 0) >= ${VIP_MIN_VISITS} THEN 'VIP'
+          WHEN v."lastVisitAt" IS NOT NULL AND v."lastVisitAt" < NOW() - INTERVAL '${AT_RISK_DAYS} days' THEN 'AT_RISK'
+          WHEN v."lastVisitAt" IS NULL AND c."createdAt" < NOW() - INTERVAL '${AT_RISK_DAYS} days'
+            AND c.status NOT IN ('INACTIVE', 'ARCHIVED', 'NEW') THEN 'AT_RISK'
           ELSE 'ACTIVE'
         END AS seg
       FROM "Customer" c
       LEFT JOIN LATERAL (
         SELECT
-          COUNT(*)::int AS visits,
-          COALESCE(SUM(price), 0)::float AS revenue
+          COUNT(*) FILTER (WHERE status = 'COMPLETED')::int AS visits,
+          COALESCE(SUM(price) FILTER (WHERE status = 'COMPLETED'), 0)::float AS revenue,
+          MAX("startAt") FILTER (WHERE status = 'COMPLETED') AS "lastVisitAt"
         FROM "Appointment" a
-        WHERE a."customerId" = c.id AND a.status = 'COMPLETED'
+        WHERE a."customerId" = c.id
       ) v ON true
       WHERE c."organizationId" = $1 AND c."deletedAt" IS NULL
     ) t
@@ -273,7 +284,14 @@ export async function listCustomers(
   return {
     items: listRes.rows.map(rowToListItem),
     total: countRes.rows[0]?.total ?? 0,
-    kpis: kpisRes.rows[0] ?? { total: 0, newCount: 0, vipCount: 0, inactiveCount: 0 },
+    kpis: kpisRes.rows[0] ?? {
+      total: 0,
+      newCount: 0,
+      vipCount: 0,
+      inactiveCount: 0,
+      activeCount: 0,
+      atRiskCount: 0,
+    },
   };
 }
 
@@ -300,10 +318,11 @@ export async function getCustomerById(
       c."updatedAt",
       c."deletedAt",
       COUNT(a.id) FILTER (WHERE a.status = 'COMPLETED')::text AS visits,
+      COUNT(a.id) FILTER (WHERE a.status = 'NO_SHOW')::text AS "noShowCount",
       COALESCE(SUM(a.price) FILTER (WHERE a.status = 'COMPLETED'), 0)::text AS revenue,
       MAX(a."startAt") FILTER (WHERE a.status = 'COMPLETED') AS "lastVisitAt"
     FROM "Customer" c
-    LEFT JOIN "Appointment" a ON a."customerId" = c.id AND a.status = 'COMPLETED'
+    LEFT JOIN "Appointment" a ON a."customerId" = c.id
     WHERE c.id = $2 AND c."organizationId" = $1 AND c."deletedAt" IS NULL
     GROUP BY c.id`,
     [organizationId, id],
@@ -339,11 +358,14 @@ export async function getCustomerHistory(
     serviceName: string;
     price: string;
     status: string;
+    staffFirstName: string | null;
   }>(
-    `SELECT a.id, a."startAt", s.name AS "serviceName", a.price::text, a.status
+    `SELECT a.id, a."startAt", COALESCE(s.name, 'Prestation') AS "serviceName", a.price::text, a.status,
+            st."firstName" AS "staffFirstName"
      FROM "Appointment" a
-     JOIN "Service" s ON s.id = a."serviceId"
+     LEFT JOIN "Service" s ON s.id = a."serviceId"
      JOIN "Customer" c ON c.id = a."customerId"
+     LEFT JOIN "Staff" st ON st.id = a."staffId"
      WHERE a."customerId" = $1 AND c."organizationId" = $2
      ORDER BY a."startAt" DESC
      LIMIT 50`,
@@ -356,6 +378,7 @@ export async function getCustomerHistory(
     serviceName: r.serviceName,
     price: parseFloat(r.price),
     status: r.status,
+    staffFirstName: r.staffFirstName,
   }));
 }
 

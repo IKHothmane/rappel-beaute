@@ -6,8 +6,11 @@ import type {
   CreateRewardInput,
   CustomerLoyaltyView,
   LoyaltyAccountSummary,
+  LoyaltyBirthdayItem,
+  LoyaltyJournalItem,
   LoyaltyKpis,
   LoyaltyLevel,
+  LoyaltyLevelCounts,
   LoyaltyProgramConfig,
   LoyaltyRewardItem,
   LoyaltyTxnItem,
@@ -550,24 +553,81 @@ export async function redeemReward(
   }
 }
 
+const EMPTY_LEVEL_COUNTS: LoyaltyLevelCounts = {
+  BRONZE: 0,
+  SILVER: 0,
+  GOLD: 0,
+  VIP: 0,
+};
+
 export async function listLoyaltyLeaderboard(
   organizationId: string,
-  limit = 40,
-): Promise<{ kpis: LoyaltyKpis; ranking: LoyaltyAccountSummary[]; rewards: LoyaltyRewardItem[]; program: LoyaltyProgramConfig }> {
+  limit = 200,
+): Promise<{
+  kpis: LoyaltyKpis;
+  ranking: LoyaltyAccountSummary[];
+  rewards: LoyaltyRewardItem[];
+  program: LoyaltyProgramConfig;
+  journal: LoyaltyJournalItem[];
+  birthdays: LoyaltyBirthdayItem[];
+}> {
   const program = await getOrCreateLoyaltyProgram(organizationId);
 
-  const [kpisRes, rankRes, rewards] = await Promise.all([
+  const [kpisRes, levelsRes, rankRes, journalRes, birthdayRes, rewards] = await Promise.all([
     pool.query<{
       membersCount: number;
+      membersThisMonth: number;
       pointsDistributed: string;
       pointsRedeemed: string;
+      pointsActive: string;
       rewardsUsed: number;
+      rewardsReady: number;
+      active30d: number;
+      memberRevenue: string;
+      memberAvgTicket: string;
+      activePackages: number;
     }>(
       `SELECT
          (SELECT COUNT(*)::int FROM "LoyaltyAccount" WHERE "organizationId" = $1 AND "lifetimePoints" > 0) AS "membersCount",
+         (SELECT COUNT(*)::int FROM "LoyaltyAccount"
+           WHERE "organizationId" = $1
+             AND "createdAt" >= date_trunc('month', timezone('Africa/Casablanca', now()))) AS "membersThisMonth",
          COALESCE((SELECT SUM(points) FROM "LoyaltyTransaction" WHERE "organizationId" = $1 AND type = 'EARN'), 0)::text AS "pointsDistributed",
          COALESCE((SELECT SUM(ABS(points)) FROM "LoyaltyTransaction" WHERE "organizationId" = $1 AND type = 'REDEEM'), 0)::text AS "pointsRedeemed",
-         (SELECT COUNT(*)::int FROM "LoyaltyRedemption" WHERE "organizationId" = $1 AND status = 'APPLIED') AS "rewardsUsed"`,
+         COALESCE((SELECT SUM(balance) FROM "LoyaltyAccount" WHERE "organizationId" = $1), 0)::text AS "pointsActive",
+         (SELECT COUNT(*)::int FROM "LoyaltyRedemption" WHERE "organizationId" = $1 AND status = 'APPLIED') AS "rewardsUsed",
+         (
+           SELECT COUNT(*)::int FROM "LoyaltyAccount" la
+           WHERE la."organizationId" = $1
+             AND la.balance >= COALESCE(
+               (SELECT MIN("pointsCost") FROM "LoyaltyReward" WHERE "organizationId" = $1 AND active = true),
+               2147483647
+             )
+         ) AS "rewardsReady",
+         (SELECT COUNT(DISTINCT "customerId")::int FROM "LoyaltyTransaction"
+           WHERE "organizationId" = $1 AND "createdAt" >= NOW() - INTERVAL '30 days') AS "active30d",
+         COALESCE((
+           SELECT SUM(a.price) FROM "Appointment" a
+           JOIN "LoyaltyAccount" la ON la."customerId" = a."customerId" AND la."organizationId" = a."organizationId"
+           WHERE a."organizationId" = $1 AND a.status = 'COMPLETED'
+             AND a."startAt" >= date_trunc('month', timezone('Africa/Casablanca', now()))
+             AND la."lifetimePoints" > 0
+         ), 0)::text AS "memberRevenue",
+         COALESCE((
+           SELECT AVG(a.price) FROM "Appointment" a
+           JOIN "LoyaltyAccount" la ON la."customerId" = a."customerId" AND la."organizationId" = a."organizationId"
+           WHERE a."organizationId" = $1 AND a.status = 'COMPLETED'
+             AND a."startAt" >= date_trunc('month', timezone('Africa/Casablanca', now()))
+             AND la."lifetimePoints" > 0
+         ), 0)::text AS "memberAvgTicket",
+         (SELECT COUNT(*)::int FROM "Package" WHERE "organizationId" = $1 AND status = 'ACTIVE') AS "activePackages"`,
+      [organizationId],
+    ),
+    pool.query<{ level: string; n: number }>(
+      `SELECT level::text, COUNT(*)::int AS n
+       FROM "LoyaltyAccount"
+       WHERE "organizationId" = $1 AND "lifetimePoints" > 0
+       GROUP BY level`,
       [organizationId],
     ),
     pool.query<{
@@ -575,30 +635,105 @@ export async function listLoyaltyLeaderboard(
       customerId: string;
       firstName: string;
       lastName: string;
+      phone: string | null;
+      birthDate: Date | null;
+      createdAt: Date;
       balance: number;
       lifetimePoints: number;
       level: string;
       updatedAt: Date;
+      lastVisitAt: Date | null;
+      lastServiceName: string | null;
+      lastServicePrice: string | null;
     }>(
-      `SELECT la.id, la."customerId", c."firstName", c."lastName",
-              la.balance, la."lifetimePoints", la.level::text, la."updatedAt"
+      `SELECT la.id, la."customerId", c."firstName", c."lastName", c.phone, c."birthDate",
+              la."createdAt", la.balance, la."lifetimePoints", la.level::text, la."updatedAt",
+              last_apt."startAt" AS "lastVisitAt",
+              last_apt."serviceName" AS "lastServiceName",
+              last_apt.price::text AS "lastServicePrice"
        FROM "LoyaltyAccount" la
        JOIN "Customer" c ON c.id = la."customerId"
+       LEFT JOIN LATERAL (
+         SELECT a."startAt", s.name AS "serviceName", a.price
+         FROM "Appointment" a
+         JOIN "Service" s ON s.id = a."serviceId"
+         WHERE a."customerId" = c.id AND a."organizationId" = $1 AND a.status = 'COMPLETED'
+         ORDER BY a."startAt" DESC
+         LIMIT 1
+       ) last_apt ON true
        WHERE la."organizationId" = $1 AND c."deletedAt" IS NULL
        ORDER BY la."lifetimePoints" DESC, la.balance DESC
        LIMIT $2`,
       [organizationId, limit],
     ),
-    listRewards(organizationId, true),
+    pool.query<{
+      id: string;
+      type: string;
+      points: number;
+      balanceAfter: number;
+      reason: string | null;
+      paymentId: string | null;
+      createdAt: Date;
+      customerId: string;
+      firstName: string;
+      lastName: string;
+      operatorName: string | null;
+    }>(
+      `SELECT lt.id, lt.type::text, lt.points, lt."balanceAfter", lt.reason, lt."paymentId",
+              lt."createdAt", lt."customerId", c."firstName", c."lastName",
+              NULLIF(TRIM(COALESCE(u."firstName", '') || ' ' || COALESCE(u."lastName", '')), '') AS "operatorName"
+       FROM "LoyaltyTransaction" lt
+       JOIN "Customer" c ON c.id = lt."customerId"
+       LEFT JOIN "User" u ON u.id = lt."createdById"
+       WHERE lt."organizationId" = $1
+       ORDER BY lt."createdAt" DESC
+       LIMIT 12`,
+      [organizationId],
+    ),
+    pool.query<{
+      customerId: string;
+      firstName: string;
+      lastName: string;
+      phone: string | null;
+      birthDate: Date;
+      balance: number;
+      level: string;
+    }>(
+      `SELECT la."customerId", c."firstName", c."lastName", c.phone, c."birthDate",
+              la.balance, la.level::text
+       FROM "LoyaltyAccount" la
+       JOIN "Customer" c ON c.id = la."customerId"
+       WHERE la."organizationId" = $1 AND c."deletedAt" IS NULL
+         AND c."birthDate" IS NOT NULL
+         AND EXTRACT(MONTH FROM c."birthDate") = EXTRACT(MONTH FROM timezone('Africa/Casablanca', now()))
+       ORDER BY EXTRACT(DAY FROM c."birthDate") ASC`,
+      [organizationId],
+    ),
+    listRewards(organizationId, false),
   ]);
 
+  const levelCounts: LoyaltyLevelCounts = { ...EMPTY_LEVEL_COUNTS };
+  for (const row of levelsRes.rows) {
+    const key = row.level as LoyaltyLevel;
+    if (key in levelCounts) levelCounts[key] = row.n;
+  }
+
+  const k = kpisRes.rows[0];
   return {
     program,
     kpis: {
-      membersCount: kpisRes.rows[0]?.membersCount ?? 0,
-      pointsDistributed: parseInt(kpisRes.rows[0]?.pointsDistributed ?? "0", 10) || 0,
-      pointsRedeemed: parseInt(kpisRes.rows[0]?.pointsRedeemed ?? "0", 10) || 0,
-      rewardsUsed: kpisRes.rows[0]?.rewardsUsed ?? 0,
+      membersCount: k?.membersCount ?? 0,
+      membersThisMonth: k?.membersThisMonth ?? 0,
+      pointsDistributed: parseInt(k?.pointsDistributed ?? "0", 10) || 0,
+      pointsRedeemed: parseInt(k?.pointsRedeemed ?? "0", 10) || 0,
+      pointsActive: parseInt(k?.pointsActive ?? "0", 10) || 0,
+      rewardsUsed: k?.rewardsUsed ?? 0,
+      rewardsReady: k?.rewardsReady ?? 0,
+      active30d: k?.active30d ?? 0,
+      memberRevenue: parseFloat(k?.memberRevenue ?? "0") || 0,
+      memberAvgTicket: Math.round((parseFloat(k?.memberAvgTicket ?? "0") || 0) * 100) / 100,
+      activePackages: k?.activePackages ?? 0,
+      levelCounts,
     },
     ranking: rankRes.rows.map((r) => ({
       id: r.id,
@@ -608,8 +743,38 @@ export async function listLoyaltyLeaderboard(
       lifetimePoints: r.lifetimePoints,
       level: r.level as LoyaltyLevel,
       updatedAt: new Date(r.updatedAt).toISOString(),
+      phone: r.phone,
+      birthDate: r.birthDate ? new Date(r.birthDate).toISOString() : null,
+      memberSince: new Date(r.createdAt).toISOString(),
+      lastVisitAt: r.lastVisitAt ? new Date(r.lastVisitAt).toISOString() : null,
+      lastServiceName: r.lastServiceName,
+      lastServicePrice: r.lastServicePrice != null ? parseFloat(r.lastServicePrice) : null,
     })),
     rewards,
+    journal: journalRes.rows.map(
+      (t): LoyaltyJournalItem => ({
+        id: t.id,
+        type: t.type as LoyaltyJournalItem["type"],
+        points: t.points,
+        balanceAfter: t.balanceAfter,
+        reason: t.reason,
+        paymentId: t.paymentId,
+        createdAt: new Date(t.createdAt).toISOString(),
+        customerId: t.customerId,
+        customerName: `${t.firstName} ${t.lastName}`.trim(),
+        operatorName: t.operatorName,
+      }),
+    ),
+    birthdays: birthdayRes.rows.map(
+      (b): LoyaltyBirthdayItem => ({
+        customerId: b.customerId,
+        customerName: `${b.firstName} ${b.lastName}`.trim(),
+        phone: b.phone,
+        birthDate: new Date(b.birthDate).toISOString(),
+        balance: b.balance,
+        level: b.level as LoyaltyLevel,
+      }),
+    ),
   };
 }
 

@@ -374,6 +374,9 @@ function mapCampaignList(r: Record<string, unknown>): CampaignListItem {
     sentCount: Number(r.sentCount) || 0,
     promotionId: (r.promotionId as string) ?? null,
     promotionName: (r.promotionName as string) ?? null,
+    promotionCode: (r.promotionCode as string) ?? null,
+    attributedRevenue: Math.round((parseFloat(String(r.attributedRevenue ?? "0")) || 0) * 100) / 100,
+    scheduledFor: r.scheduledFor ? new Date(r.scheduledFor as Date).toISOString() : null,
     preparedAt: r.preparedAt ? new Date(r.preparedAt as Date).toISOString() : null,
     createdAt: new Date(r.createdAt as Date).toISOString(),
   };
@@ -382,6 +385,10 @@ function mapCampaignList(r: Record<string, unknown>): CampaignListItem {
 export async function getCampaignKpis(organizationId: string): Promise<CampaignKpis> {
   const { rows } = await pool.query<{
     activeCampaigns: number;
+    draftCampaigns: number;
+    pausedCampaigns: number;
+    scheduledCampaigns: number;
+    totalCampaigns: number;
     targetedCustomers: number;
     pendingMessages: number;
     sentMessages: number;
@@ -390,6 +397,14 @@ export async function getCampaignKpis(organizationId: string): Promise<CampaignK
     `SELECT
       (SELECT COUNT(*)::int FROM "Campaign"
        WHERE "organizationId" = $1 AND status = 'ACTIVE'::"CampaignStatus") AS "activeCampaigns",
+      (SELECT COUNT(*)::int FROM "Campaign"
+       WHERE "organizationId" = $1 AND status = 'DRAFT'::"CampaignStatus") AS "draftCampaigns",
+      (SELECT COUNT(*)::int FROM "Campaign"
+       WHERE "organizationId" = $1 AND status = 'PAUSED'::"CampaignStatus") AS "pausedCampaigns",
+      (SELECT COUNT(*)::int FROM "Campaign"
+       WHERE "organizationId" = $1 AND "scheduledFor" IS NOT NULL AND "scheduledFor" > NOW()
+         AND status IN ('DRAFT'::"CampaignStatus", 'ACTIVE'::"CampaignStatus")) AS "scheduledCampaigns",
+      (SELECT COUNT(*)::int FROM "Campaign" WHERE "organizationId" = $1) AS "totalCampaigns",
       (SELECT COALESCE(SUM("audienceCount"), 0)::int FROM "Campaign"
        WHERE "organizationId" = $1 AND status IN ('ACTIVE','COMPLETED')) AS "targetedCustomers",
       (SELECT COUNT(*)::int FROM "CampaignRecipient" cr
@@ -412,6 +427,10 @@ export async function getCampaignKpis(organizationId: string): Promise<CampaignK
   const r = rows[0];
   return {
     activeCampaigns: r?.activeCampaigns ?? 0,
+    draftCampaigns: r?.draftCampaigns ?? 0,
+    pausedCampaigns: r?.pausedCampaigns ?? 0,
+    scheduledCampaigns: r?.scheduledCampaigns ?? 0,
+    totalCampaigns: r?.totalCampaigns ?? 0,
     targetedCustomers: r?.targetedCustomers ?? 0,
     pendingMessages: r?.pendingMessages ?? 0,
     sentMessages: r?.sentMessages ?? 0,
@@ -427,10 +446,22 @@ export async function listCampaigns(organizationId: string): Promise<{
     pool.query(
       `SELECT c.*,
               p.name AS "promotionName",
+              p.code AS "promotionCode",
               (SELECT COUNT(*)::int FROM "CampaignRecipient" cr
                WHERE cr."campaignId" = c.id AND cr.status = 'PENDING'::"CampaignRecipientStatus") AS "pendingCount",
               (SELECT COUNT(*)::int FROM "CampaignRecipient" cr
-               WHERE cr."campaignId" = c.id AND cr.status = 'SENT'::"CampaignRecipientStatus") AS "sentCount"
+               WHERE cr."campaignId" = c.id AND cr.status = 'SENT'::"CampaignRecipientStatus") AS "sentCount",
+              COALESCE((
+                SELECT SUM(i.total)::float FROM "Invoice" i
+                WHERE i."promotionId" = c."promotionId"
+                  AND c."preparedAt" IS NOT NULL
+                  AND i."issuedAt" >= c."preparedAt"
+                  AND i.status <> 'VOID'
+                  AND EXISTS (
+                    SELECT 1 FROM "CampaignRecipient" cr
+                    WHERE cr."campaignId" = c.id AND cr."customerId" = i."customerId"
+                  )
+              ), 0)::text AS "attributedRevenue"
        FROM "Campaign" c
        LEFT JOIN "Promotion" p ON p.id = c."promotionId"
        WHERE c."organizationId" = $1
@@ -494,6 +525,7 @@ export async function getCampaignById(
   const { rows } = await pool.query(
     `SELECT c.*,
             p.name AS "promotionName",
+            p.code AS "promotionCode",
             (SELECT COUNT(*)::int FROM "CampaignRecipient" cr
              WHERE cr."campaignId" = c.id AND cr.status = 'PENDING'::"CampaignRecipientStatus") AS "pendingCount",
             (SELECT COUNT(*)::int FROM "CampaignRecipient" cr
@@ -524,9 +556,7 @@ export async function getCampaignById(
     ...base,
     messageTemplate: String(r.messageTemplate),
     segmentFilters: (r.segmentFilters ?? {}) as CampaignSegmentFilters,
-    scheduledFor: r.scheduledFor ? new Date(r.scheduledFor as Date).toISOString() : null,
     skippedCount: Number(r.skippedCount) || 0,
-    attributedRevenue: Math.round((parseFloat(String(r.attributedRevenue ?? "0")) || 0) * 100) / 100,
   };
 }
 

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { authenticateUser } from "@/lib/db/users";
+import { authenticatePlatformUser } from "@/lib/db/platform-users";
 import { writeAuditLog } from "@/lib/db/audit";
+import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { createSessionCookie } from "@/lib/auth/session";
-import { isAppSession } from "@/lib/auth/types";
+import { isAppSession, isPlatformSession } from "@/lib/auth/types";
 import { stripOrganizationId } from "@/lib/auth/api-guard";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
@@ -35,8 +37,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await authenticateUser(email, password);
-    if (!session || !isAppSession(session)) {
+    const session =
+      (await authenticateUser(email, password)) ?? (await authenticatePlatformUser(email, password));
+    if (!session) {
+      return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
+    }
+
+    if (isPlatformSession(session)) {
+      await writePlatformAuditLog({
+        platformUserId: session.id,
+        platformUserName: `${session.firstName} ${session.lastName}`.trim(),
+        entityType: "PlatformUser",
+        entityId: session.id,
+        action: "LOGIN",
+      }).catch((err) => logger.warn("platform LOGIN audit failed", { error: String(err) }));
+
+      const res = NextResponse.json({
+        user: {
+          id: session.id,
+          email: session.email,
+          firstName: session.firstName,
+          lastName: session.lastName,
+          role: session.role,
+          accountType: session.accountType,
+          scope: session.scope,
+        },
+      });
+      res.cookies.set(createSessionCookie(session));
+      return res;
+    }
+
+    if (!isAppSession(session)) {
       return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
     }
 
@@ -67,8 +98,7 @@ export async function POST(request: NextRequest) {
       mustChangePassword: session.mustChangePassword,
     });
 
-    const cookie = createSessionCookie(session);
-    res.cookies.set(cookie);
+    res.cookies.set(createSessionCookie(session));
     return res;
   } catch (error) {
     logger.error("login error", { route: "/api/auth/login", error: String(error) });

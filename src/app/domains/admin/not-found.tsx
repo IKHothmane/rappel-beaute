@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminHref } from "@/lib/admin/href";
 
 export default function AdminNotFound() {
   return (
@@ -9,7 +10,7 @@ export default function AdminNotFound() {
       <h1 className="mt-3 font-display text-3xl font-semibold">
         Page d’administration introuvable
       </h1>
-      <Link href="/dashboard/" className="ac-btn mt-6 inline-flex">
+      <Link href={adminHref("/dashboard/")} className="ac-btn mt-6 inline-flex">
         Tableau de bord
       </Link>
     </div>

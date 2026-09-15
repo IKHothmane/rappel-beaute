@@ -48,7 +48,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     items: [
       { label: "Tableau de bord", href: "/dashboard/", icon: LayoutDashboard, key: "dashboard" },
       { label: "Agenda", href: "/agenda/", icon: CalendarDays, key: "agenda" },
-      { label: "Planning", href: "/planning/", icon: ClipboardList, key: "planning" },
+      { label: "Planning Équipe", href: "/planning/", icon: ClipboardList, key: "planning" },
       { label: "Assistant IA", href: "/ai/", icon: Sparkles, key: "ai" },
       { label: "Clientes", href: "/customers/", icon: Users, key: "customers" },
     ],

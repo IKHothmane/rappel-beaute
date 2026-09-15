@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Download } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -11,16 +12,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { AnalyticsOverviewDashboard } from "@/components/analytics/analytics-overview-dashboard";
 import { AppPageHeader, Kpi, ListRow, Tabs } from "@/components/app/AppUi";
 import { useCurrentUser } from "@/components/auth/session-provider";
-import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { getAnalyticsScope } from "@/lib/rbac";
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
+import { cn } from "@/lib/utils";
 import {
-  formatCompareHint,
   formatMad,
-  formatPct,
   getAnalyticsAppointments,
   getAnalyticsCustomers,
   getAnalyticsInventory,
@@ -32,6 +33,8 @@ import {
   getAnalyticsServices,
   getAnalyticsStaff,
 } from "@/modules/analytics/service";
+import { openReportExport } from "@/modules/reports/service";
+import type { ExportFormat } from "@/types/reports";
 import type {
   AnalyticsOverview,
   AppointmentAnalytics,
@@ -78,6 +81,7 @@ export function AnalyticsPageView() {
   const { toast } = useToast();
   const user = useCurrentUser();
   const scope = getAnalyticsScope(user.role);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const tabs = useMemo(() => {
     if (scope === "cash_only") return ["Revenus"];
@@ -89,6 +93,7 @@ export function AnalyticsPageView() {
   const [preset, setPreset] = useState<AnalyticsPeriodPreset>("month");
   const [compare, setCompare] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [revenue, setRevenue] = useState<RevenueAnalytics | null>(null);
@@ -104,12 +109,32 @@ export function AnalyticsPageView() {
   const [reviews, setReviews] = useState<ReviewAnalytics | null>(null);
 
   const filters = useMemo(() => ({ preset, compare }), [preset, compare]);
+  const periodLabel = PRESET_OPTIONS.find((o) => o.value === preset)?.label ?? "Cette période";
 
   const refresh = useCallback(async () => {
     if (!scope) return;
     try {
       if (tab === "Vue d'ensemble") {
-        setOverview(await getAnalyticsOverview(filters));
+        const [ov, rev, appt, cust, svc, stf, inv, mkt] = await Promise.all([
+          getAnalyticsOverview(filters),
+          getAnalyticsRevenue(filters),
+          getAnalyticsAppointments(filters),
+          getAnalyticsCustomers(filters),
+          getAnalyticsServices(filters),
+          getAnalyticsStaff(filters),
+          getAnalyticsInventory(filters),
+          getAnalyticsMarketing(filters),
+        ]);
+        setOverview(ov);
+        setRevenue(rev);
+        setAppointments(appt);
+        setCustomers(cust);
+        setServices(svc.items);
+        setStaff(stf.items);
+        setInventory(inv);
+        setMarketing(mkt.items);
+        setPostVisit(mkt.postVisit ?? null);
+        setAiMarketing(mkt.aiMarketing ?? null);
       } else if (tab === "Revenus") {
         setRevenue(await getAnalyticsRevenue(filters));
       } else if (tab === "Clientes") {
@@ -149,6 +174,23 @@ export function AnalyticsPageView() {
     }
   }, [tabs, tab]);
 
+  useEffect(() => {
+    if (!exportOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [exportOpen]);
+
+  function handleExport(format: ExportFormat) {
+    openReportExport("global", format, filters);
+    setExportOpen(false);
+    toast(`Export ${format.toUpperCase()} lancé.`, "success");
+  }
+
   if (!scope) {
     return (
       <div className="surface p-8 text-center text-sm text-ink/50">
@@ -159,26 +201,68 @@ export function AnalyticsPageView() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-      <AppPageHeader
-        title="Analytics"
-        description="KPI calculés côté serveur — définitions officielles partagées avec Rapports."
-      />
-
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="space-y-1 text-sm">
-          <span className="text-ink/50">Période</span>
-          <Select
-            value={preset}
-            onChange={(e) => setPreset(e.target.value as AnalyticsPeriodPreset)}
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <AppPageHeader
+          title="Analytics"
+          description="Analysez les performances de votre institut."
+        />
+        <div className="relative" ref={exportRef}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setExportOpen((o) => !o)}
           >
-            {PRESET_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="flex items-center gap-2 pb-2 text-sm">
+            <Download size={16} />
+            Exporter
+          </Button>
+          {exportOpen ? (
+            <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-soft">
+              {(
+                [
+                  ["pdf", "PDF"],
+                  ["xlsx", "Excel"],
+                  ["csv", "CSV"],
+                ] as const
+              ).map(([fmt, label]) => (
+                <button
+                  key={fmt}
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-primary-light/40"
+                  onClick={() => handleExport(fmt)}
+                >
+                  {label}
+                </button>
+              ))}
+              <Link
+                href="/reports/"
+                className="block border-t border-line px-3 py-2 text-sm text-primary hover:bg-primary-light/40"
+                onClick={() => setExportOpen(false)}
+              >
+                Rapports détaillés
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-end gap-2">
+        {PRESET_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => setPreset(o.value)}
+            className={cn(
+              "rounded-xl px-3 py-2 text-sm font-medium transition",
+              preset === o.value
+                ? "bg-ink text-white"
+                : "border border-line bg-white text-ink/70 hover:border-primary/30",
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+        <label className="ml-auto flex items-center gap-2 pb-1 text-sm">
           <input
             type="checkbox"
             checked={compare}
@@ -188,43 +272,28 @@ export function AnalyticsPageView() {
           Comparer à la période précédente
         </label>
         {scope === "staff_self" ? (
-          <p className="pb-2 text-xs text-ink/45">Vue limitée à vos performances.</p>
+          <p className="w-full text-xs text-ink/45">Vue limitée à vos performances.</p>
         ) : null}
       </div>
 
       <Tabs tabs={[...tabs]} value={tab} onChange={setTab} />
 
       {loading ? (
-        <p className="text-sm text-ink/50">Chargement…</p>
+        <p className="py-12 text-center text-sm text-ink/50">Chargement des analytics…</p>
       ) : tab === "Vue d'ensemble" && overview ? (
-        <>
-          <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi
-              label="CA net"
-              value={formatMad(overview.revenue.value)}
-              hint={`${formatPct(overview.revenue.changePercent)} ${formatCompareHint(overview.revenue.value, overview.revenue.previous) ?? ""}`.trim()}
-            />
-            <Kpi
-              label="Dépenses"
-              value={formatMad(overview.expenses.value)}
-              hint={formatPct(overview.expenses.changePercent)}
-            />
-            <Kpi
-              label="Marge"
-              value={formatMad(overview.margin.value)}
-              hint={formatPct(overview.margin.changePercent)}
-            />
-            <Kpi
-              label="Panier moyen"
-              value={formatMad(overview.averageTicket.value)}
-              hint={formatPct(overview.averageTicket.changePercent)}
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Kpi label="RDV" value={String(overview.appointments.value)} />
-            <Kpi label="Clientes actives (90j)" value={String(overview.customers.value)} />
-          </div>
-        </>
+        <AnalyticsOverviewDashboard
+          overview={overview}
+          revenue={revenue}
+          appointments={appointments}
+          customers={customers}
+          services={services}
+          staff={staff}
+          inventory={inventory}
+          marketing={marketing}
+          postVisit={postVisit}
+          aiMarketing={aiMarketing}
+          periodLabel={periodLabel}
+        />
       ) : null}
 
       {!loading && tab === "Revenus" && revenue ? (
@@ -244,7 +313,7 @@ export function AnalyticsPageView() {
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v) => formatMad(Number(v ?? 0))} />
-                  <Bar dataKey="revenue" fill="var(--color-primary, #7c3aed)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" fill="#E31C5F" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -331,6 +400,19 @@ export function AnalyticsPageView() {
               </p>
             </div>
           </div>
+          {(appointments.byHour?.length ?? 0) > 0 ? (
+            <div className="surface mt-6 h-56 p-4">
+              <p className="mb-2 text-sm font-medium">Fréquentation par heure</p>
+              <ResponsiveContainer width="100%" height="85%">
+                <BarChart data={appointments.byHour}>
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} width={28} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#E31C5F" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : null}
           <h3 className="mb-2 mt-6 font-medium">Occupation par jour</h3>
           <ul className="surface divide-y divide-line text-sm">
             {appointments.occupationByWeekday.map((d) => (
@@ -397,9 +479,7 @@ export function AnalyticsPageView() {
             <Kpi label="CA produits POS" value={formatMad(inventory.posRevenue ?? 0)} />
             <Kpi
               label="Marge POS"
-              value={
-                inventory.posMargin != null ? formatMad(inventory.posMargin) : "—"
-              }
+              value={inventory.posMargin != null ? formatMad(inventory.posMargin) : "—"}
             />
             <Kpi label="Stock vendu (qty)" value={String(inventory.posStockConsumed ?? 0)} />
           </div>

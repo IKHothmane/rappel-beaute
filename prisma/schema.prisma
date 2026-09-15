@@ -2046,9 +2046,12 @@ model PlatformUser {
   email        String             @unique
   firstName    String
   lastName     String
+  phone        String?
   role         PlatformRole       @default(SUPER_ADMIN)
   status       PlatformUserStatus @default(ACTIVE)
   passwordHash String?
+  locale       String             @default("fr")
+  timezone     String             @default("Africa/Casablanca")
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -2056,6 +2059,14 @@ model PlatformUser {
   supportSessions   SupportSession[]
   supportTicketsAssigned SupportTicket[] @relation("SupportTicketAssignee")
   supportMessages        SupportMessage[] @relation("SupportMessagePlatformUser")
+}
+
+/// Configuration globale Super Admin (JSON unique)
+model PlatformConfig {
+  id        String   @id @default("default")
+  data      Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
 }
 
 model Plan {
@@ -2172,6 +2183,15 @@ enum SupportTicketCategory {
   FEATURE_REQUEST
   BUG
   OTHER
+  LOGIN
+  SUBSCRIPTION
+  PAYMENT
+  APPOINTMENTS
+  CUSTOMERS
+  STOCK
+  MARKETING
+  WHATSAPP
+  AI
 }
 
 enum SupportTicketPriority {
@@ -2189,6 +2209,7 @@ enum SupportMessageSenderType {
 /// Tickets support SaaS (≠ SupportSession = mode assistance audité)
 model SupportTicket {
   id                       String                @id @default(cuid())
+  ticketNumber             Int                   @unique @default(autoincrement())
   organizationId           String
   createdByUserId          String
   subject                  String
@@ -2199,6 +2220,10 @@ model SupportTicket {
   createdAt                DateTime              @default(now())
   updatedAt                DateTime              @updatedAt
   resolvedAt               DateTime?
+  firstResponseAt          DateTime?
+  satisfactionRating       Int?
+  satisfactionComment      String?
+  satisfactionAt           DateTime?
 
   organization           Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdByUser          User          @relation("SupportTicketCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
@@ -2209,8 +2234,10 @@ model SupportTicket {
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
   @@index([status])
+  @@index([priority])
   @@index([assignedToPlatformUserId])
   @@index([updatedAt])
+  @@index([category])
 }
 
 model SupportMessage {
@@ -2220,6 +2247,7 @@ model SupportMessage {
   senderUserId         String?
   senderPlatformUserId String?
   message              String
+  isInternal           Boolean                  @default(false)
   createdAt            DateTime                 @default(now())
 
   ticket             SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)

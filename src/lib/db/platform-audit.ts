@@ -41,14 +41,25 @@ export async function writePlatformAuditLog(opts: {
 export async function listPlatformAuditLogs(opts: {
   limit?: number;
   organizationId?: string;
+  entityType?: string;
+  entityId?: string;
 }) {
   const limit = Math.min(opts.limit ?? 50, 200);
   const params: unknown[] = [];
-  let where = "";
+  const clauses: string[] = [];
   if (opts.organizationId) {
     params.push(opts.organizationId);
-    where = `WHERE a."organizationId" = $1`;
+    clauses.push(`a."organizationId" = $${params.length}`);
   }
+  if (opts.entityType) {
+    params.push(opts.entityType);
+    clauses.push(`a."entityType" = $${params.length}`);
+  }
+  if (opts.entityId) {
+    params.push(opts.entityId);
+    clauses.push(`a."entityId" = $${params.length}`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   params.push(limit);
 
   const { rows } = await pool.query<{

@@ -20,42 +20,38 @@ export function LoginForm() {
     const password = String(form.get("password") ?? "");
 
     try {
-      // 1) Essai connexion institut (app)
-      const appRes = await fetch("/api/auth/login/", {
+      const res = await fetch("/api/auth/login/", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      if (appRes.ok) {
-        router.push("/?__host=app");
+      if (res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          user?: { scope?: string; accountType?: string };
+          mustChangePassword?: boolean;
+        } | null;
+        const isPlatform =
+          data?.user?.scope === "platform" || data?.user?.accountType === "PLATFORM";
+        if (isPlatform) {
+          router.push("/dashboard/?__host=admin");
+        } else if (data?.mustChangePassword) {
+          router.push("/changer-mot-de-passe/?__host=app");
+        } else {
+          router.push("/?__host=app");
+        }
         router.refresh();
         return;
       }
 
-      // 2) Si échec → essai Super Admin (platform)
-      // (admin@… n’existe que dans PlatformUser, l’API app renvoie volontairement 401)
-      const platformRes = await fetch("/api/auth/platform/login/", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (platformRes.ok) {
-        router.push("/dashboard/?__host=admin");
-        router.refresh();
-        return;
-      }
-
-      if (appRes.status === 429 || platformRes.status === 429) {
+      if (res.status === 429) {
         setError("Trop de tentatives. Réessayez plus tard.");
         return;
       }
 
-      if (appRes.status === 503 || platformRes.status === 503) {
-        const data = (await platformRes.json().catch(() => null)) as { error?: string } | null;
+      if (res.status === 503) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
         setError(
           data?.error ??
             "Base de données indisponible. Démarrez PostgreSQL (port 5432) puis réessayez.",

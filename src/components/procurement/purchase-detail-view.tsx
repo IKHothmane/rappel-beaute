@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "@/components/auth/session-provider";
+import { canReceiveStatus, formatPurchaseDate, purchaseStatusChip } from "@/components/procurement/purchase-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { canWriteStock } from "@/lib/rbac";
+import { cn } from "@/lib/utils";
 import { formatQty } from "@/modules/inventory/service";
 import {
   formatMad,
@@ -18,10 +20,7 @@ import {
 } from "@/modules/procurement/service";
 import type { PurchaseDetail } from "@/types/procurement";
 
-type RecvDraft = Record<
-  string,
-  { quantity: string; lotNumber: string; expiresAt: string }
->;
+type RecvDraft = Record<string, { quantity: string; lotNumber: string; expiresAt: string }>;
 
 export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
   const { toast } = useToast();
@@ -59,11 +58,11 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
   }, [refresh]);
 
   if (loading) {
-    return <div className="surface p-8 text-center text-sm text-ink/50">Chargement…</div>;
+    return <div className="rounded-xl bg-white p-8 text-center text-sm text-ink/50 shadow-sm">Chargement…</div>;
   }
   if (!purchase) {
     return (
-      <div className="surface p-8 text-center">
+      <div className="rounded-xl bg-white p-8 text-center shadow-sm">
         <Link href="/purchases/" className="text-sm font-semibold text-primary">
           ← Achats
         </Link>
@@ -71,12 +70,9 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
     );
   }
 
-  const canReceive =
-    canWrite &&
-    (purchase.status === "ORDERED" || purchase.status === "PARTIALLY_RECEIVED");
+  const canReceive = canWrite && canReceiveStatus(purchase.status);
   const canOrder = canWrite && purchase.status === "DRAFT";
-  const canCancel =
-    canWrite && (purchase.status === "DRAFT" || purchase.status === "ORDERED");
+  const canCancel = canWrite && (purchase.status === "DRAFT" || purchase.status === "ORDERED");
 
   async function handleOrder() {
     setSubmitting(true);
@@ -120,41 +116,43 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
     }
 
     setSubmitting(true);
-    const key = idempotencyRef.current;
     const result = await receivePurchase(purchaseId, {
-      idempotencyKey: key,
+      idempotencyKey: idempotencyRef.current,
       items,
     });
     setSubmitting(false);
-
     if (!result.ok) {
       toast(result.error, "error");
       return;
     }
-
-    // Nouvelle clé pour une éventuelle réception suivante
     idempotencyRef.current = newIdempotencyKey();
     toast(
-      result.created
-        ? "Réception enregistrée (mouvements PURCHASE créés)."
-        : "Réception déjà enregistrée (idempotence).",
+      result.created ? "Réception enregistrée (mouvements de stock créés)." : "Réception déjà enregistrée.",
       "success",
     );
     refresh();
   }
 
   return (
-    <div>
-      <Link href="/purchases/" className="mb-4 inline-block text-sm text-primary">
+    <div className="flex flex-col gap-5 pb-8">
+      <Link href="/purchases/" className="text-sm font-semibold text-primary">
         ← Achats
       </Link>
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="font-mono text-xs text-primary">{purchase.number}</p>
-          <h1 className="font-display text-2xl font-semibold">{purchase.supplierName}</h1>
-          <p className="text-sm text-ink/55">
-            {PURCHASE_STATUS_LABEL[purchase.status]} · {formatMad(purchase.total)}
+          <p className="font-mono text-xs font-bold text-primary">{purchase.number}</p>
+          <h1 className="font-display text-2xl font-semibold text-ink">{purchase.supplierName}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold", purchaseStatusChip(purchase.status))}>
+              {PURCHASE_STATUS_LABEL[purchase.status]}
+            </span>
+            <span className="text-sm text-ink/55">{formatMad(purchase.total)}</span>
+          </div>
+          <p className="mt-1 text-[12px] text-ink/45">
+            Émise {formatPurchaseDate(purchase.createdAt)}
+            {purchase.orderedAt ? ` · Commandée ${formatPurchaseDate(purchase.orderedAt)}` : ""}
+            {purchase.receivedAt ? ` · Reçue ${formatPurchaseDate(purchase.receivedAt)}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -171,60 +169,53 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
         </div>
       </div>
 
-      <div className="mb-6 surface overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-line font-mono text-[10px] uppercase text-ink/40">
-            <tr>
-              <th className="px-4 py-3">Produit</th>
-              <th className="px-4 py-3">Commandé</th>
-              <th className="px-4 py-3">Reçu</th>
-              <th className="px-4 py-3">Reste</th>
-              <th className="px-4 py-3">Prix</th>
-              <th className="px-4 py-3">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {purchase.items.map((item) => (
-              <tr key={item.id}>
-                <td className="px-4 py-3">
-                  <Link href={`/products/${item.productId}/`} className="text-primary">
-                    {item.productName}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 font-mono">
-                  {formatQty(item.quantityOrdered, item.unit)}
-                </td>
-                <td className="px-4 py-3 font-mono">
-                  {formatQty(item.quantityReceived, item.unit)}
-                </td>
-                <td className="px-4 py-3 font-mono">
-                  {formatQty(item.quantityRemaining, item.unit)}
-                </td>
-                <td className="px-4 py-3 font-mono">{formatMad(item.unitPrice)}</td>
-                <td className="px-4 py-3 font-mono">{formatMad(item.lineTotal)}</td>
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="bg-[#FFEFF8] text-[11px] font-bold uppercase tracking-wider text-ink/40">
+              <tr>
+                <th className="px-4 py-3">Produit</th>
+                <th className="px-4 py-3">Commandé</th>
+                <th className="px-4 py-3">Reçu</th>
+                <th className="px-4 py-3">Reste</th>
+                <th className="px-4 py-3">Prix</th>
+                <th className="px-4 py-3">Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {purchase.items.map((item) => (
+                <tr key={item.id} className="border-t border-[#F0DDE9]/60">
+                  <td className="px-4 py-3">
+                    <Link href={`/products/${item.productId}/`} className="font-semibold text-primary">
+                      {item.productName}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 font-mono">{formatQty(item.quantityOrdered, item.unit)}</td>
+                  <td className="px-4 py-3 font-mono">{formatQty(item.quantityReceived, item.unit)}</td>
+                  <td className="px-4 py-3 font-mono">{formatQty(item.quantityRemaining, item.unit)}</td>
+                  <td className="px-4 py-3 font-mono">{formatMad(item.unitPrice)}</td>
+                  <td className="px-4 py-3 font-mono font-semibold">{formatMad(item.lineTotal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {canReceive ? (
-        <div className="mb-6 space-y-4 surface p-5">
-          <h2 className="font-display text-lg font-semibold">Réception</h2>
+        <div className="space-y-4 rounded-xl bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-ink">Réception</h2>
           <p className="text-sm text-ink/55">
-            Crée des mouvements PURCHASE dans le ledger — jamais d&apos;écriture directe du stock.
-            Double-clic protégé par clé d&apos;idempotence.
+            Crée des mouvements d’entrée dans le stock. Le reliquat reste ouvert jusqu’au prochain pointage.
           </p>
           <ul className="space-y-4">
             {purchase.items
               .filter((i) => i.quantityRemaining > 0)
               .map((item) => (
-                <li key={item.id} className="grid gap-2 border-b border-line pb-4 sm:grid-cols-4">
+                <li key={item.id} className="grid gap-2 border-b border-[#F0DDE9] pb-4 sm:grid-cols-4">
                   <div className="sm:col-span-4">
                     <p className="font-medium">{item.productName}</p>
-                    <p className="text-xs text-ink/45">
-                      Reste {formatQty(item.quantityRemaining, item.unit)}
-                    </p>
+                    <p className="text-xs text-ink/45">Reste {formatQty(item.quantityRemaining, item.unit)}</p>
                   </div>
                   <label className="text-sm">
                     <span className="mb-1 block text-xs text-ink/50">Quantité</span>
@@ -252,7 +243,6 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
                           [item.id]: { ...d[item.id], lotNumber: e.target.value },
                         }))
                       }
-                      placeholder="HYD-2026-08"
                     />
                   </label>
                   <label className="text-sm sm:col-span-2">
@@ -278,11 +268,11 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
       ) : null}
 
       {purchase.receipts.length > 0 ? (
-        <div className="surface p-5">
-          <h2 className="mb-3 font-display text-lg font-semibold">Historique réceptions</h2>
+        <div className="rounded-xl bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold text-ink">Historique réceptions</h2>
           <ul className="space-y-3 text-sm">
             {purchase.receipts.map((r) => (
-              <li key={r.id} className="border-b border-line pb-3">
+              <li key={r.id} className="border-b border-[#F0DDE9] pb-3">
                 <p className="font-medium">
                   {new Date(r.receivedAt).toLocaleString("fr-FR")}
                   {r.userName ? ` · ${r.userName}` : ""}

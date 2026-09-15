@@ -6,6 +6,7 @@ import type {
   CashSessionSummary,
   CashTxnItem,
   CashTxnType,
+  ClosedSessionPreview,
   CloseCashInput,
   CreatePaymentsInput,
   ManualCashTxnInput,
@@ -40,6 +41,7 @@ function mapPaymentRow(r: Record<string, unknown>): PaymentItem {
       r.customerFirst || r.customerLast
         ? `${r.customerFirst ?? ""} ${r.customerLast ?? ""}`.trim()
         : null,
+    customerPhone: (r.customerPhone as string) ?? null,
     serviceName: (r.serviceName as string) ?? null,
     amount: parseFloat(String(r.amount)) || 0,
     method: r.method as PaymentMethod,
@@ -175,9 +177,42 @@ async function buildSessionSummary(
   };
 }
 
+async function listRecentClosedSessions(
+  organizationId: string,
+  limit = 6,
+): Promise<ClosedSessionPreview[]> {
+  const { rows } = await pool.query(
+    `SELECT
+      s.id, s."openedAt", s."closedAt",
+      s."closingCounted"::text, s."expectedBalance"::text, s.difference::text,
+      cu."firstName" AS "closeFirst", cu."lastName" AS "closeLast"
+     FROM "CashRegisterSession" s
+     LEFT JOIN "User" cu ON cu.id = s."closedById"
+     WHERE s."organizationId" = $1 AND s.status = 'CLOSED'
+     ORDER BY COALESCE(s."closedAt", s."openedAt") DESC
+     LIMIT $2`,
+    [organizationId, limit],
+  );
+  return rows.map((r) => ({
+    id: String(r.id),
+    openedAt: new Date(r.openedAt as Date).toISOString(),
+    closedAt: r.closedAt ? new Date(r.closedAt as Date).toISOString() : null,
+    closedByName:
+      r.closeFirst || r.closeLast
+        ? `${r.closeFirst ?? ""} ${r.closeLast ?? ""}`.trim()
+        : null,
+    closingCounted:
+      r.closingCounted != null ? parseFloat(String(r.closingCounted)) : null,
+    expectedBalance:
+      r.expectedBalance != null ? parseFloat(String(r.expectedBalance)) : null,
+    difference: r.difference != null ? parseFloat(String(r.difference)) : null,
+  }));
+}
+
 export async function getCashRegisterState(
   organizationId: string,
 ): Promise<CashRegisterState> {
+  const recentClosed = await listRecentClosedSessions(organizationId);
   const open = await getOpenSessionRow(organizationId);
   if (!open) {
     // Dernière session fermée (aperçu)
@@ -195,10 +230,10 @@ export async function getCashRegisterState(
        ORDER BY s."openedAt" DESC LIMIT 1`,
       [organizationId],
     );
-    if (!rows[0]) return { session: null, transactions: [] };
+    if (!rows[0]) return { session: null, transactions: [], recentClosed };
     const session = await buildSessionSummary(organizationId, rows[0]);
     const txns = await listCashTransactions(organizationId, { sessionId: session.id, limit: 50 });
-    return { session, transactions: txns };
+    return { session, transactions: txns, recentClosed };
   }
 
   const session = await buildSessionSummary(organizationId, open);
@@ -206,7 +241,7 @@ export async function getCashRegisterState(
     sessionId: session.id,
     limit: 80,
   });
-  return { session, transactions };
+  return { session, transactions, recentClosed };
 }
 
 export async function listCashTransactions(
@@ -482,6 +517,7 @@ export async function listPayments(
       p.kind::text, p.status::text, p."parentPaymentId", p."giftCardId", p.notes, p."userId",
       p."paidAt", p."createdAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
+      c.phone AS "customerPhone",
       s.name AS "serviceName",
       u."firstName" AS "userFirst", u."lastName" AS "userLast"
      FROM "Payment" p
@@ -507,6 +543,7 @@ export async function getPaymentById(
       p.kind::text, p.status::text, p."parentPaymentId", p."giftCardId", p.notes, p."userId",
       p."paidAt", p."createdAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
+      c.phone AS "customerPhone",
       s.name AS "serviceName",
       u."firstName" AS "userFirst", u."lastName" AS "userLast"
      FROM "Payment" p
@@ -878,6 +915,7 @@ export async function listBillableAppointments(
     `SELECT
       a.id, a.status::text, a.price::text, a."startAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
+      c.phone AS "customerPhone",
       s.name AS "serviceName",
       COALESCE((
         SELECT SUM(CASE WHEN p.kind = 'REFUND' THEN -p.amount ELSE p.amount END)

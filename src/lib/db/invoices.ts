@@ -99,8 +99,9 @@ function mapListRow(
   return {
     id: String(r.id),
     number: String(r.number),
-    customerId: String(r.customerId),
+    customerId: String(r.customerId ?? ""),
     customerName: String(r.customerNameSnapshot ?? r.customerName ?? ""),
+    customerPhone: (r.customerPhoneSnapshot as string) || (r.customerPhone as string) || null,
     appointmentId: (r.appointmentId as string) ?? null,
     status,
     subtotal: parseFloat(String(r.subtotal)) || 0,
@@ -111,6 +112,8 @@ function mapListRow(
     issuedAt: r.issuedAt ? new Date(r.issuedAt as Date).toISOString() : null,
     createdAt: new Date(r.createdAt as Date).toISOString(),
     paymentMethods: methods,
+    firstItemName: (r.firstItemName as string) || null,
+    staffName: (r.staffName as string) || null,
   };
 }
 
@@ -120,16 +123,22 @@ export async function getInvoiceKpis(organizationId: string): Promise<InvoiceKpi
     paidTotal: string;
     unpaidTotal: string;
     monthCount: string;
+    prevMonthBilled: string;
+    voidMonthTotal: string;
+    voidMonthCount: string;
+    paidCount: string;
+    partialCount: string;
+    unpaidCount: string;
   }>(
     `WITH inv AS (
-      SELECT i.id, i.total, i.status, i."appointmentId", i."issuedAt"
+      SELECT i.id, i.total, i.status, i."appointmentId",
+        COALESCE(i."issuedAt", i."createdAt") AS ts
       FROM "Invoice" i
-      WHERE i."organizationId" = $1 AND i.status <> 'VOID'
+      WHERE i."organizationId" = $1
     ),
     paid AS (
       SELECT
-        inv.id,
-        inv.total,
+        inv.id, inv.total, inv.status, inv.ts,
         COALESCE((
           SELECT ${paidExpr("p")}
           FROM "Payment" p
@@ -140,19 +149,85 @@ export async function getInvoiceKpis(organizationId: string): Promise<InvoiceKpi
       FROM inv
     )
     SELECT
-      COALESCE(SUM(total), 0)::text AS "billedTotal",
-      COALESCE(SUM(LEAST(paid, total)), 0)::text AS "paidTotal",
-      COALESCE(SUM(GREATEST(total - paid, 0)), 0)::text AS "unpaidTotal",
-      (SELECT COUNT(*)::text FROM inv WHERE "issuedAt" >= date_trunc('month', NOW())) AS "monthCount"
+      COALESCE(SUM(total) FILTER (
+        WHERE status <> 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+      ), 0)::text AS "billedTotal",
+      COALESCE(SUM(LEAST(paid, total)) FILTER (
+        WHERE status <> 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+      ), 0)::text AS "paidTotal",
+      COALESCE(SUM(GREATEST(total - paid, 0)) FILTER (
+        WHERE status <> 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+      ), 0)::text AS "unpaidTotal",
+      COUNT(*) FILTER (
+        WHERE status <> 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+      )::text AS "monthCount",
+      COALESCE(SUM(total) FILTER (
+        WHERE status <> 'VOID'
+          AND ts >= date_trunc('month', NOW()) - INTERVAL '1 month'
+          AND ts < date_trunc('month', NOW())
+      ), 0)::text AS "prevMonthBilled",
+      COALESCE(SUM(total) FILTER (
+        WHERE status = 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+      ), 0)::text AS "voidMonthTotal",
+      COUNT(*) FILTER (
+        WHERE status = 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+      )::text AS "voidMonthCount",
+      COUNT(*) FILTER (
+        WHERE status <> 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+          AND paid + 0.01 >= total
+      )::text AS "paidCount",
+      COUNT(*) FILTER (
+        WHERE status <> 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+          AND paid > 0.001 AND paid + 0.01 < total
+      )::text AS "partialCount",
+      COUNT(*) FILTER (
+        WHERE status <> 'VOID'
+          AND ts >= date_trunc('month', NOW())
+          AND ts < date_trunc('month', NOW()) + INTERVAL '1 month'
+          AND paid <= 0.001
+      )::text AS "unpaidCount"
      FROM paid`,
     [organizationId],
   );
   const r = rows[0];
+  const billedTotal = Math.round((parseFloat(r?.billedTotal ?? "0") || 0) * 100) / 100;
+  const paidTotal = Math.round((parseFloat(r?.paidTotal ?? "0") || 0) * 100) / 100;
+  const prevMonthBilled = Math.round((parseFloat(r?.prevMonthBilled ?? "0") || 0) * 100) / 100;
+  const monthCount = parseInt(r?.monthCount ?? "0", 10) || 0;
+  const evolutionPct =
+    prevMonthBilled > 0
+      ? Math.round(((billedTotal - prevMonthBilled) / prevMonthBilled) * 1000) / 10
+      : null;
   return {
-    billedTotal: Math.round(parseFloat(r?.billedTotal ?? "0") * 100) / 100,
-    paidTotal: Math.round(parseFloat(r?.paidTotal ?? "0") * 100) / 100,
-    unpaidTotal: Math.round(parseFloat(r?.unpaidTotal ?? "0") * 100) / 100,
-    monthCount: parseInt(r?.monthCount ?? "0", 10) || 0,
+    billedTotal,
+    paidTotal,
+    unpaidTotal: Math.round((parseFloat(r?.unpaidTotal ?? "0") || 0) * 100) / 100,
+    monthCount,
+    prevMonthBilled,
+    evolutionPct,
+    voidMonthTotal: Math.round((parseFloat(r?.voidMonthTotal ?? "0") || 0) * 100) / 100,
+    voidMonthCount: parseInt(r?.voidMonthCount ?? "0", 10) || 0,
+    paidCount: parseInt(r?.paidCount ?? "0", 10) || 0,
+    partialCount: parseInt(r?.partialCount ?? "0", 10) || 0,
+    unpaidCount: parseInt(r?.unpaidCount ?? "0", 10) || 0,
+    avgBasket: monthCount > 0 ? Math.round((billedTotal / monthCount) * 100) / 100 : null,
+    recoveryPct: billedTotal > 0 ? Math.round((paidTotal / billedTotal) * 1000) / 10 : null,
   };
 }
 
@@ -185,18 +260,18 @@ export async function listInvoices(
   }
   if (opts.search) {
     conditions.push(
-      `(i.number ILIKE $${pi} OR i."customerNameSnapshot" ILIKE $${pi})`,
+      `(i.number ILIKE $${pi} OR i."customerNameSnapshot" ILIKE $${pi} OR COALESCE(i."customerPhoneSnapshot", '') ILIKE $${pi})`,
     );
     params.push(`%${opts.search}%`);
     pi++;
   }
   if (opts.from) {
-    conditions.push(`i."issuedAt" >= $${pi}::timestamptz`);
+    conditions.push(`COALESCE(i."issuedAt", i."createdAt") >= $${pi}::timestamptz`);
     params.push(opts.from);
     pi++;
   }
   if (opts.to) {
-    conditions.push(`i."issuedAt" < ($${pi}::date + INTERVAL '1 day')`);
+    conditions.push(`COALESCE(i."issuedAt", i."createdAt") < ($${pi}::date + INTERVAL '1 day')`);
     params.push(opts.to);
     pi++;
   }
@@ -220,10 +295,15 @@ export async function listInvoices(
     ),
     pool.query(
       `SELECT
-        i.id, i.number, i."customerId", i."customerNameSnapshot",
+        i.id, i.number, i."customerId", i."customerNameSnapshot", i."customerPhoneSnapshot",
         i."appointmentId", i.status::text, i.subtotal::text, i."discountTotal"::text,
-        i.total::text, i."issuedAt", i."createdAt"
+        i.total::text, i."issuedAt", i."createdAt",
+        (SELECT ii."nameSnapshot" FROM "InvoiceItem" ii
+          WHERE ii."invoiceId" = i.id ORDER BY ii."sortOrder", ii.id LIMIT 1) AS "firstItemName",
+        NULLIF(TRIM(CONCAT(COALESCE(st."firstName", ''), ' ', COALESCE(st."lastName", ''))), '') AS "staffName"
        FROM "Invoice" i
+       LEFT JOIN "Appointment" a ON a.id = i."appointmentId"
+       LEFT JOIN "Staff" st ON st.id = a."staffId"
        WHERE ${where}
        ORDER BY COALESCE(i."issuedAt", i."createdAt") DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,

@@ -11,6 +11,7 @@ export type CustomerListItem = {
   status: CustomerStatus;
   segment: CustomerSegment;
   visits: number;
+  noShowCount: number;
   revenue: number;
   averageTicket: number;
   lastVisitAt: string | null;
@@ -22,6 +23,8 @@ export type CustomerKpis = {
   newCount: number;
   vipCount: number;
   inactiveCount: number;
+  activeCount: number;
+  atRiskCount: number;
 };
 
 export type CustomerDetail = CustomerListItem & {
@@ -43,6 +46,7 @@ export type CustomerAppointmentHistory = {
   serviceName: string;
   price: number;
   status: string;
+  staffFirstName: string | null;
 };
 
 export type CreateCustomerInput = {

@@ -1,64 +1,120 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AppPageHeader } from "@/components/app/AppUi";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useSearchParams } from "next/navigation";
+import {
+  Barcode,
+  CreditCard,
+  Landmark,
+  Search,
+  ShoppingBag,
+  Trash2,
+  Wallet,
+  X,
+} from "lucide-react";
+import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import {
+  categoryCounts,
+  filterPosCatalog,
+  findBySku,
+  formatPosTime,
+  posDayKpis,
+  productStockState,
+} from "@/components/pos/pos-helpers";
+import { PosMobile } from "@/components/pos/pos-mobile";
+import { Drawer } from "@/components/ui/drawer";
 import { useToast } from "@/components/ui/toast";
+import { canAccessNav, canWriteCashRegister } from "@/lib/rbac";
+import { cn } from "@/lib/utils";
+import { getCustomer } from "@/modules/customers/service";
+import { formatMad, getCashRegister, PAYMENT_METHOD_LABEL } from "@/modules/finance/service";
+import { getCustomerLoyalty, LOYALTY_LEVEL_LABEL } from "@/modules/loyalty/service";
 import {
   createPosSaleApi,
   listPosProductsApi,
+  listPosSalesApi,
   newPosIdempotencyKey,
   searchPosCustomersApi,
 } from "@/modules/pos/service";
-import type { PosProductItem } from "@/types/pos";
-import { PRODUCT_CATEGORY_LABEL, type ProductCategory } from "@/types/inventory";
-import { PAYMENT_METHOD_LABEL, type PaymentMethod } from "@/types/finance";
+import type { PaymentMethod } from "@/types/finance";
+import { PRODUCT_UNIT_LABEL, type ProductUnit } from "@/types/inventory";
+import type { PosProductItem, PosSaleDetail } from "@/types/pos";
 
 type CartLine = { product: PosProductItem; quantity: number };
+type Customer = { id: string; name: string; phone: string };
 
-function mad(n: number) {
-  return `${n.toLocaleString("fr-MA", { maximumFractionDigits: 2 })} MAD`;
-}
+const POS_METHODS: PaymentMethod[] = ["CASH", "CARD", "TRANSFER", "CHECK", "GIFT_CARD"];
 
 export function PosPageView() {
   const { toast } = useToast();
+  const user = useCurrentUser();
+  const searchParams = useSearchParams();
+  const canWrite = canWriteCashRegister(user.role);
+  const showCash = canAccessNav(user.role, "cash-register");
+  const showLoyalty = canAccessNav(user.role, "loyalty");
+
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<PosProductItem[]>([]);
+  const [sales, setSales] = useState<PosSaleDetail[]>([]);
+  const [cashOpen, setCashOpen] = useState(false);
+  const [cashHint, setCashHint] = useState("Caisse fermée");
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<string>("");
+  const [category, setCategory] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [discount, setDiscount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("CASH");
+  const [cashGiven, setCashGiven] = useState("");
   const [customerQ, setCustomerQ] = useState("");
-  const [customerHits, setCustomerHits] = useState<
-    { id: string; name: string; phone: string }[]
-  >([]);
-  const [customer, setCustomer] = useState<{
-    id: string;
-    name: string;
-    phone: string;
-  } | null>(null);
+  const [customerHits, setCustomerHits] = useState<Customer[]>([]);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [loyaltyLine, setLoyaltyLine] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const refreshProducts = useCallback(async () => {
+  const refresh = useCallback(async () => {
     try {
-      const data = await listPosProductsApi({
-        search: search || undefined,
-        category: category || undefined,
-      });
-      setProducts(data);
+      const [catalog, daySales, cash] = await Promise.all([
+        listPosProductsApi(),
+        listPosSalesApi().catch(() => [] as PosSaleDetail[]),
+        showCash ? getCashRegister().catch(() => null) : Promise.resolve(null),
+      ]);
+      setProducts(catalog);
+      setSales(daySales);
+      const open = cash?.session?.status === "OPEN";
+      setCashOpen(Boolean(open));
+      if (open && cash?.session) {
+        setCashHint(
+          `Ouverte ${formatPosTime(cash.session.openedAt)} · fond ${formatMad(cash.session.openingFloat)}`,
+        );
+      } else {
+        setCashHint("Caisse fermée");
+      }
     } catch {
-      toast("Impossible de charger les produits.", "error");
+      toast("Impossible de charger le POS.", "error");
     }
-  }, [search, category, toast]);
+  }, [showCash, toast]);
 
   useEffect(() => {
     setLoading(true);
-    refreshProducts().finally(() => setLoading(false));
-  }, [refreshProducts]);
+    refresh().finally(() => setLoading(false));
+  }, [refresh]);
+
+  useEffect(() => {
+    const id = searchParams.get("customerId");
+    if (!id) return;
+    getCustomer(id)
+      .then(({ customer }) => {
+        setCustomer({
+          id: customer.id,
+          name: `${customer.firstName} ${customer.lastName}`.trim(),
+          phone: customer.phone,
+        });
+      })
+      .catch(() => undefined);
+  }, [searchParams]);
 
   useEffect(() => {
     if (customerQ.trim().length < 2) {
@@ -73,21 +129,41 @@ export function PosPageView() {
     return () => clearTimeout(t);
   }, [customerQ]);
 
-  const categories = useMemo(() => {
-    const set = new Set(products.map((p) => p.category));
-    return Array.from(set);
-  }, [products]);
+  useEffect(() => {
+    if (!customer || !showLoyalty) {
+      setLoyaltyLine(null);
+      return;
+    }
+    getCustomerLoyalty(customer.id)
+      .then((view) => {
+        const pts = view.account?.balance ?? 0;
+        const level = view.account ? LOYALTY_LEVEL_LABEL[view.account.level] : null;
+        setLoyaltyLine(
+          pts > 0
+            ? `Fidélité ${pts} pts${level ? ` · ${level}` : ""}`
+            : level
+              ? `Fidélité ${level}`
+              : null,
+        );
+      })
+      .catch(() => setLoyaltyLine(null));
+  }, [customer, showLoyalty]);
 
-  /** Favoris = produits en stock, sans filtre recherche (accès rapide caisse) */
-  const favorites = useMemo(() => {
-    if (search.trim() || category) return [];
-    return products.filter((p) => p.stock > 0).slice(0, 6);
-  }, [products, search, category]);
+  const visible = useMemo(
+    () => filterPosCatalog(products, search, category),
+    [products, search, category],
+  );
+  const counts = categoryCounts(products);
+  const retail = visible.filter((p) => p.category === "VENTE");
+  const other = visible.filter((p) => p.category !== "VENTE");
+  const kpis = useMemo(() => posDayKpis(sales), [sales]);
 
   const subtotal = cart.reduce((s, l) => s + l.product.salePrice * l.quantity, 0);
   const discountNum = Math.min(subtotal, Math.max(0, Number(discount) || 0));
   const total = Math.round((subtotal - discountNum) * 100) / 100;
   const cartCount = cart.reduce((s, l) => s + l.quantity, 0);
+  const given = Number(cashGiven) || 0;
+  const change = method === "CASH" && given > 0 ? Math.max(0, Math.round((given - total) * 100) / 100) : 0;
 
   function addToCart(p: PosProductItem) {
     setCart((prev) => {
@@ -98,9 +174,7 @@ export function PosPageView() {
         return prev;
       }
       if (hit) {
-        return prev.map((l) =>
-          l.product.id === p.id ? { ...l, quantity: nextQty } : l,
-        );
+        return prev.map((l) => (l.product.id === p.id ? { ...l, quantity: nextQty } : l));
       }
       return [...prev, { product: p, quantity: 1 }];
     });
@@ -121,17 +195,43 @@ export function PosPageView() {
     );
   }
 
-  async function handleCheckout() {
+  function onSearchSubmit() {
+    const hit = findBySku(products, search);
+    if (hit) {
+      addToCart(hit);
+      setSearch("");
+      toast(`${hit.name} ajouté.`, "success");
+    }
+  }
+
+  function pickCustomer(c: Customer) {
+    setCustomer(c);
+    setCustomerQ("");
+    setCustomerHits([]);
+  }
+
+  function openPay() {
     if (cart.length === 0) {
       toast("Panier vide.", "error");
       return;
     }
+    if (method === "CASH") setCashGiven(String(total));
+    setPayOpen(true);
+  }
+
+  async function handleCheckout() {
+    if (!canWrite) return;
+    if (cart.length === 0) {
+      toast("Panier vide.", "error");
+      return;
+    }
+    if (method === "CASH" && !cashOpen) {
+      toast("Ouvrez la caisse pour encaisser en espèces.", "error");
+      return;
+    }
     setSubmitting(true);
     const result = await createPosSaleApi({
-      lines: cart.map((l) => ({
-        productId: l.product.id,
-        quantity: l.quantity,
-      })),
+      lines: cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
       paymentMethod: method,
       customerId: customer?.id ?? null,
       discountTotal: discountNum,
@@ -142,256 +242,541 @@ export function PosPageView() {
       toast(result.error, "error");
       return;
     }
-    toast(`Vente ${result.sale.invoiceNumber} encaissée — ${mad(result.sale.total)}`, "success");
+    toast(`Vente ${result.sale.invoiceNumber} — ${formatMad(result.sale.total)}`, "success");
     setCart([]);
     setDiscount("");
+    setCashGiven("");
     setCustomer(null);
     setCustomerQ("");
+    setPayOpen(false);
     setMobileCartOpen(false);
-    refreshProducts();
+    refresh();
   }
 
-  const cartPanel = (
-    <div className="flex h-full flex-col">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-primary">Panier</p>
-      <p className="mt-1 text-xs text-ink/50">
-        Cliente : {customer ? customer.name : "Aucune (passage)"}
-      </p>
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "F2") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (e.key === "F8") {
+        e.preventDefault();
+        openPay();
+      } else if (e.key === "Escape") {
+        setPayOpen(false);
+        setMobileCartOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart, method, cashOpen]);
 
-      <div className="mt-3 space-y-2">
-        <Input
-          placeholder="Rechercher une cliente…"
-          value={customerQ}
-          onChange={(e) => setCustomerQ(e.target.value)}
-        />
-        {customerHits.length > 0 ? (
-          <ul className="max-h-28 overflow-y-auto rounded-lg border border-line text-sm">
-            {customerHits.map((c) => (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  className="w-full px-3 py-2 text-left hover:bg-ink/[0.03]"
-                  onClick={() => {
-                    setCustomer(c);
-                    setCustomerQ("");
-                    setCustomerHits([]);
-                  }}
-                >
-                  {c.name} · {c.phone}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {customer ? (
-          <button
-            type="button"
-            className="text-xs text-ink/50 underline"
-            onClick={() => setCustomer(null)}
-          >
-            Vente anonyme
-          </button>
-        ) : null}
-      </div>
-
-      <ul className="mt-4 flex-1 space-y-2 overflow-y-auto text-sm">
-        {cart.length === 0 ? (
-          <li className="text-ink/45">Aucun produit</li>
-        ) : (
-          cart.map((l) => (
-            <li key={l.product.id} className="flex items-start justify-between gap-2 border-b border-line/60 pb-2">
+  const cartList = (
+    <ul className="max-h-60 space-y-1.5 overflow-y-auto">
+      {cart.length === 0 ? (
+        <li className="py-6 text-center text-[13px] text-ink/45">Aucun article</li>
+      ) : (
+        cart.map((l) => {
+          const state = productStockState(l.product);
+          return (
+            <li key={l.product.id} className="flex items-center justify-between gap-2 rounded-lg bg-[#FFEFF8] p-2">
               <div className="min-w-0">
-                <p className="font-medium">{l.product.name}</p>
-                <p className="text-xs text-ink/45">{mad(l.product.salePrice)}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="rounded border border-line px-2"
-                    onClick={() => setQty(l.product.id, l.quantity - 1)}
-                  >
-                    −
-                  </button>
-                  <span className="font-mono text-xs">{l.quantity}</span>
-                  <button
-                    type="button"
-                    className="rounded border border-line px-2"
-                    onClick={() => setQty(l.product.id, l.quantity + 1)}
-                  >
-                    +
-                  </button>
-                </div>
+                <p className="truncate text-[14px] font-semibold">{l.product.name}</p>
+                <p className="text-[11px] text-ink/50">
+                  {formatMad(l.product.salePrice)}
+                  {state === "low" ? " · stock bas" : ` · stock ${l.product.stock}`}
+                </p>
               </div>
-              <span className="shrink-0 font-mono font-semibold">
-                {mad(l.product.salePrice * l.quantity)}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <button type="button" className="h-7 w-7 rounded bg-white text-sm font-bold" onClick={() => setQty(l.product.id, l.quantity - 1)}>
+                  −
+                </button>
+                <span className="w-5 text-center text-[13px] font-bold">{l.quantity}</span>
+                <button type="button" className="h-7 w-7 rounded bg-white text-sm font-bold" onClick={() => setQty(l.product.id, l.quantity + 1)}>
+                  +
+                </button>
+                <span className="w-16 text-right text-[13px] font-bold">{formatMad(l.product.salePrice * l.quantity)}</span>
+                <button type="button" className="text-ink/35 hover:text-[#BA1A1A]" onClick={() => setQty(l.product.id, 0)} aria-label="Retirer">
+                  <X size={16} />
+                </button>
+              </div>
             </li>
-          ))
-        )}
-      </ul>
-
-      <div className="mt-4 space-y-2 border-t border-line pt-3 text-sm">
-        <div className="flex justify-between">
-          <span className="text-ink/55">Sous-total</span>
-          <span className="font-mono">{mad(subtotal)}</span>
-        </div>
-        <label className="flex items-center justify-between gap-2">
-          <span className="text-ink/55">Remise</span>
-          <Input
-            className="w-24 text-right"
-            type="number"
-            min={0}
-            value={discount}
-            onChange={(e) => setDiscount(e.target.value)}
-          />
-        </label>
-        <div className="flex justify-between text-base font-semibold">
-          <span>TOTAL</span>
-          <span className="font-mono">{mad(total)}</span>
-        </div>
-
-        <div className="flex flex-wrap gap-2 pt-2">
-          {(["CASH", "CARD", "TRANSFER", "CHECK"] as PaymentMethod[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMethod(m)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
-                method === m
-                  ? "border-primary bg-primary-light text-primary-dark"
-                  : "border-line bg-white text-ink/60"
-              }`}
-            >
-              {PAYMENT_METHOD_LABEL[m]}
-            </button>
-          ))}
-        </div>
-
-        <Button
-          type="button"
-          className="mt-2 w-full"
-          disabled={submitting || cart.length === 0}
-          onClick={handleCheckout}
-        >
-          {submitting ? "Encaissement…" : "Encaisser"}
-        </Button>
-        <Link href="/cash-register/" className="block text-center text-xs text-ink/45 underline">
-          Ouvrir / fermer la caisse
-        </Link>
-      </div>
-    </div>
+          );
+        })
+      )}
+    </ul>
   );
 
   return (
     <>
-      <AppPageHeader
-        title="POS Produits"
-        description="Vente produits · facture · paiement · stock (ledger)."
+      <PosMobile
+        orgName={user.orgName || "Votre institut"}
+        cashOpen={cashOpen}
+        cashHint={cashHint}
+        kpis={kpis}
+        search={search}
+        onSearch={setSearch}
+        onSearchSubmit={onSearchSubmit}
+        category={category}
+        onCategory={setCategory}
+        products={products}
+        catalog={products}
+        loading={loading}
+        customer={customer}
+        customerQ={customerQ}
+        onCustomerQ={setCustomerQ}
+        customerHits={customerHits}
+        onPickCustomer={pickCustomer}
+        onAnonymous={() => setCustomer(null)}
+        loyaltyLine={loyaltyLine}
+        cartCount={cartCount}
+        total={total}
+        onAdd={addToCart}
+        onOpenCart={() => {
+          if (cart.length === 0) {
+            toast("Panier vide.", "error");
+            return;
+          }
+          setMobileCartOpen(true);
+        }}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="min-w-0 space-y-4">
-          <Input
-            placeholder="Rechercher un produit…"
+      <div className="hidden space-y-4 lg:block">
+        <section className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="flex items-center gap-2 font-display text-[22px] font-semibold tracking-tight">
+                <Barcode size={22} className="text-primary" />
+                Point de vente
+              </h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F0DDE9] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider">
+                <span className={cn("h-2 w-2 rounded-full", cashOpen ? "animate-pulse bg-emerald-600" : "bg-ink/30")} />
+                {cashHint}
+              </span>
+              <span className="rounded-full bg-[#FFDEA4]/50 px-2 py-1 text-[11px] font-bold uppercase text-[#5D4200]">
+                {ROLE_LABEL[user.role]}
+              </span>
+            </div>
+            <p className="mt-1 text-[15px] text-ink/50">
+              {user.orgName || "Votre institut"} — revente produits, ticket et encaissement. Le stock baisse à la vente.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-3 text-[13px] text-ink/55">
+              <span>
+                CA jour <strong className="text-primary">{formatMad(kpis.revenue)}</strong>
+              </span>
+              <span>·</span>
+              <span>
+                <strong>{kpis.count}</strong> vente{kpis.count > 1 ? "s" : ""}
+              </span>
+              <span>·</span>
+              <span>
+                Panier moyen <strong>{kpis.count ? formatMad(kpis.average) : "—"}</strong>
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5 text-[11px] text-ink/50">
+            <span className="rounded bg-[#FCE9F4] px-2 py-1">
+              <kbd className="font-bold text-primary">F2</kbd> Recherche
+            </span>
+            <span className="rounded bg-[#FCE9F4] px-2 py-1">
+              <kbd className="font-bold text-primary">F8</kbd> Encaisser
+            </span>
+            <span className="rounded bg-[#FCE9F4] px-2 py-1">
+              <kbd className="font-bold text-ink/40">ESC</kbd> Fermer
+            </span>
+          </div>
+        </section>
+
+        <form
+          className="flex items-center rounded-xl bg-white p-1.5 shadow-sm"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSearchSubmit();
+          }}
+        >
+          <Search className="ml-3 h-5 w-5 text-primary" />
+          <input
+            ref={searchRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            placeholder="SKU, nom ou marque… Entrée pour ajouter un code exact"
+            className="h-11 flex-1 bg-transparent px-3 text-[15px] outline-none"
           />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setCategory("")}
-              className={`rounded-lg border px-3 py-1.5 text-xs ${
-                !category ? "border-primary bg-primary-light" : "border-line"
-              }`}
-            >
-              Tous
-            </button>
-            {categories.map((c) => (
+        </form>
+
+        <div className="grid grid-cols-12 items-start gap-4">
+          <div className="col-span-7 min-w-0 space-y-4">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               <button
-                key={c}
                 type="button"
-                onClick={() => setCategory(c)}
-                className={`rounded-lg border px-3 py-1.5 text-xs ${
-                  category === c ? "border-primary bg-primary-light" : "border-line"
-                }`}
+                onClick={() => setCategory("")}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[14px] font-semibold",
+                  !category ? "bg-primary text-white" : "bg-white text-ink/60 shadow-sm",
+                )}
               >
-                {PRODUCT_CATEGORY_LABEL[c as ProductCategory] ?? c}
+                Tous
+                <span className="rounded bg-white/20 px-1.5 text-[11px]">{products.length}</span>
               </button>
-            ))}
-          </div>
-
-          {favorites.length > 0 ? (
-            <div>
-              <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-ink/40">
-                Favoris
-              </p>
-              <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-                {favorites.map((p) => (
-                  <button
-                    key={`fav-${p.id}`}
-                    type="button"
-                    onClick={() => addToCart(p)}
-                    className="shrink-0 rounded-lg border border-line bg-white px-3 py-2 text-left text-xs"
-                  >
-                    <span className="font-medium">{p.name}</span>
-                    <span className="mt-0.5 block font-mono text-ink/55">{mad(p.salePrice)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {loading ? (
-            <p className="text-sm text-ink/50">Chargement…</p>
-          ) : products.length === 0 ? (
-            <div className="surface p-6 text-sm text-ink/55">
-              Aucun produit vendable. Activez « vendable » et un prix de vente sur la fiche produit.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-              {products.map((p) => (
+              {counts.map((c) => (
                 <button
-                  key={p.id}
+                  key={c.category}
                   type="button"
-                  onClick={() => addToCart(p)}
-                  disabled={p.stock <= 0}
-                  className="surface p-4 text-left transition hover:border-primary disabled:opacity-40"
+                  onClick={() => setCategory(c.category)}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[14px] font-semibold",
+                    category === c.category ? "bg-primary text-white" : "bg-white text-ink/60 shadow-sm",
+                  )}
                 >
-                  <div className="mb-3 flex h-16 items-center justify-center rounded-lg bg-ink/[0.04] font-display text-2xl text-ink/25">
-                    {p.name.charAt(0)}
-                  </div>
-                  <p className="line-clamp-2 text-sm font-medium">{p.name}</p>
-                  <p className="mt-1 font-mono text-sm font-semibold">{mad(p.salePrice)}</p>
-                  <p className="text-[10px] text-ink/45">Stock {p.stock}</p>
+                  {c.label}
+                  <span className={cn("rounded px-1.5 text-[11px]", category === c.category ? "bg-white/20" : "bg-[#FCE9F4]")}>
+                    {c.count}
+                  </span>
                 </button>
               ))}
             </div>
-          )}
+
+            {loading ? (
+              <p className="rounded-xl bg-white p-8 text-center text-sm text-ink/50">Chargement…</p>
+            ) : visible.length === 0 ? (
+              <p className="rounded-xl bg-white p-8 text-center text-sm text-ink/50">
+                Aucun produit vendable. Activez « vendable » et un prix de vente.
+              </p>
+            ) : (
+              <>
+                {other.length > 0 ? (
+                  <ProductGrid title="Catalogue" items={other} onAdd={addToCart} />
+                ) : null}
+                {retail.length > 0 ? (
+                  <ProductGrid title="Revente comptoir" items={retail} onAdd={addToCart} />
+                ) : null}
+              </>
+            )}
+          </div>
+
+          <aside className="sticky top-4 col-span-5 space-y-2">
+            <div className="rounded-xl bg-white p-3 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Cliente</p>
+                <div className="flex gap-2">
+                  {customer ? (
+                    <button type="button" className="text-[12px] font-semibold text-ink/50" onClick={() => setCustomer(null)}>
+                      Anonyme
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              {customer ? (
+                <div className="rounded-lg bg-[#FFEFF8] p-2.5">
+                  <p className="text-[16px] font-bold">{customer.name}</p>
+                  {customer.phone ? <p className="text-[12px] text-ink/55">{customer.phone}</p> : null}
+                  {loyaltyLine ? <p className="mt-1 text-[12px] font-semibold text-[#7B5900]">{loyaltyLine}</p> : null}
+                </div>
+              ) : (
+                <>
+                  <input
+                    value={customerQ}
+                    onChange={(e) => setCustomerQ(e.target.value)}
+                    placeholder="Rechercher une cliente (2 caractères)…"
+                    className="h-10 w-full rounded-lg bg-[#FFEFF8] px-3 text-[13px] outline-none"
+                  />
+                  {customerHits.length > 0 ? (
+                    <ul className="mt-1 max-h-28 overflow-y-auto rounded-lg border border-[#F0DDE9] text-[13px]">
+                      {customerHits.map((c) => (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-left hover:bg-[#FFEFF8]"
+                            onClick={() => pickCustomer(c)}
+                          >
+                            {c.name}
+                            {c.phone ? ` · ${c.phone}` : ""}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-white p-3 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-[18px] font-semibold">
+                  Ticket en cours{" "}
+                  <span className="text-[12px] font-normal text-ink/45">({cartCount})</span>
+                </h2>
+                {cart.length > 0 ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#BA1A1A]"
+                    onClick={() => setCart([])}
+                  >
+                    <Trash2 size={14} />
+                    Vider
+                  </button>
+                ) : null}
+              </div>
+              {cartList}
+              <div className="mt-3 space-y-1 border-t border-[#F0DDE9] pt-3 text-[13px]">
+                <div className="flex justify-between text-ink/55">
+                  <span>Sous-total</span>
+                  <span className="font-semibold text-ink">{formatMad(subtotal)}</span>
+                </div>
+                <label className="flex items-center justify-between gap-2">
+                  <span className="text-ink/55">Remise</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    className="h-8 w-24 rounded-lg bg-[#FFEFF8] px-2 text-right text-[13px] outline-none"
+                  />
+                </label>
+                <div className="flex items-end justify-between pt-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Net à payer</span>
+                  <span className="text-[28px] font-extrabold tracking-tight">{formatMad(total)}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={!canWrite || cart.length === 0}
+                onClick={openPay}
+                className="mt-3 flex h-14 w-full items-center justify-between rounded-xl bg-primary px-4 text-white shadow-md disabled:opacity-40"
+              >
+                <span className="flex items-center gap-2 text-[16px] font-extrabold uppercase">
+                  <Wallet size={22} />
+                  Encaisser
+                </span>
+                <span className="text-[22px] font-extrabold">{formatMad(total)}</span>
+              </button>
+              {showCash ? (
+                <Link href="/cash-register/" className="mt-2 block text-center text-[12px] font-semibold text-primary hover:underline">
+                  Caisse & registre
+                </Link>
+              ) : null}
+            </div>
+          </aside>
         </div>
-
-        <aside className="surface hidden p-4 lg:block lg:sticky lg:top-4 lg:max-h-[calc(100vh-6rem)] lg:overflow-hidden">
-          {cartPanel}
-        </aside>
       </div>
 
-      {/* Mobile bottom bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white p-3 lg:hidden">
-        <Button type="button" className="w-full" onClick={() => setMobileCartOpen(true)}>
-          Panier ({cartCount}) · {mad(total)}
-        </Button>
-      </div>
+      <Drawer open={mobileCartOpen} onClose={() => setMobileCartOpen(false)} title="Ticket" side="bottom">
+        <div className="space-y-3 pb-4">
+          {cartList}
+          <div className="flex justify-between text-[14px] font-semibold">
+            <span>Net</span>
+            <span>{formatMad(total)}</span>
+          </div>
+          <label className="flex items-center justify-between gap-2 text-[13px]">
+            Remise
+            <input
+              type="number"
+              min={0}
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              className="h-9 w-24 rounded-lg bg-[#FFEFF8] px-2 text-right"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={!canWrite || cart.length === 0}
+            onClick={() => {
+              setMobileCartOpen(false);
+              openPay();
+            }}
+            className="flex h-12 w-full items-center justify-center rounded-xl bg-primary text-[14px] font-bold text-white"
+          >
+            Encaisser · {formatMad(total)}
+          </button>
+        </div>
+      </Drawer>
 
-      {mobileCartOpen ? (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-ink/40 lg:hidden">
-          <div className="max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-4">
-            <div className="mb-2 flex justify-end">
-              <button type="button" className="text-sm text-ink/50" onClick={() => setMobileCartOpen(false)}>
-                Fermer
+      {payOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between bg-[#FFEFF8] px-5 py-4">
+              <div>
+                <h3 className="text-[18px] font-bold">Règlement</h3>
+                <p className="text-[12px] text-ink/55">
+                  {customer ? customer.name : "Passage"}
+                  {cartCount ? ` · ${cartCount} article${cartCount > 1 ? "s" : ""}` : ""}
+                </p>
+              </div>
+              <button type="button" className="rounded-lg p-2 hover:bg-white" onClick={() => setPayOpen(false)} aria-label="Fermer">
+                <X size={18} />
               </button>
             </div>
-            {cartPanel}
+            <div className="grid gap-5 overflow-y-auto p-5 md:grid-cols-12">
+              <div className="space-y-4 md:col-span-7">
+                <div className="flex items-center justify-between rounded-xl bg-[#FCE9F4] p-4">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase text-ink/40">Total</p>
+                    <p className="text-[22px] font-black">{formatMad(total)}</p>
+                  </div>
+                  {discountNum > 0 ? (
+                    <p className="text-[13px] text-primary">Remise {formatMad(discountNum)}</p>
+                  ) : null}
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {POS_METHODS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMethod(m)}
+                      className={cn(
+                        "flex flex-col items-center gap-1 rounded-xl p-3 text-[12px] font-bold",
+                        method === m ? "bg-primary text-white" : "bg-[#FFEFF8] text-ink",
+                      )}
+                    >
+                      {m === "CASH" ? <Wallet size={20} /> : null}
+                      {m === "CARD" ? <CreditCard size={20} /> : null}
+                      {m === "TRANSFER" || m === "CHECK" ? <Landmark size={20} /> : null}
+                      {m === "GIFT_CARD" ? <ShoppingBag size={20} /> : null}
+                      {PAYMENT_METHOD_LABEL[m]}
+                    </button>
+                  ))}
+                </div>
+                {method === "CASH" && !cashOpen ? (
+                  <p className="rounded-lg bg-[#FFDAD6] p-3 text-[13px] text-[#93000A]">
+                    Ouvrez la caisse pour un paiement espèces.{" "}
+                    {showCash ? (
+                      <Link href="/cash-register/" className="font-semibold underline">
+                        Aller à la caisse
+                      </Link>
+                    ) : null}
+                  </p>
+                ) : null}
+                {method === "CASH" ? (
+                  <label className="block text-[13px]">
+                    <span className="mb-1 block font-semibold">Espèces reçues</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={cashGiven}
+                      onChange={(e) => setCashGiven(e.target.value)}
+                      className="h-11 w-full rounded-lg bg-[#FFEFF8] px-3 text-right text-[18px] font-bold outline-none"
+                    />
+                    <div className="mt-2 flex gap-2">
+                      {[100, 200].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          className="rounded-lg bg-white px-3 py-1.5 text-[13px] font-bold shadow-sm"
+                          onClick={() => setCashGiven(String(n))}
+                        >
+                          {formatMad(n)}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className="rounded-lg bg-[#FFDEA4] px-3 py-1.5 text-[13px] font-bold"
+                        onClick={() => setCashGiven(String(total))}
+                      >
+                        Compte exact
+                      </button>
+                    </div>
+                  </label>
+                ) : null}
+              </div>
+              <div className="flex flex-col justify-between rounded-xl bg-[#FFEFF8] p-3 md:col-span-5">
+                <p className="text-[11px] font-bold uppercase text-ink/40">Aperçu</p>
+                <ul className="mt-2 space-y-1 text-[13px]">
+                  {cart.map((l) => (
+                    <li key={l.product.id} className="flex justify-between gap-2">
+                      <span className="truncate">
+                        {l.quantity}× {l.product.name}
+                      </span>
+                      <span className="shrink-0 font-semibold">{formatMad(l.product.salePrice * l.quantity)}</span>
+                    </li>
+                  ))}
+                </ul>
+                {method === "CASH" ? (
+                  <div className="mt-3 flex justify-between rounded-lg bg-white p-2 text-[13px]">
+                    <span className="font-bold uppercase text-ink/40">Monnaie</span>
+                    <span className="font-black text-[#7B5900]">{formatMad(change)}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 bg-[#FFEFF8] px-5 py-3">
+              <button type="button" className="rounded-lg px-4 py-2.5 text-[14px] font-semibold text-ink/55" onClick={() => setPayOpen(false)}>
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={submitting || !canWrite || (method === "CASH" && !cashOpen)}
+                onClick={handleCheckout}
+                className="rounded-lg bg-primary px-5 py-2.5 text-[14px] font-bold text-white disabled:opacity-40"
+              >
+                {submitting ? "Encaissement…" : "Valider le ticket"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
     </>
+  );
+}
+
+function ProductGrid({
+  title,
+  items,
+  onAdd,
+}: {
+  title: string;
+  items: PosProductItem[];
+  onAdd: (p: PosProductItem) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <ShoppingBag size={18} className="text-primary" />
+        <h2 className="text-[18px] font-semibold">{title}</h2>
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {items.map((p) => {
+          const state = productStockState(p);
+          return (
+            <button
+              key={p.id}
+              type="button"
+              disabled={state === "out"}
+              onClick={() => onAdd(p)}
+              className={cn(
+                "flex h-36 flex-col justify-between rounded-xl bg-white p-3 text-left shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
+              )}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FCE9F4] text-[13px] font-bold text-primary">
+                  {p.name.charAt(0)}
+                </span>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                    state === "out" && "bg-[#FFDAD6] text-[#93000A]",
+                    state === "low" && "bg-amber-100 text-amber-800",
+                    state === "ok" && "bg-[#F0DDE9] text-ink/60",
+                  )}
+                >
+                  {state === "out" ? "Hors stock" : `${p.stock} restants`}
+                </span>
+              </div>
+              <div>
+                <p className="line-clamp-1 text-[14px] font-semibold">{p.name}</p>
+                <p className="text-[12px] text-ink/50">
+                  {p.brand || PRODUCT_UNIT_LABEL[p.unit as ProductUnit] || p.sku}
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[18px] font-bold text-primary">{formatMad(p.salePrice)}</span>
+                <span className="rounded-full bg-[#FFD9DE] px-2 py-0.5 text-[13px] font-bold text-[#900037]">+</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

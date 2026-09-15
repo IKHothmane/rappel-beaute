@@ -81,11 +81,12 @@ export async function listPosProducts(
     category: string;
     salePrice: string;
     stock: string;
+    minStock: string;
     unit: string;
     brand: string | null;
   }>(
     `SELECT p.id, p.name, p.sku, p.category::text, p."salePrice"::text,
-            p.stock::text, p.unit::text, p.brand
+            p.stock::text, p."minStock"::text, p.unit::text, p.brand
      FROM "Product" p
      WHERE ${conditions.join(" AND ")}
      ORDER BY p.name
@@ -100,6 +101,7 @@ export async function listPosProducts(
     category: r.category as PosProductItem["category"],
     salePrice: parseFloat(r.salePrice),
     stock: parseFloat(r.stock),
+    minStock: parseFloat(r.minStock) || 0,
     unit: r.unit,
     brand: r.brand,
   }));

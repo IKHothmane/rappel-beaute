@@ -36,6 +36,13 @@ export const PAYMENT_KIND_LABEL: Record<PaymentKind, string> = {
   REFUND: "Remboursement",
 };
 
+export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
+  PENDING: "En attente",
+  COMPLETED: "Payé",
+  REFUNDED: "Remboursé",
+  FAILED: "Échoué",
+};
+
 export const CASH_TXN_LABEL: Record<CashTxnType, string> = {
   OPENING: "Ouverture",
   SALE: "Encaissement",
@@ -54,6 +61,7 @@ export type PaymentItem = {
   appointmentId: string | null;
   customerId: string | null;
   customerName: string | null;
+  customerPhone: string | null;
   serviceName: string | null;
   amount: number;
   method: PaymentMethod;
@@ -145,9 +153,20 @@ export type CashSessionSummary = {
   };
 };
 
+export type ClosedSessionPreview = {
+  id: string;
+  openedAt: string;
+  closedAt: string | null;
+  closedByName: string | null;
+  expectedBalance: number | null;
+  closingCounted: number | null;
+  difference: number | null;
+};
+
 export type CashRegisterState = {
   session: CashSessionSummary | null;
   transactions: CashTxnItem[];
+  recentClosed: ClosedSessionPreview[];
 };
 
 export type OpenCashInput = {

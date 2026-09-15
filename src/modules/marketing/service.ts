@@ -6,6 +6,7 @@ import type {
   CampaignPreviewResult,
   CampaignRecipientItem,
   CampaignSegmentFilters,
+  CampaignStatus,
   CreateCampaignInput,
 } from "@/types/campaign";
 import { CAMPAIGN_CHANNEL_LABEL, CAMPAIGN_STATUS_LABEL } from "@/types/campaign";
@@ -87,6 +88,18 @@ export async function listCampaignRecipients(id: string): Promise<CampaignRecipi
   const res = await fetch(`/api/campaigns/${id}/recipients/`, fetchOpts);
   const data = await parseJson<{ data: CampaignRecipientItem[] }>(res);
   return data.data;
+}
+
+export async function updateCampaignApi(id: string, input: { status?: CampaignStatus; name?: string }) {
+  const res = await fetch(`/api/campaigns/${id}/`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const data = await res.json();
+  if (!res.ok) return { ok: false as const, error: data.error ?? "Erreur" };
+  return { ok: true as const, campaign: data as CampaignDetail };
 }
 
 export function formatMad(n: number): string {

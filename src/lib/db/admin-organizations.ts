@@ -742,6 +742,9 @@ export async function listAllOrganizationUsers(opts?: {
     organizationId: r.organizationId,
     organizationName: r.organizationName,
     createdAt: r.createdAt.toISOString(),
+    mustChangePassword: false,
+    accountKind: "ORG" as const,
+    lastLoginAt: null,
   }));
 }
 

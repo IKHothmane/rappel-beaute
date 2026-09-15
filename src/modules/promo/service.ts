@@ -1,6 +1,7 @@
 import type {
   CreateGiftCardInput,
   CreatePromotionInput,
+  GiftCardJournalItem,
   GiftCardKpis,
   GiftCardListItem,
   PromotionKpis,
@@ -9,6 +10,7 @@ import type {
 } from "@/types/promo";
 import {
   GIFT_CARD_STATUS_LABEL,
+  GIFT_CARD_TXN_LABEL,
   PROMOTION_STATUS_LABEL,
   PROMOTION_TYPE_LABEL,
 } from "@/types/promo";
@@ -30,6 +32,7 @@ async function parseJson<T>(res: Response): Promise<T> {
 export async function listPromotions(params?: {
   status?: string;
   search?: string;
+  limit?: number;
 }): Promise<{
   data: PromotionListItem[];
   kpis: PromotionKpis;
@@ -37,6 +40,7 @@ export async function listPromotions(params?: {
   const q = new URLSearchParams();
   if (params?.status) q.set("status", params.status);
   if (params?.search) q.set("search", params.search);
+  if (params?.limit) q.set("limit", String(params.limit));
   const res = await fetch(`/api/promotions/?${q}`, fetchOpts);
   return parseJson(res);
 }
@@ -68,10 +72,12 @@ export async function setPromotionStatus(id: string, status: PromotionStatus) {
 export async function listGiftCards(params?: {
   status?: string;
   search?: string;
-}): Promise<{ data: GiftCardListItem[]; kpis: GiftCardKpis }> {
+  limit?: number;
+}): Promise<{ data: GiftCardListItem[]; kpis: GiftCardKpis; journal: GiftCardJournalItem[] }> {
   const q = new URLSearchParams();
   if (params?.status) q.set("status", params.status);
   if (params?.search) q.set("search", params.search);
+  q.set("limit", String(params?.limit ?? 200));
   const res = await fetch(`/api/gift-cards/?${q}`, fetchOpts);
   return parseJson(res);
 }
@@ -88,8 +94,25 @@ export async function createGiftCard(input: CreateGiftCardInput) {
   return { ok: true as const, card: data as GiftCardListItem };
 }
 
+export async function cancelGiftCard(id: string) {
+  const res = await fetch("/api/gift-cards/", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "cancel", id }),
+  });
+  const data = await res.json();
+  if (!res.ok) return { ok: false as const, error: data.error ?? "Erreur" };
+  return { ok: true as const, card: data as GiftCardListItem };
+}
+
 export function formatMad(n: number): string {
   return `${n.toLocaleString("fr-MA", { maximumFractionDigits: 2 })} MAD`;
 }
 
-export { PROMOTION_TYPE_LABEL, PROMOTION_STATUS_LABEL, GIFT_CARD_STATUS_LABEL };
+export {
+  PROMOTION_TYPE_LABEL,
+  PROMOTION_STATUS_LABEL,
+  GIFT_CARD_STATUS_LABEL,
+  GIFT_CARD_TXN_LABEL,
+};

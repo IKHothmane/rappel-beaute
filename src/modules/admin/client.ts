@@ -6,6 +6,7 @@ import type {
   PlatformBillingSnapshot,
   PlatformDashboardStats,
   PlatformOrgUser,
+  PlatformUsersKpis,
   SubscriptionPlan,
   SupportSessionListItem,
 } from "@/types/platform";
@@ -27,7 +28,81 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function fetchAdminDashboard() {
-  return adminFetch<{ stats: PlatformDashboardStats; audit: unknown[] }>("/api/admin/dashboard/");
+  return adminFetch<{
+    stats: PlatformDashboardStats & {
+      mrrGrowthPercent: number;
+      suspendedOrgs: number;
+    };
+    alerts: {
+      id: string;
+      severity: "critical" | "high" | "medium" | "low";
+      label: string;
+      count: number;
+      href: string;
+    }[];
+    mrrSeries: { label: string; value: number }[];
+    orgsSeries: {
+      label: string;
+      newOrgs: number;
+      active: number;
+      suspended: number;
+    }[];
+    orgStatus: { active: number; suspended: number; archived: number };
+    subscriptions: {
+      active: number;
+      pending: number;
+      expired: number;
+      suspended: number;
+      expiringSoon: number;
+      mrr: number;
+      arr: number;
+    };
+    users: {
+      total: number;
+      active: number;
+      disabled: number;
+      thisMonth: number;
+      pending: number;
+    };
+    support: {
+      open: number;
+      inProgress: number;
+      waitingCustomer: number;
+      resolved: number;
+      urgentOpen: number;
+      highOpen: number;
+      avgFirstResponseMinutes: number | null;
+      avgSatisfaction: number | null;
+      byCategory: { category: string; count: number }[];
+    };
+    topOrgs: {
+      id: string;
+      name: string;
+      mrr: number;
+      appointments: number;
+      customers: number;
+      lastActivityAt: string | null;
+    }[];
+    health: {
+      api: string;
+      database: string;
+      auth: string;
+      email: string;
+      whatsapp: string;
+      storage: string;
+      checkedAt: string;
+    };
+    payments: { failed: number; pastDue: number };
+    audit: {
+      id: string;
+      platformUserName: string | null;
+      organizationName: string | null;
+      entityType: string;
+      entityId: string;
+      action: string;
+      createdAt: string;
+    }[];
+  }>("/api/admin/dashboard/");
 }
 
 export async function fetchAdminAnalytics() {
@@ -38,13 +113,74 @@ export async function fetchAdminBilling() {
   return adminFetch<PlatformBillingSnapshot>("/api/admin/billing/");
 }
 
-export async function fetchAdminUsers(params?: { search?: string; role?: string }) {
+export async function fetchAdminUsers(params?: {
+  search?: string;
+  role?: string;
+  status?: string;
+  organizationId?: string;
+}) {
   const sp = new URLSearchParams();
   if (params?.search) sp.set("search", params.search);
   if (params?.role) sp.set("role", params.role);
+  if (params?.status) sp.set("status", params.status);
+  if (params?.organizationId) sp.set("organizationId", params.organizationId);
   const q = sp.toString();
-  return adminFetch<{ items: PlatformOrgUser[] }>(
-    `/api/admin/users/${q ? `?${q}` : ""}`,
+  return adminFetch<{
+    items: PlatformOrgUser[];
+    kpis: PlatformUsersKpis;
+    organizations: { id: string; name: string }[];
+  }>(`/api/admin/users/${q ? `?${q}` : ""}`);
+}
+
+export async function fetchAdminUser(id: string) {
+  return adminFetch<{
+    user: PlatformOrgUser;
+    activity: {
+      id: string;
+      platformUserName: string | null;
+      organizationId: string | null;
+      organizationName: string | null;
+      action: string;
+      entityType: string;
+      entityId: string;
+      createdAt: string;
+    }[];
+  }>(`/api/admin/users/${id}/`);
+}
+
+export async function patchAdminUser(
+  id: string,
+  body: {
+    status?: "ACTIVE" | "DISABLED";
+    role?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string | null;
+    delete?: boolean;
+  },
+) {
+  return adminFetch<{ user: PlatformOrgUser }>(`/api/admin/users/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function resetAdminUserPassword(id: string) {
+  return adminFetch<{
+    temporaryPassword: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    loginUrl: string;
+    messageTemplate: string;
+  }>(`/api/admin/users/${id}/reset-password/`, { method: "POST" });
+}
+
+export async function invalidateAdminUserSessions(id: string) {
+  return adminFetch<{ ok: boolean }>(
+    `/api/admin/users/${id}/invalidate-sessions/`,
+    { method: "POST" },
   );
 }
 
@@ -176,6 +312,85 @@ export async function platformLogin(email: string, password: string) {
 
 export async function platformLogout() {
   await fetch("/api/auth/platform/login/", { method: "DELETE", credentials: "include" });
+}
+
+export type AdminSubscriptionRow = {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  organizationEmail: string | null;
+  planId: string;
+  planCode: SubscriptionPlan;
+  planName: string;
+  status: string;
+  priceSnapshot: number;
+  currencySnapshot: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  trialEndsAt: string | null;
+  startedAt: string;
+  daysUntilExpiry: number;
+  urgency: "ok" | "soon" | "expired";
+  paymentLabel: string;
+};
+
+export async function fetchAdminSubscriptions(params?: {
+  search?: string;
+  plan?: string;
+  status?: string;
+}) {
+  const sp = new URLSearchParams();
+  if (params?.search) sp.set("search", params.search);
+  if (params?.plan) sp.set("plan", params.plan);
+  if (params?.status) sp.set("status", params.status);
+  const q = sp.toString();
+  return adminFetch<{
+    items: AdminSubscriptionRow[];
+    kpis: {
+      total: number;
+      active: number;
+      expiringSoon: number;
+      expired: number;
+      mrr: number;
+    };
+    plans: { id: string; code: string; name: string; price: number }[];
+    organizations: { id: string; name: string }[];
+  }>(`/api/admin/subscriptions/${q ? `?${q}` : ""}`);
+}
+
+export async function fetchAdminSubscription(id: string) {
+  return adminFetch<{
+    item: AdminSubscriptionRow;
+    history: {
+      id: string;
+      platformUserName: string | null;
+      action: string;
+      before: unknown;
+      after: unknown;
+      createdAt: string;
+    }[];
+    plans: { id: string; code: string; name: string; price: number }[];
+  }>(`/api/admin/subscriptions/${id}/`);
+}
+
+export async function adminSubscriptionAction(
+  id: string,
+  body: Record<string, unknown>,
+) {
+  return adminFetch<{ ok: boolean; newEnd?: string; messageTemplate?: string }>(
+    `/api/admin/subscriptions/${id}/`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+export async function createAdminSubscriptionApi(input: {
+  organizationId: string;
+  planCode: SubscriptionPlan;
+}) {
+  return adminFetch<{ ok: boolean; id: string }>("/api/admin/subscriptions/", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function fetchAdminSession() {

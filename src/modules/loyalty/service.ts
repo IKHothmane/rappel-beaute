@@ -2,6 +2,9 @@ import type {
   CreatePackageInput,
   CreateRewardInput,
   CustomerLoyaltyView,
+  LoyaltyBirthdayItem,
+  LoyaltyJournalItem,
+  LoyaltyKpis,
   LoyaltyProgramConfig,
   LoyaltyRewardItem,
   PackageListItem,
@@ -27,12 +30,7 @@ async function parseJson<T>(res: Response): Promise<T> {
 export async function getLoyaltyDashboard() {
   const res = await fetch("/api/loyalty/", fetchOpts);
   return parseJson<{
-    kpis: {
-      membersCount: number;
-      pointsDistributed: number;
-      pointsRedeemed: number;
-      rewardsUsed: number;
-    };
+    kpis: LoyaltyKpis;
     ranking: {
       id: string;
       customerId: string;
@@ -40,9 +38,18 @@ export async function getLoyaltyDashboard() {
       balance: number;
       lifetimePoints: number;
       level: string;
+      updatedAt: string;
+      phone?: string | null;
+      birthDate?: string | null;
+      memberSince?: string;
+      lastVisitAt?: string | null;
+      lastServiceName?: string | null;
+      lastServicePrice?: number | null;
     }[];
     rewards: LoyaltyRewardItem[];
     program: LoyaltyProgramConfig;
+    journal: LoyaltyJournalItem[];
+    birthdays: LoyaltyBirthdayItem[];
   }>(res);
 }
 

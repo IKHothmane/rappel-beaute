@@ -27,20 +27,36 @@ export type SupportMessageItem = {
 };
 
 export const SUPPORT_CATEGORY_LABEL: Record<SupportTicketCategory, string> = {
-  TECHNICAL: "Technique",
-  BILLING: "Facturation",
   ACCOUNT: "Compte",
-  FEATURE_REQUEST: "Idée / fonctionnalité",
+  LOGIN: "Connexion",
+  SUBSCRIPTION: "Abonnement",
+  BILLING: "Facturation",
+  PAYMENT: "Paiement",
+  APPOINTMENTS: "Rendez-vous",
+  CUSTOMERS: "Clientes",
+  STOCK: "Stock",
+  MARKETING: "Marketing",
+  WHATSAPP: "WhatsApp",
+  AI: "IA",
   BUG: "Bug",
+  TECHNICAL: "Technique",
+  FEATURE_REQUEST: "Fonctionnalité",
   OTHER: "Autre",
 };
 
 export const SUPPORT_STATUS_LABEL: Record<SupportTicketStatus, string> = {
-  OPEN: "Nouveau",
+  OPEN: "Ouvert",
   IN_PROGRESS: "En cours",
   WAITING_CUSTOMER: "En attente",
   RESOLVED: "Résolu",
-  CLOSED: "Clôturé",
+  CLOSED: "Fermé",
+};
+
+export const SUPPORT_PRIORITY_LABEL: Record<string, string> = {
+  URGENT: "Urgent",
+  HIGH: "Haute",
+  NORMAL: "Normale",
+  LOW: "Basse",
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {

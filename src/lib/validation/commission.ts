@@ -70,6 +70,22 @@ export function validateCommissionAdjustment(
   };
 }
 
+export function validateMarkPaidBulk(
+  raw: Record<string, unknown>,
+): { ok: true; data: { ids: string[] } } | { ok: false; errors: string[] } {
+  const rawIds = Array.isArray(raw.ids) ? raw.ids : [];
+  const ids = [
+    ...new Set(
+      rawIds
+        .filter((id): id is string => typeof id === "string")
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ),
+  ].slice(0, 200);
+  if (!ids.length) return { ok: false, errors: ["ids"] };
+  return { ok: true, data: { ids } };
+}
+
 export function validateClosePeriod(
   raw: Record<string, unknown>,
 ): { ok: true; data: { year: number; month: number } } | { ok: false; errors: string[] } {

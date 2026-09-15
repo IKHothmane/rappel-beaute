@@ -9,7 +9,7 @@ export type AppointmentStatus =
 
 export type AppointmentSource = "MANUAL" | "ONLINE_BOOKING" | "PHONE" | "WHATSAPP";
 
-export type AgendaView = "day" | "week" | "month";
+export type AgendaView = "day" | "3days" | "week" | "month";
 
 export interface Appointment {
   id: string;

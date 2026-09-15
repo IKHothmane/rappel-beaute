@@ -9,11 +9,13 @@ import {
   closeCommissionPeriod,
   listCommissions,
   resolveStaffIdForUser,
+  setCommissionsPaidBulk,
 } from "@/lib/db/commissions";
-import { canCloseCommissionPeriod, getFeatureAccess } from "@/lib/rbac";
+import { canCloseCommissionPeriod, canWriteCommissions, getFeatureAccess } from "@/lib/rbac";
 import {
   parseCommissionListQuery,
   validateClosePeriod,
+  validateMarkPaidBulk,
 } from "@/lib/validation/commission";
 
 export async function GET(request: NextRequest) {
@@ -44,6 +46,10 @@ export async function GET(request: NextRequest) {
             baseTotal: 0,
             count: 0,
             avgRatePct: null,
+            paidTotal: 0,
+            unpaidTotal: 0,
+            paidCount: 0,
+            unpaidCount: 0,
             byStaff: [],
           },
           period: {
@@ -87,11 +93,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/** Clôture de période : POST { action: "closePeriod", year, month } */
+/** POST { action: "closePeriod" | "markPaidBulk", ... } */
 export async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "commissions");
   if (!auth.ok) return auth.response;
-  if (!canCloseCommissionPeriod(auth.session.role)) {
+  if (!canWriteCommissions(auth.session.role)) {
     return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
   }
 
@@ -99,8 +105,32 @@ export async function POST(request: NextRequest) {
     const raw = stripOrganizationId(
       (await request.json()) as Record<string, unknown>,
     );
+    const actor = {
+      id: auth.session.id,
+      name: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
+    };
+
+    if (raw.action === "markPaidBulk") {
+      const validated = validateMarkPaidBulk(raw);
+      if (!validated.ok) {
+        return NextResponse.json(
+          { error: "Données invalides.", details: validated.errors },
+          { status: 400 },
+        );
+      }
+      const result = await setCommissionsPaidBulk(
+        auth.session.organizationId,
+        validated.data.ids,
+        actor,
+      );
+      return NextResponse.json(result);
+    }
+
     if (raw.action !== "closePeriod") {
       return NextResponse.json({ error: "Action inconnue." }, { status: 400 });
+    }
+    if (!canCloseCommissionPeriod(auth.session.role)) {
+      return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
     }
     const validated = validateClosePeriod(raw);
     if (!validated.ok) {
@@ -113,16 +143,13 @@ export async function POST(request: NextRequest) {
       auth.session.organizationId,
       validated.data.year,
       validated.data.month,
-      {
-        id: auth.session.id,
-        name: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
-      },
+      actor,
     );
     return NextResponse.json(period);
   } catch (error) {
     console.error("[POST /api/commissions]", error);
     return NextResponse.json(
-      { error: "Impossible de clôturer la période." },
+      { error: "Impossible d’exécuter l’action." },
       { status: 500 },
     );
   }

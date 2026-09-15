@@ -20,6 +20,7 @@ export function SupplierForm({ initial, submitting, onSubmit, onCancel }: Props)
   const [email, setEmail] = useState(initial?.email ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [active, setActive] = useState(initial?.active ?? true);
 
   return (
     <form
@@ -33,25 +34,45 @@ export function SupplierForm({ initial, submitting, onSubmit, onCancel }: Props)
           email: email.trim() || undefined,
           address: address.trim() || undefined,
           notes: notes.trim() || undefined,
+          active,
         });
       }}
     >
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Nom *</span>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required />
-      </label>
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Contact</span>
-        <Input value={contactName} onChange={(e) => setContactName(e.target.value)} />
-      </label>
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Téléphone</span>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <label className="block text-sm sm:col-span-2">
+          <span className="mb-1.5 block font-medium">Raison sociale *</span>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex. Laboratoires Atlas"
+            required
+          />
         </label>
         <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Email</span>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <span className="mb-1.5 block font-medium">Contact commercial</span>
+          <Input
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+            placeholder="Nom du responsable"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1.5 block font-medium">Téléphone / WhatsApp</span>
+          <Input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="06 …"
+            type="tel"
+          />
+        </label>
+        <label className="block text-sm sm:col-span-2">
+          <span className="mb-1.5 block font-medium">Email commandes</span>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="achats@fournisseur.ma"
+          />
         </label>
       </div>
       <label className="block text-sm">
@@ -59,15 +80,24 @@ export function SupplierForm({ initial, submitting, onSubmit, onCancel }: Props)
         <Input value={address} onChange={(e) => setAddress(e.target.value)} />
       </label>
       <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Notes</span>
+        <span className="mb-1.5 block font-medium">Notes (conditions, délais…)</span>
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={(e) => setActive(e.target.checked)}
+          className="h-4 w-4 rounded"
+        />
+        Activer immédiatement ce partenaire
       </label>
       <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>
           Annuler
         </Button>
         <Button type="submit" variant="primary" className="w-full sm:flex-1" disabled={submitting}>
-          {submitting ? "Enregistrement…" : initial?.id ? "Enregistrer" : "Créer"}
+          {submitting ? "Enregistrement…" : initial?.id ? "Enregistrer" : "Enregistrer le fournisseur"}
         </Button>
       </div>
     </form>

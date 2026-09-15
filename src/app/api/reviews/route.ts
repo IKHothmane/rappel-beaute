@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
   try {
     const sp = new URL(request.url).searchParams;
-    const status = (sp.get("status")?.trim() || undefined) as ReviewRequestStatus | "ALL" | undefined;
+    const status = (sp.get("status")?.trim() || "ALL") as ReviewRequestStatus | "ALL";
     const result = await listReviewRequests(auth.session.organizationId, {
       status: status ?? undefined,
     });

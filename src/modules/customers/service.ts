@@ -117,7 +117,7 @@ export function formatSegmentLabel(segment: CustomerSegment): string {
     VIP: "VIP",
     NEW: "Nouvelles",
     INACTIVE: "Inactives",
-    AT_RISK: "À risque",
+    AT_RISK: "À relancer",
   };
   return map[segment];
 }

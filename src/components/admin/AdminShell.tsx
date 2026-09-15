@@ -39,11 +39,7 @@ const NAV: NavGroup[] = [
   },
   {
     title: "Assistance",
-    items: [
-      { href: "/support/tickets/", label: "Tickets support" },
-      { href: "/support/", label: "Sessions" },
-      { href: "/support/mode/", label: "Mode assistance" },
-    ],
+    items: [{ href: "/support/tickets/", label: "Support" }],
   },
   {
     items: [
@@ -52,6 +48,8 @@ const NAV: NavGroup[] = [
     ],
   },
 ];
+
+const ACCOUNT_FOOTER_H = 132;
 
 function normalizePath(pathname: string) {
   const stripped = pathname.replace(/^\/domains\/admin/, "");
@@ -67,14 +65,7 @@ function isActive(pathname: string, href: string) {
     return path.startsWith("/organizations") && !path.startsWith("/organizations/new");
   }
   if (href === "/support/tickets/") {
-    return path.startsWith("/support/tickets");
-  }
-  if (href === "/support/") {
-    return (
-      (path === "/support/" || path === "/support" || path.startsWith("/support/")) &&
-      !path.startsWith("/support/mode") &&
-      !path.startsWith("/support/tickets")
-    );
+    return path.startsWith("/support");
   }
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
@@ -83,7 +74,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const path = normalizePath(pathname);
   const [open, setOpen] = useState(false);
-  const [firstName, setFirstName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [recentCount, setRecentCount] = useState(0);
   const [openTickets, setOpenTickets] = useState(0);
@@ -92,7 +82,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchAdminSession().then((u) => {
       if (!u) return;
-      setFirstName(u.firstName ?? "");
       setDisplayName(`${u.firstName ?? ""} ${u.lastName ?? ""}`.trim());
     });
     fetchAdminAudit(20)
@@ -103,19 +92,53 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       .catch(() => setOpenTickets(0));
   }, []);
 
+  function logout() {
+    void platformLogout().then(() => {
+      window.location.href = href("/login/");
+    });
+  }
+
   if (path.startsWith("/login")) {
     return <>{children}</>;
   }
 
+  const accountPanel = (
+    <>
+      <p className="truncate text-sm font-semibold text-ink">{displayName || "…"}</p>
+      <p className="text-[11px] text-ink/45">Super administrateur</p>
+      <div className="mt-2 flex flex-col gap-1">
+        <Link
+          href={href("/settings/#profile")}
+          className="text-xs font-semibold text-primary hover:underline"
+          onClick={() => setOpen(false)}
+        >
+          Mon profil
+        </Link>
+        <button
+          type="button"
+          className="text-left text-xs text-ink/50 hover:text-ink"
+          onClick={logout}
+        >
+          Déconnexion
+        </button>
+        <Link href="/?__host=www" className="text-xs text-ink/50 hover:text-ink">
+          ← Retour vitrine
+        </Link>
+      </div>
+    </>
+  );
+
   return (
     <div className="admin-console min-h-screen bg-[#FBF4F6] text-ink">
       <div className="flex min-h-screen">
+        {/* Menu latéral (logo + nav uniquement) */}
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-line bg-white transition-transform lg:static lg:translate-x-0 ${
+          className={`fixed left-0 top-0 z-40 flex w-[260px] flex-col border-r border-line bg-white transition-transform lg:translate-x-0 ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
+          style={{ height: `calc(100dvh - ${ACCOUNT_FOOTER_H}px)` }}
         >
-          <div className="flex h-14 items-center justify-between gap-2 border-b border-line px-4">
+          <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
             <div className="flex min-w-0 items-center gap-2.5">
               <BrandLogo href={href("/dashboard/")} height={40} className="max-h-10" />
               <p className="shrink-0 font-mono text-[10px] tracking-[0.16em] text-primary">
@@ -132,11 +155,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto p-3" aria-label="Navigation administration">
+          <nav
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3"
+            aria-label="Navigation administration"
+          >
             {NAV.map((group, gi) => (
-              <div key={gi} className={gi > 0 ? "mt-4" : ""}>
+              <div key={gi} className={gi > 0 ? "mt-3" : ""}>
                 {group.title ? (
-                  <p className="mb-1.5 px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink/40">
+                  <p className="mb-1 px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink/40">
                     {group.title}
                   </p>
                 ) : null}
@@ -148,7 +174,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                         key={item.href}
                         href={href(item.href)}
                         onClick={() => setOpen(false)}
-                        className={`rounded-lg px-3 py-2 text-sm transition ${
+                        className={`rounded-lg px-3 py-1.5 text-sm transition ${
                           active
                             ? "bg-primary-light font-semibold text-primary-dark"
                             : "text-ink/65 hover:bg-[#FBF4F6] hover:text-ink"
@@ -162,31 +188,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </div>
             ))}
           </nav>
-
-          <div className="border-t border-line p-4">
-            <p className="text-xs font-medium">{displayName || "…"}</p>
-            <p className="text-[11px] text-ink/45">Super administrateur</p>
-            <div className="mt-3 flex flex-col gap-1.5">
-              <Link href={href("/profile/")} className="text-xs font-semibold text-primary">
-                Mon profil
-              </Link>
-              <button
-                type="button"
-                className="text-left text-xs text-ink/50 hover:text-ink"
-                onClick={() =>
-                  void platformLogout().then(() => {
-                    window.location.href = href("/login/");
-                  })
-                }
-              >
-                Déconnexion
-              </button>
-              <Link href="/?__host=www" className="text-xs text-ink/50 hover:text-ink">
-                ← Retour vitrine
-              </Link>
-            </div>
-          </div>
         </aside>
+
+        {/* Profil collé en bas de l'écran (position: fixed viewport) */}
+        <div
+          className={`fixed bottom-0 left-0 z-50 w-[260px] border-r border-t border-line bg-white p-3 transition-transform lg:translate-x-0 ${
+            open ? "translate-x-0" : "-translate-x-full"
+          }`}
+          style={{ height: ACCOUNT_FOOTER_H }}
+        >
+          {accountPanel}
+        </div>
 
         {open ? (
           <button
@@ -197,8 +209,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           />
         ) : null}
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-line bg-white/90 px-4 backdrop-blur md:px-6">
+        <div className="flex min-w-0 flex-1 flex-col lg:ml-[260px]">
+          <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-line bg-white/95 px-4 backdrop-blur md:px-6">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -214,11 +226,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 className="hidden max-h-9 sm:inline-flex"
               />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 href={href("/support/tickets/")}
                 className="relative rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm"
-                aria-label="Tickets support"
+                aria-label="Support"
               >
                 Support
                 {openTickets > 0 ? (
@@ -240,10 +252,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 ) : null}
               </Link>
               <Link
-                href={href("/profile/")}
-                className="hidden text-sm text-ink/60 hover:text-ink sm:inline"
+                href={href("/settings/#profile")}
+                className="hidden truncate text-sm font-medium text-ink/70 hover:text-ink sm:inline max-w-[140px]"
               >
-                {firstName || "Profil"}
+                {displayName || "Profil"}
               </Link>
             </div>
           </header>

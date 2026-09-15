@@ -65,7 +65,7 @@ export function AppShell({ children }: AppShellProps) {
       <div className="lg:pl-[260px]">
         <Header onMenuOpen={() => setSidebarOpen(true)} />
 
-        <main className="min-h-[calc(100vh-64px)] px-4 pb-24 pt-5 sm:min-h-[calc(100vh-72px)] sm:px-6 lg:px-8 lg:pb-8">
+        <main className="min-h-[calc(100vh-64px)] px-4 pb-28 pt-5 sm:min-h-[calc(100vh-72px)] sm:px-6 lg:px-8 lg:pb-8">
           <div className="mx-auto max-w-[1600px]">
             <PlanFeatureRouteGuard>{children}</PlanFeatureRouteGuard>
           </div>

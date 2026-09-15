@@ -116,6 +116,10 @@ export type AppointmentAnalytics = {
     rate: number | null;
     level: "high" | "medium" | "low";
   }[];
+  /** RDV par heure (0–23) sur la période */
+  byHour: { hour: number; label: string; count: number }[];
+  /** Fréquentation jour × heure (heatmap) */
+  heatmap: { weekday: number; hour: number; count: number }[];
 };
 
 export type InventoryAnalytics = {

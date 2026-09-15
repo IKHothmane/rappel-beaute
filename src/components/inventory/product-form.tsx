@@ -64,7 +64,7 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
     <form onSubmit={handleSubmit} className="space-y-4">
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required />
+        <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Sérum 30 ml" />
       </label>
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">SKU *</span>
@@ -127,15 +127,35 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
         <span className="mb-1.5 block font-medium">Fournisseur</span>
         <Input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} />
       </label>
-      <div className="flex flex-wrap gap-4 text-sm">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={consumable} onChange={(e) => setConsumable(e.target.checked)} />
-          Consommable (services)
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={sellable} onChange={(e) => setSellable(e.target.checked)} />
-          Vendable
-        </label>
+      <div>
+        <p className="mb-1.5 text-sm font-medium">Usage</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {(
+            [
+              { id: "retail", label: "Revente boutique", hint: "Vendu en caisse", sell: true, cons: false },
+              { id: "consumable", label: "Consommable soin", hint: "Décompté en cabine", sell: false, cons: true },
+              { id: "hybrid", label: "Les deux", hint: "Vente et soins", sell: true, cons: true },
+            ] as const
+          ).map((opt) => {
+            const active = sellable === opt.sell && consumable === opt.cons;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  setSellable(opt.sell);
+                  setConsumable(opt.cons);
+                }}
+                className={`rounded-xl p-3 text-left text-[13px] ${
+                  active ? "bg-[#FFD9DE] ring-1 ring-primary/30" : "bg-[#FFEFF8] hover:bg-[#FCE9F4]"
+                }`}
+              >
+                <span className="block font-semibold text-ink">{opt.label}</span>
+                <span className="text-[11px] text-ink/50">{opt.hint}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Notes</span>

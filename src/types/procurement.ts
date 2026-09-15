@@ -119,9 +119,11 @@ export type PurchaseListItem = {
 };
 
 export type PurchaseKpis = {
+  purchaseCount: number;
   draftCount: number;
   orderedCount: number;
   awaitingReceiptCount: number;
+  receivedCount: number;
   monthTotal: number;
 };
 

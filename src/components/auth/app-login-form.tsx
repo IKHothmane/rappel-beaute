@@ -34,9 +34,14 @@ export function AppLoginForm() {
         return;
       }
 
-      const data = (await res.json()) as { mustChangePassword?: boolean };
+      const data = (await res.json()) as {
+        mustChangePassword?: boolean;
+        user?: { scope?: string; accountType?: string };
+      };
       await refresh();
-      if (data.mustChangePassword) {
+      if (data.user?.scope === "platform" || data.user?.accountType === "PLATFORM") {
+        router.push("/dashboard/?__host=admin");
+      } else if (data.mustChangePassword) {
         router.push("/changer-mot-de-passe/");
       } else {
         router.push("/dashboard/");

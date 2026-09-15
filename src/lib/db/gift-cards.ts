@@ -1,12 +1,14 @@
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
 import type {
   CreateGiftCardInput,
+  GiftCardJournalItem,
   GiftCardKpis,
   GiftCardListItem,
   GiftCardStatus,
   GiftCardTxnItem,
+  GiftCardTxnType,
 } from "@/types/promo";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -29,6 +31,11 @@ export function isUniqueViolation(error: unknown): boolean {
   );
 }
 
+const CARD_SELECT = `g.id, g.code, g."initialValue"::text, g.balance::text, g.status::text,
+              g."buyerCustomerId", g."beneficiaryCustomerId", g."expiresAt", g."createdAt", g.notes,
+              b."firstName" AS "buyerFirst", b."lastName" AS "buyerLast", b.phone AS "buyerPhone",
+              n."firstName" AS "benFirst", n."lastName" AS "benLast", n.phone AS "benPhone"`;
+
 function mapCard(r: Record<string, unknown>): GiftCardListItem {
   return {
     id: String(r.id),
@@ -44,11 +51,29 @@ function mapCard(r: Record<string, unknown>): GiftCardListItem {
       r.benFirst || r.benLast
         ? `${r.benFirst ?? ""} ${r.benLast ?? ""}`.trim()
         : null,
+    buyerPhone: (r.buyerPhone as string) ?? null,
+    beneficiaryPhone: (r.benPhone as string) ?? null,
     buyerCustomerId: (r.buyerCustomerId as string) ?? null,
     beneficiaryCustomerId: (r.beneficiaryCustomerId as string) ?? null,
+    notes: (r.notes as string) ?? null,
     expiresAt: r.expiresAt ? new Date(r.expiresAt as Date).toISOString() : null,
     createdAt: new Date(r.createdAt as Date).toISOString(),
   };
+}
+
+function proofHash(parts: string[]) {
+  return createHash("sha256").update(parts.join("|")).digest("hex");
+}
+
+function defaultExpiry(input?: string) {
+  if (input) return new Date(input);
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d;
+}
+
+function money(v: string | null | undefined) {
+  return Math.round((parseFloat(v ?? "0") || 0) * 100) / 100;
 }
 
 export async function getGiftCardKpis(organizationId: string): Promise<GiftCardKpis> {
@@ -57,6 +82,14 @@ export async function getGiftCardKpis(organizationId: string): Promise<GiftCardK
     soldValue: string;
     redeemedValue: string;
     remainingBalance: string;
+    activeCount: number;
+    usedCount: number;
+    ritualCount: number;
+    soldThisMonth: number;
+    soldPrevMonth: number;
+    soldValueThisMonth: string;
+    expiringSoonCount: number;
+    expiringSoonBalance: string;
   }>(
     `SELECT
       (SELECT COUNT(*)::int FROM "GiftCard"
@@ -66,15 +99,55 @@ export async function getGiftCardKpis(organizationId: string): Promise<GiftCardK
       COALESCE((SELECT SUM(ABS(amount)) FROM "GiftCardTransaction"
         WHERE "organizationId" = $1 AND type = 'REDEEMED'), 0)::text AS "redeemedValue",
       COALESCE((SELECT SUM(balance) FROM "GiftCard"
-        WHERE "organizationId" = $1 AND status = 'ACTIVE'), 0)::text AS "remainingBalance"`,
+        WHERE "organizationId" = $1 AND status = 'ACTIVE'), 0)::text AS "remainingBalance",
+      (SELECT COUNT(*)::int FROM "GiftCard"
+        WHERE "organizationId" = $1 AND status = 'ACTIVE') AS "activeCount",
+      (SELECT COUNT(*)::int FROM "GiftCard"
+        WHERE "organizationId" = $1 AND status = 'USED') AS "usedCount",
+      (SELECT COUNT(*)::int FROM "GiftCard"
+        WHERE "organizationId" = $1 AND status <> 'CANCELLED'
+          AND notes IS NOT NULL AND BTRIM(notes) <> '') AS "ritualCount",
+      (SELECT COUNT(*)::int FROM "GiftCard"
+        WHERE "organizationId" = $1 AND status <> 'CANCELLED'
+          AND timezone('Africa/Casablanca', "createdAt") >= date_trunc('month', timezone('Africa/Casablanca', now()))
+          AND timezone('Africa/Casablanca', "createdAt") < date_trunc('month', timezone('Africa/Casablanca', now())) + interval '1 month'
+      ) AS "soldThisMonth",
+      (SELECT COUNT(*)::int FROM "GiftCard"
+        WHERE "organizationId" = $1 AND status <> 'CANCELLED'
+          AND timezone('Africa/Casablanca', "createdAt") >= date_trunc('month', timezone('Africa/Casablanca', now())) - interval '1 month'
+          AND timezone('Africa/Casablanca', "createdAt") < date_trunc('month', timezone('Africa/Casablanca', now()))
+      ) AS "soldPrevMonth",
+      COALESCE((SELECT SUM("initialValue") FROM "GiftCard"
+        WHERE "organizationId" = $1 AND status <> 'CANCELLED'
+          AND timezone('Africa/Casablanca', "createdAt") >= date_trunc('month', timezone('Africa/Casablanca', now()))
+          AND timezone('Africa/Casablanca', "createdAt") < date_trunc('month', timezone('Africa/Casablanca', now())) + interval '1 month'
+      ), 0)::text AS "soldValueThisMonth",
+      (SELECT COUNT(*)::int FROM "GiftCard"
+        WHERE "organizationId" = $1 AND status = 'ACTIVE'
+          AND "expiresAt" IS NOT NULL
+          AND "expiresAt" >= now()
+          AND "expiresAt" <= now() + interval '30 days') AS "expiringSoonCount",
+      COALESCE((SELECT SUM(balance) FROM "GiftCard"
+        WHERE "organizationId" = $1 AND status = 'ACTIVE'
+          AND "expiresAt" IS NOT NULL
+          AND "expiresAt" >= now()
+          AND "expiresAt" <= now() + interval '30 days'), 0)::text AS "expiringSoonBalance"`,
     [organizationId],
   );
+  const r = rows[0];
   return {
-    soldCount: rows[0]?.soldCount ?? 0,
-    soldValue: Math.round((parseFloat(rows[0]?.soldValue ?? "0") || 0) * 100) / 100,
-    redeemedValue: Math.round((parseFloat(rows[0]?.redeemedValue ?? "0") || 0) * 100) / 100,
-    remainingBalance:
-      Math.round((parseFloat(rows[0]?.remainingBalance ?? "0") || 0) * 100) / 100,
+    soldCount: r?.soldCount ?? 0,
+    soldValue: money(r?.soldValue),
+    redeemedValue: money(r?.redeemedValue),
+    remainingBalance: money(r?.remainingBalance),
+    activeCount: r?.activeCount ?? 0,
+    usedCount: r?.usedCount ?? 0,
+    ritualCount: r?.ritualCount ?? 0,
+    soldThisMonth: r?.soldThisMonth ?? 0,
+    soldPrevMonth: r?.soldPrevMonth ?? 0,
+    soldValueThisMonth: money(r?.soldValueThisMonth),
+    expiringSoonCount: r?.expiringSoonCount ?? 0,
+    expiringSoonBalance: money(r?.expiringSoonBalance),
   };
 }
 
@@ -91,7 +164,16 @@ export async function listGiftCards(
     pi++;
   }
   if (opts.search) {
-    conditions.push(`g.code ILIKE $${pi}`);
+    conditions.push(`(
+      g.code ILIKE $${pi}
+      OR COALESCE(g.notes, '') ILIKE $${pi}
+      OR COALESCE(b."firstName", '') ILIKE $${pi}
+      OR COALESCE(b."lastName", '') ILIKE $${pi}
+      OR COALESCE(b.phone, '') ILIKE $${pi}
+      OR COALESCE(n."firstName", '') ILIKE $${pi}
+      OR COALESCE(n."lastName", '') ILIKE $${pi}
+      OR COALESCE(n.phone, '') ILIKE $${pi}
+    )`);
     params.push(`%${opts.search}%`);
     pi++;
   }
@@ -99,14 +181,15 @@ export async function listGiftCards(
   const offset = (opts.page - 1) * opts.limit;
   const [countRes, listRes, kpis] = await Promise.all([
     pool.query<{ total: number }>(
-      `SELECT COUNT(*)::int AS total FROM "GiftCard" g WHERE ${where}`,
+      `SELECT COUNT(*)::int AS total
+       FROM "GiftCard" g
+       LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId"
+       LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId"
+       WHERE ${where}`,
       params,
     ),
     pool.query(
-      `SELECT g.id, g.code, g."initialValue"::text, g.balance::text, g.status::text,
-              g."buyerCustomerId", g."beneficiaryCustomerId", g."expiresAt", g."createdAt",
-              b."firstName" AS "buyerFirst", b."lastName" AS "buyerLast",
-              n."firstName" AS "benFirst", n."lastName" AS "benLast"
+      `SELECT ${CARD_SELECT}
        FROM "GiftCard" g
        LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId"
        LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId"
@@ -129,10 +212,7 @@ export async function getGiftCardById(
   id: string,
 ): Promise<(GiftCardListItem & { transactions: GiftCardTxnItem[] }) | null> {
   const { rows } = await pool.query(
-    `SELECT g.id, g.code, g."initialValue"::text, g.balance::text, g.status::text,
-            g."buyerCustomerId", g."beneficiaryCustomerId", g."expiresAt", g."createdAt",
-            b."firstName" AS "buyerFirst", b."lastName" AS "buyerLast",
-            n."firstName" AS "benFirst", n."lastName" AS "benLast"
+    `SELECT ${CARD_SELECT}
      FROM "GiftCard" g
      LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId"
      LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId"
@@ -172,10 +252,7 @@ export async function getGiftCardByCode(
   code: string,
 ): Promise<GiftCardListItem | null> {
   const { rows } = await pool.query(
-    `SELECT g.id, g.code, g."initialValue"::text, g.balance::text, g.status::text,
-            g."buyerCustomerId", g."beneficiaryCustomerId", g."expiresAt", g."createdAt",
-            b."firstName" AS "buyerFirst", b."lastName" AS "buyerLast",
-            n."firstName" AS "benFirst", n."lastName" AS "benLast"
+    `SELECT ${CARD_SELECT}
      FROM "GiftCard" g
      LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId"
      LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId"
@@ -213,7 +290,7 @@ export async function issueGiftCard(
             input.amount,
             input.buyerCustomerId ?? null,
             input.beneficiaryCustomerId ?? null,
-            input.expiresAt ? new Date(input.expiresAt) : null,
+            defaultExpiry(input.expiresAt),
             input.notes ?? null,
             actor.id,
           ],
@@ -257,6 +334,118 @@ export async function issueGiftCard(
     client.release();
   }
 
+  const card = await getGiftCardById(organizationId, id);
+  if (!card) throw new Error("NOT_FOUND");
+  return card;
+}
+
+export async function listGiftCardJournal(
+  organizationId: string,
+  limit = 20,
+): Promise<GiftCardJournalItem[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    code: string;
+    type: string;
+    amount: string;
+    balanceAfter: string;
+    reason: string | null;
+    paymentId: string | null;
+    createdAt: Date;
+    actorName: string | null;
+  }>(
+    `SELECT t.id, g.code, t.type::text, t.amount::text, t."balanceAfter"::text,
+            t.reason, t."paymentId", t."createdAt",
+            NULLIF(TRIM(COALESCE(u."firstName", '') || ' ' || COALESCE(u."lastName", '')), '') AS "actorName"
+     FROM "GiftCardTransaction" t
+     JOIN "GiftCard" g ON g.id = t."giftCardId"
+     LEFT JOIN "User" u ON u.id = t."createdById"
+     WHERE t."organizationId" = $1
+     ORDER BY t."createdAt" DESC
+     LIMIT $2`,
+    [organizationId, limit],
+  );
+  return rows.map((t) => {
+    const amount = parseFloat(t.amount) || 0;
+    const balanceAfter = parseFloat(t.balanceAfter) || 0;
+    const createdAt = new Date(t.createdAt).toISOString();
+    return {
+      id: t.id,
+      code: t.code,
+      type: t.type as GiftCardTxnType,
+      amount,
+      balanceAfter,
+      reason: t.reason,
+      paymentId: t.paymentId,
+      actorName: t.actorName,
+      createdAt,
+      proofHash: proofHash([t.id, t.type, t.amount, t.balanceAfter, createdAt]),
+    };
+  });
+}
+
+export async function cancelGiftCard(
+  organizationId: string,
+  id: string,
+  actor: { id: string; name?: string | null },
+): Promise<GiftCardListItem> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query<{
+      id: string;
+      status: string;
+      balance: string;
+      code: string;
+    }>(
+      `SELECT id, status::text, balance::text, code
+       FROM "GiftCard"
+       WHERE id = $1 AND "organizationId" = $2
+       FOR UPDATE`,
+      [id, organizationId],
+    );
+    if (!rows[0]) throw new Error("NOT_FOUND");
+    if (rows[0].status !== "ACTIVE") throw new Error("GIFT_CARD_INACTIVE");
+
+    await client.query(
+      `UPDATE "GiftCard"
+       SET status = 'CANCELLED'::"GiftCardStatus", "updatedAt" = NOW()
+       WHERE id = $1`,
+      [id],
+    );
+    await client.query(
+      `INSERT INTO "GiftCardTransaction" (
+        id, "organizationId", "giftCardId", type, amount, "balanceAfter",
+        reason, "createdById", "idempotencyKey"
+      ) VALUES (
+        $1,$2,$3,'ADJUSTMENT'::"GiftCardTxnType",0,$4,'Suspension carte cadeau',$5,$6
+      )`,
+      [
+        newId("gctx"),
+        organizationId,
+        id,
+        parseFloat(rows[0].balance) || 0,
+        actor.id,
+        `cancel:${id}:${Date.now()}`,
+      ],
+    );
+    await writeAuditLog({
+      organizationId,
+      actorId: actor.id,
+      actorName: actor.name,
+      entityType: "GiftCard",
+      entityId: id,
+      action: "CANCEL",
+      after: { code: rows[0].code, status: "CANCELLED" },
+      client,
+    });
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
   const card = await getGiftCardById(organizationId, id);
   if (!card) throw new Error("NOT_FOUND");
   return card;

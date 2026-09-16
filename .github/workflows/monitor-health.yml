@@ -16,16 +16,32 @@ jobs:
     environment: staging
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Vérifier la configuration
+        id: config
+        env:
+          HEALTH_BASE_URL: ${{ vars.HEALTH_BASE_URL }}
+        run: |
+          if [ -z "$HEALTH_BASE_URL" ]; then
+            echo "::warning::HEALTH_BASE_URL n'est pas définie sur l'environnement « staging » (Settings > Environments > staging > Variables). Sondes ignorées."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+        if: steps.config.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v5
+        if: steps.config.outputs.ready == 'true'
         with:
           node-version: "22"
           cache: npm
 
       - run: npm ci
+        if: steps.config.outputs.ready == 'true'
 
       - name: Vérifier endpoints
+        if: steps.config.outputs.ready == 'true'
         run: npx tsx scripts/ops/monitor-health.ts
         env:
           HEALTH_BASE_URL: ${{ vars.HEALTH_BASE_URL }}

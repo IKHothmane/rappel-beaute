@@ -6,7 +6,17 @@ import { sendAlert, type AlertSeverity } from "../../src/lib/monitoring/alerts";
 
 type Probe = { name: string; url: string; critical: boolean };
 
-const base = (process.env.HEALTH_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+// Une variable GitHub non définie est injectée comme chaîne vide, pas comme undefined.
+const configured = process.env.HEALTH_BASE_URL?.trim() || "http://127.0.0.1:3000";
+
+if (!/^https?:\/\//.test(configured) || !URL.canParse(configured)) {
+  console.error(
+    `[monitoring] HEALTH_BASE_URL invalide (« ${configured} ») — attendu une URL absolue en http(s), ex. https://app-staging.rappelbeaute.ma`,
+  );
+  process.exit(2);
+}
+
+const base = configured.replace(/\/$/, "");
 
 const probes: Probe[] = [
   { name: "health", url: `${base}/api/health/`, critical: true },

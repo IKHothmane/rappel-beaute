@@ -154,6 +154,16 @@ async function getSession(request: NextRequest) {
   return parseSessionTokenEdge(token);
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  const host = hostname.split(":")[0]?.toLowerCase() ?? "";
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host.endsWith(".localhost")
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const hostname = resolvePublicHostname(
@@ -162,9 +172,13 @@ export async function middleware(request: NextRequest) {
     request.headers.get("x-rappel-public-host"),
   );
 
+  // Force HTTPS seulement derrière un vrai host public.
+  // Sinon next start local / E2E CI (http://127.0.0.1:3000) boucle en 308
+  // vers https://127.0.0.1/api/health/ (sans port) et ne démarre jamais.
   if (
     process.env.NODE_ENV === "production" &&
-    request.headers.get("x-forwarded-proto") === "http"
+    request.headers.get("x-forwarded-proto") === "http" &&
+    !isLoopbackHostname(hostname)
   ) {
     const httpsUrl = new URL(`https://${hostname}${path}`);
     httpsUrl.search = request.nextUrl.search;

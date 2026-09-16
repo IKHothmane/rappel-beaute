@@ -91,9 +91,11 @@ jobs:
 
             code=$(curl -sS -o /tmp/health.json -w "%{http_code}" \
               --max-time 5 \
+              -D /tmp/health.headers \
               http://127.0.0.1:3000/api/health/ || echo "000")
             body=$(cat /tmp/health.json 2>/dev/null || true)
-            echo "try=$i http=$code body=$body"
+            loc=$(grep -i '^location:' /tmp/health.headers 2>/dev/null | tr -d '\r' || true)
+            echo "try=$i http=$code body=$body $loc"
 
             if [ "$code" = "200" ]; then
               echo "App prête"

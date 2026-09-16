@@ -2,6 +2,12 @@ import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
 
+/**
+ * En CI : ne pas passer par `npm run start` (migrate deploy + next start).
+ * Les migrations sont déjà appliquées dans le workflow ; relancer migrate
+ * peut bloquer le webServer. On bind explicitement 127.0.0.1 (évite le
+ * décalage IPv6/IPv4 sur les runners GitHub) et on sonde /api/health/.
+ */
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -16,10 +22,12 @@ export default defineConfig({
   },
   webServer: process.env.CI
     ? {
-        command: "npm run start",
-        url: baseURL,
+        command: "npx next start -H 127.0.0.1 -p 3000",
+        url: `${baseURL.replace(/\/$/, "")}/api/health/`,
         reuseExistingServer: false,
-        timeout: 120_000,
+        timeout: 180_000,
+        stdout: "pipe",
+        stderr: "pipe",
       }
     : undefined,
 });

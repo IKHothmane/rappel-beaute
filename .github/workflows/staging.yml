@@ -109,12 +109,14 @@ jobs:
           exit 1
         env:
           NODE_ENV: production
+          COOKIE_SECURE: "false"
 
       - name: E2E Playwright
         run: npm run test:e2e
         env:
           CI: true
           NODE_ENV: production
+          COOKIE_SECURE: "false"
           PLAYWRIGHT_SKIP_WEBSERVER: "1"
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
 

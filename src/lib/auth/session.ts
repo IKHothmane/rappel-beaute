@@ -35,13 +35,20 @@ export async function getSession(): Promise<SessionUser | null> {
   return parseSessionToken(token);
 }
 
+function cookieSecure(): boolean {
+  // E2E / next start en HTTP : Secure empêcherait le navigateur d'envoyer le cookie.
+  if (process.env.COOKIE_SECURE === "false") return false;
+  if (process.env.COOKIE_SECURE === "true") return true;
+  return process.env.NODE_ENV === "production";
+}
+
 export function sessionCookieOptions(token: string) {
   return {
     name: SESSION_COOKIE,
     value: token,
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     path: "/",
     maxAge: SESSION_MAX_AGE_SEC,
   };
@@ -58,7 +65,7 @@ export function clearSessionCookie() {
     value: "",
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     path: "/",
     maxAge: 0,
   };

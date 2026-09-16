@@ -85,6 +85,17 @@ function isChangePasswordPath(path: string): boolean {
   return path === CHANGE_PASSWORD_PATH || path.startsWith(`${CHANGE_PASSWORD_PATH}/`);
 }
 
+/** /domains/app/login/ → /login/ — pour les checks publics après rewrite. */
+function stripDomainPrefix(path: string, domain: "app" | "admin"): string {
+  const prefix = domain === "app" ? "/domains/app" : "/domains/admin";
+  if (path === prefix || path === `${prefix}/`) return "/";
+  if (path.startsWith(`${prefix}/`)) {
+    const rest = path.slice(prefix.length);
+    return rest.startsWith("/") ? rest : `/${rest}`;
+  }
+  return path;
+}
+
 function isPublicPath(domain: Domain, path: string): boolean {
   const list = domain === "admin" ? ADMIN_PUBLIC_PATHS : APP_PUBLIC_PATHS;
   return list.some((p) => path === p || path.startsWith(`${p}/`));
@@ -197,8 +208,14 @@ export async function middleware(request: NextRequest) {
   const session = await getSession(request);
 
   if (domain === "app") {
+    // Après rewrite Next ré-invoque le middleware sur /domains/app/... ;
+    // comparer le chemin logique sinon /domains/app/login/ n'est pas « public »
+    // → redirect /login/ → rewrite → boucle ERR_TOO_MANY_REDIRECTS.
+    const logicalPath = stripDomainPrefix(path, "app");
     const isPublic =
-      isPublicPath(domain, path) || path === "/book" || path.startsWith("/book/");
+      isPublicPath(domain, logicalPath) ||
+      logicalPath === "/book" ||
+      logicalPath.startsWith("/book/");
     if (!isPublic) {
       if (!session) {
         return publicRedirect(
@@ -207,7 +224,9 @@ export async function middleware(request: NextRequest) {
           domain,
           hostname,
           308,
-          path !== "/" && path !== "" ? { next: path } : undefined,
+          logicalPath !== "/" && logicalPath !== ""
+            ? { next: logicalPath }
+            : undefined,
         );
       }
       if (session.scope === "platform") {
@@ -218,7 +237,7 @@ export async function middleware(request: NextRequest) {
         session.scope === "app" &&
         "mustChangePassword" in session &&
         session.mustChangePassword &&
-        !isChangePasswordPath(path)
+        !isChangePasswordPath(logicalPath)
       ) {
         return publicRedirect(request, `${CHANGE_PASSWORD_PATH}/`, domain, hostname);
       }
@@ -226,14 +245,15 @@ export async function middleware(request: NextRequest) {
       session?.scope === "app" &&
       "mustChangePassword" in session &&
       session.mustChangePassword &&
-      path.startsWith("/login")
+      logicalPath.startsWith("/login")
     ) {
       return publicRedirect(request, `${CHANGE_PASSWORD_PATH}/`, domain, hostname);
     }
   }
 
   if (domain === "admin") {
-    const isPublic = isPublicPath(domain, path);
+    const logicalPath = stripDomainPrefix(path, "admin");
+    const isPublic = isPublicPath(domain, logicalPath);
     if (!isPublic) {
       if (!session || session.scope !== "platform") {
         return publicRedirect(
@@ -242,10 +262,12 @@ export async function middleware(request: NextRequest) {
           domain,
           hostname,
           308,
-          path !== "/" && path !== "" ? { next: path } : undefined,
+          logicalPath !== "/" && logicalPath !== ""
+            ? { next: logicalPath }
+            : undefined,
         );
       }
-    } else if (session?.scope === "platform" && path.startsWith("/login")) {
+    } else if (session?.scope === "platform" && logicalPath.startsWith("/login")) {
       return publicRedirect(request, "/dashboard/", domain, hostname);
     }
 
@@ -278,14 +300,16 @@ export async function middleware(request: NextRequest) {
     return res;
   }
 
-  // domain === app → rewrite
+  // domain === app → rewrite (toujours avec trailing slash si la config l'exige)
   const url = request.nextUrl.clone();
-  url.pathname =
-    path === "/" || path === ""
-      ? "/domains/app/dashboard"
-      : path.startsWith("/domains/app")
-        ? path
-        : `/domains/app${path}`;
+  if (path === "/" || path === "") {
+    url.pathname = "/domains/app/dashboard/";
+  } else if (path.startsWith("/domains/app")) {
+    url.pathname = path;
+  } else {
+    const joined = `/domains/app${path}`;
+    url.pathname = joined.endsWith("/") ? joined : `${joined}/`;
+  }
 
   const res = NextResponse.rewrite(url, { request: { headers } });
   if (queryHost) {

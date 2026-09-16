@@ -5,7 +5,8 @@ const PLATFORM = { email: "admin@rappelbeaute.ma", password: "demo1234" };
 
 test.describe("Parcours commercial — seed Institut Royal", () => {
   test("OWNER login → dashboard", async ({ page }) => {
-    await page.goto("/domains/app/login/?__host=app");
+    // URL canonique publique (le middleware rewrite vers /domains/app/…)
+    await page.goto("/login/?__host=app");
     await page.fill('input[type="email"], input[name="email"]', OWNER.email);
     await page.fill('input[type="password"]', OWNER.password);
     await page.click('button[type="submit"]');
@@ -30,17 +31,17 @@ test.describe("Parcours commercial — seed Institut Royal", () => {
   });
 
   test("Booking public institut-royal accessible", async ({ page }) => {
-    await page.goto("/domains/app/book/institut-royal/?__host=app");
+    await page.goto("/book/institut-royal/?__host=app");
     await expect(page.locator("body")).toBeVisible();
   });
 
   test("Platform SUPER_ADMIN login", async ({ request }) => {
-    const login = await request.post("/api/platform/auth/login/", {
+    const login = await request.post("/api/auth/platform/login/", {
       data: PLATFORM,
     });
     expect(login.ok()).toBeTruthy();
 
-    const orgs = await request.get("/api/platform/organizations/");
+    const orgs = await request.get("/api/admin/organizations/");
     expect(orgs.ok()).toBeTruthy();
   });
 });

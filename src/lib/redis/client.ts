@@ -13,7 +13,14 @@ export async function getRedis(): Promise<RedisClientType | null> {
   if (!connectPromise) {
     connectPromise = (async () => {
       try {
-        const c = createClient({ url });
+        const c = createClient({
+          url,
+          socket: {
+            // Évite un hang indéfini si Redis est down (ex. localhost → ::1 en CI).
+            connectTimeout: 3_000,
+            reconnectStrategy: false,
+          },
+        });
         c.on("error", (err) => {
           logger.warn("Redis client error", { error: String(err) });
         });

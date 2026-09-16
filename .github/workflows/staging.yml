@@ -50,9 +50,11 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+    # 127.0.0.1 (pas localhost) : sur les runners GHA, localhost → ::1 et Redis
+    # n'écoute souvent qu'en IPv4 → connect hang / health 503 → timeout Playwright.
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rappel_beaute_e2e?schema=public
-      REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rappel_beaute_e2e?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
       SESSION_SECRET: e2e-staging-session-secret-min-32-chars-long
       ENCRYPTION_KEY: e2e-staging-encryption-key-32chars!!
 
@@ -72,11 +74,53 @@ jobs:
       - run: npm run build
         env:
           NODE_ENV: production
-      - run: npm run test:e2e
+
+      - name: Démarrer Next.js
+        run: |
+          set -euo pipefail
+          npx next start -H 127.0.0.1 -p 3000 > /tmp/next-e2e.log 2>&1 &
+          echo $! > /tmp/next-e2e.pid
+          echo "PID=$(cat /tmp/next-e2e.pid)"
+
+          for i in $(seq 1 90); do
+            if ! kill -0 "$(cat /tmp/next-e2e.pid)" 2>/dev/null; then
+              echo "::error::next start s'est arrêté avant d'être prêt"
+              cat /tmp/next-e2e.log
+              exit 1
+            fi
+
+            code=$(curl -sS -o /tmp/health.json -w "%{http_code}" \
+              --max-time 5 \
+              http://127.0.0.1:3000/api/health/ || echo "000")
+            body=$(cat /tmp/health.json 2>/dev/null || true)
+            echo "try=$i http=$code body=$body"
+
+            if [ "$code" = "200" ]; then
+              echo "App prête"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "::error::Timeout readiness /api/health/ (90×2s)"
+          cat /tmp/next-e2e.log
+          exit 1
+        env:
+          NODE_ENV: production
+
+      - name: E2E Playwright
+        run: npm run test:e2e
         env:
           CI: true
           NODE_ENV: production
+          PLAYWRIGHT_SKIP_WEBSERVER: "1"
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+
+      - name: Logs Next.js (si échec)
+        if: failure()
+        run: |
+          echo "----- next-e2e.log -----"
+          cat /tmp/next-e2e.log || true
 
   deploy-staging:
     name: Deploy to Staging

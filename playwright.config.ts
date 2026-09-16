@@ -2,12 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
 
-/**
- * En CI : ne pas passer par `npm run start` (migrate deploy + next start).
- * Les migrations sont déjà appliquées dans le workflow ; relancer migrate
- * peut bloquer le webServer. On bind explicitement 127.0.0.1 (évite le
- * décalage IPv6/IPv4 sur les runners GitHub) et on sonde /api/health/.
- */
+/** En CI le workflow démarre l'app lui-même (logs visibles) — ne pas double-lancer. */
+const skipWebServer =
+  Boolean(process.env.PLAYWRIGHT_SKIP_WEBSERVER) || !process.env.CI;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -20,14 +18,14 @@ export default defineConfig({
     trace: "on-first-retry",
     ...devices["Desktop Chrome"],
   },
-  webServer: process.env.CI
-    ? {
+  webServer: skipWebServer
+    ? undefined
+    : {
         command: "npx next start -H 127.0.0.1 -p 3000",
         url: `${baseURL.replace(/\/$/, "")}/api/health/`,
         reuseExistingServer: false,
         timeout: 180_000,
         stdout: "pipe",
         stderr: "pipe",
-      }
-    : undefined,
+      },
 });

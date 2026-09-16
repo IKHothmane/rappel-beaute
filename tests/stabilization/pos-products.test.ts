@@ -216,7 +216,7 @@ run("41.23 — POS PostgreSQL", () => {
       {
         lines: [
           { productId, quantity: 1 },
-          { productB, quantity: 1 },
+          { productId: productB, quantity: 1 },
         ],
         paymentMethod: "CARD",
         idempotencyKey: `${PREFIX}_sale2`,
@@ -270,7 +270,7 @@ run("41.23 — POS PostgreSQL", () => {
     const sale = await createPosSale(
       orgA,
       {
-        lines: [{ productB, quantity: 1 }],
+        lines: [{ productId: productB, quantity: 1 }],
         paymentMethod: "CARD",
         customerId: null,
         idempotencyKey: `${PREFIX}_anon`,
@@ -285,7 +285,7 @@ run("41.23 — POS PostgreSQL", () => {
     const sale = await createPosSale(
       orgA,
       {
-        lines: [{ productB, quantity: 1 }],
+        lines: [{ productId: productB, quantity: 1 }],
         paymentMethod: "CARD",
         customerId,
         idempotencyKey: `${PREFIX}_cust`,
@@ -299,7 +299,7 @@ run("41.23 — POS PostgreSQL", () => {
     const sale = await createPosSale(
       orgA,
       {
-        lines: [{ productB, quantity: 1 }],
+        lines: [{ productId: productB, quantity: 1 }],
         paymentMethod: "CARD",
         discountTotal: 20,
         idempotencyKey: `${PREFIX}_disc`,
@@ -323,7 +323,7 @@ run("41.23 — POS PostgreSQL", () => {
     const a = await createPosSale(
       orgA,
       {
-        lines: [{ productB, quantity: 1 }],
+        lines: [{ productId: productB, quantity: 1 }],
         paymentMethod: "CARD",
         idempotencyKey: `${PREFIX}_idem`,
       },
@@ -332,7 +332,7 @@ run("41.23 — POS PostgreSQL", () => {
     const b = await createPosSale(
       orgA,
       {
-        lines: [{ productB, quantity: 1 }],
+        lines: [{ productId: productB, quantity: 1 }],
         paymentMethod: "CARD",
         idempotencyKey: `${PREFIX}_idem`,
       },
@@ -424,7 +424,7 @@ run("41.23 — POS PostgreSQL", () => {
       createPosSale(
         orgA,
         {
-          lines: [{ productB, quantity: 1 }],
+          lines: [{ productId: productB, quantity: 1 }],
           // @ts-expect-error test runtime guard
           paymentMethod: "ONLINE",
           idempotencyKey: `${PREFIX}_online`,

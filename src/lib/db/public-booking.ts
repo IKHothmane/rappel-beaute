@@ -11,6 +11,7 @@ import {
   isStaffAvailableOnDate,
 } from "@/modules/appointments/availability";
 import { enforcePublicBookingLimits } from "@/lib/subscriptions/guards";
+import { businessDateTime } from "@/lib/time/business-timezone";
 import { slugifyLabel } from "@/lib/booking-qr";
 import type { Appointment } from "@/types/appointment";
 import type {
@@ -32,15 +33,13 @@ function newId(prefix: string) {
 }
 
 function parseSlotDateTime(date: string, time: string): Date {
-  const [h, m] = time.split(":").map(Number);
-  const [y, mo, d] = date.split("-").map(Number);
-  return new Date(Date.UTC(y, mo - 1, d, h - 1, m, 0));
+  return businessDateTime(date, time);
 }
 
 function dayBounds(date: string): { start: Date; end: Date } {
-  const start = parseSlotDateTime(date, "00:00");
-  const end = parseSlotDateTime(date, "23:59");
-  end.setMinutes(59, 59, 999);
+  const start = businessDateTime(date, "00:00");
+  // 23:59:00 + 59,999 s — arithmétique sur l'instant, insensible au fuseau.
+  const end = new Date(businessDateTime(date, "23:59").getTime() + 59_999);
   return { start, end };
 }
 

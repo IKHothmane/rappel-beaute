@@ -5,6 +5,7 @@ import {
   isStaffAvailableOnDate,
 } from "@/modules/appointments/availability";
 import { isCoveredByOvertime, hasActiveReplacement } from "@/lib/db/planning";
+import { businessWallTime } from "@/lib/time/business-timezone";
 import type { StaffAgendaContext } from "@/types/staff";
 import type { Appointment } from "@/types/appointment";
 import { canAccessNav, canWriteFeature } from "@/lib/rbac";
@@ -29,9 +30,9 @@ function staffBase(over: Partial<StaffAgendaContext> = {}): StaffAgendaContext {
 }
 
 function mondayAt(h: number, m = 0) {
-  // 2026-09-07 is a Monday
-  const d = new Date(2026, 8, 7, h, m, 0, 0);
-  return d;
+  // 2026-09-07 est un lundi. Heure marocaine, comme le moteur de disponibilité,
+  // pour que le test tienne quel que soit le TZ du process (UTC en CI).
+  return businessWallTime({ year: 2026, month: 9, day: 7 }, h, m);
 }
 
 describe("41.24 — Planning avancé (unit)", () => {

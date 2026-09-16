@@ -5,6 +5,7 @@ import { listAppointmentsByOrg } from "@/lib/db/appointments";
 import { listStaff } from "@/lib/db/staff";
 import { listResources } from "@/lib/db/resources";
 import { checkAvailability } from "@/modules/appointments/availability";
+import { endOfBusinessDay, startOfBusinessDay } from "@/lib/time/business-timezone";
 import type {
   CreateOrganizationClosureInput,
   CreateStaffOvertimeInput,
@@ -375,10 +376,8 @@ export async function assertAppointmentBookable(params: {
     throw err;
   }
 
-  const dayStart = new Date(start);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(start);
-  dayEnd.setHours(23, 59, 59, 999);
+  const dayStart = startOfBusinessDay(start);
+  const dayEnd = endOfBusinessDay(start);
 
   const [staffRes, resourceRes, appointments] = await Promise.all([
     listStaff(params.organizationId, { page: 1, limit: 500, agenda: true }),

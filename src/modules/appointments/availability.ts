@@ -11,6 +11,17 @@ import type {
 import type { StaffAgendaContext } from "@/types/staff";
 import type { ResourceAgendaContext } from "@/types/resource";
 import { isBlockingMaintenance } from "@/types/resource";
+import {
+  businessDayOfWeek,
+  businessParts,
+  businessTimeOnDate,
+  businessWallTime,
+  endOfBusinessDay,
+  formatBusinessDate,
+  formatBusinessTime,
+  isSameBusinessDay,
+  startOfBusinessDay,
+} from "@/lib/time/business-timezone";
 
 function parseDate(iso: string) {
   return new Date(iso);
@@ -18,25 +29,6 @@ function parseDate(iso: string) {
 
 function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
   return aStart < bEnd && aEnd > bStart;
-}
-
-function sameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function formatTime(d: Date) {
-  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
-
-function parseTimeOnDate(base: Date, time: string): Date {
-  const [h, m] = time.split(":").map(Number);
-  const d = new Date(base);
-  d.setHours(h, m, 0, 0);
-  return d;
 }
 
 function checkStaffAvailability(
@@ -64,7 +56,7 @@ function checkStaffAvailability(
     }
   }
 
-  const day = start.getDay();
+  const day = businessDayOfWeek(start);
   const schedule = staff.schedules.find((s) => s.dayOfWeek === day && s.active);
   const coveredByOt = (staff.overtimes ?? []).some((ot) => {
     const oStart = parseDate(ot.startAt);
@@ -78,8 +70,8 @@ function checkStaffAvailability(
   }
 
   if (schedule) {
-    const workStart = parseTimeOnDate(start, schedule.startTime);
-    const workEnd = parseTimeOnDate(start, schedule.endTime);
+    const workStart = businessTimeOnDate(start, schedule.startTime);
+    const workEnd = businessTimeOnDate(start, schedule.endTime);
     const withinSchedule = start >= workStart && end <= workEnd;
     if (!withinSchedule && !coveredByOt) {
       conflicts.push(
@@ -90,8 +82,8 @@ function checkStaffAvailability(
 
   for (const brk of staff.breaks) {
     if (brk.dayOfWeek !== day) continue;
-    const bStart = parseTimeOnDate(start, brk.startTime);
-    const bEnd = parseTimeOnDate(start, brk.endTime);
+    const bStart = businessTimeOnDate(start, brk.startTime);
+    const bEnd = businessTimeOnDate(start, brk.endTime);
     if (overlaps(start, end, bStart, bEnd)) {
       conflicts.push(`Pause ${staff.displayName} (${brk.startTime}–${brk.endTime}).`);
     }
@@ -100,10 +92,9 @@ function checkStaffAvailability(
   for (const leave of staff.leaves) {
     if (leave.status !== "APPROVED") continue;
     const lStart = parseDate(leave.startAt);
-    const lEnd = parseDate(leave.endAt);
-    lEnd.setHours(23, 59, 59, 999);
+    const lEnd = endOfBusinessDay(parseDate(leave.endAt));
     if (overlaps(start, end, lStart, lEnd)) {
-      conflicts.push(`${staff.displayName} en congé jusqu'au ${lEnd.toLocaleDateString("fr-FR")}.`);
+      conflicts.push(`${staff.displayName} en congé jusqu'au ${formatBusinessDate(lEnd)}.`);
     }
   }
 
@@ -126,7 +117,7 @@ function checkResourceAvailability(
     const mStart = parseDate(m.startAt);
     const mEnd = parseDate(m.endAt);
     if (overlaps(start, end, mStart, mEnd)) {
-      conflicts.push(`${resource.name} en maintenance jusqu'au ${mEnd.toLocaleDateString("fr-FR")}.`);
+      conflicts.push(`${resource.name} en maintenance jusqu'au ${formatBusinessDate(mEnd)}.`);
     }
   }
   return conflicts;
@@ -161,18 +152,18 @@ export function checkAvailability(
 
     const aptStart = parseDate(apt.startAt);
     const aptEnd = parseDate(apt.endAt);
-    if (!sameDay(start, aptStart)) continue;
+    if (!isSameBusinessDay(start, aptStart)) continue;
     if (!overlaps(start, end, aptStart, aptEnd)) continue;
 
     if (apt.staffId === input.staffId) {
       conflicts.push(
-        `${apt.staffName} occupée · ${apt.serviceName} (${formatTime(aptStart)}–${formatTime(aptEnd)}).`,
+        `${apt.staffName} occupée · ${apt.serviceName} (${formatBusinessTime(aptStart)}–${formatBusinessTime(aptEnd)}).`,
       );
     }
 
     if (input.resourceId && apt.resourceId === input.resourceId) {
       conflicts.push(
-        `${apt.resourceName ?? "Ressource"} indisponible · ${formatTime(aptStart)}–${formatTime(aptEnd)}.`,
+        `${apt.resourceName ?? "Ressource"} indisponible · ${formatBusinessTime(aptStart)}–${formatBusinessTime(aptEnd)}.`,
       );
     }
   }
@@ -193,7 +184,8 @@ export function getAvailableSlots(
   },
 ): { time: string; available: boolean; reason?: string }[] {
   const slots: { time: string; available: boolean; reason?: string }[] = [];
-  const day = params.date.getDay();
+  const businessDay = businessParts(params.date);
+  const day = businessDay.weekday;
   const schedule = params.staffContext?.schedules.find((s) => s.dayOfWeek === day && s.active);
   const overtimes = params.staffContext?.overtimes ?? [];
 
@@ -209,11 +201,13 @@ export function getAvailableSlots(
   for (const ot of overtimes) {
     const oStart = parseDate(ot.startAt);
     const oEnd = parseDate(ot.endAt);
-    if (!sameDay(oStart, params.date) && !sameDay(oEnd, params.date)) {
+    if (!isSameBusinessDay(oStart, params.date) && !isSameBusinessDay(oEnd, params.date)) {
       if (!(oStart <= params.date && oEnd >= params.date)) continue;
     }
-    openHour = Math.min(openHour, oStart.getHours());
-    closeHour = Math.max(closeHour, oEnd.getHours() + (oEnd.getMinutes() > 0 ? 1 : 0));
+    const otStart = businessParts(oStart);
+    const otEnd = businessParts(oEnd);
+    openHour = Math.min(openHour, otStart.hour);
+    closeHour = Math.max(closeHour, otEnd.hour + (otEnd.minute > 0 ? 1 : 0));
   }
 
   openHour = Math.max(AGENDA_OPEN_HOUR, Math.min(openHour, AGENDA_CLOSE_HOUR - 1));
@@ -223,13 +217,12 @@ export function getAvailableSlots(
 
   for (let h = openHour; h < closeHour; h++) {
     for (let m = 0; m < 60; m += AGENDA_SLOT_MINUTES) {
-      const start = new Date(params.date);
-      start.setHours(h, m, 0, 0);
+      const start = businessWallTime(businessDay, h, m);
       const end = new Date(start.getTime() + params.durationMinutes * 60_000);
 
       if (schedule) {
-        const workEnd = parseTimeOnDate(params.date, schedule.endTime);
-        const workStart = parseTimeOnDate(params.date, schedule.startTime);
+        const workEnd = businessTimeOnDate(params.date, schedule.endTime);
+        const workStart = businessTimeOnDate(params.date, schedule.startTime);
         const withinSchedule = start >= workStart && end <= workEnd;
         const coveredByOt = overtimes.some((ot) => {
           const oStart = parseDate(ot.startAt);
@@ -253,7 +246,7 @@ export function getAvailableSlots(
       );
 
       slots.push({
-        time: formatTime(start),
+        time: formatBusinessTime(start),
         available: result.available,
         reason: result.conflicts[0],
       });
@@ -294,7 +287,7 @@ export function filterAppointmentsForDates(
 ) {
   return appointments.filter((apt) => {
     const start = parseDate(apt.startAt);
-    if (!dates.some((d) => sameDay(start, d))) return false;
+    if (!dates.some((d) => isSameBusinessDay(start, d))) return false;
     if (filters.staffId && apt.staffId !== filters.staffId) return false;
     if (filters.serviceId && apt.serviceId !== filters.serviceId) return false;
     if (filters.resourceId && apt.resourceId !== filters.resourceId) return false;
@@ -335,12 +328,10 @@ export function isStaffAvailableOnDate(
   date: Date,
 ): boolean {
   if (staff.status !== "ACTIVE") return false;
-  const day = date.getDay();
+  const day = businessDayOfWeek(date);
   const hasSchedule = staff.schedules.some((s) => s.dayOfWeek === day && s.active);
-  const dayStart = new Date(date);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(date);
-  dayEnd.setHours(23, 59, 59, 999);
+  const dayStart = startOfBusinessDay(date);
+  const dayEnd = endOfBusinessDay(date);
 
   const hasOt = (staff.overtimes ?? []).some((ot) => {
     const oStart = parseDate(ot.startAt);
@@ -353,8 +344,7 @@ export function isStaffAvailableOnDate(
   for (const leave of staff.leaves) {
     if (leave.status !== "APPROVED") continue;
     const lStart = parseDate(leave.startAt);
-    const lEnd = parseDate(leave.endAt);
-    lEnd.setHours(23, 59, 59, 999);
+    const lEnd = endOfBusinessDay(parseDate(leave.endAt));
     if (overlaps(dayStart, dayEnd, lStart, lEnd)) return false;
   }
 
@@ -371,10 +361,8 @@ export function isResourceAvailableOnDate(
   date: Date,
 ): boolean {
   if (!resource.active) return false;
-  const dayStart = new Date(date);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(date);
-  dayEnd.setHours(23, 59, 59, 999);
+  const dayStart = startOfBusinessDay(date);
+  const dayEnd = endOfBusinessDay(date);
 
   for (const m of resource.maintenances) {
     if (!isBlockingMaintenance(m.status)) continue;

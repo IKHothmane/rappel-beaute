@@ -271,6 +271,13 @@ export async function middleware(request: NextRequest) {
       return publicRedirect(request, "/dashboard/", domain, hostname);
     }
 
+    // Déjà sous /domains/admin (ré-entrée middleware après rewrite) → next, pas rewrite
+    if (path.startsWith("/domains/admin")) {
+      const res = NextResponse.next({ request: { headers } });
+      res.cookies.set(COOKIE_HOST, "admin", { path: "/", sameSite: "lax" });
+      return res;
+    }
+
     // Rewrite interne — /admin → Super Admin (pas la vitrine)
     const url = request.nextUrl.clone();
     url.pathname = adminInternalPath(path);
@@ -300,12 +307,20 @@ export async function middleware(request: NextRequest) {
     return res;
   }
 
-  // domain === app → rewrite (toujours avec trailing slash si la config l'exige)
+  // domain === app → rewrite vers /domains/app/…
+  // Si on y est déjà (ré-entrée après rewrite), next() — sinon boucle infinie
+  // et Playwright timeout (goto qui ne finit jamais / formulaire jamais monté).
+  if (path.startsWith("/domains/app")) {
+    const res = NextResponse.next({ request: { headers } });
+    if (queryHost) {
+      res.cookies.set(COOKIE_HOST, queryHost, { path: "/", sameSite: "lax" });
+    }
+    return res;
+  }
+
   const url = request.nextUrl.clone();
   if (path === "/" || path === "") {
     url.pathname = "/domains/app/dashboard/";
-  } else if (path.startsWith("/domains/app")) {
-    url.pathname = path;
   } else {
     const joined = `/domains/app${path}`;
     url.pathname = joined.endsWith("/") ? joined : `${joined}/`;

@@ -5,12 +5,13 @@ const PLATFORM = { email: "admin@rappelbeaute.ma", password: "demo1234" };
 
 test.describe("Parcours commercial — seed Institut Royal", () => {
   test("OWNER login → dashboard", async ({ page }) => {
-    // URL canonique publique (le middleware rewrite vers /domains/app/…)
-    await page.goto("/login/?__host=app");
-    await page.fill('input[type="email"], input[name="email"]', OWNER.email);
-    await page.fill('input[type="password"]', OWNER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/dashboard/);
+    await page.goto("/login/?__host=app", { waitUntil: "domcontentloaded" });
+    const email = page.locator('input[name="email"]');
+    await expect(email).toBeVisible({ timeout: 15_000 });
+    await email.fill(OWNER.email);
+    await page.locator('input[name="password"]').fill(OWNER.password);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL(/dashboard/, { timeout: 15_000 });
     await expect(page.locator("body")).toContainText(/Institut|Dashboard|Tableau/i);
   });
 
@@ -31,8 +32,14 @@ test.describe("Parcours commercial — seed Institut Royal", () => {
   });
 
   test("Booking public institut-royal accessible", async ({ page }) => {
-    await page.goto("/book/institut-royal/?__host=app");
+    await page.goto("/book/institut-royal/?__host=app", {
+      waitUntil: "domcontentloaded",
+    });
     await expect(page.locator("body")).toBeVisible();
+    // Contenu métier (évite un faux positif sur une page d'erreur vide)
+    await expect(page.locator("body")).toContainText(/Institut|réserver|service|Hydrafacial/i, {
+      timeout: 15_000,
+    });
   });
 
   test("Platform SUPER_ADMIN login", async ({ request }) => {

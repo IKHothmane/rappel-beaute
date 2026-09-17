@@ -5,7 +5,7 @@ import {
   requirePosWrite,
   stripOrganizationId,
 } from "@/lib/auth/api-guard";
-import { createPosSale, listPosSales } from "@/lib/db/pos";
+import { createPosSale, getPosSalesKpis, listPosSales } from "@/lib/db/pos";
 import type { PaymentMethod } from "@/types/finance";
 import { PAYMENT_METHODS } from "@/types/finance";
 
@@ -26,8 +26,22 @@ export async function GET(request: NextRequest) {
   const auth = await requirePosRead(request);
   if (!auth.ok) return auth.response;
   try {
-    const data = await listPosSales(auth.session.organizationId);
-    return NextResponse.json({ data });
+    const sp = request.nextUrl.searchParams;
+    const filters = {
+      from: sp.get("from") ?? undefined,
+      to: sp.get("to") ?? undefined,
+      soldById: sp.get("soldById") ?? undefined,
+      paymentMethod: sp.get("paymentMethod") ?? undefined,
+      status: sp.get("status") ?? undefined,
+      customerId: sp.get("customerId") ?? undefined,
+      search: sp.get("search") ?? undefined,
+      limit: sp.get("limit") ? Number(sp.get("limit")) : 50,
+    };
+    const [data, kpis] = await Promise.all([
+      listPosSales(auth.session.organizationId, filters),
+      getPosSalesKpis(auth.session.organizationId, filters),
+    ]);
+    return NextResponse.json({ data, kpis });
   } catch (error) {
     console.error("[GET /api/pos/sales]", error);
     return NextResponse.json({ error: "Erreur liste." }, { status: 500 });

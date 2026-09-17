@@ -2,6 +2,7 @@ import type {
   CreatePosSaleInput,
   PosProductItem,
   PosSaleDetail,
+  PosSalesKpis,
 } from "@/types/pos";
 import type { PaymentMethod } from "@/types/finance";
 
@@ -57,10 +58,27 @@ export async function createPosSaleApi(
   }
 }
 
-export async function listPosSalesApi(): Promise<PosSaleDetail[]> {
-  const res = await fetch("/api/pos/sales/", fetchOpts);
-  const data = await parseJson<{ data: PosSaleDetail[] }>(res);
-  return data.data;
+export async function listPosSalesApi(params?: {
+  from?: string;
+  to?: string;
+  soldById?: string;
+  paymentMethod?: string;
+  status?: string;
+  customerId?: string;
+  search?: string;
+  limit?: number;
+}): Promise<{ data: PosSaleDetail[]; kpis: PosSalesKpis }> {
+  const q = new URLSearchParams();
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  if (params?.soldById) q.set("soldById", params.soldById);
+  if (params?.paymentMethod) q.set("paymentMethod", params.paymentMethod);
+  if (params?.status) q.set("status", params.status);
+  if (params?.customerId) q.set("customerId", params.customerId);
+  if (params?.search) q.set("search", params.search);
+  if (params?.limit) q.set("limit", String(params.limit));
+  const res = await fetch(`/api/pos/sales/?${q}`, fetchOpts);
+  return parseJson<{ data: PosSaleDetail[]; kpis: PosSalesKpis }>(res);
 }
 
 export async function refundPosSaleApi(
@@ -83,4 +101,4 @@ export function newPosIdempotencyKey(): string {
   return `pos_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export type { CreatePosSaleInput, PosProductItem, PosSaleDetail, PaymentMethod };
+export type { CreatePosSaleInput, PosProductItem, PosSaleDetail, PosSalesKpis, PaymentMethod };

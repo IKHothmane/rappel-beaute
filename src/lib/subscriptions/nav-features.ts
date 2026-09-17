@@ -15,6 +15,7 @@ export const NAV_PLAN_FEATURE: Record<string, PlanFeatureKey | null> = {
   purchases: "purchases",
   "cash-register": "cashRegister",
   pos: "cashRegister",
+  ventes: "cashRegister",
   payments: "cashRegister",
   invoices: "invoices",
   expenses: "expenses",
@@ -85,8 +86,8 @@ export function isPlanFeatureEnabled(
   features: Record<string, boolean> | null | undefined,
   navKey: string,
 ): boolean {
-  // POS = caisse + stock (pas de 2ᵉ feature plan dédiée)
-  if (navKey === "pos") {
+  // POS / Ventes = caisse + stock (pas de 2ᵉ feature plan dédiée)
+  if (navKey === "pos" || navKey === "ventes") {
     if (!features) return true;
     return features.cashRegister === true && features.inventory === true;
   }

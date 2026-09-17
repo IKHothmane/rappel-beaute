@@ -17,6 +17,7 @@ export type AdminSubscriptionListItem = {
   organizationId: string;
   organizationName: string;
   organizationEmail: string | null;
+  organizationCity: string | null;
   planId: string;
   planCode: PlanCode;
   planName: string;
@@ -35,6 +36,9 @@ export type AdminSubscriptionListItem = {
 export type AdminSubscriptionsKpis = {
   total: number;
   active: number;
+  trial: number;
+  pastDue: number;
+  suspended: number;
   expiringSoon: number;
   expired: number;
   mrr: number;
@@ -44,13 +48,19 @@ export async function getAdminSubscriptionsKpis(): Promise<AdminSubscriptionsKpi
   const { rows } = await pool.query<{
     total: string;
     active: string;
+    trial: string;
+    pastDue: string;
+    suspended: string;
     soon: string;
     expired: string;
     mrr: string;
   }>(
     `SELECT
       COUNT(*)::text AS total,
-      COUNT(*) FILTER (WHERE s.status IN ('ACTIVE', 'TRIAL'))::text AS active,
+      COUNT(*) FILTER (WHERE s.status = 'ACTIVE')::text AS active,
+      COUNT(*) FILTER (WHERE s.status = 'TRIAL')::text AS trial,
+      COUNT(*) FILTER (WHERE s.status = 'PAST_DUE')::text AS pastDue,
+      COUNT(*) FILTER (WHERE s.status = 'PAUSED')::text AS suspended,
       COUNT(*) FILTER (
         WHERE s.status IN ('ACTIVE', 'TRIAL', 'PAST_DUE')
           AND s."currentPeriodEnd" > NOW()
@@ -66,6 +76,9 @@ export async function getAdminSubscriptionsKpis(): Promise<AdminSubscriptionsKpi
   return {
     total: parseInt(rows[0]?.total ?? "0", 10),
     active: parseInt(rows[0]?.active ?? "0", 10),
+    trial: parseInt(rows[0]?.trial ?? "0", 10),
+    pastDue: parseInt(rows[0]?.pastDue ?? "0", 10),
+    suspended: parseInt(rows[0]?.suspended ?? "0", 10),
     expiringSoon: parseInt(rows[0]?.soon ?? "0", 10),
     expired: parseInt(rows[0]?.expired ?? "0", 10),
     mrr: parseFloat(rows[0]?.mrr ?? "0"),
@@ -79,7 +92,11 @@ function mapUrgency(status: SubscriptionStatus, end: Date): {
 } {
   const days = Math.ceil((end.getTime() - Date.now()) / 86400000);
   if (status === "EXPIRED" || days < 0) {
-    return { daysUntilExpiry: days, urgency: "expired", paymentLabel: "—" };
+    return {
+      daysUntilExpiry: days,
+      urgency: "expired",
+      paymentLabel: status === "PAST_DUE" ? "Impayé" : "Échu",
+    };
   }
   if (status === "PAUSED" || status === "CANCELLED") {
     return {
@@ -88,13 +105,27 @@ function mapUrgency(status: SubscriptionStatus, end: Date): {
       paymentLabel: status === "PAUSED" ? "Suspendu" : "Annulé",
     };
   }
+  if (status === "TRIAL") {
+    return {
+      daysUntilExpiry: days,
+      urgency: days <= 7 ? "soon" : "ok",
+      paymentLabel: days <= 7 ? `Essai (J-${Math.max(0, days)})` : "En essai",
+    };
+  }
+  if (status === "PAST_DUE") {
+    return {
+      daysUntilExpiry: days,
+      urgency: "soon",
+      paymentLabel: "Impayé",
+    };
+  }
   if (days <= 7) {
-    return { daysUntilExpiry: days, urgency: "soon", paymentLabel: "Payé" };
+    return { daysUntilExpiry: days, urgency: "soon", paymentLabel: "Renouvellement" };
   }
   return {
     daysUntilExpiry: days,
     urgency: "ok",
-    paymentLabel: status === "PAST_DUE" ? "Impayé" : "Payé",
+    paymentLabel: "Payé",
   };
 }
 
@@ -143,6 +174,7 @@ export async function listAdminSubscriptions(opts?: {
     organizationId: string;
     organizationName: string;
     organizationEmail: string | null;
+    organizationCity: string | null;
     planId: string;
     planCode: string;
     planName: string;
@@ -155,6 +187,7 @@ export async function listAdminSubscriptions(opts?: {
     startedAt: Date;
   }>(
     `SELECT s.id, s."organizationId", o.name AS "organizationName", o.email AS "organizationEmail",
+            o.city AS "organizationCity",
             s."planId", p.code AS "planCode", p.name AS "planName", s.status,
             s."priceSnapshot"::text, s."currencySnapshot",
             s."currentPeriodStart", s."currentPeriodEnd", s."trialEndsAt", s."startedAt"
@@ -173,6 +206,7 @@ export async function listAdminSubscriptions(opts?: {
       organizationId: r.organizationId,
       organizationName: r.organizationName,
       organizationEmail: r.organizationEmail,
+      organizationCity: r.organizationCity,
       planId: r.planId,
       planCode: r.planCode as PlanCode,
       planName: r.planName,
@@ -196,6 +230,7 @@ export async function fetchAdminSubscription(
     organizationId: string;
     organizationName: string;
     organizationEmail: string | null;
+    organizationCity: string | null;
     planId: string;
     planCode: string;
     planName: string;
@@ -208,6 +243,7 @@ export async function fetchAdminSubscription(
     startedAt: Date;
   }>(
     `SELECT s.id, s."organizationId", o.name AS "organizationName", o.email AS "organizationEmail",
+            o.city AS "organizationCity",
             s."planId", p.code AS "planCode", p.name AS "planName", s.status,
             s."priceSnapshot"::text, s."currencySnapshot",
             s."currentPeriodStart", s."currentPeriodEnd", s."trialEndsAt", s."startedAt"
@@ -225,6 +261,7 @@ export async function fetchAdminSubscription(
     organizationId: r.organizationId,
     organizationName: r.organizationName,
     organizationEmail: r.organizationEmail,
+    organizationCity: r.organizationCity,
     planId: r.planId,
     planCode: r.planCode as PlanCode,
     planName: r.planName,

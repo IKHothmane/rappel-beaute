@@ -35,6 +35,12 @@ function checkMemory(config: RateLimitConfig): RateLimitResult {
   return { allowed: true };
 }
 
+/**
+ * Compteur atomique Redis (INCR) + TTL garanti.
+ * Pipeline MULTI : 1 RTT au lieu de 2–3.
+ * EXPIRE NX (Redis 7) : pose le TTL seulement s’il manque — guérit aussi
+ * une clé orpheline si un crash a coupé entre INCR et EXPIRE.
+ */
 async function checkRedis(config: RateLimitConfig): Promise<RateLimitResult | null> {
   const redis = await getRedis();
   if (!redis) return null;
@@ -42,13 +48,19 @@ async function checkRedis(config: RateLimitConfig): Promise<RateLimitResult | nu
   const redisKey = `rl:${config.key}`;
   const windowSec = Math.ceil(config.windowMs / 1000);
 
-  const count = await redis.incr(redisKey);
-  if (count === 1) {
-    await redis.expire(redisKey, windowSec);
-  }
+  const results = await redis
+    .multi()
+    .incr(redisKey)
+    .expire(redisKey, windowSec, "NX")
+    .ttl(redisKey)
+    .exec();
+
+  if (!results) return null;
+
+  const count = results[0] as number;
+  const ttl = results[2] as number;
 
   if (count > config.limit) {
-    const ttl = await redis.ttl(redisKey);
     return {
       allowed: false,
       retryAfterSec: ttl > 0 ? ttl : windowSec,

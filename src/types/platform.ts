@@ -38,6 +38,8 @@ export type OrganizationListItem = {
   createdAt: string;
   mrr: number;
   usersCount: number;
+  subscriptionStatus: SubscriptionStatus | null;
+  renewAt: string | null;
 };
 
 export type PlatformDashboardStats = {
@@ -67,10 +69,25 @@ export type PlatformBillingLine = {
   id: string;
   organizationId: string;
   organizationName: string;
+  organizationCity: string | null;
+  organizationPhone: string | null;
   amount: number;
   plan: PlanCode;
   periodStart: string;
+  periodEnd: string | null;
   status: string;
+};
+
+export type PlatformBillingUnpaid = {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  organizationCity: string | null;
+  organizationPhone: string | null;
+  amount: number;
+  dueAt: string;
+  attemptsHint: string;
+  statusLabel: string;
 };
 
 export type PlatformBillingSnapshot = {
@@ -79,6 +96,44 @@ export type PlatformBillingSnapshot = {
   mrrGrowthPercent: number;
   activeSubs: number;
   mrrSeries: { label: string; value: number }[];
+  /** Proxy encaissement (MRR actifs − impayés) — pas de ledger SaaS */
+  collected: number;
+  collectedGrowthPercent: number;
+  pastDueAmount: number;
+  pastDueCount: number;
+  collectionRate: number;
+  fleet: {
+    total: number;
+    active: number;
+    trial: number;
+    cancelledThisMonth: number;
+    suspended: number;
+    expiringSoon: number;
+  };
+  movements: {
+    newThisMonth: number;
+    newMrr: number;
+    churnThisMonth: number;
+    churnMrr: number;
+    netMrr: number;
+  };
+  renewals: {
+    todayCount: number;
+    todayAmount: number;
+    next7Count: number;
+    next7Amount: number;
+    next30Count: number;
+    next30Amount: number;
+  };
+  cityMrr: { city: string; mrr: number; pct: number }[];
+  unpaid: PlatformBillingUnpaid[];
+  history: {
+    label: string;
+    mrr: number;
+    collected: number;
+    pastDue: number;
+    rate: number;
+  }[];
   planShare: Record<PlanCode, number>;
   lines: PlatformBillingLine[];
 };
@@ -88,12 +143,15 @@ export type PlatformOrgUser = {
   email: string;
   firstName: string;
   lastName: string;
+  phone: string | null;
   role: string;
   status: string;
   organizationId: string | null;
   organizationName: string | null;
+  organizationCity: string | null;
   createdAt: string;
   mustChangePassword: boolean;
+  sessionVersion: number;
   accountKind: "ORG" | "PLATFORM";
   lastLoginAt: string | null;
 };
@@ -103,6 +161,11 @@ export type PlatformUsersKpis = {
   active: number;
   disabled: number;
   thisMonth: number;
+  inactive: number;
+  onlineToday: number;
+  watchlist: number;
+  orgsCount: number;
+  roleShare: Record<string, number>;
 };
 
 export type SupportSessionListItem = {

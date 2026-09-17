@@ -60,24 +60,62 @@ export async function getPlatformUsersKpis(): Promise<PlatformUsersKpis> {
     active: string;
     disabled: string;
     month: string;
+    inactive: string;
+    onlineToday: string;
+    watchlist: string;
   }>(
     `SELECT
       COUNT(*)::text AS total,
-      COUNT(*) FILTER (WHERE status = 'ACTIVE')::text AS active,
-      COUNT(*) FILTER (WHERE status = 'DISABLED')::text AS disabled,
-      COUNT(*) FILTER (WHERE "createdAt" >= date_trunc('month', NOW()))::text AS month
-     FROM "User"`,
+      COUNT(*) FILTER (WHERE u.status = 'ACTIVE')::text AS active,
+      COUNT(*) FILTER (WHERE u.status = 'DISABLED')::text AS disabled,
+      COUNT(*) FILTER (WHERE u."createdAt" >= date_trunc('month', NOW()))::text AS month,
+      COUNT(*) FILTER (
+        WHERE u.status = 'ACTIVE'
+          AND (login."createdAt" IS NULL OR login."createdAt" < NOW() - INTERVAL '30 days')
+      )::text AS inactive,
+      COUNT(*) FILTER (
+        WHERE u.status = 'ACTIVE'
+          AND login."createdAt" >= date_trunc('day', NOW())
+      )::text AS onlineToday,
+      COUNT(*) FILTER (
+        WHERE u.status = 'ACTIVE' AND u."mustChangePassword" = true
+      )::text AS watchlist
+     FROM "User" u
+     LEFT JOIN LATERAL (
+       SELECT a."createdAt" FROM "AuditLog" a
+       WHERE a."entityId" = u.id AND a.action = 'LOGIN'
+       ORDER BY a."createdAt" DESC LIMIT 1
+     ) login ON true`,
   );
   const { rows: platform } = await pool.query<{ c: string }>(
     `SELECT COUNT(*)::text AS c FROM "PlatformUser" WHERE status = 'ACTIVE'`,
   );
-  const total = parseInt(rows[0]?.total ?? "0", 10) + parseInt(platform[0]?.c ?? "0", 10);
-  const active = parseInt(rows[0]?.active ?? "0", 10) + parseInt(platform[0]?.c ?? "0", 10);
+  const { rows: orgs } = await pool.query<{ c: string }>(
+    `SELECT COUNT(*)::text AS c FROM "Organization" WHERE status = 'ACTIVE'`,
+  );
+  const { rows: roles } = await pool.query<{ role: string; c: string }>(
+    `SELECT role::text AS role, COUNT(*)::text AS c FROM "User" GROUP BY role`,
+  );
+  const platformCount = parseInt(platform[0]?.c ?? "0", 10);
+  const total = parseInt(rows[0]?.total ?? "0", 10) + platformCount;
+  const active = parseInt(rows[0]?.active ?? "0", 10) + platformCount;
+  const roleShare: Record<string, number> = {};
+  for (const r of roles) {
+    roleShare[r.role] = parseInt(r.c ?? "0", 10);
+  }
+  if (platformCount > 0) {
+    roleShare.SUPER_ADMIN = (roleShare.SUPER_ADMIN ?? 0) + platformCount;
+  }
   return {
     total,
     active,
     disabled: parseInt(rows[0]?.disabled ?? "0", 10),
     thisMonth: parseInt(rows[0]?.month ?? "0", 10),
+    inactive: parseInt(rows[0]?.inactive ?? "0", 10),
+    onlineToday: parseInt(rows[0]?.onlineToday ?? "0", 10),
+    watchlist: parseInt(rows[0]?.watchlist ?? "0", 10),
+    orgsCount: parseInt(orgs[0]?.c ?? "0", 10),
+    roleShare,
   };
 }
 
@@ -98,6 +136,8 @@ export async function listPlatformWideUsers(opts?: {
       `(LOWER(u.email) LIKE $${params.length}
         OR LOWER(u."firstName") LIKE $${params.length}
         OR LOWER(u."lastName") LIKE $${params.length}
+        OR LOWER(COALESCE(u.phone, '')) LIKE $${params.length}
+        OR LOWER(u.id) LIKE $${params.length}
         OR LOWER(o.name) LIKE $${params.length})`,
     );
   }
@@ -130,17 +170,21 @@ export async function listPlatformWideUsers(opts?: {
       email: string;
       firstName: string;
       lastName: string;
+      phone: string | null;
       role: string;
       status: string;
       organizationId: string;
       organizationName: string;
+      organizationCity: string | null;
       createdAt: Date;
       mustChangePassword: boolean;
+      sessionVersion: number;
       lastLoginAt: Date | null;
     }>(
-      `SELECT u.id, u.email, u."firstName", u."lastName", u.role::text, u.status::text,
-              u."organizationId", o.name AS "organizationName", u."createdAt",
-              u."mustChangePassword", login."createdAt" AS "lastLoginAt"
+      `SELECT u.id, u.email, u."firstName", u."lastName", u.phone, u.role::text, u.status::text,
+              u."organizationId", o.name AS "organizationName", o.city AS "organizationCity",
+              u."createdAt", u."mustChangePassword", u."sessionVersion",
+              login."createdAt" AS "lastLoginAt"
        FROM "User" u
        JOIN "Organization" o ON o.id = u."organizationId"
        LEFT JOIN LATERAL (
@@ -149,7 +193,7 @@ export async function listPlatformWideUsers(opts?: {
          ORDER BY a."createdAt" DESC LIMIT 1
        ) login ON true
        ${where}
-       ORDER BY o.name, u."lastName", u."firstName"
+       ORDER BY COALESCE(login."createdAt", u."createdAt") DESC
        LIMIT $${params.length}`,
       params,
     );
@@ -160,12 +204,15 @@ export async function listPlatformWideUsers(opts?: {
         email: r.email,
         firstName: r.firstName,
         lastName: r.lastName,
+        phone: r.phone,
         role: r.role,
         status: r.status,
         organizationId: r.organizationId,
         organizationName: r.organizationName,
+        organizationCity: r.organizationCity,
         createdAt: r.createdAt.toISOString(),
         mustChangePassword: Boolean(r.mustChangePassword),
+        sessionVersion: r.sessionVersion ?? 0,
         accountKind: "ORG",
         lastLoginAt: r.lastLoginAt?.toISOString() ?? null,
       });
@@ -207,12 +254,15 @@ export async function listPlatformWideUsers(opts?: {
         email: r.email,
         firstName: r.firstName,
         lastName: r.lastName,
+        phone: null,
         role: r.role,
         status: r.status,
         organizationId: null,
         organizationName: null,
+        organizationCity: null,
         createdAt: r.createdAt.toISOString(),
         mustChangePassword: false,
+        sessionVersion: 0,
         accountKind: "PLATFORM",
         lastLoginAt: null,
       });
@@ -230,17 +280,21 @@ export async function getPlatformWideUser(
     email: string;
     firstName: string;
     lastName: string;
+    phone: string | null;
     role: string;
     status: string;
     organizationId: string;
     organizationName: string;
+    organizationCity: string | null;
     createdAt: Date;
     mustChangePassword: boolean;
+    sessionVersion: number;
     lastLoginAt: Date | null;
   }>(
-    `SELECT u.id, u.email, u."firstName", u."lastName", u.role::text, u.status::text,
-            u."organizationId", o.name AS "organizationName", u."createdAt",
-            u."mustChangePassword", login."createdAt" AS "lastLoginAt"
+    `SELECT u.id, u.email, u."firstName", u."lastName", u.phone, u.role::text, u.status::text,
+            u."organizationId", o.name AS "organizationName", o.city AS "organizationCity",
+            u."createdAt", u."mustChangePassword", u."sessionVersion",
+            login."createdAt" AS "lastLoginAt"
      FROM "User" u
      JOIN "Organization" o ON o.id = u."organizationId"
      LEFT JOIN LATERAL (
@@ -258,12 +312,15 @@ export async function getPlatformWideUser(
       email: r.email,
       firstName: r.firstName,
       lastName: r.lastName,
+      phone: r.phone,
       role: r.role,
       status: r.status,
       organizationId: r.organizationId,
       organizationName: r.organizationName,
+      organizationCity: r.organizationCity,
       createdAt: r.createdAt.toISOString(),
       mustChangePassword: Boolean(r.mustChangePassword),
+      sessionVersion: r.sessionVersion ?? 0,
       accountKind: "ORG",
       lastLoginAt: r.lastLoginAt?.toISOString() ?? null,
     };
@@ -289,12 +346,15 @@ export async function getPlatformWideUser(
     email: p.email,
     firstName: p.firstName,
     lastName: p.lastName,
+    phone: null,
     role: p.role,
     status: p.status,
     organizationId: null,
     organizationName: null,
+    organizationCity: null,
     createdAt: p.createdAt.toISOString(),
     mustChangePassword: false,
+    sessionVersion: 0,
     accountKind: "PLATFORM",
     lastLoginAt: null,
   };

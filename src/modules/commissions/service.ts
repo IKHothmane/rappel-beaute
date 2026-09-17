@@ -167,3 +167,41 @@ export function formatRate(item: {
   if (item.type === "PERCENTAGE") return `${item.percentageSnapshot ?? 0} %`;
   return `${item.fixedSnapshot ?? 0} MAD`;
 }
+
+export async function getCommissionSettings() {
+  const res = await fetch("/api/commissions/settings/", fetchOpts);
+  return parseJson<import("@/types/commission").CommissionSettings>(res);
+}
+
+export async function updateCommissionSettingsApi(input: {
+  productCommissionEnabled?: boolean;
+  productCommissionRate?: number;
+}): Promise<
+  | { ok: true; settings: import("@/types/commission").CommissionSettings }
+  | { ok: false; error: string }
+> {
+  try {
+    const res = await fetch("/api/commissions/settings/", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        ok: false,
+        error:
+          typeof data === "object" && data && "error" in data
+            ? String((data as { error: string }).error)
+            : "Erreur",
+      };
+    }
+    return {
+      ok: true,
+      settings: data as import("@/types/commission").CommissionSettings,
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
+  }
+}

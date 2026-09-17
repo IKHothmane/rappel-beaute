@@ -1,7 +1,7 @@
 "use client";
 
-import { AdminSettingsPage } from "@/components/admin/AdminSettingsPage";
+import { AdminPlatformSettingsView } from "@/components/admin/admin-platform-settings";
 
 export default function SettingsPage() {
-  return <AdminSettingsPage />;
+  return <AdminPlatformSettingsView />;
 }

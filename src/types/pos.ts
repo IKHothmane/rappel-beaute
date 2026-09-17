@@ -57,6 +57,24 @@ export type PosProductItem = {
   brand: string | null;
 };
 
+export type PosSalesListFilters = {
+  from?: string;
+  to?: string;
+  soldById?: string;
+  paymentMethod?: PaymentMethod;
+  status?: PosSaleStatus | "all";
+  customerId?: string;
+  search?: string;
+  limit?: number;
+};
+
+export type PosSalesKpis = {
+  revenue: number;
+  salesCount: number;
+  productsSold: number;
+  averageBasket: number;
+};
+
 export const POS_SALE_STATUS_LABEL: Record<PosSaleStatus, string> = {
   COMPLETED: "Encaissée",
   REFUNDED: "Remboursée",

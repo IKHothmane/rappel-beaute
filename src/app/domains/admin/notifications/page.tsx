@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminUi";
+import { adminHref } from "@/lib/admin/href";
 import { fetchAdminAudit } from "@/modules/admin/client";
 import { platformAuditActionLabel } from "@/types/platform";
 
@@ -23,8 +24,8 @@ export default function NotificationsPage() {
   return (
     <>
       <AdminPageHeader
-        title="Activité plateforme"
-        description="Flux basé sur PlatformAuditLog (pas de notifications fictives)."
+        title="Notifications"
+        description="Activité récente de la plateforme (journal d'audit)."
       />
 
       {loading ? <p className="text-sm text-[var(--admin-muted)]">Chargement…</p> : null}
@@ -45,7 +46,7 @@ export default function NotificationsPage() {
                     <>
                       {" · "}
                       <Link
-                        href={`/organizations/${n.organizationId}/`}
+                        href={adminHref(`/organizations/${n.organizationId}/`)}
                         className="text-[var(--admin-accent)]"
                       >
                         {n.organizationName ?? n.organizationId}

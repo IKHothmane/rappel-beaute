@@ -30,6 +30,7 @@ import {
   LOYALTY_TXN_LABEL,
   redeemReward,
 } from "@/modules/loyalty/service";
+import { listPosSalesApi } from "@/modules/pos/service";
 import type {
   CustomerAppointmentHistory,
   CustomerDetail,
@@ -42,11 +43,14 @@ import type {
 import type { CustomerLoyaltyView, PackageListItem } from "@/types/loyalty";
 import type { PaymentItem } from "@/types/finance";
 import { PAYMENT_METHOD_LABEL } from "@/types/finance";
+import type { PosSaleDetail } from "@/types/pos";
+import { POS_SALE_STATUS_LABEL } from "@/types/pos";
 
 const TABS = [
   "Profil",
   "Timeline",
   "Historique",
+  "Achats",
   "Fidélité",
   "Forfaits",
   "Paiements",
@@ -114,6 +118,8 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
   const [loyalty, setLoyalty] = useState<CustomerLoyaltyView | null>(null);
   const [packages, setPackages] = useState<PackageListItem[]>([]);
   const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [productSales, setProductSales] = useState<PosSaleDetail[]>([]);
+  const [productSalesLoading, setProductSalesLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -161,6 +167,18 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
     }
   }, [customerId]);
 
+  const refreshProductSales = useCallback(async () => {
+    setProductSalesLoading(true);
+    try {
+      const res = await listPosSalesApi({ customerId, limit: 50 });
+      setProductSales(res.data);
+    } catch {
+      setProductSales([]);
+    } finally {
+      setProductSalesLoading(false);
+    }
+  }, [customerId]);
+
   useEffect(() => {
     setLoading(true);
     refresh().finally(() => setLoading(false));
@@ -170,7 +188,8 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
     if (["Fidélité", "Forfaits", "Paiements"].includes(tab)) refreshLoyaltyTabs();
     if (tab === "Timeline") refreshTimeline();
     if (tab === "Notes") refreshNotes();
-  }, [tab, refreshLoyaltyTabs, refreshTimeline, refreshNotes]);
+    if (tab === "Achats") void refreshProductSales();
+  }, [tab, refreshLoyaltyTabs, refreshTimeline, refreshNotes, refreshProductSales]);
 
   if (loading) {
     return <div className="surface p-8 text-center text-sm text-ink/50">Chargement…</div>;
@@ -458,6 +477,50 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
                   <p className="text-xs text-ink/50">{STATUS_LABEL[h.status] ?? h.status}</p>
                 </div>
                 <span className="font-mono font-semibold">{mad(h.price)}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : null}
+
+      {tab === "Achats" ? (
+        productSalesLoading ? (
+          <div className="surface p-5 text-sm text-ink/60">Chargement…</div>
+        ) : productSales.length === 0 ? (
+          <div className="surface p-5 text-sm text-ink/60">Aucun achat produit.</div>
+        ) : (
+          <ul className="surface divide-y divide-line text-sm">
+            {productSales.map((sale) => (
+              <li
+                key={sale.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-5"
+              >
+                <div>
+                  <p className="font-medium">
+                    {new Date(sale.createdAt).toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}{" "}
+                    — {sale.invoiceNumber}
+                  </p>
+                  <p className="text-xs text-ink/50">
+                    {POS_SALE_STATUS_LABEL[sale.status]} ·{" "}
+                    {PAYMENT_METHOD_LABEL[sale.paymentMethod] ?? sale.paymentMethod}
+                    {sale.lines.length > 0
+                      ? ` · ${sale.lines.map((l) => `${l.quantity}× ${l.name}`).join(", ")}`
+                      : null}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono font-semibold">{mad(sale.total)}</span>
+                  <Link
+                    href={`/invoices/${sale.invoiceId}/`}
+                    className="text-xs text-primary underline"
+                  >
+                    Facture
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>

@@ -45,7 +45,7 @@ function dayBounds(date: string): { start: Date; end: Date } {
 
 export async function resolveOrganizationBySlug(slug: string): Promise<PublicOrganizationProfile | null> {
   const { rows } = await pool.query<PublicOrganizationProfile>(
-    `SELECT id, slug, name, address, phone, email
+    `SELECT id, slug, name, address, city, phone, email
      FROM "Organization"
      WHERE slug = $1 AND status = 'ACTIVE'::"OrganizationStatus"
      LIMIT 1`,

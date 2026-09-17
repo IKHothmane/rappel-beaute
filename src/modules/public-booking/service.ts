@@ -3,6 +3,9 @@ import type {
   PublicBookingInput,
   PublicBookingResult,
   PublicOrganizationProfile,
+  PublicProductItem,
+  PublicProductOrderInput,
+  PublicProductOrderResult,
   PublicServiceItem,
   PublicStaffItem,
 } from "@/types/public-booking";
@@ -75,6 +78,24 @@ export async function submitPublicBooking(
   input: PublicBookingInput,
 ): Promise<PublicBookingResult> {
   const res = await fetch(`/api/public/${slug}/bookings/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return parseJson(res);
+}
+
+export async function getPublicProducts(slug: string): Promise<PublicProductItem[]> {
+  const res = await fetch(`/api/public/${slug}/products/`, fetchOpts);
+  const data = await parseJson<{ data: PublicProductItem[] }>(res);
+  return data.data;
+}
+
+export async function submitPublicProductOrder(
+  slug: string,
+  input: PublicProductOrderInput,
+): Promise<PublicProductOrderResult> {
+  const res = await fetch(`/api/public/${slug}/product-orders/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),

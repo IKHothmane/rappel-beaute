@@ -7,7 +7,7 @@ import { useCurrentUser } from "@/components/auth/session-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { canManageReviewSettings, canWriteFeatureLimited } from "@/lib/rbac";
+import { canManageReviewSettings, canWriteCommissions, canWriteFeatureLimited } from "@/lib/rbac";
 import { getReviewSettings, updateReviewSettings } from "@/modules/reviews/service";
 import {
   getBookingPolicy,
@@ -18,6 +18,10 @@ import {
   getPostVisitSettings,
   updatePostVisitSettingsSettingsApi,
 } from "@/modules/post-visit/service";
+import {
+  getCommissionSettings,
+  updateCommissionSettingsApi,
+} from "@/modules/commissions/service";
 import type {
   DepositDefaultMode,
   DepositRetentionPolicy,
@@ -30,6 +34,7 @@ const TABS = [
   "Réservation",
   "Paiements",
   "Facturation",
+  "Commissions",
   "Notifications",
   "Abonnement",
 ];
@@ -567,6 +572,8 @@ export default function SettingsPage() {
           <CommunicationReviewSettings />
         ) : tab === "Réservation" ? (
           <BookingPolicySettingsForm />
+        ) : tab === "Commissions" ? (
+          <ProductCommissionSettingsForm />
         ) : (
           <>
             <p className="font-medium">Onglet « {tab} »</p>
@@ -582,5 +589,101 @@ export default function SettingsPage() {
         )}
       </div>
     </>
+  );
+}
+
+function ProductCommissionSettingsForm() {
+  const { toast } = useToast();
+  const user = useCurrentUser();
+  const canEdit = canWriteCommissions(user.role);
+
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [rate, setRate] = useState("5");
+
+  const load = useCallback(async () => {
+    try {
+      const s = await getCommissionSettings();
+      setEnabled(s.productCommissionEnabled);
+      setRate(String(s.productCommissionRate));
+    } catch {
+      toast("Impossible de charger les commissions produits.", "error");
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    setLoading(true);
+    load().finally(() => setLoading(false));
+  }, [load]);
+
+  async function handleSave() {
+    if (!canEdit) return;
+    setSubmitting(true);
+    const result = await updateCommissionSettingsApi({
+      productCommissionEnabled: enabled,
+      productCommissionRate: Number(rate) || 0,
+    });
+    setSubmitting(false);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    toast("Commissions produits enregistrées.", "success");
+  }
+
+  if (loading) {
+    return <p className="text-sm text-ink/50">Chargement…</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <p className="font-medium">Commissions sur ventes produits</p>
+        <p className="text-xs text-ink/50">
+          Si activé, une commission est créée à chaque vente POS pour l&apos;employée
+          liée au compte vendeur (correspondance Staff par e-mail ou nom).
+        </p>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            disabled={!canEdit}
+            className="size-4 rounded border-line"
+          />
+          Activer les commissions produits
+        </label>
+
+        <label className="block space-y-1.5 text-sm">
+          <span>Taux (% du total vente)</span>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            step={0.1}
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            disabled={!canEdit || !enabled}
+          />
+        </label>
+
+        <p className="text-xs text-ink/45">
+          Suivi :{" "}
+          <Link href="/commissions/" className="text-primary underline">
+            Ventes &amp; Finance → Commissions
+          </Link>
+        </p>
+      </section>
+
+      {canEdit ? (
+        <Button disabled={submitting} onClick={() => void handleSave()}>
+          Enregistrer
+        </Button>
+      ) : (
+        <p className="text-xs text-ink/45">Lecture seule pour votre rôle.</p>
+      )}
+    </div>
   );
 }

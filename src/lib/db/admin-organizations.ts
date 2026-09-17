@@ -104,6 +104,8 @@ type OrgRow = {
   createdAt: Date;
   plan: PlanCode | null;
   subPrice: string | null;
+  subStatus: string | null;
+  renewAt: Date | null;
   ownerFirst: string | null;
   ownerLast: string | null;
   ownerEmail: string | null;
@@ -126,6 +128,8 @@ function mapOrgRow(r: OrgRow): OrganizationListItem {
     createdAt: r.createdAt.toISOString(),
     mrr: r.subPrice ? parseFloat(r.subPrice) : 0,
     usersCount: parseInt(r.usersCount ?? "0", 10),
+    subscriptionStatus: (r.subStatus as OrganizationListItem["subscriptionStatus"]) ?? null,
+    renewAt: r.renewAt ? r.renewAt.toISOString() : null,
   };
 }
 
@@ -133,11 +137,12 @@ const ORG_SELECT = `
   SELECT
     o.id, o.name, o.slug, o.city, o.phone, o.email, o.status, o."createdAt",
     p.code AS plan, s."priceSnapshot"::text AS "subPrice",
+    s.status AS "subStatus", s."currentPeriodEnd" AS "renewAt",
     u."firstName" AS "ownerFirst", u."lastName" AS "ownerLast", u.email AS "ownerEmail",
     (SELECT COUNT(*)::text FROM "User" WHERE "organizationId" = o.id) AS "usersCount"
   FROM "Organization" o
   LEFT JOIN LATERAL (
-    SELECT "planId", "priceSnapshot" FROM "Subscription"
+    SELECT "planId", "priceSnapshot", status, "currentPeriodEnd" FROM "Subscription"
     WHERE "organizationId" = o.id
     ORDER BY "createdAt" DESC LIMIT 1
   ) s ON true
@@ -192,12 +197,13 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
     `SELECT
       o.id, o.name, o.slug, o.city, o.phone, o.email, o.status, o.address, o."createdAt",
       p.code AS plan, s."priceSnapshot"::text AS "subPrice",
+      s.status AS "subStatus", s."currentPeriodEnd" AS "renewAt",
       u."firstName" AS "ownerFirst", u."lastName" AS "ownerLast", u.email AS "ownerEmail",
       u.phone AS "ownerPhone",
       (SELECT COUNT(*)::text FROM "User" WHERE "organizationId" = o.id) AS "usersCount"
     FROM "Organization" o
     LEFT JOIN LATERAL (
-      SELECT "planId", "priceSnapshot" FROM "Subscription"
+      SELECT "planId", "priceSnapshot", status, "currentPeriodEnd" FROM "Subscription"
       WHERE "organizationId" = o.id ORDER BY "createdAt" DESC LIMIT 1
     ) s ON true
     LEFT JOIN "Plan" p ON p.id = s."planId"
@@ -716,14 +722,19 @@ export async function listAllOrganizationUsers(opts?: {
     email: string;
     firstName: string;
     lastName: string;
+    phone: string | null;
     role: string;
     status: string;
     organizationId: string;
     organizationName: string;
+    organizationCity: string | null;
     createdAt: Date;
+    mustChangePassword: boolean;
+    sessionVersion: number;
   }>(
-    `SELECT u.id, u.email, u."firstName", u."lastName", u.role::text, u.status::text,
-            u."organizationId", o.name AS "organizationName", u."createdAt"
+    `SELECT u.id, u.email, u."firstName", u."lastName", u.phone, u.role::text, u.status::text,
+            u."organizationId", o.name AS "organizationName", o.city AS "organizationCity",
+            u."createdAt", u."mustChangePassword", u."sessionVersion"
      FROM "User" u
      JOIN "Organization" o ON o.id = u."organizationId"
      ${where}
@@ -737,12 +748,15 @@ export async function listAllOrganizationUsers(opts?: {
     email: r.email,
     firstName: r.firstName,
     lastName: r.lastName,
+    phone: r.phone,
     role: r.role,
     status: r.status,
     organizationId: r.organizationId,
     organizationName: r.organizationName,
+    organizationCity: r.organizationCity,
     createdAt: r.createdAt.toISOString(),
-    mustChangePassword: false,
+    mustChangePassword: Boolean(r.mustChangePassword),
+    sessionVersion: r.sessionVersion ?? 0,
     accountKind: "ORG" as const,
     lastLoginAt: null,
   }));

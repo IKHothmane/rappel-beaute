@@ -231,6 +231,7 @@ const NAV_FEATURE: Record<string, AppFeature | null> = {
   suppliers: "stock",
   "cash-register": "cash-register",
   pos: "cash-register",
+  ventes: "cash-register",
   payments: "cash-register",
   invoices: "cash-register",
   expenses: "expenses",

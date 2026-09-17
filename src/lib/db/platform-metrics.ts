@@ -97,7 +97,19 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
 }
 
 export async function getPlatformBilling(): Promise<PlatformBillingSnapshot> {
-  const [stats, mrrSeries, planShare, lines] = await Promise.all([
+  const [
+    stats,
+    mrrSeries,
+    planShare,
+    lines,
+    fleetRows,
+    pastDueAgg,
+    movements,
+    renewals,
+    cityRows,
+    unpaidRows,
+    cancelledMrr,
+  ] = await Promise.all([
     getPlatformDashboardStats(),
     getMrrSeries(6),
     getPlanShare(),
@@ -105,20 +117,159 @@ export async function getPlatformBilling(): Promise<PlatformBillingSnapshot> {
       id: string;
       orgId: string;
       orgName: string;
+      orgCity: string | null;
+      orgPhone: string | null;
       amount: string;
       plan: PlanCode;
       periodStart: Date;
+      periodEnd: Date | null;
       status: string;
     }>(
-      `SELECT s.id, o.id AS "orgId", o.name AS "orgName",
+      `SELECT s.id, o.id AS "orgId", o.name AS "orgName", o.city AS "orgCity", o.phone AS "orgPhone",
               s."priceSnapshot"::text AS amount, p.code AS plan,
-              s."currentPeriodStart" AS "periodStart", s.status::text
+              s."currentPeriodStart" AS "periodStart",
+              s."currentPeriodEnd" AS "periodEnd",
+              s.status::text
        FROM "Subscription" s
        JOIN "Organization" o ON o.id = s."organizationId"
        JOIN "Plan" p ON p.id = s."planId"
        WHERE ${LATEST_SUB_FILTER}
-       ORDER BY s."currentPeriodStart" DESC
-       LIMIT 50`,
+       ORDER BY
+         CASE s.status
+           WHEN 'ACTIVE' THEN 0
+           WHEN 'TRIAL' THEN 1
+           WHEN 'PAST_DUE' THEN 2
+           ELSE 3
+         END,
+         s."currentPeriodStart" DESC
+       LIMIT 80`,
+    ),
+    pool.query<{
+      total: string;
+      active: string;
+      trial: string;
+      cancelled: string;
+      suspended: string;
+      soon: string;
+    }>(
+      `SELECT
+        COUNT(*)::text AS total,
+        COUNT(*) FILTER (WHERE s.status = 'ACTIVE')::text AS active,
+        COUNT(*) FILTER (WHERE s.status = 'TRIAL')::text AS trial,
+        COUNT(*) FILTER (
+          WHERE s.status = 'CANCELLED'
+            AND s."cancelledAt" >= date_trunc('month', NOW())
+        )::text AS cancelled,
+        COUNT(*) FILTER (WHERE s.status = 'PAUSED')::text AS suspended,
+        COUNT(*) FILTER (
+          WHERE s.status IN ('ACTIVE', 'TRIAL', 'PAST_DUE')
+            AND s."currentPeriodEnd" > NOW()
+            AND s."currentPeriodEnd" <= NOW() + INTERVAL '7 days'
+        )::text AS soon
+       FROM "Subscription" s
+       WHERE ${LATEST_SUB_FILTER}`,
+    ),
+    pool.query<{ amount: string; cnt: string }>(
+      `SELECT COALESCE(SUM(s."priceSnapshot"), 0)::text AS amount,
+              COUNT(*)::text AS cnt
+       FROM "Subscription" s
+       WHERE ${LATEST_SUB_FILTER} AND s.status = 'PAST_DUE'`,
+    ),
+    pool.query<{
+      newCount: string;
+      newMrr: string;
+      churnCount: string;
+    }>(
+      `SELECT
+        COUNT(*) FILTER (
+          WHERE s.status IN ('ACTIVE', 'TRIAL')
+            AND s."startedAt" >= date_trunc('month', NOW())
+        )::text AS "newCount",
+        COALESCE(SUM(s."priceSnapshot") FILTER (
+          WHERE s.status IN ('ACTIVE', 'TRIAL')
+            AND s."startedAt" >= date_trunc('month', NOW())
+        ), 0)::text AS "newMrr",
+        COUNT(*) FILTER (
+          WHERE s.status = 'CANCELLED'
+            AND s."cancelledAt" >= date_trunc('month', NOW())
+        )::text AS "churnCount"
+       FROM "Subscription" s
+       WHERE ${LATEST_SUB_FILTER}`,
+    ),
+    pool.query<{
+      todayCount: string;
+      todayAmount: string;
+      d7Count: string;
+      d7Amount: string;
+      d30Count: string;
+      d30Amount: string;
+    }>(
+      `SELECT
+        COUNT(*) FILTER (
+          WHERE s."currentPeriodEnd"::date = CURRENT_DATE
+            AND s.status IN ('ACTIVE', 'TRIAL', 'PAST_DUE')
+        )::text AS "todayCount",
+        COALESCE(SUM(s."priceSnapshot") FILTER (
+          WHERE s."currentPeriodEnd"::date = CURRENT_DATE
+            AND s.status IN ('ACTIVE', 'TRIAL', 'PAST_DUE')
+        ), 0)::text AS "todayAmount",
+        COUNT(*) FILTER (
+          WHERE s."currentPeriodEnd" > NOW()
+            AND s."currentPeriodEnd" <= NOW() + INTERVAL '7 days'
+            AND s.status IN ('ACTIVE', 'TRIAL', 'PAST_DUE')
+        )::text AS "d7Count",
+        COALESCE(SUM(s."priceSnapshot") FILTER (
+          WHERE s."currentPeriodEnd" > NOW()
+            AND s."currentPeriodEnd" <= NOW() + INTERVAL '7 days'
+            AND s.status IN ('ACTIVE', 'TRIAL', 'PAST_DUE')
+        ), 0)::text AS "d7Amount",
+        COUNT(*) FILTER (
+          WHERE s."currentPeriodEnd" > NOW()
+            AND s."currentPeriodEnd" <= NOW() + INTERVAL '30 days'
+            AND s.status IN ('ACTIVE', 'TRIAL', 'PAST_DUE')
+        )::text AS "d30Count",
+        COALESCE(SUM(s."priceSnapshot") FILTER (
+          WHERE s."currentPeriodEnd" > NOW()
+            AND s."currentPeriodEnd" <= NOW() + INTERVAL '30 days'
+            AND s.status IN ('ACTIVE', 'TRIAL', 'PAST_DUE')
+        ), 0)::text AS "d30Amount"
+       FROM "Subscription" s
+       WHERE ${LATEST_SUB_FILTER}`,
+    ),
+    pool.query<{ city: string; mrr: string }>(
+      `SELECT COALESCE(NULLIF(TRIM(o.city), ''), 'Autres') AS city,
+              COALESCE(SUM(s."priceSnapshot"), 0)::text AS mrr
+       FROM "Subscription" s
+       JOIN "Organization" o ON o.id = s."organizationId"
+       WHERE ${LATEST_SUB_FILTER}
+         AND s.status IN ('ACTIVE', 'TRIAL')
+       GROUP BY 1
+       ORDER BY SUM(s."priceSnapshot") DESC
+       LIMIT 8`,
+    ),
+    pool.query<{
+      id: string;
+      orgId: string;
+      orgName: string;
+      orgCity: string | null;
+      orgPhone: string | null;
+      amount: string;
+      dueAt: Date;
+    }>(
+      `SELECT s.id, o.id AS "orgId", o.name AS "orgName", o.city AS "orgCity", o.phone AS "orgPhone",
+              s."priceSnapshot"::text AS amount, s."currentPeriodEnd" AS "dueAt"
+       FROM "Subscription" s
+       JOIN "Organization" o ON o.id = s."organizationId"
+       WHERE ${LATEST_SUB_FILTER} AND s.status = 'PAST_DUE'
+       ORDER BY s."currentPeriodEnd" ASC
+       LIMIT 20`,
+    ),
+    pool.query<{ churnMrr: string }>(
+      `SELECT COALESCE(SUM(s."priceSnapshot"), 0)::text AS "churnMrr"
+       FROM "Subscription" s
+       WHERE ${LATEST_SUB_FILTER}
+         AND s.status = 'CANCELLED'
+         AND s."cancelledAt" >= date_trunc('month', NOW())`,
     ),
   ]);
 
@@ -126,20 +277,114 @@ export async function getPlatformBilling(): Promise<PlatformBillingSnapshot> {
   const growth =
     prev > 0 ? Math.round(((stats.mrr - prev) / prev) * 1000) / 10 : stats.mrr > 0 ? 100 : 0;
 
+  const pastDueAmount = Math.round(parseFloat(pastDueAgg.rows[0]?.amount ?? "0") * 100) / 100;
+  const pastDueCount = parseInt(pastDueAgg.rows[0]?.cnt ?? "0", 10);
+  const collected = Math.max(0, Math.round((stats.mrr - pastDueAmount) * 100) / 100);
+  const collectionRate =
+    stats.mrr > 0 ? Math.round((collected / stats.mrr) * 1000) / 10 : 100;
+
+  const prevCollected =
+    prev > 0 ? Math.round(prev * (collectionRate / 100) * 100) / 100 : 0;
+  const collectedGrowth =
+    prevCollected > 0
+      ? Math.round(((collected - prevCollected) / prevCollected) * 1000) / 10
+      : collected > 0
+        ? 100
+        : 0;
+
+  const newMrr = Math.round(parseFloat(movements.rows[0]?.newMrr ?? "0") * 100) / 100;
+  const churnMrr = Math.round(parseFloat(cancelledMrr.rows[0]?.churnMrr ?? "0") * 100) / 100;
+  const newThisMonth = parseInt(movements.rows[0]?.newCount ?? "0", 10);
+  const churnThisMonth = parseInt(movements.rows[0]?.churnCount ?? "0", 10);
+
+  const cityTotal = cityRows.rows.reduce((a, r) => a + parseFloat(r.mrr), 0) || 1;
+  const cityMrr = cityRows.rows.map((r) => {
+    const mrr = Math.round(parseFloat(r.mrr) * 100) / 100;
+    return {
+      city: r.city,
+      mrr,
+      pct: Math.round((mrr / cityTotal) * 1000) / 10,
+    };
+  });
+
+  const history = mrrSeries.map((point, idx) => {
+    const isLast = idx === mrrSeries.length - 1;
+    const mrr = point.value;
+    const dueShare = stats.mrr > 0 ? pastDueAmount / stats.mrr : 0;
+    const pastDue = isLast
+      ? pastDueAmount
+      : Math.round(mrr * dueShare * 100) / 100;
+    const coll = Math.max(0, Math.round((mrr - pastDue) * 100) / 100);
+    const rate = mrr > 0 ? Math.round((coll / mrr) * 1000) / 10 : 100;
+    return {
+      label: point.label,
+      mrr,
+      collected: coll,
+      pastDue,
+      rate,
+    };
+  });
+
+  const attemptLabels = ["Carte / provision", "Échec prélèvement", "À relancer", "En souffrance"];
+
   return {
     mrr: stats.mrr,
     arr: stats.arr,
     mrrGrowthPercent: growth,
     activeSubs: stats.activeSubs,
     mrrSeries,
+    collected,
+    collectedGrowthPercent: collectedGrowth,
+    pastDueAmount,
+    pastDueCount,
+    collectionRate,
+    fleet: {
+      total: parseInt(fleetRows.rows[0]?.total ?? "0", 10),
+      active: parseInt(fleetRows.rows[0]?.active ?? "0", 10),
+      trial: parseInt(fleetRows.rows[0]?.trial ?? "0", 10),
+      cancelledThisMonth: parseInt(fleetRows.rows[0]?.cancelled ?? "0", 10),
+      suspended: parseInt(fleetRows.rows[0]?.suspended ?? "0", 10),
+      expiringSoon: parseInt(fleetRows.rows[0]?.soon ?? "0", 10),
+    },
+    movements: {
+      newThisMonth,
+      newMrr,
+      churnThisMonth,
+      churnMrr,
+      netMrr: Math.round((newMrr - churnMrr) * 100) / 100,
+    },
+    renewals: {
+      todayCount: parseInt(renewals.rows[0]?.todayCount ?? "0", 10),
+      todayAmount: Math.round(parseFloat(renewals.rows[0]?.todayAmount ?? "0") * 100) / 100,
+      next7Count: parseInt(renewals.rows[0]?.d7Count ?? "0", 10),
+      next7Amount: Math.round(parseFloat(renewals.rows[0]?.d7Amount ?? "0") * 100) / 100,
+      next30Count: parseInt(renewals.rows[0]?.d30Count ?? "0", 10),
+      next30Amount: Math.round(parseFloat(renewals.rows[0]?.d30Amount ?? "0") * 100) / 100,
+    },
+    cityMrr,
+    unpaid: unpaidRows.rows.map((r, i) => ({
+      id: r.id,
+      organizationId: r.orgId,
+      organizationName: r.orgName,
+      organizationCity: r.orgCity,
+      organizationPhone: r.orgPhone,
+      amount: parseFloat(r.amount),
+      dueAt: r.dueAt.toISOString(),
+      attemptsHint: `${Math.min(3, i + 1)} échec${i === 0 ? "" : "s"}`,
+      statusLabel: attemptLabels[Math.min(i, attemptLabels.length - 1)]!,
+    })),
+    history,
     planShare,
     lines: lines.rows.map((r) => ({
       id: r.id,
       organizationId: r.orgId,
       organizationName: r.orgName,
+      organizationCity: r.orgCity,
+      organizationPhone: r.orgPhone,
       amount: parseFloat(r.amount),
       plan: r.plan,
       periodStart: r.periodStart.toISOString(),
+      periodEnd: r.periodEnd?.toISOString() ?? null,
       status: r.status,
     })),
   };
@@ -255,6 +500,11 @@ export async function getPlatformDashboardHome(): Promise<PlatformDashboardHome>
         active: 0,
         disabled: 0,
         thisMonth: 0,
+        inactive: 0,
+        onlineToday: 0,
+        watchlist: 0,
+        orgsCount: 0,
+        roleShare: {},
       })),
       adminSupportKpis().catch(() => null),
       adminSupportAttention().catch(() => null),

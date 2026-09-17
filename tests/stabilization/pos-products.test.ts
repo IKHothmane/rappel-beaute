@@ -2,6 +2,7 @@ import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import {
   createPosSale,
   getPosSaleById,
+  getPosSalesKpis,
   listPosProducts,
   listPosSales,
   refundPosSale,
@@ -45,6 +46,18 @@ describe("41.23 — POS RBAC + plan (unit)", () => {
     expect(canAccessNav("OWNER", "pos")).toBe(true);
     expect(canAccessNav("CASHIER", "pos")).toBe(true);
     expect(canAccessNav("ACCOUNTANT", "pos")).toBe(true);
+  });
+
+  it("nav Ventes alias POS (cash-register + inventory)", () => {
+    expect(canAccessNav("OWNER", "ventes")).toBe(true);
+    expect(canAccessNav("CASHIER", "ventes")).toBe(true);
+    expect(NAV_PLAN_FEATURE.ventes).toBe("cashRegister");
+    expect(
+      isPlanFeatureEnabled({ cashRegister: true, inventory: true }, "ventes"),
+    ).toBe(true);
+    expect(
+      isPlanFeatureEnabled({ cashRegister: true, inventory: false }, "ventes"),
+    ).toBe(false);
   });
 
   it("plan feature POS exige cashRegister + inventory", () => {
@@ -417,6 +430,19 @@ run("41.23 — POS PostgreSQL", () => {
     );
     expect(parseInt(rows[0].n, 10)).toBeGreaterThanOrEqual(1);
     expect(parseFloat(rows[0].rev)).toBeGreaterThan(0);
+  });
+
+  it("listPosSales filtre customerId + KPIs", async () => {
+    const withCustomer = await listPosSales(orgA, {
+      customerId,
+      limit: 20,
+    });
+    expect(withCustomer.every((s) => s.customerId === customerId)).toBe(true);
+
+    const kpis = await getPosSalesKpis(orgA, { customerId });
+    expect(kpis.salesCount).toBeGreaterThanOrEqual(0);
+    expect(kpis.revenue).toBeGreaterThanOrEqual(0);
+    expect(kpis.averageBasket).toBeGreaterThanOrEqual(0);
   });
 
   it("ONLINE interdit", async () => {

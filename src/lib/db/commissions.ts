@@ -2,7 +2,6 @@ import { randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
 import {
-  PRODUCT_COMMISSIONS_ENABLED,
   type CommissionDetail,
   type CommissionKpis,
   type CommissionListItem,
@@ -145,10 +144,11 @@ function mapRow(r: Record<string, unknown>, periodClosed: boolean): CommissionLi
   const customerName = r.customerName != null ? String(r.customerName).trim() : "";
   return {
     id: String(r.id),
-    appointmentId: String(r.appointmentId),
+    appointmentId: r.appointmentId != null ? String(r.appointmentId) : null,
+    posSaleId: r.posSaleId != null ? String(r.posSaleId) : null,
     staffId: String(r.staffId),
     staffName: String(r.staffNameSnapshot ?? r.staffName ?? ""),
-    serviceId: String(r.serviceId),
+    serviceId: r.serviceId != null ? String(r.serviceId) : null,
     serviceName: String(r.serviceNameSnapshot ?? r.serviceName ?? ""),
     customerName: customerName || null,
     appointmentAt: new Date(r.appointmentAt as Date).toISOString(),
@@ -169,21 +169,26 @@ function mapRow(r: Record<string, unknown>, periodClosed: boolean): CommissionLi
 
 const SELECT_BASE = `
   SELECT
-    cr.id, cr."appointmentId", cr."staffId", cr."serviceId",
+    cr.id, cr."appointmentId", cr."posSaleId", cr."staffId", cr."serviceId",
     cr."serviceNameSnapshot", cr."staffNameSnapshot",
     cr."baseAmount"::text, cr.type::text,
     cr."percentageSnapshot"::text, cr."fixedSnapshot"::text,
     cr."commissionAmount"::text, cr.paid, cr."paidAt",
     cr."createdAt",
-    a."startAt" AS "appointmentAt",
-    NULLIF(TRIM(CONCAT(cu."firstName", ' ', cu."lastName")), '') AS "customerName",
+    COALESCE(a."startAt", ps."createdAt", cr."createdAt") AS "appointmentAt",
+    NULLIF(TRIM(CONCAT(
+      COALESCE(cu."firstName", cu_pos."firstName", ''), ' ',
+      COALESCE(cu."lastName", cu_pos."lastName", '')
+    )), '') AS "customerName",
     COALESCE((
       SELECT SUM(adj.amount) FROM "CommissionAdjustment" adj
       WHERE adj."commissionRecordId" = cr.id
     ), 0)::text AS "adjustmentsTotal"
   FROM "CommissionRecord" cr
-  JOIN "Appointment" a ON a.id = cr."appointmentId"
+  LEFT JOIN "Appointment" a ON a.id = cr."appointmentId"
   LEFT JOIN "Customer" cu ON cu.id = a."customerId"
+  LEFT JOIN "PosSale" ps ON ps.id = cr."posSaleId"
+  LEFT JOIN "Customer" cu_pos ON cu_pos.id = ps."customerId"
 `;
 
 export async function listCommissions(
@@ -220,8 +225,8 @@ export async function listCommissions(
 
   const conditions = [
     `cr."organizationId" = $1`,
-    `a."startAt" >= $2`,
-    `a."startAt" < $3`,
+    `COALESCE(a."startAt", ps."createdAt", cr."createdAt") >= $2`,
+    `COALESCE(a."startAt", ps."createdAt", cr."createdAt") < $3`,
   ];
   const params: unknown[] = [organizationId, range.from, range.to];
   let pi = 4;
@@ -242,7 +247,7 @@ export async function listCommissions(
   if (opts.search) {
     conditions.push(
       `(cr."serviceNameSnapshot" ILIKE $${pi} OR cr."staffNameSnapshot" ILIKE $${pi}
-        OR CONCAT(cu."firstName", ' ', cu."lastName") ILIKE $${pi})`,
+        OR CONCAT(COALESCE(cu."firstName", cu_pos."firstName", ''), ' ', COALESCE(cu."lastName", cu_pos."lastName", '')) ILIKE $${pi})`,
     );
     params.push(`%${opts.search}%`);
     pi++;
@@ -252,8 +257,10 @@ export async function listCommissions(
   const offset = (opts.page - 1) * opts.limit;
   const fromJoin = `
        FROM "CommissionRecord" cr
-       JOIN "Appointment" a ON a.id = cr."appointmentId"
-       LEFT JOIN "Customer" cu ON cu.id = a."customerId"`;
+       LEFT JOIN "Appointment" a ON a.id = cr."appointmentId"
+       LEFT JOIN "Customer" cu ON cu.id = a."customerId"
+       LEFT JOIN "PosSale" ps ON ps.id = cr."posSaleId"
+       LEFT JOIN "Customer" cu_pos ON cu_pos.id = ps."customerId"`;
 
   const [countRes, listRes, kpiRes, byStaffRes] = await Promise.all([
     pool.query<{ total: number }>(
@@ -265,7 +272,7 @@ export async function listCommissions(
     pool.query(
       `${SELECT_BASE}
        WHERE ${where}
-       ORDER BY a."startAt" DESC, cr."createdAt" DESC
+       ORDER BY COALESCE(a."startAt", ps."createdAt", cr."createdAt") DESC, cr."createdAt" DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,
       [...params, opts.limit, offset],
     ),
@@ -472,13 +479,11 @@ export async function getStaffCommissionSummary(
 /**
  * Figé la commission employée au COMPLETED — idempotent.
  * Jamais appelée pour CANCELLED / NO_SHOW.
- * Commissions produits : désactivées (PRODUCT_COMMISSIONS_ENABLED).
  */
 export async function createCommissionForAppointment(opts: {
   organizationId: string;
   appointmentId: string;
 }): Promise<{ created: number; skipped: number }> {
-  void PRODUCT_COMMISSIONS_ENABLED;
   const { organizationId, appointmentId } = opts;
 
   const apt = await pool.query<{
@@ -557,6 +562,158 @@ export async function createCommissionForAppointment(opts: {
         rule.rows[0].type,
         percentage,
         fixed,
+        commissionAmount,
+        key,
+      ],
+    );
+    return { created: 1, skipped: 0 };
+  } catch (e) {
+    if (isUniqueViolation(e)) return { created: 0, skipped: 1 };
+    throw e;
+  }
+}
+
+export async function getOrCreateCommissionSettings(
+  organizationId: string,
+): Promise<import("@/types/commission").CommissionSettings> {
+  const existing = await pool.query<{
+    id: string;
+    organizationId: string;
+    productCommissionEnabled: boolean;
+    productCommissionRate: string;
+    updatedAt: Date;
+  }>(
+    `SELECT id, "organizationId", "productCommissionEnabled",
+            "productCommissionRate"::text, "updatedAt"
+     FROM "CommissionSettings" WHERE "organizationId" = $1`,
+    [organizationId],
+  );
+  if (existing.rows[0]) {
+    const r = existing.rows[0];
+    return {
+      id: r.id,
+      organizationId: r.organizationId,
+      productCommissionEnabled: r.productCommissionEnabled,
+      productCommissionRate: parseFloat(r.productCommissionRate) || 5,
+      updatedAt: r.updatedAt.toISOString(),
+    };
+  }
+  const id = newId("cset");
+  await pool.query(
+    `INSERT INTO "CommissionSettings" (
+      id, "organizationId", "productCommissionEnabled", "productCommissionRate", "updatedAt"
+    ) VALUES ($1,$2,false,5,NOW())
+    ON CONFLICT ("organizationId") DO NOTHING`,
+    [id, organizationId],
+  );
+  return getOrCreateCommissionSettings(organizationId);
+}
+
+export async function updateCommissionSettings(
+  organizationId: string,
+  input: { productCommissionEnabled?: boolean; productCommissionRate?: number },
+  actor: { id: string; name?: string | null },
+): Promise<import("@/types/commission").CommissionSettings> {
+  await getOrCreateCommissionSettings(organizationId);
+  const rate =
+    input.productCommissionRate != null
+      ? Math.min(100, Math.max(0, Math.round(input.productCommissionRate * 100) / 100))
+      : undefined;
+  await pool.query(
+    `UPDATE "CommissionSettings" SET
+       "productCommissionEnabled" = COALESCE($2, "productCommissionEnabled"),
+       "productCommissionRate" = COALESCE($3, "productCommissionRate"),
+       "updatedAt" = NOW()
+     WHERE "organizationId" = $1`,
+    [
+      organizationId,
+      input.productCommissionEnabled ?? null,
+      rate ?? null,
+    ],
+  );
+  await writeAuditLog({
+    organizationId,
+    actorId: actor.id,
+    actorName: actor.name,
+    entityType: "CommissionSettings",
+    entityId: organizationId,
+    action: "COMMISSION_SETTINGS_UPDATED",
+    after: {
+      productCommissionEnabled: input.productCommissionEnabled,
+      productCommissionRate: rate,
+    },
+  });
+  return getOrCreateCommissionSettings(organizationId);
+}
+
+/**
+ * Commission produit après vente POS — idempotent.
+ * Requiert CommissionSettings.productCommissionEnabled + Staff résolu pour le vendeur.
+ */
+export async function createCommissionForPosSale(opts: {
+  organizationId: string;
+  posSaleId: string;
+  soldByUser: { id: string; email: string; firstName: string; lastName: string };
+}): Promise<{ created: number; skipped: number }> {
+  const settings = await getOrCreateCommissionSettings(opts.organizationId);
+  if (!settings.productCommissionEnabled || settings.productCommissionRate <= 0) {
+    return { created: 0, skipped: 0 };
+  }
+
+  const sale = await pool.query<{
+    id: string;
+    total: string;
+    status: string;
+  }>(
+    `SELECT id, total::text, status::text FROM "PosSale"
+     WHERE id = $1 AND "organizationId" = $2`,
+    [opts.posSaleId, opts.organizationId],
+  );
+  if (!sale.rows[0] || sale.rows[0].status !== "COMPLETED") {
+    return { created: 0, skipped: 0 };
+  }
+
+  const staffId = await resolveStaffIdForUser(opts.organizationId, opts.soldByUser);
+  if (!staffId) return { created: 0, skipped: 0 };
+
+  const staff = await pool.query<{ firstName: string; lastName: string }>(
+    `SELECT "firstName", "lastName" FROM "Staff" WHERE id = $1`,
+    [staffId],
+  );
+  if (!staff.rows[0]) return { created: 0, skipped: 0 };
+
+  const key = `pos:${opts.posSaleId}:commission:${staffId}`;
+  const exists = await pool.query(
+    `SELECT 1 FROM "CommissionRecord"
+     WHERE "organizationId" = $1 AND "idempotencyKey" = $2`,
+    [opts.organizationId, key],
+  );
+  if (exists.rows[0]) return { created: 0, skipped: 1 };
+
+  const base = parseFloat(sale.rows[0].total) || 0;
+  const percentage = settings.productCommissionRate;
+  const commissionAmount = Math.round(base * (percentage / 100) * 100) / 100;
+  if (commissionAmount <= 0) return { created: 0, skipped: 0 };
+
+  try {
+    await pool.query(
+      `INSERT INTO "CommissionRecord" (
+        id, "organizationId", "appointmentId", "posSaleId", "staffId", "serviceId",
+        "serviceNameSnapshot", "staffNameSnapshot", "baseAmount", type,
+        "percentageSnapshot", "fixedSnapshot", "commissionAmount",
+        "idempotencyKey", "updatedAt"
+      ) VALUES (
+        $1,$2,NULL,$3,$4,NULL,$5,$6,$7,'PERCENTAGE'::"CommissionType",$8,NULL,$9,$10,NOW()
+      )`,
+      [
+        newId("com"),
+        opts.organizationId,
+        opts.posSaleId,
+        staffId,
+        "Vente produits",
+        `${staff.rows[0].firstName} ${staff.rows[0].lastName}`.trim(),
+        base,
+        percentage,
         commissionAmount,
         key,
       ],

@@ -582,21 +582,113 @@ export async function createPosSale(
     console.error("[createPosSale] loyalty", e);
   }
 
+  // Commission produit si activée + Staff résolu
+  try {
+    const { createCommissionForPosSale } = await import("@/lib/db/commissions");
+    const userRow = await pool.query<{
+      email: string;
+      firstName: string;
+      lastName: string;
+    }>(
+      `SELECT email, "firstName", "lastName" FROM "User" WHERE id = $1 AND "organizationId" = $2`,
+      [actor.id, organizationId],
+    );
+    if (userRow.rows[0]) {
+      await createCommissionForPosSale({
+        organizationId,
+        posSaleId: saleId,
+        soldByUser: {
+          id: actor.id,
+          email: userRow.rows[0].email,
+          firstName: userRow.rows[0].firstName,
+          lastName: userRow.rows[0].lastName,
+        },
+      });
+    }
+  } catch (e) {
+    console.error("[createPosSale] product commission", e);
+  }
+
   const detail = await loadSaleDetail(organizationId, saleId);
   if (!detail) throw new Error("SALE_NOT_FOUND");
   return detail;
 }
 
+export type ListPosSalesOpts = {
+  limit?: number;
+  from?: Date | string;
+  to?: Date | string;
+  soldById?: string;
+  paymentMethod?: string;
+  status?: string;
+  customerId?: string;
+  search?: string;
+};
+
+function parseBound(value: Date | string | undefined, endOfDay: boolean): Date | null {
+  if (!value) return null;
+  const d = value instanceof Date ? new Date(value) : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    if (endOfDay) d.setHours(23, 59, 59, 999);
+    else d.setHours(0, 0, 0, 0);
+  }
+  return d;
+}
+
 export async function listPosSales(
   organizationId: string,
-  opts?: { limit?: number },
+  opts?: ListPosSalesOpts,
 ): Promise<PosSaleDetail[]> {
+  const clauses = [`s."organizationId" = $1`];
+  const params: unknown[] = [organizationId];
+  let i = 2;
+
+  const from = parseBound(opts?.from, false);
+  const to = parseBound(opts?.to, true);
+  if (from) {
+    clauses.push(`s."createdAt" >= $${i++}`);
+    params.push(from);
+  }
+  if (to) {
+    clauses.push(`s."createdAt" <= $${i++}`);
+    params.push(to);
+  }
+  if (opts?.soldById?.trim()) {
+    clauses.push(`s."soldById" = $${i++}`);
+    params.push(opts.soldById.trim());
+  }
+  if (opts?.paymentMethod?.trim()) {
+    clauses.push(`s."paymentMethod" = $${i++}::"PaymentMethod"`);
+    params.push(opts.paymentMethod.trim());
+  }
+  if (opts?.status?.trim() && opts.status !== "all") {
+    clauses.push(`s.status = $${i++}::"PosSaleStatus"`);
+    params.push(opts.status.trim());
+  }
+  if (opts?.customerId?.trim()) {
+    clauses.push(`s."customerId" = $${i++}`);
+    params.push(opts.customerId.trim());
+  }
+  if (opts?.search?.trim()) {
+    clauses.push(
+      `(i.number ILIKE $${i} OR COALESCE(i."customerNameSnapshot", '') ILIKE $${i})`,
+    );
+    params.push(`%${opts.search.trim()}%`);
+    i += 1;
+  }
+
+  const limit = Math.min(Math.max(opts?.limit ?? 50, 1), 200);
+  params.push(limit);
+
   const { rows } = await pool.query<{ id: string }>(
-    `SELECT id FROM "PosSale"
-     WHERE "organizationId" = $1
-     ORDER BY "createdAt" DESC
-     LIMIT $2`,
-    [organizationId, opts?.limit ?? 50],
+    `SELECT s.id
+     FROM "PosSale" s
+     JOIN "Invoice" i ON i.id = s."invoiceId"
+     WHERE ${clauses.join(" AND ")}
+     ORDER BY s."createdAt" DESC
+     LIMIT $${i}`,
+    params,
   );
   const out: PosSaleDetail[] = [];
   for (const r of rows) {
@@ -604,6 +696,92 @@ export async function listPosSales(
     if (d) out.push(d);
   }
   return out;
+}
+
+export async function getPosSalesKpis(
+  organizationId: string,
+  opts?: ListPosSalesOpts,
+): Promise<{
+  revenue: number;
+  salesCount: number;
+  productsSold: number;
+  averageBasket: number;
+}> {
+  const clauses = [`s."organizationId" = $1`];
+  const params: unknown[] = [organizationId];
+  let i = 2;
+
+  const from = parseBound(opts?.from, false);
+  const to = parseBound(opts?.to, true);
+  if (from) {
+    clauses.push(`s."createdAt" >= $${i++}`);
+    params.push(from);
+  }
+  if (to) {
+    clauses.push(`s."createdAt" <= $${i++}`);
+    params.push(to);
+  }
+  if (opts?.soldById?.trim()) {
+    clauses.push(`s."soldById" = $${i++}`);
+    params.push(opts.soldById.trim());
+  }
+  if (opts?.paymentMethod?.trim()) {
+    clauses.push(`s."paymentMethod" = $${i++}::"PaymentMethod"`);
+    params.push(opts.paymentMethod.trim());
+  }
+  if (opts?.status?.trim() && opts.status !== "all") {
+    clauses.push(`s.status = $${i++}::"PosSaleStatus"`);
+    params.push(opts.status.trim());
+  } else {
+    clauses.push(`s.status = 'COMPLETED'::"PosSaleStatus"`);
+  }
+  if (opts?.customerId?.trim()) {
+    clauses.push(`s."customerId" = $${i++}`);
+    params.push(opts.customerId.trim());
+  }
+  if (opts?.search?.trim()) {
+    clauses.push(
+      `(EXISTS (
+         SELECT 1 FROM "Invoice" i
+         WHERE i.id = s."invoiceId"
+           AND (i.number ILIKE $${i} OR COALESCE(i."customerNameSnapshot", '') ILIKE $${i})
+       ))`,
+    );
+    params.push(`%${opts.search.trim()}%`);
+    i += 1;
+  }
+
+  const where = clauses.join(" AND ");
+  const whereS2 = where.replace(/\bs\./g, "s2.");
+
+  const { rows } = await pool.query<{
+    revenue: string;
+    salesCount: string;
+    productsSold: string;
+  }>(
+    `SELECT
+       COALESCE(SUM(s.total), 0)::text AS revenue,
+       COUNT(*)::text AS "salesCount",
+       COALESCE((
+         SELECT SUM(ii.quantity)
+         FROM "PosSale" s2
+         JOIN "InvoiceItem" ii ON ii."invoiceId" = s2."invoiceId"
+         WHERE ${whereS2}
+       ), 0)::text AS "productsSold"
+     FROM "PosSale" s
+     WHERE ${where}`,
+    params,
+  );
+
+  const revenue = parseFloat(rows[0]?.revenue ?? "0");
+  const salesCount = parseInt(rows[0]?.salesCount ?? "0", 10);
+  const productsSold = parseFloat(rows[0]?.productsSold ?? "0");
+  return {
+    revenue,
+    salesCount,
+    productsSold,
+    averageBasket: salesCount > 0 ? Math.round((revenue / salesCount) * 100) / 100 : 0,
+  };
 }
 
 export async function getPosSaleById(

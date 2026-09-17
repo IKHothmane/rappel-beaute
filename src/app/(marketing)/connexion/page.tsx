@@ -19,10 +19,11 @@ export default function ConnexionPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           alt=""
-          className="h-full w-full scale-105 object-cover object-center brightness-95"
+          className="h-full w-full object-cover object-center"
           src={BG_IMG}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-[#FFF6F8]/80 to-white/95 backdrop-blur-[4px]" />
+        {/* Voile léger uniquement pour la lisibilité du formulaire — pas de blur ni filtre image */}
+        <div className="absolute inset-0 bg-white/35" />
       </div>
 
       <div className="z-10 my-4 w-full max-w-lg">

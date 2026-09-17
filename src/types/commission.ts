@@ -1,4 +1,4 @@
-/** Commissions produits désactivées en V1 (éviter double logique stock/vente) */
+/** Legacy flag — préférer CommissionSettings.productCommissionEnabled */
 export const PRODUCT_COMMISSIONS_ENABLED = false;
 
 export type CommissionType = "PERCENTAGE" | "FIXED";
@@ -16,12 +16,21 @@ export const COMMISSION_TYPE_LABEL: Record<CommissionType, string> = {
   FIXED: "Fixe",
 };
 
+export type CommissionSettings = {
+  id: string;
+  organizationId: string;
+  productCommissionEnabled: boolean;
+  productCommissionRate: number;
+  updatedAt: string;
+};
+
 export type CommissionListItem = {
   id: string;
-  appointmentId: string;
+  appointmentId: string | null;
+  posSaleId: string | null;
   staffId: string;
   staffName: string;
-  serviceId: string;
+  serviceId: string | null;
   serviceName: string;
   customerName: string | null;
   appointmentAt: string;

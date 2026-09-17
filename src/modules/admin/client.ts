@@ -319,6 +319,7 @@ export type AdminSubscriptionRow = {
   organizationId: string;
   organizationName: string;
   organizationEmail: string | null;
+  organizationCity: string | null;
   planId: string;
   planCode: SubscriptionPlan;
   planName: string;
@@ -349,6 +350,9 @@ export async function fetchAdminSubscriptions(params?: {
     kpis: {
       total: number;
       active: number;
+      trial: number;
+      pastDue: number;
+      suspended: number;
       expiringSoon: number;
       expired: number;
       mrr: number;

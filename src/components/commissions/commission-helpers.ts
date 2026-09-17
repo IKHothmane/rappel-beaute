@@ -42,7 +42,8 @@ export function commissionShortId(id: string) {
 }
 
 export function ticketRef(item: CommissionListItem) {
-  const tail = item.appointmentId.replace(/[^a-zA-Z0-9]/g, "").slice(-6).toUpperCase();
+  const ref = item.posSaleId ?? item.appointmentId ?? item.id;
+  const tail = ref.replace(/[^a-zA-Z0-9]/g, "").slice(-6).toUpperCase();
   return tail || commissionShortId(item.id).replace("#", "");
 }
 

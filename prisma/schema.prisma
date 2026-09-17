@@ -467,6 +467,7 @@ model Organization {
   commissionRecords  CommissionRecord[]
   commissionAdjustments CommissionAdjustment[]
   commissionPeriods  CommissionPeriod[]
+  commissionSettings CommissionSettings?
   expenses           Expense[]
   auditLogs          AuditLog[]
   loyaltyProgram     LoyaltyProgram?
@@ -1311,19 +1312,35 @@ model PosSale {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
   customer     Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  commissionRecords CommissionRecord[]
 
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, createdAt])
   @@index([organizationId, customerId])
 }
 
-/// Commission figée à la finalisation du RDV (jamais recalculée si le taux change)
+/// Paramètres commissions org (taux produit global)
+model CommissionSettings {
+  id                       String   @id @default(cuid())
+  organizationId           String   @unique
+  productCommissionEnabled Boolean  @default(false)
+  /// Pourcentage sur le total TTC de la vente POS (ex. 5.00 = 5 %)
+  productCommissionRate    Decimal  @default(5) @db.Decimal(5, 2)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+/// Commission figée à la finalisation du RDV ou vente POS (jamais recalculée si le taux change)
 model CommissionRecord {
   id                 String         @id @default(cuid())
   organizationId     String
-  appointmentId      String
+  appointmentId      String?
   staffId            String
-  serviceId          String
+  serviceId          String?
+  /// Vente produits (null si commission RDV)
+  posSaleId          String?
   serviceNameSnapshot String
   staffNameSnapshot  String
   baseAmount         Decimal        @db.Decimal(10, 2)
@@ -1333,13 +1350,14 @@ model CommissionRecord {
   commissionAmount   Decimal        @db.Decimal(10, 2)
   paid               Boolean        @default(false)
   paidAt             DateTime?
-  /// Idempotence apt:{id}:commission:{staffId}
+  /// Idempotence apt:{id}:commission:{staffId} | pos:{saleId}:commission:{staffId}
   idempotencyKey     String
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  appointment  Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointment  Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  posSale      PosSale?     @relation(fields: [posSaleId], references: [id], onDelete: Cascade)
   staff        Staff        @relation(fields: [staffId], references: [id], onDelete: Restrict)
   adjustments  CommissionAdjustment[]
 
@@ -1347,6 +1365,7 @@ model CommissionRecord {
   @@index([organizationId])
   @@index([staffId])
   @@index([appointmentId])
+  @@index([posSaleId])
   @@index([organizationId, createdAt])
   @@index([organizationId, serviceId])
 }

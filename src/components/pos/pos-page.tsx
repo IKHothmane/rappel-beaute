@@ -71,18 +71,23 @@ export function PosPageView() {
   const [loyaltyLine, setLoyaltyLine] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [lastSale, setLastSale] = useState<PosSaleDetail | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [catalog, daySales, cash] = await Promise.all([
+      const today = new Date().toISOString().slice(0, 10);
+      const [catalog, daySalesRes, cash] = await Promise.all([
         listPosProductsApi(),
-        listPosSalesApi().catch(() => [] as PosSaleDetail[]),
+        listPosSalesApi({ from: today, to: today, limit: 30 }).catch(() => ({
+          data: [] as PosSaleDetail[],
+          kpis: { revenue: 0, salesCount: 0, productsSold: 0, averageBasket: 0 },
+        })),
         showCash ? getCashRegister().catch(() => null) : Promise.resolve(null),
       ]);
       setProducts(catalog);
-      setSales(daySales);
+      setSales(daySalesRes.data);
       const open = cash?.session?.status === "OPEN";
       setCashOpen(Boolean(open));
       if (open && cash?.session) {
@@ -243,6 +248,7 @@ export function PosPageView() {
       return;
     }
     toast(`Vente ${result.sale.invoiceNumber} — ${formatMad(result.sale.total)}`, "success");
+    setLastSale(result.sale);
     setCart([]);
     setDiscount("");
     setCashGiven("");
@@ -711,6 +717,50 @@ export function PosPageView() {
                 className="rounded-lg bg-primary px-5 py-2.5 text-[14px] font-bold text-white disabled:opacity-40"
               >
                 {submitting ? "Encaissement…" : "Valider le ticket"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {lastSale ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="bg-[#FFEFF8] px-5 py-4">
+              <h3 className="text-[18px] font-bold">Vente enregistrée</h3>
+              <p className="text-[13px] text-ink/55">
+                Ticket {lastSale.invoiceNumber} · {formatMad(lastSale.total)}
+              </p>
+            </div>
+            <div className="space-y-3 p-5">
+              <p className="text-[13px] text-ink/60">
+                {lastSale.customerName ?? "Passage"} ·{" "}
+                {PAYMENT_METHOD_LABEL[lastSale.paymentMethod]}
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link
+                  href={`/invoices/${lastSale.invoiceId}/`}
+                  className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-center text-[14px] font-bold text-white"
+                  onClick={() => setLastSale(null)}
+                >
+                  Voir la facture
+                </Link>
+                <Link
+                  href={`/invoices/${lastSale.invoiceId}/?print=1`}
+                  className="flex-1 rounded-lg bg-[#FFEFF8] px-4 py-2.5 text-center text-[14px] font-bold text-ink"
+                  onClick={() => setLastSale(null)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Imprimer le ticket
+                </Link>
+              </div>
+              <button
+                type="button"
+                className="w-full rounded-lg px-4 py-2 text-[14px] font-semibold text-ink/55"
+                onClick={() => setLastSale(null)}
+              >
+                Nouvelle vente
               </button>
             </div>
           </div>

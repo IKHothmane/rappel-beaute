@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode, RefObject } from "react";
 import {
   CalendarDays,
@@ -10,10 +9,8 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
-  Sparkles,
   Star,
   Store,
-  Tags,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -33,6 +30,7 @@ type ServicesMobileProps = {
   orgName: string;
   catalogCount: number;
   activeCount: number;
+  inactiveCount: number;
   canWrite: boolean;
   financeHidden: boolean;
   overview: AnalyticsOverview | null;
@@ -40,11 +38,8 @@ type ServicesMobileProps = {
   searchInput: string;
   onSearchChange: (value: string) => void;
   searchRef: RefObject<HTMLInputElement>;
-  category: string;
   activeFilter: ActiveFilter;
-  onCategoryChange: (category: string) => void;
   onActiveFilterChange: (filter: ActiveFilter) => void;
-  categoryCounts: [string, number][];
   filtered: ServiceListItem[];
   statsById: Map<string, ServiceAnalyticsRow>;
   loading: boolean;
@@ -54,15 +49,16 @@ type ServicesMobileProps = {
   menuId: string | null;
   onMenu: (id: string | null) => void;
   onCreate: () => void;
-  onCategories: () => void;
   onEdit: (id: string) => void;
   onToggle: (service: ServiceListItem) => void;
+  onDelete: (service: ServiceListItem) => void;
 };
 
 export function ServicesMobile({
   orgName,
   catalogCount,
   activeCount,
+  inactiveCount,
   canWrite,
   financeHidden,
   overview,
@@ -70,11 +66,8 @@ export function ServicesMobile({
   searchInput,
   onSearchChange,
   searchRef,
-  category,
   activeFilter,
-  onCategoryChange,
   onActiveFilterChange,
-  categoryCounts,
   filtered,
   statsById,
   loading,
@@ -84,14 +77,13 @@ export function ServicesMobile({
   menuId,
   onMenu,
   onCreate,
-  onCategories,
   onEdit,
   onToggle,
+  onDelete,
 }: ServicesMobileProps) {
   function cycleStatusFilter() {
     const next: ActiveFilter = activeFilter === "all" ? "active" : activeFilter === "active" ? "inactive" : "all";
     onActiveFilterChange(next);
-    onCategoryChange("");
   }
 
   const filterHint =
@@ -125,39 +117,8 @@ export function ServicesMobile({
               <Plus size={18} />
               Nouveau service
             </button>
-            <button
-              type="button"
-              onClick={onCategories}
-              className="inline-flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#F0DDE9] text-[13px] font-semibold text-ink active:bg-[#E4BDC2]/40"
-            >
-              <Tags size={18} className="text-ink/50" />
-              Catégories
-            </button>
           </div>
         ) : null}
-      </section>
-
-      <section className="relative overflow-hidden rounded-xl bg-[#FFEFF8] p-3 shadow-sm">
-        <div className="flex items-start gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-sm">
-            <Sparkles size={16} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-primary">À partir du catalogue</p>
-            <p className="mt-1 text-[13px] leading-5 text-ink">{insight}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Link
-                href="/ai/"
-                className="inline-flex h-8 items-center gap-1 rounded-lg bg-white px-3 text-[12px] font-semibold text-primary shadow-sm"
-              >
-                Ouvrir le copilote
-              </Link>
-              <Link href="/agenda/" className="inline-flex h-8 items-center px-2.5 text-[12px] font-medium text-ink/50">
-                Agenda
-              </Link>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section className="grid grid-cols-2 gap-2">
@@ -233,26 +194,23 @@ export function ServicesMobile({
         </div>
         <div className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 py-0.5">
           <Pill
-            active={!category && activeFilter === "all"}
-            onClick={() => {
-              onCategoryChange("");
-              onActiveFilterChange("all");
-            }}
+            active={activeFilter === "all"}
+            onClick={() => onActiveFilterChange("all")}
             label="Tous"
             count={catalogCount}
           />
-          {categoryCounts.map(([name, count]) => (
-            <Pill
-              key={name}
-              active={category === name}
-              onClick={() => {
-                onCategoryChange(name);
-                onActiveFilterChange("all");
-              }}
-              label={name}
-              count={count}
-            />
-          ))}
+          <Pill
+            active={activeFilter === "active"}
+            onClick={() => onActiveFilterChange("active")}
+            label="Actifs"
+            count={activeCount}
+          />
+          <Pill
+            active={activeFilter === "inactive"}
+            onClick={() => onActiveFilterChange("inactive")}
+            label="Inactifs"
+            count={inactiveCount}
+          />
         </div>
       </section>
 
@@ -278,6 +236,7 @@ export function ServicesMobile({
               onMenu={() => onMenu(menuId === s.id ? null : s.id)}
               onEdit={() => onEdit(s.id)}
               onToggle={() => onToggle(s)}
+              onDelete={() => onDelete(s)}
             />
           ))
         )}
@@ -342,6 +301,7 @@ function MobileServiceCard({
   onMenu,
   onEdit,
   onToggle,
+  onDelete,
 }: {
   service: ServiceListItem;
   stats?: ServiceAnalyticsRow;
@@ -354,6 +314,7 @@ function MobileServiceCard({
   onMenu: () => void;
   onEdit: () => void;
   onToggle: () => void;
+  onDelete: () => void;
 }) {
   const Icon = categoryIcon(s.category);
   const hourly = hourlyRate(s.price, s.durationMin);
@@ -438,6 +399,13 @@ function MobileServiceCard({
                   >
                     {s.active ? "Désactiver" : "Réactiver"}
                   </button>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-left text-red-600 hover:bg-red-50"
+                    onClick={onDelete}
+                  >
+                    Supprimer
+                  </button>
                 </div>
               ) : null}
             </div>
@@ -505,15 +473,8 @@ function MobileServiceCard({
         ) : null}
       </div>
 
-      <div className="flex items-center justify-end gap-2 pt-1">
-        <Link
-          href="/agenda/"
-          className="inline-flex h-9 items-center gap-1 rounded-lg bg-[#FCE9F4] px-3 text-[12px] font-semibold text-ink"
-        >
-          <CalendarDays size={14} />
-          Créneaux
-        </Link>
-        {canWrite ? (
+      {canWrite ? (
+        <div className="flex items-center justify-end gap-2 pt-1">
           <button
             type="button"
             onClick={onEdit}
@@ -522,8 +483,8 @@ function MobileServiceCard({
             <Pencil size={14} />
             Modifier
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </article>
   );
 }

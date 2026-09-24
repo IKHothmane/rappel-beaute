@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
-  Download,
   Filter,
   Info,
   MoreHorizontal,
@@ -13,10 +12,7 @@ import {
   Plus,
   Scissors,
   Search,
-  Sparkles,
   Star,
-  Store,
-  Tags,
   TrendingUp,
   Wallet,
 } from "lucide-react";
@@ -36,6 +32,7 @@ import { formatMad, formatPct, getAnalyticsOverview, getAnalyticsServices } from
 import { openReportExport } from "@/modules/reports/service";
 import {
   createService,
+  deleteService,
   formatDuration,
   getService,
   getServiceFormOptions,
@@ -58,7 +55,6 @@ export function ServicesPageView() {
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [catalog, setCatalog] = useState<ServiceListItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -67,11 +63,8 @@ export function ServicesPageView() {
   const [serviceStats, setServiceStats] = useState<ServiceAnalyticsRow[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceDetail | null>(null);
-  const [prefillCategory, setPrefillCategory] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [newCategory, setNewCategory] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -120,15 +113,6 @@ export function ServicesPageView() {
     return map;
   }, [serviceStats]);
 
-  const categoryCounts = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const s of catalog) {
-      const key = s.category || "Sans catégorie";
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    return map;
-  }, [catalog]);
-
   const activeCount = catalog.filter((s) => s.active).length;
   const inactiveCount = catalog.length - activeCount;
 
@@ -137,16 +121,14 @@ export function ServicesPageView() {
     return catalog.filter((s) => {
       if (activeFilter === "active" && !s.active) return false;
       if (activeFilter === "inactive" && s.active) return false;
-      if (category && (s.category || "Sans catégorie") !== category) return false;
       if (!q) return true;
       return (
         s.name.toLowerCase().includes(q) ||
-        (s.category ?? "").toLowerCase().includes(q) ||
         (s.description ?? "").toLowerCase().includes(q) ||
         s.staffNames.some((n) => n.toLowerCase().includes(q))
       );
     });
-  }, [catalog, search, category, activeFilter]);
+  }, [catalog, search, activeFilter]);
 
   const topByRevenue = serviceStats[0] ?? null;
   const topByAppointments = useMemo(() => {
@@ -181,7 +163,7 @@ export function ServicesPageView() {
     return opts;
   }
 
-  async function openCreate(categoryName?: string) {
+  async function openCreate() {
     try {
       await ensureOptions();
     } catch {
@@ -189,9 +171,7 @@ export function ServicesPageView() {
       return;
     }
     setEditing(null);
-    setPrefillCategory(categoryName ?? "");
     setDrawerOpen(true);
-    setCategoriesOpen(false);
   }
 
   async function openEdit(id: string) {
@@ -202,7 +182,6 @@ export function ServicesPageView() {
       ]);
       setOptions(opts);
       setEditing(detail);
-      setPrefillCategory("");
       setDrawerOpen(true);
       setMenuId(null);
     } catch {
@@ -236,14 +215,22 @@ export function ServicesPageView() {
     refresh();
   }
 
-  function createFromNewCategory() {
-    const name = newCategory.trim();
-    if (!name) {
-      toast("Indiquez un nom de catégorie.", "error");
+  async function confirmDelete(row: ServiceListItem) {
+    if (!canWrite) return;
+    const ok = window.confirm(`Supprimer « ${row.name} » ? Cette action est définitive.`);
+    if (!ok) {
+      setMenuId(null);
       return;
     }
-    setNewCategory("");
-    void openCreate(name);
+    const result = await deleteService(row.id);
+    if (!result.ok) {
+      toast(result.error, "error");
+      setMenuId(null);
+      return;
+    }
+    toast("Service supprimé.", "success");
+    setMenuId(null);
+    refresh();
   }
 
   const insight =
@@ -261,6 +248,7 @@ export function ServicesPageView() {
         orgName={user.orgName}
         catalogCount={catalog.length}
         activeCount={activeCount}
+        inactiveCount={inactiveCount}
         canWrite={canWrite}
         financeHidden={financeHidden}
         overview={overview}
@@ -268,11 +256,8 @@ export function ServicesPageView() {
         searchInput={searchInput}
         onSearchChange={setSearchInput}
         searchRef={searchRef}
-        category={category}
         activeFilter={activeFilter}
-        onCategoryChange={setCategory}
         onActiveFilterChange={setActiveFilter}
-        categoryCounts={Array.from(categoryCounts.entries())}
         filtered={filtered}
         statsById={statsById}
         loading={loading}
@@ -282,9 +267,9 @@ export function ServicesPageView() {
         menuId={menuId}
         onMenu={setMenuId}
         onCreate={() => void openCreate()}
-        onCategories={() => setCategoriesOpen(true)}
         onEdit={(id) => void openEdit(id)}
         onToggle={(s) => void toggleActive(s)}
+        onDelete={(s) => void confirmDelete(s)}
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
@@ -424,132 +409,107 @@ export function ServicesPageView() {
 
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
         <FilterPill
-          active={!category && activeFilter === "all"}
-          onClick={() => {
-            setCategory("");
-            setActiveFilter("all");
-          }}
+          active={activeFilter === "all"}
+          onClick={() => setActiveFilter("all")}
           label="Tous"
           count={catalog.length}
         />
         <FilterPill
-          active={activeFilter === "active" && !category}
-          onClick={() => {
-            setCategory("");
-            setActiveFilter("active");
-          }}
+          active={activeFilter === "active"}
+          onClick={() => setActiveFilter("active")}
           label="Actifs"
           count={activeCount}
         />
-        {Array.from(categoryCounts.entries()).map(([name, count]) => (
-          <FilterPill
-            key={name}
-            active={category === name}
-            onClick={() => {
-              setCategory(name);
-              setActiveFilter("all");
-            }}
-            label={name}
-            count={count}
-          />
-        ))}
-        {canWrite ? (
-          <button
-            type="button"
-            onClick={() => setCategoriesOpen(true)}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#FFEFF8] px-3 py-2 text-[13px] font-semibold text-primary shadow-sm"
-          >
-            <Plus size={16} />
-            Catégorie
-          </button>
-        ) : null}
+        <FilterPill
+          active={activeFilter === "inactive"}
+          onClick={() => setActiveFilter("inactive")}
+          label="Inactifs"
+          count={inactiveCount}
+        />
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
-        <div className="flex flex-col gap-4 lg:col-span-8">
-          {loading ? (
-            <p className="rounded-xl bg-white py-12 text-center text-sm text-ink/40 shadow-sm">Chargement…</p>
-          ) : filtered.length === 0 ? (
-            <p className="rounded-xl bg-white py-12 text-center text-sm text-ink/45 shadow-sm">
-              Aucun service trouvé.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {filtered.map((s) => (
-                <ServiceCard
-                  key={s.id}
-                  service={s}
-                  stats={statsById.get(s.id)}
-                  financeHidden={financeHidden}
-                  canWrite={canWrite}
-                  isBestSeller={topByAppointments?.serviceId === s.id && (topByAppointments?.appointments ?? 0) > 0}
-                  isTopHourly={topHourly?.service.id === s.id}
-                  menuOpen={menuId === s.id}
-                  onMenu={() => setMenuId(menuId === s.id ? null : s.id)}
-                  onEdit={() => void openEdit(s.id)}
-                  onToggle={() => void toggleActive(s)}
-                />
+      <div className="flex flex-col gap-5">
+        {!financeHidden && hourlyRanking.length > 0 ? (
+          <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h2 className="text-[16px] font-bold text-ink">Matrice de rentabilité</h2>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Tarif / heure de soin</p>
+              </div>
+              <span className="rounded bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-800">
+                MAD / h
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {hourlyRanking.map(({ service, rate }) => (
+                <div key={service.id}>
+                  <div className="mb-1 flex items-center justify-between text-[13px]">
+                    <span className="truncate font-semibold text-ink">{service.name}</span>
+                    <span className="shrink-0 font-bold text-emerald-800">{formatMad(rate)}/h</span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#FCE9F4]">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${maxHourly ? Math.round((rate / maxHourly) * 100) : 0}%` }}
+                    />
+                  </div>
+                </div>
               ))}
             </div>
-          )}
-        </div>
-
-        <aside className="flex flex-col gap-4 lg:col-span-4">
-          {!financeHidden && hourlyRanking.length > 0 ? (
-            <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-[16px] font-bold text-ink">Matrice de rentabilité</h2>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Tarif / heure de soin</p>
-                </div>
-                <span className="rounded bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-800">
-                  MAD / h
-                </span>
-              </div>
-              <div className="space-y-3">
-                {hourlyRanking.map(({ service, rate }) => (
-                  <div key={service.id}>
-                    <div className="mb-1 flex items-center justify-between text-[13px]">
-                      <span className="truncate font-semibold text-ink">{service.name}</span>
-                      <span className="shrink-0 font-bold text-emerald-800">{formatMad(rate)}/h</span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-[#FCE9F4]">
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${maxHourly ? Math.round((rate / maxHourly) * 100) : 0}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-start gap-2 rounded-lg bg-[#FFEFF8] p-3">
-                <Info size={16} className="mt-0.5 shrink-0 text-primary" />
-                <p className="text-[12px] leading-5 text-ink/60">
-                  <strong className="text-ink">Impact agenda :</strong> modifier la durée d’une prestation recalcule
-                  les créneaux disponibles.
-                </p>
-              </div>
+            <div className="flex items-start gap-2 rounded-lg bg-[#FFEFF8] p-3">
+              <Info size={16} className="mt-0.5 shrink-0 text-primary" />
+              <p className="text-[12px] leading-5 text-ink/60">
+                <strong className="text-ink">Impact agenda :</strong> modifier la durée d’une prestation recalcule
+                les créneaux disponibles.
+              </p>
             </div>
-          ) : null}
+          </div>
+        ) : null}
 
-          {topByRevenue && !financeHidden ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-sm">
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#7B5900]">Meilleur CA du mois</p>
-                <h3 className="truncate text-[15px] font-bold text-ink">{topByRevenue.serviceName}</h3>
-                <p className="text-[13px] text-ink/50">
-                  {topByRevenue.appointments} RDV • {formatMad(topByRevenue.revenue)}
-                </p>
-              </div>
-              <Link
-                href="/agenda/"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FCE9F4] text-primary"
-              >
-                <CalendarDays size={18} />
-              </Link>
+        {topByRevenue && !financeHidden ? (
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-sm">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#7B5900]">Meilleur CA du mois</p>
+              <h3 className="truncate text-[15px] font-bold text-ink">{topByRevenue.serviceName}</h3>
+              <p className="text-[13px] text-ink/50">
+                {topByRevenue.appointments} RDV • {formatMad(topByRevenue.revenue)}
+              </p>
             </div>
-          ) : null}
-        </aside>
+            <Link
+              href="/agenda/"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FCE9F4] text-primary"
+            >
+              <CalendarDays size={18} />
+            </Link>
+          </div>
+        ) : null}
+
+        {loading ? (
+          <p className="rounded-xl bg-white py-12 text-center text-sm text-ink/40 shadow-sm">Chargement…</p>
+        ) : filtered.length === 0 ? (
+          <p className="rounded-xl bg-white py-12 text-center text-sm text-ink/45 shadow-sm">
+            Aucun service trouvé.
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {filtered.map((s) => (
+              <ServiceCard
+                key={s.id}
+                service={s}
+                stats={statsById.get(s.id)}
+                financeHidden={financeHidden}
+                canWrite={canWrite}
+                isBestSeller={topByAppointments?.serviceId === s.id && (topByAppointments?.appointments ?? 0) > 0}
+                isTopHourly={topHourly?.service.id === s.id}
+                menuOpen={menuId === s.id}
+                onMenu={() => setMenuId(menuId === s.id ? null : s.id)}
+                onEdit={() => void openEdit(s.id)}
+                onToggle={() => void toggleActive(s)}
+                onDelete={() => void confirmDelete(s)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <p className="text-center text-[11px] text-ink/35">
@@ -569,8 +529,8 @@ export function ServicesPageView() {
       >
         {options ? (
           <ServiceForm
-            key={editing?.id ?? `new-${prefillCategory}`}
-            initial={editing ?? (prefillCategory ? { category: prefillCategory, active: true } : { active: true })}
+            key={editing?.id ?? "new"}
+            initial={editing ?? { active: true }}
             options={options}
             extraCategories={categories}
             canEditPrice={canPrice}
@@ -584,56 +544,6 @@ export function ServicesPageView() {
         ) : (
           <p className="text-sm text-ink/50">Chargement…</p>
         )}
-      </Drawer>
-
-      <Drawer open={categoriesOpen} onClose={() => setCategoriesOpen(false)} title="Catégories" side="right">
-        <div className="flex flex-col gap-3">
-          {Array.from(categoryCounts.entries()).length === 0 ? (
-            <p className="text-sm text-ink/45">Aucune catégorie pour l’instant.</p>
-          ) : (
-            Array.from(categoryCounts.entries()).map(([name, count]) => (
-              <div key={name} className="flex items-center justify-between rounded-xl bg-[#FFEFF8] p-3">
-                <div>
-                  <p className="text-sm font-semibold text-ink">{name}</p>
-                  <p className="text-[11px] text-ink/45">
-                    {count} service{count > 1 ? "s" : ""}
-                  </p>
-                </div>
-                {canWrite ? (
-                  <button
-                    type="button"
-                    onClick={() => void openCreate(name)}
-                    className="text-[12px] font-semibold text-primary"
-                  >
-                    + Service
-                  </button>
-                ) : null}
-              </div>
-            ))
-          )}
-          {canWrite ? (
-            <div className="mt-2 flex flex-col gap-2 border-t border-line pt-3">
-              <p className="text-[12px] font-semibold text-ink">Nouvelle catégorie</p>
-              <input
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="Ex. Regard & cils"
-                className="h-11 rounded-xl bg-[#FFEFF8] px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              <button
-                type="button"
-                onClick={createFromNewCategory}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-[13px] font-semibold text-white"
-              >
-                <Plus size={16} />
-                Créer un service dans cette catégorie
-              </button>
-              <p className="text-[11px] text-ink/40">
-                Une catégorie existe dès qu’un service l’utilise. Il n’y a pas de liste séparée.
-              </p>
-            </div>
-          ) : null}
-        </div>
       </Drawer>
     </div>
   );
@@ -718,6 +628,7 @@ function ServiceCard({
   onMenu,
   onEdit,
   onToggle,
+  onDelete,
 }: {
   service: ServiceListItem;
   stats?: ServiceAnalyticsRow;
@@ -729,6 +640,7 @@ function ServiceCard({
   onMenu: () => void;
   onEdit: () => void;
   onToggle: () => void;
+  onDelete: () => void;
 }) {
   const Icon = categoryIcon(s.category);
   const hourly = hourlyRate(s.price, s.durationMin);
@@ -778,6 +690,13 @@ function ServiceCard({
                   </button>
                   <button type="button" className="block w-full px-3 py-2 text-left hover:bg-[#FFEFF8]" onClick={onToggle}>
                     {s.active ? "Désactiver" : "Réactiver"}
+                  </button>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-left text-red-600 hover:bg-red-50"
+                    onClick={onDelete}
+                  >
+                    Supprimer
                   </button>
                 </div>
               ) : null}
@@ -845,8 +764,8 @@ function ServiceCard({
         )}
       </div>
 
-      <div className="mt-4 flex items-center gap-2 pt-1">
-        {canWrite ? (
+      {canWrite ? (
+        <div className="mt-4 flex items-center gap-2 pt-1">
           <button
             type="button"
             onClick={onEdit}
@@ -855,15 +774,8 @@ function ServiceCard({
             <Pencil size={14} />
             Modifier
           </button>
-        ) : null}
-        <Link
-          href="/agenda/"
-          className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-[#FCE9F4] px-3 text-[13px] font-medium text-primary"
-        >
-          <CalendarDays size={14} />
-          RDV{rdv > 0 ? ` (${rdv})` : ""}
-        </Link>
-      </div>
+        </div>
+      ) : null}
     </article>
   );
 }

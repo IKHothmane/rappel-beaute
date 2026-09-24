@@ -13,12 +13,9 @@ import {
   Lightbulb,
   Package,
   Radar,
-  RefreshCw,
   Send,
-  Settings2,
   ShieldCheck,
   Sparkles,
-  Trash2,
   Users,
   Wallet,
 } from "lucide-react";
@@ -345,7 +342,7 @@ export function AiAssistantPage() {
                 )}
               >
                 <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-500" : "bg-amber-500")} />
-                {connected ? "Connecté" : quotaBlocked ? "Non inclus au forfait" : "Quota à vérifier"}
+                {connected ? "Connecté" : quotaBlocked ? "Non inclus au forfait" : "Hors ligne"}
               </span>
             </div>
             <p className="max-w-3xl text-sm text-ink/55">
@@ -397,9 +394,9 @@ export function AiAssistantPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <section className="space-y-4 lg:col-span-5">
-          <div className="flex items-center justify-between px-1">
+      <div className="flex flex-col gap-6">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="col-span-full flex items-center justify-between px-1">
             <h2 className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-ink/50">
               <Radar size={16} className="text-primary" />
               Outils métier & diagnostics
@@ -619,7 +616,7 @@ export function AiAssistantPage() {
           </article>
         </section>
 
-        <section className="flex min-h-[420px] flex-col rounded-2xl border border-line bg-white shadow-soft lg:col-span-7 lg:min-h-[420px]">
+        <section className="order-first flex min-h-[420px] flex-col rounded-2xl border border-line bg-white shadow-soft lg:min-h-[420px]">
           <div className="flex items-center justify-between rounded-t-2xl border-b border-line bg-gradient-to-r from-white to-[#FFF7F9] px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -641,14 +638,6 @@ export function AiAssistantPage() {
               <button
                 type="button"
                 onClick={newChat}
-                className="rounded-xl p-2 text-ink/40 hover:bg-slate-100 hover:text-ink"
-                title="Nouvelle discussion"
-              >
-                <RefreshCw size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={newChat}
                 className="rounded-xl bg-primary px-3 py-1.5 text-[11px] font-bold text-white"
               >
                 Nouveau
@@ -660,29 +649,6 @@ export function AiAssistantPage() {
             {lines.length === 0 && !analyzing ? (
               <div className="space-y-3 text-sm text-ink/45">
                 <p>Posez une question sur votre institut. Aucun exemple inventé n’est affiché.</p>
-                {conversations.length ? (
-                  <ul className="space-y-1">
-                    {conversations.slice(0, 6).map((c) => (
-                      <li key={c.id} className="group flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => openConversation(c.id)}
-                          className="min-w-0 flex-1 truncate rounded-lg px-2 py-1.5 text-left text-xs text-ink/70 hover:bg-[#FFF7F9]"
-                        >
-                          {c.title || "Sans titre"}
-                        </button>
-                        <button
-                          type="button"
-                          className="hidden rounded p-1 text-ink/35 hover:text-red-600 group-hover:block"
-                          onClick={() => removeConversation(c.id)}
-                          aria-label="Supprimer"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
               </div>
             ) : (
               lines.map((line, i) =>

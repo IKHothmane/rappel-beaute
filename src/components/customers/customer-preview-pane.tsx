@@ -166,14 +166,18 @@ export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: 
           <Phone size={14} className="text-ink/40" />
           {person.phone}
         </p>
-        <p className="flex min-w-0 items-center gap-2 truncate">
-          <Mail size={14} className="shrink-0 text-ink/40" />
-          <span className="truncate">{person.email || "Pas d’e-mail"}</span>
-        </p>
-        <p className="flex items-center gap-2">
-          <Cake size={14} className="text-ink/40" />
-          {birth ? `${birth}${age ? ` (${age} ans)` : ""}` : "Anniversaire —"}
-        </p>
+        {person.email ? (
+          <p className="flex min-w-0 items-center gap-2 truncate">
+            <Mail size={14} className="shrink-0 text-ink/40" />
+            <span className="truncate">{person.email}</span>
+          </p>
+        ) : null}
+        {birth ? (
+          <p className="flex items-center gap-2">
+            <Cake size={14} className="text-ink/40" />
+            {birth}{age ? ` (${age} ans)` : ""}
+          </p>
+        ) : null}
         <p className="flex items-center gap-2">
           <Star size={14} className="text-ink/40" />
           {visits} {visits > 1 ? "visites" : "visite"}

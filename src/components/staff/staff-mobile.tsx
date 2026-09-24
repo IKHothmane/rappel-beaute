@@ -215,14 +215,6 @@ export function StaffMobile({
             )
           }
         />
-        {canCommissions ? (
-          <StripChip
-            icon={<Wallet size={16} className="text-[#7B5900]" />}
-            label="Commissions"
-            value={commissionTotal != null ? formatMad(commissionTotal) : "—"}
-            hint="Mois en cours"
-          />
-        ) : null}
       </div>
 
       <div className="relative">

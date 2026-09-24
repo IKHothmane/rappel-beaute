@@ -7,7 +7,7 @@ import {
 } from "@/lib/auth/api-guard";
 import { canEditServicePrice } from "@/lib/rbac";
 import { writeAuditLog } from "@/lib/db/audit";
-import { getServiceById, updateService } from "@/lib/db/services";
+import { deleteService, getServiceById, updateService } from "@/lib/db/services";
 import { validateUpdateService } from "@/lib/validation/service";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -84,6 +84,50 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     console.error("[PATCH /api/services/:id]", error);
     return NextResponse.json(
       { error: "Impossible de mettre à jour le service." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const auth = await requireFeatureWrite(request, "services");
+  if (!auth.ok) return auth.response;
+
+  try {
+    const { id } = await context.params;
+    const { name } = await deleteService(auth.session.organizationId, id);
+
+    await writeAuditLog({
+      organizationId: auth.session.organizationId,
+      actorId: auth.session.id,
+      actorName: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
+      entityType: "Service",
+      entityId: id,
+      action: "DELETE",
+      before: { name },
+      after: null,
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return NextResponse.json({ error: "Service introuvable." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "HAS_APPOINTMENTS") {
+      return NextResponse.json(
+        { error: "Impossible de supprimer : des rendez-vous sont liés. Désactivez le service." },
+        { status: 409 },
+      );
+    }
+    if (error instanceof Error && error.message === "HAS_PACKAGES") {
+      return NextResponse.json(
+        { error: "Impossible de supprimer : un forfait utilise ce service." },
+        { status: 409 },
+      );
+    }
+    console.error("[DELETE /api/services/:id]", error);
+    return NextResponse.json(
+      { error: "Impossible de supprimer le service." },
       { status: 500 },
     );
   }

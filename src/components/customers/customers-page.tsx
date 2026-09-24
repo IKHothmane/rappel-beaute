@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  MessageCircle,
   MoreVertical,
   RefreshCw,
   Search,
@@ -22,7 +21,6 @@ import {
   customerInitials,
   formatRelativeVisit,
   segmentBadge,
-  whatsappHref,
 } from "@/components/customers/customers-helpers";
 import { Drawer } from "@/components/ui/drawer";
 import { useToast } from "@/components/ui/toast";
@@ -358,16 +356,6 @@ export function CustomersPageView() {
                                 </p>
                                 <div className="flex items-center gap-1.5">
                                   <span className="font-mono text-[11px] text-ink/45">{c.phone}</span>
-                                  <a
-                                    href={whatsappHref(c.phone, c.firstName)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600"
-                                    title="WhatsApp"
-                                  >
-                                    <MessageCircle size={11} />
-                                  </a>
                                 </div>
                               </div>
                             </div>

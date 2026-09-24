@@ -391,13 +391,6 @@ export function StaffPageView() {
             tone="primary"
           />
           <KpiCard
-            label="Commissions"
-            value={canCommissions && commissionTotal != null ? formatMad(commissionTotal) : "—"}
-            hint={canCommissions ? "Acquises ce mois" : "Accès limité"}
-            icon={Wallet}
-            tone="gold"
-          />
-          <KpiCard
             label="Satisfaction"
             value={reviews?.averageInternalScore != null ? `${reviews.averageInternalScore}` : "—"}
             hint={

@@ -15,7 +15,6 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
-  Trash2,
   Users,
   Wallet,
   Zap,
@@ -142,7 +141,7 @@ export function AiAssistantMobile(props: AiAssistantMobileProps) {
               connected ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800",
             )}
           >
-            {connected ? "Connecté" : quotaBlocked ? "Forfait" : "Quota"}
+            {connected ? "Connecté" : quotaBlocked ? "Forfait" : "Hors ligne"}
           </span>
         </div>
 
@@ -157,14 +156,6 @@ export function AiAssistantMobile(props: AiAssistantMobileProps) {
             <Bot size={20} />
           </div>
         </div>
-
-        {usage ? (
-          <p className="text-[11px] font-medium text-ink/45">
-            Quota {usage.messageCount}
-            {usage.maxMessages != null ? ` / ${usage.maxMessages}` : ""} ce mois
-            {usage.remainingMessages != null ? ` · ${usage.remainingMessages} restants` : ""}
-          </p>
-        ) : null}
 
         <div className="mt-1 grid grid-cols-3 rounded-xl bg-[#F6E3EF] p-1">
           {TABS.map((item) => {
@@ -215,59 +206,19 @@ export function AiAssistantMobile(props: AiAssistantMobileProps) {
 
       {tab === "conversation" ? (
         <section className="flex flex-col gap-4">
-          {conversations.length ? (
-            <div className="flex items-center gap-2">
-              <select
-                className="min-w-0 flex-1 truncate rounded-lg border border-line bg-white px-2 py-1.5 text-[11px] text-ink/70"
-                value={conversationId ?? ""}
-                onChange={(e) => {
-                  if (e.target.value) void onOpenConversation(e.target.value);
-                  else onNewChat();
-                }}
-              >
-                <option value="">Nouvelle session</option>
-                {conversations.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title || "Sans titre"}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={onNewChat}
-                className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-ink/70"
-              >
-                Nouveau
-              </button>
-            </div>
-          ) : null}
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={onNewChat}
+              className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-white"
+            >
+              Nouveau
+            </button>
+          </div>
 
           {lines.length === 0 && !analyzing ? (
             <div className="rounded-2xl bg-white p-4 text-sm text-ink/45 shadow-sm">
               <p>Posez une question sur votre institut. Aucun exemple inventé n’est affiché.</p>
-              {conversations.length ? (
-                <ul className="mt-3 space-y-1">
-                  {conversations.slice(0, 5).map((c) => (
-                    <li key={c.id} className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => onOpenConversation(c.id)}
-                        className="min-w-0 flex-1 truncate rounded-lg px-2 py-1.5 text-left text-xs text-ink/70 hover:bg-[#FFF7F9]"
-                      >
-                        {c.title || "Sans titre"}
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded p-1 text-ink/35"
-                        onClick={() => onRemoveConversation(c.id)}
-                        aria-label="Supprimer"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
             </div>
           ) : (
             lines.map((line, i) =>

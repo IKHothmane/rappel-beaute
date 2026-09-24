@@ -504,6 +504,60 @@ export async function updateService(
   return { service, priceChange };
 }
 
+export async function deleteService(
+  organizationId: string,
+  serviceId: string,
+): Promise<{ name: string }> {
+  const existing = await getServiceById(organizationId, serviceId);
+  if (!existing) throw new Error("NOT_FOUND");
+
+  const [appointments, packages] = await Promise.all([
+    pool.query<{ ok: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1 FROM "Appointment"
+        WHERE "serviceId" = $1 AND "organizationId" = $2
+      ) AS ok`,
+      [serviceId, organizationId],
+    ),
+    pool.query<{ ok: boolean }>(
+      `SELECT (
+        EXISTS (SELECT 1 FROM "PackageItem" WHERE "serviceId" = $1)
+        OR EXISTS (SELECT 1 FROM "Package" WHERE "serviceId" = $1)
+      ) AS ok`,
+      [serviceId],
+    ),
+  ]);
+
+  if (appointments.rows[0]?.ok) throw new Error("HAS_APPOINTMENTS");
+  if (packages.rows[0]?.ok) throw new Error("HAS_PACKAGES");
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`DELETE FROM "WaitingListEntry" WHERE "serviceId" = $1 AND "organizationId" = $2`, [
+      serviceId,
+      organizationId,
+    ]);
+    await client.query(`DELETE FROM "ServiceStaff" WHERE "serviceId" = $1`, [serviceId]);
+    await client.query(`DELETE FROM "ServiceResource" WHERE "serviceId" = $1`, [serviceId]);
+    await client.query(`DELETE FROM "ServiceProduct" WHERE "serviceId" = $1`, [serviceId]);
+    await client.query(`DELETE FROM "ServiceCommission" WHERE "serviceId" = $1`, [serviceId]);
+    const { rowCount } = await client.query(
+      `DELETE FROM "Service" WHERE id = $1 AND "organizationId" = $2`,
+      [serviceId, organizationId],
+    );
+    if (!rowCount) throw new Error("NOT_FOUND");
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+
+  return { name: existing.name };
+}
+
 export async function getServiceFormOptions(organizationId: string): Promise<ServiceFormOptions> {
   const [staff, resources, products] = await Promise.all([
     pool.query<{ id: string; firstName: string; lastName: string; position: string | null }>(

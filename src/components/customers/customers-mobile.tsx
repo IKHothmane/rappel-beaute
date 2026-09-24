@@ -630,14 +630,18 @@ function CustomerFocusMobile({
             <Phone size={14} className="shrink-0 text-primary" />
             <span className="truncate font-mono">{person.phone}</span>
           </p>
-          <p className="flex items-center gap-1.5 truncate">
-            <Cake size={14} className="shrink-0 text-[#7B5900]" />
-            {birth ? `${birth}${age != null ? ` (${age} ans)` : ""}` : "Anniversaire —"}
-          </p>
-          <p className="col-span-2 flex items-center gap-1.5 truncate">
-            <Mail size={14} className="shrink-0 text-primary" />
-            <span className="truncate">{person.email || "Pas d’e-mail"}</span>
-          </p>
+          {birth ? (
+            <p className="flex items-center gap-1.5 truncate">
+              <Cake size={14} className="shrink-0 text-[#7B5900]" />
+              {birth}{age != null ? ` (${age} ans)` : ""}
+            </p>
+          ) : null}
+          {person.email ? (
+            <p className="col-span-2 flex items-center gap-1.5 truncate">
+              <Mail size={14} className="shrink-0 text-primary" />
+              <span className="truncate">{person.email}</span>
+            </p>
+          ) : null}
           {favStaff ? (
             <p className="col-span-2 flex items-center gap-1.5 rounded-lg bg-[#FFEFF8] p-2 text-ink">
               <Star size={14} className="text-[#7B5900]" />

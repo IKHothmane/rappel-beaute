@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
 import {
   Ban,
   Brain,
@@ -14,21 +13,18 @@ import {
   Clock3,
   Gauge,
   Hourglass,
-  Link2,
   Lock,
-  Pencil,
-  Repeat,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
   Umbrella,
-  UserPlus,
   Users,
 } from "lucide-react";
 import { BlockSlotDialog } from "@/components/agenda/block-slot-dialog";
 import { staffColor } from "@/components/agenda/staff-colors";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Label, Select } from "@/components/ui/select";
@@ -58,7 +54,7 @@ import type {
   StaffOvertimeItem,
   StaffReplacementItem,
 } from "@/types/planning";
-import type { LeaveType, StaffAgendaContext, StaffBreakSlot } from "@/types/staff";
+import type { LeaveType, StaffAgendaContext, StaffScheduleSlot } from "@/types/staff";
 import { DAY_LABELS, LEAVE_TYPE_LABEL } from "@/types/staff";
 import {
   appointmentsInRange,
@@ -145,12 +141,12 @@ export function PlanningPageView() {
   const [staffFilter, setStaffFilter] = useState("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editDay, setEditDay] = useState(() => new Date().getDay());
-  const [worked, setWorked] = useState(true);
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("18:00");
-  const [breakStart, setBreakStart] = useState("13:00");
-  const [breakEnd, setBreakEnd] = useState("14:00");
-  const [copyDays, setCopyDays] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [hoursOpen, setHoursOpen] = useState(false);
+  const [weekDraft, setWeekDraft] = useState<StaffScheduleSlot[]>([]);
+  const [hoursDraft, setHoursDraft] = useState<
+    { day: number; open: boolean; start: string; end: string }[]
+  >([]);
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -237,16 +233,27 @@ export function PlanningPageView() {
   );
   const gridDates = view === "day" ? [anchor] : weekDates;
 
-  useEffect(() => {
+  function openScheduleEditor() {
     if (!selected) return;
-    const slot = schedulesForEditor(selected).find((item) => item.dayOfWeek === editDay);
-    setWorked(Boolean(slot?.active));
-    setStartTime(slot?.startTime ?? "09:00");
-    setEndTime(slot?.endTime ?? "18:00");
-    const brk = breaksForEditor(selected).find((item) => item.dayOfWeek === editDay);
-    setBreakStart(brk?.startTime ?? "13:00");
-    setBreakEnd(brk?.endTime ?? "14:00");
-  }, [selected, editDay]);
+    setWeekDraft(schedulesForEditor(selected));
+    setScheduleOpen(true);
+  }
+
+  function openHoursEditor() {
+    setHoursDraft(
+      [1, 2, 3, 4, 5, 6, 0].map((day) => {
+        const row = openingHours.find((item) => item.day === day);
+        const match = row?.hours.match(/(\d{2}:\d{2})\s*→\s*(\d{2}:\d{2})/);
+        return {
+          day,
+          open: Boolean(match),
+          start: match?.[1] ?? "09:00",
+          end: match?.[2] ?? "18:00",
+        };
+      }),
+    );
+    setHoursOpen(true);
+  }
 
   function shift(step: number) {
     const next = new Date(anchor);
@@ -264,37 +271,21 @@ export function PlanningPageView() {
 
   async function saveSchedule() {
     if (!selected) return;
-    if (worked && startTime >= endTime) {
+    if (weekDraft.some((d) => d.active && d.startTime >= d.endTime)) {
       toast("L’heure de fin doit être après l’heure de début.", "error");
       return;
     }
     setSavingSchedule(true);
-    const days = schedulesForEditor(selected).map((item) => {
-      if (item.dayOfWeek === editDay) {
-        return { ...item, active: worked, startTime, endTime };
-      }
-      if (copyDays && worked && item.active) {
-        return { ...item, startTime, endTime };
-      }
-      return item;
-    });
-    const copiedDays = new Set(
-      days.filter((item) => (copyDays && worked ? item.active : item.dayOfWeek === editDay)).map((item) => item.dayOfWeek),
-    );
-    const keptBreaks: StaffBreakSlot[] = breaksForEditor(selected).filter((item) => !copiedDays.has(item.dayOfWeek));
-    if (worked && breakStart && breakEnd && breakStart < breakEnd) {
-      for (const dayOfWeek of copiedDays) {
-        keptBreaks.push({ dayOfWeek, startTime: breakStart, endTime: breakEnd });
-      }
-    }
     const result = await updateStaffSchedule(selected.id, {
-      schedules: days.filter((item) => item.active).map((item) => ({
-        dayOfWeek: item.dayOfWeek,
-        startTime: toHHMM(item.startTime),
-        endTime: toHHMM(item.endTime),
-        active: true,
-      })),
-      breaks: keptBreaks,
+      schedules: weekDraft
+        .filter((item) => item.active)
+        .map((item) => ({
+          dayOfWeek: item.dayOfWeek,
+          startTime: toHHMM(item.startTime),
+          endTime: toHHMM(item.endTime),
+          active: true,
+        })),
+      breaks: breaksForEditor(selected),
     });
     setSavingSchedule(false);
     if (!result.ok) {
@@ -302,6 +293,42 @@ export function PlanningPageView() {
       return;
     }
     toast("Horaires enregistrés.", "success");
+    setScheduleOpen(false);
+    await refresh();
+  }
+
+  async function saveOpeningHours() {
+    if (hoursDraft.some((d) => d.open && d.start >= d.end)) {
+      toast("L’heure de fin doit être après l’heure de début.", "error");
+      return;
+    }
+    const activeStaff = staff.filter((person) => person.status === "ACTIVE");
+    if (!activeStaff.length) {
+      toast("Aucune employée active.", "error");
+      return;
+    }
+    setSavingSchedule(true);
+    for (const person of activeStaff) {
+      const result = await updateStaffSchedule(person.id, {
+        schedules: hoursDraft
+          .filter((item) => item.open)
+          .map((item) => ({
+            dayOfWeek: item.day,
+            startTime: toHHMM(item.start),
+            endTime: toHHMM(item.end),
+            active: true,
+          })),
+        breaks: breaksForEditor(person),
+      });
+      if (!result.ok) {
+        setSavingSchedule(false);
+        toast(result.error, "error");
+        return;
+      }
+    }
+    setSavingSchedule(false);
+    toast("Horaires d’ouverture enregistrés.", "success");
+    setHoursOpen(false);
     await refresh();
   }
 
@@ -882,7 +909,10 @@ export function PlanningPageView() {
                       <button
                         key={label}
                         type="button"
-                        onClick={() => setEditDay(day)}
+                        onClick={() => {
+                          setEditDay(day);
+                          openScheduleEditor();
+                        }}
                         className={cn(
                           "flex w-full items-center justify-between rounded-lg py-1",
                           editDay === day && "bg-primary-light/60 px-2",
@@ -909,58 +939,11 @@ export function PlanningPageView() {
                 <div className="flex items-center justify-end border-t border-line pt-3">
                   <button
                     type="button"
-                    onClick={() => setEditDay(editDay)}
+                    onClick={openScheduleEditor}
                     className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white"
                   >
                     Modifier
                   </button>
-                </div>
-              </Card>
-
-              <Card className="space-y-4">
-                <div className="flex items-center justify-between border-b border-line pb-2">
-                  <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-ink">
-                    <Pencil size={14} className="text-primary" />
-                    Modifier le planning de {selected.firstName}
-                  </h3>
-                  <span className="text-[10px] text-ink/45">{DAY_LABELS[editDay]}</span>
-                </div>
-                <label className="flex items-center gap-2 text-xs font-bold text-ink">
-                  <input
-                    type="checkbox"
-                    checked={worked}
-                    onChange={(e) => setWorked(e.target.checked)}
-                    className="rounded text-primary"
-                  />
-                  Jour travaillé
-                </label>
-                {worked ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="mb-1 text-[10px] font-bold text-ink/45">Heure de début</p>
-                        <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-9 font-bold" />
-                      </div>
-                      <div>
-                        <p className="mb-1 text-[10px] font-bold text-ink/45">Heure de fin</p>
-                        <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-9 font-bold" />
-                      </div>
-                    </div>
-                    <label className="flex items-center gap-2 text-[11px] text-ink/60">
-                      <input
-                        type="checkbox"
-                        checked={copyDays}
-                        onChange={(e) => setCopyDays(e.target.checked)}
-                        className="rounded text-primary"
-                      />
-                      Copier sur les autres jours déjà travaillés
-                    </label>
-                  </>
-                ) : null}
-                <div className="flex justify-end gap-2 border-t border-line pt-2">
-                  <Button type="button" variant="brand" size="sm" disabled={savingSchedule} onClick={saveSchedule}>
-                    {savingSchedule ? "Enregistrement…" : "Enregistrer"}
-                  </Button>
                 </div>
               </Card>
             </>
@@ -990,7 +973,7 @@ export function PlanningPageView() {
                 (actuellement en repos) pour absorber la charge.
               </div>
               <p className="text-[10px] text-white/45">
-                Aucun chiffre de CA n’est inventé : ouvrez la fiche RH pour ajuster l’horaire.
+                Aucun chiffre de CA n’est inventé : utilisez Modifier pour ajuster l’horaire.
               </p>
             </div>
           ) : null}
@@ -1001,9 +984,13 @@ export function PlanningPageView() {
                 <Clock3 size={14} className="text-gold" />
                 Horaires d’ouverture (dérivés des shifts)
               </h3>
-              <Link href="/settings/" className="text-[11px] font-bold text-primary hover:underline">
+              <button
+                type="button"
+                onClick={openHoursEditor}
+                className="text-[11px] font-bold text-primary hover:underline"
+              >
                 Paramètres
-              </Link>
+              </button>
             </div>
             <div className="space-y-1.5 text-xs">
               {openingHours.map((row) => (
@@ -1129,6 +1116,142 @@ export function PlanningPageView() {
           </Button>
         </div>
       </Modal>
+
+      <Drawer
+        open={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        title={selected ? `Modifier le planning de ${selected.firstName}` : "Modifier le planning"}
+        side="right"
+      >
+        <div className="flex flex-col gap-3">
+          {weekDraft
+            .slice()
+            .sort((a, b) => ((a.dayOfWeek + 6) % 7) - ((b.dayOfWeek + 6) % 7))
+            .map((day) => (
+              <div key={day.dayOfWeek} className="rounded-xl border border-line bg-[#FFEFF8]/50 p-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <input
+                    type="checkbox"
+                    checked={day.active}
+                    onChange={(e) =>
+                      setWeekDraft((prev) =>
+                        prev.map((item) =>
+                          item.dayOfWeek === day.dayOfWeek ? { ...item, active: e.target.checked } : item,
+                        ),
+                      )
+                    }
+                    className="rounded text-primary"
+                  />
+                  {DAY_LABELS[day.dayOfWeek]}
+                </label>
+                {day.active ? (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="mb-1 text-[10px] font-bold text-ink/45">Début</p>
+                      <Input
+                        type="time"
+                        value={day.startTime}
+                        onChange={(e) =>
+                          setWeekDraft((prev) =>
+                            prev.map((item) =>
+                              item.dayOfWeek === day.dayOfWeek ? { ...item, startTime: e.target.value } : item,
+                            ),
+                          )
+                        }
+                        className="h-9 font-bold"
+                      />
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[10px] font-bold text-ink/45">Fin</p>
+                      <Input
+                        type="time"
+                        value={day.endTime}
+                        onChange={(e) =>
+                          setWeekDraft((prev) =>
+                            prev.map((item) =>
+                              item.dayOfWeek === day.dayOfWeek ? { ...item, endTime: e.target.value } : item,
+                            ),
+                          )
+                        }
+                        className="h-9 font-bold"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-[12px] text-ink/45">Repos</p>
+                )}
+              </div>
+            ))}
+          <Button type="button" variant="brand" disabled={savingSchedule} onClick={() => void saveSchedule()}>
+            {savingSchedule ? "Enregistrement…" : "Enregistrer"}
+          </Button>
+        </div>
+      </Drawer>
+
+      <Drawer
+        open={hoursOpen}
+        onClose={() => setHoursOpen(false)}
+        title="Horaires d’ouverture"
+        side="right"
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-[12px] text-ink/50">
+            Ces horaires s’appliquent à toutes les employées actives.
+          </p>
+          {hoursDraft.map((row) => (
+            <div key={row.day} className="rounded-xl border border-line bg-[#FFEFF8]/50 p-3">
+              <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+                <input
+                  type="checkbox"
+                  checked={row.open}
+                  onChange={(e) =>
+                    setHoursDraft((prev) =>
+                      prev.map((item) => (item.day === row.day ? { ...item, open: e.target.checked } : item)),
+                    )
+                  }
+                  className="rounded text-primary"
+                />
+                {DAY_LABELS[row.day]}
+              </label>
+              {row.open ? (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold text-ink/45">Ouverture</p>
+                    <Input
+                      type="time"
+                      value={row.start}
+                      onChange={(e) =>
+                        setHoursDraft((prev) =>
+                          prev.map((item) => (item.day === row.day ? { ...item, start: e.target.value } : item)),
+                        )
+                      }
+                      className="h-9 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold text-ink/45">Fermeture</p>
+                    <Input
+                      type="time"
+                      value={row.end}
+                      onChange={(e) =>
+                        setHoursDraft((prev) =>
+                          prev.map((item) => (item.day === row.day ? { ...item, end: e.target.value } : item)),
+                        )
+                      }
+                      className="h-9 font-bold"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-1 text-[12px] text-ink/45">Fermé</p>
+              )}
+            </div>
+          ))}
+          <Button type="button" variant="brand" disabled={savingSchedule} onClick={() => void saveOpeningHours()}>
+            {savingSchedule ? "Enregistrement…" : "Enregistrer"}
+          </Button>
+        </div>
+      </Drawer>
     </div>
   );
 }

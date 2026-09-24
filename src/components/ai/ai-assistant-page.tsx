@@ -360,24 +360,9 @@ export function AiAssistantPage() {
             <div className="flex items-center gap-2">
               <Button type="button" variant="brand" size="sm" onClick={newChat} disabled={quotaBlocked}>
                 <Sparkles size={14} />
-                Nouvelle question
+                Nouveau
               </Button>
-              <Link
-                href="/settings/"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-2 text-xs font-bold text-ink hover:bg-[#FFF7F9]"
-              >
-                <Settings2 size={14} />
-                Paramètres
-              </Link>
             </div>
-            {usage ? (
-              <p className="rounded-xl border border-line bg-white px-3 py-1.5 text-[11px] font-medium text-ink/55">
-                <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                Quota {usage.messageCount}
-                {usage.maxMessages != null ? ` / ${usage.maxMessages}` : ""} ce mois
-                {usage.remainingMessages != null ? ` · ${usage.remainingMessages} restants` : ""}
-              </p>
-            ) : null}
           </div>
         </div>
 
@@ -634,7 +619,7 @@ export function AiAssistantPage() {
           </article>
         </section>
 
-        <section className="flex min-h-[640px] flex-col rounded-2xl border border-line bg-white shadow-soft lg:col-span-7 lg:min-h-[820px]">
+        <section className="flex min-h-[420px] flex-col rounded-2xl border border-line bg-white shadow-soft lg:col-span-7 lg:min-h-[420px]">
           <div className="flex items-center justify-between rounded-t-2xl border-b border-line bg-gradient-to-r from-white to-[#FFF7F9] px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -661,23 +646,13 @@ export function AiAssistantPage() {
               >
                 <RefreshCw size={14} />
               </button>
-              {conversations.length ? (
-                <select
-                  className="max-w-[140px] truncate rounded-lg border border-line bg-slate-50 px-2 py-1 text-[11px] font-mono text-ink/60"
-                  value={conversationId ?? ""}
-                  onChange={(e) => {
-                    if (e.target.value) void openConversation(e.target.value);
-                    else newChat();
-                  }}
-                >
-                  <option value="">Nouvelle session</option>
-                  {conversations.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title || "Sans titre"}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
+              <button
+                type="button"
+                onClick={newChat}
+                className="rounded-xl bg-primary px-3 py-1.5 text-[11px] font-bold text-white"
+              >
+                Nouveau
+              </button>
             </div>
           </div>
 

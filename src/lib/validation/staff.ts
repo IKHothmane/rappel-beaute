@@ -1,3 +1,4 @@
+import { limitPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 import type {
   CreateStaffInput,
   CreateStaffLeaveInput,
@@ -23,6 +24,10 @@ export function validateCreateStaff(body: unknown): ValidationResult<CreateStaff
   const firstName = String(raw.firstName ?? "").trim();
   const lastName = String(raw.lastName ?? "").trim();
   if (!firstName) errors.firstName = "Le prénom est obligatoire.";
+  const phone = raw.phone ? limitPhoneDigits(String(raw.phone)) : "";
+  if (phone && phone.length > PHONE_MAX_DIGITS) {
+    errors.phone = "Le téléphone ne doit pas dépasser 10 chiffres.";
+  }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
@@ -31,7 +36,7 @@ export function validateCreateStaff(body: unknown): ValidationResult<CreateStaff
     data: {
       firstName,
       lastName,
-      phone: raw.phone ? String(raw.phone).trim() : undefined,
+      phone: phone || undefined,
       email: raw.email ? String(raw.email).trim() : undefined,
       position: raw.position ? String(raw.position).trim() : undefined,
       status: STAFF_STATUSES.includes(raw.status as StaffStatus)
@@ -39,6 +44,7 @@ export function validateCreateStaff(body: unknown): ValidationResult<CreateStaff
         : "ACTIVE",
       hireDate: raw.hireDate ? String(raw.hireDate) : undefined,
       notes: raw.notes ? String(raw.notes).trim() : undefined,
+      serviceIds: Array.isArray(raw.serviceIds) ? raw.serviceIds.map(String) : [],
     },
   };
 }
@@ -58,7 +64,13 @@ export function validateUpdateStaff(body: unknown): ValidationResult<UpdateStaff
     else data.firstName = v;
   }
   if (raw.lastName !== undefined) data.lastName = String(raw.lastName).trim();
-  if (raw.phone !== undefined) data.phone = String(raw.phone).trim() || undefined;
+  if (raw.phone !== undefined) {
+    const v = limitPhoneDigits(String(raw.phone));
+    if (v && v.length > PHONE_MAX_DIGITS) {
+      errors.phone = "Le téléphone ne doit pas dépasser 10 chiffres.";
+    }
+    data.phone = v || undefined;
+  }
   if (raw.email !== undefined) data.email = String(raw.email).trim() || undefined;
   if (raw.position !== undefined) data.position = String(raw.position).trim() || undefined;
   if (raw.status !== undefined) {
@@ -68,6 +80,9 @@ export function validateUpdateStaff(body: unknown): ValidationResult<UpdateStaff
   }
   if (raw.hireDate !== undefined) data.hireDate = String(raw.hireDate) || undefined;
   if (raw.notes !== undefined) data.notes = String(raw.notes).trim() || undefined;
+  if (raw.serviceIds !== undefined) {
+    data.serviceIds = Array.isArray(raw.serviceIds) ? raw.serviceIds.map(String) : [];
+  }
   if (raw.active === false) data.status = "ARCHIVED";
   if (raw.active === true && raw.status === undefined) data.status = "ACTIVE";
 

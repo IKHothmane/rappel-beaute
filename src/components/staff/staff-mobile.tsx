@@ -223,15 +223,6 @@ export function StaffMobile({
             hint="Mois en cours"
           />
         ) : null}
-        {canExport ? (
-          <button
-            type="button"
-            onClick={onExport}
-            className="flex shrink-0 items-center gap-2 rounded-lg bg-[#F6E3EF]/80 px-3.5 py-2 whitespace-nowrap text-[12px] font-semibold text-ink"
-          >
-            Exporter l’équipe
-          </button>
-        ) : null}
       </div>
 
       <div className="relative">

@@ -289,25 +289,6 @@ export function ServicesPageView() {
 
       <div className="hidden flex-col gap-5 lg:flex">
       <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40">
-            Gestion commerciale
-          </p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFDEA4]/50 px-2.5 py-1 text-[11px] font-bold text-[#7B5900]">
-              <Store size={13} />
-              {user.orgName || "Votre institut"}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F6E3EF] px-2.5 py-1 text-[11px] font-medium text-ink/60">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {activeCount} service{activeCount !== 1 ? "s" : ""} actif{activeCount !== 1 ? "s" : ""}
-            </span>
-            <span className="hidden items-center gap-1 rounded-full bg-[#FCE9F4] px-2.5 py-1 text-[11px] font-medium text-primary sm:inline-flex">
-              Durées synchronisées agenda
-            </span>
-          </div>
-        </div>
-
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink lg:text-[32px]">
@@ -329,26 +310,6 @@ export function ServicesPageView() {
                 Nouveau service
               </button>
             ) : null}
-            {canWrite ? (
-              <button
-                type="button"
-                onClick={() => setCategoriesOpen(true)}
-                className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm"
-              >
-                <Tags size={16} className="text-[#7B5900]" />
-                Catégories
-              </button>
-            ) : null}
-            {canExport ? (
-              <button
-                type="button"
-                onClick={() => openReportExport("services", "csv", { preset: "year" })}
-                className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm"
-              >
-                <Download size={16} />
-                Exporter
-              </button>
-            ) : null}
           </div>
         </div>
 
@@ -358,7 +319,7 @@ export function ServicesPageView() {
             ref={searchRef}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Rechercher un service, une catégorie…"
+            placeholder="Rechercher un service…"
             className="h-12 w-full rounded-xl bg-white pl-12 pr-28 text-sm text-ink shadow-sm outline-none placeholder:text-ink/35 focus:ring-2 focus:ring-primary/20"
           />
           <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
@@ -534,44 +495,6 @@ export function ServicesPageView() {
         </div>
 
         <aside className="flex flex-col gap-4 lg:col-span-4">
-          <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-primary">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <h2 className="text-[16px] font-bold text-ink">À partir du catalogue</h2>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Mois en cours</p>
-              </div>
-            </div>
-            <div className="rounded-xl bg-[#FFEFF8] p-3">
-              <p className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-primary">
-                <Sparkles size={14} />
-                Classement réel
-              </p>
-              <p className="text-[13px] leading-5 text-ink">{insight}</p>
-            </div>
-            {topHourly && !financeHidden ? (
-              <div className="rounded-xl bg-[#FFDEA4]/30 p-3">
-                <p className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#7B5900]">
-                  <TrendingUp size={14} />
-                  Rentabilité horaire
-                </p>
-                <p className="text-[13px] leading-5 text-ink">
-                  {topHourly.service.name} atteint {formatMad(topHourly.rate)}/h au tarif catalogue (
-                  {formatDuration(topHourly.service.durationMin)}).
-                </p>
-              </div>
-            ) : null}
-            <Link
-              href="/ai/"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-[13px] font-semibold text-white shadow-sm"
-            >
-              <Sparkles size={16} />
-              Ouvrir le copilote IA
-            </Link>
-          </div>
-
           {!financeHidden && hourlyRanking.length > 0 ? (
             <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">

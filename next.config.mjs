@@ -29,6 +29,14 @@ const nextConfig = {
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
+  },
   async redirects() {
     return [
       // Anciennes pages SEO → ancres /fonctionnalites/

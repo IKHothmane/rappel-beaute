@@ -1,9 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CalendarDays, Clock3 } from "lucide-react";
 import { bookPath } from "@/components/public-site/PublicSiteShell";
 import { slugifyLabel } from "@/lib/booking-qr";
+import { servicePlaceholderImage } from "@/lib/public-site";
 import {
   formatDuration,
   formatMad,
@@ -36,14 +39,19 @@ export function PublicServiceDetailPage({
   }, [slug, serviceSlug]);
 
   if (loading) {
-    return <p className="px-4 py-16 text-center text-sm text-[#221820]/45">Chargement…</p>;
+    return (
+      <p className="px-5 py-16 text-center text-sm text-[#746970]">Chargement…</p>
+    );
   }
 
   if (!service) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <p className="text-sm text-[#221820]/55">Service introuvable.</p>
-        <Link href={bookPath(slug, "/services/")} className="mt-4 inline-block text-sm font-bold text-primary">
+      <div className="mx-auto max-w-xl px-5 py-16 text-center">
+        <p className="text-sm text-[#746970]">Service introuvable.</p>
+        <Link
+          href={bookPath(slug, "/services/")}
+          className="mt-4 inline-block text-sm font-bold text-[#B76E79]"
+        >
           Retour aux services
         </Link>
       </div>
@@ -51,35 +59,56 @@ export function PublicServiceDetailPage({
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <Link href={bookPath(slug, "/services/")} className="text-sm font-semibold text-primary hover:underline">
+    <div className="mx-auto max-w-3xl px-5 py-10">
+      <Link
+        href={bookPath(slug, "/services/")}
+        className="text-sm font-semibold text-[#B76E79] hover:underline"
+      >
         ← Services
       </Link>
-      <h1 className="mt-4 font-serif text-3xl font-semibold">{service.name}</h1>
-      <p className="mt-3 text-sm text-[#221820]/60">
-        {service.description ?? "Prestation réalisée par notre équipe."}
-      </p>
-      <div className="mt-6 grid grid-cols-2 gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E4BDC2]/35">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#221820]/40">Durée</p>
-          <p className="font-semibold">{formatDuration(service.durationMin)}</p>
+
+      <div className="mt-6 overflow-hidden rounded-3xl border border-[#EBDDE4] bg-white shadow-sm">
+        <div className="relative h-64 sm:h-80">
+          <Image
+            src={servicePlaceholderImage(service.id)}
+            alt={service.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 768px"
+            priority
+          />
         </div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#221820]/40">Prix</p>
-          <p className="font-semibold text-primary">{formatMad(service.price)}</p>
+        <div className="p-6 sm:p-8">
+          {service.category ? (
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#B76E79]">
+              {service.category}
+            </p>
+          ) : null}
+          <h1 className="mt-2 font-serif text-4xl text-[#241A22]">{service.name}</h1>
+          <p className="mt-4 leading-7 text-[#665A61]">
+            {service.description ?? "Prestation réalisée par notre équipe."}
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-6 border-t border-[#F0E4E8] pt-5">
+            <div className="flex items-center gap-2 text-sm text-[#776B71]">
+              <Clock3 size={16} className="text-[#B76E79]" />
+              {formatDuration(service.durationMin)}
+            </div>
+            <strong className="text-xl text-[#B14F5E]">{formatMad(service.price)}</strong>
+          </div>
+          {service.deposit != null && service.deposit > 0 ? (
+            <p className="mt-3 text-xs text-amber-700">
+              Acompte : {formatMad(service.deposit)} (encaissement à l&apos;institut)
+            </p>
+          ) : null}
+          <Link
+            href={bookPath(slug, `/booking/?service=${encodeURIComponent(service.id)}`)}
+            className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#B76E79] text-sm font-semibold text-white hover:bg-[#9F5C67] sm:w-auto sm:px-8"
+          >
+            <CalendarDays size={17} />
+            Réserver ce service
+          </Link>
         </div>
       </div>
-      {service.deposit != null && service.deposit > 0 ? (
-        <p className="mt-3 text-xs text-amber-700">
-          Acompte : {formatMad(service.deposit)} (encaissement à l&apos;institut)
-        </p>
-      ) : null}
-      <Link
-        href={bookPath(slug, `/booking/?service=${encodeURIComponent(service.id)}`)}
-        className="mt-8 flex h-12 items-center justify-center rounded-lg bg-[#7B5900] text-sm font-bold text-white hover:bg-[#5D4200]"
-      >
-        Réserver ce service
-      </Link>
     </div>
   );
 }

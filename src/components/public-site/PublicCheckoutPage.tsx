@@ -70,13 +70,13 @@ export function PublicCheckoutPage({ slug }: { slug: string }) {
   }
 
   if (count === 0) {
-    return <p className="py-16 text-center text-sm text-[#221820]/45">Redirection…</p>;
+    return <p className="py-16 text-center text-sm text-[#746970]">Redirection…</p>;
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-10 sm:px-6">
-      <h1 className="font-serif text-2xl font-semibold">Commander</h1>
-      <p className="mt-1 text-sm text-[#221820]/55">
+    <div className="mx-auto max-w-lg px-5 py-10">
+      <h1 className="font-serif text-3xl font-semibold text-[#241A22]">Commander</h1>
+      <p className="mt-1 text-sm text-[#746970]">
         Click &amp; collect · paiement lors du retrait
       </p>
 
@@ -88,38 +88,38 @@ export function PublicCheckoutPage({ slug }: { slug: string }) {
 
       <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-6">
         <section>
-          <h2 className="text-sm font-bold">Vos informations</h2>
+          <h2 className="text-sm font-bold text-[#241A22]">Vos informations</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <input
               required
-              className="rounded-xl border border-[#E4BDC2]/50 bg-white px-4 py-3 text-sm"
+              className="rounded-xl border border-[#EBDDE4] bg-white px-4 py-3 text-sm outline-none focus:border-[#B76E79]"
               placeholder="Prénom *"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
             />
             <input
               required
-              className="rounded-xl border border-[#E4BDC2]/50 bg-white px-4 py-3 text-sm"
+              className="rounded-xl border border-[#EBDDE4] bg-white px-4 py-3 text-sm outline-none focus:border-[#B76E79]"
               placeholder="Nom *"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
             />
             <input
               required
-              className="rounded-xl border border-[#E4BDC2]/50 bg-white px-4 py-3 text-sm sm:col-span-2"
+              className="rounded-xl border border-[#EBDDE4] bg-white px-4 py-3 text-sm outline-none focus:border-[#B76E79] sm:col-span-2"
               placeholder="Téléphone *"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
             <input
-              className="rounded-xl border border-[#E4BDC2]/50 bg-white px-4 py-3 text-sm sm:col-span-2"
+              className="rounded-xl border border-[#EBDDE4] bg-white px-4 py-3 text-sm outline-none focus:border-[#B76E79] sm:col-span-2"
               placeholder="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <textarea
-              className="min-h-[72px] rounded-xl border border-[#E4BDC2]/50 bg-white px-4 py-3 text-sm sm:col-span-2"
+              className="min-h-[72px] rounded-xl border border-[#EBDDE4] bg-white px-4 py-3 text-sm outline-none focus:border-[#B76E79] sm:col-span-2"
               placeholder="Note (optionnel)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -127,13 +127,13 @@ export function PublicCheckoutPage({ slug }: { slug: string }) {
           </div>
         </section>
 
-        <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E4BDC2]/35">
-          <h2 className="text-sm font-bold">Mode de récupération</h2>
+        <section className="rounded-2xl border border-[#EBDDE4] bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-[#241A22]">Mode de récupération</h2>
           <label className="mt-3 flex items-start gap-3 text-sm">
-            <input type="radio" checked readOnly className="mt-1" />
+            <input type="radio" checked readOnly className="mt-1 accent-[#B76E79]" />
             <span>
               <strong>Retrait à l&apos;institut</strong>
-              <span className="mt-0.5 block text-[#221820]/55">
+              <span className="mt-0.5 block text-[#746970]">
                 {org?.name ?? "Institut"}
                 {org?.city ? ` · ${org.city}` : ""}
                 {org?.address ? ` — ${org.address}` : ""}
@@ -142,39 +142,37 @@ export function PublicCheckoutPage({ slug }: { slug: string }) {
           </label>
         </section>
 
-        <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E4BDC2]/35">
-          <h2 className="text-sm font-bold">Paiement</h2>
+        <section className="rounded-2xl border border-[#EBDDE4] bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-[#241A22]">Paiement</h2>
           <label className="mt-3 flex items-start gap-3 text-sm">
-            <input type="radio" checked readOnly className="mt-1" />
+            <input type="radio" checked readOnly className="mt-1 accent-[#B76E79]" />
             <span>
               <strong>Paiement lors du retrait</strong>
-              <span className="mt-0.5 block text-[#221820]/55">
+              <span className="mt-0.5 block text-[#746970]">
                 Espèces ou carte à l&apos;institut
               </span>
             </span>
           </label>
         </section>
 
-        <section className="rounded-xl bg-[#FFEFF8] p-4 text-sm">
-          <h2 className="font-bold">Votre commande</h2>
-          <p className="mt-1 text-[#221820]/55">
+        <section className="rounded-2xl bg-[#FBECEF] p-4 text-sm">
+          <h2 className="font-bold text-[#241A22]">Votre commande</h2>
+          <p className="mt-1 text-[#746970]">
             {count} produit{count > 1 ? "s" : ""}
           </p>
-          <p className="mt-2 font-mono text-lg font-bold text-primary">
-            {formatMad(total)}
-          </p>
+          <p className="mt-2 text-lg font-bold text-[#B14F5E]">{formatMad(total)}</p>
         </section>
 
         <button
           type="submit"
           disabled={submitting}
-          className="flex h-12 w-full items-center justify-center rounded-lg bg-[#7B5900] text-sm font-bold text-white disabled:opacity-60"
+          className="flex h-12 w-full items-center justify-center rounded-xl bg-[#B76E79] text-sm font-semibold text-white hover:bg-[#9F5C67] disabled:opacity-60"
         >
           {submitting ? "…" : "Confirmer la commande"}
         </button>
         <Link
           href={bookPath(slug, "/cart/")}
-          className="block text-center text-sm font-semibold text-primary"
+          className="block text-center text-sm font-semibold text-[#B76E79]"
         >
           Retour au panier
         </Link>

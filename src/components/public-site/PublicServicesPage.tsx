@@ -1,14 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import { bookPath } from "@/components/public-site/PublicSiteShell";
+import { slugifyLabel } from "@/lib/booking-qr";
+import { servicePlaceholderImage } from "@/lib/public-site";
 import {
   formatDuration,
   formatMad,
   getPublicServices,
 } from "@/modules/public-booking/service";
-import { slugifyLabel } from "@/lib/booking-qr";
 import type { PublicServiceItem } from "@/types/public-booking";
 
 export function PublicServicesPage({ slug }: { slug: string }) {
@@ -37,73 +40,122 @@ export function PublicServicesPage({ slug }: { slug: string }) {
   }, [services, category]);
 
   if (loading) {
-    return <p className="px-4 py-16 text-center text-sm text-[#221820]/45">Chargement…</p>;
+    return (
+      <p className="px-5 py-16 text-center text-sm text-[#746970]">Chargement…</p>
+    );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Prestations</p>
-      <h1 className="mt-1 font-serif text-3xl font-semibold">Nos services</h1>
-      <p className="mt-2 text-sm text-[#221820]/55">
-        Découvrez toutes nos prestations.
-      </p>
-
-      <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-        {categories.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCategory(c)}
-            className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${
-              category === c
-                ? "bg-[#7B5900] text-white"
-                : "bg-white text-[#221820]/65 ring-1 ring-[#E4BDC2]/50"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
-        <p className="mt-10 text-sm text-[#221820]/45">Aucun service dans cette catégorie.</p>
-      ) : (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((s) => {
-            const serviceSlug = slugifyLabel(s.name);
-            return (
-              <article
-                key={s.id}
-                className="flex flex-col rounded-xl border border-[#E4BDC2]/35 bg-white p-5 shadow-sm"
-              >
-                <h2 className="font-semibold text-lg">{s.name}</h2>
-                {s.description ? (
-                  <p className="mt-2 line-clamp-3 text-sm text-[#221820]/55">{s.description}</p>
-                ) : (
-                  <p className="mt-2 text-sm text-[#221820]/40">Soin institut</p>
-                )}
-                <p className="mt-4 text-sm font-semibold text-[#221820]/70">
-                  {formatDuration(s.durationMin)} · {formatMad(s.price)}
-                </p>
-                <div className="mt-4 flex gap-2">
-                  <Link
-                    href={bookPath(slug, `/services/${serviceSlug}/`)}
-                    className="flex-1 rounded-lg border border-[#E4BDC2]/50 py-2.5 text-center text-xs font-bold"
-                  >
-                    Voir détails
-                  </Link>
-                  <Link
-                    href={bookPath(slug, `/booking/?service=${encodeURIComponent(s.id)}`)}
-                    className="flex-1 rounded-lg bg-[#7B5900] py-2.5 text-center text-xs font-bold text-white"
-                  >
-                    Réserver
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
+    <div>
+      <section className="border-b border-[#EBDDE4] bg-[#F9ECE9]">
+        <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#B76E79]">
+            Nos prestations
+          </p>
+          <div className="mt-3 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <h1 className="font-serif text-5xl">Tous nos services</h1>
+              <p className="mt-4 max-w-2xl text-[#6E6268]">
+                Découvrez notre gamme complète de soins, réalisés par des
+                professionnelles qualifiées dans un cadre élégant et apaisant.
+              </p>
+            </div>
+            <Link
+              href={bookPath(slug, "/booking/")}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#B76E79] px-5 py-3 font-semibold text-white"
+            >
+              <CalendarDays size={17} />
+              Réserver
+            </Link>
+          </div>
         </div>
-      )}
+      </section>
+
+      <main className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+        <div className="flex gap-2 overflow-x-auto pb-3">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setCategory(cat)}
+              className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition ${
+                category === cat
+                  ? "bg-[#B76E79] text-white"
+                  : "bg-[#F7EFF1] text-[#665960] hover:bg-[#F0E4E8]"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {filtered.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-[#746970]">
+            Aucun service dans cette catégorie.
+          </p>
+        ) : (
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {filtered.map((service) => {
+              const sSlug = slugifyLabel(service.name);
+              return (
+                <article
+                  key={service.id}
+                  className="overflow-hidden rounded-2xl border border-[#EBDDE4] bg-white shadow-sm"
+                >
+                  <div className="relative h-52">
+                    <Image
+                      src={servicePlaceholderImage(service.id)}
+                      alt={service.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, 25vw"
+                    />
+                  </div>
+                  <div className="p-5">
+                    {service.category ? (
+                      <span className="text-xs font-medium text-[#B76E79]">
+                        {service.category}
+                      </span>
+                    ) : null}
+                    <h2 className="mt-2 font-serif text-2xl">{service.name}</h2>
+                    <p className="mt-2 min-h-12 text-sm leading-6 text-[#766970]">
+                      {service.description?.trim() ||
+                        "Soin professionnel réalisé à l'institut."}
+                    </p>
+                    <div className="mt-4 flex items-center justify-between border-t border-[#F0E4E8] pt-4">
+                      <div className="flex items-center gap-1 text-sm text-[#776B71]">
+                        <Clock3 size={15} />
+                        {formatDuration(service.durationMin)}
+                      </div>
+                      <strong className="text-[#B14F5E]">
+                        {formatMad(service.price)}
+                      </strong>
+                    </div>
+                    <div className="mt-5 grid grid-cols-2 gap-2">
+                      <Link
+                        href={bookPath(
+                          slug,
+                          `/booking/?service=${encodeURIComponent(service.id)}`,
+                        )}
+                        className="flex items-center justify-center rounded-xl bg-[#B76E79] py-2.5 text-sm font-semibold text-white"
+                      >
+                        Réserver
+                      </Link>
+                      <Link
+                        href={bookPath(slug, `/services/${sSlug}/`)}
+                        className="flex items-center justify-center gap-1 rounded-xl border border-[#D8B9C0] py-2.5 text-sm font-medium text-[#A55261]"
+                      >
+                        Détails
+                        <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

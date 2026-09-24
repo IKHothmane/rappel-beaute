@@ -3,15 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, Textarea } from "@/components/ui/select";
-import { ServiceCommissionForm, type CommissionLink } from "@/components/services/service-commission-form";
-import { ServiceProductSelector, type ProductLink } from "@/components/services/service-product-selector";
-import { ServiceResourceSelector, type ResourceLink } from "@/components/services/service-resource-selector";
+import { Textarea } from "@/components/ui/select";
 import { ServiceStaffSelector } from "@/components/services/service-staff-selector";
 import { DURATION_PRESETS } from "@/components/services/services-helpers";
 import { cn } from "@/lib/utils";
 import type { CreateServiceInput, ServiceDetail, ServiceFormOptions } from "@/types/service";
-import { SERVICE_CATEGORIES } from "@/types/service";
 
 type ServiceFormProps = {
   initial?: Partial<ServiceDetail>;
@@ -26,70 +22,27 @@ type ServiceFormProps = {
 export function ServiceForm({
   initial,
   options,
-  extraCategories = [],
   canEditPrice = true,
   submitting,
   onSubmit,
   onCancel,
 }: ServiceFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [category, setCategory] = useState(initial?.category ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [durationMin, setDurationMin] = useState(initial?.durationMin?.toString() ?? "60");
-  const [prepTimeMin, setPrepTimeMin] = useState(initial?.prepTimeMin?.toString() ?? "0");
-  const [cleanupTimeMin, setCleanupTimeMin] = useState(initial?.cleanupTimeMin?.toString() ?? "0");
-  const [deposit, setDeposit] = useState(initial?.deposit?.toString() ?? "");
-  const [recommendedReturnDays, setRecommendedReturnDays] = useState(
-    initial?.recommendedReturnDays?.toString() ?? "",
-  );
   const [staffIds, setStaffIds] = useState<string[]>(initial?.staff?.map((s) => s.staffId) ?? []);
-  const [resources, setResources] = useState<ResourceLink[]>(
-    initial?.resources?.map((r) => ({ resourceId: r.resourceId, quantity: r.quantity })) ?? [],
-  );
-  const [products, setProducts] = useState<ProductLink[]>(
-    initial?.products?.map((p) => ({
-      productId: p.productId,
-      quantity: p.quantity,
-      unit: p.unit,
-    })) ?? [],
-  );
-  const [commissions, setCommissions] = useState<CommissionLink[]>(
-    initial?.commissions?.map((c) => ({
-      staffId: c.staffId,
-      type: c.type,
-      percentage: c.percentage ?? undefined,
-      fixedAmount: c.fixedAmount ?? undefined,
-    })) ?? [],
-  );
-  const [showAdvanced, setShowAdvanced] = useState(
-    Boolean(initial?.resources?.length || initial?.products?.length || initial?.commissions?.length),
-  );
   const [active, setActive] = useState(initial?.active ?? true);
-
-  const categoryOptions = Array.from(
-    new Set([...SERVICE_CATEGORIES, ...extraCategories, category].filter(Boolean)),
-  );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     onSubmit({
       name: name.trim(),
-      category: category.trim() || undefined,
       description: description.trim() || undefined,
       price: Number(price),
       durationMin: Number(durationMin),
-      prepTimeMin: Number(prepTimeMin) || 0,
-      cleanupTimeMin: Number(cleanupTimeMin) || 0,
-      deposit: deposit ? Number(deposit) : undefined,
-      recommendedReturnDays: recommendedReturnDays
-        ? Number(recommendedReturnDays)
-        : null,
       active,
       staffIds,
-      resources,
-      products,
-      commissions,
     });
   }
 
@@ -98,18 +51,6 @@ export function ServiceForm({
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>
         <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Hydrafacial" />
-      </label>
-
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Catégorie</span>
-        <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="">—</option>
-          {categoryOptions.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </Select>
       </label>
 
       <label className="block text-sm">
@@ -135,8 +76,8 @@ export function ServiceForm({
             disabled={!canEditPrice}
           />
         </label>
-        <label className="block text-sm sm:col-span-2">
-          <span className="mb-1.5 block font-medium">Durée calibrée pour l’agenda *</span>
+        <label className="block text-sm">
+          <span className="mb-1.5 block font-medium">Durée *</span>
           <div className="mb-2 flex flex-wrap gap-1.5">
             {DURATION_PRESETS.map((min) => (
               <button
@@ -164,52 +105,15 @@ export function ServiceForm({
         </label>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Préparation (min)</span>
-          <Input type="number" min={0} value={prepTimeMin} onChange={(e) => setPrepTimeMin(e.target.value)} />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Nettoyage (min)</span>
-          <Input
-            type="number"
-            min={0}
-            value={cleanupTimeMin}
-            onChange={(e) => setCleanupTimeMin(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Acompte (MAD)</span>
-          <Input type="number" min={0} value={deposit} onChange={(e) => setDeposit(e.target.value)} />
-        </label>
-      </div>
-
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Relance post-prestation (jours)</span>
-        <Input
-          type="number"
-          min={1}
-          placeholder="Ex. 30 — vide = délai institut"
-          value={recommendedReturnDays}
-          onChange={(e) => setRecommendedReturnDays(e.target.value)}
-        />
-        <span className="mt-1 block text-xs text-ink/45">
-          Après un RDV COMPLETED, propose une relance WhatsApp à J+N.
-        </span>
-      </label>
-
       <div>
         <span className="mb-1.5 block text-sm font-medium">Employées autorisées</span>
-        <p className="mb-2 text-[11px] text-ink/45">
-          Seules les employées cochées seront proposées à la prise de rendez-vous pour ce soin.
-        </p>
         <ServiceStaffSelector options={options.staff} value={staffIds} onChange={setStaffIds} />
       </div>
 
-      <div className="flex items-center justify-between rounded-xl bg-[#FFEFF8] p-3">
-        <div>
+      <div className="flex items-center justify-between gap-3 rounded-xl bg-[#FFEFF8] p-3">
+        <div className="min-w-0">
           <p className="text-sm font-semibold text-ink">Statut du service</p>
-          <p className="text-[12px] text-ink/50">Visible dans l’agenda et le catalogue s’il est actif.</p>
+          <p className="text-[12px] text-ink/50">{active ? "Actif" : "Inactif"}</p>
         </div>
         <button
           type="button"
@@ -217,7 +121,7 @@ export function ServiceForm({
           aria-checked={active}
           onClick={() => setActive((v) => !v)}
           className={cn(
-            "relative h-6 w-11 rounded-full transition-colors",
+            "relative h-6 w-11 shrink-0 rounded-full transition-colors",
             active ? "bg-emerald-600" : "bg-ink/20",
           )}
         >
@@ -229,36 +133,6 @@ export function ServiceForm({
           />
         </button>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setShowAdvanced((v) => !v)}
-        className="text-sm text-primary hover:underline"
-      >
-        {showAdvanced ? "Masquer ressources & stock" : "Ressources, produits & commissions"}
-      </button>
-
-      {showAdvanced ? (
-        <div className="space-y-4 border-t border-line pt-4">
-          <div>
-            <span className="mb-1.5 block text-sm font-medium">Ressources nécessaires</span>
-            <ServiceResourceSelector options={options.resources} value={resources} onChange={setResources} />
-          </div>
-          <div>
-            <span className="mb-1.5 block text-sm font-medium">Produits consommés</span>
-            <ServiceProductSelector options={options.products} value={products} onChange={setProducts} />
-          </div>
-          <div>
-            <span className="mb-1.5 block text-sm font-medium">Commissions par employée</span>
-            <ServiceCommissionForm
-              staffOptions={options.staff}
-              allowedStaffIds={staffIds}
-              value={commissions}
-              onChange={setCommissions}
-            />
-          </div>
-        </div>
-      ) : null}
 
       <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>

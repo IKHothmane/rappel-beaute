@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AvailabilitySlots } from "@/components/agenda/availability-slots";
 import { Button } from "@/components/ui/button";
 import { FieldGroup, Label, Select, Textarea } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/empty-state";
-import { listCustomers } from "@/modules/customers/service";
+import { createCustomer, listCustomers } from "@/modules/customers/service";
 import { getAvailableSlots, isStaffAvailableOnDate, isResourceAvailableOnDate } from "@/modules/appointments/availability";
+import { limitPhoneDigits, moroccoPhoneSearchVariants } from "@/lib/validation/customer";
 import type { ServiceAgendaOption } from "@/types/service";
 import type { ServiceFormOptions } from "@/types/service";
 import type { StaffAgendaContext } from "@/types/staff";
@@ -44,7 +44,15 @@ export function AppointmentForm({
   onCancel,
 }: AppointmentFormProps) {
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
+  const [customerMode, setCustomerMode] = useState<"search" | "new">("search");
+  const [query, setQuery] = useState("");
+  const [listOpen, setListOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const searchRef = useRef<HTMLDivElement>(null);
+
   const [serviceId, setServiceId] = useState(initial?.serviceId ?? "");
+  const [extraIds, setExtraIds] = useState<string[]>([]);
   const [staffId, setStaffId] = useState(initial?.staffId ?? "");
   const [resourceId, setResourceId] = useState(initial?.resourceId ?? "");
   const [date, setDate] = useState(() => {
@@ -59,10 +67,11 @@ export function AppointmentForm({
     return "";
   });
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
-  const [deposit, setDeposit] = useState(initial?.deposit?.toString() ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [promoCode, setPromoCode] = useState("");
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,7 +90,21 @@ export function AppointmentForm({
     };
   }, []);
 
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!searchRef.current?.contains(e.target as Node)) setListOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const selectedCustomer = customers.find((c) => c.id === customerId);
   const service = services.find((s) => s.id === serviceId);
+  const extraServices = extraIds
+    .map((id) => services.find((s) => s.id === id))
+    .filter((s): s is ServiceAgendaOption => Boolean(s));
+  const totalDuration = (service?.durationMin ?? 60) + extraServices.reduce((n, s) => n + s.durationMin, 0);
+  const catalogTotal = (service?.price ?? 0) + extraServices.reduce((n, s) => n + s.price, 0);
 
   const staffContext = staffContexts.find((s) => s.id === staffId);
   const resourceContext = resourceContexts.find((r) => r.id === resourceId);
@@ -120,86 +143,201 @@ export function AppointmentForm({
     return list;
   }, [formOptions, service, date, resourceContexts]);
 
-  useEffect(() => {
-    if (service && !initial?.price) {
-      setPrice(String(service.price));
-      if (service.deposit != null) setDeposit(String(service.deposit));
-    }
-  }, [service, initial?.price]);
+  const filteredCustomers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return customers.slice(0, 12);
+    const phoneVars = moroccoPhoneSearchVariants(q).map((v) => v.toLowerCase());
+    return customers
+      .filter((c) => {
+        const name = `${c.firstName} ${c.lastName}`.toLowerCase();
+        if (name.includes(q)) return true;
+        const stored = moroccoPhoneSearchVariants(c.phone ?? "");
+        return stored.some((s) => phoneVars.some((v) => s.includes(v) || v.includes(s)));
+      })
+      .slice(0, 12);
+  }, [customers, query]);
 
   useEffect(() => {
-    if (staffId && !allowedStaff.some((s) => s.id === staffId)) {
-      setStaffId(allowedStaff[0]?.id ?? "");
-      setTime("");
-    }
-  }, [allowedStaff, staffId]);
-
-  useEffect(() => {
-    if (resourceId && !allowedResources.some((r) => r.id === resourceId)) {
-      setResourceId("");
-    }
-  }, [allowedResources, resourceId]);
+    if (service && !initial?.price) setPrice(String(catalogTotal));
+  }, [service, extraIds, catalogTotal, initial?.price]);
 
   const slots = useMemo(() => {
-    if (!staffId || !serviceId || !date) return [];
+    if (!serviceId || !date) return [];
     const [y, m, d] = date.split("-").map(Number);
     const day = new Date(y, m - 1, d);
+    const slotStaff = staffId || allowedStaff[0]?.id || "";
+    const ctx = staffContexts.find((s) => s.id === slotStaff);
     return getAvailableSlots(appointments, {
       date: day,
-      staffId,
+      staffId: slotStaff,
       resourceId: resourceId || undefined,
-      durationMinutes: service?.durationMin ?? 60,
+      durationMinutes: totalDuration,
       excludeAppointmentId: initial?.id,
-      staffContext,
+      staffContext: ctx,
       resourceContext,
     });
-  }, [appointments, staffId, serviceId, resourceId, date, service, initial?.id, staffContext, resourceContext]);
+  }, [
+    appointments,
+    staffId,
+    allowedStaff,
+    serviceId,
+    resourceId,
+    date,
+    totalDuration,
+    initial?.id,
+    staffContexts,
+    resourceContext,
+  ]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function resolveCustomerId(): Promise<string | null> {
+    if (customerId) return customerId;
+    if (customerMode === "new") {
+      const full = newName.trim();
+      const phone = limitPhoneDigits(newPhone);
+      if (!full || phone.length < 8) return null;
+      const parts = full.split(/\s+/);
+      const firstName = parts[0] ?? full;
+      const lastName = parts.slice(1).join(" ") || "—";
+      const created = await createCustomer({ firstName, lastName, phone });
+      return created.ok ? created.customer.id : null;
+    }
+    const created = await createCustomer({
+      firstName: "Cliente",
+      lastName: "de passage",
+      phone: `06${Date.now().toString().slice(-8)}`,
+    });
+    return created.ok ? created.customer.id : null;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!customerId || !serviceId || !staffId || !date || !time || !price) return;
-    if (service?.resourceIds.length && !resourceId) return;
+    if (!serviceId || !date || !time || !price) return;
+    setCreating(true);
+    const resolvedCustomer = await resolveCustomerId();
+    if (!resolvedCustomer) {
+      setCreating(false);
+      return;
+    }
+    const resolvedStaff = staffId || allowedStaff[0]?.id;
+    if (!resolvedStaff) {
+      setCreating(false);
+      return;
+    }
 
     const [h, min] = time.split(":").map(Number);
     const [y, mo, d] = date.split("-").map(Number);
     const start = new Date(y, mo - 1, d, h, min, 0);
-    const end = new Date(start.getTime() + (service?.durationMin ?? 60) * 60_000);
+    const end = new Date(start.getTime() + totalDuration * 60_000);
+    const extraLabel = extraServices.map((s) => s.name).join(" + ");
 
     onSubmit({
-      customerId,
+      customerId: resolvedCustomer,
       serviceId,
-      staffId,
+      staffId: resolvedStaff,
       resourceId: resourceId || undefined,
       startAt: start.toISOString(),
       endAt: end.toISOString(),
       price: Number(price),
-      deposit: deposit ? Number(deposit) : undefined,
-      notes: notes || undefined,
+      notes: [
+        notes.trim() || undefined,
+        extraLabel ? `Soins: ${service?.name ?? ""} + ${extraLabel}` : undefined,
+        promoCode.trim() ? `Promo: ${promoCode.trim()}` : undefined,
+      ]
+        .filter(Boolean)
+        .join("\n") || undefined,
     });
+    setCreating(false);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <FieldGroup>
+    <form onSubmit={(e) => void handleSubmit(e)} className="grid gap-3 sm:grid-cols-2">
+      <FieldGroup className="sm:col-span-2">
         <Label>Cliente</Label>
-        <Select
-          value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
-          required
-          disabled={customersLoading}
-        >
-          <option value="">
-            {customersLoading ? "Chargement des clientes…" : "Choisir une cliente…"}
-          </option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.firstName} {c.lastName}
-            </option>
-          ))}
-        </Select>
-        {!customersLoading && customers.length === 0 ? (
-          <p className="mt-1 text-xs text-amber-700">Aucune cliente en base pour cet institut.</p>
-        ) : null}
+        <div className="mb-2 flex gap-2 text-[12px]">
+          <button
+            type="button"
+            className={`rounded-lg px-2.5 py-1 font-semibold ${customerMode === "search" ? "bg-primary text-white" : "bg-[#FCE9F4]"}`}
+            onClick={() => setCustomerMode("search")}
+          >
+            Existante / passage
+          </button>
+          <button
+            type="button"
+            className={`rounded-lg px-2.5 py-1 font-semibold ${customerMode === "new" ? "bg-primary text-white" : "bg-[#FCE9F4]"}`}
+            onClick={() => {
+              setCustomerMode("new");
+              setCustomerId("");
+            }}
+          >
+            + Nouvelle cliente
+          </button>
+        </div>
+        {customerMode === "new" ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Nom complet"
+              required
+            />
+            <Input
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={newPhone}
+              onChange={(e) => setNewPhone(limitPhoneDigits(e.target.value))}
+              placeholder="0655443322"
+              required
+            />
+          </div>
+        ) : (
+          <div ref={searchRef} className="relative">
+            <Input
+              value={selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : query}
+              onChange={(e) => {
+                setCustomerId("");
+                setQuery(e.target.value);
+                setListOpen(true);
+              }}
+              onFocus={() => setListOpen(true)}
+              placeholder="Rechercher nom, prénom ou téléphone — ou laisser vide (passage)"
+            />
+            {listOpen ? (
+              <div className="absolute z-30 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-line bg-white shadow-lg">
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]"
+                  onClick={() => {
+                    setCustomerId("");
+                    setQuery("");
+                    setListOpen(false);
+                  }}
+                >
+                  Sans cliente (passage)
+                </button>
+                {customersLoading ? (
+                  <p className="px-3 py-2 text-[12px] text-ink/45">Chargement…</p>
+                ) : (
+                  filteredCustomers.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]"
+                      onClick={() => {
+                        setCustomerId(c.id);
+                        setQuery("");
+                        setListOpen(false);
+                      }}
+                    >
+                      {c.firstName} {c.lastName}
+                      <span className="ml-2 text-[11px] text-ink/45">{c.phone}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
       </FieldGroup>
 
       <FieldGroup>
@@ -208,8 +346,6 @@ export function AppointmentForm({
           value={serviceId}
           onChange={(e) => {
             setServiceId(e.target.value);
-            setStaffId("");
-            setResourceId("");
             setTime("");
           }}
           required
@@ -225,51 +361,26 @@ export function AppointmentForm({
 
       <FieldGroup>
         <Label>Employée</Label>
-        <Select
-          value={staffId}
-          onChange={(e) => {
-            setStaffId(e.target.value);
-            setTime("");
-          }}
-          required
-          disabled={!serviceId}
-        >
-          <option value="">
-            {serviceId ? "Choisir une employée" : "Sélectionnez d'abord un service"}
-          </option>
+        <Select value={staffId} onChange={(e) => setStaffId(e.target.value)}>
+          <option value="">Sans employée</option>
           {allowedStaff.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
           ))}
         </Select>
-        {service && service.staffIds.length > 0 && allowedStaff.length === 0 ? (
-          <p className="mt-1 text-xs text-amber-700">Aucune employée autorisée pour ce service.</p>
-        ) : null}
       </FieldGroup>
 
       <FieldGroup>
         <Label>Ressource / cabine</Label>
-        <Select
-          value={resourceId}
-          onChange={(e) => setResourceId(e.target.value)}
-          disabled={!serviceId}
-          required={Boolean(service?.resourceIds.length)}
-        >
-          <option value="">
-            {service?.resourceIds.length ? "Choisir une ressource" : "Sans ressource"}
-          </option>
+        <Select value={resourceId} onChange={(e) => setResourceId(e.target.value)}>
+          <option value="">Sans ressource</option>
           {allowedResources.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name} ({RESOURCE_TYPE_LABEL[r.type as keyof typeof RESOURCE_TYPE_LABEL] ?? r.type})
             </option>
           ))}
         </Select>
-        {service && service.resourceIds.length > 0 && allowedResources.length === 0 ? (
-          <p className="mt-1 text-xs text-amber-700">
-            Aucune ressource disponible pour ce service à cette date.
-          </p>
-        ) : null}
       </FieldGroup>
 
       <FieldGroup>
@@ -286,63 +397,78 @@ export function AppointmentForm({
         />
       </FieldGroup>
 
-      {staffId && serviceId && date ? (
-        <FieldGroup>
-          <Label>Heure disponible</Label>
-          <AvailabilitySlots
-            slots={slots}
-            value={time}
-            onSelect={setTime}
-            loading={submitting}
-          />
-        </FieldGroup>
-      ) : (
-        <Skeleton className="h-24 w-full" />
-      )}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FieldGroup>
-          <Label>Prix (MAD)</Label>
-          <Input
-            type="number"
-            min={0}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-          />
-          {service ? (
-            <p className="mt-1 text-xs text-ink/45">
-              Prix catalogue : {service.price} MAD — conservé sur le RDV même si le tarif change.
-            </p>
-          ) : null}
-        </FieldGroup>
-        <FieldGroup>
-          <Label>Acompte (MAD)</Label>
-          <Input
-            type="number"
-            min={0}
-            value={deposit}
-            onChange={(e) => setDeposit(e.target.value)}
-          />
-        </FieldGroup>
-      </div>
+      <FieldGroup className="sm:col-span-2">
+        <div className="flex items-center justify-between">
+          <Label>Autres soins</Label>
+          <button
+            type="button"
+            className="text-[12px] font-semibold text-primary"
+            onClick={() => {
+              const next = services.find((s) => s.id !== serviceId && !extraIds.includes(s.id));
+              if (next) setExtraIds((prev) => [...prev, next.id]);
+            }}
+          >
+            Ajouter un autre soin
+          </button>
+        </div>
+        {extraIds.map((id, idx) => (
+          <div key={`${id}-${idx}`} className="mt-2 flex gap-2">
+            <Select
+              value={id}
+              onChange={(e) => {
+                const copy = [...extraIds];
+                copy[idx] = e.target.value;
+                setExtraIds(copy);
+              }}
+            >
+              {services
+                .filter((s) => s.id !== serviceId)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} · {s.durationMin} min · {s.price} MAD
+                  </option>
+                ))}
+            </Select>
+            <Button type="button" variant="ghost" onClick={() => setExtraIds((prev) => prev.filter((_, i) => i !== idx))}>
+              Retirer
+            </Button>
+          </div>
+        ))}
+      </FieldGroup>
 
       <FieldGroup>
+        <Label>Prix (MAD)</Label>
+        <Input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} required />
+        <p className="mt-1 text-xs text-ink/45">
+          {totalDuration} min · catalogue {catalogTotal} MAD
+        </p>
+      </FieldGroup>
+
+      <FieldGroup>
+        <Label>Code promo</Label>
+        <Input value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="CODE" />
+      </FieldGroup>
+
+      <FieldGroup className="sm:col-span-2">
+        <Label>Heure</Label>
+        {date && serviceId ? (
+          <AvailabilitySlots slots={slots} value={time} onSelect={setTime} loading={submitting} />
+        ) : (
+          <p className="text-[12px] text-ink/45">Choisissez un service et une date.</p>
+        )}
+      </FieldGroup>
+
+      <FieldGroup className="sm:col-span-2">
         <Label>Notes</Label>
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Allergie, préférences…" />
       </FieldGroup>
 
-      <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">
+      <div className="flex flex-col gap-2 border-t border-line pt-4 sm:col-span-2 sm:flex-row">
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>
           Annuler
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          className="w-full sm:flex-1"
-          disabled={submitting || !time}
-        >
-          {submitting ? "Création…" : initial?.id ? "Enregistrer" : "Créer le RDV"}
+        <Button type="submit" variant="primary" className="w-full sm:flex-1" disabled={submitting || creating || !time}>
+          {submitting || creating ? "Création…" : initial?.id ? "Enregistrer" : "Créer le RDV"}
         </Button>
       </div>
     </form>

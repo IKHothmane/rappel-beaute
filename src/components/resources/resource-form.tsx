@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, Textarea } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import type { CreateResourceInput, ResourceDetail, ResourceType } from "@/types/resource";
 import { RESOURCE_TYPE_LABEL, RESOURCE_TYPES } from "@/types/resource";
 
@@ -25,8 +25,6 @@ export function ResourceForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [type, setType] = useState<ResourceType>(initial?.type ?? "CABINE");
   const [capacity, setCapacity] = useState(initial?.capacity?.toString() ?? "1");
-  const [location, setLocation] = useState(initial?.location ?? "");
-  const [notes, setNotes] = useState(initial?.notes ?? "");
   const [active, setActive] = useState(initial?.active ?? true);
   const [serviceIds, setServiceIds] = useState<string[]>(
     initial?.services?.map((s) => s.serviceId) ?? [],
@@ -42,8 +40,6 @@ export function ResourceForm({
       name: name.trim(),
       type,
       capacity: Number(capacity) || 1,
-      location: location.trim() || undefined,
-      notes: notes.trim() || undefined,
       active,
       serviceIds: services ? serviceIds : undefined,
     });
@@ -78,16 +74,6 @@ export function ResourceForm({
           />
         </label>
       </div>
-
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Emplacement</span>
-        <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="RDC, fond" />
-      </label>
-
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Notes</span>
-        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-      </label>
 
       {services && services.length > 0 ? (
         <div>

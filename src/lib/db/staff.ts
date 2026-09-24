@@ -454,6 +454,19 @@ export async function getStaffById(
   };
 }
 
+async function syncStaffServices(staffId: string, serviceIds: string[], organizationId: string) {
+  await pool.query(`DELETE FROM "ServiceStaff" WHERE "staffId" = $1`, [staffId]);
+  for (const serviceId of serviceIds) {
+    await pool.query(
+      `INSERT INTO "ServiceStaff" ("serviceId", "staffId")
+       SELECT s.id, $2 FROM "Service" s
+       WHERE s.id = $1 AND s."organizationId" = $3
+       ON CONFLICT DO NOTHING`,
+      [serviceId, staffId, organizationId],
+    );
+  }
+}
+
 export async function createStaff(
   organizationId: string,
   input: CreateStaffInput,
@@ -477,6 +490,10 @@ export async function createStaff(
       input.notes ?? null,
     ],
   );
+
+  if (input.serviceIds) {
+    await syncStaffServices(id, input.serviceIds, organizationId);
+  }
 
   const detail = await getStaffById(organizationId, id);
   if (!detail) throw new Error("Staff introuvable après création.");
@@ -508,6 +525,10 @@ export async function updateStaff(
     setField("hireDate", input.hireDate ? new Date(input.hireDate) : null);
   }
   if (input.notes !== undefined) setField("notes", input.notes ?? null);
+
+  if (input.serviceIds !== undefined) {
+    await syncStaffServices(staffId, input.serviceIds, organizationId);
+  }
 
   if (sets.length > 0) {
     sets.push(`"updatedAt" = NOW()`);

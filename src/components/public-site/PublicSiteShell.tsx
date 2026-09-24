@@ -5,22 +5,23 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
   CalendarDays,
+  Clock,
   Home,
+  Mail,
+  MapPin,
   Menu,
+  MessageCircle,
   Package,
+  Phone,
+  Search,
   ShoppingBag,
   Sparkles,
   X,
 } from "lucide-react";
 import { usePublicCart } from "@/components/public-site/PublicCartContext";
+import { bookHref } from "@/lib/public-site";
 import { cn } from "@/lib/utils";
 import type { PublicOrganizationProfile } from "@/types/public-booking";
-
-function bookPath(slug: string, path = "") {
-  const base = `/book/${encodeURIComponent(slug)}`;
-  if (!path || path === "/") return `${base}/`;
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
-}
 
 type Props = {
   org: PublicOrganizationProfile;
@@ -32,56 +33,58 @@ export function PublicSiteShell({ org, children }: Props) {
   const { count } = usePublicCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const slug = org.slug;
+  const base = bookHref(slug);
 
   const nav = [
-    { href: bookPath(slug), label: "Accueil", match: "exact" as const },
-    { href: bookPath(slug, "/services/"), label: "Services", match: "prefix" as const },
-    { href: bookPath(slug, "/products/"), label: "Produits", match: "prefix" as const },
-    { href: bookPath(slug, "/booking/"), label: "Réserver", match: "prefix" as const },
+    { href: base, label: "Accueil", match: "exact" as const },
+    { href: bookHref(slug, "/services/"), label: "Services", match: "prefix" as const },
+    { href: bookHref(slug, "/products/"), label: "Produits", match: "prefix" as const },
+    { href: bookHref(slug, "/booking/"), label: "Réserver", match: "prefix" as const },
   ];
 
   function isActive(href: string, match: "exact" | "prefix") {
     const path = pathname.replace(/\/$/, "") || "/";
     const target = href.replace(/\/$/, "") || "/";
-    if (match === "exact") return path === target || path.endsWith(`/book/${slug}`);
+    if (match === "exact") {
+      return path === target || path.endsWith(`/book/${slug}`);
+    }
     return path === target || path.startsWith(target);
   }
 
-  const waPhone = org.phone?.replace(/\D/g, "") ?? "";
+  const waDigits = org.phone?.replace(/\D/g, "") ?? "";
   const wa =
-    waPhone.length >= 9
-      ? `https://wa.me/${waPhone.startsWith("0") ? `212${waPhone.slice(1)}` : waPhone}`
+    waDigits.length >= 9
+      ? `https://wa.me/${waDigits.startsWith("0") ? `212${waDigits.slice(1)}` : waDigits}`
       : null;
 
   return (
-    <div className="min-h-screen bg-[#FFF7F9] text-[#221820]">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-[#E4BDC2]/40 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-          <Link href={bookPath(slug)} className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#382D36] text-sm font-bold text-[#FFDEA4]">
-              {org.name.charAt(0)}
-            </span>
-            <div className="min-w-0 hidden sm:block">
-              <p className="truncate font-serif text-base font-semibold tracking-tight">
-                {org.name}
-              </p>
-              <p className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-[#7B5900]">
+    <div className="min-h-screen bg-[#FFFDFC] text-[#241A22]">
+      <header className="sticky top-0 z-50 border-b border-[#EBDDE4]/80 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 lg:px-8">
+          <Link href={base} className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFF1F5] text-[#B76E79]">
+              ✦
+            </div>
+            <div className="min-w-0">
+              <div className="truncate font-serif text-lg font-semibold tracking-wide text-[#241A22]">
+                {org.name.toUpperCase()}
+              </div>
+              <div className="text-[8px] uppercase tracking-[0.25em] text-[#9A7A83]">
                 Beauté · Bien-être · Soin
-              </p>
+              </div>
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigation">
+          <nav className="hidden items-center gap-7 md:flex" aria-label="Navigation">
             {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "rounded-lg px-3 py-2 text-sm font-semibold transition",
+                  "text-sm transition",
                   isActive(item.href, item.match)
-                    ? "bg-[#FFEFF8] text-primary"
-                    : "text-[#221820]/65 hover:bg-[#FFEFF8] hover:text-[#221820]",
+                    ? "font-semibold text-[#B76E79]"
+                    : "text-[#51474D] hover:text-[#B76E79]",
                 )}
               >
                 {item.label}
@@ -89,149 +92,196 @@ export function PublicSiteShell({ org, children }: Props) {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-3 md:flex">
+            <button
+              type="button"
+              className="rounded-full p-2 text-[#51474D] hover:bg-[#FFF4F7]"
+              aria-label="Rechercher"
+            >
+              <Search size={19} />
+            </button>
             <Link
-              href={bookPath(slug, "/cart/")}
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[#221820]/70 hover:bg-[#FFEFF8]"
+              href={bookHref(slug, "/cart/")}
+              className="relative rounded-full p-2 text-[#51474D] hover:bg-[#FFF4F7]"
               aria-label="Panier"
             >
-              <ShoppingBag className="h-5 w-5" />
+              <ShoppingBag size={20} />
               {count > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#B76E79] text-[10px] text-white">
                   {Math.min(count, 99)}
                 </span>
               ) : null}
             </Link>
             <Link
-              href={bookPath(slug, "/booking/")}
-              className="hidden h-10 items-center rounded-lg bg-[#7B5900] px-4 text-sm font-bold text-white shadow-sm hover:bg-[#5D4200] sm:inline-flex"
+              href={bookHref(slug, "/booking/")}
+              className="flex items-center gap-2 rounded-xl bg-[#B76E79] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#9F5C67]"
             >
+              <CalendarDays size={16} />
               Prendre rendez-vous
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-1 md:hidden">
+            <Link
+              href={bookHref(slug, "/cart/")}
+              className="relative rounded-full p-2"
+              aria-label="Panier"
+            >
+              <ShoppingBag size={20} />
+              {count > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#B76E79] px-1 text-[9px] text-white">
+                  {Math.min(count, 99)}
+                </span>
+              ) : null}
             </Link>
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-xl lg:hidden"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="rounded-xl p-2"
               aria-label="Menu"
-              onClick={() => setMenuOpen(true)}
             >
-              <Menu className="h-5 w-5" />
+              {menuOpen ? <X /> : <Menu />}
             </button>
           </div>
         </div>
-      </header>
 
-      {/* Mobile drawer */}
-      {menuOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-[#221820]/40"
-            aria-label="Fermer"
-            onClick={() => setMenuOpen(false)}
-          />
-          <div className="absolute right-0 top-0 flex h-full w-72 flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-[#FFEFF8] p-4">
-              <p className="font-semibold">{org.name}</p>
-              <button type="button" onClick={() => setMenuOpen(false)}>
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <nav className="flex flex-col gap-1 p-3">
+        {menuOpen ? (
+          <div className="border-t border-[#EBDDE4] bg-white px-5 py-5 md:hidden">
+            <nav className="flex flex-col gap-4">
               {nav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="rounded-xl px-3 py-3 text-sm font-semibold hover:bg-[#FFEFF8]"
-                >
+                <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>
                   {item.label}
                 </Link>
               ))}
               <Link
-                href={bookPath(slug, "/cart/")}
+                href={bookHref(slug, "/booking/")}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-xl px-3 py-3 text-sm font-semibold hover:bg-[#FFEFF8]"
+                className="rounded-xl bg-[#B76E79] px-4 py-3 text-center font-medium text-white"
               >
-                Panier {count > 0 ? `(${count})` : ""}
+                Prendre rendez-vous
               </Link>
             </nav>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </header>
 
-      <main className="pb-24 lg:pb-0">{children}</main>
+      <main className="pb-20 md:pb-0">{children}</main>
 
-      {/* Footer */}
-      <footer className="mt-12 border-t border-[#E4BDC2]/40 bg-white">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3 sm:px-6">
+      <footer className="border-t border-[#EBDDE4] bg-white">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 md:grid-cols-3 lg:px-8">
           <div>
-            <p className="font-serif text-lg font-semibold">{org.name}</p>
-            <p className="mt-2 text-sm text-[#221820]/55">
-              {org.address ?? "Adresse à venir"}
-              {org.city ? ` · ${org.city}` : ""}
+            <div className="font-serif text-xl font-semibold">{org.name}</div>
+            <p className="mt-3 max-w-sm text-sm leading-6 text-[#746970]">
+              Beauté, bien-être et soins professionnels dans un espace élégant
+              {org.city ? ` à ${org.city}` : ""}.
             </p>
-            {org.phone ? (
-              <a href={`tel:${org.phone}`} className="mt-2 block text-sm font-semibold text-primary">
-                {org.phone}
-              </a>
-            ) : null}
-            {org.email ? (
-              <a href={`mailto:${org.email}`} className="mt-1 block text-sm text-[#221820]/55">
-                {org.email}
-              </a>
-            ) : null}
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#221820]/40">
-              Horaires
-            </p>
-            <p className="mt-2 text-sm">Lun – Sam · 09:00 – 19:00</p>
-            <p className="text-sm text-[#221820]/45">Dimanche · Fermé</p>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#221820]/40">
-              Contact
-            </p>
-            <div className="mt-2 flex flex-col gap-2 text-sm">
+            <h3 className="font-semibold text-[#241A22]">Nous trouver</h3>
+            <div className="mt-4 space-y-3 text-sm text-[#746970]">
+              <div className="flex gap-3">
+                <MapPin size={17} className="shrink-0" />
+                <span>{org.address ?? "Adresse à venir"}</span>
+              </div>
+              {org.phone ? (
+                <div className="flex gap-3">
+                  <Phone size={17} className="shrink-0" />
+                  <a href={`tel:${org.phone}`}>{org.phone}</a>
+                </div>
+              ) : null}
+              {org.email ? (
+                <div className="flex gap-3">
+                  <Mail size={17} className="shrink-0" />
+                  <a href={`mailto:${org.email}`}>{org.email}</a>
+                </div>
+              ) : null}
               {wa ? (
-                <a href={wa} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary">
+                <a
+                  href={wa}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 font-semibold text-[#B76E79]"
+                >
+                  <MessageCircle size={17} />
                   WhatsApp
                 </a>
               ) : null}
-              <Link href={bookPath(slug, "/booking/")} className="font-semibold text-[#7B5900]">
-                Réserver en ligne
-              </Link>
+            </div>
+          </div>
+          <div>
+            <h3 className="font-semibold text-[#241A22]">Horaires</h3>
+            <div className="mt-4 flex gap-3 text-sm text-[#746970]">
+              <Clock size={17} className="shrink-0" />
+              <div>
+                <p>Lundi - Samedi</p>
+                <p>09:00 - 19:00</p>
+                <p className="mt-1">Dimanche · Fermé</p>
+              </div>
             </div>
           </div>
         </div>
-        <div className="border-t border-[#FFEFF8] px-4 py-4 text-center text-[11px] text-[#221820]/40 sm:px-6">
-          Propulsé par Rappel Beauté · Conditions · Confidentialité
+        <div className="border-t border-[#EBDDE4]">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-5 text-xs text-[#8B7E84] md:flex-row md:items-center md:justify-between lg:px-8">
+            <div className="flex gap-4">
+              <span>Conditions d&apos;utilisation</span>
+              <span>Politique de confidentialité</span>
+            </div>
+            <div className="flex items-center gap-2">
+              © {new Date().getFullYear()} {org.name}
+            </div>
+          </div>
         </div>
       </footer>
 
-      {/* Mobile bottom nav */}
+      {wa ? (
+        <a
+          href={wa}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-20 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg md:bottom-6"
+          aria-label="WhatsApp"
+        >
+          <MessageCircle size={22} />
+        </a>
+      ) : null}
+
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E4BDC2]/40 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#EBDDE4] bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
         aria-label="Navigation mobile"
       >
         <div className="flex h-16 items-center justify-around px-1">
           {(
             [
-              { href: bookPath(slug), label: "Accueil", icon: Home },
-              { href: bookPath(slug, "/services/"), label: "Services", icon: Sparkles },
-              { href: bookPath(slug, "/products/"), label: "Produits", icon: Package },
-              { href: bookPath(slug, "/booking/"), label: "Réserver", icon: CalendarDays },
+              { href: base, label: "Accueil", icon: Home, match: "exact" as const },
+              {
+                href: bookHref(slug, "/services/"),
+                label: "Services",
+                icon: Sparkles,
+                match: "prefix" as const,
+              },
+              {
+                href: bookHref(slug, "/products/"),
+                label: "Produits",
+                icon: Package,
+                match: "prefix" as const,
+              },
+              {
+                href: bookHref(slug, "/booking/"),
+                label: "Réserver",
+                icon: CalendarDays,
+                match: "prefix" as const,
+              },
             ] as const
           ).map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.href, item.href.endsWith(`/book/${slug}`) || item.href.endsWith(`/book/${slug}/`) ? "exact" : "prefix");
+            const active = isActive(item.href, item.match);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-semibold",
-                  active ? "text-primary" : "text-[#221820]/45",
+                  active ? "text-[#B76E79]" : "text-[#8B7E84]",
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -245,4 +295,4 @@ export function PublicSiteShell({ org, children }: Props) {
   );
 }
 
-export { bookPath };
+export { bookHref as bookPath };

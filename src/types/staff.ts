@@ -113,6 +113,7 @@ export type CreateStaffInput = {
   status?: StaffStatus;
   hireDate?: string;
   notes?: string;
+  serviceIds?: string[];
 };
 
 export type UpdateStaffInput = Partial<CreateStaffInput> & {

@@ -16,7 +16,7 @@ import {
   Wallet,
   Wrench,
 } from "lucide-react";
-import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser } from "@/components/auth/session-provider";
 import { ResourceFocusPanel } from "@/components/resources/resource-focus-panel";
 import { ResourceForm } from "@/components/resources/resource-form";
 import {
@@ -328,14 +328,6 @@ export function ResourcesPageView() {
 
       <div className="hidden flex-col gap-5 lg:flex">
         <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40">
-              {user.orgName || "Votre institut"} · {ROLE_LABEL[user.role]}
-            </p>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFEFF8] px-2.5 py-1 text-[11px] font-medium text-ink/55">
-              Agenda synchronisé
-            </span>
-          </div>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink lg:text-[32px]">

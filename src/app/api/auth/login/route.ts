@@ -10,6 +10,7 @@ import { stripOrganizationId } from "@/lib/auth/api-guard";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { AUTH_RATE_LIMITS, authRateLimitKey, checkRateLimit } from "@/lib/rate-limit";
+import { COOKIE_HOST } from "@/lib/domain";
 
 export async function POST(request: NextRequest) {
   const ip = clientIp(request);
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
         },
       });
       res.cookies.set(createSessionCookie(session));
+      res.cookies.set(COOKIE_HOST, "admin", { path: "/", sameSite: "lax" });
       return res;
     }
 
@@ -99,6 +101,7 @@ export async function POST(request: NextRequest) {
     });
 
     res.cookies.set(createSessionCookie(session));
+    res.cookies.set(COOKIE_HOST, "app", { path: "/", sameSite: "lax" });
     return res;
   } catch (error) {
     logger.error("login error", { route: "/api/auth/login", error: String(error) });

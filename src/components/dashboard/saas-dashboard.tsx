@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BadgeCheck,
   Banknote,
   CalendarCheck,
   CalendarDays,
@@ -272,6 +271,7 @@ export function SaasDashboard() {
     { dow: 4, label: "Jeu" },
     { dow: 5, label: "Ven" },
     { dow: 6, label: "Sam" },
+    { dow: 0, label: "Dim" },
   ];
   const peakCell = heat.reduce(
     (best, cell) => (cell.count > best.count ? cell : best),
@@ -324,10 +324,6 @@ export function SaasDashboard() {
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FBF4F6] px-2.5 py-0.5 text-xs font-medium text-ink">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 {user.orgName}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded bg-institut px-2 py-0.5 text-[11px] font-semibold text-gold">
-                <BadgeCheck size={12} />
-                CNDP &amp; MAD
               </span>
             </div>
             <div className="mt-2 flex flex-wrap items-baseline gap-3">
@@ -675,7 +671,7 @@ export function SaasDashboard() {
                 <LayoutGrid size={18} className="text-gold" />
               </div>
               <div className="flex flex-col gap-1">
-                <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] text-ink/40">
+                <div className="mb-1 grid grid-cols-8 gap-1 text-center text-[11px] text-ink/40">
                   <span>H</span>
                   {heatDays.map((d) => (
                     <span key={d.dow} className={d.dow === 6 ? "font-bold text-primary" : ""}>
@@ -684,7 +680,7 @@ export function SaasDashboard() {
                   ))}
                 </div>
                 {heatHours.map((hour) => (
-                  <div key={hour} className="grid grid-cols-7 items-center gap-1 text-center text-xs">
+                  <div key={hour} className="grid grid-cols-8 items-center gap-1 text-center text-xs">
                     <span className="font-mono text-ink/40">{String(hour).padStart(2, "0")}h</span>
                     {heatDays.map((d) => {
                       const count = heat.find((c) => c.weekday === d.dow && c.hour === hour)?.count ?? 0;

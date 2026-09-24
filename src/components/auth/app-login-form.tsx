@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSession } from "@/components/auth/session-provider";
 import { BrandLogo } from "@/components/www/BrandLogo";
 
 export function AppLoginForm() {
-  const router = useRouter();
   const { refresh } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,13 +38,12 @@ export function AppLoginForm() {
       };
       await refresh();
       if (data.user?.scope === "platform" || data.user?.accountType === "PLATFORM") {
-        router.push("/dashboard/?__host=admin");
+        window.location.replace("/dashboard/");
       } else if (data.mustChangePassword) {
-        router.push("/changer-mot-de-passe/");
+        window.location.replace("/changer-mot-de-passe/");
       } else {
-        router.push("/dashboard/");
+        window.location.replace("/dashboard/");
       }
-      router.refresh();
     } catch {
       setError("Identifiants invalides.");
     } finally {

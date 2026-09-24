@@ -44,7 +44,10 @@ function isMarketingPath(path: string): boolean {
   return prefixes.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
-function resolveDomain(request: NextRequest): Domain {
+function resolveDomain(
+  request: NextRequest,
+  session: { scope?: string } | null,
+): Domain {
   // 1) Query localhost / apex (?__host=admin)
   const explicit = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
   if (explicit) return explicit;
@@ -61,10 +64,13 @@ function resolveDomain(request: NextRequest): Domain {
   );
   if (fromHost === "app" || fromHost === "admin") return fromHost;
 
-  // 4) Cookie posé lors d’une navigation admin/app sur le domaine apex
-  //    (ex. rappelbeauty.com/dashboard/?__host=admin → puis /organizations/)
   const path = request.nextUrl.pathname;
+  if (path === "/book" || path.startsWith("/book/")) return "app";
+
+  // 4) Session ou cookie sur localhost / apex (ex. /dashboard/ après login)
   if (!isMarketingPath(path)) {
+    if (session?.scope === "platform") return "admin";
+    if (session?.scope === "app") return "app";
     const fromCookie = parseDomainParam(request.cookies.get(COOKIE_HOST)?.value);
     if (fromCookie === "app" || fromCookie === "admin") return fromCookie;
   }
@@ -201,11 +207,10 @@ export async function middleware(request: NextRequest) {
   }
 
   const queryHost = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
-  const domain = resolveDomain(request);
+  const session = await getSession(request);
+  const domain = resolveDomain(request, session);
   const headers = new Headers(request.headers);
   headers.set(HEADER_DOMAIN, domain);
-
-  const session = await getSession(request);
 
   if (domain === "app") {
     // Après rewrite Next ré-invoque le middleware sur /domains/app/... ;
@@ -327,9 +332,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const res = NextResponse.rewrite(url, { request: { headers } });
-  if (queryHost) {
-    res.cookies.set(COOKIE_HOST, queryHost, { path: "/", sameSite: "lax" });
-  }
+  res.cookies.set(COOKIE_HOST, domain, { path: "/", sameSite: "lax" });
   return res;
 }
 

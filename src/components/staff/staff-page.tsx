@@ -308,25 +308,6 @@ export function StaffPageView() {
 
       <div className="hidden flex-col gap-5 lg:flex">
         <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40">
-              Ressources humaines
-            </p>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFDEA4]/50 px-2.5 py-1 text-[11px] font-bold text-[#7B5900]">
-                <Store size={13} />
-                {user.orgName || "Votre institut"}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F6E3EF] px-2.5 py-1 text-[11px] font-medium text-ink/60">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {activeCount} active{activeCount !== 1 ? "s" : ""}
-              </span>
-              <span className="hidden items-center gap-1 rounded-full bg-[#FCE9F4] px-2.5 py-1 text-[11px] font-medium text-primary sm:inline-flex">
-                {ROLE_LABEL[user.role]}
-              </span>
-            </div>
-          </div>
-
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink lg:text-[32px]">
@@ -355,16 +336,6 @@ export function StaffPageView() {
                 <CalendarDays size={16} className="text-[#7B5900]" />
                 Planning général
               </Link>
-              {canExport ? (
-                <button
-                  type="button"
-                  onClick={handleExport}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink/70 shadow-sm"
-                >
-                  <Download size={16} />
-                  Exporter
-                </button>
-              ) : null}
             </div>
           </div>
         </section>

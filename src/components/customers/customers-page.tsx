@@ -406,36 +406,7 @@ export function CustomersPageView() {
                               {badge.label}
                             </span>
                           </td>
-                          <td className="relative px-3 py-3.5 text-right">
-                            <button
-                              type="button"
-                              className="rounded p-1 text-ink/40 hover:bg-[#FCE9F4]"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMenuId(menuId === c.id ? null : c.id);
-                              }}
-                            >
-                              <MoreVertical size={16} />
-                            </button>
-                            {menuId === c.id ? (
-                              <div className="absolute right-3 z-20 mt-1 w-40 rounded-xl border border-line bg-white py-1 text-left text-xs shadow-lg">
-                                <Link
-                                  href={`/customers/${c.id}/`}
-                                  className="block px-3 py-2 hover:bg-[#FFEFF8]"
-                                  onClick={() => setMenuId(null)}
-                                >
-                                  Fiche complète
-                                </Link>
-                                <Link
-                                  href={`/agenda/?customerId=${c.id}`}
-                                  className="block px-3 py-2 hover:bg-[#FFEFF8]"
-                                  onClick={() => setMenuId(null)}
-                                >
-                                  Nouveau RDV
-                                </Link>
-                              </div>
-                            ) : null}
-                          </td>
+                          <td className="px-3 py-3.5" />
                         </tr>
                       );
                     })}

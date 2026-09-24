@@ -5,8 +5,43 @@ import type {
   UpdateCustomerInput,
 } from "@/types/customer";
 
+export const PHONE_MAX_DIGITS = 10;
+
 export function normalizePhone(phone: string): string {
   return phone.replace(/\s+/g, "").trim();
+}
+
+/** Garde uniquement les chiffres, format local Maroc, 10 max (ex. 0655443322). */
+export function limitPhoneDigits(raw: string, max = PHONE_MAX_DIGITS): string {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("00212")) digits = digits.slice(2);
+  if (digits.startsWith("212")) digits = `0${digits.slice(3)}`;
+  return digits.slice(0, max);
+}
+
+export function moroccoPhoneSearchVariants(raw: string): string[] {
+  let digits = raw.replace(/\D/g, "");
+  if (!digits) return [];
+  if (digits.startsWith("00212")) digits = digits.slice(2);
+
+  const variants = new Set<string>([digits]);
+  if (digits.startsWith("212")) {
+    const rest = digits.slice(3);
+    if (rest) {
+      variants.add(`0${rest}`);
+      variants.add(rest);
+    }
+  } else if (digits.startsWith("0")) {
+    const rest = digits.slice(1);
+    if (rest) {
+      variants.add(`212${rest}`);
+      variants.add(rest);
+    }
+  } else if (digits.length >= 8) {
+    variants.add(`0${digits}`);
+    variants.add(`212${digits}`);
+  }
+  return [...variants];
 }
 
 function isValidEmail(email: string): boolean {
@@ -33,11 +68,12 @@ export function validateCreateCustomer(body: unknown): ValidationResult<CreateCu
   const raw = body as Record<string, unknown>;
   const firstName = String(raw.firstName ?? "").trim();
   const lastName = String(raw.lastName ?? "").trim();
-  const phone = normalizePhone(String(raw.phone ?? ""));
+  const phone = limitPhoneDigits(String(raw.phone ?? ""));
 
   if (!firstName) errors.firstName = "Le prénom est obligatoire.";
   if (!lastName) errors.lastName = "Le nom est obligatoire.";
   if (!phone || phone.length < 8) errors.phone = "Le téléphone est obligatoire.";
+  if (phone.length > PHONE_MAX_DIGITS) errors.phone = "Le téléphone ne doit pas dépasser 10 chiffres.";
 
   const emailRaw = raw.email != null ? String(raw.email).trim() : "";
   if (emailRaw && !isValidEmail(emailRaw)) errors.email = "E-mail invalide.";
@@ -90,9 +126,10 @@ export function validateUpdateCustomer(body: unknown): ValidationResult<UpdateCu
     else data.lastName = v;
   }
   if (raw.phone !== undefined) {
-    const v = normalizePhone(String(raw.phone));
-    if (v.length < 8) errors.phone = "Téléphone invalide.";
-    else data.phone = v;
+    const v = limitPhoneDigits(String(raw.phone));
+    if (v.length < 8 || v.length > PHONE_MAX_DIGITS) {
+      errors.phone = "Le téléphone doit contenir 8 à 10 chiffres.";
+    } else data.phone = v;
   }
   if (raw.email !== undefined) {
     const v = String(raw.email).trim();

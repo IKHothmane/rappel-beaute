@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Tabs } from "@/components/app/AppUi";
 import { useCurrentUser } from "@/components/auth/session-provider";
@@ -121,12 +122,20 @@ export function StaffDetailView({ staffId }: { staffId: string }) {
           <p className="text-sm text-ink/55">{staff.position ?? "—"}</p>
           <StatusBadge status={staff.status} />
         </div>
-        <div className="flex gap-4 text-sm">
-          <Kpi label="RDV" value={String(staff.appointmentCount)} />
-          {canPerfFull ? (
-            <Kpi label="CA" value={formatStaffRevenue(staff.revenue)} />
+        <div className="flex flex-wrap items-center gap-3">
+          {canWrite ? (
+            <Button type="button" variant="brand" onClick={() => setEditOpen(true)}>
+              <Pencil size={16} />
+              Modifier
+            </Button>
           ) : null}
-          {staff.rating != null ? <Kpi label="Note" value={`${staff.rating}/10`} /> : null}
+          <div className="flex gap-4 text-sm">
+            <Kpi label="RDV" value={String(staff.appointmentCount)} />
+            {canPerfFull ? (
+              <Kpi label="CA" value={formatStaffRevenue(staff.revenue)} />
+            ) : null}
+            {staff.rating != null ? <Kpi label="Note" value={`${staff.rating}/10`} /> : null}
+          </div>
         </div>
       </div>
 
@@ -214,10 +223,17 @@ function ProfileTab({
   return (
     <div className="space-y-3 text-sm">
       {canWrite ? (
-        <button type="button" className="btn-primary mb-4" onClick={onEdit}>
-          Modifier
-        </button>
+        <div className="mb-4 flex justify-end">
+          <Button type="button" variant="brand" size="sm" onClick={onEdit}>
+            <Pencil size={14} />
+            Modifier le profil
+          </Button>
+        </div>
       ) : null}
+      <Row label="Prénom" value={staff.firstName || "—"} />
+      <Row label="Nom" value={staff.lastName || "—"} />
+      <Row label="Poste" value={staff.position ?? "—"} />
+      <Row label="Statut" value={STAFF_STATUS_LABEL[staff.status]} />
       <Row label="Téléphone" value={staff.phone ?? "—"} />
       <Row label="E-mail" value={staff.email ?? "—"} />
       <Row

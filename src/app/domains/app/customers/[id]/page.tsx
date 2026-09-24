@@ -1,9 +1,7 @@
-"use client";
-
-import { CustomerDetailView } from "@/components/app/CustomerDetailView";
+import { redirect } from "next/navigation";
 
 type Props = { params: { id: string } };
 
-export default function CustomerDetailPage({ params }: Props) {
-  return <CustomerDetailView customerId={params.id} />;
+export default function CustomerDetailPage(_props: Props) {
+  redirect("/customers/");
 }

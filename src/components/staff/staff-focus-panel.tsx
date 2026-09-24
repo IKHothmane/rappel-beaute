@@ -273,65 +273,6 @@ export function StaffFocusPanel({
         )}
       </div>
 
-      <div className="flex flex-col gap-2 rounded-xl bg-[#FFEFF8] p-3">
-        <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-ink/40">
-          <Timer size={14} className="text-[#7B5900]" />
-          Présence & planning du jour
-        </span>
-        <div className="rounded-lg bg-white p-2.5">
-          <p className="text-[10px] uppercase text-ink/40">Horaires prévus</p>
-          <p className="text-[16px] font-bold text-ink">
-            {detail ? todayScheduleLabel(detail.schedules) : "…"}
-          </p>
-        </div>
-        {leave ? (
-          <p className="text-[11px] text-amber-800">
-            Congé en cours · {LEAVE_TYPE_LABEL[leave.type]} jusqu’au{" "}
-            {new Date(leave.endAt).toLocaleDateString("fr-FR")}
-          </p>
-        ) : (
-          <p className="text-[11px] text-ink/50">
-            Le pointage biométrique n’est pas disponible — le planning agenda fait foi.
-          </p>
-        )}
-      </div>
-
-      {canCommissions ? (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <h4 className="flex items-center gap-1.5 text-[15px] font-bold text-ink">
-              <Wallet size={16} className="text-[#7B5900]" />
-              Commissions {summary ? `(${summary.periodLabel})` : ""}
-            </h4>
-            <Link href={`/staff/${staffId}/`} className="text-[11px] font-semibold text-primary hover:underline">
-              Détail
-            </Link>
-          </div>
-          <div className="flex flex-col gap-2 rounded-xl bg-[#F6E3EF]/60 p-3">
-            {loading && !summary ? (
-              <p className="text-[12px] text-ink/40">Chargement…</p>
-            ) : summary ? (
-              <>
-                <div className="flex items-center justify-between text-[13px]">
-                  <span className="text-ink/50">CA prestations</span>
-                  <span className="font-bold text-ink">{formatCommissionMad(summary.baseTotal)}</span>
-                </div>
-                <div className="flex items-center justify-between text-[13px]">
-                  <span className="text-ink/50">Prestations</span>
-                  <span className="font-bold text-ink">{summary.count}</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-[#E4BDC2]/30 pt-1.5 text-[13px]">
-                  <span className="font-medium text-ink">Commission nette</span>
-                  <span className="text-[15px] font-bold text-primary">{formatCommissionMad(summary.netTotal)}</span>
-                </div>
-              </>
-            ) : (
-              <p className="text-[12px] text-ink/45">Aucune commission figée ce mois.</p>
-            )}
-          </div>
-        </div>
-      ) : null}
-
       <div className="relative flex flex-col gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-[#FCCA66]/25 via-[#FCE9F4] to-[#FFD9DE]/40 p-3.5">
         <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-primary">
           <Sparkles size={14} />

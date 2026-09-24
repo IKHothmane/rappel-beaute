@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, Textarea } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
+import { limitPhoneDigits } from "@/lib/validation/customer";
+import { listServices } from "@/modules/services/service";
 import type { CreateStaffInput, StaffDetail, StaffStatus } from "@/types/staff";
 import { STAFF_STATUS_LABEL } from "@/types/staff";
 
@@ -24,14 +26,40 @@ export function StaffForm({
 }: StaffFormProps) {
   const [firstName, setFirstName] = useState(initial?.firstName ?? "");
   const [lastName, setLastName] = useState(initial?.lastName ?? "");
-  const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [phone, setPhone] = useState(limitPhoneDigits(initial?.phone ?? ""));
   const [email, setEmail] = useState(initial?.email ?? "");
   const [position, setPosition] = useState(initial?.position ?? "");
   const [status, setStatus] = useState<StaffStatus>(initial?.status ?? "ACTIVE");
   const [hireDate, setHireDate] = useState(
     initial?.hireDate ? initial.hireDate.slice(0, 10) : "",
   );
-  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [serviceIds, setServiceIds] = useState<string[]>(
+    initial?.serviceIds ?? initial?.services?.map((s) => s.serviceId) ?? [],
+  );
+  const [services, setServices] = useState<{ id: string; name: string }[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setServicesLoading(true);
+    listServices({ active: true, limit: 100 })
+      .then((res) => {
+        if (!cancelled) setServices(res.data.map((s) => ({ id: s.id, name: s.name })));
+      })
+      .catch(() => {
+        if (!cancelled) setServices([]);
+      })
+      .finally(() => {
+        if (!cancelled) setServicesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function toggleService(id: string) {
+    setServiceIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +71,7 @@ export function StaffForm({
       position: position.trim() || undefined,
       status,
       hireDate: hireDate || undefined,
-      notes: notes.trim() || undefined,
+      serviceIds,
     });
   }
 
@@ -62,7 +90,14 @@ export function StaffForm({
 
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Téléphone</span>
-        <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+212 6 XX XX XX XX" />
+        <Input
+          type="tel"
+          inputMode="numeric"
+          maxLength={10}
+          value={phone}
+          onChange={(e) => setPhone(limitPhoneDigits(e.target.value))}
+          placeholder="0655443322"
+        />
       </label>
 
       <label className="block text-sm">
@@ -92,10 +127,30 @@ export function StaffForm({
         </label>
       </div>
 
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Notes</span>
-        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-      </label>
+      <div>
+        <p className="mb-1.5 text-sm font-medium">Services qu&apos;elle peut réaliser</p>
+        {servicesLoading ? (
+          <p className="text-[13px] text-ink/45">Chargement des services…</p>
+        ) : services.length === 0 ? (
+          <p className="text-[13px] text-ink/45">Aucun service dans le catalogue.</p>
+        ) : (
+          <div className="grid max-h-52 grid-cols-1 gap-1.5 overflow-y-auto rounded-lg bg-[#FFEFF8] p-2">
+            {services.map((s) => (
+              <label
+                key={s.id}
+                className="flex cursor-pointer items-center gap-2 rounded p-1.5 text-[13px] hover:bg-white"
+              >
+                <input
+                  type="checkbox"
+                  checked={serviceIds.includes(s.id)}
+                  onChange={() => toggleService(s.id)}
+                />
+                <span className="truncate">{s.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>

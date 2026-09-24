@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function LoginForm() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -35,13 +33,12 @@ export function LoginForm() {
         const isPlatform =
           data?.user?.scope === "platform" || data?.user?.accountType === "PLATFORM";
         if (isPlatform) {
-          router.push("/dashboard/?__host=admin");
+          window.location.replace("/dashboard/");
         } else if (data?.mustChangePassword) {
-          router.push("/changer-mot-de-passe/?__host=app");
+          window.location.replace("/changer-mot-de-passe/");
         } else {
-          router.push("/?__host=app");
+          window.location.replace("/dashboard/");
         }
-        router.refresh();
         return;
       }
 

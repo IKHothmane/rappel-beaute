@@ -381,13 +381,6 @@ export function PlanningPageView() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/staff/"
-            className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary-light px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary/15"
-          >
-            <UserPlus size={14} />
-            Ajouter une employée
-          </Link>
           <button
             type="button"
             onClick={() => setBlockOpen(true)}
@@ -395,16 +388,6 @@ export function PlanningPageView() {
           >
             <Ban size={14} className="text-amber-600" />
             Bloquer un créneau
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              document.getElementById("planning-repeat")?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-soft hover:bg-primary-dark"
-          >
-            <Repeat size={14} />
-            Répéter le planning
           </button>
         </div>
       </Card>
@@ -442,28 +425,6 @@ export function PlanningPageView() {
           hintClass="text-primary"
           tone="emerald"
         />
-      </div>
-
-      <div className="flex flex-col items-start justify-between gap-4 rounded-2xl bg-institut p-4 text-white md:flex-row md:items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
-            <Link2 size={16} className="text-primary" />
-          </div>
-          <div>
-            <p className="flex items-center gap-2 text-xs font-bold">
-              Synchronisation Planning → Agenda
-              <span className="rounded bg-primary px-2 py-0.5 text-[9px] font-extrabold">AUTO</span>
-            </p>
-            <p className="text-[11px] text-white/70">
-              Un horaire travaillé ouvre les réservations. Un repos ou un congé bloque immédiatement les
-              créneaux clientes.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] text-white/80">
-          <ShieldCheck size={14} className="text-emerald-400" />
-          Même source que l’Agenda et la réservation en ligne
-        </div>
       </div>
 
       <div className="flex flex-col justify-between gap-3 rounded-2xl border border-line bg-white px-5 py-3.5 sm:flex-row sm:items-center">
@@ -578,7 +539,6 @@ export function PlanningPageView() {
                           {index === peakDayIndex ? " ★" : ""}
                         </th>
                       ))}
-                      <th className="px-3 py-3 pr-4 text-right">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/80">
@@ -606,9 +566,6 @@ export function PlanningPageView() {
                             </td>
                           );
                         })}
-                        <td className="px-3 py-3 pr-4 text-right font-black text-ink">
-                          {Math.round(weekHours(person, weekDates))} h
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -949,17 +906,14 @@ export function PlanningPageView() {
                     );
                   })}
                 </div>
-                <div className="flex items-center justify-between border-t border-line pt-3">
-                  <div>
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-ink/45">Volume hebdomadaire</p>
-                    <p className="text-base font-black text-ink">{Math.round(weekHours(selected, weekDates))} h / semaine</p>
-                  </div>
-                  <Link
-                    href={`/staff/${selected.id}/`}
-                    className="rounded-xl border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-[#FBF5F7]"
+                <div className="flex items-center justify-end border-t border-line pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditDay(editDay)}
+                    className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white"
                   >
-                    Fiche RH
-                  </Link>
+                    Modifier
+                  </button>
                 </div>
               </Card>
 
@@ -992,14 +946,6 @@ export function PlanningPageView() {
                         <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-9 font-bold" />
                       </div>
                     </div>
-                    <div>
-                      <p className="mb-1 text-[10px] font-bold text-ink/45">Plage de pause</p>
-                      <div className="flex items-center gap-2">
-                        <Input type="time" value={breakStart} onChange={(e) => setBreakStart(e.target.value)} className="h-9 font-bold" />
-                        <span className="text-ink/30">→</span>
-                        <Input type="time" value={breakEnd} onChange={(e) => setBreakEnd(e.target.value)} className="h-9 font-bold" />
-                      </div>
-                    </div>
                     <label className="flex items-center gap-2 text-[11px] text-ink/60">
                       <input
                         type="checkbox"
@@ -1019,24 +965,6 @@ export function PlanningPageView() {
               </Card>
             </>
           ) : null}
-
-          <Card id="planning-repeat" className="space-y-3">
-            <div className="flex items-center gap-2 border-b border-line pb-2">
-              <Repeat size={14} className="text-primary" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-ink">Répéter ce planning</h3>
-            </div>
-            <p className="text-xs leading-relaxed text-ink/60">
-              Les horaires ci-dessus sont un modèle hebdomadaire : ils s’appliquent déjà chaque semaine.
-              Pour une exception (congé, formation, fermeture), ajoutez une absence ou bloquez un créneau
-              — sans écraser le rythme habituel.
-            </p>
-            <Link
-              href={selected ? `/staff/${selected.id}/` : "/staff/"}
-              className="flex w-full items-center justify-center rounded-xl bg-institut py-2 text-xs font-extrabold text-white hover:bg-black"
-            >
-              Modifier le modèle sur la fiche RH
-            </Link>
-          </Card>
 
           {aiHint ? (
             <div className="space-y-4 rounded-2xl border border-[#3a2b38] bg-gradient-to-br from-[#241a22] to-institut p-5 text-white shadow-lg">

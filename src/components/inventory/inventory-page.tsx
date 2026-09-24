@@ -83,6 +83,7 @@ export function InventoryPageView() {
   const [invOpen, setInvOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adjustType, setAdjustType] = useState<MovementType>("ADJUSTMENT_IN");
+  const [adjustProductId, setAdjustProductId] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -161,12 +162,9 @@ export function InventoryPageView() {
     });
   }, [products, search, category, alert, usage, tab]);
 
-  function openAdjust(id: string, type: MovementType = "ADJUSTMENT_IN") {
-    if (!id) {
-      toast("Sélectionnez d’abord un produit.", "info");
-      return;
-    }
-    setSelectedId(id);
+  function openAdjust(id?: string, type: MovementType = "ADJUSTMENT_IN") {
+    setAdjustProductId(id ?? "");
+    if (id) setSelectedId(id);
     setAdjustType(type);
     setAdjustOpen(true);
   }
@@ -316,7 +314,7 @@ export function InventoryPageView() {
               {canWrite ? (
                 <button
                   type="button"
-                  onClick={() => openAdjust(selected?.id ?? "")}
+                  onClick={() => openAdjust()}
                   className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm ring-1 ring-black/5"
                 >
                   <SlidersHorizontal size={16} className="text-[#C79A3B]" />
@@ -585,18 +583,18 @@ export function InventoryPageView() {
         onClose={() => setAdjustOpen(false)}
         title="Ajuster le stock"
       >
-        {selected ? (
-          <AdjustForm
-            productName={selected.name}
-            unitLabel={formatQty(selected.stock, selected.unit)}
-            defaultType={adjustType}
-            submitting={submitting}
-            onCancel={() => setAdjustOpen(false)}
-            onSubmit={submitMovement}
-          />
-        ) : (
-          <p className="text-sm text-ink/50">Sélectionnez un produit.</p>
-        )}
+        <AdjustForm
+          products={products}
+          defaultId={adjustProductId}
+          defaultType={adjustType}
+          submitting={submitting}
+          onCancel={() => setAdjustOpen(false)}
+          onSubmit={(input) => {
+            setSelectedId(input.productId);
+            setAdjustProductId(input.productId);
+            return submitMovement(input);
+          }}
+        />
       </Drawer>
 
       <Drawer open={receiptOpen} onClose={() => setReceiptOpen(false)} title="Entrée BL">
@@ -1020,27 +1018,37 @@ function InventoryCountForm({
 }
 
 function AdjustForm({
-  productName,
-  unitLabel,
+  products,
+  defaultId,
   defaultType,
   submitting,
   onSubmit,
   onCancel,
 }: {
-  productName: string;
-  unitLabel: string;
+  products: ProductListItem[];
+  defaultId: string;
   defaultType: MovementType;
   submitting: boolean;
-  onSubmit: (input: { type: MovementType; quantity: number; reason?: string }) => void;
+  onSubmit: (input: { productId: string; type: MovementType; quantity: number; reason?: string }) => void;
   onCancel: () => void;
 }) {
+  const [productId, setProductId] = useState(defaultId);
   const [type, setType] = useState<MovementType>(defaultType);
   const [quantity, setQuantity] = useState("1");
   const [reason, setReason] = useState("");
+  const current = products.find((p) => p.id === productId);
+
+  useEffect(() => {
+    setProductId(defaultId);
+  }, [defaultId]);
 
   useEffect(() => {
     setType(defaultType);
   }, [defaultType]);
+
+  if (products.length === 0) {
+    return <p className="text-sm text-ink/50">Aucun produit actif.</p>;
+  }
 
   return (
     <form
@@ -1048,13 +1056,24 @@ function AdjustForm({
       onSubmit={(e) => {
         e.preventDefault();
         const qty = Number(quantity);
-        if (!qty) return;
-        onSubmit({ type, quantity: qty, reason: reason.trim() || undefined });
+        if (!qty || !productId) return;
+        onSubmit({ productId, type, quantity: qty, reason: reason.trim() || undefined });
       }}
     >
-      <p className="text-sm text-ink/55">
-        {productName} · stock actuel {unitLabel}
-      </p>
+      <label className="block text-sm">
+        <span className="mb-1.5 block font-medium">Produit *</span>
+        <Select value={productId} onChange={(e) => setProductId(e.target.value)} required>
+          <option value="">Choisir un produit</option>
+          {products.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </Select>
+      </label>
+      {current ? (
+        <p className="text-sm text-ink/55">Stock actuel {formatQty(current.stock, current.unit)}</p>
+      ) : null}
       <Select value={type} onChange={(e) => setType(e.target.value as MovementType)}>
         <option value="ADJUSTMENT_IN">Entrée (ajustement +)</option>
         <option value="ADJUSTMENT_OUT">Sortie (ajustement −)</option>
@@ -1071,7 +1090,7 @@ function AdjustForm({
         <Button type="button" variant="ghost" className="flex-1" onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" className="flex-1" disabled={submitting}>
+        <Button type="submit" variant="primary" className="flex-1" disabled={submitting || !productId}>
           {submitting ? "Enregistrement…" : "Enregistrer"}
         </Button>
       </div>

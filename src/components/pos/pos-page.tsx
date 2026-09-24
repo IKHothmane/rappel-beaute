@@ -7,13 +7,14 @@ import {
   Barcode,
   CreditCard,
   Landmark,
-  Search,
+  Package,
   ShoppingBag,
+  Sparkles,
   Trash2,
   Wallet,
   X,
 } from "lucide-react";
-import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser } from "@/components/auth/session-provider";
 import {
   categoryCounts,
   filterPosCatalog,
@@ -74,6 +75,7 @@ export function PosPageView() {
   const [lastSale, setLastSale] = useState<PosSaleDetail | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const customerRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -264,6 +266,10 @@ export function PosPageView() {
       if (e.key === "F2") {
         e.preventDefault();
         searchRef.current?.focus();
+      } else if (e.key === "F4") {
+        e.preventDefault();
+        setCustomer(null);
+        window.setTimeout(() => customerRef.current?.focus(), 0);
       } else if (e.key === "F8") {
         e.preventDefault();
         openPay();
@@ -277,6 +283,7 @@ export function PosPageView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, method, cashOpen]);
 
+  const ticketNo = kpis.count + 1;
   const cartList = (
     <ul className="max-h-60 space-y-1.5 overflow-y-auto">
       {cart.length === 0 ? (
@@ -287,20 +294,25 @@ export function PosPageView() {
           return (
             <li key={l.product.id} className="flex items-center justify-between gap-2 rounded-lg bg-[#FFEFF8] p-2">
               <div className="min-w-0">
-                <p className="truncate text-[14px] font-semibold">{l.product.name}</p>
-                <p className="text-[11px] text-ink/50">
+                <p className="flex items-center gap-1 truncate text-[14px] font-semibold">
+                  <ShoppingBag size={14} className="shrink-0 text-primary" />
+                  <span className="truncate">{l.product.name}</span>
+                </p>
+                <p className={cn("text-[11px]", state === "low" ? "font-medium text-[#BA1A1A]" : "text-ink/50")}>
                   {formatMad(l.product.salePrice)}
-                  {state === "low" ? " · stock bas" : ` · stock ${l.product.stock}`}
+                  {state === "low" ? " · Alerte stock" : ` · stock ${l.product.stock}`}
                 </p>
               </div>
               <div className="flex items-center gap-1.5">
-                <button type="button" className="h-7 w-7 rounded bg-white text-sm font-bold" onClick={() => setQty(l.product.id, l.quantity - 1)}>
-                  −
-                </button>
-                <span className="w-5 text-center text-[13px] font-bold">{l.quantity}</span>
-                <button type="button" className="h-7 w-7 rounded bg-white text-sm font-bold" onClick={() => setQty(l.product.id, l.quantity + 1)}>
-                  +
-                </button>
+                <div className="flex items-center rounded bg-white px-1 shadow-sm">
+                  <button type="button" className="px-1.5 py-0.5 text-sm font-bold text-ink/50" onClick={() => setQty(l.product.id, l.quantity - 1)}>
+                    −
+                  </button>
+                  <span className="w-5 text-center text-[13px] font-bold">{l.quantity}</span>
+                  <button type="button" className="px-1.5 py-0.5 text-sm font-bold text-ink/50" onClick={() => setQty(l.product.id, l.quantity + 1)}>
+                    +
+                  </button>
+                </div>
                 <span className="w-16 text-right text-[13px] font-bold">{formatMad(l.product.salePrice * l.quantity)}</span>
                 <button type="button" className="text-ink/35 hover:text-[#BA1A1A]" onClick={() => setQty(l.product.id, 0)} aria-label="Retirer">
                   <X size={16} />
@@ -316,7 +328,6 @@ export function PosPageView() {
   return (
     <>
       <PosMobile
-        orgName={user.orgName || "Votre institut"}
         cashOpen={cashOpen}
         cashHint={cashHint}
         kpis={kpis}
@@ -345,50 +356,51 @@ export function PosPageView() {
           }
           setMobileCartOpen(true);
         }}
+        ticketNo={ticketNo}
+        customerRef={customerRef}
       />
 
       <div className="hidden space-y-4 lg:block">
         <section className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
-          <div>
+          <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="flex items-center gap-2 font-display text-[22px] font-semibold tracking-tight">
-                <Barcode size={22} className="text-primary" />
-                Point de vente
+              <h1 className="font-display text-[22px] font-semibold tracking-tight">
+                Point de Vente Express (POS)
               </h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F0DDE9] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider">
-                <span className={cn("h-2 w-2 rounded-full", cashOpen ? "animate-pulse bg-emerald-600" : "bg-ink/30")} />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F0DDE9] px-2.5 py-1 text-[11px] font-semibold">
+                <span className="relative flex h-2 w-2">
+                  {cashOpen ? <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#7B5900] opacity-60" /> : null}
+                  <span className={cn("relative inline-flex h-2 w-2 rounded-full", cashOpen ? "bg-[#7B5900]" : "bg-ink/30")} />
+                </span>
                 {cashHint}
               </span>
-              <span className="rounded-full bg-[#FFDEA4]/50 px-2 py-1 text-[11px] font-bold uppercase text-[#5D4200]">
-                {ROLE_LABEL[user.role]}
-              </span>
             </div>
-            <p className="mt-1 text-[15px] text-ink/50">
-              {user.orgName || "Votre institut"} — revente produits, ticket et encaissement. Le stock baisse à la vente.
-            </p>
-            <div className="mt-2 flex flex-wrap gap-3 text-[13px] text-ink/55">
+            <div className="flex flex-wrap items-center gap-3 text-[13px] text-ink/55">
               <span>
-                CA jour <strong className="text-primary">{formatMad(kpis.revenue)}</strong>
+                <strong className="text-primary">{formatMad(kpis.revenue)}</strong> CA Jour
               </span>
-              <span>·</span>
+              <span className="text-ink/25">•</span>
               <span>
-                <strong>{kpis.count}</strong> vente{kpis.count > 1 ? "s" : ""}
+                <strong className="text-ink">{kpis.count}</strong> Ventes
               </span>
-              <span>·</span>
+              <span className="text-ink/25">•</span>
               <span>
-                Panier moyen <strong>{kpis.count ? formatMad(kpis.average) : "—"}</strong>
+                <strong className="text-[#7B5900]">{kpis.count ? formatMad(kpis.average) : "—"}</strong> Panier Moyen
               </span>
             </div>
           </div>
-          <div className="flex flex-wrap gap-1.5 text-[11px] text-ink/50">
-            <span className="rounded bg-[#FCE9F4] px-2 py-1">
-              <kbd className="font-bold text-primary">F2</kbd> Recherche
+          <div className="flex flex-wrap gap-1.5 text-[11px]">
+            <span className="inline-flex items-center gap-1 rounded bg-[#FCE9F4] px-2 py-1">
+              <kbd className="rounded bg-white px-1 font-bold text-primary shadow-sm">F2</kbd> Recherche
             </span>
-            <span className="rounded bg-[#FCE9F4] px-2 py-1">
-              <kbd className="font-bold text-primary">F8</kbd> Encaisser
+            <span className="inline-flex items-center gap-1 rounded bg-[#FCE9F4] px-2 py-1">
+              <kbd className="rounded bg-white px-1 font-bold text-primary shadow-sm">F4</kbd> Cliente
             </span>
-            <span className="rounded bg-[#FCE9F4] px-2 py-1">
-              <kbd className="font-bold text-ink/40">ESC</kbd> Fermer
+            <span className="inline-flex items-center gap-1 rounded bg-[#FCE9F4] px-2 py-1">
+              <kbd className="rounded bg-white px-1 font-bold text-primary shadow-sm">F8</kbd> Encaissement
+            </span>
+            <span className="inline-flex items-center gap-1 rounded bg-[#FCE9F4] px-2 py-1">
+              <kbd className="rounded bg-white px-1 font-bold text-ink/40 shadow-sm">ESC</kbd> Fermer
             </span>
           </div>
         </section>
@@ -400,14 +412,17 @@ export function PosPageView() {
             onSearchSubmit();
           }}
         >
-          <Search className="ml-3 h-5 w-5 text-primary" />
+          <Barcode className="ml-3 h-6 w-6 text-primary" />
           <input
             ref={searchRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="SKU, nom ou marque… Entrée pour ajouter un code exact"
-            className="h-11 flex-1 bg-transparent px-3 text-[15px] outline-none"
+            placeholder="Scanner code-barres, chercher un produit ou une cliente… (F2)"
+            className="h-11 flex-1 bg-transparent px-3 text-[15px] outline-none placeholder:text-ink/35"
           />
+          <span className="mr-2 hidden rounded bg-[#FFDEA4] px-2 py-1 text-[11px] font-bold text-[#5D4200] sm:inline">
+            Entrée = SKU exact
+          </span>
         </form>
 
         <div className="grid grid-cols-12 items-start gap-4">
@@ -451,10 +466,22 @@ export function PosPageView() {
             ) : (
               <>
                 {other.length > 0 ? (
-                  <ProductGrid title="Catalogue" items={other} onAdd={addToCart} />
+                  <ProductGrid
+                    title="Prestations & catalogue"
+                    hint="Sélection immédiate"
+                    icon={Sparkles}
+                    items={other}
+                    onAdd={addToCart}
+                  />
                 ) : null}
                 {retail.length > 0 ? (
-                  <ProductGrid title="Revente comptoir" items={retail} onAdd={addToCart} />
+                  <ProductGrid
+                    title="Cosmétiques & revente comptoir"
+                    hint="Inventaire direct"
+                    icon={Package}
+                    items={retail}
+                    onAdd={addToCart}
+                  />
                 ) : null}
               </>
             )}
@@ -463,8 +490,18 @@ export function PosPageView() {
           <aside className="sticky top-4 col-span-5 space-y-2">
             <div className="rounded-xl bg-white p-3 shadow-sm">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Cliente</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Fiche cliente associée</p>
                 <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="text-[12px] font-semibold text-primary"
+                    onClick={() => {
+                      setCustomer(null);
+                      window.setTimeout(() => customerRef.current?.focus(), 0);
+                    }}
+                  >
+                    Changer (F4)
+                  </button>
                   {customer ? (
                     <button type="button" className="text-[12px] font-semibold text-ink/50" onClick={() => setCustomer(null)}>
                       Anonyme
@@ -473,14 +510,25 @@ export function PosPageView() {
                 </div>
               </div>
               {customer ? (
-                <div className="rounded-lg bg-[#FFEFF8] p-2.5">
-                  <p className="text-[16px] font-bold">{customer.name}</p>
-                  {customer.phone ? <p className="text-[12px] text-ink/55">{customer.phone}</p> : null}
-                  {loyaltyLine ? <p className="mt-1 text-[12px] font-semibold text-[#7B5900]">{loyaltyLine}</p> : null}
+                <div className="flex items-center gap-3 rounded-lg bg-[#FFEFF8] p-2.5">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-white">
+                    {customer.name
+                      .split(" ")
+                      .map((w) => w[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[16px] font-bold">{customer.name}</p>
+                    {customer.phone ? <p className="text-[12px] text-ink/55">{customer.phone}</p> : null}
+                    {loyaltyLine ? <p className="mt-0.5 text-[12px] font-semibold text-[#7B5900]">{loyaltyLine}</p> : null}
+                  </div>
                 </div>
               ) : (
                 <>
                   <input
+                    ref={customerRef}
                     value={customerQ}
                     onChange={(e) => setCustomerQ(e.target.value)}
                     placeholder="Rechercher une cliente (2 caractères)…"
@@ -509,8 +557,10 @@ export function PosPageView() {
             <div className="rounded-xl bg-white p-3 shadow-sm">
               <div className="mb-2 flex items-center justify-between">
                 <h2 className="text-[18px] font-semibold">
-                  Ticket en cours{" "}
-                  <span className="text-[12px] font-normal text-ink/45">({cartCount})</span>
+                  Ticket N° {ticketNo}{" "}
+                  <span className="text-[12px] font-normal text-ink/45">
+                    ({cartCount} article{cartCount !== 1 ? "s" : ""})
+                  </span>
                 </h2>
                 {cart.length > 0 ? (
                   <button
@@ -526,7 +576,7 @@ export function PosPageView() {
               {cartList}
               <div className="mt-3 space-y-1 border-t border-[#F0DDE9] pt-3 text-[13px]">
                 <div className="flex justify-between text-ink/55">
-                  <span>Sous-total</span>
+                  <span>Total brut</span>
                   <span className="font-semibold text-ink">{formatMad(subtotal)}</span>
                 </div>
                 <label className="flex items-center justify-between gap-2">
@@ -540,22 +590,33 @@ export function PosPageView() {
                     className="h-8 w-24 rounded-lg bg-[#FFEFF8] px-2 text-right text-[13px] outline-none"
                   />
                 </label>
+                {discountNum > 0 ? (
+                  <div className="flex justify-between font-semibold text-primary">
+                    <span>Remises déduites</span>
+                    <span>−{formatMad(discountNum)}</span>
+                  </div>
+                ) : null}
                 <div className="flex items-end justify-between pt-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Net à payer</span>
-                  <span className="text-[28px] font-extrabold tracking-tight">{formatMad(total)}</span>
+                  <span className="text-[28px] font-extrabold tracking-tight">
+                    {formatMad(total).replace(" MAD", "")} <span className="text-[18px] text-primary">DH</span>
+                  </span>
                 </div>
               </div>
               <button
                 type="button"
                 disabled={!canWrite || cart.length === 0}
                 onClick={openPay}
-                className="mt-3 flex h-14 w-full items-center justify-between rounded-xl bg-primary px-4 text-white shadow-md disabled:opacity-40"
+                className="mt-3 flex h-14 w-full items-center justify-between rounded-xl bg-gradient-to-r from-[#E31C5F] to-primary px-4 text-white shadow-lg shadow-primary/20 disabled:opacity-40"
               >
-                <span className="flex items-center gap-2 text-[16px] font-extrabold uppercase">
+                <span className="flex items-center gap-2 text-[15px] font-extrabold uppercase tracking-wide">
                   <Wallet size={22} />
-                  Encaisser
+                  Encaisser le ticket
                 </span>
-                <span className="text-[22px] font-extrabold">{formatMad(total)}</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-[20px] font-extrabold">{formatMad(total)}</span>
+                  <kbd className="rounded bg-white/20 px-1.5 py-0.5 text-[11px] font-bold">F8</kbd>
+                </span>
               </button>
               {showCash ? (
                 <Link href="/cash-register/" className="mt-2 block text-center text-[12px] font-semibold text-primary hover:underline">
@@ -603,7 +664,7 @@ export function PosPageView() {
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between bg-[#FFEFF8] px-5 py-4">
               <div>
-                <h3 className="text-[18px] font-bold">Règlement</h3>
+                <h3 className="text-[18px] font-bold">Règlement & encaissement</h3>
                 <p className="text-[12px] text-ink/55">
                   {customer ? customer.name : "Passage"}
                   {cartCount ? ` · ${cartCount} article${cartCount > 1 ? "s" : ""}` : ""}
@@ -772,18 +833,25 @@ export function PosPageView() {
 
 function ProductGrid({
   title,
+  hint,
+  icon: Icon,
   items,
   onAdd,
 }: {
   title: string;
+  hint?: string;
+  icon: typeof ShoppingBag;
   items: PosProductItem[];
   onAdd: (p: PosProductItem) => void;
 }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <ShoppingBag size={18} className="text-primary" />
-        <h2 className="text-[18px] font-semibold">{title}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Icon size={18} className="text-primary" />
+          <h2 className="text-[18px] font-semibold">{title}</h2>
+        </div>
+        {hint ? <span className="text-[11px] font-bold uppercase tracking-wider text-ink/40">{hint}</span> : null}
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((p) => {
@@ -799,8 +867,8 @@ function ProductGrid({
               )}
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FCE9F4] text-[13px] font-bold text-primary">
-                  {p.name.charAt(0)}
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FCE9F4] text-primary">
+                  <Icon size={16} />
                 </span>
                 <span
                   className={cn(
@@ -821,7 +889,9 @@ function ProductGrid({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[18px] font-bold text-primary">{formatMad(p.salePrice)}</span>
-                <span className="rounded-full bg-[#FFD9DE] px-2 py-0.5 text-[13px] font-bold text-[#900037]">+</span>
+                <span className={cn("rounded px-2 py-1 text-[11px] font-bold", state === "out" ? "bg-[#F0DDE9] text-ink/40" : "bg-primary text-white")}>
+                  {state === "out" ? "Indisponible" : "Ajouter"}
+                </span>
               </div>
             </button>
           );

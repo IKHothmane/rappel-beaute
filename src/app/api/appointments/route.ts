@@ -39,7 +39,16 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const appointments = await listAppointmentsByOrg(auth.session.organizationId);
+    const sp = request.nextUrl.searchParams;
+    const fromRaw = sp.get("from");
+    const toRaw = sp.get("to");
+    const from = fromRaw ? new Date(fromRaw) : undefined;
+    const to = toRaw ? new Date(toRaw) : undefined;
+    const range =
+      (from && !Number.isNaN(from.getTime())) || (to && !Number.isNaN(to.getTime()))
+        ? { from, to }
+        : undefined;
+    const appointments = await listAppointmentsByOrg(auth.session.organizationId, range);
     return NextResponse.json(appointments);
   } catch (error) {
     console.error("[GET /api/appointments]", error);

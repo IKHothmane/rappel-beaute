@@ -108,7 +108,7 @@ export type PurchaseItemRow = {
 export type PurchaseListItem = {
   id: string;
   number: string;
-  supplierId: string;
+  supplierId: string | null;
   supplierName: string;
   status: PurchaseStatus;
   itemCount: number;
@@ -157,7 +157,7 @@ export type PurchaseDetail = PurchaseListItem & {
 };
 
 export type CreatePurchaseInput = {
-  supplierId: string;
+  supplierId?: string;
   notes?: string;
   items: PurchaseItemInput[];
   /** Si true, passe directement en ORDERED */

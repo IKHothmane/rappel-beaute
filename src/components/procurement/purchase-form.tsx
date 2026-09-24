@@ -15,7 +15,7 @@ type Props = {
   catalog: ProductListItem[];
   submitting: boolean;
   onSubmit: (payload: {
-    supplierId: string;
+    supplierId?: string;
     notes?: string;
     submit: boolean;
     items: PurchaseItemInput[];
@@ -41,7 +41,7 @@ export function PurchaseForm({ suppliers, catalog, submitting, onSubmit, onCance
 
   function emit(submit: boolean) {
     onSubmit({
-      supplierId,
+      supplierId: supplierId || undefined,
       notes: notes.trim() || undefined,
       submit,
       items: lines.map(({ productId, quantityOrdered, unitPrice }) => ({
@@ -55,7 +55,7 @@ export function PurchaseForm({ suppliers, catalog, submitting, onSubmit, onCance
   return (
     <div className="space-y-4">
       <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Fournisseur *</span>
+        <span className="mb-1.5 block font-medium">Fournisseur</span>
         <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
           <option value="">Choisir…</option>
           {suppliers.map((s) => (
@@ -68,6 +68,12 @@ export function PurchaseForm({ suppliers, catalog, submitting, onSubmit, onCance
 
       <div className="space-y-2">
         <p className="text-sm font-medium">Produits</p>
+        <div className="grid grid-cols-[1fr_72px_88px_auto] gap-2 text-[11px] font-semibold text-ink/45">
+          <span>Produit</span>
+          <span>Quantité</span>
+          <span>Prix</span>
+          <span />
+        </div>
         {lines.map((line) => (
           <div key={line.key} className="grid grid-cols-[1fr_72px_88px_auto] gap-2">
             <Select
@@ -95,6 +101,7 @@ export function PurchaseForm({ suppliers, catalog, submitting, onSubmit, onCance
               onChange={(e) =>
                 updateLine(line.key, { quantityOrdered: Number(e.target.value) || 0 })
               }
+              aria-label="Quantité"
             />
             <Input
               type="number"
@@ -102,6 +109,7 @@ export function PurchaseForm({ suppliers, catalog, submitting, onSubmit, onCance
               step={0.01}
               value={line.unitPrice}
               onChange={(e) => updateLine(line.key, { unitPrice: Number(e.target.value) || 0 })}
+              aria-label="Prix"
             />
             <button
               type="button"

@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
-import { Pool, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
+import { pool } from "@/lib/db/pool";
 import type {
   CreateStaffInput,
   CreateStaffLeaveInput,
@@ -14,8 +15,6 @@ import type {
   UpdateStaffScheduleInput,
 } from "@/types/staff";
 import { staffDisplayName } from "@/types/staff";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;

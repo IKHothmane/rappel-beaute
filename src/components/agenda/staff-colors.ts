@@ -7,8 +7,9 @@ const PALETTE = [
   { bar: "bg-rose-600", text: "text-rose-700", soft: "bg-rose-50", ring: "ring-rose-200" },
 ] as const;
 
-export function staffColor(staffId: string) {
+export function staffColor(staffId: string | null | undefined) {
+  const id = staffId ?? "";
   let hash = 0;
-  for (let i = 0; i < staffId.length; i += 1) hash = (hash + staffId.charCodeAt(i) * (i + 1)) % PALETTE.length;
+  for (let i = 0; i < id.length; i += 1) hash = (hash + id.charCodeAt(i) * (i + 1)) % PALETTE.length;
   return PALETTE[hash] ?? PALETTE[0];
 }

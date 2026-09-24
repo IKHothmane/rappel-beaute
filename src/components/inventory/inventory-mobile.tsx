@@ -121,7 +121,7 @@ export function InventoryMobile({
             </button>
             <button
               type="button"
-              onClick={() => onAdjust(filtered[0]?.id ?? "")}
+              onClick={() => onAdjust("")}
               className="inline-flex h-12 items-center justify-center gap-1 rounded-xl bg-[#F0DDE9] text-[12px] font-semibold text-ink"
             >
               <SlidersHorizontal size={16} />

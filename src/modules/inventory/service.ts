@@ -73,6 +73,27 @@ export async function createProduct(
   }
 }
 
+export async function deleteProduct(
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/products/${id}/`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: (data as { error?: string }).error ?? "Impossible de supprimer le produit.",
+      };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
+  }
+}
+
 export async function updateProduct(
   id: string,
   input: UpdateProductInput,

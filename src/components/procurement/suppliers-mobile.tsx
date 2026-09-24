@@ -49,7 +49,6 @@ type Props = {
   catalog: ProductListItem[];
   onCreate: () => void;
   onEdit: () => void;
-  onArchive: () => void;
 };
 
 export function SuppliersMobile({
@@ -76,7 +75,6 @@ export function SuppliersMobile({
   catalog,
   onCreate,
   onEdit,
-  onArchive,
 }: Props) {
   const [view, setView] = useState<MobileView>("list");
 
@@ -110,7 +108,6 @@ export function SuppliersMobile({
             showPurchases={showPurchases}
             catalog={catalog}
             onEdit={onEdit}
-            onArchive={onArchive}
           />
         </div>
       ) : (

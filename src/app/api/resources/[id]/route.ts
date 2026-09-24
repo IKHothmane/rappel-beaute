@@ -5,7 +5,7 @@ import {
   requireFeatureWrite,
   stripOrganizationId,
 } from "@/lib/auth/api-guard";
-import { getResourceById, updateResource } from "@/lib/db/resources";
+import { deleteResource, getResourceById, updateResource } from "@/lib/db/resources";
 import { validateUpdateResource } from "@/lib/validation/resource";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -49,5 +49,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
     console.error("[PATCH /api/resources/:id]", error);
     return NextResponse.json({ error: "Impossible de mettre à jour la ressource." }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const auth = await requireFeatureWrite(request, "resources");
+  if (!auth.ok) return auth.response;
+
+  try {
+    const { id } = await context.params;
+    await deleteResource(auth.session.organizationId, id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
+    }
+    console.error("[DELETE /api/resources/:id]", error);
+    return NextResponse.json({ error: "Impossible de supprimer la ressource." }, { status: 500 });
   }
 }

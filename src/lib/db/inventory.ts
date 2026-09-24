@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
-import { Pool, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
+import { pool } from "@/lib/db/pool";
 import type {
   CreateMovementInput,
   CreateProductInput,
@@ -15,8 +16,6 @@ import type {
   UpdateProductInput,
 } from "@/types/inventory";
 import { computeStockAlert, movementSign } from "@/types/inventory";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;
@@ -607,7 +606,7 @@ export async function createProduct(
         input.maxStock ?? null,
         input.supplierName ?? null,
         input.consumable !== false,
-        Boolean(input.sellable),
+        input.sellable !== false,
         input.active !== false,
         input.notes ?? null,
       ],
@@ -710,6 +709,23 @@ export async function updateProduct(
   const detail = await getProductById(organizationId, productId);
   if (!detail) throw new Error("NOT_FOUND");
   return detail;
+}
+
+export async function deleteProduct(
+  organizationId: string,
+  productId: string,
+): Promise<{ name: string }> {
+  const existing = await getProductById(organizationId, productId);
+  if (!existing) throw new Error("NOT_FOUND");
+
+  const { rowCount } = await pool.query(
+    `UPDATE "Product"
+     SET "deletedAt" = NOW(), active = false, "updatedAt" = NOW()
+     WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
+    [productId, organizationId],
+  );
+  if (!rowCount) throw new Error("NOT_FOUND");
+  return { name: existing.name };
 }
 
 export async function createProductLot(

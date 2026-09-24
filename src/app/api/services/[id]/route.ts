@@ -113,18 +113,6 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     if (error instanceof Error && error.message === "NOT_FOUND") {
       return NextResponse.json({ error: "Service introuvable." }, { status: 404 });
     }
-    if (error instanceof Error && error.message === "HAS_APPOINTMENTS") {
-      return NextResponse.json(
-        { error: "Impossible de supprimer : des rendez-vous sont liés. Désactivez le service." },
-        { status: 409 },
-      );
-    }
-    if (error instanceof Error && error.message === "HAS_PACKAGES") {
-      return NextResponse.json(
-        { error: "Impossible de supprimer : un forfait utilise ce service." },
-        { status: 409 },
-      );
-    }
     console.error("[DELETE /api/services/:id]", error);
     return NextResponse.json(
       { error: "Impossible de supprimer le service." },

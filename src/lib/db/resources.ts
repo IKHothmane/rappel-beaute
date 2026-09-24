@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { Pool } from "pg";
+import { pool } from "@/lib/db/pool";
 import type {
   CreateMaintenanceInput,
   CreateResourceInput,
@@ -13,8 +13,6 @@ import type {
   UpdateResourceInput,
 } from "@/types/resource";
 import { isBlockingMaintenance } from "@/types/resource";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;
@@ -354,6 +352,23 @@ export async function updateResource(
   const detail = await getResourceById(organizationId, resourceId);
   if (!detail) throw new Error("NOT_FOUND");
   return detail;
+}
+
+export async function deleteResource(
+  organizationId: string,
+  resourceId: string,
+): Promise<{ name: string }> {
+  const existing = await getResourceById(organizationId, resourceId);
+  if (!existing) throw new Error("NOT_FOUND");
+
+  const { rowCount } = await pool.query(
+    `UPDATE "Resource"
+     SET "deletedAt" = NOW(), active = false, "updatedAt" = NOW()
+     WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
+    [resourceId, organizationId],
+  );
+  if (!rowCount) throw new Error("NOT_FOUND");
+  return { name: existing.name };
 }
 
 export async function createResourceMaintenance(

@@ -66,6 +66,7 @@ type ResourcesMobileProps = {
   onCreate: () => void;
   onEdit: (id: string) => void;
   onToggle: (row: ResourceListItem) => void;
+  onDelete: (row: ResourceListItem) => void;
   onMaintenance: () => void;
 };
 
@@ -104,6 +105,7 @@ export function ResourcesMobile({
   onCreate,
   onEdit,
   onToggle,
+  onDelete,
   onMaintenance,
 }: ResourcesMobileProps) {
   const [view, setView] = useState<MobileView>("list");
@@ -300,6 +302,7 @@ export function ResourcesMobile({
                 onMenu={() => onMenu(menuId === r.id ? null : r.id)}
                 onEdit={() => onEdit(r.id)}
                 onToggle={() => onToggle(r)}
+                onDelete={() => onDelete(r)}
               />
             ))
           )}
@@ -314,7 +317,6 @@ export function ResourcesMobile({
           insight={insight}
           canWrite={canWrite}
           onEdit={() => onEdit(selected.id)}
-          onToggle={() => onToggle(selected)}
           onMaintenance={onMaintenance}
         />
       ) : null}

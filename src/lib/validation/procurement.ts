@@ -121,13 +121,12 @@ export function validateCreatePurchase(
   const errors: string[] = [];
   const supplierId = str(raw.supplierId);
   const items = parseItems(raw.items);
-  if (!supplierId) errors.push("supplierId");
   if (!items) errors.push("items");
   if (errors.length) return { ok: false, errors };
   return {
     ok: true,
     data: {
-      supplierId: supplierId!,
+      supplierId: supplierId || undefined,
       notes: str(raw.notes),
       items: items!,
       submit: Boolean(raw.submit),

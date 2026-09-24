@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   KeyRound,
   MessageCircle,
-  PauseCircle,
   Pencil,
   Sparkles,
   Timer,
@@ -28,7 +27,7 @@ import { formatMad as formatCommissionMad, getStaffCommissions } from "@/modules
 import { formatMad } from "@/modules/analytics/service";
 import { getStaff } from "@/modules/staff/service";
 import type { StaffCommissionSummary } from "@/types/commission";
-import type { StaffDetail, StaffListItem, StaffStatus } from "@/types/staff";
+import type { StaffDetail, StaffListItem } from "@/types/staff";
 import { LEAVE_TYPE_LABEL, STAFF_STATUS_LABEL } from "@/types/staff";
 
 type StaffFocusPanelProps = {
@@ -42,7 +41,6 @@ type StaffFocusPanelProps = {
   teamRevenue: number;
   insight: string;
   onEdit: () => void;
-  onStatus: (status: StaffStatus) => void;
 };
 
 export function StaffFocusPanel({
@@ -56,7 +54,6 @@ export function StaffFocusPanel({
   teamRevenue,
   insight,
   onEdit,
-  onStatus,
 }: StaffFocusPanelProps) {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<StaffDetail | null>(null);
@@ -103,8 +100,6 @@ export function StaffFocusPanel({
   const disabledServices = detail?.services.filter((s) => !s.active) ?? [];
   const shownEnabled = enabledServices.slice(0, 4);
   const shownDisabled = disabledServices.slice(0, 2);
-  const nextStatus: StaffStatus = person.status === "ACTIVE" ? "ON_LEAVE" : "ACTIVE";
-
   return (
     <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-md">
       <div className="flex items-start justify-between gap-3 border-b border-[#E4BDC2]/30 pb-3">
@@ -134,24 +129,14 @@ export function StaffFocusPanel({
           </div>
         </div>
         {canWrite ? (
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={onEdit}
-              title="Modifier la fiche"
-              className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-primary"
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => onStatus(nextStatus)}
-              title={person.status === "ACTIVE" ? "Mettre en congé" : "Réactiver"}
-              className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-amber-700"
-            >
-              <PauseCircle size={16} />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onEdit}
+            title="Modifier la fiche"
+            className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-primary"
+          >
+            <Pencil size={16} />
+          </button>
         ) : null}
       </div>
 

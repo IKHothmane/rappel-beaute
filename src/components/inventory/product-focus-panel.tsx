@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Minus, PauseCircle, Pencil, Plus, ShoppingBag, Sparkles } from "lucide-react";
+import { Minus, Pencil, Plus, ShoppingBag, Sparkles } from "lucide-react";
 import {
   alertChipClass,
   formatMovementTime,
@@ -23,7 +23,6 @@ type ProductFocusPanelProps = {
   canWrite: boolean;
   financeHidden: boolean;
   onEdit: () => void;
-  onToggle: () => void;
   onAdjust: () => void;
 };
 
@@ -34,7 +33,6 @@ export function ProductFocusPanel({
   canWrite,
   financeHidden,
   onEdit,
-  onToggle,
   onAdjust,
 }: ProductFocusPanelProps) {
   const [loading, setLoading] = useState(true);
@@ -57,7 +55,16 @@ export function ProductFocusPanel({
     return () => {
       cancelled = true;
     };
-  }, [productId]);
+  }, [
+    productId,
+    fallback.stock,
+    fallback.alert,
+    fallback.name,
+    fallback.purchasePrice,
+    fallback.salePrice,
+    fallback.minStock,
+    fallback.active,
+  ]);
 
   const product = detail ?? fallback;
   const margin = productMargin(product);
@@ -85,24 +92,14 @@ export function ProductFocusPanel({
             </div>
           </div>
           {canWrite ? (
-            <div className="flex shrink-0 gap-1">
-              <button
-                type="button"
-                onClick={onEdit}
-                title="Modifier"
-                className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-primary"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={onToggle}
-                title={product.active ? "Désactiver" : "Réactiver"}
-                className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-amber-700"
-              >
-                <PauseCircle size={16} />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onEdit}
+              title="Modifier"
+              className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-primary"
+            >
+              <Pencil size={16} />
+            </button>
           ) : null}
         </div>
 
@@ -274,20 +271,12 @@ export function ProductFocusPanel({
           <p className="mt-1 text-[12px] leading-relaxed text-ink">{insight}</p>
         </div>
 
-        <div className="flex gap-2">
-          <Link
-            href="/stock/"
-            className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
-          >
-            Stock
-          </Link>
-          <Link
-            href={`/products/${productId}/`}
-            className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-[#F0DDE9] text-[13px] font-semibold text-primary"
-          >
-            Fiche complète
-          </Link>
-        </div>
+        <Link
+          href="/stock/"
+          className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
+        >
+          Stock
+        </Link>
       </div>
     </div>
   );

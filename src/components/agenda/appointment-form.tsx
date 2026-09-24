@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AvailabilitySlots } from "@/components/agenda/availability-slots";
 import { Button } from "@/components/ui/button";
-import { FieldGroup, Label, Select, Textarea } from "@/components/ui/select";
+import { FieldGroup, Label, Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { createCustomer, listCustomers } from "@/modules/customers/service";
 import { getAvailableSlots, isStaffAvailableOnDate, isResourceAvailableOnDate } from "@/modules/appointments/availability";
@@ -67,7 +67,6 @@ export function AppointmentForm({
     return "";
   });
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
-  const [notes, setNotes] = useState(initial?.notes ?? "");
   const [promoCode, setPromoCode] = useState("");
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
@@ -239,7 +238,6 @@ export function AppointmentForm({
       endAt: end.toISOString(),
       price: Number(price),
       notes: [
-        notes.trim() || undefined,
         extraLabel ? `Soins: ${service?.name ?? ""} + ${extraLabel}` : undefined,
         promoCode.trim() ? `Promo: ${promoCode.trim()}` : undefined,
       ]
@@ -403,10 +401,7 @@ export function AppointmentForm({
           <button
             type="button"
             className="text-[12px] font-semibold text-primary"
-            onClick={() => {
-              const next = services.find((s) => s.id !== serviceId && !extraIds.includes(s.id));
-              if (next) setExtraIds((prev) => [...prev, next.id]);
-            }}
+            onClick={() => setExtraIds((prev) => [...prev, ""])}
           >
             Ajouter un autre soin
           </button>
@@ -421,6 +416,7 @@ export function AppointmentForm({
                 setExtraIds(copy);
               }}
             >
+              <option value="">Choisir un soin</option>
               {services
                 .filter((s) => s.id !== serviceId)
                 .map((s) => (
@@ -456,11 +452,6 @@ export function AppointmentForm({
         ) : (
           <p className="text-[12px] text-ink/45">Choisissez un service et une date.</p>
         )}
-      </FieldGroup>
-
-      <FieldGroup className="sm:col-span-2">
-        <Label>Notes</Label>
-        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Allergie, préférences…" />
       </FieldGroup>
 
       <div className="flex flex-col gap-2 border-t border-line pt-4 sm:col-span-2 sm:flex-row">

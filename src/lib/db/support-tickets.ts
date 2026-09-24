@@ -1,10 +1,8 @@
 import { randomBytes } from "crypto";
-import { Pool } from "pg";
+import { pool } from "@/lib/db/pool";
 import { emitNotification } from "@/lib/db/notifications";
 import { writeAuditLog } from "@/lib/db/audit";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export type SupportTicketStatus =
   | "OPEN"

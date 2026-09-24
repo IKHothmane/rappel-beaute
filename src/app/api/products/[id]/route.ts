@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth/api-guard";
 import {
   createProductLot,
+  deleteProduct,
   getProductById,
   isUniqueViolation,
   updateProduct,
@@ -86,5 +87,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
     console.error("[PATCH /api/products/:id]", error);
     return NextResponse.json({ error: "Impossible de mettre à jour." }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const auth = await requireFeatureWrite(request, "stock");
+  if (!auth.ok) return auth.response;
+
+  try {
+    const { id } = await context.params;
+    await deleteProduct(auth.session.organizationId, id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return NextResponse.json({ error: "Produit introuvable." }, { status: 404 });
+    }
+    console.error("[DELETE /api/products/:id]", error);
+    return NextResponse.json({ error: "Impossible de supprimer le produit." }, { status: 500 });
   }
 }

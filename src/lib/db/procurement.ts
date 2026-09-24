@@ -479,8 +479,8 @@ function mapPurchaseListRow(r: Record<string, unknown>): PurchaseListItem {
   return {
     id: String(r.id),
     number: String(r.number),
-    supplierId: String(r.supplierId),
-    supplierName: String(r.supplierName),
+    supplierId: r.supplierId ? String(r.supplierId) : null,
+    supplierName: String(r.supplierName ?? "Sans fournisseur"),
     status: r.status as PurchaseStatus,
     itemCount: Number(r.itemCount) || 0,
     total: Math.round(parseFloat(String(r.total ?? "0")) * 100) / 100,
@@ -515,7 +515,7 @@ export async function listPurchases(
     pi++;
   }
   if (opts.search) {
-    conditions.push(`(pu.number ILIKE $${pi} OR s.name ILIKE $${pi})`);
+    conditions.push(`(pu.number ILIKE $${pi} OR COALESCE(s.name, '') ILIKE $${pi})`);
     params.push(`%${opts.search}%`);
     pi++;
   }
@@ -527,18 +527,18 @@ export async function listPurchases(
     pool.query<{ total: number }>(
       `SELECT COUNT(*)::int AS total
        FROM "Purchase" pu
-       JOIN "Supplier" s ON s.id = pu."supplierId"
+       LEFT JOIN "Supplier" s ON s.id = pu."supplierId"
        WHERE ${where}`,
       params,
     ),
     pool.query(
       `SELECT
-        pu.id, pu.number, pu."supplierId", s.name AS "supplierName",
+        pu.id, pu.number, pu."supplierId", COALESCE(s.name, 'Sans fournisseur') AS "supplierName",
         pu.status::text AS status, pu."orderedAt", pu."receivedAt", pu."createdAt",
         COUNT(pi.id)::int AS "itemCount",
         COALESCE(SUM(pi."quantityOrdered" * pi."unitPrice"), 0)::text AS total
        FROM "Purchase" pu
-       JOIN "Supplier" s ON s.id = pu."supplierId"
+       LEFT JOIN "Supplier" s ON s.id = pu."supplierId"
        LEFT JOIN "PurchaseItem" pi ON pi."purchaseId" = pu.id
        WHERE ${where}
        GROUP BY pu.id, s.name
@@ -650,11 +650,11 @@ export async function getPurchaseById(
 ): Promise<PurchaseDetail | null> {
   const { rows } = await pool.query(
     `SELECT
-      pu.id, pu.number, pu."supplierId", s.name AS "supplierName",
+      pu.id, pu.number, pu."supplierId", COALESCE(s.name, 'Sans fournisseur') AS "supplierName",
       pu.status::text AS status, pu.notes, pu."orderedAt", pu."receivedAt",
       pu."createdById", pu."createdAt", pu."updatedAt"
      FROM "Purchase" pu
-     JOIN "Supplier" s ON s.id = pu."supplierId"
+     LEFT JOIN "Supplier" s ON s.id = pu."supplierId"
      WHERE pu.id = $1 AND pu."organizationId" = $2`,
     [purchaseId, organizationId],
   );
@@ -669,8 +669,8 @@ export async function getPurchaseById(
   return {
     id: rows[0].id,
     number: rows[0].number,
-    supplierId: rows[0].supplierId,
-    supplierName: rows[0].supplierName,
+    supplierId: rows[0].supplierId ?? null,
+    supplierName: rows[0].supplierName ?? "Sans fournisseur",
     status: rows[0].status as PurchaseStatus,
     itemCount: items.length,
     total: Math.round(total * 100) / 100,
@@ -723,12 +723,14 @@ export async function createPurchase(
   try {
     await client.query("BEGIN");
 
-    const supplier = await client.query(
-      `SELECT id FROM "Supplier"
-       WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL AND active = true`,
-      [input.supplierId, organizationId],
-    );
-    if (!supplier.rows[0]) throw new Error("SUPPLIER_NOT_FOUND");
+    if (input.supplierId) {
+      const supplier = await client.query(
+        `SELECT id FROM "Supplier"
+         WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL AND active = true`,
+        [input.supplierId, organizationId],
+      );
+      if (!supplier.rows[0]) throw new Error("SUPPLIER_NOT_FOUND");
+    }
 
     const number = await nextPurchaseNumber(organizationId, client);
     const id = newId("pur");
@@ -742,7 +744,7 @@ export async function createPurchase(
       [
         id,
         organizationId,
-        input.supplierId,
+        input.supplierId ?? null,
         number,
         status,
         input.notes ?? null,

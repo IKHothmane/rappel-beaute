@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { pool } from "@/lib/db/pool";
 import { pctChange, previousPeriod, resolvePreset } from "@/lib/analytics/period";
 import { AT_RISK_DAYS, VIP_MIN_REVENUE, VIP_MIN_VISITS } from "@/types/customer";
 import type {
@@ -18,8 +18,6 @@ import type {
   StaffAnalyticsRow,
 } from "@/types/analytics";
 import { PAYMENT_METHOD_LABEL } from "@/types/analytics";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const WEEKDAY_LABEL = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
@@ -187,8 +185,7 @@ async function kpiPair(
   current: FilterParams,
   prev: FilterParams | null,
 ): Promise<KpiWithCompare> {
-  const value = await fn(current);
-  const previous = prev ? await fn(prev) : null;
+  const [value, previous] = await Promise.all([fn(current), prev ? fn(prev) : Promise.resolve(null)]);
   return kpi(value, previous);
 }
 
@@ -206,24 +203,25 @@ export async function getAnalyticsOverview(
       }
     : null;
 
-  const revenue = await kpiPair(sumNetRevenue, current, prev);
-  const expenses = await kpiPair(sumExpenses, current, prev);
+  const [revenue, expenses, tickets, ticketsPrev, appointments, activeCustomers] = await Promise.all([
+    kpiPair(sumNetRevenue, current, prev),
+    kpiPair(sumExpenses, current, prev),
+    countTickets(current),
+    prev ? countTickets(prev) : Promise.resolve(null),
+    kpiPair(countAppointments, current, prev),
+    countActiveCustomers(orgId),
+  ]);
   const marginVal = revenue.value - expenses.value;
   const marginPrev =
     revenue.previous != null && expenses.previous != null
       ? revenue.previous - expenses.previous
       : null;
-
-  const tickets = await countTickets(current);
-  const ticketsPrev = prev ? await countTickets(prev) : null;
   const avgTicket = tickets > 0 ? Math.round((revenue.value / tickets) * 100) / 100 : 0;
   const avgPrev =
     ticketsPrev && ticketsPrev > 0 && revenue.previous != null
       ? Math.round((revenue.previous / ticketsPrev) * 100) / 100
       : null;
-
-  const appointments = await kpiPair(countAppointments, current, prev);
-  const customers = kpi(await countActiveCustomers(orgId), null);
+  const customers = kpi(activeCustomers, null);
 
   return {
     period: filters.period,

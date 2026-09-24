@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { pool } from "@/lib/db/pool";
 import {
   generateTemporaryPassword,
   hashPassword,
@@ -7,8 +7,6 @@ import {
 import type { AppSessionUser, SessionUser } from "@/lib/auth/types";
 import type { AppRole } from "@/lib/rbac";
 import { writeAuditLog } from "@/lib/db/audit";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 type UserRow = {
   id: string;

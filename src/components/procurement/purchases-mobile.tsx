@@ -42,6 +42,7 @@ type Props = {
   onCreate: () => void;
   onReceived: () => void;
   onToast: (msg: string, kind?: "success" | "error" | "info") => void;
+  onOpenFull?: () => void;
 };
 
 export function PurchasesMobile({
@@ -70,6 +71,7 @@ export function PurchasesMobile({
   onCreate,
   onReceived,
   onToast,
+  onOpenFull,
 }: Props) {
   const [view, setView] = useState<MobileView>("list");
 
@@ -100,6 +102,7 @@ export function PurchasesMobile({
             financeHidden={financeHidden}
             onReceived={onReceived}
             onToast={onToast}
+            onOpenFull={onOpenFull}
           />
         </div>
       ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -139,6 +139,7 @@ export function SaasDashboard() {
   const [resourceCount, setResourceCount] = useState(0);
   const [waKpis, setWaKpis] = useState<WhatsAppKpis | null>(null);
   const [reviewKpis, setReviewKpis] = useState<ReviewKpis | null>(null);
+  const loadGen = useRef(0);
 
   const todayLabel = useMemo(
     () =>
@@ -153,87 +154,96 @@ export function SaasDashboard() {
   );
 
   const load = useCallback(async () => {
+    const gen = ++loadGen.current;
     setLoading(true);
     setError(null);
+    const customerPreset = period === "today" ? "month" : period;
+    const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
+    const dayStart = new Date(`${todayKey}T00:00:00+01:00`);
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
     try {
-      const customerPreset = period === "today" ? "month" : period;
-      const [
-        ov,
-        revenue,
-        apptsAnalytics,
-        customersData,
-        servicesData,
-        staffData,
-        reviewsData,
-        allAppts,
-        cashState,
-        billableList,
-        stockKpis,
-        tickets,
-        staffList,
-        wa,
-        reviewsDash,
-        resources,
-      ] = await Promise.all([
+      const [ov, revenue, apptsAnalytics, customersData, todayList] = await Promise.all([
         getAnalyticsOverview({ preset: period, compare: true }),
         getAnalyticsRevenue({ preset: period, compare: true }),
         getAnalyticsAppointments({ preset: "week", compare: false }),
         getAnalyticsCustomers({ preset: customerPreset, compare: false }),
-        getAnalyticsServices({ preset: customerPreset, compare: false }),
-        getAnalyticsStaff({ preset: customerPreset, compare: false }),
-        getAnalyticsReviews({ preset: customerPreset, compare: false }),
-        listAppointments(),
-        getCashRegister().catch(() => null),
-        listBillableAppointments().catch(() => []),
-        getStockKpis().catch(() => null),
-        listSupportTickets().catch(() => ({ items: [] })),
-        listStaff({ status: "ACTIVE", limit: 50 }).catch(() => ({
-          data: [],
-          pagination: { page: 1, limit: 50, total: 0, totalPages: 0 },
-        })),
-        getWhatsAppDashboard("pending").catch(() => null),
-        getReviewsDashboard().catch(() => null),
-        listResources({ active: true, limit: 50 }).catch(() => ({
-          data: [],
-          pagination: { page: 1, limit: 50, total: 0, totalPages: 0 },
-        })),
+        listAppointments({ from: dayStart.toISOString(), to: dayEnd.toISOString() }),
       ]);
 
+      if (gen !== loadGen.current) return;
       setOverview(ov);
       setDaily(revenue.daily);
       setRevenueTotals({ periodNet: revenue.totals.periodNet, prevMonth: revenue.totals.prevMonth });
       setAppointmentsAnalytics(apptsAnalytics);
       setCustomers(customersData);
-      setServices([...servicesData.items].sort((a, b) => b.revenue - a.revenue).slice(0, 5));
-      setStaffRows([...staffData.items].sort((a, b) => b.revenue - a.revenue).slice(0, 5));
-      setReviewsAnalytics(reviewsData);
-
-      const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
       setTodayAppts(
-        allAppts
-          .filter((a) => a.startAt.slice(0, 10) === todayKey && a.status !== "CANCELLED")
+        todayList
+          .filter((a) => a.status !== "CANCELLED")
           .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()),
       );
-      setCash(cashState);
-      setBillable({
-        remaining: billableList.reduce((s, a) => s + a.remaining, 0),
-        count: billableList.filter((a) => a.remaining > 0).length,
-      });
-      setStock(stockKpis);
-      const open = tickets.items.filter((t) =>
-        ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(t.status),
-      );
-      setOpenTickets(open.length);
-      setPlatformReplyTickets(open.filter((t) => t.lastSenderType === "PLATFORM").length);
-      setActiveStaff(staffList.data.length);
-      setResourceCount(resources.data.length);
-      setWaKpis(wa?.kpis ?? null);
-      setReviewKpis(reviewsDash?.kpis ?? null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Impossible de charger le tableau de bord.");
+      if (gen === loadGen.current) {
+        setError(e instanceof Error ? e.message : "Impossible de charger le tableau de bord.");
+      }
     } finally {
-      setLoading(false);
+      if (gen === loadGen.current) setLoading(false);
     }
+
+    if (gen !== loadGen.current) return;
+
+    const [
+      servicesData,
+      staffData,
+      reviewsData,
+      cashState,
+      billableList,
+      stockKpis,
+      tickets,
+      staffList,
+      wa,
+      reviewsDash,
+      resources,
+    ] = await Promise.all([
+      getAnalyticsServices({ preset: customerPreset, compare: false }).catch(() => ({ items: [] })),
+      getAnalyticsStaff({ preset: customerPreset, compare: false }).catch(() => ({ items: [] })),
+      getAnalyticsReviews({ preset: customerPreset, compare: false }).catch(() => null),
+      getCashRegister().catch(() => null),
+      listBillableAppointments().catch(() => []),
+      getStockKpis().catch(() => null),
+      listSupportTickets().catch(() => ({ items: [] })),
+      listStaff({ status: "ACTIVE", limit: 1 }).catch(() => ({
+        data: [],
+        pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
+      })),
+      getWhatsAppDashboard("pending").catch(() => null),
+      getReviewsDashboard().catch(() => null),
+      listResources({ active: true, limit: 1 }).catch(() => ({
+        data: [],
+        pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
+      })),
+    ]);
+
+    if (gen !== loadGen.current) return;
+
+    setServices([...servicesData.items].sort((a, b) => b.revenue - a.revenue).slice(0, 5));
+    setStaffRows([...staffData.items].sort((a, b) => b.revenue - a.revenue).slice(0, 5));
+    setReviewsAnalytics(reviewsData);
+    setCash(cashState);
+    setBillable({
+      remaining: billableList.reduce((s, a) => s + a.remaining, 0),
+      count: billableList.filter((a) => a.remaining > 0).length,
+    });
+    setStock(stockKpis);
+    const open = tickets.items.filter((t) =>
+      ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(t.status),
+    );
+    setOpenTickets(open.length);
+    setPlatformReplyTickets(open.filter((t) => t.lastSenderType === "PLATFORM").length);
+    setActiveStaff(staffList.pagination.total);
+    setResourceCount(resources.pagination.total);
+    setWaKpis(wa?.kpis ?? null);
+    setReviewKpis(reviewsDash?.kpis ?? null);
   }, [period]);
 
   useEffect(() => {

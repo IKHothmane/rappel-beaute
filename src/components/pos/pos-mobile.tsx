@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Barcode, Search, ShoppingBag, UserRound } from "lucide-react";
+import type { RefObject } from "react";
+import { Barcode, Package, Search, Sparkles, UserRound, Wallet } from "lucide-react";
 import {
   categoryCounts,
   filterPosCatalog,
@@ -15,7 +16,6 @@ import type { PosProductItem } from "@/types/pos";
 type Customer = { id: string; name: string; phone: string };
 
 type Props = {
-  orgName: string;
   cashOpen: boolean;
   cashHint: string;
   kpis: { revenue: number; count: number; average: number };
@@ -38,10 +38,11 @@ type Props = {
   total: number;
   onAdd: (p: PosProductItem) => void;
   onOpenCart: () => void;
+  ticketNo: number;
+  customerRef?: RefObject<HTMLInputElement | null>;
 };
 
 export function PosMobile({
-  orgName,
   cashOpen,
   cashHint,
   kpis,
@@ -64,6 +65,8 @@ export function PosMobile({
   total,
   onAdd,
   onOpenCart,
+  ticketNo,
+  customerRef,
 }: Props) {
   const counts = categoryCounts(products);
   const visible = filterPosCatalog(catalog.length ? catalog : products, search, category);
@@ -73,58 +76,78 @@ export function PosMobile({
   return (
     <div className="space-y-4 pb-8 lg:hidden">
       <section className="rounded-xl bg-[#FFEFF8] p-3 space-y-2">
-        <div className="flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wider">
+        <div className="flex items-center justify-between gap-2 text-[11px] font-semibold">
           <span className="flex min-w-0 items-center gap-1.5 truncate text-ink">
-            <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", cashOpen ? "bg-emerald-600" : "bg-ink/30")} />
+            <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", cashOpen ? "bg-emerald-500" : "bg-ink/30")} />
             <span className="truncate">{cashHint}</span>
           </span>
-          <span className="shrink-0 text-primary">POS</span>
+          <span className="shrink-0 rounded-full bg-white px-2 py-0.5 font-bold text-primary">POS Express</span>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
-          <KpiMini label="CA jour" value={formatMad(kpis.revenue)} />
+          <KpiMini label="CA Jour" value={formatMad(kpis.revenue)} tone="primary" />
           <KpiMini label="Ventes" value={String(kpis.count)} />
-          <KpiMini label="Panier moy." value={kpis.count ? formatMad(kpis.average) : "—"} />
+          <KpiMini label="Panier moy." value={kpis.count ? formatMad(kpis.average) : "—"} tone="gold" />
         </div>
         <form
-          className="relative"
+          className="flex items-center gap-1.5"
           onSubmit={(e) => {
             e.preventDefault();
             onSearchSubmit();
           }}
         >
-          <Search className="absolute left-3 top-3 h-5 w-5 text-ink/35" />
-          <input
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-            placeholder="Soin, SKU, cosmétique…"
-            className="h-11 w-full rounded-lg bg-white pl-10 pr-3 text-[13px] shadow-sm outline-none"
-          />
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-5 w-5 text-ink/35" />
+            <input
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+              placeholder="Soin, cosmétique, SKU…"
+              className="h-11 w-full rounded-lg bg-white pl-10 pr-3 text-[13px] shadow-sm outline-none"
+            />
+          </div>
+          <button
+            type="submit"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#F0DDE9] text-primary shadow-sm"
+            aria-label="Scanner"
+          >
+            <Barcode size={22} />
+          </button>
         </form>
       </section>
 
-      <section className="rounded-xl bg-white p-3 shadow-sm space-y-2">
+      <section className="rounded-xl bg-[#FCE9F4] p-3 shadow-sm space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">Cliente</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">Fiche cliente</p>
           {customer ? (
-            <button type="button" className="text-[12px] font-semibold text-ink/50" onClick={onAnonymous}>
-              Anonyme
+            <button type="button" className="rounded-lg bg-white px-2.5 py-1 text-[12px] font-semibold shadow-sm" onClick={onAnonymous}>
+              Changer
             </button>
           ) : null}
         </div>
         {customer ? (
-          <div className="rounded-lg bg-[#FFEFF8] p-2">
-            <p className="text-[16px] font-bold">{customer.name}</p>
-            {customer.phone ? <p className="text-[12px] text-ink/55">{customer.phone}</p> : null}
-            {loyaltyLine ? <p className="mt-1 text-[12px] text-[#7B5900]">{loyaltyLine}</p> : null}
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-white">
+              {customer.name
+                .split(" ")
+                .map((w) => w[0])
+                .slice(0, 2)
+                .join("")
+                .toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[16px] font-bold">{customer.name}</p>
+              {customer.phone ? <p className="truncate text-[12px] text-ink/55">{customer.phone}</p> : null}
+              {loyaltyLine ? <p className="mt-0.5 text-[12px] font-semibold text-[#7B5900]">{loyaltyLine}</p> : null}
+            </div>
           </div>
         ) : (
           <div className="relative">
             <UserRound className="absolute left-3 top-3 h-4 w-4 text-ink/35" />
             <input
+              ref={customerRef}
               value={customerQ}
               onChange={(e) => onCustomerQ(e.target.value)}
               placeholder="Rechercher une cliente…"
-              className="h-11 w-full rounded-lg bg-[#FFEFF8] pl-9 pr-3 text-[13px] outline-none"
+              className="h-11 w-full rounded-lg bg-white pl-9 pr-3 text-[13px] outline-none"
             />
             {customerHits.length > 0 ? (
               <ul className="mt-1 overflow-hidden rounded-lg border border-[#F0DDE9] bg-white text-[13px]">
@@ -147,13 +170,14 @@ export function PosMobile({
       </section>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        <CatPill active={!category} onClick={() => onCategory("")} label={`Tous ${products.length}`} />
+        <CatPill active={!category} onClick={() => onCategory("")} label="Tous" count={products.length} />
         {counts.map((c) => (
           <CatPill
             key={c.category}
             active={category === c.category}
             onClick={() => onCategory(c.category)}
-            label={`${c.label} ${c.count}`}
+            label={c.label}
+            count={c.count}
           />
         ))}
       </div>
@@ -167,7 +191,7 @@ export function PosMobile({
       ) : (
         <>
           {other.length > 0 ? (
-            <CatalogBlock title="Catalogue" items={other} onAdd={onAdd} />
+            <CatalogGrid title="Prestations cabine" items={other} onAdd={onAdd} />
           ) : null}
           {retail.length > 0 ? (
             <CatalogBlock title="Revente comptoir" items={retail} onAdd={onAdd} />
@@ -175,31 +199,86 @@ export function PosMobile({
         </>
       )}
 
-      <section className="rounded-2xl bg-[#F0DDE9] p-3 shadow-sm">
+      <section className="rounded-2xl bg-[#F0DDE9] p-3 shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-white">
               {cartCount}
             </span>
             <div>
-              <p className="text-[18px] font-bold">Ticket en cours</p>
-              <p className="text-[11px] text-ink/50">{orgName}</p>
+              <p className="text-[18px] font-bold">Ticket N° {ticketNo}</p>
+              <p className="text-[11px] text-ink/50">Cabine & produits</p>
             </div>
           </div>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[16px] font-bold">
+          <span>Total net</span>
+          <span className="text-primary">{formatMad(total)}</span>
         </div>
         <button
           type="button"
           onClick={onOpenCart}
-          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[14px] font-bold text-white"
+          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-[14px] font-bold text-white"
         >
-          <Barcode className="h-5 w-5" />
-          Encaisser · {formatMad(total)}
+          <Wallet className="h-5 w-5" />
+          Encaisser le ticket · {formatMad(total)}
         </button>
         <Link href="/cash-register/" className="mt-2 block text-center text-[12px] font-semibold text-primary">
           Caisse & registre
         </Link>
       </section>
     </div>
+  );
+}
+
+function CatalogGrid({
+  title,
+  items,
+  onAdd,
+}: {
+  title: string;
+  items: PosProductItem[];
+  onAdd: (p: PosProductItem) => void;
+}) {
+  return (
+    <section className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h2 className="text-[18px] font-bold">{title}</h2>
+        </div>
+        <span className="text-[11px] text-ink/45">Tap pour ajouter</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {items.map((p) => {
+          const state = productStockState(p);
+          return (
+            <div
+              key={p.id}
+              className={cn("flex flex-col justify-between rounded-xl bg-white p-2.5 shadow-sm", state === "out" && "opacity-50")}
+            >
+              <div>
+                <p className="line-clamp-2 text-[14px] font-semibold">{p.name}</p>
+                <p className="mt-0.5 text-[11px] text-ink/50">
+                  {p.brand || PRODUCT_UNIT_LABEL[p.unit as ProductUnit] || p.sku}
+                </p>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[16px] font-bold text-primary">{formatMad(p.salePrice)}</span>
+                <button
+                  type="button"
+                  disabled={state === "out"}
+                  onClick={() => onAdd(p)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FFD9DE] text-[16px] font-bold text-[#900037] disabled:bg-[#F0DDE9] disabled:text-ink/30"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -215,7 +294,7 @@ function CatalogBlock({
   return (
     <section className="space-y-2">
       <div className="flex items-center gap-1.5">
-        <ShoppingBag className="h-5 w-5 text-primary" />
+        <Package className="h-5 w-5 text-[#7B5900]" />
         <h2 className="text-[18px] font-bold">{title}</h2>
       </div>
       <div className="space-y-1.5">
@@ -263,7 +342,17 @@ function CatalogBlock({
   );
 }
 
-function CatPill({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+function CatPill({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}) {
   return (
     <button
       type="button"
@@ -273,16 +362,23 @@ function CatPill({ active, onClick, label }: { active: boolean; onClick: () => v
         active ? "bg-primary text-white shadow-sm" : "bg-[#F0DDE9] text-ink",
       )}
     >
-      {label}
+      {label} <span className={cn("ml-0.5 text-[12px]", active ? "opacity-80" : "text-ink/50")}>{count}</span>
     </button>
   );
 }
 
-function KpiMini({ label, value }: { label: string; value: string }) {
+function KpiMini({ label, value, tone }: { label: string; value: string; tone?: "primary" | "gold" }) {
   return (
     <div className="rounded-lg bg-white p-2 text-center shadow-sm">
       <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">{label}</p>
-      <p className="mt-0.5 text-[15px] font-bold text-ink">{value}</p>
+      <p
+        className={cn(
+          "mt-0.5 text-[15px] font-bold",
+          tone === "primary" ? "text-primary" : tone === "gold" ? "text-[#7B5900]" : "text-ink",
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }

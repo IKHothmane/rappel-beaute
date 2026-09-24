@@ -14,7 +14,8 @@ import {
   Truck,
   Wallet,
 } from "lucide-react";
-import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser } from "@/components/auth/session-provider";
+import { PurchaseDetailView } from "@/components/procurement/purchase-detail-view";
 import { PurchaseFocusPanel } from "@/components/procurement/purchase-focus-panel";
 import { PurchaseForm } from "@/components/procurement/purchase-form";
 import {
@@ -67,6 +68,7 @@ export function PurchasesPageView() {
   const [catalog, setCatalog] = useState<ProductListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -145,13 +147,13 @@ export function PurchasesPageView() {
   }
 
   async function handleCreate(payload: {
-    supplierId: string;
+    supplierId?: string;
     notes?: string;
     submit: boolean;
     items: PurchaseItemInput[];
   }) {
-    if (!payload.supplierId || payload.items.some((l) => !l.productId || l.quantityOrdered <= 0)) {
-      toast("Fournisseur et lignes valides requis.", "error");
+    if (payload.items.some((l) => !l.productId || l.quantityOrdered <= 0)) {
+      toast("Ajoutez au moins une ligne produit valide.", "error");
       return;
     }
     setSubmitting(true);
@@ -194,13 +196,11 @@ export function PurchasesPageView() {
         onCreate={() => setDrawerOpen(true)}
         onReceived={() => void refresh()}
         onToast={toast}
+        onOpenFull={() => setDetailOpen(true)}
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
         <section className="flex flex-col gap-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40">
-            {user.orgName || "Votre institut"} · {ROLE_LABEL[user.role]}
-          </p>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink">
@@ -379,7 +379,7 @@ export function PurchasesPageView() {
                             {p.number}
                           </td>
                           <td className="px-4 py-3.5">
-                            {showSuppliers ? (
+                            {showSuppliers && p.supplierId ? (
                               <Link
                                 href={`/suppliers/${p.supplierId}/`}
                                 className="font-semibold text-primary hover:underline"
@@ -422,13 +422,17 @@ export function PurchasesPageView() {
                                   Réceptionner
                                 </button>
                               ) : (
-                                <Link
-                                  href={`/purchases/${p.id}/`}
+                                <button
+                                  type="button"
                                   className="rounded-md bg-[#F6E3EF] px-2.5 py-1 text-[11px] font-semibold text-ink"
-                                  onClick={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedId(p.id);
+                                    setDetailOpen(true);
+                                  }}
                                 >
                                   Détail
-                                </Link>
+                                </button>
                               )}
                             </div>
                           </td>
@@ -479,6 +483,7 @@ export function PurchasesPageView() {
                 financeHidden={financeHidden}
                 onReceived={() => void refresh()}
                 onToast={toast}
+                onOpenFull={() => setDetailOpen(true)}
               />
             ) : (
               <div className="rounded-xl bg-white p-8 text-center text-sm text-ink/40 shadow-sm">
@@ -488,6 +493,22 @@ export function PurchasesPageView() {
           </div>
         </div>
       </div>
+
+      <Drawer
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={selected ? selected.number : "Fiche commande"}
+        className="max-w-xl"
+      >
+        {selected ? (
+          <PurchaseDetailView
+            key={selected.id}
+            purchaseId={selected.id}
+            embedded
+            onChanged={() => void refresh()}
+          />
+        ) : null}
+      </Drawer>
 
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Nouvelle commande">
         <PurchaseForm

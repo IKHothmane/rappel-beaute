@@ -1,8 +1,6 @@
-import { Pool } from "pg";
+import { pool } from "@/lib/db/pool";
 import type { PlanCode, PlanDto } from "@/types/subscription";
 import { parsePlanFeatures } from "@/lib/subscriptions/features";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 type PlanRow = {
   id: string;

@@ -99,6 +99,27 @@ export async function updateResource(
   }
 }
 
+export async function deleteResource(
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/resources/${id}/`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: (data as { error?: string }).error ?? "Impossible de supprimer la ressource.",
+      };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Erreur réseau" };
+  }
+}
+
 export async function createResourceMaintenance(
   resourceId: string,
   input: CreateMaintenanceInput,

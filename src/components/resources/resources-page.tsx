@@ -45,6 +45,7 @@ import { listAppointments } from "@/modules/appointments/service";
 import {
   createResource,
   createResourceMaintenance,
+  deleteResource,
   getResource,
   listResources,
   updateResource,
@@ -276,6 +277,25 @@ export function ResourcesPageView() {
     refresh();
   }
 
+  async function handleDelete(row: ResourceListItem) {
+    if (!canWrite) return;
+    const ok = window.confirm(`Supprimer « ${row.name} » ? Elle disparaîtra du catalogue.`);
+    if (!ok) {
+      setMenuId(null);
+      return;
+    }
+    const result = await deleteResource(row.id);
+    if (!result.ok) {
+      toast(result.error, "error");
+      setMenuId(null);
+      return;
+    }
+    toast("Ressource supprimée.", "success");
+    setMenuId(null);
+    if (selectedId === row.id) setSelectedId(null);
+    refresh();
+  }
+
   function openMaintenance() {
     if (!selected) {
       toast("Sélectionnez d’abord une ressource.", "info");
@@ -323,6 +343,7 @@ export function ResourcesPageView() {
         onCreate={() => void openCreate()}
         onEdit={(id) => void openEdit(id)}
         onToggle={(row) => void handleToggle(row)}
+        onDelete={(row) => void handleDelete(row)}
         onMaintenance={openMaintenance}
       />
 
@@ -558,6 +579,7 @@ export function ResourcesPageView() {
                   onMenu={() => setMenuId(menuId === r.id ? null : r.id)}
                   onEdit={() => void openEdit(r.id)}
                   onToggle={() => void handleToggle(r)}
+                  onDelete={() => void handleDelete(r)}
                 />
               ))
             )}
@@ -574,7 +596,6 @@ export function ResourcesPageView() {
                 insight={insight}
                 canWrite={canWrite}
                 onEdit={() => void openEdit(selected.id)}
-                onToggle={() => void handleToggle(selected)}
                 onMaintenance={openMaintenance}
               />
             ) : (
@@ -647,6 +668,7 @@ function MasterCard({
   onMenu,
   onEdit,
   onToggle,
+  onDelete,
 }: {
   resource: ResourceListItem;
   status: ReturnType<typeof liveStatus>;
@@ -660,6 +682,7 @@ function MasterCard({
   onMenu: () => void;
   onEdit: () => void;
   onToggle: () => void;
+  onDelete: () => void;
 }) {
   const Icon = resourceTypeIcon(r.type);
   const left = current ? remainingMinutes(current.endAt) : null;
@@ -758,11 +781,15 @@ function MasterCard({
           <button type="button" onClick={onEdit} className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]">
             Modifier
           </button>
-          <Link href={`/resources/${r.id}/`} className="block px-3 py-2 text-[13px] hover:bg-[#FFEFF8]">
-            Fiche complète
-          </Link>
           <button type="button" onClick={onToggle} className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]">
             {r.active ? "Désactiver" : "Réactiver"}
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="block w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50"
+          >
+            Supprimer
           </button>
         </div>
       ) : null}

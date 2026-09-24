@@ -13,7 +13,7 @@ import {
   Sparkles,
   Wallet,
 } from "lucide-react";
-import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser } from "@/components/auth/session-provider";
 import { SupplierFocusPanel } from "@/components/procurement/supplier-focus-panel";
 import { SupplierForm } from "@/components/procurement/supplier-form";
 import {
@@ -29,7 +29,6 @@ import { canAccessNav, canWriteStock } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 import { listProducts } from "@/modules/inventory/service";
 import {
-  archiveSupplier,
   createSupplier,
   formatMad,
   getSupplier,
@@ -135,18 +134,6 @@ export function SuppliersPageView() {
     refresh();
   }
 
-  async function handleArchive() {
-    if (!selectedId) return;
-    if (!confirm("Archiver ce fournisseur ?")) return;
-    const result = await archiveSupplier(selectedId);
-    if (!result.ok) {
-      toast(result.error, "error");
-      return;
-    }
-    toast("Fournisseur archivé.", "success");
-    refresh();
-  }
-
   return (
     <div className="flex flex-col gap-5 pb-8">
       <SuppliersMobile
@@ -173,16 +160,10 @@ export function SuppliersPageView() {
         catalog={catalog}
         onCreate={() => void openCreate()}
         onEdit={() => void openEdit()}
-        onArchive={() => void handleArchive()}
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
         <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40">
-              {user.orgName || "Votre institut"} · {ROLE_LABEL[user.role]}
-            </p>
-          </div>
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink">
@@ -463,7 +444,6 @@ export function SuppliersPageView() {
                 showPurchases={showPurchases}
                 catalog={catalog}
                 onEdit={() => void openEdit(selected.id)}
-                onArchive={() => void handleArchive()}
               />
             ) : (
               <div className="rounded-2xl bg-white p-8 text-center text-sm text-ink/40 shadow-sm">

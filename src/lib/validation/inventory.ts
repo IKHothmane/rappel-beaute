@@ -34,9 +34,10 @@ export function validateCreateProduct(body: unknown): ValidationResult<CreatePro
   }
   const raw = body as Record<string, unknown>;
   const name = String(raw.name ?? "").trim();
-  const sku = String(raw.sku ?? "").trim().toUpperCase();
+  const sku =
+    String(raw.sku ?? "").trim().toUpperCase() ||
+    `PRD-${Date.now().toString(36).toUpperCase()}`;
   if (!name) errors.name = "Le nom est obligatoire.";
-  if (!sku) errors.sku = "Le SKU est obligatoire.";
 
   if (Object.keys(errors).length) return { ok: false, errors };
 
@@ -53,8 +54,8 @@ export function validateCreateProduct(body: unknown): ValidationResult<CreatePro
       minStock: raw.minStock != null ? Number(raw.minStock) : 0,
       maxStock: raw.maxStock != null && raw.maxStock !== "" ? Number(raw.maxStock) : undefined,
       supplierName: raw.supplierName ? String(raw.supplierName).trim() : undefined,
-      consumable: raw.consumable !== false,
-      sellable: Boolean(raw.sellable),
+      consumable: raw.consumable === undefined ? true : Boolean(raw.consumable),
+      sellable: raw.sellable === undefined ? true : Boolean(raw.sellable),
       active: raw.active !== false,
       notes: raw.notes ? String(raw.notes).trim() : undefined,
       initialStock:

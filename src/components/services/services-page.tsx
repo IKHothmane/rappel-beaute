@@ -217,7 +217,7 @@ export function ServicesPageView() {
 
   async function confirmDelete(row: ServiceListItem) {
     if (!canWrite) return;
-    const ok = window.confirm(`Supprimer « ${row.name} » ? Cette action est définitive.`);
+    const ok = window.confirm(`Supprimer « ${row.name} » ? Le service disparaît du catalogue. Les rendez-vous déjà pris conservent le nom du soin.`);
     if (!ok) {
       setMenuId(null);
       return;

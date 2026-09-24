@@ -4,11 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
-  PauseCircle,
   Pencil,
   Shield,
   Sparkles,
-  Timer,
   Wrench,
 } from "lucide-react";
 import {
@@ -40,7 +38,6 @@ type ResourceFocusPanelProps = {
   insight: string;
   canWrite: boolean;
   onEdit: () => void;
-  onToggle: () => void;
   onMaintenance: () => void;
 };
 
@@ -53,7 +50,6 @@ export function ResourceFocusPanel({
   insight,
   canWrite,
   onEdit,
-  onToggle,
   onMaintenance,
 }: ResourceFocusPanelProps) {
   const [loading, setLoading] = useState(true);
@@ -134,24 +130,14 @@ export function ResourceFocusPanel({
             </div>
           </div>
           {canWrite ? (
-            <div className="flex shrink-0 gap-1">
-              <button
-                type="button"
-                onClick={onEdit}
-                title="Modifier"
-                className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-primary"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={onToggle}
-                title={resource.active ? "Désactiver" : "Réactiver"}
-                className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-amber-700"
-              >
-                <PauseCircle size={16} />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onEdit}
+              title="Modifier"
+              className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-primary"
+            >
+              <Pencil size={16} />
+            </button>
           ) : null}
         </div>
 
@@ -268,31 +254,15 @@ export function ResourceFocusPanel({
         </div>
 
         {canWrite ? (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onMaintenance}
-              className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
-            >
-              <Wrench size={15} className="text-[#7B5900]" />
-              Maintenance
-            </button>
-            <Link
-              href={`/resources/${resourceId}/`}
-              className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#F0DDE9] text-[13px] font-semibold text-primary"
-            >
-              <Timer size={15} />
-              Fiche complète
-            </Link>
-          </div>
-        ) : (
-          <Link
-            href={`/resources/${resourceId}/`}
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-[#F0DDE9] text-[13px] font-semibold text-primary"
+          <button
+            type="button"
+            onClick={onMaintenance}
+            className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
           >
-            Fiche complète
-          </Link>
-        )}
+            <Wrench size={15} className="text-[#7B5900]" />
+            Maintenance
+          </button>
+        ) : null}
       </div>
     </div>
   );

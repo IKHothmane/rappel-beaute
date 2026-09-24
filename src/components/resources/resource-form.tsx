@@ -24,7 +24,6 @@ export function ResourceForm({
 }: ResourceFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [type, setType] = useState<ResourceType>(initial?.type ?? "CABINE");
-  const [capacity, setCapacity] = useState(initial?.capacity?.toString() ?? "1");
   const [active, setActive] = useState(initial?.active ?? true);
   const [serviceIds, setServiceIds] = useState<string[]>(
     initial?.services?.map((s) => s.serviceId) ?? [],
@@ -39,7 +38,7 @@ export function ResourceForm({
     onSubmit({
       name: name.trim(),
       type,
-      capacity: Number(capacity) || 1,
+      capacity: initial?.capacity ?? 1,
       active,
       serviceIds: services ? serviceIds : undefined,
     });
@@ -52,28 +51,16 @@ export function ResourceForm({
         <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Cabine Privilège 3" />
       </label>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Type</span>
-          <Select value={type} onChange={(e) => setType(e.target.value as ResourceType)}>
-            {RESOURCE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {RESOURCE_TYPE_LABEL[t]}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Capacité</span>
-          <Input
-            type="number"
-            min={1}
-            max={6}
-            value={capacity}
-            onChange={(e) => setCapacity(e.target.value)}
-          />
-        </label>
-      </div>
+      <label className="block text-sm">
+        <span className="mb-1.5 block font-medium">Type</span>
+        <Select value={type} onChange={(e) => setType(e.target.value as ResourceType)}>
+          {RESOURCE_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {RESOURCE_TYPE_LABEL[t]}
+            </option>
+          ))}
+        </Select>
+      </label>
 
       {services && services.length > 0 ? (
         <div>

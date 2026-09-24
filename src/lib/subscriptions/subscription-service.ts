@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
-import { Pool, type PoolClient } from "pg";
+import type { PoolClient } from "pg";
+import { pool } from "@/lib/db/pool";
 import {
   APPOINTMENT_COUNT_STATUSES,
   type SubscriptionDto,
@@ -7,8 +8,6 @@ import {
   type UsageDto,
 } from "@/types/subscription";
 import { parsePlanFeatures } from "@/lib/subscriptions/features";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const ACTIVE_SUB_STATUSES: SubscriptionStatus[] = ["TRIAL", "ACTIVE", "PAST_DUE"];
 

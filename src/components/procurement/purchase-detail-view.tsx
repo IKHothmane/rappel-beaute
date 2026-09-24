@@ -22,7 +22,15 @@ import type { PurchaseDetail } from "@/types/procurement";
 
 type RecvDraft = Record<string, { quantity: string; lotNumber: string; expiresAt: string }>;
 
-export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
+export function PurchaseDetailView({
+  purchaseId,
+  embedded,
+  onChanged,
+}: {
+  purchaseId: string;
+  embedded?: boolean;
+  onChanged?: () => void;
+}) {
   const { toast } = useToast();
   const user = useCurrentUser();
   const canWrite = canWriteStock(user.role);
@@ -83,6 +91,7 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
       return;
     }
     toast("Commande envoyée.", "success");
+    onChanged?.();
     refresh();
   }
 
@@ -96,6 +105,7 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
       return;
     }
     toast("Commande annulée.", "success");
+    onChanged?.();
     refresh();
   }
 
@@ -130,14 +140,17 @@ export function PurchaseDetailView({ purchaseId }: { purchaseId: string }) {
       result.created ? "Réception enregistrée (mouvements de stock créés)." : "Réception déjà enregistrée.",
       "success",
     );
+    onChanged?.();
     refresh();
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-8">
-      <Link href="/purchases/" className="text-sm font-semibold text-primary">
-        ← Achats
-      </Link>
+    <div className={cn("flex flex-col gap-5", embedded ? "pb-2" : "pb-8")}>
+      {embedded ? null : (
+        <Link href="/purchases/" className="text-sm font-semibold text-primary">
+          ← Achats
+        </Link>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>

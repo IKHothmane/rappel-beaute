@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode, type RefObject, useEffect, useState } from "react";
-import { LayoutList, Plus, Search, ShoppingBag, SlidersHorizontal, Sparkles } from "lucide-react";
+import { LayoutList, MoreHorizontal, Plus, Search, ShoppingBag, SlidersHorizontal, Sparkles } from "lucide-react";
 import { ProductFocusPanel } from "@/components/inventory/product-focus-panel";
 import {
   alertChipClass,
@@ -50,6 +50,7 @@ type ProductsMobileProps = {
   onCreate: () => void;
   onEdit: (id: string) => void;
   onToggle: (row: ProductListItem) => void;
+  onDelete: (row: ProductListItem) => void;
   onAdjust: () => void;
 };
 
@@ -84,6 +85,7 @@ export function ProductsMobile({
   onCreate,
   onEdit,
   onToggle,
+  onDelete,
   onAdjust,
 }: ProductsMobileProps) {
   const [view, setView] = useState<MobileView>("list");
@@ -287,6 +289,9 @@ export function ProductsMobile({
                 financeHidden={financeHidden}
                 canWrite={canWrite}
                 onOpen={() => openFocus(p.id)}
+                onEdit={() => onEdit(p.id)}
+                onToggle={() => onToggle(p)}
+                onDelete={() => onDelete(p)}
                 onAdjust={onAdjust}
               />
             ))
@@ -300,7 +305,6 @@ export function ProductsMobile({
           canWrite={canWrite}
           financeHidden={financeHidden}
           onEdit={() => onEdit(selected.id)}
-          onToggle={() => onToggle(selected)}
           onAdjust={onAdjust}
         />
       ) : null}
@@ -314,6 +318,9 @@ function ProductCard({
   financeHidden,
   canWrite,
   onOpen,
+  onEdit,
+  onToggle,
+  onDelete,
   onAdjust,
 }: {
   product: ProductListItem;
@@ -321,11 +328,15 @@ function ProductCard({
   financeHidden: boolean;
   canWrite: boolean;
   onOpen: () => void;
+  onEdit: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
   onAdjust: () => void;
 }) {
   const margin = productMargin(p);
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <article className={cn("rounded-xl bg-white p-3.5 shadow-sm", selected && "ring-1 ring-primary/25")}>
+    <article className={cn("relative rounded-xl bg-white p-3.5 shadow-sm", selected && "ring-1 ring-primary/25")}>
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={onOpen} className="min-w-0 text-left">
           <p className="truncate text-[16px] font-bold text-ink">{p.name}</p>
@@ -333,10 +344,56 @@ function ProductCard({
             {PRODUCT_CATEGORY_LABEL[p.category]} · {p.sku}
           </p>
         </button>
-        <span className={cn("inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold", alertChipClass(p.alert))}>
-          {STOCK_ALERT_LABEL[p.alert]}
-        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold", alertChipClass(p.alert))}>
+            {STOCK_ALERT_LABEL[p.alert]}
+          </span>
+          {canWrite ? (
+            <button
+              type="button"
+              aria-label="Actions"
+              onClick={() => setMenuOpen((open) => !open)}
+              className="rounded-lg p-1.5 text-ink/40"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+          ) : null}
+        </div>
       </div>
+      {menuOpen && canWrite ? (
+        <div className="absolute right-3 top-12 z-20 min-w-[160px] rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5">
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              onEdit();
+            }}
+            className="block w-full px-3 py-2 text-left text-[13px]"
+          >
+            Modifier
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              onToggle();
+            }}
+            className="block w-full px-3 py-2 text-left text-[13px]"
+          >
+            {p.active ? "Désactiver" : "Réactiver"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              onDelete();
+            }}
+            className="block w-full px-3 py-2 text-left text-[13px] text-red-600"
+          >
+            Supprimer
+          </button>
+        </div>
+      ) : null}
       <div className="mt-2 flex items-center justify-between text-[12px] text-ink/55">
         <span>
           {formatQty(p.stock, p.unit)} / min {p.minStock}

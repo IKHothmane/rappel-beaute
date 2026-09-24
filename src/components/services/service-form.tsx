@@ -63,47 +63,46 @@ export function ServiceForm({
         />
       </label>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Prix (MAD) *</span>
-          <Input
-            type="number"
-            min={0}
-            step={0.01}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-            disabled={!canEditPrice}
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Durée *</span>
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            {DURATION_PRESETS.map((min) => (
-              <button
-                key={min}
-                type="button"
-                onClick={() => setDurationMin(String(min))}
-                className={cn(
-                  "rounded-lg px-3 py-1.5 text-[12px] font-semibold",
-                  Number(durationMin) === min
-                    ? "bg-primary text-white shadow-sm"
-                    : "bg-[#FCE9F4] text-ink hover:bg-[#F6E3EF]",
-                )}
-              >
-                {min} min
-              </button>
-            ))}
-          </div>
-          <Input
-            type="number"
-            min={1}
-            value={durationMin}
-            onChange={(e) => setDurationMin(e.target.value)}
-            required
-          />
-        </label>
-      </div>
+      <label className="block text-sm">
+        <span className="mb-1.5 block font-medium">Prix (MAD) *</span>
+        <Input
+          type="number"
+          min={0}
+          step={0.01}
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          required
+          disabled={!canEditPrice}
+        />
+      </label>
+
+      <label className="block text-sm">
+        <span className="mb-1.5 block font-medium">Durée *</span>
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {DURATION_PRESETS.map((min) => (
+            <button
+              key={min}
+              type="button"
+              onClick={() => setDurationMin(String(min))}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-[12px] font-semibold",
+                Number(durationMin) === min
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-[#FCE9F4] text-ink hover:bg-[#F6E3EF]",
+              )}
+            >
+              {min} min
+            </button>
+          ))}
+        </div>
+        <Input
+          type="number"
+          min={1}
+          value={durationMin}
+          onChange={(e) => setDurationMin(e.target.value)}
+          required
+        />
+      </label>
 
       <div>
         <span className="mb-1.5 block text-sm font-medium">Employées autorisées</span>
@@ -119,18 +118,15 @@ export function ServiceForm({
           type="button"
           role="switch"
           aria-checked={active}
+          aria-label={active ? "Désactiver le service" : "Activer le service"}
           onClick={() => setActive((v) => !v)}
           className={cn(
-            "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-            active ? "bg-emerald-600" : "bg-ink/20",
+            "inline-flex h-7 w-12 shrink-0 items-center rounded-full border-0 p-0.5 shadow-inner transition-colors",
+            "appearance-none outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            active ? "justify-end bg-emerald-600" : "justify-start bg-ink/25",
           )}
         >
-          <span
-            className={cn(
-              "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-              active ? "translate-x-5" : "translate-x-0.5",
-            )}
-          />
+          <span className="block h-6 w-6 rounded-full bg-white shadow-sm" />
         </button>
       </div>
 

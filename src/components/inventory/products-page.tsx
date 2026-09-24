@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Download,
-  Eye,
   LayoutGrid,
   MoreHorizontal,
   Package,
@@ -16,7 +15,7 @@ import {
   Truck,
   Wallet,
 } from "lucide-react";
-import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser } from "@/components/auth/session-provider";
 import { ProductFocusPanel } from "@/components/inventory/product-focus-panel";
 import { ProductForm } from "@/components/inventory/product-form";
 import {
@@ -24,7 +23,6 @@ import {
   alertChipClass,
   exportProductsCsv,
   isLowMargin,
-  productMargin,
   STOCK_ALERT_LABEL,
   stockFillPercent,
   usageLabel,
@@ -41,6 +39,7 @@ import { getAnalyticsInventory } from "@/modules/analytics/service";
 import {
   createMovement,
   createProduct,
+  deleteProduct,
   formatMad,
   formatQty,
   getProduct,
@@ -238,7 +237,9 @@ export function ProductsPageView() {
       return;
     }
     setDrawerOpen(false);
+    const createdId = !editing ? result.product.id : null;
     setEditing(null);
+    if (createdId) setSelectedId(createdId);
     toast(editing ? "Produit mis à jour." : "Produit créé.", "success");
     refresh();
   }
@@ -252,6 +253,25 @@ export function ProductsPageView() {
     }
     toast(row.active ? "Produit désactivé." : "Produit réactivé.", "success");
     setMenuId(null);
+    refresh();
+  }
+
+  async function handleDelete(row: ProductListItem) {
+    if (!canWrite) return;
+    const ok = window.confirm(`Supprimer « ${row.name} » ? Il disparaîtra du catalogue.`);
+    if (!ok) {
+      setMenuId(null);
+      return;
+    }
+    const result = await deleteProduct(row.id);
+    if (!result.ok) {
+      toast(result.error, "error");
+      setMenuId(null);
+      return;
+    }
+    toast("Produit supprimé.", "success");
+    setMenuId(null);
+    if (selectedId === row.id) setSelectedId(null);
     refresh();
   }
 
@@ -296,19 +316,12 @@ export function ProductsPageView() {
         onCreate={() => void openCreate()}
         onEdit={(id) => void openEdit(id)}
         onToggle={(row) => void handleToggle(row)}
+        onDelete={(row) => void handleDelete(row)}
         onAdjust={openAdjust}
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
         <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40">
-              {user.orgName || "Votre institut"} · {ROLE_LABEL[user.role]}
-            </p>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFEFF8] px-2.5 py-1 text-[11px] font-medium text-ink/55">
-              Stock par mouvements
-            </span>
-          </div>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink lg:text-[32px]">
@@ -539,34 +552,59 @@ export function ProductsPageView() {
             ) : filtered.length === 0 ? (
               <p className="py-12 text-center text-sm text-ink/45">Aucun produit trouvé.</p>
             ) : viewMode === "grid" ? (
-              filtered.map((p) => (
-                <article
-                  key={p.id}
-                  onClick={() => {
-                    setSelectedId(p.id);
-                    setMenuId(null);
-                  }}
-                  className={cn(
-                    "cursor-pointer rounded-xl bg-white p-4 shadow-sm",
-                    selected?.id === p.id && "ring-1 ring-primary/15",
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="text-[16px] font-bold text-ink">{p.name}</h3>
-                      <p className="text-[12px] text-ink/45">
-                        {p.sku} · {PRODUCT_CATEGORY_LABEL[p.category]}
-                      </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {filtered.map((p) => (
+                  <article
+                    key={p.id}
+                    onClick={() => {
+                      setSelectedId(p.id);
+                      setMenuId(null);
+                    }}
+                    className={cn(
+                      "relative cursor-pointer rounded-xl bg-white p-4 shadow-sm",
+                      selected?.id === p.id && "ring-1 ring-primary/15",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-[16px] font-bold text-ink">{p.name}</h3>
+                        <p className="text-[12px] text-ink/45">
+                          {p.sku} · {PRODUCT_CATEGORY_LABEL[p.category]}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", alertChipClass(p.alert))}>
+                          {STOCK_ALERT_LABEL[p.alert]}
+                        </span>
+                        {canWrite ? (
+                          <button
+                            type="button"
+                            aria-label="Actions"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuId(menuId === p.id ? null : p.id);
+                            }}
+                            className="rounded-lg p-1.5 text-ink/40 hover:bg-[#FCE9F4] hover:text-ink"
+                          >
+                            <MoreHorizontal size={16} />
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
-                    <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", alertChipClass(p.alert))}>
-                      {STOCK_ALERT_LABEL[p.alert]}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-[13px] text-ink/55">
-                    {formatQty(p.stock, p.unit)} · {usageLabel(p)}
-                  </p>
-                </article>
-              ))
+                    <p className="mt-2 text-[13px] text-ink/55">
+                      {formatQty(p.stock, p.unit)} · {usageLabel(p)}
+                    </p>
+                    {menuId === p.id && canWrite ? (
+                      <ProductActionsMenu
+                        active={p.active}
+                        onEdit={() => void openEdit(p.id)}
+                        onToggle={() => void handleToggle(p)}
+                        onDelete={() => void handleDelete(p)}
+                      />
+                    ) : null}
+                  </article>
+                ))}
+              </div>
             ) : (
               <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
                 <table className="w-full text-left text-sm">
@@ -579,16 +617,13 @@ export function ProductsPageView() {
                         <>
                           <th className="px-3 py-3 text-right font-semibold">Achat</th>
                           <th className="px-3 py-3 text-right font-semibold">Vente</th>
-                          <th className="px-3 py-3 text-right font-semibold">Marge</th>
                         </>
                       ) : null}
                       <th className="px-4 py-3 text-right font-semibold"> </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((p) => {
-                      const m = productMargin(p);
-                      return (
+                    {filtered.map((p) => (
                         <tr
                           key={p.id}
                           onClick={() => {
@@ -629,72 +664,33 @@ export function ProductsPageView() {
                               <td className="px-3 py-3 text-right font-semibold">
                                 {p.salePrice != null ? formatMad(p.salePrice) : "—"}
                               </td>
-                              <td className="px-3 py-3 text-right">
-                                {m ? (
-                                  <span className={m.pct < 25 ? "font-bold text-red-700" : "font-bold text-emerald-700"}>
-                                    {m.pct.toFixed(0)} %
-                                  </span>
-                                ) : (
-                                  <span className="text-ink/35">—</span>
-                                )}
-                              </td>
                             </>
                           ) : null}
                           <td className="relative px-4 py-3 text-right">
-                            <div className="inline-flex items-center gap-1">
+                            {canWrite ? (
                               <button
                                 type="button"
-                                title="Fiche"
+                                aria-label="Actions"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedId(p.id);
+                                  setMenuId(menuId === p.id ? null : p.id);
                                 }}
-                                className="rounded-lg p-1.5 text-ink/40 hover:bg-[#FCE9F4] hover:text-primary"
+                                className="rounded-lg p-1.5 text-ink/40 hover:bg-[#FCE9F4] hover:text-ink"
                               >
-                                <Eye size={16} />
+                                <MoreHorizontal size={16} />
                               </button>
-                              {canWrite ? (
-                                <button
-                                  type="button"
-                                  aria-label="Actions"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setMenuId(menuId === p.id ? null : p.id);
-                                  }}
-                                  className="rounded-lg p-1.5 text-ink/40 hover:bg-[#FCE9F4] hover:text-ink"
-                                >
-                                  <MoreHorizontal size={16} />
-                                </button>
-                              ) : null}
-                            </div>
+                            ) : null}
                             {menuId === p.id && canWrite ? (
-                              <div
-                                className="absolute right-4 top-12 z-10 min-w-[160px] rounded-xl bg-white py-1 text-left shadow-lg ring-1 ring-black/5"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => void openEdit(p.id)}
-                                  className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]"
-                                >
-                                  Modifier
-                                </button>
-                                <Link href={`/products/${p.id}/`} className="block px-3 py-2 text-[13px] hover:bg-[#FFEFF8]">
-                                  Fiche complète
-                                </Link>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleToggle(p)}
-                                  className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]"
-                                >
-                                  {p.active ? "Désactiver" : "Réactiver"}
-                                </button>
-                              </div>
+                              <ProductActionsMenu
+                                active={p.active}
+                                onEdit={() => void openEdit(p.id)}
+                                onToggle={() => void handleToggle(p)}
+                                onDelete={() => void handleDelete(p)}
+                              />
                             ) : null}
                           </td>
                         </tr>
-                      );
-                    })}
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -710,7 +706,6 @@ export function ProductsPageView() {
                 canWrite={canWrite}
                 financeHidden={financeHidden}
                 onEdit={() => void openEdit(selected.id)}
-                onToggle={() => void handleToggle(selected)}
                 onAdjust={openAdjust}
               />
             ) : (
@@ -772,6 +767,39 @@ export function ProductsPageView() {
           <p className="text-sm text-ink/50">Sélectionnez un produit.</p>
         )}
       </Drawer>
+    </div>
+  );
+}
+
+function ProductActionsMenu({
+  active,
+  onEdit,
+  onToggle,
+  onDelete,
+}: {
+  active: boolean;
+  onEdit: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div
+      className="absolute right-3 top-12 z-20 min-w-[160px] rounded-xl bg-white py-1 text-left shadow-lg ring-1 ring-black/5"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button type="button" onClick={onEdit} className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]">
+        Modifier
+      </button>
+      <button type="button" onClick={onToggle} className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]">
+        {active ? "Désactiver" : "Réactiver"}
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        className="block w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50"
+      >
+        Supprimer
+      </button>
     </div>
   );
 }

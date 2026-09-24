@@ -1,9 +1,5 @@
-import { Pool } from "pg";
+import { pool } from "@/lib/db/pool";
 import type { Appointment, CreateAppointmentInput } from "@/types/appointment";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
 
 export type AppointmentRow = {
   id: string;
@@ -11,7 +7,7 @@ export type AppointmentRow = {
   customerId: string;
   customerFirstName: string | null;
   customerLastName: string | null;
-  serviceId: string;
+  serviceId: string | null;
   serviceName: string | null;
   staffId: string;
   staffFirstName: string | null;
@@ -36,7 +32,7 @@ const SELECT = `
     c."firstName" AS "customerFirstName",
     c."lastName" AS "customerLastName",
     a."serviceId",
-    s.name AS "serviceName",
+    COALESCE(s.name, a."serviceNameSnapshot") AS "serviceName",
     a."staffId",
     st."firstName" AS "staffFirstName",
     st."lastName" AS "staffLastName",
@@ -72,7 +68,7 @@ export function rowToDto(row: AppointmentRow): Appointment {
     organizationId: row.organizationId,
     customerId: row.customerId,
     customerName: personName(row.customerFirstName, row.customerLastName, "Cliente inconnue"),
-    serviceId: row.serviceId,
+    serviceId: row.serviceId ?? "",
     serviceName: row.serviceName?.trim() || "Service inconnu",
     staffId: row.staffId,
     staffName: personName(row.staffFirstName, row.staffLastName, "Employée inconnue"),
@@ -98,16 +94,67 @@ export async function getOrgIdBySlug(slug: string): Promise<string> {
   return rows[0].id;
 }
 
-export async function listAppointmentsByOrg(organizationId: string): Promise<Appointment[]> {
+const ELAPSED_STATUSES = `('CONFIRMED', 'ARRIVED', 'IN_PROGRESS')`;
+
+/** Passe en Terminé les RDV dont la durée prévue (endAt) est dépassée. */
+export async function completeElapsedAppointments(organizationId: string): Promise<void> {
+  const { rows } = await pool.query<{ id: string; serviceId: string | null }>(
+    `UPDATE "Appointment"
+     SET status = 'COMPLETED'::"AppointmentStatus", "updatedAt" = NOW()
+     WHERE "organizationId" = $1
+       AND "endAt" < NOW()
+       AND "endAt" > NOW() - INTERVAL '2 days'
+       AND status IN ${ELAPSED_STATUSES}
+     RETURNING id, "serviceId"`,
+    [organizationId],
+  );
+
+  if (rows.length === 0) return;
+
+  const { onAppointmentCompleted } = await import("@/lib/db/invoices");
+  for (const row of rows) {
+    if (!row.serviceId) continue;
+    try {
+      await onAppointmentCompleted({
+        organizationId,
+        appointmentId: row.id,
+        serviceId: row.serviceId,
+        userId: null,
+      });
+    } catch (e) {
+      console.error("[completeElapsedAppointments]", row.id, e);
+    }
+  }
+}
+
+export async function listAppointmentsByOrg(
+  organizationId: string,
+  range?: { from?: Date; to?: Date },
+): Promise<Appointment[]> {
   try {
     const { expireOverdueDepositAppointments } = await import("@/lib/db/booking-policy");
     await expireOverdueDepositAppointments(organizationId);
   } catch {
     /* ignore */
   }
+  try {
+    await completeElapsedAppointments(organizationId);
+  } catch {
+    /* ignore */
+  }
+  const params: unknown[] = [organizationId];
+  let where = `WHERE a."organizationId" = $1`;
+  if (range?.from) {
+    params.push(range.from);
+    where += ` AND a."startAt" >= $${params.length}`;
+  }
+  if (range?.to) {
+    params.push(range.to);
+    where += ` AND a."startAt" < $${params.length}`;
+  }
   const { rows } = await pool.query<AppointmentRow>(
-    `${SELECT} WHERE a."organizationId" = $1 ORDER BY a."startAt" ASC`,
-    [organizationId],
+    `${SELECT} ${where} ORDER BY a."startAt" ASC`,
+    params,
   );
   return rows.map(rowToDto);
 }
@@ -150,11 +197,11 @@ export async function createAppointmentRow(
 
   await pool.query(
     `INSERT INTO "Appointment" (
-      id, "organizationId", "customerId", "serviceId", "staffId", "resourceId",
+      id, "organizationId", "customerId", "serviceId", "serviceNameSnapshot", "staffId", "resourceId",
       "startAt", "endAt", price, deposit, "depositState", "depositDueAt",
       status, source, notes, "updatedAt"
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::"DepositState",$12,
+      $1,$2,$3,$4,(SELECT name FROM "Service" WHERE id = $4),$5,$6,$7,$8,$9,$10,$11::"DepositState",$12,
       'PENDING',$13::"AppointmentSource",$14,NOW()
     )`,
     [
@@ -192,6 +239,11 @@ export async function getAppointmentById(
   id: string,
   organizationId: string,
 ): Promise<Appointment | null> {
+  try {
+    await completeElapsedAppointments(organizationId);
+  } catch {
+    /* ignore */
+  }
   const { rows } = await pool.query<AppointmentRow>(
     `${SELECT} WHERE a.id = $1 AND a."organizationId" = $2`,
     [id, organizationId],

@@ -3,19 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, Textarea } from "@/components/ui/select";
-import type {
-  CreateProductInput,
-  ProductCategory,
-  ProductDetail,
-  ProductUnit,
-} from "@/types/inventory";
-import {
-  PRODUCT_CATEGORIES,
-  PRODUCT_CATEGORY_LABEL,
-  PRODUCT_UNIT_LABEL,
-  PRODUCT_UNITS,
-} from "@/types/inventory";
+import type { CreateProductInput, ProductDetail } from "@/types/inventory";
 
 type ProductFormProps = {
   initial?: Partial<ProductDetail>;
@@ -24,38 +12,42 @@ type ProductFormProps = {
   onCancel: () => void;
 };
 
+function generateSku(name: string) {
+  const slug = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "")
+    .slice(0, 8)
+    .toUpperCase();
+  return `${slug || "PRD"}-${Date.now().toString(36).toUpperCase()}`;
+}
+
 export function ProductForm({ initial, submitting, onSubmit, onCancel }: ProductFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [sku, setSku] = useState(initial?.sku ?? "");
-  const [category, setCategory] = useState<ProductCategory>(initial?.category ?? "CONSOMMABLE");
-  const [brand, setBrand] = useState(initial?.brand ?? "");
-  const [unit, setUnit] = useState<ProductUnit>(initial?.unit ?? "UNIT");
   const [purchasePrice, setPurchasePrice] = useState(initial?.purchasePrice?.toString() ?? "0");
   const [salePrice, setSalePrice] = useState(initial?.salePrice?.toString() ?? "");
   const [minStock, setMinStock] = useState(initial?.minStock?.toString() ?? "0");
   const [maxStock, setMaxStock] = useState(initial?.maxStock?.toString() ?? "");
   const [supplierName, setSupplierName] = useState(initial?.supplierName ?? "");
   const [initialStock, setInitialStock] = useState("");
-  const [consumable, setConsumable] = useState(initial?.consumable ?? true);
-  const [sellable, setSellable] = useState(initial?.sellable ?? false);
-  const [notes, setNotes] = useState(initial?.notes ?? "");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const trimmed = name.trim();
     onSubmit({
-      name: name.trim(),
-      sku: sku.trim(),
-      category,
-      brand: brand.trim() || undefined,
-      unit,
+      name: trimmed,
+      sku: initial?.sku?.trim() || generateSku(trimmed),
+      category: initial?.category ?? "CONSOMMABLE",
+      brand: initial?.brand ?? undefined,
+      unit: initial?.unit ?? "UNIT",
       purchasePrice: Number(purchasePrice) || 0,
       salePrice: salePrice ? Number(salePrice) : undefined,
       minStock: Number(minStock) || 0,
       maxStock: maxStock ? Number(maxStock) : undefined,
       supplierName: supplierName.trim() || undefined,
-      consumable,
-      sellable,
-      notes: notes.trim() || undefined,
+      consumable: initial?.id ? initial.consumable ?? true : true,
+      sellable: initial?.id ? initial.sellable ?? true : true,
+      notes: initial?.notes ?? undefined,
       initialStock: !initial?.id && initialStock ? Number(initialStock) : undefined,
     });
   }
@@ -65,36 +57,6 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>
         <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Sérum 30 ml" />
-      </label>
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">SKU *</span>
-        <Input value={sku} onChange={(e) => setSku(e.target.value)} required disabled={Boolean(initial?.id)} />
-      </label>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Catégorie</span>
-          <Select value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)}>
-            {PRODUCT_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {PRODUCT_CATEGORY_LABEL[c]}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Unité</span>
-          <Select value={unit} onChange={(e) => setUnit(e.target.value as ProductUnit)} disabled={Boolean(initial?.id)}>
-            {PRODUCT_UNITS.map((u) => (
-              <option key={u} value={u}>
-                {PRODUCT_UNIT_LABEL[u]}
-              </option>
-            ))}
-          </Select>
-        </label>
-      </div>
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Marque</span>
-        <Input value={brand} onChange={(e) => setBrand(e.target.value)} />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm">
@@ -126,40 +88,6 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Fournisseur</span>
         <Input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} />
-      </label>
-      <div>
-        <p className="mb-1.5 text-sm font-medium">Usage</p>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {(
-            [
-              { id: "retail", label: "Revente boutique", hint: "Vendu en caisse", sell: true, cons: false },
-              { id: "consumable", label: "Consommable soin", hint: "Décompté en cabine", sell: false, cons: true },
-              { id: "hybrid", label: "Les deux", hint: "Vente et soins", sell: true, cons: true },
-            ] as const
-          ).map((opt) => {
-            const active = sellable === opt.sell && consumable === opt.cons;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => {
-                  setSellable(opt.sell);
-                  setConsumable(opt.cons);
-                }}
-                className={`rounded-xl p-3 text-left text-[13px] ${
-                  active ? "bg-[#FFD9DE] ring-1 ring-primary/30" : "bg-[#FFEFF8] hover:bg-[#FCE9F4]"
-                }`}
-              >
-                <span className="block font-semibold text-ink">{opt.label}</span>
-                <span className="text-[11px] text-ink/50">{opt.hint}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Notes</span>
-        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
       </label>
       <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>

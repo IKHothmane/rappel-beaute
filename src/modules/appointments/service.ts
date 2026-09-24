@@ -15,8 +15,18 @@ async function parseJson<T>(res: Response): Promise<T> {
   return data as T;
 }
 
-export async function listAppointments(): Promise<Appointment[]> {
-  const res = await fetch("/api/appointments/", { cache: "no-store", credentials: "include" });
+export async function listAppointments(params?: {
+  from?: string;
+  to?: string;
+}): Promise<Appointment[]> {
+  const q = new URLSearchParams();
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  const qs = q.toString();
+  const res = await fetch(`/api/appointments/${qs ? `?${qs}` : ""}`, {
+    cache: "no-store",
+    credentials: "include",
+  });
   return parseJson<Appointment[]>(res);
 }
 

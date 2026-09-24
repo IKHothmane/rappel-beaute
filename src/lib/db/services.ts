@@ -208,7 +208,7 @@ async function loadRelations(serviceId: string, organizationId: string) {
        FROM "ServiceStaff" ss
        JOIN "Staff" st ON st.id = ss."staffId"
        WHERE ss."serviceId" = $1 AND st."organizationId" = $2
-       ORDER BY st.name`,
+       ORDER BY st."firstName", st."lastName"`,
       [serviceId, organizationId],
     ),
     pool.query<{ resourceId: string; resourceName: string; resourceType: string; quantity: number }>(
@@ -240,7 +240,7 @@ async function loadRelations(serviceId: string, organizationId: string) {
        FROM "ServiceCommission" sc
        JOIN "Staff" st ON st.id = sc."staffId"
        WHERE sc."serviceId" = $1 AND st."organizationId" = $2
-       ORDER BY st.name`,
+       ORDER BY st."firstName", st."lastName"`,
       [serviceId, organizationId],
     ),
   ]);
@@ -511,29 +511,19 @@ export async function deleteService(
   const existing = await getServiceById(organizationId, serviceId);
   if (!existing) throw new Error("NOT_FOUND");
 
-  const [appointments, packages] = await Promise.all([
-    pool.query<{ ok: boolean }>(
-      `SELECT EXISTS (
-        SELECT 1 FROM "Appointment"
-        WHERE "serviceId" = $1 AND "organizationId" = $2
-      ) AS ok`,
-      [serviceId, organizationId],
-    ),
-    pool.query<{ ok: boolean }>(
-      `SELECT (
-        EXISTS (SELECT 1 FROM "PackageItem" WHERE "serviceId" = $1)
-        OR EXISTS (SELECT 1 FROM "Package" WHERE "serviceId" = $1)
-      ) AS ok`,
-      [serviceId],
-    ),
-  ]);
-
-  if (appointments.rows[0]?.ok) throw new Error("HAS_APPOINTMENTS");
-  if (packages.rows[0]?.ok) throw new Error("HAS_PACKAGES");
-
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    await client.query(
+      `UPDATE "Appointment"
+       SET "serviceNameSnapshot" = COALESCE(NULLIF("serviceNameSnapshot", ''), $3),
+           "serviceId" = NULL,
+           "updatedAt" = NOW()
+       WHERE "serviceId" = $1 AND "organizationId" = $2`,
+      [serviceId, organizationId, existing.name],
+    );
+    await client.query(`UPDATE "PackageItem" SET "serviceId" = NULL WHERE "serviceId" = $1`, [serviceId]);
+    await client.query(`UPDATE "Package" SET "serviceId" = NULL WHERE "serviceId" = $1`, [serviceId]);
     await client.query(`DELETE FROM "WaitingListEntry" WHERE "serviceId" = $1 AND "organizationId" = $2`, [
       serviceId,
       organizationId,

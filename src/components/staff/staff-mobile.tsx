@@ -8,7 +8,6 @@ import {
   LayoutList,
   MapPin,
   MessageCircle,
-  MoreVertical,
   Plus,
   Search,
   SlidersHorizontal,
@@ -29,7 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatMad, formatPct } from "@/modules/analytics/service";
 import type { AnalyticsOverview, ReviewAnalytics } from "@/types/analytics";
-import type { StaffListItem, StaffStatus } from "@/types/staff";
+import type { StaffListItem } from "@/types/staff";
 import { STAFF_STATUS_LABEL } from "@/types/staff";
 
 type StaffFilter = "all" | "active" | "leave" | "top";
@@ -64,11 +63,8 @@ type StaffMobileProps = {
   selected: StaffListItem | null;
   topSellerIds: Set<string>;
   teamRevenue: number;
-  menuId: string | null;
-  onMenu: (id: string | null) => void;
   onCreate: () => void;
   onEdit: (id: string) => void;
-  onStatus: (id: string, status: StaffStatus) => void;
   onExport: () => void;
 };
 
@@ -101,11 +97,8 @@ export function StaffMobile({
   selected,
   topSellerIds,
   teamRevenue,
-  menuId,
-  onMenu,
   onCreate,
   onEdit,
-  onStatus,
   onExport,
 }: StaffMobileProps) {
   const [view, setView] = useState<MobileView>("list");
@@ -307,11 +300,8 @@ export function StaffMobile({
                 financeHidden={financeHidden}
                 isTop={topSellerIds.has(s.id)}
                 selected={s.id === selectedId}
-                menuOpen={menuId === s.id}
                 onOpen={() => openFocus(s.id)}
-                onMenu={() => onMenu(menuId === s.id ? null : s.id)}
                 onEdit={() => onEdit(s.id)}
-                onStatus={(status) => onStatus(s.id, status)}
                 canWrite={canWrite}
               />
             ))
@@ -329,7 +319,6 @@ export function StaffMobile({
           teamRevenue={teamRevenue}
           insight={insight}
           onEdit={() => onEdit(selected.id)}
-          onStatus={(status) => onStatus(selected.id, status)}
         />
       ) : null}
     </div>
@@ -342,11 +331,8 @@ function StaffListCard({
   financeHidden,
   isTop,
   selected,
-  menuOpen,
   onOpen,
-  onMenu,
   onEdit,
-  onStatus,
   canWrite,
 }: {
   staff: StaffListItem;
@@ -354,11 +340,8 @@ function StaffListCard({
   financeHidden: boolean;
   isTop: boolean;
   selected: boolean;
-  menuOpen: boolean;
   onOpen: () => void;
-  onMenu: () => void;
   onEdit: () => void;
-  onStatus: (status: StaffStatus) => void;
   canWrite: boolean;
 }) {
   const showFinance = canPerf && !financeHidden;
@@ -410,11 +393,10 @@ function StaffListCard({
           {canWrite ? (
             <button
               type="button"
-              aria-label="Actions"
-              onClick={onMenu}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FCE9F4] text-ink/45"
+              onClick={onEdit}
+              className="rounded-lg bg-[#FCE9F4] px-3 py-1.5 text-[12px] font-semibold text-ink"
             >
-              <MoreVertical size={16} />
+              Modifier
             </button>
           ) : null}
         </div>
@@ -481,35 +463,6 @@ function StaffListCard({
           Planning
         </Link>
       </div>
-
-      {menuOpen && canWrite ? (
-        <div className="absolute right-3 top-12 z-10 min-w-[160px] rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]"
-          >
-            Modifier
-          </button>
-          {s.status === "ACTIVE" ? (
-            <button
-              type="button"
-              onClick={() => onStatus("ON_LEAVE")}
-              className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]"
-            >
-              Mettre en congé
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onStatus("ACTIVE")}
-              className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]"
-            >
-              Réactiver
-            </button>
-          )}
-        </div>
-      ) : null}
     </article>
   );
 }

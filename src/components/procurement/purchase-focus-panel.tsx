@@ -25,6 +25,7 @@ type Props = {
   financeHidden: boolean;
   onReceived: () => void;
   onToast: (msg: string, kind?: "success" | "error" | "info") => void;
+  onOpenFull?: () => void;
 };
 
 export function PurchaseFocusPanel({
@@ -34,6 +35,7 @@ export function PurchaseFocusPanel({
   financeHidden,
   onReceived,
   onToast,
+  onOpenFull,
 }: Props) {
   const idempotencyRef = useRef(newIdempotencyKey());
   const [loading, setLoading] = useState(true);
@@ -120,9 +122,13 @@ export function PurchaseFocusPanel({
             <h3 className="text-[18px] font-bold text-ink">Contrôle de réception</h3>
           </div>
           <p className="mt-1 font-mono text-[12px] font-semibold text-ink">{p.number}</p>
-          <Link href={`/suppliers/${p.supplierId}/`} className="text-[13px] font-semibold text-primary hover:underline">
-            {p.supplierName}
-          </Link>
+          {p.supplierId ? (
+            <Link href={`/suppliers/${p.supplierId}/`} className="text-[13px] font-semibold text-primary hover:underline">
+              {p.supplierName}
+            </Link>
+          ) : (
+            <p className="text-[13px] font-semibold text-ink/55">{p.supplierName}</p>
+          )}
         </div>
         <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold", purchaseStatusChip(p.status))}>
           {PURCHASE_STATUS_LABEL[p.status]}
@@ -185,36 +191,22 @@ export function PurchaseFocusPanel({
                   </div>
                 </div>
                 {canReceive && item.quantityRemaining > 0 ? (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <label className="text-[12px]">
-                      <span className="mb-1 block text-ink/45">Quantité à pointer</span>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={item.quantityRemaining}
-                        step={0.001}
-                        value={recv[item.id]?.quantity ?? "0"}
-                        onChange={(e) =>
-                          setRecv((d) => ({
-                            ...d,
-                            [item.id]: { ...d[item.id], quantity: e.target.value },
-                          }))
-                        }
-                      />
-                    </label>
-                    <label className="text-[12px]">
-                      <span className="mb-1 block text-ink/45">Lot (optionnel)</span>
-                      <Input
-                        value={recv[item.id]?.lotNumber ?? ""}
-                        onChange={(e) =>
-                          setRecv((d) => ({
-                            ...d,
-                            [item.id]: { ...d[item.id], lotNumber: e.target.value },
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
+                  <label className="text-[12px]">
+                    <span className="mb-1 block text-ink/45">Quantité à pointer</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={item.quantityRemaining}
+                      step={0.001}
+                      value={recv[item.id]?.quantity ?? "0"}
+                      onChange={(e) =>
+                        setRecv((d) => ({
+                          ...d,
+                          [item.id]: { ...d[item.id], quantity: e.target.value },
+                        }))
+                      }
+                    />
+                  </label>
                 ) : null}
               </div>
             );
@@ -240,9 +232,19 @@ export function PurchaseFocusPanel({
         </button>
       ) : null}
 
-      <Link href={`/purchases/${p.id}/`} className="text-center text-[12px] font-semibold text-primary hover:underline">
-        Fiche complète
-      </Link>
+      {onOpenFull ? (
+        <button
+          type="button"
+          onClick={onOpenFull}
+          className="text-center text-[12px] font-semibold text-primary hover:underline"
+        >
+          Fiche complète
+        </button>
+      ) : (
+        <Link href={`/purchases/${p.id}/`} className="text-center text-[12px] font-semibold text-primary hover:underline">
+          Fiche complète
+        </Link>
+      )}
     </div>
   );
 }

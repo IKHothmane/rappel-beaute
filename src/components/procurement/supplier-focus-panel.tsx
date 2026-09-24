@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { MessageCircle, MoreVertical, Pencil, Phone, ShoppingCart, Star } from "lucide-react";
+import { MessageCircle, Pencil, Phone, ShoppingCart, Star } from "lucide-react";
 import {
   leadTimeLabel,
   supplierInitials,
@@ -27,7 +27,6 @@ type Props = {
   showPurchases: boolean;
   catalog: ProductListItem[];
   onEdit: () => void;
-  onArchive: () => void;
 };
 
 function stockHint(catalog: ProductListItem[], productId: string) {
@@ -51,19 +50,16 @@ export function SupplierFocusPanel({
   showPurchases,
   catalog,
   onEdit,
-  onArchive,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<SupplierDetail | null>(null);
   const [compare, setCompare] = useState<ProductDetail | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setDetail(null);
     setCompare(null);
-    setMenuOpen(false);
     getSupplier(supplierId)
       .then((res) => {
         if (!cancelled) setDetail(res);
@@ -140,40 +136,14 @@ export function SupplierFocusPanel({
             </div>
           </div>
           {canWrite ? (
-            <div className="relative">
-              <button
-                type="button"
-                className="rounded-lg p-1 text-ink/45 hover:bg-[#FCE9F4]"
-                onClick={() => setMenuOpen((v) => !v)}
-                aria-label="Actions"
-              >
-                <MoreVertical className="h-5 w-5" />
-              </button>
-              {menuOpen ? (
-                <div className="absolute right-0 z-10 mt-1 w-44 overflow-hidden rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5">
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[#FBF4F6]"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onEdit();
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" /> Modifier
-                  </button>
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink/70 hover:bg-[#FBF4F6]"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onArchive();
-                    }}
-                  >
-                    Archiver
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            <button
+              type="button"
+              onClick={onEdit}
+              title="Modifier"
+              className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-primary"
+            >
+              <Pencil size={16} />
+            </button>
           ) : null}
         </div>
 

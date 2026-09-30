@@ -24,6 +24,7 @@ function isMarketingPath(path: string): boolean {
   const prefixes = [
     "/fonctionnalites",
     "/tarifs",
+    "/instituts",
     "/a-propos",
     "/professionnel",
     "/connexion",
@@ -223,10 +224,11 @@ export async function middleware(request: NextRequest) {
       logicalPath.startsWith("/book/");
     if (!isPublic) {
       if (!session) {
+        const loginPath = isAppOrAdminHostname(hostname) ? "/login/" : "/connexion/";
         return publicRedirect(
           request,
-          "/login/",
-          domain,
+          loginPath,
+          loginPath === "/connexion/" ? "www" : domain,
           hostname,
           308,
           logicalPath !== "/" && logicalPath !== ""
@@ -235,7 +237,8 @@ export async function middleware(request: NextRequest) {
         );
       }
       if (session.scope === "platform") {
-        return publicRedirect(request, "/login/", domain, hostname);
+        const loginPath = isAppOrAdminHostname(hostname) ? "/login/" : "/connexion/";
+        return publicRedirect(request, loginPath, loginPath === "/connexion/" ? "www" : domain, hostname);
       }
       // Reset admin : accès limité à la page de changement de MDP
       if (
@@ -293,13 +296,9 @@ export async function middleware(request: NextRequest) {
 
   if (domain === "www") {
     if (path === "/login" || path === "/login/") {
-      const appLogin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-      if (appLogin && process.env.NODE_ENV === "production") {
-        return NextResponse.redirect(`${appLogin}/login/`, 308);
-      }
       const local = request.nextUrl.clone();
-      local.pathname = "/login/";
-      local.searchParams.set(QUERY_HOST, "app");
+      local.pathname = "/connexion/";
+      local.search = "";
       return NextResponse.redirect(local, 308);
     }
 

@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   AlertTriangle,
   Banknote,
-  Landmark,
   Lock,
   Plus,
   Sparkles,
@@ -50,7 +49,6 @@ type Props = {
   onOpen: () => void;
   onPay: () => void;
   onOut: () => void;
-  onBank: () => void;
   onClose: () => void;
 };
 
@@ -80,7 +78,6 @@ export function CashRegisterMobile({
   onOpen,
   onPay,
   onOut,
-  onBank,
   onClose,
 }: Props) {
   const mix = paymentMix(session);
@@ -122,45 +119,23 @@ export function CashRegisterMobile({
           </p>
         </div>
         {canWrite && isOpen ? (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={onPay}
-              className="flex h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-primary text-[14px] font-semibold text-white shadow-sm"
+              className="flex h-12 items-center justify-center gap-1.5 rounded-lg bg-primary text-[14px] font-semibold text-white shadow-sm"
             >
               <Plus className="h-5 w-5" />
               Nouvel encaissement
             </button>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={onOut}
-                className="flex h-10 items-center justify-center gap-1 rounded-lg bg-[#FCE9F4] text-[11px] font-bold text-ink"
-              >
-                <Banknote className="h-4 w-4 text-[#7B5900]" />
-                Sortie
-              </button>
-              <button
-                type="button"
-                onClick={onBank}
-                className="flex h-10 items-center justify-center gap-1 rounded-lg bg-[#FCE9F4] text-[11px] font-bold text-ink"
-              >
-                <Landmark className="h-4 w-4" />
-                Banque
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onCounted(String(theoretical));
-                  onTab("overview");
-                  document.getElementById("cash-close-mobile")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="flex h-10 items-center justify-center gap-1 rounded-lg bg-[#FCE9F4] text-[11px] font-bold text-primary"
-              >
-                <Lock className="h-4 w-4" />
-                Clôture
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onOut}
+              className="flex h-12 items-center justify-center gap-1.5 rounded-lg bg-[#FCE9F4] text-[14px] font-semibold text-ink"
+            >
+              <Banknote className="h-5 w-5 text-[#7B5900]" />
+              Sortie
+            </button>
           </div>
         ) : null}
 

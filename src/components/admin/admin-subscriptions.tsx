@@ -23,7 +23,6 @@ import {
   Hourglass,
   Mail,
   PauseCircle,
-  Pencil,
   RotateCcw,
   Search,
   Shield,
@@ -43,6 +42,7 @@ import {
   fetchAdminAudit,
   fetchAdminBilling,
   fetchAdminSubscriptions,
+  updateAdminPlanPrice,
   type AdminSubscriptionRow,
 } from "@/modules/admin/client";
 import { PLAN_LABEL, platformAuditActionLabel } from "@/types/platform";
@@ -199,6 +199,9 @@ export function AdminSubscriptionsView() {
   const [createPlan, setCreatePlan] = useState<SubscriptionPlan>("INSTITUT");
   const [reminderText, setReminderText] = useState("");
   const [chartRange, setChartRange] = useState<"30" | "90" | "365">("365");
+  const [priceInput, setPriceInput] = useState("");
+  const [priceSaving, setPriceSaving] = useState(false);
+  const [priceNote, setPriceNote] = useState("");
 
   useEffect(() => {
     const t = window.setTimeout(() => setQ(qInput.trim()), 280);
@@ -240,6 +243,9 @@ export function AdminSubscriptionsView() {
         });
         setPlans(subs.plans);
         setOrgs(subs.organizations);
+        if (typeof subs.showcasePrice === "number") {
+          setPriceInput((current) => (current === "" ? String(subs.showcasePrice) : current));
+        }
         if (billing) {
           setMrrSeries(billing.mrrSeries ?? []);
           setMrrGrowth(billing.mrrGrowthPercent ?? 0);
@@ -304,6 +310,26 @@ export function AdminSubscriptionsView() {
     plans.find((p) => p.code === "PREMIUM") ??
     plans[0] ??
     null;
+
+  async function saveOfferPrice() {
+    if (!offerPlan) return;
+    const price = Math.round(Number(priceInput));
+    if (!Number.isFinite(price) || price < 0) {
+      alert("Indiquez un prix valide.");
+      return;
+    }
+    setPriceSaving(true);
+    setPriceNote("");
+    try {
+      await updateAdminPlanPrice(offerPlan.id, price);
+      setPriceNote("Prix enregistré. La vitrine affiche ce montant.");
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Impossible d'enregistrer le prix.");
+    } finally {
+      setPriceSaving(false);
+    }
+  }
 
   const activePct =
     kpis.total > 0 ? Math.round((kpis.active / kpis.total) * 1000) / 10 : 0;
@@ -417,14 +443,6 @@ export function AdminSubscriptionsView() {
       {/* Header */}
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="max-w-3xl space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <CreditCard className="h-4 w-4" />
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-primary">
-              Contrats & Flux SaaS Maroc
-            </span>
-          </div>
           <h1 className="text-[28px] font-black tracking-tight text-ink lg:text-[32px]">
             Abonnements & Facturation
           </h1>
@@ -455,13 +473,6 @@ export function AdminSubscriptionsView() {
             <Download className="h-4 w-4 text-[#7B5900]" />
             Exporter CSV
           </button>
-          <Link
-            href={adminHref("/plans/")}
-            className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-sm"
-          >
-            <Pencil className="h-4 w-4" />
-            Gérer l&apos;offre
-          </Link>
         </div>
       </header>
 
@@ -590,21 +601,41 @@ export function AdminSubscriptionsView() {
                     Formule standardisée — modules institut débloqués selon le plan.
                   </p>
                 </div>
-                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-end">
-                  <div>
-                    <span className="text-4xl font-black text-primary md:text-5xl">
-                      {offerPlan ? Math.round(offerPlan.price) : "—"}
-                    </span>
-                    <span className="text-lg font-bold text-ink"> DH</span>
-                    <span className="block text-xs text-ink/45">HT / mois / institut</span>
+                <div className="flex flex-col items-start gap-2">
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label className="block">
+                      <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-ink/40">
+                        Prix vitrine
+                      </span>
+                      <span className="flex items-baseline gap-1">
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          disabled={!offerPlan || priceSaving}
+                          value={priceInput}
+                          onChange={(e) => {
+                            setPriceInput(e.target.value);
+                            setPriceNote("");
+                          }}
+                          className="w-28 bg-transparent text-4xl font-black text-primary outline-none md:text-5xl"
+                        />
+                        <span className="text-lg font-bold text-ink">DH</span>
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      disabled={!offerPlan || priceSaving}
+                      onClick={() => void saveOfferPrice()}
+                      className="mb-1 h-10 rounded-xl bg-primary px-4 text-xs font-bold text-white disabled:opacity-60"
+                    >
+                      {priceSaving ? "…" : "Enregistrer"}
+                    </button>
                   </div>
-                  <Link
-                    href={adminHref("/plans/")}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#FFEFF8] px-3 py-2 text-sm font-semibold text-ink"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Modifier
-                  </Link>
+                  <span className="text-xs text-ink/45">HT / mois · affiché sur la page Tarifs</span>
+                  {priceNote ? (
+                    <span className="text-xs font-semibold text-emerald-700">{priceNote}</span>
+                  ) : null}
                 </div>
               </div>
               <div className="border-t border-[#F0DDE9]/60 bg-[#FFEFF8]/50 px-5 py-4 md:px-6">
@@ -1603,27 +1634,6 @@ export function AdminSubscriptionsView() {
           </Link>
         </div>
       ) : null}
-
-      <footer className="flex flex-col items-start justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm md:flex-row md:items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFDEA4]/50 text-[#5D4200]">
-            <Shield className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-ink">Conformité CNDP · Loi 09-08</p>
-            <p className="text-xs text-ink/50">
-              Isolation multi-tenant · Hébergement souverain Maroc
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => openModal("create")}
-          className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white"
-        >
-          + Créer un abonnement
-        </button>
-      </footer>
 
       {/* Modals */}
       {modal && (selected || modal === "create") ? (

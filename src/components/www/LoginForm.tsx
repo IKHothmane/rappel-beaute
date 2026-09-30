@@ -1,21 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
-export function LoginForm() {
+function LoginFormFields() {
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    const fromEmail = searchParams.get("email")?.trim() ?? "";
+    const fromPassword =
+      searchParams.get("password")?.trim() || searchParams.get("pin")?.trim() || "";
+    if (fromEmail) setEmail(fromEmail);
+    if (fromPassword) {
+      setPassword(fromPassword);
+      setShowPassword(true);
+    }
+    if (fromEmail || fromPassword) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("password");
+      url.searchParams.delete("pin");
+      const qs = url.searchParams.toString();
+      window.history.replaceState({}, "", `${url.pathname}${qs ? `?${qs}` : ""}${url.hash}`);
+    }
+  }, [searchParams]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    const form = new FormData(e.currentTarget);
-    const email = String(form.get("email") ?? "");
-    const password = String(form.get("password") ?? "");
 
     try {
       const res = await fetch("/api/auth/login/", {
@@ -113,9 +131,11 @@ export function LoginForm() {
                 className="w-full rounded-xl border border-line bg-white/90 py-3 pl-11 pr-4 text-sm text-ink outline-none transition-all placeholder:text-ink/30 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
                 id="email"
                 name="email"
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="contact@institut.ma"
                 required
                 type="email"
+                value={email}
               />
             </div>
           </div>
@@ -146,9 +166,11 @@ export function LoginForm() {
                 className="w-full rounded-xl border border-line bg-white/90 py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all placeholder:text-ink/30 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
                 id="password"
                 name="password"
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
                 required
                 type={showPassword ? "text" : "password"}
+                value={password}
               />
               <button
                 aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
@@ -228,27 +250,6 @@ export function LoginForm() {
               {error}
             </p>
           ) : null}
-
-          <div className="border-t border-line/70 pt-3 text-center">
-            <p className="flex items-center justify-center gap-1.5 text-[11px] leading-relaxed text-ink/40">
-              <svg
-                className="h-3.5 w-3.5 shrink-0 text-gold"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                />
-              </svg>
-              <span>
-                Message d&apos;erreur générique. Chiffrement conforme CNDP (Loi 09-08).
-              </span>
-            </p>
-          </div>
         </form>
       </div>
 
@@ -265,5 +266,17 @@ export function LoginForm() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function LoginForm() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-96 w-full max-w-lg animate-pulse rounded-3xl bg-white/80" />
+      }
+    >
+      <LoginFormFields />
+    </Suspense>
   );
 }

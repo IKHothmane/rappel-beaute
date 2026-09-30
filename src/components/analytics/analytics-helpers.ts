@@ -308,8 +308,8 @@ export function buildAnalyticsInsight(opts: {
       performance,
       alert,
       monitors,
-      cta: "Ouvrir la réactivation",
-      ctaHref: "/reactivation/",
+      cta: "Voir les clientes",
+      ctaHref: "/customers/",
       secondaryCta: `Inspecter le segment inactif (${inactive})`,
       secondaryHref: "/customers/",
     };
@@ -320,8 +320,8 @@ export function buildAnalyticsInsight(opts: {
       performance,
       alert,
       monitors,
-      cta: "Préparer une campagne",
-      ctaHref: "/marketing/",
+      cta: "Ouvrir WhatsApp",
+      ctaHref: "/whatsapp/",
       secondaryCta: "Voir les clientes",
       secondaryHref: "/customers/",
     };

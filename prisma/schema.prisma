@@ -444,6 +444,7 @@ model Organization {
   phone     String?
   email     String?
   ice       String?
+  logoUrl    String?
   status    OrganizationStatus @default(ACTIVE)
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
@@ -504,6 +505,7 @@ model Organization {
   staffReplacements     StaffReplacement[]
   aiConversations       AIConversation[]
   aiUsagePeriods        AIUsagePeriod[]
+  googleCalendarConnection GoogleCalendarConnection?
 
   @@index([slug])
   @@index([status])
@@ -875,6 +877,8 @@ model Appointment {
   source         AppointmentSource @default(MANUAL)
   /// Attribution marketing (ex. qr) — jamais de prix/durée client
   attributionSource String?
+  /// Identifiant de l'événement Google Calendar (sync agenda institut)
+  googleEventId  String?
   notes          String?
   promotionId    String?
   createdAt      DateTime          @default(now())
@@ -901,6 +905,23 @@ model Appointment {
   @@index([resourceId, startAt])
   @@index([customerId])
   @@index([promotionId])
+}
+
+model GoogleCalendarConnection {
+  id                   String    @id @default(cuid())
+  organizationId       String    @unique
+  googleEmail          String
+  googleAccountId      String?
+  calendarId           String    @default("primary")
+  calendarName         String?
+  refreshTokenEnc      String
+  accessTokenEnc       String?
+  accessTokenExpiresAt DateTime?
+  connectedAt          DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
@@ -2126,6 +2147,8 @@ model Subscription {
   currentPeriodEnd    DateTime
   cancelledAt         DateTime?
   trialEndsAt         DateTime?
+  paid                Boolean            @default(false)
+  paidAt              DateTime?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 

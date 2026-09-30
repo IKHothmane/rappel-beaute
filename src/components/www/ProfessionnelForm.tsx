@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
-import { CITIES, SITE } from "@/lib/site";
+import { APP_LOGIN_HREF, CITIES, SITE } from "@/lib/site";
 import { OsmMapPicker } from "@/components/www/OsmMapPicker";
 
 type OsmSuggestion = {
@@ -13,9 +13,10 @@ type OsmSuggestion = {
   mapsUrl: string;
 };
 
-export function ProfessionnelForm() {
+export function ProfessionnelForm({ monthlyPrice = 399 }: { monthlyPrice?: number }) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoName, setLogoName] = useState<string | null>(null);
   const [localisation, setLocalisation] = useState("");
@@ -85,13 +86,26 @@ export function ProfessionnelForm() {
     };
   }, [localisation]);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch("/api/public/signup/", {
+        method: "POST",
+        body: new FormData(e.currentTarget),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error || "Impossible de créer le compte. Réessayez.");
+        return;
+      }
       setSent(true);
-    }, 700);
+    } catch {
+      setError("Réseau indisponible. Réessayez.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function onLogoChange(e: ChangeEvent<HTMLInputElement>) {
@@ -160,12 +174,18 @@ export function ProfessionnelForm() {
         </span>
         <div>
           <p className="font-display text-xl font-semibold text-ink">
-            Demande transmise avec succès !
+            Votre mot de passe a été envoyé
           </p>
           <p className="mt-1 text-sm leading-relaxed text-ink/60">
-            Notre équipe vous contactera via WhatsApp sous 24h pour configurer vos prestations et
-            ouvrir votre console.
+            Vérifiez votre boîte mail (et les spams). Vous y trouverez un mot de passe temporaire
+            pour vous connecter. Vous le changerez à la première connexion.
           </p>
+          <a
+            className="mt-3 inline-flex text-sm font-semibold text-primary hover:underline"
+            href={APP_LOGIN_HREF}
+          >
+            Aller à la connexion
+          </a>
         </div>
       </div>
     );
@@ -188,10 +208,10 @@ export function ProfessionnelForm() {
           </svg>
         </div>
         <div>
-          <span className="text-sm font-bold tracking-wide text-ink">Accès calibré à la main</span>
+          <span className="text-sm font-bold tracking-wide text-ink">Mot de passe par e-mail</span>
           <p className="mt-0.5 text-xs leading-normal text-ink/55">
-            Votre accès sur-mesure sera activé sous 24h par notre équipe. Aucun compte en
-            libre-service — nous paramétrons chaque institut avec soin.
+            À l&apos;envoi, un mot de passe temporaire part vers l&apos;adresse e-mail saisie. Vous
+            pourrez ensuite vous connecter et le modifier.
           </p>
         </div>
       </div>
@@ -429,12 +449,7 @@ export function ProfessionnelForm() {
       </label>
 
       <div className="flex flex-col gap-1.5 text-sm">
-        <span className="flex items-center justify-between font-medium text-ink">
-          <span>Formule souhaitée pour l&apos;essai</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gold">
-            14 jours sans engagement
-          </span>
-        </span>
+        <span className="font-medium text-ink">Formule souhaitée</span>
         <input type="hidden" name="plan" value="rappel-beauty" />
         <div className="flex h-12 items-center justify-between rounded-lg border border-primary/25 bg-primary-light/40 px-4">
           <div className="flex items-center gap-2.5">
@@ -443,7 +458,7 @@ export function ProfessionnelForm() {
             </span>
             <span className="text-sm font-semibold text-ink">{SITE.name}</span>
           </div>
-          <span className="text-sm font-bold text-primary">399 DH/mois</span>
+          <span className="text-sm font-bold text-primary">{monthlyPrice} DH/mois</span>
         </div>
         <p className="text-xs text-ink/45">
           Toutes les fonctionnalités incluses · Sans engagement · Résiliable à tout moment
@@ -460,6 +475,12 @@ export function ProfessionnelForm() {
         />
       </label>
 
+      {error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
+
       <div className="flex flex-col gap-3 pt-1">
         <button
           className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-base font-bold text-white shadow-lg transition-all hover:bg-primary-dark active:scale-[0.99] disabled:opacity-70"
@@ -467,10 +488,10 @@ export function ProfessionnelForm() {
           type="submit"
         >
           {loading ? (
-            <>Configuration en cours...</>
+            <>Envoi du mot de passe...</>
           ) : (
             <>
-              Demander l&apos;activation de mon institut
+              Créer mon accès
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   d="M14 5l7 7m0 0l-7 7m7-7H3"
@@ -482,20 +503,6 @@ export function ProfessionnelForm() {
             </>
           )}
         </button>
-        <p className="flex items-center justify-center gap-1.5 text-center text-xs text-ink/45">
-          <svg className="h-4 w-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-            />
-          </svg>
-          14 jours offerts · Sans carte bancaire · Conformité Loi 09-08 (CNDP Maroc)
-        </p>
-        <p className="text-center text-[11px] text-ink/35">
-          Formulaire vitrine · {SITE.name} — aucune donnée métier n&apos;est lue ici.
-        </p>
       </div>
     </form>
   );

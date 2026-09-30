@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clearSessionCookie, getSessionFromRequest } from "@/lib/auth/session";
 import { isAppSession, toPublicSession } from "@/lib/auth/types";
 import { getUserSessionState } from "@/lib/db/users";
+import { getOrganizationLogoUrl } from "@/lib/db/organization";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       user: toPublicSession({
         ...session,
+        orgLogoUrl: await getOrganizationLogoUrl(session.organizationId),
         mustChangePassword: state.mustChangePassword,
         sessionVersion: state.sessionVersion,
       }),

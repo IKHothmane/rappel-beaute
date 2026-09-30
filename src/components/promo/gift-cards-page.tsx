@@ -44,7 +44,6 @@ import {
   monthDelta,
   offerKind,
   offerLabel,
-  posHref,
   posSimulation,
   printGiftCard,
   remainingPct,
@@ -569,15 +568,7 @@ export function GiftCardsPageView() {
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                              {canPos && card.status === "ACTIVE" ? (
-                                <Link
-                                  href={posHref(card.beneficiaryCustomerId)}
-                                  className="inline-flex rounded-lg bg-primary p-1.5 text-white"
-                                  title="Déduire au POS"
-                                >
-                                  <ShoppingCart size={16} />
-                                </Link>
-                              ) : st === "urgent" && canWhatsapp ? (
+                              {st === "urgent" && canWhatsapp ? (
                                 <button
                                   type="button"
                                   className="inline-flex rounded-lg bg-[#FCE9F4] p-1.5 text-primary"
@@ -634,20 +625,7 @@ export function GiftCardsPageView() {
             {selected ? (
               <>
                 <LuxuryPreview card={selected} orgName={user.orgName} />
-                <div className="grid grid-cols-4 gap-1">
-                  {canPos ? (
-                    <Link
-                      href={posHref(selected.beneficiaryCustomerId)}
-                      className="flex flex-col items-center rounded-xl bg-white p-2 text-[10px] font-semibold shadow-sm"
-                    >
-                      <ShoppingCart size={16} className="mb-1 text-primary" />
-                      Déduire POS
-                    </Link>
-                  ) : (
-                    <span className="flex flex-col items-center rounded-xl bg-white p-2 text-[10px] text-ink/30 shadow-sm">
-                      Déduire
-                    </span>
-                  )}
+                <div className="grid grid-cols-3 gap-1">
                   {canWhatsapp && waHref ? (
                     <a
                       href={waHref}
@@ -731,14 +709,6 @@ export function GiftCardsPageView() {
                       <span className="text-ink/50">Nouveau solde</span>
                       <span className="font-mono font-bold text-[#7B5900]">{formatMad(sim.newBalance)}</span>
                     </div>
-                    {canPos ? (
-                      <Link
-                        href={posHref(selected.beneficiaryCustomerId)}
-                        className="flex h-11 items-center justify-center gap-1.5 rounded-lg bg-primary text-[14px] font-bold text-white"
-                      >
-                        Encaisser & déduire dans le POS
-                      </Link>
-                    ) : null}
                   </div>
                 ) : (
                   <div className="rounded-xl bg-white p-4 text-[13px] text-ink/45 shadow-sm">

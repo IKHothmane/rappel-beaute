@@ -1,7 +1,5 @@
-"use client";
-
-import { GiftCardsPageView } from "@/components/promo/gift-cards-page";
+import { redirect } from "next/navigation";
 
 export default function GiftCardsPage() {
-  return <GiftCardsPageView />;
+  redirect("/dashboard/");
 }

@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { CommissionsPageView } from "@/components/commissions/commissions-page";
-
-export const metadata: Metadata = { title: "Commissions & rémunération" };
+import { redirect } from "next/navigation";
 
 export default function CommissionsPage() {
-  return <CommissionsPageView />;
+  redirect("/dashboard/");
 }

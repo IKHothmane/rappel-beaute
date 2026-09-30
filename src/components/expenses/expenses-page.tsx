@@ -6,10 +6,8 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import {
   Banknote,
   CalendarDays,
-  Download,
   Pencil,
   Plus,
-  Scale,
   Search,
   Sparkles,
   Undo2,
@@ -23,10 +21,8 @@ import {
   type ExpenseTab,
   categoryBarClass,
   categoryChipClass,
-  expenseInsight,
   expenseShortId,
   expenseStatusChip,
-  exportExpensesCsv,
   formatExpenseDate,
   formatExpenseDateTime,
   formatExpenseTime,
@@ -141,7 +137,6 @@ export function ExpensesPageView() {
     paged[0] ??
     filtered[0] ??
     null;
-  const insight = useMemo(() => expenseInsight(kpis), [kpis]);
   const mix = kpis?.byCategory ?? [];
   const month = kpis?.monthTotal ?? 0;
   const categoryOptions = EXPENSE_CATEGORIES.map((c) => ({
@@ -209,7 +204,6 @@ export function ExpensesPageView() {
     <>
       <ExpensesMobile
         orgName={user.orgName}
-        insight={insight}
         kpis={kpis}
         search={searchInput}
         onSearch={setSearchInput}
@@ -237,7 +231,6 @@ export function ExpensesPageView() {
         }}
         canEdit={canEdit}
         canArchive={canArchive}
-        exportCsv={() => exportExpensesCsv(filtered)}
         categories={categoryOptions}
       />
 
@@ -257,14 +250,6 @@ export function ExpensesPageView() {
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => exportExpensesCsv(filtered)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#F6E3EF] px-4 text-[14px] font-semibold"
-            >
-              <Download size={18} />
-              Exporter CSV
-            </button>
             {canCreate ? (
               <button
                 type="button"
@@ -425,31 +410,6 @@ export function ExpensesPageView() {
           />
         </section>
 
-        <section className="rounded-xl bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFDEA4]/60 text-[#5D4200]">
-                <Scale size={20} />
-              </div>
-              <div>
-                <h2 className="text-[16px] font-bold">Circuit de validation</h2>
-                <p className="mt-1 text-[13px] leading-relaxed text-ink/60">
-                  Caisse : saisie possible. Annulation VOID : {canArchive ? "autorisée pour votre rôle" : "réservée au propriétaire / responsable"}.
-                  Espèces : caisse ouverte obligatoire. Il n’existe pas de file d’approbation séparée — une écriture est enregistrée ou annulée.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="relative overflow-hidden rounded-xl bg-ink p-5 text-[#FEECF7] shadow-sm">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-[#FFDEA4]">
-            <Sparkles size={16} />
-            Lecture des charges
-          </div>
-          <p className="mt-2 text-[16px] font-semibold leading-7">{insight}</p>
-        </section>
-
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
           <section className="overflow-hidden rounded-xl bg-white shadow-sm lg:col-span-8">
             <div className="flex items-center justify-between bg-[#FFEFF8] px-4 py-3">
@@ -470,7 +430,7 @@ export function ExpensesPageView() {
                   <table className="w-full min-w-[720px] text-left text-[13px]">
                     <thead>
                       <tr className="bg-[#FCE9F4] text-[11px] font-bold uppercase tracking-wider text-ink/50">
-                        <th className="px-3 py-2.5">Réf. & date</th>
+                        <th className="px-3 py-2.5">Date</th>
                         <th className="px-3 py-2.5">Description</th>
                         <th className="px-3 py-2.5">Catégorie</th>
                         <th className="px-3 py-2.5">Règlement</th>
@@ -810,7 +770,6 @@ function ExpenseInspect({
         <InspectRow label="Règlement" value={PAYMENT_METHOD_LABEL[expense.paymentMethod]} />
         <InspectRow label="Date" value={formatExpenseDateTime(expense.expenseDate)} />
         <InspectRow label="Auteur" value={expense.createdByName ?? "—"} />
-        {expense.reference ? <InspectRow label="Référence" value={expense.reference} /> : null}
       </dl>
       {expense.paymentMethod === "CASH" && expense.status === "RECORDED" ? (
         <p className="rounded-lg bg-emerald-50 p-2 text-[12px] text-emerald-800">

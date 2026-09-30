@@ -1,16 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
   CheckCheck,
   Info,
-  Settings2,
-  Shield,
-  Sparkles,
-  Zap,
 } from "lucide-react";
 import {
   CATEGORY_CHIPS,
@@ -28,70 +23,22 @@ import { cn } from "@/lib/utils";
 export function NotificationsMobile({ vm }: { vm: NotificationsViewModel }) {
   return (
     <div className="flex flex-col gap-6 pb-4 lg:hidden">
-      {/* Context strip */}
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-container px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-              <span className="h-1.5 w-1.5 animate-ping rounded-full bg-primary" />
-              {vm.roleLabel}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold text-primary">
-              CNDP Loi 09-08
-            </span>
-          </div>
-          <span className="flex items-center gap-1 text-[11px] font-semibold text-secondary">
-            <span className="inline-block h-2 w-2 rounded-full bg-primary-container" />
-            Alertes Live
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary">
-              <span className="text-sm font-bold">
-                {vm.userName
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((p) => p[0])
-                  .join("")
-                  .toUpperCase() || "?"}
-              </span>
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h2 className="truncate text-lg font-bold text-on-surface">{vm.userName}</h2>
-                <BadgeCheck className="h-4 w-4 text-secondary" />
-              </div>
-              <p className="truncate text-[13px] text-on-surface-variant">{vm.orgName}</p>
-            </div>
-          </div>
-          <span className="shrink-0 rounded-full bg-surface-container-low px-2 py-0.5 text-[11px] font-bold text-primary">
-            Hub
-          </span>
-        </div>
-
+        <h1 className="text-[22px] font-semibold tracking-tight text-on-surface">
+          Centre de Notifications
+        </h1>
         <p className="text-[13px] text-on-surface-variant">
           Gérez les urgences cabines, paiements et opportunités métier en direct.
         </p>
-        <div className="flex items-center justify-between pt-1">
-          <button
-            type="button"
-            onClick={vm.onReadAll}
-            disabled={vm.counters.unread === 0}
-            className="flex items-center gap-1.5 text-[11px] font-bold text-primary transition-transform active:scale-95 disabled:opacity-50"
-          >
-            <CheckCheck className="h-[18px] w-[18px]" />
-            Tout marquer comme lu
-          </button>
-          <a
-            href="#preferences-mobile"
-            className="flex items-center gap-1 text-[11px] font-semibold text-on-surface-variant"
-          >
-            <Settings2 className="h-[18px] w-[18px]" />
-            Préférences
-          </a>
-        </div>
+        <button
+          type="button"
+          onClick={vm.onReadAll}
+          disabled={vm.counters.unread === 0}
+          className="flex items-center gap-1.5 text-[11px] font-bold text-primary transition-transform active:scale-95 disabled:opacity-50"
+        >
+          <CheckCheck className="h-[18px] w-[18px]" />
+          Tout marquer comme lu
+        </button>
       </section>
 
       {/* Metrics 2x2 */}
@@ -177,42 +124,6 @@ export function NotificationsMobile({ vm }: { vm: NotificationsViewModel }) {
             </button>
           );
         })}
-      </section>
-
-      {/* Copilote */}
-      <section className="relative flex flex-col gap-3 overflow-hidden rounded-xl bg-inverse-surface p-4 text-inverse-on-surface shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-secondary-container" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-secondary-fixed">
-              Copilote IA Prestige
-            </h3>
-          </div>
-          <span className="rounded-full bg-surface-variant/30 px-2 py-0.5 text-[10px] font-bold text-secondary-fixed">
-            {vm.insights.length} reco.
-          </span>
-        </div>
-        {vm.insights.map((ins) => (
-          <div key={ins.id} className="flex flex-col gap-2 rounded-lg bg-on-surface/50 p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-secondary-fixed" />
-                <span className="text-lg font-bold text-on-primary-container">{ins.title}</span>
-              </div>
-              <span className="shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-bold text-primary-fixed">
-                {ins.badge}
-              </span>
-            </div>
-            <p className="text-[13px] text-surface-container-highest">{ins.body}</p>
-            <Link
-              href={ins.href}
-              className="mt-1 flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-primary-container text-sm font-bold text-on-primary shadow-md active:scale-[0.98]"
-            >
-              <Zap className="h-[18px] w-[18px]" />
-              {ins.cta}
-            </Link>
-          </div>
-        ))}
       </section>
 
       {/* Urgences */}
@@ -341,43 +252,6 @@ export function NotificationsMobile({ vm }: { vm: NotificationsViewModel }) {
             </div>
           ))
         )}
-      </section>
-
-      {/* Channels summary */}
-      <section
-        id="preferences-mobile"
-        className="flex flex-col gap-3 rounded-xl bg-surface-container-low p-4"
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-on-surface">
-            Canaux d&apos;Alerte Actifs
-          </span>
-          <span className="text-[11px] font-bold text-secondary">App push</span>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {(["App Push", "Email", "WhatsApp"] as const).map((label) => (
-            <div
-              key={label}
-              className="flex flex-col items-center gap-1 rounded-lg bg-surface-container-lowest p-2 shadow-sm"
-            >
-              <span className="text-[11px] font-bold text-on-surface">{label}</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            </div>
-          ))}
-        </div>
-        <div className="flex items-start gap-2 pt-1">
-          <Shield className="mt-0.5 h-[18px] w-[18px] shrink-0 text-secondary" />
-          <p className="text-[11px] leading-tight text-on-surface-variant">
-            Chiffrement · Conformité CNDP Loi 09-08 · Cloud souverain Maroc.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => vm.onSaveChannels(vm.channelRules)}
-          className="mt-1 h-10 w-full rounded-lg bg-on-surface text-sm font-bold text-surface"
-        >
-          Enregistrer préférences locales
-        </button>
       </section>
     </div>
   );

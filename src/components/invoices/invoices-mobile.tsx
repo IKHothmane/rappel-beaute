@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
-import { Download, MessageCircle, Plus, Search, Sparkles } from "lucide-react";
+import { MessageCircle, Plus, Search, Sparkles } from "lucide-react";
 import {
   type InvoicePeriod,
   type InvoiceTab,
@@ -42,7 +42,6 @@ type Props = {
   onNew: () => void;
   onVoid: (e: InvoiceListItem) => void;
   onCollect: (e: InvoiceListItem) => void;
-  exportCsv: () => void;
 };
 
 export function InvoicesMobile({
@@ -69,7 +68,6 @@ export function InvoicesMobile({
   onNew,
   onVoid,
   onCollect,
-  exportCsv,
 }: Props) {
   const [view, setView] = useState<"list" | "focus">("list");
 
@@ -156,20 +154,10 @@ export function InvoicesMobile({
 
   return (
     <div className="w-full space-y-4 pb-8 lg:hidden">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-primary">{orgName}</p>
-          <h1 className="mt-0.5 text-[22px] font-bold leading-tight text-ink">Factures & documents</h1>
-          <p className="mt-1 text-[13px] text-ink/55">Registre émis depuis les RDV et le POS.</p>
-        </div>
-        <button
-          type="button"
-          aria-label="Exporter CSV"
-          onClick={exportCsv}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FCE9F4] text-ink"
-        >
-          <Download size={18} />
-        </button>
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-primary">{orgName}</p>
+        <h1 className="mt-0.5 text-[22px] font-bold leading-tight text-ink">Factures & documents</h1>
+        <p className="mt-1 text-[13px] text-ink/55">Registre émis depuis les RDV et le POS.</p>
       </div>
 
       {canWrite ? (

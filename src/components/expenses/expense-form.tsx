@@ -39,11 +39,10 @@ export function ExpenseForm({
       : new Date().toISOString().slice(0, 10),
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    initial?.paymentMethod ?? "TRANSFER",
+    initial?.paymentMethod ?? "CASH",
   );
   const [supplierId, setSupplierId] = useState(initial?.supplierId ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [reference, setReference] = useState(initial?.reference ?? "");
 
   return (
     <form
@@ -57,7 +56,6 @@ export function ExpenseForm({
           paymentMethod,
           supplierId: supplierId || undefined,
           description: description.trim() || undefined,
-          reference: reference.trim() || undefined,
         });
       }}
     >
@@ -135,14 +133,6 @@ export function ExpenseForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-        />
-      </label>
-      <label className="block text-sm">
-        <span className="mb-1.5 block font-medium">Référence</span>
-        <Input
-          value={reference}
-          onChange={(e) => setReference(e.target.value)}
-          placeholder="FAC-08-2026"
         />
       </label>
       <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">

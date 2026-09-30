@@ -11,7 +11,7 @@ export default function ResetPasswordPage() {
         className="surface w-full max-w-md p-8"
         onSubmit={(e) => {
           e.preventDefault();
-          router.push("/login/");
+          router.push("/connexion/");
         }}
       >
         <h1 className="font-display text-2xl font-semibold">Nouveau mot de passe</h1>

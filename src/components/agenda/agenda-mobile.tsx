@@ -29,6 +29,7 @@ import { formatMad } from "@/modules/analytics/service";
 import { getCustomer } from "@/modules/customers/service";
 import { listWaitingList } from "@/modules/waiting-list/service";
 import { staffColor } from "@/components/agenda/staff-colors";
+import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
 import { cn } from "@/lib/utils";
 import type { AgendaKpis } from "@/components/agenda/agenda-toolbar";
 
@@ -251,12 +252,7 @@ export function AgendaMobile({
               {dateLine}
             </p>
           </div>
-          <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F6E3EF] text-primary shadow-sm"
-            title={whatsappConnected ? "WhatsApp connecté" : "Synchronisation"}
-          >
-            <Cloud size={18} />
-          </div>
+          <GoogleCalendarConnect compact />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -334,6 +330,9 @@ export function AgendaMobile({
             <Lock size={16} className="text-ink/45" />
             Bloquer
           </button>
+          <div className="col-span-5">
+            <GoogleCalendarConnect className="h-11 w-full max-w-none justify-center rounded-xl bg-white shadow-sm" />
+          </div>
         </div>
       </section>
 

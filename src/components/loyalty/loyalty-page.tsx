@@ -694,15 +694,6 @@ export function LoyaltyPageView() {
                           </td>
                           <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-end gap-1">
-                              {canPos ? (
-                                <Link
-                                  href={`/pos/?customerId=${m.customerId}`}
-                                  className="rounded p-1 text-primary hover:bg-[#FFEFF8]"
-                                  title="Ouvrir au POS"
-                                >
-                                  <Wallet size={16} />
-                                </Link>
-                              ) : null}
                               {canWhatsapp && wa ? (
                                 <a
                                   href={wa}
@@ -1250,15 +1241,6 @@ function FocusPanel({
       ) : null}
 
       <div className="flex flex-col gap-2">
-        {canPos ? (
-          <Link
-            href={`/pos/?customerId=${member.customerId}`}
-            className="flex h-12 items-center justify-center gap-2 rounded-lg bg-primary text-[14px] font-bold text-white shadow-sm"
-          >
-            <Wallet size={18} />
-            Ouvrir au POS
-          </Link>
-        ) : null}
         {canRedeem && ready ? (
           <button
             type="button"

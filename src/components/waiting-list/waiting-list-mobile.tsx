@@ -2,21 +2,16 @@
 
 import { useEffect, useState } from "react";
 import {
-  Brain,
   CalendarCheck,
   CalendarClock,
   CheckCircle2,
   ChevronRight,
   Flame,
-  Lightbulb,
-  Lock,
   MapPin,
   MessageCircle,
   Plus,
   Search,
   Shield,
-  SlidersHorizontal,
-  Sparkles,
   Target,
   Timer,
   Users,
@@ -42,8 +37,6 @@ type Props = {
   orgName: string;
   roleLabel: string;
   kpis: WaitingKpis;
-  mix: { label: string; pct: number }[];
-  saturday: { count: number; revenue: number; staffName: string | null } | null;
   slot: CancelledSlot | null;
   opportunity: WaitingRow | null;
   nextMatch: WaitingRow | null;
@@ -60,7 +53,6 @@ type Props = {
   onSelect: (id: string) => void;
   canWrite: boolean;
   onAdd: () => void;
-  onSettings: () => void;
   onWhatsApp: (row: WaitingRow) => void;
   onHold: (row: WaitingRow) => void;
   onConfirm: (row: WaitingRow) => void;
@@ -80,8 +72,6 @@ export function WaitingListMobile({
   orgName,
   roleLabel,
   kpis,
-  mix,
-  saturday,
   slot,
   opportunity,
   nextMatch,
@@ -98,7 +88,6 @@ export function WaitingListMobile({
   onSelect,
   canWrite,
   onAdd,
-  onSettings,
   onWhatsApp,
   onHold,
   onConfirm,
@@ -120,10 +109,6 @@ export function WaitingListMobile({
             <Shield size={13} />
             {roleLabel}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#FFD9DE] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
-            <Sparkles size={13} />
-            Matching actif
-          </span>
           <span className="inline-flex items-center gap-1 rounded-full bg-[#F6E3EF] px-2.5 py-1 text-[11px] font-semibold text-ink/55">
             <MapPin size={13} className="text-[#7B5900]" />
             {orgName}
@@ -140,28 +125,16 @@ export function WaitingListMobile({
             {kpis.waiting} cliente{kpis.waiting > 1 ? "s" : ""}
           </span>
         </div>
-        <div className="grid grid-cols-5 gap-2">
-          {canWrite ? (
-            <button
-              type="button"
-              onClick={onAdd}
-              className="col-span-4 flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-[14px] font-bold text-white shadow-sm"
-            >
-              <Plus size={18} />
-              Ajouter à la liste d’attente
-            </button>
-          ) : (
-            <div className="col-span-4" />
-          )}
+        {canWrite ? (
           <button
             type="button"
-            aria-label="Paramètres matching"
-            onClick={onSettings}
-            className="flex h-12 items-center justify-center rounded-xl bg-[#FCE9F4] text-ink/60"
+            onClick={onAdd}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[14px] font-bold text-white shadow-sm"
           >
-            <SlidersHorizontal size={20} className="text-primary" />
+            <Plus size={18} />
+            Ajouter à la liste d’attente
           </button>
-        </div>
+        ) : null}
       </section>
 
       {!alertDismissed && opportunity && (slot || opportunity.hasMatch) ? (
@@ -422,77 +395,6 @@ export function WaitingListMobile({
           })
         )}
       </section>
-
-      <section className="relative overflow-hidden rounded-2xl bg-ink p-4 text-[#FEECF7] shadow-sm">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C79A3B]/20 text-[#FFDEA4]">
-              <Brain size={16} />
-            </div>
-            <span className="text-[13px] font-bold">Copilote · remplissage</span>
-          </div>
-          <span className="rounded-full bg-[#7B5900] px-2 py-0.5 text-[11px] font-bold text-white">Live</span>
-        </div>
-        <div className="mt-3 rounded-xl bg-white/5 p-3">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
-            CA récupéré ce mois
-          </p>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-[28px] font-bold text-white">
-              {formatWaitMad(kpis.bookedMonthRevenue)}
-            </span>
-            <span className="text-[12px] font-semibold text-emerald-400">
-              {kpis.bookedMonth} RDV convertis
-            </span>
-          </div>
-          {mix.length ? (
-            <>
-              <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-white/10">
-                {mix.map((s, i) => (
-                  <div
-                    key={s.label}
-                    className={cn(
-                      "h-full",
-                      i === 0 ? "bg-primary" : i === 1 ? "bg-[#FFDEA4]" : i === 2 ? "bg-emerald-500" : "bg-[#F0DDE9]",
-                    )}
-                    style={{ width: `${Math.max(s.pct, 4)}%` }}
-                  />
-                ))}
-              </div>
-              <div className="mt-1.5 flex justify-between text-[11px] text-white/70">
-                {mix.map((s) => (
-                  <span key={s.label} className="truncate px-0.5">
-                    {s.label.split(" ")[0]} {s.pct}%
-                  </span>
-                ))}
-              </div>
-            </>
-          ) : null}
-        </div>
-        {saturday ? (
-          <div className="mt-3 rounded-xl bg-[#C79A3B]/10 p-3">
-            <div className="flex items-start gap-2">
-              <Lightbulb size={18} className="mt-0.5 shrink-0 text-[#FFDEA4]" />
-              <p className="text-[13px] leading-relaxed text-white/90">
-                <strong className="text-[#FFDEA4]">{saturday.count} clientes</strong> attendent un samedi
-                {saturday.staffName ? ` avec ${saturday.staffName.split(" ")[0]}` : ""}. Gain potentiel{" "}
-                <strong className="text-[#FFDEA4]">{formatWaitMad(saturday.revenue)}</strong>.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p className="mt-3 text-[13px] text-white/70">
-            Les scores sont calculés sur la date souhaitée, la praticienne et les créneaux annulés du jour.
-          </p>
-        )}
-      </section>
-
-      <footer className="space-y-2 pb-2 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full bg-[#FCE9F4] px-3 py-1 text-[11px] text-ink/50">
-          <Lock size={13} className="text-[#7B5900]" />
-          Isolation par institut · CNDP 09-08
-        </div>
-      </footer>
     </div>
   );
 }

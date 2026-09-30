@@ -399,7 +399,7 @@ export function AiAssistantMobile(props: AiAssistantMobileProps) {
               </strong>
             </p>
             <Link
-              href="/reactivation/"
+              href="/whatsapp/"
               className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#F6E3EF] py-2.5 text-[14px] font-bold text-primary"
             >
               <Send size={16} />

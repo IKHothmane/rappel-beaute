@@ -147,6 +147,31 @@ export function AgendaPage() {
   }, []);
 
   useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const google = sp.get("google");
+    if (!google) return;
+    const reasons: Record<string, string> = {
+      "not-configured": "Google Calendar n'est pas configuré (GOOGLE_CLIENT_ID).",
+      forbidden: "Seule la gérante peut connecter Google Calendar.",
+      denied: "Autorisation Google refusée.",
+      state: "Session Google expirée. Réessayez.",
+      session: "Reconnectez-vous puis reliez Google Calendar.",
+      refresh: "Google n’a pas renvoyé de jeton. Réessayez « Connecter Google ».",
+      oauth: "Connexion Google impossible.",
+    };
+    if (google === "connected") {
+      toast("Compte Google lié à cet institut. Choisissez son calendrier.", "success");
+    } else {
+      toast(reasons[sp.get("reason") ?? ""] ?? "Connexion Google impossible.", "error");
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete("google");
+    url.searchParams.delete("reason");
+    url.searchParams.delete("pick");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [toast]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       await Promise.all([refresh(), refreshMeta()]);
@@ -606,10 +631,6 @@ export function AgendaPage() {
           </motion.div>
         </AnimatePresence>
       )}
-
-      <p className="mt-6 hidden text-[11px] text-ink/40 md:block">
-        Données chiffrées selon les normes CNDP · montants en dirhams marocains (MAD TTC).
-      </p>
 
       <Drawer
         open={drawer === "create"}

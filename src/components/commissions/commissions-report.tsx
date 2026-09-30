@@ -113,10 +113,6 @@ export function CommissionsReportView() {
         <Link href="/reports/" className="text-primary">
           ← Rapports
         </Link>
-        {" · "}
-        <Link href="/commissions/" className="text-primary">
-          Module commissions
-        </Link>
       </p>
 
       <div className="mb-4 flex flex-wrap gap-2">

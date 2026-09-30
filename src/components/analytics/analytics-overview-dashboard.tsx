@@ -279,7 +279,7 @@ export function AnalyticsOverviewDashboard({
       items.push({
         tone: "action",
         text: `${customers.kpis.inactive} clientes inactives. Relancez-les avec une campagne « Retour cliente ».`,
-        href: "/marketing/",
+        href: "/customers/",
       });
     }
     if (inventory && inventory.lowStockCount > 0) {
@@ -721,8 +721,8 @@ export function AnalyticsOverviewDashboard({
         <Section
           title="Marketing"
           action={
-            <Link href="/marketing/" className="text-xs font-medium text-primary hover:underline">
-              Campagnes
+            <Link href="/whatsapp/" className="text-xs font-medium text-primary hover:underline">
+              WhatsApp
             </Link>
           }
         >
@@ -827,10 +827,10 @@ export function AnalyticsOverviewDashboard({
         {customers && customers.kpis.inactive > 0 ? (
           <div className="mt-4">
             <Link
-              href="/marketing/"
+              href="/whatsapp/"
               className={cn(buttonVariants({ variant: "brand", size: "sm" }))}
             >
-              Créer une campagne retour
+              Relancer sur WhatsApp
             </Link>
           </div>
         ) : null}

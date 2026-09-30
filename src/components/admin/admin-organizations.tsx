@@ -1,45 +1,35 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Ban,
-  Building2,
   ChevronLeft,
   ChevronRight,
   CreditCard,
-  Eye,
   Filter,
   Hourglass,
   Lock,
-  Plus,
-  RotateCcw,
   Search,
   Shield,
   Store,
-  SwitchCamera,
   Verified,
   X,
 } from "lucide-react";
-import {
-  AdminActionsMenu,
-  adminMenuItemClass,
-} from "@/components/admin/AdminActionsMenu";
-import { adminHref } from "@/lib/admin/href";
 import { cn } from "@/lib/utils";
 import {
   archiveOrganizationApi,
+  adminSubscriptionAction,
   fetchAdminDashboard,
   fetchOrganization,
   fetchOrganizations,
   reactivateOrganizationApi,
-  startSupportSessionApi,
   suspendOrganizationApi,
+  updateOrganizationApi,
 } from "@/modules/admin/client";
 import { PLAN_LABEL } from "@/types/platform";
 import type {
   OrganizationDetail,
   OrganizationListItem,
+  OrganizationStatus,
   SubscriptionPlan,
 } from "@/types/platform";
 
@@ -66,6 +56,37 @@ function formatDate(iso: string | null | undefined) {
     month: "2-digit",
     year: "numeric",
   });
+}
+
+function OrgAvatar({
+  name,
+  logoUrl,
+  className,
+  fallbackClassName,
+}: {
+  name: string;
+  logoUrl?: string | null;
+  className?: string;
+  fallbackClassName?: string;
+}) {
+  if (logoUrl) {
+    return (
+      <div
+        className={cn(
+          "shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-line",
+          className,
+        )}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img alt="" className="h-full w-full object-contain p-0.5" src={logoUrl} />
+      </div>
+    );
+  }
+  return (
+    <div className={cn("flex shrink-0 items-center justify-center", className, fallbackClassName)}>
+      {initials(name)}
+    </div>
+  );
 }
 
 function initials(name: string) {
@@ -141,135 +162,6 @@ function StatusPill({ org }: { org: OrganizationListItem }) {
   );
 }
 
-function OrgActions({
-  org,
-  onChanged,
-  onInspect,
-}: {
-  org: OrganizationListItem;
-  onChanged: () => void;
-  onInspect: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const detailHref = adminHref(`/organizations/${org.id}/`);
-
-  async function run(action: () => Promise<false | void>, close: () => void) {
-    setBusy(true);
-    try {
-      const result = await action();
-      if (result === false) return;
-      close();
-      onChanged();
-    } catch (e) {
-      console.error(e);
-      alert(e instanceof Error ? e.message : "Action impossible.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="flex items-center justify-end gap-0.5">
-      <button
-        type="button"
-        className="rounded-lg p-2 text-primary hover:bg-primary/10"
-        title="Inspecter"
-        onClick={(e) => {
-          e.stopPropagation();
-          onInspect();
-        }}
-      >
-        <Eye className="h-4 w-4" />
-      </button>
-      <Link
-        href={adminHref(`/organizations/${org.id}/support/`)}
-        className="rounded-lg p-2 text-ink/45 hover:bg-[#FFEFF8] hover:text-ink"
-        title="Mode assistance"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <SwitchCamera className="h-4 w-4" />
-      </Link>
-      <div onClick={(e) => e.stopPropagation()}>
-        <AdminActionsMenu triggerLabel="⋯">
-          {(close) => (
-            <>
-              <button
-                type="button"
-                className={adminMenuItemClass}
-                onClick={() => {
-                  close();
-                  onInspect();
-                }}
-              >
-                Fiche 360°
-              </button>
-              <Link href={detailHref} className={adminMenuItemClass} onClick={close}>
-                Ouvrir la fiche
-              </Link>
-              <Link
-                href={adminHref(`/organizations/${org.id}/?edit=1`)}
-                className={adminMenuItemClass}
-                onClick={close}
-              >
-                Modifier
-              </Link>
-              {org.status === "ACTIVE" ? (
-                <button
-                  type="button"
-                  className={adminMenuItemClass}
-                  disabled={busy}
-                  onClick={() =>
-                    void run(async () => {
-                      if (!confirm(`Suspendre « ${org.name} » ?`)) return false;
-                      await suspendOrganizationApi(org.id);
-                    }, close)
-                  }
-                >
-                  Suspendre
-                </button>
-              ) : org.status === "SUSPENDED" ? (
-                <button
-                  type="button"
-                  className={adminMenuItemClass}
-                  disabled={busy}
-                  onClick={() =>
-                    void run(async () => {
-                      await reactivateOrganizationApi(org.id);
-                    }, close)
-                  }
-                >
-                  Réactiver
-                </button>
-              ) : null}
-              {org.status !== "ARCHIVED" ? (
-                <button
-                  type="button"
-                  className={`${adminMenuItemClass} text-red-700`}
-                  disabled={busy}
-                  onClick={() =>
-                    void run(async () => {
-                      if (
-                        !confirm(
-                          `Archiver définitivement « ${org.name} » ?`,
-                        )
-                      ) {
-                        return false;
-                      }
-                      await archiveOrganizationApi(org.id);
-                    }, close)
-                  }
-                >
-                  Archiver
-                </button>
-              ) : null}
-            </>
-          )}
-        </AdminActionsMenu>
-      </div>
-    </div>
-  );
-}
-
 function TenantDrawer({
   orgId,
   onClose,
@@ -282,24 +174,41 @@ function TenantDrawer({
   const [detail, setDetail] = useState<OrganizationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [periodMonths, setPeriodMonths] = useState(1);
+  const [periodEnd, setPeriodEnd] = useState("");
+  const [periodMode, setPeriodMode] = useState<"date" | "extend">("date");
+
+  async function reload() {
+    const r = await fetchOrganization(orgId);
+    setDetail(r.organization);
+    setEditName(r.organization.name);
+    setEditPhone(r.organization.phone ?? "");
+    setEditEmail(r.organization.email ?? "");
+    setEditCity(r.organization.city ?? "");
+    setPeriodEnd(
+      (r.organization.subscription?.renewAt ?? r.organization.renewAt)?.slice(0, 10) ?? "",
+    );
+  }
 
   useEffect(() => {
     setLoading(true);
-    fetchOrganization(orgId)
-      .then((r) => setDetail(r.organization))
+    reload()
       .catch(console.error)
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on org change only
   }, [orgId]);
 
-  async function suspend() {
-    if (!detail) return;
-    if (!confirm(`Suspendre « ${detail.name} » ? Les connexions seront bloquées.`)) return;
+  async function run(action: () => Promise<false | void>) {
     setBusy(true);
     try {
-      await suspendOrganizationApi(detail.id);
+      const result = await action();
+      if (result === false) return;
       onChanged();
-      const r = await fetchOrganization(orgId);
-      setDetail(r.organization);
+      await reload();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Erreur");
     } finally {
@@ -307,45 +216,103 @@ function TenantDrawer({
     }
   }
 
-  async function reactivate() {
+  async function saveEdit() {
     if (!detail) return;
-    setBusy(true);
-    try {
-      await reactivateOrganizationApi(detail.id);
-      onChanged();
-      const r = await fetchOrganization(orgId);
-      setDetail(r.organization);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Erreur");
-    } finally {
-      setBusy(false);
-    }
+    await run(async () => {
+      await updateOrganizationApi(detail.id, {
+        name: editName.trim(),
+        phone: editPhone.trim() || undefined,
+        email: editEmail.trim() || undefined,
+        city: editCity.trim() || undefined,
+      });
+    });
   }
 
-  async function impersonate() {
-    if (!detail) return;
-    const reason = window.prompt("Motif de la session assistance :", "Diagnostic Super Admin");
-    if (!reason?.trim()) return;
-    setBusy(true);
-    try {
-      await startSupportSessionApi(detail.id, reason.trim());
-      window.location.href = adminHref(`/organizations/${detail.id}/support/`);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Erreur");
-      setBusy(false);
+  async function applyStatus(next: OrganizationStatus) {
+    if (!detail || next === detail.status) return;
+    await run(async () => {
+      if (next === "ACTIVE") await reactivateOrganizationApi(detail.id);
+      else if (next === "SUSPENDED") {
+        if (!confirm(`Suspendre « ${detail.name} » ?`)) return false;
+        await suspendOrganizationApi(detail.id);
+      } else {
+        if (!confirm(`Archiver définitivement « ${detail.name} » ?`)) return false;
+        await archiveOrganizationApi(detail.id);
+      }
+    });
+  }
+
+  async function applyPeriod() {
+    if (!detail?.subscriptionId) {
+      alert("Aucun abonnement lié à cet institut.");
+      return;
     }
+    if (periodMode === "date" && !periodEnd) {
+      alert("Choisissez une date d’échéance.");
+      return;
+    }
+    await run(async () => {
+      if (periodMode === "date") {
+        await adminSubscriptionAction(detail.subscriptionId!, {
+          action: "set-period",
+          periodEnd: new Date(`${periodEnd}T23:59:59`).toISOString(),
+        });
+      } else {
+        await adminSubscriptionAction(detail.subscriptionId!, {
+          action: "extend",
+          months: periodMonths,
+        });
+      }
+    });
+  }
+
+  async function applyPaid(paid: boolean) {
+    if (!detail?.subscriptionId) {
+      alert("Aucun abonnement lié à cet institut.");
+      return;
+    }
+    if (detail.subscription?.paid === paid) return;
+    await run(async () => {
+      await adminSubscriptionAction(detail.subscriptionId!, {
+        action: "set-paid",
+        paid,
+      });
+    });
+  }
+
+  async function applyDemo() {
+    if (!detail?.subscriptionId) {
+      alert("Aucun abonnement lié à cet institut.");
+      return;
+    }
+    if (
+      !confirm(
+        `Passer « ${detail.name} » en mode démo 7 jours ?`,
+      )
+    ) {
+      return;
+    }
+    await run(async () => {
+      await adminSubscriptionAction(detail.subscriptionId!, {
+        action: "demo-trial",
+        days: 7,
+      });
+    });
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm xl:sticky xl:top-4 xl:w-[400px]">
-      <div className="flex items-start justify-between gap-2">
+    <aside className="flex max-h-[85vh] w-full shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-sm xl:sticky xl:top-4 xl:max-h-[calc(100dvh-7rem)] xl:w-[400px]">
+      <div className="flex shrink-0 items-start justify-between gap-2 px-4 pb-0 pt-4">
         {loading || !detail ? (
           <p className="text-sm text-ink/45">Chargement…</p>
         ) : (
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[#B61149] text-sm font-black text-white shadow-md">
-              {initials(detail.name)}
-            </div>
+            <OrgAvatar
+              name={detail.name}
+              logoUrl={detail.logoUrl}
+              className="h-12 w-12 rounded-2xl text-sm font-black shadow-md"
+              fallbackClassName="bg-gradient-to-br from-primary to-[#B61149] text-white"
+            />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 <h2 className="truncate text-base font-black text-ink">{detail.name}</h2>
@@ -369,44 +336,7 @@ function TenantDrawer({
       </div>
 
       {detail ? (
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void impersonate()}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-[#FFEFF8] py-2.5 text-xs font-bold text-ink"
-            >
-              <SwitchCamera className="h-3.5 w-3.5 text-primary" />
-              Assistance
-            </button>
-            {detail.status === "ACTIVE" ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void suspend()}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-red-50 py-2.5 text-xs font-bold text-red-800"
-              >
-                <Ban className="h-3.5 w-3.5" />
-                Suspendre
-              </button>
-            ) : detail.status === "SUSPENDED" ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void reactivate()}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-[#FFDEA4]/50 py-2.5 text-xs font-bold text-[#5D4200]"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Réactiver
-              </button>
-            ) : (
-              <div className="rounded-xl bg-stone-100 py-2.5 text-center text-xs font-semibold text-stone-500">
-                Archivé
-              </div>
-            )}
-          </div>
-
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-[#FFEFF8] p-3">
               <p className="text-[11px] text-ink/45">Clientes</p>
@@ -478,9 +408,9 @@ function TenantDrawer({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Statut</span>
+                <span>Statut abo.</span>
                 <span className="font-bold text-ink">
-                  {detail.subscription?.status ?? "—"}
+                  {detail.subscription?.status ?? detail.subscriptionStatus ?? "—"}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -490,28 +420,199 @@ function TenantDrawer({
                 </span>
               </div>
               <div className="flex justify-between">
+                <span>Paiement</span>
+                <span
+                  className={cn(
+                    "font-bold",
+                    detail.subscription?.paid ? "text-emerald-700" : "text-red-600",
+                  )}
+                >
+                  {detail.subscription ? (detail.subscription.paid ? "Payé" : "Non payé") : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span>Utilisateurs</span>
                 <span className="font-bold text-ink">{detail.usersCount}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#F0DDE9] pt-3">
-            <Link
-              href={adminHref(`/organizations/${detail.id}/?tab=subscription`)}
-              className="flex items-center gap-1 text-xs font-semibold text-ink/50 hover:text-primary"
-            >
-              <CreditCard className="h-3.5 w-3.5" />
-              Facturation
-            </Link>
-            <Link
-              href={adminHref(`/organizations/${detail.id}/?edit=1`)}
-              className="rounded-xl bg-ink px-4 py-2 text-xs font-bold text-white hover:bg-ink/90"
-            >
-              Modifier la fiche
-            </Link>
+          {/* Actions */}
+          <div className="rounded-2xl border border-line p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
+              Actions
+            </p>
+
+            <div className="mt-3 space-y-3">
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-ink">Modifier</p>
+                <div className="flex flex-col gap-2">
+                  <input
+                    className="h-10 w-full rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
+                    placeholder="Nom"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                  <input
+                    className="h-10 w-full rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
+                    placeholder="E-mail"
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="h-10 w-full rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
+                      placeholder="Téléphone"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                    />
+                    <input
+                      className="h-10 w-full rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
+                      placeholder="Ville"
+                      value={editCity}
+                      onChange={(e) => setEditCity(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy || editName.trim().length < 2}
+                    onClick={() => void saveEdit()}
+                    className="h-10 rounded-xl bg-ink text-xs font-bold text-white disabled:opacity-60"
+                  >
+                    {busy ? "…" : "Enregistrer les modifications"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-[#F0DDE9] pt-3">
+                <p className="mb-1.5 text-xs font-semibold text-ink">Changer le statut</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(
+                    [
+                      ["ACTIVE", "Actif"],
+                      ["SUSPENDED", "Suspendu"],
+                      ["ARCHIVED", "Archivé"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      disabled={busy || detail.status === value}
+                      onClick={() => void applyStatus(value)}
+                      className={cn(
+                        "rounded-lg py-2 text-[11px] font-bold transition",
+                        detail.status === value
+                          ? "bg-primary text-white"
+                          : "bg-[#FFEFF8] text-ink hover:bg-primary/10",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-[#F0DDE9] pt-3">
+                <p className="mb-1.5 text-xs font-semibold text-ink">Changer la période</p>
+                <div className="mb-2 grid grid-cols-2 gap-1.5">
+                  {(
+                    [
+                      ["date", "Date d’échéance"],
+                      ["extend", "Prolonger"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setPeriodMode(value)}
+                      className={cn(
+                        "rounded-lg py-2 text-[11px] font-bold transition",
+                        periodMode === value
+                          ? "bg-primary text-white"
+                          : "bg-[#FFEFF8] text-ink hover:bg-primary/10",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {periodMode === "date" ? (
+                    <input
+                      className="h-10 w-full rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
+                      type="date"
+                      value={periodEnd}
+                      onChange={(e) => setPeriodEnd(e.target.value)}
+                    />
+                  ) : (
+                    <select
+                      className="h-10 w-full rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-primary"
+                      value={periodMonths}
+                      onChange={(e) => setPeriodMonths(Number(e.target.value))}
+                    >
+                      {[1, 2, 3, 6, 12].map((m) => (
+                        <option key={m} value={m}>
+                          Prolonger de {m} mois
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    type="button"
+                    disabled={busy || !detail.subscriptionId}
+                    onClick={() => void applyPeriod()}
+                    className="h-10 rounded-xl bg-primary text-xs font-bold text-white disabled:opacity-60"
+                  >
+                    {busy ? "…" : "Appliquer la période"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-[#F0DDE9] pt-3">
+                <p className="mb-1.5 text-xs font-semibold text-ink">Paiement</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(
+                    [
+                      [true, "Payé"],
+                      [false, "Non payé"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      disabled={busy || !detail.subscriptionId || detail.subscription?.paid === value}
+                      onClick={() => void applyPaid(value)}
+                      className={cn(
+                        "rounded-lg py-2 text-[11px] font-bold transition disabled:opacity-60",
+                        detail.subscription?.paid === value
+                          ? value
+                            ? "bg-emerald-600 text-white"
+                            : "bg-red-600 text-white"
+                          : "bg-[#FFEFF8] text-ink hover:bg-primary/10",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-[#F0DDE9] pt-3">
+                <p className="mb-1.5 text-xs font-semibold text-ink">Mode démo</p>
+                <button
+                  type="button"
+                  disabled={busy || !detail.subscriptionId}
+                  onClick={() => void applyDemo()}
+                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-[#FFDEA4]/60 text-xs font-bold text-[#5D4200] disabled:opacity-60"
+                >
+                  <Hourglass className="h-3.5 w-3.5" />
+                  Activer démo 7 jours
+                </button>
+              </div>
+            </div>
           </div>
-        </>
+        </div>
       ) : null}
     </aside>
   );
@@ -630,21 +731,6 @@ export function AdminOrganizationsView() {
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8 lg:gap-6">
       {/* Header */}
       <header className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink/45">
-          <div className="flex items-center gap-1.5">
-            <span className="flex items-center gap-1 font-bold uppercase tracking-widest text-primary">
-              <Building2 className="h-3.5 w-3.5" />
-              Super Admin
-            </span>
-            <span>/</span>
-            <span className="font-semibold text-ink">Tenants & Salons</span>
-          </div>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            Cluster Maroc · CNDP
-          </span>
-        </div>
-
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-[28px] font-black tracking-tight text-ink lg:text-[32px]">
@@ -654,15 +740,6 @@ export function AdminOrganizationsView() {
               Supervision et cycle de vie des {s?.orgs ?? items.length} établissements
               inscrits sur Rappel Beauté.
             </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={adminHref("/organizations/new/")}
-              className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(227,28,95,0.25)]"
-            >
-              <Plus className="h-4 w-4" />
-              Créer un institut
-            </Link>
           </div>
         </div>
 
@@ -889,18 +966,18 @@ export function AdminOrganizationsView() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex min-w-0 items-start gap-3">
-                        <div
-                          className={cn(
-                            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold",
+                        <OrgAvatar
+                          name={org.name}
+                          logoUrl={org.logoUrl}
+                          className="h-11 w-11 rounded-xl text-sm font-extrabold"
+                          fallbackClassName={cn(
                             statusLabel(org).tone === "due"
                               ? "bg-red-100 text-red-800"
                               : statusLabel(org).tone === "active"
                                 ? "bg-gradient-to-br from-primary to-[#B61149] text-white"
                                 : "bg-[#FFEFF8] text-ink",
                           )}
-                        >
-                          {initials(org.name)}
-                        </div>
+                        />
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <h2 className="truncate text-sm font-bold text-ink">{org.name}</h2>
@@ -948,24 +1025,6 @@ export function AdminOrganizationsView() {
                       <span>Créé {formatDate(org.createdAt)}</span>
                     </div>
                   </button>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(org.id)}
-                      className="flex items-center justify-center gap-1.5 rounded-lg bg-ink py-2 text-xs font-semibold text-white"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      Fiche 360°
-                    </button>
-                    <Link
-                      href={adminHref(`/organizations/${org.id}/support/`)}
-                      className="flex items-center justify-center gap-1.5 rounded-lg border border-primary/30 bg-[#FFF0F5] py-2 text-xs font-semibold text-primary"
-                    >
-                      <SwitchCamera className="h-3.5 w-3.5" />
-                      Assistance
-                    </Link>
-                  </div>
                 </li>
               );
             })}
@@ -983,7 +1042,6 @@ export function AdminOrganizationsView() {
                     <th className="px-3 py-3.5 font-medium">Formule</th>
                     <th className="px-3 py-3.5 font-medium">Usage</th>
                     <th className="px-3 py-3.5 font-medium">Statut</th>
-                    <th className="px-4 py-3.5 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F0DDE9]/80">
@@ -999,18 +1057,18 @@ export function AdminOrganizationsView() {
                     >
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black",
+                          <OrgAvatar
+                            name={org.name}
+                            logoUrl={org.logoUrl}
+                            className="h-11 w-11 rounded-2xl text-sm font-black"
+                            fallbackClassName={cn(
                               statusLabel(org).tone === "due"
                                 ? "bg-red-100 text-red-800"
                                 : selectedId === org.id
                                   ? "bg-gradient-to-br from-primary to-[#B61149] text-white"
                                   : "bg-[#FFEFF8] text-ink",
                             )}
-                          >
-                            {initials(org.name)}
-                          </div>
+                          />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="truncate font-bold text-ink">{org.name}</span>
@@ -1063,13 +1121,6 @@ export function AdminOrganizationsView() {
                       </td>
                       <td className="px-3 py-3.5">
                         <StatusPill org={org} />
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <OrgActions
-                          org={org}
-                          onChanged={load}
-                          onInspect={() => setSelectedId(org.id)}
-                        />
                       </td>
                     </tr>
                   ))}
@@ -1135,7 +1186,7 @@ export function AdminOrganizationsView() {
           <div className="w-full xl:w-auto">
             {/* Mobile: overlay-style drawer peek */}
             <div className="fixed inset-0 z-40 bg-ink/40 xl:hidden" onClick={() => setSelectedId(null)} />
-            <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl xl:static xl:z-auto xl:max-h-none xl:overflow-visible xl:rounded-none">
+            <div className="fixed inset-x-0 bottom-0 z-50 xl:static xl:z-auto">
               <TenantDrawer
                 orgId={selectedId}
                 onClose={() => setSelectedId(null)}
@@ -1145,21 +1196,6 @@ export function AdminOrganizationsView() {
           </div>
         ) : null}
       </div>
-
-      <footer className="flex flex-col items-start justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm md:flex-row md:items-center">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFDEA4]/50 text-[#5D4200]">
-            <Shield className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-ink">Conformité CNDP · Loi 09-08</p>
-            <p className="text-xs text-ink/50">
-              Données clientes hébergées au Maroc — isolation multi-tenant.
-            </p>
-          </div>
-        </div>
-        <span className="text-xs font-bold text-[#7B5900]">100% Souveraineté Maroc</span>
-      </footer>
     </div>
   );
 }

@@ -31,6 +31,7 @@ export type OrganizationListItem = {
   city: string | null;
   phone: string | null;
   email: string | null;
+  logoUrl: string | null;
   status: OrganizationStatus;
   plan: PlanCode | null;
   ownerName: string | null;
@@ -38,6 +39,7 @@ export type OrganizationListItem = {
   createdAt: string;
   mrr: number;
   usersCount: number;
+  subscriptionId: string | null;
   subscriptionStatus: SubscriptionStatus | null;
   renewAt: string | null;
 };
@@ -204,6 +206,7 @@ export const PLATFORM_AUDIT_ACTION_LABEL: Record<string, string> = {
   USER_UPDATED: "Utilisateur modifié",
   USER_ROLE_CHANGED: "Rôle modifié",
   USER_PASSWORD_RESET: "Mot de passe réinitialisé",
+  PLATFORM_ADMIN_CREATED: "Administrateur créé",
   USER_SESSIONS_INVALIDATED: "Sessions invalidées",
   OWNER_ACCESS_RESET: "Accès propriétaire réinitialisé",
   SUBSCRIPTION_PLAN_CHANGED: "Formule modifiée",
@@ -214,6 +217,8 @@ export const PLATFORM_AUDIT_ACTION_LABEL: Record<string, string> = {
   SUBSCRIPTION_REACTIVATED: "Abonnement réactivé",
   SUBSCRIPTION_CANCELLED: "Abonnement annulé",
   SUBSCRIPTION_EXTENDED: "Abonnement prolongé",
+  SUBSCRIPTION_MARKED_PAID: "Abonnement marqué payé",
+  SUBSCRIPTION_MARKED_UNPAID: "Abonnement marqué non payé",
   SUBSCRIPTION_TRIAL_GRANTED: "Période gratuite accordée",
   SUBSCRIPTION_CREATED: "Abonnement créé",
   SUPPORT_SESSION_STARTED: "Session assistance démarrée",
@@ -244,5 +249,7 @@ export type OrganizationDetail = OrganizationListItem & {
     status: SubscriptionStatus;
     startAt: string;
     renewAt: string;
+    paid: boolean;
+    paidAt: string | null;
   } | null;
 };

@@ -52,6 +52,16 @@ export function generateTemporaryPassword(): string {
   return `${chars.slice(0, 2).join("")}-${chars.slice(2, 6).join("")}${chars.slice(6, 8).join("")}${chars.slice(8).join("")}`;
 }
 
+/** PIN à 6 chiffres pour l'inscription publique (e-mail → connexion → changer MDP). */
+export function generateSignupPin(): string {
+  const digits: string[] = [];
+  while (digits.length < 6) {
+    const byte = randomBytes(1)[0]!;
+    if (byte < 250) digits.push(String(byte % 10));
+  }
+  return digits.join("");
+}
+
 function base64UrlEncode(input: string | Buffer): string {
   return Buffer.from(input)
     .toString("base64")

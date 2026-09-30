@@ -15,6 +15,7 @@ import {
   Power,
   Search,
   Shield,
+  UserPlus,
   ShieldCheck,
   UsersRound,
   X,
@@ -30,6 +31,7 @@ import {
 import { adminHref } from "@/lib/admin/href";
 import { cn } from "@/lib/utils";
 import {
+  createPlatformAdminApi,
   fetchAdminUser,
   fetchAdminUsers,
   invalidateAdminUserSessions,
@@ -309,6 +311,12 @@ export function AdminUsersView() {
     user: PlatformOrgUser;
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createFirst, setCreateFirst] = useState("");
+  const [createLast, setCreateLast] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createPassword, setCreatePassword] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setQ(qInput.trim()), 280);
@@ -539,16 +547,6 @@ export function AdminUsersView() {
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8 lg:gap-6">
       {/* Header */}
       <header className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider text-ink/45">
-          <span className="font-bold text-primary">Super Admin</span>
-          <span>/</span>
-          <span className="text-ink/60">Utilisateurs globaux</span>
-          <span className="hidden sm:inline">/</span>
-          <span className="hidden font-bold text-[#7B5900] sm:inline">
-            Gouvernance des accès & sessions
-          </span>
-        </div>
-
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -583,6 +581,17 @@ export function AdminUsersView() {
                 ⌘K
               </kbd>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCreateError(null);
+                setCreateOpen(true);
+              }}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-sm hover:opacity-90"
+            >
+              <UserPlus className="h-4 w-4" />
+              Ajouter un admin
+            </button>
             <button
               type="button"
               onClick={exportCsv}
@@ -1469,6 +1478,117 @@ export function AdminUsersView() {
           </div>
         </div>
       </section>
+
+      {createOpen ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/45 p-4">
+          <form
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setCreateError(null);
+              setBusy(true);
+              void createPlatformAdminApi({
+                email: createEmail.trim(),
+                password: createPassword,
+                firstName: createFirst.trim(),
+                lastName: createLast.trim(),
+              })
+                .then(() => {
+                  setCreateOpen(false);
+                  setCreateFirst("");
+                  setCreateLast("");
+                  setCreateEmail("");
+                  setCreatePassword("");
+                  load();
+                })
+                .catch((err) => {
+                  setCreateError(err instanceof Error ? err.message : "Création impossible.");
+                })
+                .finally(() => setBusy(false));
+            }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-ink">Ajouter un admin</h2>
+                <p className="mt-1 text-sm text-ink/50">
+                  Compte Super Admin. Connexion avec cet e-mail et ce mot de passe.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-lg p-1 text-ink/40 hover:bg-[#FFEFF8]"
+                onClick={() => setCreateOpen(false)}
+                aria-label="Fermer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">Prénom</span>
+                <input
+                  required
+                  value={createFirst}
+                  onChange={(e) => setCreateFirst(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-primary"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium">Nom</span>
+                <input
+                  required
+                  value={createLast}
+                  onChange={(e) => setCreateLast(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-primary"
+                />
+              </label>
+            </div>
+            <label className="mt-3 block text-sm">
+              <span className="mb-1 block font-medium">E-mail</span>
+              <input
+                required
+                type="email"
+                autoComplete="off"
+                value={createEmail}
+                onChange={(e) => setCreateEmail(e.target.value)}
+                className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-primary"
+              />
+            </label>
+            <label className="mt-3 block text-sm">
+              <span className="mb-1 block font-medium">Mot de passe</span>
+              <input
+                required
+                type="password"
+                minLength={8}
+                autoComplete="new-password"
+                value={createPassword}
+                onChange={(e) => setCreatePassword(e.target.value)}
+                className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-primary"
+              />
+              <span className="mt-1 block text-xs text-ink/45">8 caractères minimum.</span>
+            </label>
+            {createError ? (
+              <p className="mt-3 text-sm font-medium text-red-600">{createError}</p>
+            ) : null}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-ink/60"
+                onClick={() => setCreateOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={busy}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+              >
+                {busy ? "…" : "Créer le compte"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       {temp ? (
         <TempPasswordModal

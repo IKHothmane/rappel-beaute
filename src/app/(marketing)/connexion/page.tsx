@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/www/LoginForm";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Connexion Espace Pro",

@@ -11,10 +11,29 @@ export const SITE = {
 /** Connexion SaaS — jamais sur le site www (marketing) */
 export const APP_LOGIN_HREF =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")
-    ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/login/`
+    ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/connexion/`
     : process.env.NODE_ENV === "production"
-      ? `${SITE.appUrl}/login/`
-      : "/login/?__host=app";
+      ? `${SITE.appUrl}/connexion/`
+      : "/connexion/";
+
+/** URL absolue de connexion — e-mails transactionnels (préremplissage optionnel). */
+export function absoluteAppLoginUrl(opts?: {
+  email?: string;
+  password?: string;
+}): string {
+  const fromEnv = (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_BASE_URL ||
+    ""
+  ).replace(/\/$/, "");
+  const base =
+    fromEnv ||
+    (process.env.NODE_ENV === "production" ? SITE.appUrl : "http://localhost:3000");
+  const url = new URL(`${base}/connexion/`);
+  if (opts?.email?.trim()) url.searchParams.set("email", opts.email.trim().toLowerCase());
+  if (opts?.password) url.searchParams.set("password", opts.password);
+  return url.toString();
+}
 
 /**
  * Architecture marketing figée — 12 pages.
@@ -24,6 +43,7 @@ export const MARKETING_PAGES = [
   { path: "/", group: "nav" },
   { path: "/fonctionnalites/", group: "nav" },
   { path: "/tarifs/", group: "nav" },
+  { path: "/instituts/", group: "nav" },
   { path: "/a-propos/", group: "nav" },
   { path: "/essai/", group: "conversion" },
   { path: "/professionnel/", group: "conversion" },
@@ -41,6 +61,7 @@ export const NAV = [
   { href: "/", label: "Accueil" },
   { href: "/fonctionnalites/", label: "Fonctionnalités" },
   { href: "/tarifs/", label: "Tarifs" },
+  { href: "/instituts/", label: "Instituts" },
   { href: "/a-propos/", label: "À propos" },
 ] as const;
 

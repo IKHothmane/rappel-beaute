@@ -208,13 +208,6 @@ export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: 
           <Wallet size={14} />
           Encaisser
         </Link>
-        <Link
-          href={`/loyalty/?customerId=${person.id}`}
-          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-[#FCE9F4] px-3 text-[12px] font-semibold text-[#7B5900]"
-        >
-          <Star size={14} />
-          Fidélité
-        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -271,9 +264,9 @@ export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: 
           {loyalty?.nextReward && points >= loyalty.nextReward.pointsCost ? (
             <div className="flex items-center justify-between gap-2 rounded-xl bg-[#FCCA66]/20 p-2">
               <p className="text-[12px] font-bold text-[#7B5900]">{loyalty.nextReward.name}</p>
-              <Link href={`/loyalty/?customerId=${person.id}`} className="shrink-0 text-[11px] font-semibold text-primary">
-                Voir fidélité
-              </Link>
+              <span className="shrink-0 text-[11px] font-semibold text-[#7B5900]">
+                {loyalty.nextReward.pointsCost} pts
+              </span>
             </div>
           ) : null}
           {history.length === 0 ? (
@@ -331,9 +324,6 @@ export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: 
           ) : (
             <p>Aucune récompense configurée pour le moment.</p>
           )}
-          <Link href={`/loyalty/?customerId=${person.id}`} className="inline-block font-semibold text-primary">
-            Ouvrir la fidélité
-          </Link>
         </div>
       ) : (
         <div className="rounded-xl bg-[#FCE9F4] p-3">

@@ -6,13 +6,11 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   CreditCard,
-  Hourglass,
   LayoutDashboard,
   LifeBuoy,
   MonitorDot,
   PanelLeftClose,
   PanelLeftOpen,
-  Receipt,
   Search,
   Settings,
   Shield,
@@ -47,16 +45,12 @@ const NAV: NavGroup[] = [
   },
   {
     title: "Finance SaaS",
-    items: [
-      { href: "/billing/", label: "MRR & Revenus", icon: Activity },
-      { href: "/plans/", label: "Plans & tarifs", icon: Receipt },
-    ],
+    items: [{ href: "/billing/", label: "MRR & Revenus", icon: Activity }],
   },
   {
     title: "Opérations",
     items: [
       { href: "/support/tickets/", label: "Support & Tickets", icon: LifeBuoy, badge: "tickets" },
-      { href: "/onboarding/", label: "Onboarding & Essais", icon: Hourglass },
       { href: "/system/logs/", label: "Activité & Logs", icon: Terminal },
     ],
   },
@@ -97,9 +91,6 @@ function isActive(pathname: string, href: string) {
   if (href === "/organizations/") {
     return path.startsWith("/organizations");
   }
-  if (href === "/onboarding/") {
-    return path.startsWith("/onboarding");
-  }
   if (href === "/support/tickets/") {
     return path.startsWith("/support");
   }
@@ -114,9 +105,6 @@ function isActive(pathname: string, href: string) {
   }
   if (href === "/billing/") {
     return path.startsWith("/billing");
-  }
-  if (href === "/plans/") {
-    return path.startsWith("/plans");
   }
   if (href === "/subscriptions/") {
     return path.startsWith("/subscriptions");
@@ -470,12 +458,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <Link
-                  href={href("/organizations/new/")}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-bold text-white shadow-[0_4px_20px_-2px_rgba(186,0,73,0.3)]"
-                >
-                  Créer un institut
-                </Link>
                 <Link
                   href={href("/system/health/")}
                   className="hidden h-10 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-bold text-ink shadow-sm ring-1 ring-line hover:bg-[#FFEFF8] sm:inline-flex"

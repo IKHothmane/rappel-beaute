@@ -61,6 +61,34 @@ export async function getPlanById(id: string): Promise<PlanDto | null> {
   return rows[0] ? mapPlan(rows[0]) : null;
 }
 
+/** Prix affiché sur la vitrine : valeur publiée, sinon le prix du plan Institut. */
+export async function getShowcaseMonthlyPrice(): Promise<number> {
+  const { getPlatformSettings } = await import("@/lib/db/platform-settings");
+  const settings = await getPlatformSettings();
+  const raw = settings.billing.publicPrice;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 0) return Math.round(raw);
+  const plan = await getPlanByCode("INSTITUT");
+  if (plan && Number.isFinite(plan.price) && plan.price >= 0) return Math.round(plan.price);
+  return 399;
+}
+
+export async function publishShowcaseMonthlyPrice(
+  price: number,
+  actor: { id: string; name: string },
+): Promise<void> {
+  const { getPlatformSettings, updatePlatformSettings } = await import(
+    "@/lib/db/platform-settings"
+  );
+  const current = await getPlatformSettings();
+  await updatePlatformSettings({
+    patch: {
+      billing: { ...current.billing, price, publicPrice: price },
+    },
+    platformUserId: actor.id,
+    platformUserName: actor.name,
+  });
+}
+
 export async function getPlanByCode(code: PlanCode | string): Promise<PlanDto | null> {
   const { rows } = await pool.query<PlanRow>(
     `SELECT id, code, name, description, price::text, currency, "billingInterval",

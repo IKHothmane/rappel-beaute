@@ -232,6 +232,13 @@ export async function createAppointmentRow(
     console.error("[createAppointmentRow] notification", e);
   }
 
+  try {
+    const { syncAppointmentToGoogle } = await import("@/lib/integrations/google-calendar-sync");
+    syncAppointmentToGoogle(organizationId, appointment);
+  } catch (e) {
+    console.error("[createAppointmentRow] google calendar", e);
+  }
+
   return appointment;
 }
 
@@ -386,7 +393,16 @@ export async function updateAppointmentRow(
     }
   }
 
-  return appointment ? await getAppointmentById(id, organizationId) : null;
+  const latest = appointment ? await getAppointmentById(id, organizationId) : null;
+  if (latest) {
+    try {
+      const { syncAppointmentToGoogle } = await import("@/lib/integrations/google-calendar-sync");
+      syncAppointmentToGoogle(organizationId, latest);
+    } catch (e) {
+      console.error("[updateAppointmentRow] google calendar", e);
+    }
+  }
+  return latest;
 }
 
 export function isExclusionViolation(error: unknown): boolean {

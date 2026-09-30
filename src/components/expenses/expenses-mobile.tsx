@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
-import { Download, Plus, Scale, Search, Sparkles } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import {
   type ExpensePeriod,
   type ExpenseTab,
@@ -20,7 +20,6 @@ import { PAYMENT_METHOD_LABEL, type PaymentMethod } from "@/types/finance";
 
 type Props = {
   orgName: string;
-  insight: string;
   kpis: ExpenseKpis | null;
   search: string;
   onSearch: (v: string) => void;
@@ -45,13 +44,11 @@ type Props = {
   onVoid: (e: ExpenseListItem) => void;
   canEdit: boolean;
   canArchive: boolean;
-  exportCsv: () => void;
   categories: { value: string; label: string }[];
 };
 
 export function ExpensesMobile({
   orgName,
-  insight,
   kpis,
   search,
   onSearch,
@@ -76,7 +73,6 @@ export function ExpensesMobile({
   onVoid,
   canEdit,
   canArchive,
-  exportCsv,
   categories,
 }: Props) {
   const [view, setView] = useState<"list" | "focus">("list");
@@ -119,7 +115,6 @@ export function ExpensesMobile({
             <Row label="Méthode" value={PAYMENT_METHOD_LABEL[selected.paymentMethod]} />
             <Row label="Date" value={formatExpenseDate(selected.expenseDate)} />
             <Row label="Auteur" value={selected.createdByName ?? "—"} />
-            {selected.reference ? <Row label="Référence" value={selected.reference} /> : null}
           </dl>
           {selected.category === "PRODUCT_PURCHASE" ? (
             <p className="rounded-lg bg-amber-50 p-2 text-[12px] text-amber-900">
@@ -153,20 +148,10 @@ export function ExpensesMobile({
 
   return (
     <div className="w-full space-y-4 pb-8 lg:hidden">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-primary">{orgName}</p>
-          <h1 className="mt-0.5 text-[22px] font-bold leading-tight text-ink">Dépenses & budgets</h1>
-          <p className="mt-1 text-[13px] text-ink/55">Contrôle des charges, pièces et annulations VOID.</p>
-        </div>
-        <button
-          type="button"
-          aria-label="Exporter CSV"
-          onClick={exportCsv}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FCE9F4] text-ink"
-        >
-          <Download size={18} />
-        </button>
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-primary">{orgName}</p>
+        <h1 className="mt-0.5 text-[22px] font-bold leading-tight text-ink">Dépenses & budgets</h1>
+        <p className="mt-1 text-[13px] text-ink/55">Contrôle des charges, pièces et annulations VOID.</p>
       </div>
 
       {canCreate ? (
@@ -300,26 +285,6 @@ export function ExpensesMobile({
           </div>
         </section>
       ) : null}
-
-      <section className="relative overflow-hidden rounded-xl bg-ink p-4 text-[#FEECF7] shadow-sm">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
-          <Sparkles className="h-4 w-4" />
-          Lecture des charges
-        </div>
-        <p className="mt-2 text-[13px] leading-relaxed text-[#FEECF7]/90">{insight}</p>
-      </section>
-
-      <section className="rounded-xl bg-white p-3 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Scale className="h-4 w-4 text-[#7B5900]" />
-          <h2 className="text-[14px] font-bold">Circuit de validation</h2>
-        </div>
-        <p className="mt-1 text-[12px] leading-relaxed text-ink/55">
-          {canArchive
-            ? "Vous pouvez enregistrer et annuler (VOID). Pas de file d’approbation séparée."
-            : "Saisie possible selon votre rôle. L’annulation VOID est réservée au propriétaire / responsable."}
-        </p>
-      </section>
 
       <div className="flex items-center justify-between">
         <h2 className="text-[16px] font-semibold">Registre</h2>

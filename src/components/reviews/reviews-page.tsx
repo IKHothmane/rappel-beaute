@@ -5,18 +5,14 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import {
   AlertTriangle,
   CheckCircle2,
-  Lock,
-  MapPin,
   MessageCircle,
   Search,
   Send,
-  Settings,
-  Shield,
   Sparkles,
   Star,
   ThumbsUp,
 } from "lucide-react";
-import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser } from "@/components/auth/session-provider";
 import {
   type ReviewSort,
   type ReviewTab,
@@ -32,18 +28,14 @@ import {
   waHref,
 } from "@/components/reviews/reviews-helpers";
 import { ReviewsMobile } from "@/components/reviews/reviews-mobile";
-import { Button } from "@/components/ui/button";
-import { Drawer } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { canManageReviewSettings, canSendReviews } from "@/lib/rbac";
+import { canSendReviews } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 import {
   getReviewsDashboard,
   recordReviewSatisfaction,
   skipReviewRequest,
-  updateReviewSettings,
 } from "@/modules/reviews/service";
 import { markWhatsAppSent } from "@/modules/whatsapp/service";
 import type {
@@ -70,7 +62,6 @@ export function ReviewsPageView() {
   const { toast } = useToast();
   const user = useCurrentUser();
   const canSend = canSendReviews(user.role);
-  const canSettings = canManageReviewSettings(user.role);
   const directorName = `${user.firstName} ${user.lastName}`.trim() || "La direction";
 
   const [loading, setLoading] = useState(true);
@@ -85,12 +76,7 @@ export function ReviewsPageView() {
   const [sort, setSort] = useState<ReviewSort>("recent");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [tone, setTone] = useState<"warm" | "formal">("warm");
-  const [googleUrl, setGoogleUrl] = useState("");
-  const [delayHours, setDelayHours] = useState("3");
-  const [maxWindow, setMaxWindow] = useState("24");
-  const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 250);
@@ -114,14 +100,6 @@ export function ReviewsPageView() {
     setLoading(true);
     refresh().finally(() => setLoading(false));
   }, [refresh]);
-
-  useEffect(() => {
-    if (!settings) return;
-    setGoogleUrl(settings.googleReviewUrl ?? "");
-    setDelayHours(String(settings.delayHours));
-    setMaxWindow(String(settings.maxWindowHours));
-    setEnabled(settings.enabled);
-  }, [settings, settingsOpen]);
 
   const counts = useMemo(() => tabCounts(items), [items]);
   const filtered = useMemo(() => filterReviews(items, { tab, search, sort }), [items, tab, search, sort]);
@@ -185,29 +163,8 @@ export function ReviewsPageView() {
     refresh();
   }
 
-  async function handleSaveSettings(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    const result = await updateReviewSettings({
-      googleReviewUrl: googleUrl.trim() || null,
-      delayHours: Number(delayHours) || 3,
-      maxWindowHours: Number(maxWindow) || 24,
-      enabled,
-    });
-    setSubmitting(false);
-    if (!result.ok) {
-      toast(result.error, "error");
-      return;
-    }
-    setSettings(result.settings);
-    setSettingsOpen(false);
-    toast("Paramètres enregistrés.", "success");
-    refresh();
-  }
-
   const shared = {
     orgName: user.orgName,
-    roleLabel: ROLE_LABEL[user.role],
     directorName,
     kpis,
     insight,
@@ -224,21 +181,12 @@ export function ReviewsPageView() {
     selected,
     onSelect: setSelectedId,
     canSend,
-    canSettings,
-    onSettings: () => setSettingsOpen(true),
-    onSolicit: () => {
-      setTab("pending");
-      const first = items.find((i) => i.status === "PENDING");
-      if (first) setSelectedId(first.id);
-    },
     submitting,
     onMarkSent: handleMarkSent,
     onSkip: handleSkip,
     onSatisfaction: handleSatisfaction,
     staffScores,
     googleUrl: settings?.googleReviewUrl ?? null,
-    settingsEnabled: settings?.enabled ?? false,
-    delayHours: settings?.delayHours ?? 3,
     onCopy,
   };
 
@@ -247,57 +195,14 @@ export function ReviewsPageView() {
       <ReviewsMobile {...shared} />
 
       <div className="hidden space-y-6 lg:block">
-        <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F0DDE9] px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
-                <Lock size={13} className="text-primary" />
-                {ROLE_LABEL[user.role]}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F6E3EF] px-3 py-1 text-[11px] font-bold uppercase text-[#B61149]">
-                <Star size={13} className="text-[#7B5900]" />
-                Collecte interne
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FCCA66]/40 px-3 py-1 text-[11px] font-semibold text-[#5D4200]">
-                <Shield size={13} />
-                CNDP 09-08 · opt-in
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFEFF8] px-3 py-1 text-[11px] text-ink/55">
-                <MapPin size={13} />
-                {user.orgName}
-              </span>
-            </div>
-            <h1 className="flex items-center gap-3 text-[28px] font-bold tracking-tight xl:text-[40px] xl:leading-[48px]">
-              <Star size={32} className="text-[#7B5900]" fill="currentColor" />
-              Avis & réputation
-            </h1>
-            <p className="max-w-3xl text-[15px] text-ink/55">
-              Demandes après rendez-vous terminé, notes internes à trois niveaux, relance WhatsApp manuelle. Aucune
-              publication Google ni réponse envoyée à votre place.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {canSettings ? (
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(true)}
-                className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-4 text-[14px] font-semibold shadow-sm"
-              >
-                <Settings size={18} />
-                Paramètres & délais
-              </button>
-            ) : null}
-            {canSend ? (
-              <button
-                type="button"
-                onClick={shared.onSolicit}
-                className="inline-flex h-12 items-center gap-2 rounded-xl bg-white px-4 text-[14px] font-semibold text-[#B61149] shadow-sm"
-              >
-                <Send size={18} />
-                Solliciter ({counts.pending})
-              </button>
-            ) : null}
-          </div>
+        <header>
+          <h1 className="flex items-center gap-3 text-[28px] font-bold tracking-tight xl:text-[40px] xl:leading-[48px]">
+            <Star size={32} className="text-[#7B5900]" fill="currentColor" />
+            Avis & réputation
+          </h1>
+          <p className="mt-1 max-w-3xl text-[15px] text-ink/55">
+            Demandes après rendez-vous terminé, notes internes à trois niveaux, relance WhatsApp manuelle.
+          </p>
         </header>
 
         <section className="relative overflow-hidden rounded-2xl bg-[#382D36] p-6 text-[#FEECF7] shadow-sm">
@@ -346,7 +251,11 @@ export function ReviewsPageView() {
             ) : canSend && counts.pending > 0 ? (
               <button
                 type="button"
-                onClick={shared.onSolicit}
+                onClick={() => {
+                  setTab("pending");
+                  const first = items.find((i) => i.status === "PENDING");
+                  if (first) setSelectedId(first.id);
+                }}
                 className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white"
               >
                 Voir les envois
@@ -565,7 +474,7 @@ export function ReviewsPageView() {
           </aside>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm">
             <h3 className="text-[18px] font-bold">Répartition interne</h3>
             <StarBar label="5★ très satisfaite" count={kpis?.verySatisfiedCount ?? 0} total={kpis?.recordedCount ?? 0} color="bg-primary" />
@@ -592,70 +501,8 @@ export function ReviewsPageView() {
               ))
             )}
           </div>
-          <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[18px] font-bold">Workflow réel</h3>
-              <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", settings?.enabled ? "bg-emerald-100 text-emerald-800" : "bg-[#F6E3EF] text-ink/55")}>
-                {settings?.enabled ? "Actif" : "Désactivé"}
-              </span>
-            </div>
-            <ol className="space-y-3 text-[13px] text-ink/70">
-              <li>
-                <strong className="text-ink">1. RDV terminé + {settings?.delayHours ?? 3} h</strong>
-                <p>Une demande d’avis est créée (fenêtre {settings?.maxWindowHours ?? 24} h).</p>
-              </li>
-              <li>
-                <strong className="text-ink">2. Envoi WhatsApp manuel</strong>
-                <p>Vous ouvrez wa.me, puis marquez envoyé. Rien ne part tout seul.</p>
-              </li>
-              <li>
-                <strong className="text-ink">3. Note interne</strong>
-                <p>Très satisfaite / satisfaite / insatisfaite. Lien Google seulement si configuré et cliente satisfaite.</p>
-              </li>
-            </ol>
-          </div>
         </div>
-
-        <footer className="flex flex-col items-center justify-between gap-2 rounded-2xl bg-white p-5 text-[13px] text-ink/50 md:flex-row">
-          <span className="flex items-center gap-2">
-            <Lock size={16} className="text-[#7B5900]" />
-            Isolation par institut · CNDP 09-08 · WhatsApp opt-in
-          </span>
-          <span>Aucune publication Google automatique</span>
-        </footer>
       </div>
-
-      <Drawer open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Paramètres des avis">
-        <form className="space-y-4 overflow-y-auto p-5" onSubmit={handleSaveSettings}>
-          <label className="flex items-center gap-2 text-[14px]">
-            <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-            Activer la création des demandes après RDV
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Délai après RDV (heures)</span>
-            <Input type="number" min={1} max={72} value={delayHours} onChange={(e) => setDelayHours(e.target.value)} />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Fenêtre max (heures)</span>
-            <Input type="number" min={3} max={168} value={maxWindow} onChange={(e) => setMaxWindow(e.target.value)} />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Lien Google Review (optionnel)</span>
-            <Input value={googleUrl} onChange={(e) => setGoogleUrl(e.target.value)} placeholder="https://g.page/r/…" />
-          </label>
-          <p className="text-[12px] text-ink/45">
-            Le lien n’est jamais envoyé automatiquement. Il sert d’invitation manuelle si la cliente est satisfaite.
-          </p>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setSettingsOpen(false)} className="h-11 rounded-lg bg-[#FFEFF8] px-4 text-[14px] font-semibold">
-              Annuler
-            </button>
-            <Button type="submit" variant="brand" disabled={submitting}>
-              Enregistrer
-            </Button>
-          </div>
-        </form>
-      </Drawer>
     </>
   );
 }

@@ -9,6 +9,10 @@ function buildKey(input: PutObjectInput): string {
   return `${input.category}/${input.organizationId}/${Date.now()}_${safe}`;
 }
 
+function publicUrl(key: string): string {
+  return `/api/storage/local/${key.split("/").map(encodeURIComponent).join("/")}`;
+}
+
 export class LocalStorageService implements StorageService {
   async put(input: PutObjectInput): Promise<StoredObject> {
     const key = buildKey(input);
@@ -17,14 +21,14 @@ export class LocalStorageService implements StorageService {
     await fs.writeFile(full, input.data);
     return {
       key,
-      url: `/api/storage/local/${encodeURIComponent(key)}`,
+      url: publicUrl(key),
       size: input.data.length,
       contentType: input.contentType,
     };
   }
 
   getPublicUrl(key: string): string | null {
-    return `/api/storage/local/${encodeURIComponent(key)}`;
+    return publicUrl(key);
   }
 
   async delete(key: string): Promise<void> {

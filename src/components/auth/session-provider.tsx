@@ -47,7 +47,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
     setUser(null);
-    window.location.href = "/login/";
+    window.location.href = "/connexion/";
   }, []);
 
   const value = useMemo(
@@ -76,6 +76,7 @@ export function useCurrentUser(): AppSessionUser {
       organizationId: "",
       orgName: "",
       orgSlug: "",
+      orgLogoUrl: null,
       scope: "app",
       accountType: "ORGANIZATION",
       mustChangePassword: false,

@@ -15,7 +15,6 @@ import {
   MessageCircle,
   Phone,
   Search,
-  Send,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -468,24 +467,14 @@ function CustomerListCard({ customer: c, onOpen }: { customer: CustomerListItem;
           <MessageCircle size={14} />
           WhatsApp
         </a>
-        {c.segment === "AT_RISK" ? (
-          <Link
-            href="/reactivation/"
-            className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-[#FCCA66] px-3 text-[12px] font-semibold text-[#7B5900]"
-          >
-            <Send size={14} />
-            Relancer
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={onOpen}
-            className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-[#F6E3EF] px-3 text-[12px] font-semibold text-ink"
-          >
-            <Eye size={14} />
-            Fiche 360°
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onOpen}
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-[#F6E3EF] px-3 text-[12px] font-semibold text-ink"
+        >
+          <Eye size={14} />
+          Fiche 360°
+        </button>
       </div>
     </div>
   );
@@ -674,13 +663,6 @@ function CustomerFocusMobile({
             <Wallet size={16} />
             Encaisser
           </Link>
-          <Link
-            href={`/loyalty/?customerId=${person.id}`}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-[#FFDEA4] text-[12px] font-semibold text-[#7B5900] shadow-sm"
-          >
-            <Star size={16} />
-            Points Club
-          </Link>
         </div>
         {canWrite ? (
           <button type="button" onClick={onEdit} className="text-center text-[12px] font-semibold text-primary">
@@ -784,12 +766,9 @@ function CustomerFocusMobile({
                 <p className="text-[13px] font-bold text-[#7B5900]">{loyalty.nextReward.name}</p>
                 <p className="text-[11px] text-[#5D4200]">{loyalty.nextReward.pointsCost} pts</p>
               </div>
-              <Link
-                href={`/loyalty/?customerId=${person.id}`}
-                className="rounded-lg bg-[#7B5900] px-3 py-1.5 text-[12px] font-semibold text-white"
-              >
-                Appliquer
-              </Link>
+              <span className="rounded-lg bg-[#7B5900] px-3 py-1.5 text-[12px] font-semibold text-white">
+                {loyalty.nextReward.pointsCost} pts
+              </span>
             </div>
           ) : null}
           <span className="text-[14px] font-semibold text-ink">Historique des soins récents</span>
@@ -847,9 +826,6 @@ function CustomerFocusMobile({
           ) : (
             <p>Aucune récompense configurée pour le moment.</p>
           )}
-          <Link href={`/loyalty/?customerId=${person.id}`} className="font-semibold text-primary">
-            Ouvrir la fidélité
-          </Link>
         </div>
       ) : (
         <div

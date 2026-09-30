@@ -11,6 +11,7 @@ import { usePlanFeatures } from "@/components/subscriptions/plan-features-provid
 
 const BYPASS_PREFIXES = [
   "/login",
+  "/connexion",
   "/forgot-password",
   "/reset-password",
   "/book",

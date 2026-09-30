@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { Pool } from "pg";
 import { hashPassword } from "@/lib/auth/crypto";
 import type { PlatformSessionUser } from "@/lib/auth/types";
@@ -461,6 +462,45 @@ export async function updatePlatformWideUserProfile(
   });
 
   return getPlatformWideUser(userId);
+}
+
+export async function createPlatformAdmin(
+  actor: PlatformSessionUser,
+  input: { email: string; password: string; firstName: string; lastName: string },
+): Promise<{ id: string; email: string; firstName: string; lastName: string }> {
+  const email = input.email.trim().toLowerCase();
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  const password = input.password;
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("EMAIL_INVALID");
+  if (password.length < 8) throw new Error("PASSWORD_SHORT");
+  if (firstName.length < 1 || lastName.length < 1) throw new Error("NAME_REQUIRED");
+
+  const { rows: taken } = await pool.query<{ id: string }>(
+    `SELECT id FROM "PlatformUser" WHERE LOWER(email) = $1 LIMIT 1`,
+    [email],
+  );
+  if (taken[0]) throw new Error("EMAIL_TAKEN");
+
+  const id = `pu_${randomBytes(8).toString("hex")}`;
+  await pool.query(
+    `INSERT INTO "PlatformUser" (
+      id, email, "firstName", "lastName", role, status, "passwordHash", "updatedAt"
+    ) VALUES ($1, $2, $3, $4, 'SUPER_ADMIN', 'ACTIVE', $5, NOW())`,
+    [id, email, firstName, lastName, hashPassword(password)],
+  );
+
+  await writePlatformAuditLog({
+    platformUserId: actor.id,
+    platformUserName: actorName(actor),
+    entityType: "PlatformUser",
+    entityId: id,
+    action: "PLATFORM_ADMIN_CREATED",
+    after: { email, firstName, lastName, role: "SUPER_ADMIN" },
+  });
+
+  return { id, email, firstName, lastName };
 }
 
 export async function platformResetUserPassword(

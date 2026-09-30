@@ -1,6 +1,11 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
-import { countSubscriptionsUsingPlan, getPlanById, updatePlan } from "@/lib/subscriptions/plans";
+import {
+  countSubscriptionsUsingPlan,
+  getPlanById,
+  publishShowcaseMonthlyPrice,
+  updatePlan,
+} from "@/lib/subscriptions/plans";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -37,6 +42,13 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     active: body.active != null ? Boolean(body.active) : undefined,
     features: body.features as Record<string, boolean> | undefined,
   });
+
+  if (before.code === "INSTITUT" && plan && body.price != null) {
+    await publishShowcaseMonthlyPrice(plan.price, {
+      id: auth.session.id,
+      name: `${auth.session.firstName} ${auth.session.lastName}`,
+    });
+  }
 
   await writePlatformAuditLog({
     platformUserId: auth.session.id,

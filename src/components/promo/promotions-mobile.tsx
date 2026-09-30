@@ -8,32 +8,23 @@ import {
   CalendarDays,
   Copy,
   Gift,
-  Lock,
-  MapPin,
-  MessageCircle,
   Percent,
   Plus,
   Receipt,
   Search,
-  Shield,
   Sparkles,
-  Store,
   Users,
   Wallet,
   Zap,
 } from "lucide-react";
 import {
-  type GanttWeek,
   type PromoSimulation,
   type PromoTab,
   discountLabel,
   fillRatio,
-  formatPromoShortDate,
-  ganttOffset,
   perimeterLabel,
   promoShortId,
   statusChip,
-  validityLabel,
 } from "@/components/promo/promo-helpers";
 import { cn, formatMad } from "@/lib/utils";
 import type { CustomerListItem } from "@/types/customer";
@@ -47,8 +38,6 @@ type Insight = {
 };
 
 type Props = {
-  orgName: string;
-  roleLabel: string;
   kpis: PromotionKpis | null;
   kpiHints: { pos: string; revenue: string; conversion: string };
   effort: number | null;
@@ -65,20 +54,12 @@ type Props = {
   onSelect: (id: string) => void;
   canWrite: boolean;
   onAdd: () => void;
-  onCalendar: () => void;
-  onRules: () => void;
   onDeploy: () => void;
   canPos: boolean;
   canAgenda: boolean;
-  canWhatsapp: boolean;
-  canReactivation: boolean;
-  weeks: GanttWeek[];
-  ganttItems: PromotionListItem[];
   sim: PromoSimulation | null;
   simCustomer: CustomerListItem | null;
   simLines: { name: string; price: number }[];
-  waText: string;
-  waHref: string | null;
   onCopy: (text: string, label: string) => void;
   onToggleStatus: (p: PromotionListItem) => void;
 };
@@ -87,13 +68,10 @@ const TABS: { id: PromoTab; label: string }[] = [
   { id: "all", label: "Toutes" },
   { id: "codes", label: "Codes" },
   { id: "auto", label: "Paliers" },
-  { id: "calendar", label: "Calendrier" },
   { id: "audit", label: "Historique" },
 ];
 
 export function PromotionsMobile({
-  orgName,
-  roleLabel,
   kpis,
   kpiHints,
   effort,
@@ -110,20 +88,12 @@ export function PromotionsMobile({
   onSelect,
   canWrite,
   onAdd,
-  onCalendar,
-  onRules,
   onDeploy,
   canPos,
   canAgenda,
-  canWhatsapp,
-  canReactivation,
-  weeks,
-  ganttItems,
   sim,
   simCustomer,
   simLines,
-  waText,
-  waHref,
   onCopy,
   onToggleStatus,
 }: Props) {
@@ -171,18 +141,10 @@ export function PromotionsMobile({
           <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold", chip?.className)}>
             {chip?.label}
           </span>
-          {selected.description ? <p className="text-[13px] text-ink/55">{selected.description}</p> : null}
           <div className="grid grid-cols-2 gap-2 text-[12px] text-ink/70">
             <div className="rounded-lg bg-[#FFF7F9] p-2">
-              Panier min. {selected.minAmount != null ? formatMad(selected.minAmount) : "—"}
+              {selected.maxUsesPerCustomer === 1 ? "Une seule fois" : "Plusieurs fois"}
             </div>
-            <div className="rounded-lg bg-[#FFF7F9] p-2">
-              {selected.maxUsesPerCustomer != null
-                ? `${selected.maxUsesPerCustomer}× / cliente`
-                : "Sans plafond / cliente"}
-            </div>
-            <div className="rounded-lg bg-[#FFF7F9] p-2">{validityLabel(selected).secondary}</div>
-            <div className="rounded-lg bg-[#FFF7F9] p-2">Non cumulable au POS</div>
           </div>
           {sim ? (
             <div className="space-y-2 rounded-xl bg-[#FCE9F4] p-3">
@@ -223,19 +185,6 @@ export function PromotionsMobile({
                 ))}
               </ul>
               <div className="grid grid-cols-2 gap-2">
-                {canPos ? (
-                  <Link
-                    href="/pos/"
-                    className="flex h-10 items-center justify-center gap-1 rounded-lg bg-white text-[12px] font-semibold shadow-sm"
-                  >
-                    <Store size={15} className="text-primary" />
-                    Tester POS
-                  </Link>
-                ) : (
-                  <span className="flex h-10 items-center justify-center rounded-lg bg-white/50 text-[12px] text-ink/35">
-                    POS
-                  </span>
-                )}
                 {canAgenda ? (
                   <Link
                     href="/agenda/"
@@ -248,37 +197,6 @@ export function PromotionsMobile({
               </div>
             </div>
           ) : null}
-          <div className="space-y-2 rounded-xl bg-[#FFEFF8] p-3">
-            <p className="flex items-center gap-1.5 text-[14px] font-semibold">
-              <MessageCircle size={16} className="text-emerald-700" />
-              WhatsApp manuel
-            </p>
-            <p className="rounded-lg bg-white p-2.5 text-[13px] italic text-ink/70">{waText}</p>
-            <div className="grid grid-cols-2 gap-2">
-              {canWhatsapp && waHref ? (
-                <a
-                  href={waHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex h-10 items-center justify-center gap-1 rounded-lg bg-emerald-700 text-[12px] font-bold text-white"
-                >
-                  WhatsApp
-                </a>
-              ) : (
-                <span className="flex h-10 items-center justify-center rounded-lg bg-white text-[12px] text-ink/35">
-                  Téléphone requis
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => onCopy(waText, "Texte copié")}
-                className="flex h-10 items-center justify-center gap-1 rounded-lg bg-white text-[12px] font-semibold shadow-sm"
-              >
-                <Copy size={15} />
-                Copier
-              </button>
-            </div>
-          </div>
           {canWrite ? (
             <button
               type="button"
@@ -296,52 +214,18 @@ export function PromotionsMobile({
   return (
     <div className="w-full space-y-4 pb-8 lg:hidden">
       <section className="space-y-2">
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#382D36] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
-            <Shield size={13} />
-            {roleLabel}
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#F6E3EF] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider">
-            <Lock size={13} className="text-primary" />
-            Anti-cumul POS
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#F0DDE9] px-2.5 py-1 text-[11px] font-semibold text-ink/55">
-            <MapPin size={13} className="text-[#7B5900]" />
-            {orgName}
-          </span>
-        </div>
         <h1 className="text-[28px] font-bold leading-9 tracking-tight">Promotions & offres</h1>
         <p className="text-[13px] text-ink/55">Campagnes, codes et plafonds — liés au POS réel.</p>
-        <div className="grid grid-cols-12 gap-2">
-          {canWrite ? (
-            <button
-              type="button"
-              onClick={onAdd}
-              className="col-span-6 flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-[14px] font-bold text-white shadow-sm"
-            >
-              <Plus size={18} />
-              Promotion
-            </button>
-          ) : (
-            <div className="col-span-6" />
-          )}
+        {canWrite ? (
           <button
             type="button"
-            onClick={onCalendar}
-            className="col-span-3 flex h-12 items-center justify-center rounded-xl bg-[#FCE9F4] shadow-sm"
-            aria-label="Calendrier"
+            onClick={onAdd}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[14px] font-bold text-white shadow-sm"
           >
-            <CalendarDays size={19} className="text-primary" />
+            <Plus size={18} />
+            Nouvelle promotion
           </button>
-          <button
-            type="button"
-            onClick={onRules}
-            className="col-span-3 flex h-12 items-center justify-center rounded-xl bg-[#FCE9F4] shadow-sm"
-            aria-label="Règles"
-          >
-            <Shield size={19} className="text-[#7B5900]" />
-          </button>
-        </div>
+        ) : null}
       </section>
 
       <section className="relative overflow-hidden rounded-xl bg-[#382D36] p-4 text-[#FEECF7] shadow-sm">
@@ -364,11 +248,6 @@ export function PromotionsMobile({
             <Zap size={16} />
             Préparer une offre
           </button>
-        ) : null}
-        {canReactivation ? (
-          <Link href="/reactivation/" className="mt-2 block text-center text-[12px] font-semibold text-[#FFDEA4]">
-            Ouvrir la réactivation →
-          </Link>
         ) : null}
       </section>
 
@@ -510,46 +389,6 @@ export function PromotionsMobile({
         )}
       </section>
 
-      {tab === "calendar" || ganttItems.length > 0 ? (
-        <section className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <CalendarDays size={18} className="text-[#7B5900]" />
-            <h3 className="text-[18px] font-bold">Chevauchement</h3>
-          </div>
-          <div className="grid grid-cols-6 gap-1 text-center text-[9px] text-ink/40">
-            {weeks.map((w) => (
-              <span key={w.label} className={w.current ? "font-bold text-primary" : ""}>
-                {w.label.replace(" (actuelle)", "")}
-              </span>
-            ))}
-          </div>
-          {ganttItems.slice(0, 5).map((p) => {
-            const pos = ganttOffset(p, weeks);
-            return (
-              <div key={p.id} className="space-y-1">
-                <div className="flex justify-between text-[11px]">
-                  <span className="font-medium">{p.code ?? p.name}</span>
-                  <span className="text-ink/45">{formatPromoShortDate(p.endsAt)}</span>
-                </div>
-                <div className="relative h-3 overflow-hidden rounded-full bg-[#FCE9F4]">
-                  <div
-                    className="absolute h-full rounded-full bg-primary"
-                    style={{ left: `${pos.left}%`, width: `${pos.width}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      ) : null}
-
-      <footer className="space-y-1 pb-4 text-center text-[11px] text-ink/45">
-        <p className="flex items-center justify-center gap-1">
-          <Lock size={12} />
-          Une remise à la fois au POS
-        </p>
-        <p>Les totaux viennent des usages et factures, pas d’une maquette.</p>
-      </footer>
     </div>
   );
 }

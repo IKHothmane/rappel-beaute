@@ -3,19 +3,12 @@
 import Link from "next/link";
 import {
   Bug,
-  CheckCircle2,
   Headphones,
   Lightbulb,
-  MapPin,
   Send,
-  Shield,
-  Sparkles,
   Timer,
-  Zap,
 } from "lucide-react";
 import {
-  DIAGNOSTIC_ACTIONS,
-  KNOWLEDGE_GUIDES,
   SUPPORT_CATEGORY_LABEL,
   SUPPORT_PRIORITY_LABEL,
   SUPPORT_STATUS_LABEL,
@@ -39,23 +32,6 @@ export function SupportMobile({ vm }: { vm: SupportViewModel }) {
   return (
     <div className="flex flex-col gap-4 pb-4 lg:hidden">
       <section className="flex flex-col gap-3 pt-1">
-        <div className="flex items-center gap-1.5 overflow-x-auto py-1">
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-container-highest px-2.5 py-1 text-[11px] font-bold tracking-wider text-on-surface shadow-sm">
-            {vm.roleLabel}
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-secondary-fixed px-2.5 py-1 text-[11px] font-bold text-on-secondary-fixed shadow-sm">
-            Assistance
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-container-low px-2.5 py-1 text-[11px] font-semibold text-on-surface-variant">
-            <Shield className="h-3 w-3 text-secondary" />
-            CNDP 09-08
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-container-low px-2.5 py-1 text-[11px] font-semibold text-on-surface-variant">
-            <MapPin className="h-3 w-3 text-primary" />
-            {vm.orgName}
-          </span>
-        </div>
-
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-primary shadow-sm">
             <Headphones className="h-5 w-5" />
@@ -339,73 +315,6 @@ export function SupportMobile({ vm }: { vm: SupportViewModel }) {
               </button>
             ))
         )}
-      </section>
-
-      {/* AI + guides */}
-      <section className="flex flex-col gap-3 rounded-xl bg-inverse-surface p-4 text-inverse-on-surface shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary/20 text-secondary-fixed">
-              <Sparkles className="h-[18px] w-[18px]" />
-            </div>
-            <span className="text-sm font-bold uppercase tracking-wide text-secondary-fixed">
-              Liens express
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          {DIAGNOSTIC_ACTIONS.slice(0, 3).map((a) => (
-            <Link
-              key={a.id}
-              href={a.href}
-              className="flex items-center justify-between rounded-lg bg-white/5 p-2.5"
-            >
-              <span className="flex items-center gap-2 text-[11px] font-medium text-surface-bright">
-                <Zap className="h-[18px] w-[18px] text-secondary-fixed" />
-                {a.label}
-              </span>
-            </Link>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          {KNOWLEDGE_GUIDES.slice(0, 2).map((g) => {
-            const Icon = g.icon;
-            return (
-              <Link key={g.id} href={g.href} className="flex flex-col gap-1 rounded-lg bg-white/5 p-2.5">
-                <Icon className="h-4 w-4 text-secondary-fixed" />
-                <span className="line-clamp-1 text-[11px] font-bold text-surface-bright">
-                  {g.title}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3 rounded-xl bg-surface-container-high p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary shadow-sm">
-            <CheckCircle2 className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wide text-primary">
-              Assistance institut
-            </span>
-            <p className="text-lg font-extrabold tracking-tight text-on-surface">Via ticket dédié</p>
-          </div>
-        </div>
-        <p className="text-[13px] text-on-surface-variant">
-          Pour une urgence caisse, agenda ou TPE, créez un ticket prioritaire depuis ce centre.
-        </p>
-        {vm.canWrite ? (
-          <button
-            type="button"
-            onClick={() => vm.onOpenModal("ticket")}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-surface-container-lowest text-sm font-bold text-primary shadow-sm"
-          >
-            Ouvrir un ticket
-          </button>
-        ) : null}
       </section>
     </div>
   );

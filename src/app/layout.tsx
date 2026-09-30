@@ -31,9 +31,12 @@ export const metadata: Metadata = {
   description:
     "Agenda, clientes, stock, caisse et WhatsApp manuel pour instituts de beauté au Maroc. 14 jours pour essayer, activation sous 24 h, sans carte bancaire.",
   icons: {
-    icon: [{ url: "/brand/logo.png", type: "image/png" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/brand/logo.png", type: "image/png" },
+    ],
     apple: [{ url: "/brand/logo.png", type: "image/png" }],
-    shortcut: ["/brand/logo.png"],
+    shortcut: ["/favicon.ico"],
   },
   openGraph: {
     title: SITE.name,

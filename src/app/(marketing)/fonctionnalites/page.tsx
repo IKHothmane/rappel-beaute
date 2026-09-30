@@ -78,21 +78,7 @@ export default function FonctionnalitesPage() {
               Rendez-vous, clientes, caisse, stock, fidélité, WhatsApp et rapports.
               Ancres SEO prêtes à partager et rigueur comptable infaillible.
             </p>
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                href="/demo/"
-                className="inline-flex w-full items-center justify-center rounded-full bg-primary px-7 py-3.5 text-base font-medium text-white shadow-soft transition hover:bg-primary-dark sm:w-auto"
-              >
-                Demander une démo
-              </Link>
-              <Link
-                href="/essai/"
-                className="inline-flex w-full items-center justify-center rounded-full border border-line bg-white px-7 py-3.5 text-base font-medium text-ink shadow-sm transition hover:border-primary/40 hover:bg-primary-light/50 sm:w-auto"
-              >
-                Demande d’essai 14 jours
-              </Link>
-            </div>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-ink/55">
+            <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-ink/55">
               <span className="flex items-center gap-1.5">
                 <span className="font-bold text-primary">✓</span> Conforme dirham marocain (MAD)
               </span>
@@ -826,23 +812,6 @@ export default function FonctionnalitesPage() {
                 Une démo de 20 minutes, ou une demande d’essai. Activation sous 24 h, sans carte
                 bancaire requise.
               </p>
-              <div
-                className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row"
-                id="demande-essai"
-              >
-                <Link
-                  href="/demo/"
-                  className="inline-flex w-full items-center justify-center rounded-full bg-primary px-8 py-4 text-base font-semibold text-white shadow-soft transition hover:scale-105 hover:bg-primary-dark sm:w-auto"
-                >
-                  Demander une démo
-                </Link>
-                <Link
-                  href="/essai/"
-                  className="inline-flex w-full items-center justify-center rounded-full border border-white/20 bg-white/10 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/20 sm:w-auto"
-                >
-                  Demande d’essai 14 jours
-                </Link>
-              </div>
               <p className="pt-2 text-xs text-white/50">
                 Starter 299 MAD · Institut 499 MAD · Premium 899 MAD · Sans engagement
               </p>

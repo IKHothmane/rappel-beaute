@@ -7,7 +7,6 @@ import {
   Banknote,
   CreditCard,
   Download,
-  Landmark,
   Lock,
   Plus,
   Search,
@@ -48,8 +47,10 @@ import {
   openCashRegister,
   PAYMENT_METHOD_LABEL,
 } from "@/modules/finance/service";
+import { listPurchases } from "@/modules/procurement/service";
 import type { CashRegisterState, PaymentMethod } from "@/types/finance";
 import { PAYMENT_METHODS } from "@/types/finance";
+import type { PurchaseListItem } from "@/types/procurement";
 
 type Billable = Awaited<ReturnType<typeof listBillableAppointments>>[number];
 
@@ -77,9 +78,12 @@ export function CashRegisterPageView() {
   const [payMethod, setPayMethod] = useState<PaymentMethod>("CASH");
   const [payMethod2, setPayMethod2] = useState<PaymentMethod | "">("");
   const [payAmount2, setPayAmount2] = useState("");
+  const [inReason, setInReason] = useState("Alimentation de caisse");
 
   const [outAmount, setOutAmount] = useState("");
   const [outReason, setOutReason] = useState("");
+  const [purchases, setPurchases] = useState<PurchaseListItem[]>([]);
+  const [purchaseId, setPurchaseId] = useState("");
   const [counted, setCounted] = useState("");
   const [closeReason, setCloseReason] = useState("");
 
@@ -131,10 +135,9 @@ export function CashRegisterPageView() {
     try {
       const list = await listBillableAppointments();
       setBillable(list);
-      if (list[0]) {
-        setAptId(list[0].id);
-        setPayAmount(String(list[0].remaining));
-      }
+      setAptId("");
+      setPayAmount("");
+      setInReason("Alimentation de caisse");
       payKeyRef.current = newIdempotencyKey();
       setPayOpen(true);
     } catch {
@@ -143,9 +146,34 @@ export function CashRegisterPageView() {
   }
 
   async function handlePay() {
-    if (!aptId) return;
+    const amount = Number(payAmount);
+    if (!amount || amount <= 0) {
+      toast("Indiquez un montant.", "error");
+      return;
+    }
+
+    if (!aptId) {
+      setSubmitting(true);
+      const result = await createCashTxn({
+        type: "CASH_IN",
+        amount,
+        reason: inReason.trim() || "Alimentation de caisse",
+        idempotencyKey: newIdempotencyKey("in"),
+      });
+      setSubmitting(false);
+      if (!result.ok) {
+        toast(result.error, "error");
+        return;
+      }
+      toast("Caisse alimentée.", "success");
+      setPayOpen(false);
+      setPayAmount("");
+      refresh();
+      return;
+    }
+
     const items: { amount: number; method: PaymentMethod }[] = [
-      { amount: Number(payAmount), method: payMethod },
+      { amount, method: payMethod },
     ];
     if (payMethod2 && Number(payAmount2) > 0) {
       items.push({ amount: Number(payAmount2), method: payMethod2 });
@@ -169,10 +197,20 @@ export function CashRegisterPageView() {
     refresh();
   }
 
-  function openOut(kind: "out" | "bank") {
+  async function openOut(kind: "out" | "bank") {
     setOutKind(kind);
+    setPurchaseId("");
+    setOutAmount("");
     setOutReason(kind === "bank" ? "Dépôt banque / coffre" : "");
     setOutOpen(true);
+    try {
+      const res = await listPurchases({ limit: 50 });
+      setPurchases(
+        res.data.filter((p) => p.status !== "DRAFT" && p.status !== "CANCELLED"),
+      );
+    } catch {
+      setPurchases([]);
+    }
   }
 
   async function handleOut() {
@@ -252,7 +290,6 @@ export function CashRegisterPageView() {
         onOpen={handleOpen}
         onPay={openPayDrawer}
         onOut={() => openOut("out")}
-        onBank={() => openOut("bank")}
         onClose={handleClose}
       />
 
@@ -302,25 +339,6 @@ export function CashRegisterPageView() {
               >
                 <Banknote size={18} className="text-[#7B5900]" />
                 Sortie
-              </button>
-              <button
-                type="button"
-                onClick={() => openOut("bank")}
-                className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-[#F0DDE9] px-3.5 text-[14px] font-semibold text-ink"
-              >
-                <Landmark size={18} />
-                Banque
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCounted(String(theoretical));
-                  document.getElementById("cash-close")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-ink px-4 text-[14px] font-semibold text-[#FEECF7]"
-              >
-                <Lock size={18} className="text-[#FFDEA4]" />
-                Clôturer
               </button>
             </div>
           ) : null}
@@ -757,7 +775,7 @@ export function CashRegisterPageView() {
       <Drawer open={payOpen} onClose={() => setPayOpen(false)} title="Encaisser">
         <div className="space-y-4">
           <label className="block text-sm">
-            <span className="mb-1.5 block font-medium">Rendez-vous</span>
+            <span className="mb-1.5 block font-medium">Rendez-vous (facultatif)</span>
             <Select
               value={aptId}
               onChange={(e) => {
@@ -766,17 +784,19 @@ export function CashRegisterPageView() {
                 if (b) setPayAmount(String(b.remaining));
               }}
             >
-              {billable.length === 0 ? (
-                <option value="">Aucun RDV à encaisser</option>
-              ) : (
-                billable.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.customerName} · {b.serviceName} · reste {formatMad(b.remaining)}
-                  </option>
-                ))
-              )}
+              <option value="">Alimenter la caisse (sans RDV)</option>
+              {billable.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.customerName} · {b.serviceName} · reste {formatMad(b.remaining)}
+                </option>
+              ))}
             </Select>
           </label>
+          {!aptId ? (
+            <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/55">
+              Sans rendez-vous, le montant entre en espèces dans le tiroir (alimentation).
+            </p>
+          ) : null}
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-sm">
               <span className="mb-1.5 block font-medium">Montant</span>
@@ -788,52 +808,69 @@ export function CashRegisterPageView() {
                 onChange={(e) => setPayAmount(e.target.value)}
               />
             </label>
-            <label className="block text-sm">
-              <span className="mb-1.5 block font-medium">Méthode</span>
-              <Select
-                value={payMethod}
-                onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
-              >
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABEL[m]}
-                  </option>
-                ))}
-              </Select>
-            </label>
+            {aptId ? (
+              <label className="block text-sm">
+                <span className="mb-1.5 block font-medium">Méthode</span>
+                <Select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
+                >
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {PAYMENT_METHOD_LABEL[m]}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            ) : (
+              <label className="block text-sm">
+                <span className="mb-1.5 block font-medium">Motif</span>
+                <Input
+                  value={inReason}
+                  onChange={(e) => setInReason(e.target.value)}
+                  placeholder="Alimentation de caisse"
+                />
+              </label>
+            )}
           </div>
-          <div className="border-t border-line pt-3">
-            <p className="mb-2 text-xs text-ink/45">Paiement multi-méthodes (optionnel)</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                placeholder="2ᵉ montant"
-                value={payAmount2}
-                onChange={(e) => setPayAmount2(e.target.value)}
-              />
-              <Select
-                value={payMethod2}
-                onChange={(e) => setPayMethod2(e.target.value as PaymentMethod | "")}
-              >
-                <option value="">—</option>
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABEL[m]}
-                  </option>
-                ))}
-              </Select>
+          {aptId ? (
+            <div className="border-t border-line pt-3">
+              <p className="mb-2 text-xs text-ink/45">Paiement multi-méthodes (optionnel)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  placeholder="2ᵉ montant"
+                  value={payAmount2}
+                  onChange={(e) => setPayAmount2(e.target.value)}
+                />
+                <Select
+                  value={payMethod2}
+                  onChange={(e) => setPayMethod2(e.target.value as PaymentMethod | "")}
+                >
+                  <option value="">—</option>
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {PAYMENT_METHOD_LABEL[m]}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
-          </div>
+          ) : null}
           <Button
             type="button"
             variant="primary"
             className="w-full"
-            disabled={submitting || !aptId}
+            disabled={submitting || !payAmount || Number(payAmount) <= 0}
             onClick={handlePay}
           >
-            {submitting ? "Encaissement…" : "Encaisser"}
+            {submitting
+              ? "Enregistrement…"
+              : aptId
+                ? "Encaisser"
+                : "Alimenter la caisse"}
           </Button>
         </div>
       </Drawer>
@@ -845,8 +882,30 @@ export function CashRegisterPageView() {
       >
         <div className="space-y-4">
           <p className="text-[13px] text-ink/55">
-            Enregistre une sortie espèces (CASH_OUT). Les dépenses fournisseurs restent dans Dépenses.
+            Retire des espèces du tiroir. Vous pouvez payer une facture d’achat ou une sortie libre.
           </p>
+          <label className="block text-sm">
+            <span className="mb-1.5 block font-medium">Facture d’achat (facultatif)</span>
+            <Select
+              value={purchaseId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setPurchaseId(id);
+                const p = purchases.find((row) => row.id === id);
+                if (p) {
+                  setOutAmount(String(p.total));
+                  setOutReason(`Achat ${p.number} · ${p.supplierName}`);
+                }
+              }}
+            >
+              <option value="">Sortie libre</option>
+              {purchases.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.number} · {p.supplierName} · {formatMad(p.total)}
+                </option>
+              ))}
+            </Select>
+          </label>
           <label className="block text-sm">
             <span className="mb-1.5 block font-medium">Montant</span>
             <Input

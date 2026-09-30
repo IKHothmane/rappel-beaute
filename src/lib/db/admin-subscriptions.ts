@@ -412,6 +412,43 @@ export async function setSubscriptionStatus(
   });
 }
 
+export async function setSubscriptionPaid(
+  actor: PlatformSessionUser,
+  subscriptionId: string,
+  paid: boolean,
+): Promise<void> {
+  const { rows } = await pool.query<{
+    organizationId: string;
+    paid: boolean;
+    paidAt: Date | null;
+  }>(
+    `SELECT "organizationId", paid, "paidAt" FROM "Subscription" WHERE id = $1`,
+    [subscriptionId],
+  );
+  const sub = rows[0];
+  if (!sub) throw new Error("NOT_FOUND");
+
+  await pool.query(
+    `UPDATE "Subscription" SET
+      paid = $2,
+      "paidAt" = CASE WHEN $2 THEN NOW() ELSE NULL END,
+      "updatedAt" = NOW()
+     WHERE id = $1`,
+    [subscriptionId, paid],
+  );
+
+  await writePlatformAuditLog({
+    platformUserId: actor.id,
+    platformUserName: actorName(actor),
+    organizationId: sub.organizationId,
+    entityType: "Subscription",
+    entityId: subscriptionId,
+    action: paid ? "SUBSCRIPTION_MARKED_PAID" : "SUBSCRIPTION_MARKED_UNPAID",
+    before: { paid: sub.paid, paidAt: sub.paidAt?.toISOString() ?? null },
+    after: { paid },
+  });
+}
+
 export async function extendSubscriptionPeriod(
   actor: PlatformSessionUser,
   subscriptionId: string,
@@ -477,6 +514,112 @@ export async function grantFreePeriod(
   });
 
   return { newEnd: newEnd.toISOString() };
+}
+
+export async function grantDemoTrial(
+  actor: PlatformSessionUser,
+  subscriptionId: string,
+  days = 7,
+): Promise<{ newEnd: string }> {
+  const { rows } = await pool.query<{
+    organizationId: string;
+    status: SubscriptionStatus;
+    currentPeriodEnd: Date;
+    trialEndsAt: Date | null;
+  }>(
+    `SELECT "organizationId", status, "currentPeriodEnd", "trialEndsAt"
+     FROM "Subscription" WHERE id = $1`,
+    [subscriptionId],
+  );
+  const sub = rows[0];
+  if (!sub) throw new Error("NOT_FOUND");
+
+  const now = new Date();
+  const newEnd = new Date(now.getTime() + days * 86400000);
+
+  await pool.query(
+    `UPDATE "Subscription" SET
+      status = 'TRIAL',
+      "trialEndsAt" = $2,
+      "currentPeriodStart" = $3,
+      "currentPeriodEnd" = $2,
+      "cancelledAt" = NULL,
+      "updatedAt" = NOW()
+     WHERE id = $1`,
+    [subscriptionId, newEnd, now],
+  );
+
+  await pool.query(
+    `UPDATE "Organization" SET status = 'ACTIVE', "updatedAt" = NOW()
+     WHERE id = $1 AND status != 'ARCHIVED'`,
+    [sub.organizationId],
+  );
+
+  await writePlatformAuditLog({
+    platformUserId: actor.id,
+    platformUserName: actorName(actor),
+    organizationId: sub.organizationId,
+    entityType: "Subscription",
+    entityId: subscriptionId,
+    action: "SUBSCRIPTION_TRIAL_GRANTED",
+    before: {
+      status: sub.status,
+      currentPeriodEnd: sub.currentPeriodEnd.toISOString(),
+      trialEndsAt: sub.trialEndsAt?.toISOString() ?? null,
+    },
+    after: {
+      status: "TRIAL",
+      currentPeriodEnd: newEnd.toISOString(),
+      trialEndsAt: newEnd.toISOString(),
+      days,
+      mode: "demo",
+    },
+  });
+
+  return { newEnd: newEnd.toISOString() };
+}
+
+export async function setSubscriptionPeriodEnd(
+  actor: PlatformSessionUser,
+  subscriptionId: string,
+  periodEnd: Date,
+): Promise<{ newEnd: string }> {
+  const { rows } = await pool.query<{
+    organizationId: string;
+    currentPeriodEnd: Date;
+    status: SubscriptionStatus;
+  }>(
+    `SELECT "organizationId", "currentPeriodEnd", status FROM "Subscription" WHERE id = $1`,
+    [subscriptionId],
+  );
+  const sub = rows[0];
+  if (!sub) throw new Error("NOT_FOUND");
+  if (Number.isNaN(periodEnd.getTime())) throw new Error("INVALID_DATE");
+
+  await pool.query(
+    `UPDATE "Subscription" SET
+      "currentPeriodEnd" = $2,
+      status = CASE
+        WHEN status IN ('CANCELLED', 'EXPIRED') THEN 'ACTIVE'::"SubscriptionStatus"
+        ELSE status
+      END,
+      "updatedAt" = NOW()
+     WHERE id = $1`,
+    [subscriptionId, periodEnd],
+  );
+
+  await writePlatformAuditLog({
+    platformUserId: actor.id,
+    platformUserName: actorName(actor),
+    organizationId: sub.organizationId,
+    entityType: "Subscription",
+    entityId: subscriptionId,
+    action: "SUBSCRIPTION_EXTENDED",
+    before: { currentPeriodEnd: sub.currentPeriodEnd.toISOString(), status: sub.status },
+    after: { currentPeriodEnd: periodEnd.toISOString() },
+  });
+
+  return { newEnd: periodEnd.toISOString() };
 }
 
 export async function createAdminSubscription(

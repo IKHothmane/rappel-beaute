@@ -7,6 +7,7 @@ import {
   listPlans,
 } from "@/lib/db/admin-subscriptions";
 import { listOrganizationsForFilter } from "@/lib/db/admin-users";
+import { getShowcaseMonthlyPrice } from "@/lib/subscriptions/plans";
 import type { PlanCode, SubscriptionStatus } from "@/types/subscription";
 
 export async function GET(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   const sp = request.nextUrl.searchParams;
   const statusRaw = sp.get("status") ?? undefined;
-  const [items, kpis, plans, organizations] = await Promise.all([
+  const [items, kpis, plans, organizations, showcasePrice] = await Promise.all([
     listAdminSubscriptions({
       search: sp.get("search") ?? undefined,
       planCode: sp.get("plan") ?? undefined,
@@ -25,9 +26,10 @@ export async function GET(request: NextRequest) {
     getAdminSubscriptionsKpis(),
     listPlans(true),
     listOrganizationsForFilter(),
+    getShowcaseMonthlyPrice(),
   ]);
 
-  return adminJson({ items, kpis, plans, organizations });
+  return adminJson({ items, kpis, plans, organizations, showcasePrice });
 }
 
 export async function POST(request: NextRequest) {

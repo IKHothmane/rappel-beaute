@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -9,25 +8,14 @@ import {
   BadgeCheck,
   CalendarCheck2,
   CalendarDays,
-  CheckCircle2,
-  ChevronDown,
   CircleDollarSign,
   CreditCard,
-  Download,
-  FileSpreadsheet,
-  FileText,
   Landmark,
-  MapPin,
   Package,
   RefreshCw,
-  Scale,
-  Settings2,
-  Share2,
-  Shield,
   ShoppingBag,
   Sparkles,
   Star,
-  Target,
   Users,
   Wallet,
   Zap,
@@ -63,8 +51,6 @@ function paymentBarColor(method: string): string {
 }
 
 export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
-  const [exportOpen, setExportOpen] = useState(false);
-  const exportRef = useRef<HTMLDivElement>(null);
   const ov = vm.overview;
   const topServices = vm.services.slice(0, 4);
   const topStaff = [...vm.staff].sort((a, b) => b.revenue - a.revenue).slice(0, 4);
@@ -79,100 +65,17 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
   const topPos = vm.inventory?.topPosProducts?.[0] ?? null;
   const presetLabel = ANALYTICS_PRESETS.find((p) => p.value === vm.preset)?.label ?? vm.periodLabel;
 
-  useEffect(() => {
-    if (!exportOpen) return;
-    const onDoc = (e: MouseEvent) => {
-      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
-        setExportOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [exportOpen]);
-
   return (
     <div className="hidden space-y-6 lg:block">
       <header className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full bg-inverse-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-secondary-fixed shadow-sm">
-                <Shield className="h-3 w-3 text-secondary-container" fill="currentColor" />
-                {vm.roleLabel}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-container/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-container">
-                <Target className="h-3 w-3" />
-                Décision &amp; Pilotage
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-                <Scale className="h-3 w-3 text-primary" />
-                Conforme CNDP Loi 09-08
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-container px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-secondary">
-                <MapPin className="h-3 w-3" />
-                {vm.orgName}
-              </span>
-            </div>
-            <h1 className="mt-1 text-[40px] font-bold leading-tight tracking-tight text-on-surface">
-              Analytics &amp; Performance Décisionnelle{" "}
-              <span className="font-serif italic text-primary-container">— {vm.orgName}</span>
-            </h1>
-            <p className="max-w-4xl text-[15px] text-on-surface-variant">
-              Pilotage décisionnel en temps réel : CA, rétention, équipe, stock et marketing — consolidé en
-              dirhams marocains (MAD).
-            </p>
-          </div>
-          <div className="relative flex items-center gap-2">
-            <Link
-              href="/settings/"
-              className="flex h-12 items-center gap-2 rounded-lg bg-surface-container-lowest px-4 text-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container"
-            >
-              <Settings2 className="h-5 w-5 text-on-surface-variant" />
-              Configurer Objectifs
-            </Link>
-            <div className="relative" ref={exportRef}>
-              <button
-                type="button"
-                onClick={() => setExportOpen((v) => !v)}
-                className="flex h-12 items-center gap-2 rounded-lg bg-primary-container px-5 text-sm font-bold text-on-primary shadow-md transition-all hover:bg-primary hover:shadow-lg"
-              >
-                <Share2 className="h-5 w-5" />
-                Exporter
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              {exportOpen ? (
-                <div className="absolute right-0 z-50 mt-2 flex w-64 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-2xl">
-                  <ExportItem
-                    icon={<FileText className="h-4 w-4" />}
-                    title="PDF décisionnel"
-                    hint="Synthèse imprimable"
-                    onClick={() => {
-                      vm.onExport("pdf");
-                      setExportOpen(false);
-                    }}
-                  />
-                  <ExportItem
-                    icon={<FileSpreadsheet className="h-4 w-4" />}
-                    title="Excel / XLSX"
-                    hint="Tableaux analytiques"
-                    onClick={() => {
-                      vm.onExport("xlsx");
-                      setExportOpen(false);
-                    }}
-                  />
-                  <ExportItem
-                    icon={<Download className="h-4 w-4" />}
-                    title="CSV"
-                    hint="Export brut"
-                    onClick={() => {
-                      vm.onExport("csv");
-                      setExportOpen(false);
-                    }}
-                  />
-                </div>
-              ) : null}
-            </div>
-          </div>
+        <div className="min-w-0 space-y-2">
+          <h1 className="text-[40px] font-bold leading-tight tracking-tight text-on-surface">
+            Analytics &amp; Performance Décisionnelle
+          </h1>
+          <p className="max-w-4xl text-[15px] text-on-surface-variant">
+            Pilotage décisionnel en temps réel : CA, rétention, équipe, stock et marketing — consolidé en
+            dirhams marocains (MAD).
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
@@ -240,7 +143,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
                   </span>
                 </div>
                 <p className="text-[13px] text-surface-dim">
-                  {vm.insight.greeting} · {vm.orgName}
+                  {vm.insight.greeting}
                 </p>
               </div>
             </div>
@@ -842,7 +745,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           <ModuleCard
-            href="/pos/"
+            href="/products/"
             icon={<ShoppingBag className="h-5 w-5" />}
             iconTone="bg-primary-container/10 text-primary-container"
             badge={posShare != null ? `${posShare.toLocaleString("fr-MA")} % du CA` : "Retail"}
@@ -925,7 +828,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
             loading={vm.loading}
           />
           <ModuleCard
-            href={vm.canMarketing ? "/marketing/" : "/reports/"}
+            href="/reports/"
             icon={<Wallet className="h-5 w-5" />}
             iconTone="bg-primary-fixed text-on-primary-fixed"
             badge={`${vm.marketing.length} campagne${vm.marketing.length > 1 ? "s" : ""}`}
@@ -946,7 +849,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
             loading={vm.loading}
           />
           <ModuleCard
-            href={vm.canReactivation ? "/reactivation/" : "/customers/"}
+            href="/customers/"
             icon={<RefreshCw className="h-5 w-5" />}
             iconTone="bg-surface-container text-primary"
             badge="Relances"
@@ -969,22 +872,6 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
         </div>
       </section>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-low px-5 py-4 text-[12px] text-on-surface-variant">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5 text-secondary" />
-            Données consolidées en temps réel
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Scale className="h-3.5 w-3.5 text-secondary" />
-            Conformité CNDP Loi 09-08
-          </span>
-        </div>
-        <Link href="/reports/" className="inline-flex items-center gap-1 font-bold text-primary hover:underline">
-          Consulter le Grand Livre &amp; Rapports
-          <ArrowUpRight className="h-4 w-4" />
-        </Link>
-      </footer>
     </div>
   );
 }
@@ -1111,34 +998,6 @@ function MiniStat({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{label}</p>
       <p className="text-sm font-extrabold text-on-surface">{value}</p>
     </div>
-  );
-}
-
-function ExportItem({
-  icon,
-  title,
-  hint,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  hint: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-surface-container-low"
-    >
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container text-primary">
-        {icon}
-      </span>
-      <span className="flex flex-col">
-        <span className="text-sm font-bold">{title}</span>
-        <span className="text-[10px] text-on-surface-variant">{hint}</span>
-      </span>
-    </button>
   );
 }
 

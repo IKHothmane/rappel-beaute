@@ -1,10 +1,5 @@
-"use client";
-
-import { ReactivationPageView } from "@/components/reactivation/reactivation-page";
+import { redirect } from "next/navigation";
 
 export default function ReactivationPage() {
-  return (
-    <ReactivationPageView />
-  );
+  redirect("/dashboard/");
 }
-

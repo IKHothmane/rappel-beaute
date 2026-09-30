@@ -8,3 +8,15 @@ export function getSessionSecret(): string {
   }
   return secret;
 }
+
+/** Clé AES pour jetons OAuth (Google Calendar). Min. 16 caractères. */
+export function getEncryptionKey(): string {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key || key.length < 16) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("ENCRYPTION_KEY must be set (min 16 chars) in production.");
+    }
+    return "dev-only-encryption-key-16";
+  }
+  return key;
+}

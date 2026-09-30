@@ -161,7 +161,6 @@ export const ROLE_NAV: Record<AppRole, string[]> = {
     "customers",
     "staff",
     "resources",
-    "commissions",
     "loyalty",
     "promotions",
     "whatsapp",
@@ -204,7 +203,6 @@ export const ROLE_NAV: Record<AppRole, string[]> = {
     "payments",
     "expenses",
     "invoices",
-    "commissions",
     "loyalty",
     "promotions",
     "gift-cards",
@@ -410,6 +408,11 @@ export function canSendReviews(role: AppRole): boolean {
 
 export function canManageReviewSettings(role: AppRole): boolean {
   return getFeatureAccess(role, "reviews") === "write";
+}
+
+/** Lier / délier Google Calendar — propriétaire et gérante */
+export function canManageGoogleCalendar(role: AppRole): boolean {
+  return role === "OWNER" || role === "MANAGER";
 }
 
 export type AnalyticsScope = "full" | "staff_self" | "cash_only";

@@ -309,12 +309,6 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
         <Link href={`/payments/?customerId=${customerId}`} className="btn-ghost text-xs sm:text-sm">
           Nouveau paiement
         </Link>
-        <Link href={`/loyalty/?customerId=${customerId}`} className="btn-ghost text-xs sm:text-sm">
-          Ajouter fidélité
-        </Link>
-        <Link href={`/loyalty/?tab=packages&customerId=${customerId}`} className="btn-ghost text-xs sm:text-sm">
-          Ajouter forfait
-        </Link>
         {canWrite ? (
           <button
             type="button"

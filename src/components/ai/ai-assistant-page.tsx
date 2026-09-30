@@ -601,7 +601,7 @@ export function AiAssistantPage() {
             )}
             <div className="mt-4 flex gap-2">
               <Link
-                href="/reactivation/"
+                href="/whatsapp/"
                 className="flex flex-1 items-center justify-center rounded-xl bg-primary py-2 text-xs font-bold text-white hover:bg-primary-dark"
               >
                 Campagne ciblée

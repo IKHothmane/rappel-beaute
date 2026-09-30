@@ -20,6 +20,7 @@ import { APPOINTMENT_STATUS_LABEL } from "@/modules/appointments/constants";
 import { formatMad } from "@/modules/analytics/service";
 import { staffColor } from "@/components/agenda/staff-colors";
 import { cn } from "@/lib/utils";
+import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
 import type { ServiceAgendaOption } from "@/types/service";
 import type { ServiceFormOptions } from "@/types/service";
 
@@ -129,6 +130,7 @@ export function AgendaChrome({
               className="h-10 w-full rounded-lg bg-[#FBF4F6] pl-9 pr-3 text-sm outline-none placeholder:text-ink/35 focus:bg-white focus:ring-1 focus:ring-primary/30"
             />
           </div>
+          <GoogleCalendarConnect />
           <button
             type="button"
             onClick={onBlockSlot}

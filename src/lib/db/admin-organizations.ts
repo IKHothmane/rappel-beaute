@@ -100,6 +100,7 @@ type OrgRow = {
   city: string | null;
   phone: string | null;
   email: string | null;
+  logoUrl: string | null;
   status: OrganizationStatus;
   createdAt: Date;
   plan: PlanCode | null;
@@ -110,6 +111,7 @@ type OrgRow = {
   ownerLast: string | null;
   ownerEmail: string | null;
   usersCount: string;
+  subscriptionId: string | null;
 };
 
 function mapOrgRow(r: OrgRow): OrganizationListItem {
@@ -120,6 +122,7 @@ function mapOrgRow(r: OrgRow): OrganizationListItem {
     city: r.city,
     phone: r.phone,
     email: r.email,
+    logoUrl: r.logoUrl ?? null,
     status: r.status,
     plan: r.plan,
     ownerName:
@@ -128,6 +131,7 @@ function mapOrgRow(r: OrgRow): OrganizationListItem {
     createdAt: r.createdAt.toISOString(),
     mrr: r.subPrice ? parseFloat(r.subPrice) : 0,
     usersCount: parseInt(r.usersCount ?? "0", 10),
+    subscriptionId: r.subscriptionId ?? null,
     subscriptionStatus: (r.subStatus as OrganizationListItem["subscriptionStatus"]) ?? null,
     renewAt: r.renewAt ? r.renewAt.toISOString() : null,
   };
@@ -135,14 +139,15 @@ function mapOrgRow(r: OrgRow): OrganizationListItem {
 
 const ORG_SELECT = `
   SELECT
-    o.id, o.name, o.slug, o.city, o.phone, o.email, o.status, o."createdAt",
+    o.id, o.name, o.slug, o.city, o.phone, o.email, o."logoUrl", o.status, o."createdAt",
     p.code AS plan, s."priceSnapshot"::text AS "subPrice",
+    s.id AS "subscriptionId",
     s.status AS "subStatus", s."currentPeriodEnd" AS "renewAt",
     u."firstName" AS "ownerFirst", u."lastName" AS "ownerLast", u.email AS "ownerEmail",
     (SELECT COUNT(*)::text FROM "User" WHERE "organizationId" = o.id) AS "usersCount"
   FROM "Organization" o
   LEFT JOIN LATERAL (
-    SELECT "planId", "priceSnapshot", status, "currentPeriodEnd" FROM "Subscription"
+    SELECT id, "planId", "priceSnapshot", status, "currentPeriodEnd" FROM "Subscription"
     WHERE "organizationId" = o.id
     ORDER BY "createdAt" DESC LIMIT 1
   ) s ON true
@@ -195,15 +200,16 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
     OrgRow & { address: string | null; ownerPhone: string | null }
   >(
     `SELECT
-      o.id, o.name, o.slug, o.city, o.phone, o.email, o.status, o.address, o."createdAt",
+      o.id, o.name, o.slug, o.city, o.phone, o.email, o."logoUrl", o.status, o.address, o."createdAt",
       p.code AS plan, s."priceSnapshot"::text AS "subPrice",
+      s.id AS "subscriptionId",
       s.status AS "subStatus", s."currentPeriodEnd" AS "renewAt",
       u."firstName" AS "ownerFirst", u."lastName" AS "ownerLast", u.email AS "ownerEmail",
       u.phone AS "ownerPhone",
       (SELECT COUNT(*)::text FROM "User" WHERE "organizationId" = o.id) AS "usersCount"
     FROM "Organization" o
     LEFT JOIN LATERAL (
-      SELECT "planId", "priceSnapshot", status, "currentPeriodEnd" FROM "Subscription"
+      SELECT id, "planId", "priceSnapshot", status, "currentPeriodEnd" FROM "Subscription"
       WHERE "organizationId" = o.id ORDER BY "createdAt" DESC LIMIT 1
     ) s ON true
     LEFT JOIN "Plan" p ON p.id = s."planId"
@@ -241,9 +247,11 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
     status: SubscriptionStatus;
     startedAt: Date;
     currentPeriodEnd: Date;
+    paid: boolean;
+    paidAt: Date | null;
   }>(
     `SELECT s.id, p.code AS "planCode", s."priceSnapshot"::text, s.status,
-            s."startedAt", s."currentPeriodEnd"
+            s."startedAt", s."currentPeriodEnd", s.paid, s."paidAt"
      FROM "Subscription" s
      JOIN "Plan" p ON p.id = s."planId"
      WHERE s."organizationId" = $1
@@ -272,6 +280,8 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
           status: sub.status,
           startAt: sub.startedAt.toISOString(),
           renewAt: sub.currentPeriodEnd.toISOString(),
+          paid: Boolean(sub.paid),
+          paidAt: sub.paidAt ? sub.paidAt.toISOString() : null,
         }
       : null,
   };

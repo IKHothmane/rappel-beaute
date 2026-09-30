@@ -379,9 +379,6 @@ export function AdminSettingsPage() {
                   <Link href={adminHref("/subscriptions/")} className="ac-btn">
                     Gérer les abonnements instituts
                   </Link>
-                  <Link href={adminHref("/plans/")} className="ac-btn-ghost">
-                    Modifier l&apos;offre / plans
-                  </Link>
                 </div>
               </>
             ) : null}

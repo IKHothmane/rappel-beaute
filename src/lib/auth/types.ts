@@ -13,6 +13,7 @@ export type AppSessionUser = {
   organizationId: string;
   orgName: string;
   orgSlug: string;
+  orgLogoUrl: string | null;
   scope: "app";
   accountType: "ORGANIZATION";
   /** true après un reset admin — accès limité à /changer-mot-de-passe */

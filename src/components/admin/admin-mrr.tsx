@@ -20,7 +20,6 @@ import {
   Hourglass,
   MapPin,
   MessageCircle,
-  ShieldCheck,
   Store,
   TrendingUp,
   Undo2,
@@ -220,14 +219,6 @@ export function AdminMrrView() {
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8 lg:gap-6">
       {/* Header */}
       <header className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider text-ink/45">
-          <span className="font-bold text-ink/50">Super Admin</span>
-          <span>/</span>
-          <span className="text-ink/50">Finance SaaS</span>
-          <span>/</span>
-          <span className="font-bold text-primary">MRR &amp; Revenus</span>
-        </div>
-
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -1208,28 +1199,6 @@ export function AdminMrrView() {
                 {madHt(d.renewals.next30Amount)}
               </span>
             </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-start justify-between gap-3 rounded-xl bg-[#FFEFF8]/80 p-4 sm:flex-row sm:items-center">
-          <div className="flex items-start gap-2">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#7B5900]" />
-            <div>
-              <p className="text-sm font-bold text-ink">
-                Intégrité architecturale &amp; cloisonnement
-              </p>
-              <p className="text-[13px] text-ink/55">
-                Séparation stricte{" "}
-                <strong className="text-ink">Subscription</strong> (obligation
-                récurrente) ≠ <strong className="text-ink">Invoice</strong> (caisse
-                institut) ≠ <strong className="text-ink">Payment</strong> (POS). Le MRR
-                plateforme est dérivé des abonnements.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 whitespace-nowrap text-[11px] text-ink/50">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            CNDP Loi 09-08
           </div>
         </div>
       </section>

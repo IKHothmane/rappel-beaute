@@ -4,24 +4,17 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
-  ArrowUpRight,
   BadgeCheck,
   CalendarCheck2,
   CalendarDays,
-  CheckCircle2,
   CircleDollarSign,
   CreditCard,
-  Download,
   Landmark,
-  Lock,
   Package,
   RefreshCw,
-  Scale,
-  Settings2,
   ShoppingBag,
   Sparkles,
   Star,
-  Target,
   Users,
   Wallet,
   Zap,
@@ -75,44 +68,13 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
     <div className="space-y-4 pb-4 lg:hidden">
       {/* Header */}
       <section className="flex flex-col gap-2 pt-1">
-        <div className="flex flex-wrap items-center gap-1">
-          <span className="inline-flex items-center gap-1 rounded-full bg-inverse-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-secondary-fixed">
-            <Lock className="h-3 w-3 text-secondary-container" />
-            {vm.roleLabel}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary-container/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-container">
-            <Target className="h-3 w-3" />
-            Décision &amp; Pilotage
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-            <Scale className="h-3 w-3 text-primary" />
-            CNDP Loi 09-08
-          </span>
-        </div>
         <div className="flex flex-col gap-1">
           <h1 className="text-[22px] font-semibold tracking-tight text-on-surface">
             Analytics &amp; Performance
           </h1>
           <p className="text-sm leading-relaxed text-on-surface-variant">
-            Pilotage décisionnel · {vm.orgName} · MAD
+            Pilotage décisionnel · MAD
           </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <Link
-            href="/settings/"
-            className="flex h-11 items-center justify-center gap-1.5 rounded-lg bg-surface-container-lowest text-sm font-semibold text-on-surface shadow-sm active:scale-[0.99]"
-          >
-            <Settings2 className="h-4 w-4 text-secondary" />
-            Objectifs
-          </Link>
-          <button
-            type="button"
-            onClick={() => vm.onExport("pdf")}
-            className="flex h-11 items-center justify-center gap-1.5 rounded-lg bg-primary-container text-sm font-bold text-on-primary shadow-md active:scale-[0.99]"
-          >
-            <Download className="h-4 w-4" />
-            Exporter
-          </button>
         </div>
       </section>
 
@@ -623,7 +585,7 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
       <section className="space-y-2">
         <h2 className="px-0.5 text-base font-bold text-on-surface">Piliers Opérationnels</h2>
         <OpRow
-          href="/pos/"
+          href="/products/"
           icon={<ShoppingBag className="h-4 w-4" />}
           iconTone="bg-primary-container/10 text-primary-container"
           title="Boutique Produits"
@@ -678,7 +640,7 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
           }
         />
         <OpRow
-          href={vm.canMarketing ? "/marketing/" : "/reports/"}
+          href="/reports/"
           icon={<Wallet className="h-4 w-4" />}
           iconTone="bg-primary-fixed text-on-primary-fixed"
           title="Marketing Attribué"
@@ -691,7 +653,7 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
           loading={vm.loading}
         />
         <OpRow
-          href={vm.canReactivation ? "/reactivation/" : "/customers/"}
+          href="/customers/"
           icon={<RefreshCw className="h-4 w-4" />}
           iconTone="bg-surface-container text-primary"
           title="Réactivation"
@@ -705,26 +667,6 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
         />
       </section>
 
-      {/* Legal footer */}
-      <footer className="space-y-2 rounded-xl bg-surface-container-low p-4 text-[11px] text-on-surface-variant">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5 text-secondary" />
-            Données live
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Scale className="h-3.5 w-3.5 text-secondary" />
-            CNDP Loi 09-08
-          </span>
-        </div>
-        <Link
-          href="/reports/"
-          className="flex h-10 w-full items-center justify-between rounded-lg bg-surface-container-lowest px-3 text-sm font-bold text-primary shadow-sm"
-        >
-          Consulter les rapports
-          <ArrowUpRight className="h-4 w-4" />
-        </Link>
-      </footer>
     </div>
   );
 }

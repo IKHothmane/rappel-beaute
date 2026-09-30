@@ -13,7 +13,6 @@ import {
   CircleDollarSign,
   ClipboardList,
   FileText,
-  Gift,
   LayoutDashboard,
   Lock,
   Megaphone,
@@ -26,13 +25,15 @@ import {
   Users,
   WalletCards,
   X,
+  LogOut,
 } from "lucide-react";
 import {
   ROLE_LABEL,
   useCurrentUser,
+  useSession,
 } from "@/components/auth/session-provider";
 import { usePlanFeatures } from "@/components/subscriptions/plan-features-provider";
-import { BrandLogo } from "@/components/www/BrandLogo";
+import { OrgLogo } from "@/components/app/org-logo";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -73,12 +74,9 @@ const sections: { title: string | null; items: NavItem[] }[] = [
   {
     title: "Ventes & Finance",
     items: [
-      { label: "POS Produits", href: "/pos/", icon: ShoppingCart, key: "pos" },
-      { label: "Ventes", href: "/ventes/", icon: ClipboardList, key: "ventes" },
       { label: "Caisse", href: "/cash-register/", icon: WalletCards, key: "cash-register" },
       { label: "Paiements", href: "/payments/", icon: CircleDollarSign, key: "payments" },
       { label: "Dépenses", href: "/expenses/", icon: CircleDollarSign, key: "expenses" },
-      { label: "Commissions", href: "/commissions/", icon: CircleDollarSign, key: "commissions" },
       { label: "Factures", href: "/invoices/", icon: FileText, key: "invoices" },
     ],
   },
@@ -86,11 +84,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     title: "Croissance",
     items: [
       { label: "Liste d'attente", href: "/waiting-list/", icon: Users, key: "waiting-list" },
-      { label: "Réactivation", href: "/reactivation/", icon: Users, key: "reactivation" },
-      { label: "Fidélité", href: "/loyalty/", icon: Gift, key: "loyalty" },
       { label: "Promotions", href: "/promotions/", icon: Megaphone, key: "promotions" },
-      { label: "Cartes cadeaux", href: "/gift-cards/", icon: Gift, key: "gift-cards" },
-      { label: "Marketing", href: "/marketing/", icon: Megaphone, key: "marketing" },
       { label: "Avis", href: "/reviews/", icon: Star, key: "reviews" },
     ],
   },
@@ -133,6 +127,7 @@ export default function OwnerSidebar({
 }: OwnerSidebarProps) {
   const pathname = usePathname();
   const user = useCurrentUser();
+  const { logout } = useSession();
   const { isNavEnabled, loading: planLoading } = usePlanFeatures();
 
   return (
@@ -164,7 +159,7 @@ export default function OwnerSidebar({
             className={cn("flex min-w-0 items-center gap-2.5", collapsed && "lg:hidden")}
             onClick={onClose}
           >
-            <BrandLogo href={null} height={40} className="max-h-10 shrink-0" />
+            <OrgLogo url={user.orgLogoUrl} name={user.orgName} size={40} />
             <div className="min-w-0">
               <div className="truncate font-display text-sm font-semibold leading-tight">
                 {user.orgName}
@@ -248,7 +243,7 @@ export default function OwnerSidebar({
           ))}
         </nav>
 
-        <div className="border-t border-line p-3">
+        <div className="space-y-1.5 border-t border-line p-3">
           <Link
             href="/profile/"
             onClick={onClose}
@@ -268,6 +263,18 @@ export default function OwnerSidebar({
               <div className="text-xs text-ink/45">{ROLE_LABEL[user.role]}</div>
             </div>
           </Link>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            title="Se déconnecter"
+            className={cn(
+              "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-ink/60 transition hover:bg-[#FBF4F6] hover:text-primary",
+              collapsed && "lg:justify-center lg:px-2",
+            )}
+          >
+            <LogOut size={16} className="shrink-0" />
+            <span className={cn(collapsed && "lg:hidden")}>Se déconnecter</span>
+          </button>
         </div>
       </aside>
     </>

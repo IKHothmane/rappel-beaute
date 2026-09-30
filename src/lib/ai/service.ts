@@ -530,7 +530,7 @@ export async function analyzeDashboard(
   if (inactive > 0) {
     opportunities.push({
       text: `${inactive} clientes n'ont pas repris d'activité récente — pensez à une relance.`,
-      href: "/reactivation/",
+      href: "/customers/",
     });
   }
   if (lowStock > 0) {
@@ -584,8 +584,8 @@ export async function getAIRecommendations(
       id: "reactivate-inactive",
       title: "Opportunité relance",
       detail: `${insight.kpis.inactiveCustomers} clientes inactives — créez une campagne WhatsApp de retour.`,
-      actionHref: "/reactivation/",
-      actionLabel: "Ouvrir réactivation",
+      actionHref: "/customers/",
+      actionLabel: "Voir les clientes",
     });
   }
   if (insight.kpis.lowStockCount > 0) {
@@ -611,8 +611,8 @@ export async function getAIRecommendations(
       id: "push-service",
       title: "Campagne service phare",
       detail: `Mettez en avant ${insight.kpis.topServiceName} auprès des clientes dormantes.`,
-      actionHref: "/marketing/",
-      actionLabel: "Créer une campagne",
+      actionHref: "/whatsapp/",
+      actionLabel: "Ouvrir WhatsApp",
     });
   }
 

@@ -30,6 +30,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const bare =
     path.startsWith("/login") ||
+    path.startsWith("/connexion") ||
     path.startsWith("/forgot-password") ||
     path.startsWith("/reset-password") ||
     path.startsWith("/changer-mot-de-passe") ||

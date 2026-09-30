@@ -15,20 +15,20 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export function HomeHero({ imageSrc }: { imageSrc: string }) {
   return (
-    <section className="relative flex min-h-[520px] items-center justify-center overflow-hidden bg-institut text-white sm:min-h-[640px] lg:min-h-[720px]">
+    <section className="relative flex min-h-[520px] items-center justify-center overflow-hidden bg-[#FFF8FB] text-ink sm:min-h-[640px] lg:min-h-[720px]">
       <div className="absolute inset-0 z-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           alt=""
-          className="h-full w-full animate-kenburns object-cover object-center brightness-75"
+          className="h-full w-full animate-kenburns object-cover object-center"
           src={imageSrc}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-institut/90 via-institut/50 to-institut/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FFF8FB]/85 via-[#FFF8FB]/40 to-transparent" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 py-14 text-center sm:px-6 sm:py-20 lg:px-8">
         <motion.p
-          className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-gold sm:mb-3 sm:text-xs sm:tracking-[0.3em]"
+          className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-primary sm:mb-3 sm:text-xs sm:tracking-[0.3em]"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease, delay: 0.1 }}
@@ -37,7 +37,7 @@ export function HomeHero({ imageSrc }: { imageSrc: string }) {
         </motion.p>
 
         <motion.h1
-          className="mb-2 font-display text-3xl font-light tracking-tight text-white sm:mb-3 sm:text-6xl md:text-7xl"
+          className="mb-2 font-display text-3xl font-light tracking-tight text-ink sm:mb-3 sm:text-6xl md:text-7xl"
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease, delay: 0.22 }}
@@ -46,7 +46,7 @@ export function HomeHero({ imageSrc }: { imageSrc: string }) {
         </motion.h1>
 
         <motion.p
-          className="mb-8 flex items-center justify-center space-x-2 text-xs font-normal tracking-wide text-white/90 sm:mb-10 sm:space-x-3 sm:text-base"
+          className="mb-8 flex items-center justify-center space-x-2 text-xs font-normal tracking-wide text-ink/70 sm:mb-10 sm:space-x-3 sm:text-base"
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease, delay: 0.38 }}
@@ -68,7 +68,7 @@ export function HomeHero({ imageSrc }: { imageSrc: string }) {
         </motion.div>
 
         <motion.div
-          className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/80"
+          className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-ink/65"
           initial="hidden"
           animate="show"
           variants={{
@@ -95,7 +95,7 @@ export function HomeHero({ imageSrc }: { imageSrc: string }) {
             >
               <Link
                 href="/#explore"
-                className="inline-block rounded-full border border-line/20 bg-institut/50 px-3 py-1 text-white backdrop-blur-sm transition hover:scale-105 hover:bg-primary/30"
+                className="inline-block rounded-full border border-line bg-white/70 px-3 py-1 text-ink backdrop-blur-sm transition hover:scale-105 hover:border-primary/40 hover:bg-white"
               >
                 {city}
               </Link>
@@ -111,7 +111,7 @@ export function HomeHero({ imageSrc }: { imageSrc: string }) {
         transition={{ delay: 1.2, duration: 0.6 }}
         aria-hidden
       >
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">Scroll</span>
+        <span className="text-[10px] uppercase tracking-[0.2em] text-ink/40">Scroll</span>
         <span className="h-8 w-px animate-scroll-line bg-gradient-to-b from-gold to-transparent" />
       </motion.div>
     </section>

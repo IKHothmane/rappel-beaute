@@ -4,19 +4,14 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
-  BadgeCheck,
   Bath,
   CalendarCheck2,
   CalendarDays,
   CircleDollarSign,
-  Download,
   IdCard,
   Landmark,
-  Lock,
   Package,
-  RefreshCw,
   Scale,
-  Send,
   Sparkles,
   Star,
   Users,
@@ -31,7 +26,6 @@ import {
   initials,
   paymentBarColor,
   presenceRate,
-  reviewScoreLabel,
   serviceShare,
   statusCount,
   type ModuleCardDef,
@@ -49,44 +43,13 @@ export function ReportsMobile(vm: ReportsViewModel) {
   return (
     <div className="space-y-4 pb-4 print:hidden lg:hidden">
       <section className="flex flex-col gap-2 pt-1">
-        <div className="flex flex-wrap items-center gap-1">
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-            <Lock className="h-3 w-3 text-primary" />
-            {vm.roleLabel}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-            <BadgeCheck className="h-3 w-3 text-secondary" />
-            Données live
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-secondary-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-secondary-container">
-            <Scale className="h-3 w-3" />
-            CNDP Loi 09-08
-          </span>
-        </div>
         <div className="flex flex-col gap-1">
           <h1 className="font-headline-sm text-[22px] font-semibold tracking-tight text-on-surface">
             Rapports &amp; Audit Financier
           </h1>
           <p className="text-sm leading-relaxed text-on-surface-variant">
-            Générez, analysez et exportez les rapports comptables et opérationnels consolidés en dirhams (MAD).
+            Générez, analysez et comparez les rapports comptables et opérationnels consolidés en dirhams (MAD).
           </p>
-        </div>
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={() => vm.onExport("pdf")}
-            className="flex h-12 w-full items-center justify-between rounded-lg bg-primary-container px-4 text-on-primary-container shadow-md transition-all active:scale-[0.99]"
-          >
-            <span className="flex items-center gap-2 text-sm font-bold">
-              <Download className="h-5 w-5" />
-              Exporter le Rapport
-            </span>
-            <span className="flex items-center gap-1 text-[10px] font-bold">
-              <span className="rounded bg-white/20 px-1.5 py-0.5">PDF</span>
-              <span className="rounded bg-white/20 px-1.5 py-0.5">XLSX</span>
-              <span className="rounded bg-white/20 px-1.5 py-0.5">CSV</span>
-            </span>
-          </button>
         </div>
       </section>
 
@@ -207,13 +170,6 @@ export function ReportsMobile(vm: ReportsViewModel) {
               {vm.insight.cta}
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => vm.onExport("pdf")}
-            className="flex h-10 w-full items-center justify-center gap-1 rounded-lg bg-white/10 text-sm font-semibold active:bg-white/20"
-          >
-            Télécharger l&apos;Audit IA
-          </button>
         </div>
       </section>
 
@@ -476,67 +432,8 @@ export function ReportsMobile(vm: ReportsViewModel) {
               </div>
             ))}
           </div>
-          {vm.canCommissions ? (
-            <Link href="/commissions/" className="block text-center text-sm font-semibold text-primary">
-              Ouvrir le module commissions
-            </Link>
-          ) : null}
         </section>
       ) : null}
-
-      <section className="mb-2 space-y-3 rounded-xl bg-surface-container-low p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Send className="h-5 w-5 text-primary" />
-            <h2 className="text-base font-bold text-on-surface">Transmission des Livrables</h2>
-          </div>
-          <BadgeCheck className="h-5 w-5 text-secondary" />
-        </div>
-        <p className="text-xs text-on-surface-variant">
-          Pas d&apos;envoi automatique vers un expert-comptable. L&apos;export télécharge le module actuellement
-          sélectionné ({vm.activeType}).
-        </p>
-        <div className="grid grid-cols-3 gap-1">
-          <button
-            type="button"
-            onClick={() => vm.onExport("pdf")}
-            className="h-10 rounded-lg bg-primary-container text-xs font-bold text-on-primary-container"
-          >
-            PDF
-          </button>
-          <button
-            type="button"
-            onClick={() => vm.onExport("xlsx")}
-            className="h-10 rounded-lg bg-white text-xs font-bold shadow-sm"
-          >
-            Excel
-          </button>
-          <button
-            type="button"
-            onClick={() => vm.onExport("csv")}
-            className="h-10 rounded-lg bg-white text-xs font-bold shadow-sm"
-          >
-            CSV
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={vm.onAuto}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-ink text-sm font-bold text-white shadow-sm active:scale-[0.99]"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Valider les Options d&apos;Export
-        </button>
-        <div className="space-y-1 border-t-0 pt-1 text-center text-[11px] text-on-surface-variant">
-          <p>Exports à la demande — aucune empreinte SHA-256 inventée.</p>
-          {vm.giftBalance != null ? <p>En-cours cartes cadeaux : {formatMad(vm.giftBalance)}</p> : null}
-          {vm.reviews ? (
-            <p className="flex items-center justify-center gap-1 font-semibold text-secondary">
-              <Star className="h-3 w-3" /> {reviewScoreLabel(vm.reviews)}
-            </p>
-          ) : null}
-        </div>
-      </section>
     </div>
   );
 }

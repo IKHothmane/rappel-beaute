@@ -806,12 +806,6 @@ export function SaasDashboard() {
                 ))}
               </div>
             )}
-            <Link
-              href="/commissions/"
-              className="rounded-lg bg-[#FBF4F6] py-2 text-center text-xs font-semibold text-ink/80 hover:bg-[#F0DDE9]"
-            >
-              Détails des commissions
-            </Link>
           </section>
 
           <section className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-soft sm:p-6">

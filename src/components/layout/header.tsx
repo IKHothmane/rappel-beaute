@@ -1,7 +1,8 @@
 "use client";
 
-import { Menu, Search } from "lucide-react";
-import { useCurrentUser } from "@/components/auth/session-provider";
+import { LogOut, Menu, Search } from "lucide-react";
+import { OrgLogo } from "@/components/app/org-logo";
+import { useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
 type HeaderProps = {
@@ -10,6 +11,7 @@ type HeaderProps = {
 
 export function Header({ onMenuOpen }: HeaderProps) {
   const user = useCurrentUser();
+  const { logout } = useSession();
 
   return (
     <header className="sticky top-0 z-30 border-b border-line/70 bg-white/85 backdrop-blur-xl">
@@ -24,11 +26,11 @@ export function Header({ onMenuOpen }: HeaderProps) {
             <Menu size={22} />
           </button>
 
-          <div className="min-w-0 flex-1 md:hidden">
-            <p className="truncate text-[10px] font-bold uppercase tracking-wider text-primary">
-              Rappel Beauté
-            </p>
-            <p className="truncate text-sm font-semibold text-ink">{user.orgName}</p>
+          <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
+            <OrgLogo url={user.orgLogoUrl} name={user.orgName} size={32} />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-ink">{user.orgName}</p>
+            </div>
           </div>
 
           <div className="hidden min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-[#FBF4F6]/80 px-3 py-2 md:flex md:max-w-[280px] md:flex-none">
@@ -53,6 +55,15 @@ export function Header({ onMenuOpen }: HeaderProps) {
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-gold font-semibold text-white">
               {user.firstName.charAt(0)}
             </div>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="rounded-xl p-2 text-ink/55 transition hover:bg-[#FBF4F6] hover:text-primary"
+              aria-label="Se déconnecter"
+              title="Se déconnecter"
+            >
+              <LogOut size={18} />
+            </button>
           </div>
         </div>
       </div>

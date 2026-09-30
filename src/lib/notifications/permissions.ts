@@ -108,7 +108,7 @@ export function buildNotificationHref(
     case "ReviewRequest":
       return `/reviews/?requestId=${entityId}`;
     case "Campaign":
-      return `/marketing/?campaignId=${entityId}`;
+      return `/dashboard/`;
     case "SupportTicket":
       return `/support/${entityId}/`;
     default:

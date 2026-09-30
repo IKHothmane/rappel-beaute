@@ -16,6 +16,8 @@ export type PlatformSettingsData = {
   };
   billing: {
     price: number;
+    /** Prix mensuel affiché sur la vitrine. Absent = 399 DH. */
+    publicPrice?: number;
     currency: string;
     vatPercent: number;
     period: "MONTHLY" | "YEARLY";

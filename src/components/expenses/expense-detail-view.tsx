@@ -149,9 +149,6 @@ export function ExpenseDetailView({ expenseId }: { expenseId: string }) {
           Description · <span className="font-medium">{expense.description ?? "—"}</span>
         </p>
         <p>
-          Référence · <span className="font-mono">{expense.reference ?? "—"}</span>
-        </p>
-        <p>
           Créée par · <span className="font-medium">{expense.createdByName ?? "—"}</span>
         </p>
         {expense.paymentMethod === "CASH" && expense.status === "RECORDED" ? (

@@ -25,7 +25,7 @@ function ActivateForm() {
         const d = (await res.json()) as { error?: string };
         throw new Error(d.error ?? "Erreur");
       }
-      router.push("/login/?activated=1");
+      router.push("/connexion/?activated=1");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
     } finally {

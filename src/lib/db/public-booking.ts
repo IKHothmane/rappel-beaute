@@ -524,6 +524,13 @@ export async function createPublicBooking(
     }
 
     try {
+      const { syncAppointmentToGoogle } = await import("@/lib/integrations/google-calendar-sync");
+      syncAppointmentToGoogle(organizationId, apt);
+    } catch (e) {
+      console.error("[createPublicBooking] google calendar", e);
+    }
+
+    try {
       const { enqueueOnlineBookingConfirmation } = await import("@/lib/db/whatsapp");
       await enqueueOnlineBookingConfirmation(organizationId, appointmentId);
     } catch (e) {

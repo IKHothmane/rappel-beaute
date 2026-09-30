@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Ban,
-  Download,
   FileText,
   Link2,
   MessageCircle,
@@ -24,7 +23,6 @@ import {
   type InvoicePeriod,
   type InvoiceTab,
   downloadInvoiceHtml,
-  exportInvoicesCsv,
   formatInvoiceDate,
   formatInvoiceDateTime,
   formatInvoiceTime,
@@ -358,7 +356,6 @@ export function InvoicesPageView() {
           setVoidReason("");
         }}
         onCollect={openCollect}
-        exportCsv={() => exportInvoicesCsv(filtered)}
       />
 
       <div className="hidden space-y-4 lg:block">
@@ -380,14 +377,6 @@ export function InvoicesPageView() {
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => exportInvoicesCsv(filtered)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#F6E3EF] px-4 text-[14px] font-semibold"
-            >
-              <Download size={18} />
-              Exporter CSV
-            </button>
             {canWrite ? (
               <button
                 type="button"
@@ -852,7 +841,7 @@ export function InvoicesPageView() {
             </p>
             <div className="grid grid-cols-5 gap-1 text-center">
               {[
-                ["POS", canPos ? "/pos/" : null],
+                ["POS", null],
                 ["Facture", null],
                 ["Paiement", canPayments ? "/payments/" : null],
                 ["Caisse", canCash ? "/cash-register/" : null],

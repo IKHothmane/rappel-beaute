@@ -132,6 +132,18 @@ export async function fetchAdminUsers(params?: {
   }>(`/api/admin/users/${q ? `?${q}` : ""}`);
 }
 
+export async function createPlatformAdminApi(input: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}) {
+  return adminFetch<{ user: { id: string; email: string; firstName: string; lastName: string } }>(
+    "/api/admin/users/",
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
+
 export async function fetchAdminUser(id: string) {
   return adminFetch<{
     user: PlatformOrgUser;
@@ -359,6 +371,7 @@ export async function fetchAdminSubscriptions(params?: {
     };
     plans: { id: string; code: string; name: string; price: number }[];
     organizations: { id: string; name: string }[];
+    showcasePrice: number;
   }>(`/api/admin/subscriptions/${q ? `?${q}` : ""}`);
 }
 
@@ -375,6 +388,13 @@ export async function fetchAdminSubscription(id: string) {
     }[];
     plans: { id: string; code: string; name: string; price: number }[];
   }>(`/api/admin/subscriptions/${id}/`);
+}
+
+export async function updateAdminPlanPrice(id: string, price: number) {
+  return adminFetch<{ plan: { id: string; price: number } }>(`/api/admin/plans/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ price }),
+  });
 }
 
 export async function adminSubscriptionAction(

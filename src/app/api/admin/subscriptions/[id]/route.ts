@@ -4,8 +4,11 @@ import {
   changeSubscriptionPlan,
   extendSubscriptionPeriod,
   fetchAdminSubscription,
+  grantDemoTrial,
   grantFreePeriod,
   listSubscriptionHistory,
+  setSubscriptionPaid,
+  setSubscriptionPeriodEnd,
   setSubscriptionStatus,
 } from "@/lib/db/admin-subscriptions";
 import { getPlanByCode, getPlanById, listPlans } from "@/lib/subscriptions/plans";
@@ -62,6 +65,8 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     planCode?: string;
     months?: number;
     days?: number;
+    periodEnd?: string;
+    paid?: boolean;
     reason?: string;
     applyAt?: "now" | "next_period";
   };
@@ -107,6 +112,25 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     }
     if (body.action === "extend") {
       const result = await extendSubscriptionPeriod(auth.session, id, body.months ?? 1);
+      return adminJson({ ok: true, ...result });
+    }
+    if (body.action === "set-paid") {
+      if (typeof body.paid !== "boolean") return adminError("Indiquez si l’abonnement est payé.", 400);
+      await setSubscriptionPaid(auth.session, id, body.paid);
+      return adminJson({ ok: true });
+    }
+    if (body.action === "set-period") {
+      const raw = typeof body.periodEnd === "string" ? body.periodEnd : "";
+      const periodEnd = new Date(raw);
+      if (!raw || Number.isNaN(periodEnd.getTime())) {
+        return adminError("Date de fin invalide.", 400);
+      }
+      const result = await setSubscriptionPeriodEnd(auth.session, id, periodEnd);
+      return adminJson({ ok: true, ...result });
+    }
+    if (body.action === "demo-trial") {
+      const days = body.days ?? 7;
+      const result = await grantDemoTrial(auth.session, id, days);
       return adminJson({ ok: true, ...result });
     }
     if (body.action === "grant-trial") {

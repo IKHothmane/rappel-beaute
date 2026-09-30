@@ -1,11 +1,13 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import { AppPageHeader } from "@/components/app/AppUi";
-import { useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { ROLE_LABEL } from "@/lib/rbac";
 
 export function ProfileView() {
   const user = useCurrentUser();
+  const { logout } = useSession();
 
   return (
     <>
@@ -31,9 +33,14 @@ export function ProfileView() {
           <span className="text-ink/45">Rôle · </span>
           {ROLE_LABEL[user.role]}
         </p>
-        <p className="text-xs text-ink/40">
-          Pas de photo cliente ; photo profil staff optionnelle plus tard.
-        </p>
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#FCE9F4] text-sm font-semibold"
+        >
+          <LogOut size={16} />
+          Se déconnecter
+        </button>
       </div>
     </>
   );

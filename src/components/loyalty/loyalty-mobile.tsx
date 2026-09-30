@@ -591,15 +591,6 @@ function FocusCard({
         {member.memberSince ? ` · depuis ${formatShortDate(member.memberSince)}` : ""}
       </p>
       <div className="mt-3 flex flex-col gap-2">
-        {canPos ? (
-          <Link
-            href={`/pos/?customerId=${member.customerId}`}
-            className="flex h-12 items-center justify-center gap-2 rounded-lg bg-primary text-[14px] font-bold text-white"
-          >
-            <Wallet size={18} />
-            Ouvrir au POS
-          </Link>
-        ) : null}
         {canRedeem && ready ? (
           <button
             type="button"

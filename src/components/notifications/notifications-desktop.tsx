@@ -1,14 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import {
   Check,
   CheckCheck,
   Search,
-  Shield,
-  Sparkles,
-  Settings2,
   Zap,
   AlertTriangle,
   Info,
@@ -23,7 +19,6 @@ import {
   primaryActionLabel,
   severityBadge,
   typeIcon,
-  type ChannelKey,
   type NotificationsViewModel,
 } from "@/components/notifications/notifications-helpers";
 import { formatRelativeTime } from "@/modules/notifications/service";
@@ -37,12 +32,6 @@ export function NotificationsDesktop({ vm }: { vm: NotificationsViewModel }) {
       <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 animate-ping rounded-full bg-primary" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-primary">
-                Flux télémétrique · {vm.orgName}
-              </span>
-            </div>
             <h1 className="text-[40px] font-extrabold tracking-tight text-on-surface">
               Centre de Notifications &amp; Alertes Métier
             </h1>
@@ -60,13 +49,6 @@ export function NotificationsDesktop({ vm }: { vm: NotificationsViewModel }) {
               <CheckCheck className="h-[18px] w-[18px] text-primary" />
               Tout marquer comme lu
             </button>
-            <a
-              href="#preferences"
-              className="flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container"
-            >
-              <Settings2 className="h-[18px] w-[18px] text-secondary" />
-              Préférences &amp; Canaux
-            </a>
             <button
               type="button"
               onClick={vm.onRefresh}
@@ -183,108 +165,6 @@ export function NotificationsDesktop({ vm }: { vm: NotificationsViewModel }) {
         </div>
       </section>
 
-      {/* Copilote */}
-      <section className="relative mb-2 overflow-hidden rounded-2xl bg-inverse-surface p-6 text-inverse-on-surface shadow-xl">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-secondary/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-        <div className="relative z-10 flex flex-col gap-6">
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/20 text-secondary-fixed shadow-sm">
-                <Sparkles className="h-6 w-6" />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-secondary-fixed">
-                    Copilote IA Prestige
-                  </span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-                  <span className="text-[11px] font-semibold text-inverse-on-surface/70">
-                    Synthèse des alertes critiques
-                  </span>
-                </div>
-                <h2 className="text-[22px] font-bold text-inverse-on-surface">
-                  {vm.insights.length} recommandation{vm.insights.length > 1 ? "s" : ""} proactive
-                  {vm.insights.length > 1 ? "s" : ""}
-                </h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-full bg-inverse-surface/80 px-3 py-1.5">
-              <span className="h-2 w-2 animate-ping rounded-full bg-secondary-container" />
-              <span className="text-[11px] font-bold text-secondary-fixed">
-                Moteur prédictif · {vm.orgName}
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {vm.insights.map((ins) => (
-              <div
-                key={ins.id}
-                className="flex flex-col justify-between gap-4 rounded-xl bg-inverse-on-surface/5 p-4 backdrop-blur-md"
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={cn(
-                      "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                      ins.tone === "gold"
-                        ? "bg-secondary/20 text-secondary-fixed"
-                        : "bg-primary/20 text-primary-fixed",
-                    )}
-                  >
-                    <Zap className="h-5 w-5" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={cn(
-                          "text-sm font-bold",
-                          ins.tone === "gold" ? "text-secondary-fixed" : "text-primary-fixed",
-                        )}
-                      >
-                        {ins.title}
-                      </span>
-                      <span
-                        className={cn(
-                          "rounded px-2 py-0.5 text-[11px] font-bold",
-                          ins.tone === "gold"
-                            ? "bg-secondary/20 text-secondary-fixed"
-                            : "bg-primary/20 text-primary-fixed",
-                        )}
-                      >
-                        {ins.badge}
-                      </span>
-                    </div>
-                    <p className="text-[13px] text-inverse-on-surface/80">{ins.body}</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Link
-                    href={ins.href}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-bold shadow-md transition-all",
-                      ins.tone === "gold"
-                        ? "bg-secondary text-on-secondary hover:opacity-95"
-                        : "bg-primary text-on-primary hover:bg-primary-container",
-                    )}
-                  >
-                    <Zap className="h-[18px] w-[18px]" />
-                    {ins.cta}
-                  </Link>
-                  {ins.secondaryCta && ins.secondaryHref ? (
-                    <Link
-                      href={ins.secondaryHref}
-                      className="rounded-lg bg-inverse-on-surface/10 px-4 py-2.5 text-sm font-semibold text-inverse-on-surface transition-all hover:bg-inverse-on-surface/20"
-                    >
-                      {ins.secondaryCta}
-                    </Link>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Urgences */}
       <section id="urgences" className="space-y-4">
         <div className="flex items-center justify-between">
@@ -314,99 +194,31 @@ export function NotificationsDesktop({ vm }: { vm: NotificationsViewModel }) {
         )}
       </section>
 
-      {/* Timeline + preferences */}
-      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-12">
-        <section id="liste" className="flex flex-col gap-8 xl:col-span-8">
-          {vm.loading ? (
-            <p className="text-sm text-on-surface-variant">Chargement du flux…</p>
-          ) : vm.groups.length === 0 ? (
-            <div className="rounded-xl bg-surface-container-lowest p-8 text-center text-sm text-on-surface-variant shadow-sm">
-              Aucune notification pour ce filtre.
-            </div>
-          ) : (
-            vm.groups.map((group) => (
-              <div key={group.key} className="space-y-4">
-                <div className="flex items-center justify-between pb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[22px] font-bold capitalize text-on-surface">{group.label}</span>
-                    <span className="rounded-full bg-surface-container-high px-2 py-0.5 text-[11px] font-bold text-on-surface-variant">
-                      {group.items.length} notification{group.items.length > 1 ? "s" : ""}
-                    </span>
-                  </div>
+      <section id="liste" className="flex flex-col gap-8">
+        {vm.loading ? (
+          <p className="text-sm text-on-surface-variant">Chargement du flux…</p>
+        ) : vm.groups.length === 0 ? (
+          <div className="rounded-xl bg-surface-container-lowest p-8 text-center text-sm text-on-surface-variant shadow-sm">
+            Aucune notification pour ce filtre.
+          </div>
+        ) : (
+          vm.groups.map((group) => (
+            <div key={group.key} className="space-y-4">
+              <div className="flex items-center justify-between pb-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[22px] font-bold capitalize text-on-surface">{group.label}</span>
+                  <span className="rounded-full bg-surface-container-high px-2 py-0.5 text-[11px] font-bold text-on-surface-variant">
+                    {group.items.length} notification{group.items.length > 1 ? "s" : ""}
+                  </span>
                 </div>
-                {group.items.map((item) => (
-                  <TimelineCard key={item.id} item={item} onOpen={vm.onOpen} onMarkRead={vm.onMarkRead} />
-                ))}
               </div>
-            ))
-          )}
-        </section>
-
-        <aside id="preferences" className="flex flex-col gap-6 xl:col-span-4">
-          <div className="sticky top-24 flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/15 text-secondary">
-                  <Settings2 className="h-5 w-5" />
-                </div>
-                <h3 className="text-[22px] font-bold text-on-surface">Canaux d&apos;Alerte</h3>
-              </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Local</span>
-            </div>
-            <p className="text-[13px] text-on-surface-variant">
-              Préférences enregistrées sur cet appareil. Le routage serveur multi-canaux arrive prochainement.
-            </p>
-            <div className="space-y-3 pt-1">
-              {vm.channelRules.map((rule) => (
-                <div key={rule.id} className="flex flex-col gap-1.5 rounded-xl bg-surface-container-low p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-on-surface">{rule.label}</span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-bold uppercase",
-                        rule.priorityTone === "primary" && "text-primary",
-                        rule.priorityTone === "secondary" && "text-secondary",
-                        rule.priorityTone === "muted" && "text-on-surface-variant",
-                      )}
-                    >
-                      {rule.priority}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 text-[11px] text-on-surface-variant">
-                    {(["app", "email", "whatsapp"] as ChannelKey[]).map((key) => (
-                      <label key={key} className="flex cursor-pointer items-center gap-1.5">
-                        <input
-                          type="checkbox"
-                          checked={rule.channels[key]}
-                          onChange={() => vm.onToggleChannel(rule.id, key)}
-                          className="h-4 w-4 rounded accent-primary"
-                        />
-                        <span className="capitalize">{key === "app" ? "App" : key === "email" ? "Email" : "WhatsApp"}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+              {group.items.map((item) => (
+                <TimelineCard key={item.id} item={item} onOpen={vm.onOpen} onMarkRead={vm.onMarkRead} />
               ))}
             </div>
-            <button
-              type="button"
-              onClick={() => vm.onSaveChannels(vm.channelRules)}
-              className="mt-1 w-full rounded-lg bg-on-surface py-2.5 text-sm font-bold text-surface shadow-sm transition-all hover:bg-inverse-surface"
-            >
-              Enregistrer les règles de routage
-            </button>
-            <div className="flex items-start gap-2 rounded-xl bg-surface-container p-3">
-              <Shield className="mt-0.5 h-5 w-5 shrink-0 text-secondary" />
-              <div className="flex flex-col">
-                <span className="text-[11px] font-bold text-on-surface">Conformité CNDP Loi 09-08</span>
-                <p className="text-[11px] leading-relaxed text-on-surface-variant">
-                  Notifications chiffrées · Hébergement cloud souverain Maroc.
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
+          ))
+        )}
+      </section>
     </div>
   );
 }

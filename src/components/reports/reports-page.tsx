@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import {
   buildPnl,
@@ -18,7 +18,6 @@ import {
 } from "@/components/reports/reports-helpers";
 import { ReportsDesktop } from "@/components/reports/reports-desktop";
 import { ReportsMobile } from "@/components/reports/reports-mobile";
-import { Drawer } from "@/components/ui/drawer";
 import { useToast } from "@/components/ui/toast";
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
 import { canAccessNav, getAnalyticsScope } from "@/lib/rbac";
@@ -69,9 +68,6 @@ export function ReportsPageView() {
   const [serviceOpts, setServiceOpts] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState<ReportMeta | null>(null);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [autoOpen, setAutoOpen] = useState(false);
-  const exportRef = useRef<HTMLDivElement>(null);
 
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [revenue, setRevenue] = useState<RevenueAnalytics | null>(null);
@@ -178,18 +174,9 @@ export function ReportsPageView() {
       .catch(() => undefined);
   }, [canGiftCards]);
 
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (!exportRef.current?.contains(e.target as Node)) setExportOpen(false);
-    }
-    if (exportOpen) document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [exportOpen]);
-
   function exportFile(format: "csv" | "xlsx" | "pdf") {
     const type = types.includes(activeType) ? activeType : types[0] ?? "global";
     openReportExport(type, format, filters);
-    setExportOpen(false);
   }
 
   const commissionsTotal = staffRows.reduce((s, r) => s + r.commission, 0);
@@ -264,7 +251,7 @@ export function ReportsPageView() {
     top,
     onExport: exportFile,
     onPrint: () => window.print(),
-    onAuto: () => setAutoOpen(true),
+    onAuto: () => undefined,
     onRefresh: () => {
       setLoading(true);
       refresh().finally(() => setLoading(false));
@@ -287,50 +274,7 @@ export function ReportsPageView() {
   return (
     <>
       <ReportsMobile {...vm} />
-      <ReportsDesktop
-        vm={vm}
-        exportOpen={exportOpen}
-        setExportOpen={setExportOpen}
-        exportRef={exportRef}
-        customerRows={customerRows}
-        ledger={ledger}
-        loyalty={loyalty}
-        canReactivation={canReactivation}
-      />
-      <Drawer open={autoOpen} onClose={() => setAutoOpen(false)} title="Rapports automatisés">
-        <div className="space-y-3 text-sm text-on-surface">
-          <p>
-            Les envois planifiés vers un expert-comptable, un hashing SHA-256 ou un fichier FEC Sage/Cegid ne sont pas
-            disponibles dans cette version.
-          </p>
-          <p className="text-on-surface-variant">
-            Exportez à la demande le module actuellement affiché ({activeType}) en PDF, Excel ou CSV. L&apos;impression
-            utilise la vue navigateur.
-          </p>
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            <button
-              type="button"
-              className="h-10 rounded-lg bg-primary-container text-sm font-bold text-on-primary-container"
-              onClick={() => {
-                exportFile("pdf");
-                setAutoOpen(false);
-              }}
-            >
-              PDF
-            </button>
-            <button
-              type="button"
-              className="h-10 rounded-lg bg-surface-container text-sm font-bold"
-              onClick={() => {
-                exportFile("xlsx");
-                setAutoOpen(false);
-              }}
-            >
-              Excel
-            </button>
-          </div>
-        </div>
-      </Drawer>
+      <ReportsDesktop vm={vm} customerRows={customerRows} ledger={ledger} loyalty={loyalty} />
     </>
   );
 }

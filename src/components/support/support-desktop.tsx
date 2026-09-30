@@ -3,22 +3,15 @@
 import Link from "next/link";
 import {
   Bug,
-  CheckCircle2,
   Headphones,
   Lightbulb,
-  MapPin,
   Paperclip,
   RefreshCw,
   Search,
   Send,
-  Shield,
-  Sparkles,
   Timer,
-  Zap,
 } from "lucide-react";
 import {
-  DIAGNOSTIC_ACTIONS,
-  KNOWLEDGE_GUIDES,
   SUPPORT_CATEGORY_LABEL,
   SUPPORT_PRIORITY_LABEL,
   SUPPORT_STATUS_LABEL,
@@ -40,28 +33,7 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-surface-container-high px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
-                Support Prestige Métier
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-secondary-fixed px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-on-secondary-fixed">
-                <Shield className="h-3.5 w-3.5" />
-                {vm.roleLabel}
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-primary-fixed px-2.5 py-1 text-[11px] font-bold tracking-wider text-on-primary-fixed">
-                <span className="h-1.5 w-1.5 animate-ping rounded-full bg-primary" />
-                Assistance prioritaire
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-[11px] font-bold text-on-surface shadow-sm">
-                <Shield className="h-3.5 w-3.5 text-secondary" />
-                CNDP Loi 09-08
-              </span>
-              <span className="flex items-center gap-1 text-[13px] text-on-surface-variant">
-                <MapPin className="h-4 w-4" />
-                {vm.orgName}
-              </span>
-            </div>
-            <h1 className="mt-1 flex items-center gap-2 text-[28px] font-bold text-on-surface">
+            <h1 className="flex items-center gap-2 text-[28px] font-bold text-on-surface">
               <Headphones className="h-8 w-8 text-primary" />
               Support &amp; Conciergerie Technique Métier
             </h1>
@@ -441,113 +413,6 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
           </div>
         </div>
       </section>
-
-      {/* IA + knowledge */}
-      <section className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-        <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-inverse-surface p-6 text-inverse-on-surface shadow-xl lg:col-span-5">
-          <div className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full bg-secondary-container/10 blur-3xl" />
-          <div className="relative z-10 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/30 text-secondary-fixed shadow-inner">
-                  <Sparkles className="h-6 w-6" />
-                </div>
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-secondary-fixed">
-                    Aide rapide
-                  </span>
-                  <h4 className="text-[22px] font-extrabold text-surface-bright">
-                    Liens métiers express
-                  </h4>
-                </div>
-              </div>
-            </div>
-            <p className="mt-1 text-[13px] text-surface-variant/80">
-              Accès direct aux modules concernés — pas de diagnostic inventé.
-            </p>
-            <div className="mt-2 flex flex-col gap-2">
-              {DIAGNOSTIC_ACTIONS.map((a) => (
-                <Link
-                  key={a.id}
-                  href={a.href}
-                  className="flex items-center justify-between rounded-lg bg-surface-container-highest/10 p-2.5 text-left text-sm text-surface-bright transition-all hover:bg-surface-container-highest/20"
-                >
-                  <span className="flex items-center gap-2">
-                    <Zap className="h-[18px] w-[18px] text-secondary-fixed" />
-                    {a.label}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between gap-3 rounded-2xl bg-surface-container-lowest p-6 shadow-sm lg:col-span-7">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
-                Raccourcis
-              </span>
-              <h4 className="text-[22px] font-bold text-on-surface">Modules &amp; procédures</h4>
-            </div>
-          </div>
-          <div className="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {KNOWLEDGE_GUIDES.map((g) => {
-              const Icon = g.icon;
-              return (
-                <Link
-                  key={g.id}
-                  href={g.href}
-                  className="group flex flex-col justify-between rounded-xl bg-surface-container-low p-4 transition-colors hover:bg-surface-container"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-lowest text-primary shadow-sm">
-                      <Icon className="h-[22px] w-[22px]" />
-                    </div>
-                    <div>
-                      <span
-                        className={cn(
-                          "text-[11px] font-bold uppercase",
-                          g.tone === "secondary" ? "text-secondary" : "text-primary",
-                        )}
-                      >
-                        {g.eyebrow}
-                      </span>
-                      <h5 className="mt-0.5 text-lg font-bold text-on-surface group-hover:text-primary">
-                        {g.title}
-                      </h5>
-                      <p className="mt-1 text-[13px] text-on-surface-variant">{g.body}</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <footer className="flex flex-col items-center justify-between gap-4 rounded-2xl bg-surface-container-lowest p-6 shadow-sm md:flex-row">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <CheckCircle2 className="h-7 w-7" />
-          </div>
-          <div>
-            <p className="text-lg font-bold text-on-surface">Centre d&apos;assistance institut</p>
-            <p className="text-[13px] text-on-surface-variant">
-              Créez un ticket pour toute urgence caisse, agenda ou TPE.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-col text-[13px] text-on-surface-variant md:items-end">
-          <span className="flex items-center gap-2 font-bold text-on-surface">
-            <Shield className="h-4 w-4 text-secondary" />
-            Conformité CNDP Loi 09-08
-          </span>
-          <span className="text-[11px] text-on-surface-variant/80">
-            Tickets et messages stockés pour votre organisation
-          </span>
-        </div>
-      </footer>
     </div>
   );
 }

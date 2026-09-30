@@ -29,14 +29,17 @@ import {
 } from "lucide-react";
 import { TarifsFaq } from "@/components/www/TarifsFaq";
 import { SITE } from "@/lib/site";
+import { getShowcaseMonthlyPrice } from "@/lib/subscriptions/plans";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Tarifs — 399 DH/mois",
-  description:
-    "Une seule formule à 399 DH/mois. Toutes les fonctionnalités essentielles pour gérer votre institut. Essai 14 jours sans carte bancaire.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const price = await getShowcaseMonthlyPrice();
+  return {
+    title: `Tarifs — ${price} DH/mois`,
+    description: `Une seule formule à ${price} DH/mois. Toutes les fonctionnalités essentielles pour gérer votre institut. Essai 7 jours sans carte bancaire.`,
+  };
+}
 
 const WA_HREF = `https://wa.me/${SITE.phone.replace(/\D/g, "")}`;
 
@@ -71,12 +74,12 @@ const FAQS = [
   {
     question: "L'essai gratuit est-il vraiment sans engagement ?",
     answer:
-      "Oui. Vous pouvez tester Rappel Beauty gratuitement pendant 14 jours. Aucune carte bancaire n'est nécessaire pour commencer l'essai.",
+      "Oui. Vous pouvez tester Rappel Beauty gratuitement pendant 7 jours. Aucune carte bancaire n'est nécessaire pour commencer l'essai.",
   },
   {
-    question: "Que se passe-t-il après les 14 jours ?",
+    question: "Que se passe-t-il après les 7 jours ?",
     answer:
-      "À la fin de l'essai, vous pouvez souscrire à l'abonnement de 399 DH/mois pour continuer à utiliser votre espace.",
+      "À la fin de l'essai, vous pouvez souscrire à l'abonnement mensuel pour continuer à utiliser votre espace.",
   },
   {
     question: "Puis-je arrêter mon abonnement facilement ?",
@@ -113,7 +116,10 @@ const TRUST = [
   },
 ] as const;
 
-export default function TarifsPage() {
+export default async function TarifsPage() {
+  const price = await getShowcaseMonthlyPrice();
+  const priceLabel = `${price} DH/mois`;
+
   return (
     <div className="bg-[#FFF9FC] text-ink">
       {/* Hero */}
@@ -136,7 +142,7 @@ export default function TarifsPage() {
             <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
               Tout votre institut
               <br />
-              pour <span className="text-primary">399 DH/mois</span>
+              pour <span className="text-primary">{priceLabel}</span>
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-ink/55 sm:text-lg">
@@ -146,7 +152,7 @@ export default function TarifsPage() {
           </div>
 
           <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-            {["Sans engagement", "Configuration incluse", "Support inclus", "Essai 14 jours gratuit"].map(
+            {["Sans engagement", "Configuration incluse", "Support inclus", "Essai 7 jours gratuit"].map(
               (item) => (
                 <div key={item} className="flex items-center gap-2 text-xs font-medium text-ink/60">
                   <Check size={15} strokeWidth={3} className="text-emerald-600" aria-hidden />
@@ -319,7 +325,7 @@ export default function TarifsPage() {
                 </p>
 
                 <div className="mt-5 flex items-end justify-center gap-2">
-                  <span className="text-5xl font-extrabold tracking-tight text-primary">399</span>
+                  <span className="text-5xl font-extrabold tracking-tight text-primary">{price}</span>
                   <div className="pb-2 text-left">
                     <div className="text-sm font-bold text-primary">DH</div>
                     <div className="text-xs text-ink/45">/ mois</div>
@@ -364,7 +370,7 @@ export default function TarifsPage() {
                   <Gift size={19} aria-hidden />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#C21852]">14 jours gratuits</p>
+                  <p className="text-xs font-bold text-[#C21852]">7 jours gratuits</p>
                   <p className="mt-0.5 text-xs text-ink/45">Aucune carte bancaire requise</p>
                 </div>
               </div>
@@ -473,7 +479,7 @@ export default function TarifsPage() {
             <h2 className="mt-4 font-display text-3xl font-bold leading-tight text-white sm:text-4xl">
               Testez Rappel Beauty
               <br />
-              gratuitement pendant 14 jours
+              gratuitement pendant 7 jours
             </h2>
 
             <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-[#D5C7CE]">

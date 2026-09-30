@@ -4,13 +4,14 @@ import { Suspense } from "react";
 import { Reveal } from "@/components/www/Reveal";
 import { ProfessionnelForm } from "@/components/www/ProfessionnelForm";
 import { APP_LOGIN_HREF, SITE } from "@/lib/site";
+import { getShowcaseMonthlyPrice } from "@/lib/subscriptions/plans";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Je suis un professionnel",
   description:
-    "Agenda anti-chevauchement, caisse MAD, stock cabine et WhatsApp. Essai 14 jours sans carte — accès activé sous 24 h.",
+    "Agenda anti-chevauchement, caisse MAD, stock cabine et WhatsApp pour instituts de beauté.",
 };
 
 const HERO_IMG =
@@ -37,7 +38,8 @@ const REASONS = [
   },
 ] as const;
 
-export default function ProfessionnelPage() {
+export default async function ProfessionnelPage() {
+  const monthlyPrice = await getShowcaseMonthlyPrice();
   return (
     <section className="relative w-full overflow-hidden">
       {/* Background */}
@@ -66,7 +68,7 @@ export default function ProfessionnelPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-ink/60 sm:text-lg">
             Agenda anti-chevauchement, caisse certifiée MAD, suivi du stock cabine et relances
-            WhatsApp élégantes. Démarrez votre essai 14 jours sans carte bancaire.
+            WhatsApp élégantes.
           </p>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -79,12 +81,6 @@ export default function ProfessionnelPage() {
                 <strong className="font-semibold text-primary">Se connecter</strong>
               </span>
             </Link>
-            <Link
-              href="/demo/"
-              className="inline-flex items-center gap-2 rounded-xl bg-gold/20 px-4 py-2.5 text-sm font-medium text-ink/80 transition hover:bg-gold/40 hover:text-ink"
-            >
-              Demander une démo privée
-            </Link>
           </div>
         </Reveal>
 
@@ -94,7 +90,7 @@ export default function ProfessionnelPage() {
             <Suspense
               fallback={<div className="h-96 animate-pulse rounded-xl bg-primary-light/40" />}
             >
-              <ProfessionnelForm />
+              <ProfessionnelForm monthlyPrice={monthlyPrice} />
             </Suspense>
           </Reveal>
 

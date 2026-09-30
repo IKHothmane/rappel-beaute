@@ -394,7 +394,7 @@ export function reportsInsight(opts: {
       vigilance,
       recommendation: `Préparer une relance ciblée sur les ${opts.inactive} clientes inactives — le montant récupérable n'est pas estimé ici.`,
       cta: "Ouvrir la relance",
-      href: "/reactivation/",
+      href: "/customers/",
     };
   }
   if ((opts.inactive ?? 0) > 0 && opts.canMarketing) {
@@ -403,7 +403,7 @@ export function reportsInsight(opts: {
       vigilance,
       recommendation: "Créer une campagne opt-in pour relancer le segment inactif, sans envoi automatique.",
       cta: "Ouvrir les campagnes",
-      href: "/marketing/",
+      href: "/whatsapp/",
     };
   }
   return {

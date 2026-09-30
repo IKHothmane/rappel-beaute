@@ -107,6 +107,7 @@ export const AUTH_RATE_LIMITS = {
   login: { limit: 10, windowMs: 15 * 60_000 },
   activate: { limit: 5, windowMs: 15 * 60_000 },
   platformLogin: { limit: 10, windowMs: 15 * 60_000 },
+  signup: { limit: 5, windowMs: 60 * 60_000 },
 } as const;
 
 export function authRateLimitKey(action: string, ip: string, email?: string): string {

@@ -533,7 +533,7 @@ export function AdminPlatformSettingsView() {
             id="billing"
             icon={<Diamond className="h-5 w-5" />}
             title="2. Abonnements & facturation"
-            desc="Grille tarifaire par défaut (PlatformConfig). Plans détaillés → /plans/."
+            desc="Grille tarifaire par défaut (PlatformConfig)."
             active={section === "billing"}
             onVisible={() => setSection("billing")}
           >
@@ -687,12 +687,6 @@ export function AdminPlatformSettingsView() {
                 </div>
               ))}
             </div>
-            <Link
-              href={adminHref("/plans/")}
-              className="mt-4 inline-flex text-[12px] font-bold text-primary hover:underline"
-            >
-              Gérer les plans détaillés →
-            </Link>
           </Section>
 
           {/* 3 Email */}

@@ -35,7 +35,6 @@ import {
   monthDelta,
   offerKind,
   offerLabel,
-  posHref,
   posSimulation,
   remainingPct,
   statusChipClass,
@@ -296,20 +295,7 @@ export function GiftCardsMobile(props: Props) {
                   <div className="h-full rounded-full bg-primary" style={{ width: `${remainingPct(featured)}%` }} />
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-1">
-                {canPos ? (
-                  <Link
-                    href={posHref(featured.beneficiaryCustomerId)}
-                    className="flex h-10 flex-col items-center justify-center rounded-lg bg-primary text-[10px] font-bold text-white"
-                  >
-                    <ShoppingCart size={14} />
-                    Déduire
-                  </Link>
-                ) : (
-                  <span className="flex h-10 flex-col items-center justify-center rounded-lg bg-[#FCE9F4] text-[10px] font-bold text-ink/35">
-                    Déduire
-                  </span>
-                )}
+              <div className="grid grid-cols-3 gap-1">
                 {canWhatsapp && waHref ? (
                   <a
                     href={waHref}
@@ -426,14 +412,6 @@ export function GiftCardsMobile(props: Props) {
               <span className="text-[22px] font-extrabold text-[#7B5900]">{formatMad(sim.remainder)}</span>
             </div>
           </div>
-          {canPos ? (
-            <Link
-              href={posHref(featured.beneficiaryCustomerId)}
-              className="flex h-12 items-center justify-center gap-2 rounded-lg bg-primary text-[14px] font-bold text-white"
-            >
-              Encaisser dans le POS
-            </Link>
-          ) : null}
         </section>
       ) : null}
 

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { Ref } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -10,21 +9,11 @@ import {
   Bath,
   CalendarCheck2,
   CalendarDays,
-  ChevronDown,
   CircleDollarSign,
-  Download,
-  FileSpreadsheet,
-  FileText,
   IdCard,
   Landmark,
-  MapPin,
   Package,
-  Printer,
   RefreshCw,
-  Scale,
-  Settings2,
-  Share2,
-  Shield,
   Sparkles,
   Star,
   Users,
@@ -38,7 +27,6 @@ import {
   deltaClass,
   healthyStockCount,
   initials,
-  marketingRoi,
   paymentBarColor,
   paymentDotColor,
   presenceRate,
@@ -56,22 +44,14 @@ import type { CustomerReportRow, ReportType, StockLedgerReportRow } from "@/type
 
 export function ReportsDesktop({
   vm,
-  exportOpen,
-  setExportOpen,
-  exportRef,
   customerRows,
   ledger,
   loyalty,
-  canReactivation,
 }: {
   vm: ReportsViewModel;
-  exportOpen: boolean;
-  setExportOpen: (v: boolean) => void;
-  exportRef: Ref<HTMLDivElement>;
   customerRows: CustomerReportRow[];
   ledger: StockLedgerReportRow[];
   loyalty: LoyaltyAnalytics | null;
-  canReactivation: boolean;
 }) {
   const ov = vm.overview;
   const completed = statusCount(vm.agenda, "COMPLETED");
@@ -83,71 +63,19 @@ export function ReportsDesktop({
   const staffRev = vm.staffRows.reduce((s, r) => s + r.revenue, 0);
   const staffComm = vm.staffRows.reduce((s, r) => s + r.commission, 0);
   const staffRdv = vm.staffRows.reduce((s, r) => s + r.appointments, 0);
-  const roi = marketingRoi(vm.marketing);
   const marginPct = avgServiceMargin(vm.services);
 
   return (
     <div className="hidden space-y-6 print:block lg:block">
       <header className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#FFDEA4] shadow-sm">
-                <Shield className="h-3 w-3" fill="currentColor" />
-                {vm.roleLabel}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-on-surface">
-                <BadgeCheck className="h-3 w-3 text-primary" />
-                Données live
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-secondary-fixed px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-on-secondary-fixed">
-                <Scale className="h-3 w-3 text-secondary" />
-                Conforme CNDP Loi 09-08
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-                <MapPin className="h-3 w-3 text-secondary" />
-                {vm.orgName}
-              </span>
-            </div>
-            <h1 className="mt-1 text-[40px] font-bold leading-tight tracking-tight text-on-surface">
-              Rapports &amp; Centre d&apos;Audit Financier{" "}
-              <span className="font-serif italic text-primary-container">— {vm.orgName}</span>
-            </h1>
-            <p className="max-w-4xl text-[15px] text-on-surface-variant">
-              Générez, analysez, comparez et exportez les rapports comptables et opérationnels consolidés (Livre de
-              Caisse, RDV, Clientes, Staff, Prestations, Stock).
-            </p>
-          </div>
-          <div className="relative flex items-center gap-2 print:hidden">
-            <button
-              type="button"
-              onClick={vm.onAuto}
-              className="flex h-12 items-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container"
-            >
-              <Settings2 className="h-5 w-5 text-secondary" />
-              Rapports Automatisés
-            </button>
-            <div className="relative" ref={exportRef}>
-              <button
-                type="button"
-                onClick={() => setExportOpen(!exportOpen)}
-                className="flex h-12 items-center gap-2 rounded-lg bg-primary-container px-5 text-sm font-bold text-on-primary-container shadow-md transition-all hover:bg-primary hover:shadow-lg"
-              >
-                <Share2 className="h-5 w-5" />
-                Exporter le Rapport
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              {exportOpen ? (
-                <div className="absolute right-0 z-50 mt-2 flex w-64 flex-col gap-1 rounded-xl bg-white p-2 shadow-2xl">
-                  <ExportItem icon={<FileText className="h-4 w-4" />} title="PDF Expert-Comptable" hint="Synthèse imprimable" onClick={() => vm.onExport("pdf")} />
-                  <ExportItem icon={<FileSpreadsheet className="h-4 w-4" />} title="Excel / XLSX Analytique" hint="Tableaux croisés dynamiques" onClick={() => vm.onExport("xlsx")} />
-                  <ExportItem icon={<FileSpreadsheet className="h-4 w-4" />} title="CSV Grand Livre" hint="Export brut transactions" onClick={() => vm.onExport("csv")} />
-                  <div className="my-1 h-px bg-surface-container" />
-                  <ExportItem icon={<Printer className="h-4 w-4" />} title="Imprimer le Bilan" hint="Format A4 navigateur" onClick={vm.onPrint} />
-                </div>
-              ) : null}
-            </div>
-          </div>
+        <div className="min-w-0 space-y-2">
+          <h1 className="text-[40px] font-bold leading-tight tracking-tight text-on-surface">
+            Rapports &amp; Centre d&apos;Audit Financier
+          </h1>
+          <p className="max-w-4xl text-[15px] text-on-surface-variant">
+            Générez, analysez et comparez les rapports comptables et opérationnels consolidés (Livre de
+            Caisse, RDV, Clientes, Staff, Prestations, Stock).
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-sm print:hidden">
@@ -236,7 +164,7 @@ export function ReportsDesktop({
                   </span>
                 </div>
                 <p className="text-[13px] text-[#E7D5E0]">
-                  Analyse des indicateurs et recommandations opérationnelles — {vm.orgName}
+                  Analyse des indicateurs et recommandations opérationnelles
                 </p>
               </div>
             </div>
@@ -259,14 +187,6 @@ export function ReportsDesktop({
                   {vm.insight.cta}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => vm.onExport("pdf")}
-                className="flex h-10 items-center gap-1.5 rounded-lg bg-white/10 px-4 text-sm font-semibold text-white transition-all hover:bg-white/20"
-              >
-                <Download className="h-4 w-4" />
-                Télécharger l&apos;Audit IA
-              </button>
             </div>
           </div>
           {vm.loading ? (
@@ -556,11 +476,6 @@ export function ReportsDesktop({
                   <h3 className="text-[22px] font-bold">Performance nominative de l&apos;équipe</h3>
                   <p className="text-[13px] text-on-surface-variant">RDV terminés, CA encaissé, commissions dues — sans notes inventées</p>
                 </div>
-                {vm.canCommissions ? (
-                  <Link href="/commissions/" className="flex items-center gap-1 rounded-lg bg-surface-container px-3 py-1.5 text-sm font-semibold">
-                    Module commissions
-                  </Link>
-                ) : null}
               </div>
               <div className="w-full overflow-x-auto">
                 <table className="w-full border-collapse text-left text-[15px]">
@@ -673,136 +588,14 @@ export function ReportsDesktop({
 
           <div className="flex flex-col gap-2 rounded-xl bg-white p-8 shadow-sm">
             <h3 className="text-[22px] font-bold">Modules liés</h3>
-            {vm.canMarketing ? (
-              <Shortcut
-                href="/marketing/"
-                title="Campagnes & marketing"
-                hint={roi != null ? `CA attribué / destinataire : ${roi.toLocaleString("fr-MA")} MAD` : `${vm.marketing.length} campagne(s)`}
-              />
-            ) : null}
-            {vm.canGiftCards ? (
-              <Shortcut href="/gift-cards/" title="Cartes cadeaux" hint={vm.giftBalance != null ? `En-cours ${formatMad(vm.giftBalance)}` : "Soldes réels"} />
-            ) : null}
             {vm.canReviews ? <Shortcut href="/reviews/" title="Avis & réputation" hint={reviewScoreLabel(vm.reviews)} /> : null}
-            {vm.canLoyalty ? (
-              <Shortcut
-                href="/loyalty/"
-                title="Fidélité"
-                hint={
-                  loyalty
-                    ? `${loyalty.pointsEarned.toLocaleString("fr-MA")} pts gagnés · ${loyalty.vipCustomers} VIP`
-                    : "Points & récompenses"
-                }
-              />
-            ) : null}
-            {canReactivation ? <Shortcut href="/reactivation/" title="Relance clientes" hint="Segment inactif 90 j" /> : null}
+            <Shortcut href="/customers/" title="Clientes" hint="Fichier et historique" />
+            <Shortcut href="/whatsapp/" title="WhatsApp" hint="Relances manuelles" />
           </div>
         </div>
       </section>
 
-      <footer className="flex flex-col gap-6 rounded-xl bg-white p-8 shadow-sm print:hidden">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-surface-container pb-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <Share2 className="h-5 w-5 text-primary" />
-              <h3 className="text-[22px] font-bold text-on-surface">Automatisation des Livrables &amp; Exports</h3>
-            </div>
-            <p className="text-[13px] text-on-surface-variant">
-              Téléchargez à la demande le module sélectionné ({vm.activeType}). Les envois planifiés vers un
-              expert-comptable ne sont pas encore disponibles.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-lg bg-surface-container-low px-3 py-1.5 text-sm font-semibold text-on-surface">
-              <span className="h-2 w-2 rounded-full bg-secondary" />
-              À la demande
-            </span>
-            <span className="flex items-center gap-1.5 rounded-lg bg-secondary-fixed px-3 py-1.5 text-sm font-bold text-on-secondary-fixed">
-              <BadgeCheck className="h-4 w-4" />
-              Module : {vm.activeType}
-            </span>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <button
-            type="button"
-            onClick={() => vm.onExport("pdf")}
-            className="flex items-start gap-3 rounded-lg bg-surface-container-low p-4 text-left transition-colors hover:bg-surface-container"
-          >
-            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-primary-container" />
-            <span className="flex flex-col">
-              <span className="text-sm font-bold">PDF / Grand Livre</span>
-              <span className="text-[12px] text-on-surface-variant">Synthèse imprimable de la période</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => vm.onExport("xlsx")}
-            className="flex items-start gap-3 rounded-lg bg-surface-container-low p-4 text-left transition-colors hover:bg-surface-container"
-          >
-            <FileSpreadsheet className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-            <span className="flex flex-col">
-              <span className="text-sm font-bold">Excel Analytique</span>
-              <span className="text-[12px] text-on-surface-variant">Tableaux pour retraitement</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => vm.onExport("csv")}
-            className="flex items-start gap-3 rounded-lg bg-surface-container-low p-4 text-left transition-colors hover:bg-surface-container"
-          >
-            <FileSpreadsheet className="mt-0.5 h-4 w-4 shrink-0 text-on-surface-variant" />
-            <span className="flex flex-col">
-              <span className="text-sm font-bold">CSV Transactions</span>
-              <span className="text-[12px] text-on-surface-variant">Export brut du module actif</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={vm.onAuto}
-            className="flex items-start gap-3 rounded-lg bg-surface-container-low p-4 text-left transition-colors hover:bg-surface-container"
-          >
-            <Settings2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <span className="flex flex-col">
-              <span className="text-sm font-bold">Options d&apos;automatisation</span>
-              <span className="text-[12px] text-on-surface-variant">Paramètres et limites actuelles</span>
-            </span>
-          </button>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-4 text-[11px] text-on-surface-variant">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-secondary" />
-            <span>
-              Exports générés à la demande — conformité CNDP (consentements réels). Aucune empreinte cryptographique
-              inventée.
-            </span>
-          </div>
-          <span className="text-outline">Horodatage Casablanca : {vm.generatedAt}</span>
-        </div>
-      </footer>
     </div>
-  );
-}
-
-function ExportItem({
-  icon,
-  title,
-  hint,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  hint: string;
-  onClick: () => void;
-}) {
-  return (
-    <button type="button" onClick={onClick} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-surface-container-low">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container text-primary">{icon}</span>
-      <span className="flex flex-col">
-        <span className="text-sm font-bold">{title}</span>
-        <span className="text-[10px] text-on-surface-variant">{hint}</span>
-      </span>
-    </button>
   );
 }
 

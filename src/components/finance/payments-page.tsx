@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import {
   Banknote,
   CreditCard,
-  Download,
   Gift,
   Landmark,
   Plus,
@@ -18,7 +17,6 @@ import {
   PAYMENT_PAGE_SIZE,
   type PaymentPeriod,
   type PaymentTab,
-  exportPaymentsCsv,
   filterPayments,
   formatPaymentDateTime,
   formatPaymentTime,
@@ -292,7 +290,6 @@ export function PaymentsPageView() {
           }
         }}
         canRefund={canRefundRow}
-        exportCsv={() => exportPaymentsCsv(filtered)}
       />
 
       <div className="hidden space-y-4 lg:block">
@@ -314,14 +311,6 @@ export function PaymentsPageView() {
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => exportPaymentsCsv(filtered)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#F6E3EF] px-4 text-[14px] font-semibold"
-            >
-              <Download size={18} />
-              Exporter CSV
-            </button>
             {canWrite ? (
               <button
                 type="button"
@@ -946,11 +935,6 @@ function PaymentInspect({
         {canCash ? (
           <Link href="/cash-register/" className="font-semibold text-primary hover:underline">
             Caisse →
-          </Link>
-        ) : null}
-        {canPos ? (
-          <Link href="/pos/" className="font-semibold text-primary hover:underline">
-            POS →
           </Link>
         ) : null}
       </div>

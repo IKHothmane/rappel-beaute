@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Lock, MessageCircle, Search, Send, Settings, Shield, Star } from "lucide-react";
+import { MessageCircle, Search, Send, Star } from "lucide-react";
 import {
   type ReviewSort,
   type ReviewTab,
@@ -41,7 +41,6 @@ const TABS: { id: ReviewTab; label: string }[] = [
 
 export type ReviewsMobileProps = {
   orgName: string;
-  roleLabel: string;
   directorName: string;
   kpis: ReviewKpis | null;
   insight: Insight;
@@ -58,17 +57,12 @@ export type ReviewsMobileProps = {
   selected: ReviewRequestItem | null;
   onSelect: (id: string) => void;
   canSend: boolean;
-  canSettings: boolean;
-  onSettings: () => void;
-  onSolicit: () => void;
   submitting: boolean;
   onMarkSent: (item: ReviewRequestItem) => void;
   onSkip: (id: string) => void;
   onSatisfaction: (id: string, s: ReviewSatisfaction) => void;
   staffScores: StaffReviewScore[];
   googleUrl: string | null;
-  settingsEnabled: boolean;
-  delayHours: number;
   onCopy: (text: string, label: string) => void;
 };
 
@@ -89,53 +83,17 @@ export function ReviewsMobile(props: ReviewsMobileProps) {
   return (
     <div className="w-full space-y-4 pb-8 lg:hidden">
       <section className="space-y-2">
-        <div className="flex flex-wrap gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#FFDEA4] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#261900]">
-            <Shield size={13} />
-            {props.roleLabel}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#F6E3EF] px-2.5 py-1 text-[11px] font-bold uppercase text-ink/60">
-            <Star size={13} className="text-[#7B5900]" />
-            Collecte interne
-          </span>
-        </div>
         <h1 className="text-[28px] font-bold leading-9">Avis & réputation</h1>
         <p className="text-[13px] text-ink/55">
-          Demandes après RDV, notes internes, suivi WhatsApp manuel — pas de publication Google automatique.
+          Demandes après RDV, notes internes, suivi WhatsApp manuel.
         </p>
-        <div className="space-y-2">
-          {props.canSend ? (
-            <button
-              type="button"
-              onClick={props.onSolicit}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[14px] font-bold text-white shadow-sm"
-            >
-              <Send size={18} />
-              Solliciter ({props.counts.pending})
-            </button>
-          ) : null}
-          <div className="grid grid-cols-2 gap-2">
-            {props.canSettings ? (
-              <button
-                type="button"
-                onClick={props.onSettings}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FFEFF8] text-[12px] font-semibold"
-              >
-                <Settings size={16} />
-                Paramètres
-              </button>
-            ) : (
-              <span />
-            )}
-            <Link
-              href="/whatsapp/"
-              className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FFEFF8] text-[12px] font-semibold"
-            >
-              <MessageCircle size={16} />
-              WhatsApp
-            </Link>
-          </div>
-        </div>
+        <Link
+          href="/whatsapp/"
+          className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FFEFF8] text-[12px] font-semibold"
+        >
+          <MessageCircle size={16} />
+          WhatsApp
+        </Link>
       </section>
 
       <section className="relative overflow-hidden rounded-2xl bg-[#382D36] p-4 text-[#FEECF7] shadow-sm">
@@ -205,12 +163,6 @@ export function ReviewsMobile(props: ReviewsMobileProps) {
         <StarBar label="4★" count={kpis?.satisfiedCount ?? 0} total={kpis?.recordedCount ?? 0} color="bg-[#FCCA66]" />
         <StarBar label="1★" count={kpis?.dissatisfiedCount ?? 0} total={kpis?.recordedCount ?? 0} color="bg-[#BA1A1A]" />
         <p className="text-[12px] text-ink/45">Pas de 2★ / 3★ : le produit ne saisit que trois niveaux.</p>
-        <div className="flex gap-2 rounded-xl bg-[#F6E3EF] p-3 text-[12px] text-ink/70">
-          <Shield size={16} className="mt-0.5 shrink-0 text-[#7B5900]" />
-          {props.settingsEnabled
-            ? `Déclenchement ${props.delayHours} h après RDV terminé. WhatsApp manuel. ${props.googleUrl ? "Lien Google proposé si la cliente est satisfaite." : "Aucun lien Google configuré."}`
-            : "Collecte désactivée dans les paramètres."}
-        </div>
       </section>
 
       <section className="space-y-2">
@@ -321,13 +273,6 @@ export function ReviewsMobile(props: ReviewsMobileProps) {
         </section>
       ) : null}
 
-      <footer className="rounded-2xl bg-[#FCE9F4] p-4 text-center text-[11px] text-ink/50">
-        <p className="flex items-center justify-center gap-1 font-bold text-ink">
-          <Lock size={14} className="text-[#7B5900]" />
-          CNDP 09-08 · opt-in WhatsApp
-        </p>
-        <p className="mt-1">Notes internes isolées par institut. Aucune publication Google automatique.</p>
-      </footer>
     </div>
   );
 }

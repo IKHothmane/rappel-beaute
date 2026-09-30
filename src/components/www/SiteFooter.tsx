@@ -15,6 +15,7 @@ const COLS = [
   {
     title: "Solutions",
     links: [
+      { href: "/instituts/", label: "Instituts inscrits" },
       { href: "/solutions/institut-beaute/", label: "Institut de beauté" },
       { href: "/fonctionnalites/#rdv", label: "Rendez-vous" },
       { href: "/fonctionnalites/#clientes", label: "Clientes" },
@@ -43,16 +44,15 @@ const COLS = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-8 border-t border-line bg-[#FBF4F6]">
+    <footer
+      className="mt-8 border-t border-line bg-[#FFF8FB] bg-[url('/brand/footer.png')] bg-cover bg-center bg-no-repeat"
+    >
       <div className="container-rb grid gap-10 py-14 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <div className="lg:col-span-1">
           <BrandLogo height={72} />
           <p className="mt-4 max-w-[16rem] text-sm leading-relaxed text-ink/65">
             Le logiciel des instituts de beauté au Maroc. Agenda, caisse, stock,
             WhatsApp manuel.
-          </p>
-          <p className="mt-4 font-mono text-[11px] tracking-wider text-ink/45">
-            {SITE.version} · Starter {299} · Institut {499} · Premium {899} MAD
           </p>
         </div>
 

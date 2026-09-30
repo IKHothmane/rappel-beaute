@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
           </>
         )}
         <p className="mt-4 text-center text-sm">
-          <Link href="/login/" className="text-primary">
+          <Link href="/connexion/" className="text-primary">
             Retour connexion
           </Link>
         </p>

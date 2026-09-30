@@ -1,29 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  Brain,
   CalendarCheck,
   CalendarPlus,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Download,
   Flame,
-  Lightbulb,
   Lock,
   MapPin,
   MessageCircle,
   MoreVertical,
   Plus,
   Search,
-  Shield,
-  SlidersHorizontal,
   Target,
   Timer,
   Users,
-  X,
   Zap,
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
@@ -38,9 +32,7 @@ import {
   WEEKDAYS,
   bestOpportunity,
   buildAppointmentTimes,
-  demandMix,
   enrichWaitingRows,
-  exportWaitingCsv,
   filterWaitingRows,
   findCancelledSlot,
   formatCountdown,
@@ -52,7 +44,6 @@ import {
   nextBest,
   nextDateForWeekdays,
   priorityChip,
-  saturdayOpportunity,
   slotToLocalParts,
   staffShort,
   statusChip,
@@ -73,7 +64,8 @@ import { Select, Textarea } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canWriteFeatureLimited } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
-import { listCustomers } from "@/modules/customers/service";
+import { limitPhoneDigits, moroccoPhoneSearchVariants } from "@/lib/validation/customer";
+import { createCustomer, listCustomers } from "@/modules/customers/service";
 import { listServices } from "@/modules/services/service";
 import { listStaff } from "@/modules/staff/service";
 import {
@@ -90,7 +82,6 @@ export function WaitingListPageView() {
   const user = useCurrentUser();
   const canWrite = canWriteFeatureLimited(user.role, "agenda");
   const canAgenda = canAccessNav(user.role, "agenda");
-  const canWhatsapp = canAccessNav(user.role, "whatsapp");
 
   const [loading, setLoading] = useState(true);
   const [raw, setRaw] = useState<WaitingListEntry[]>([]);
@@ -108,9 +99,7 @@ export function WaitingListPageView() {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [alertDismissed, setAlertDismissed] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [holdUntil, setHoldUntil] = useState<number | null>(null);
   const [holdEntryId, setHoldEntryId] = useState<string | null>(null);
@@ -118,6 +107,9 @@ export function WaitingListPageView() {
   const [submitting, setSubmitting] = useState(false);
 
   const [customerId, setCustomerId] = useState("");
+  const [customerMode, setCustomerMode] = useState<"search" | "new">("search");
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [staffId, setStaffId] = useState("");
   const [days, setDays] = useState<number[]>([1, 2, 6]);
@@ -132,14 +124,6 @@ export function WaitingListPageView() {
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const apply = () => setIsDesktop(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -189,8 +173,6 @@ export function WaitingListPageView() {
   );
   const kpis = useMemo(() => waitingKpis(rowsAll), [rowsAll]);
   const counts = useMemo(() => tabCounts(rowsAll), [rowsAll]);
-  const mix = useMemo(() => demandMix(rowsAll), [rowsAll]);
-  const saturday = useMemo(() => saturdayOpportunity(rowsAll), [rowsAll]);
   const opportunity = useMemo(() => bestOpportunity(rowsAll, slot), [rowsAll, slot]);
   const nextMatch = useMemo(
     () => (opportunity ? nextBest(rowsAll, opportunity.id) : null),
@@ -215,14 +197,54 @@ export function WaitingListPageView() {
   const selected = (selectedId ? rowsAll.find((r) => r.id === selectedId) : null) ?? pageRows[0] ?? null;
   const holdLeft = holdUntil && holdEntryId === selected?.id ? holdUntil - now : 0;
 
+  function resetAddForm() {
+    setCustomerId("");
+    setCustomerMode("search");
+    setNewName("");
+    setNewPhone("");
+    setNotes("");
+  }
+
+  function openAdd() {
+    resetAddForm();
+    setAddOpen(true);
+  }
+
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!customerId || !serviceId) return;
+    if (!serviceId) return;
     const win = TIME_WINDOWS.find((w) => w.id === windowId);
     setSubmitting(true);
     try {
+      let resolvedCustomerId = customerId;
+      if (customerMode === "new") {
+        const full = newName.trim();
+        const phone = limitPhoneDigits(newPhone);
+        if (!full || phone.length < 8) {
+          toast("Nom et téléphone de la cliente sont requis.", "error");
+          return;
+        }
+        const parts = full.split(/\s+/);
+        const created = await createCustomer({
+          firstName: parts[0] ?? full,
+          lastName: parts.slice(1).join(" ") || "—",
+          phone,
+        });
+        if (!created.ok) {
+          toast(created.error, "error");
+          return;
+        }
+        resolvedCustomerId = created.customer.id;
+        setCustomers((prev) =>
+          prev.some((c) => c.id === created.customer.id) ? prev : [created.customer, ...prev],
+        );
+      }
+      if (!resolvedCustomerId) {
+        toast("Choisissez une cliente ou créez-en une nouvelle.", "error");
+        return;
+      }
       await createWaitingList({
-        customerId,
+        customerId: resolvedCustomerId,
         serviceId,
         staffId: staffId || null,
         preferredDate: nextDateForWeekdays(days),
@@ -232,8 +254,7 @@ export function WaitingListPageView() {
       });
       toast("Cliente ajoutée à la liste d’attente.", "success");
       setAddOpen(false);
-      setCustomerId("");
-      setNotes("");
+      resetAddForm();
       await refresh();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Erreur", "error");
@@ -314,8 +335,6 @@ export function WaitingListPageView() {
     orgName: user.orgName,
     roleLabel: ROLE_LABEL[user.role],
     kpis,
-    mix,
-    saturday,
     slot,
     opportunity,
     nextMatch,
@@ -331,8 +350,7 @@ export function WaitingListPageView() {
     selected,
     onSelect: setSelectedId,
     canWrite,
-    onAdd: () => setAddOpen(true),
-    onSettings: () => setSettingsOpen(true),
+    onAdd: openAdd,
     onWhatsApp,
     onHold,
     onConfirm,
@@ -360,10 +378,6 @@ export function WaitingListPageView() {
                 <Lock size={12} className="text-[#7B5900]" />
                 {ROLE_LABEL[user.role]}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-primary">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                Matching actif
-              </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-[#FFDEA4] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#261900]">
                 <MapPin size={12} />
                 {user.orgName}
@@ -378,29 +392,13 @@ export function WaitingListPageView() {
             {canWrite ? (
               <button
                 type="button"
-                onClick={() => setAddOpen(true)}
+                onClick={openAdd}
                 className="inline-flex h-12 items-center gap-1.5 rounded-lg bg-primary px-5 text-[14px] font-semibold text-white shadow-sm"
               >
                 <Plus size={18} />
                 Ajouter à la liste d’attente
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              className="inline-flex h-12 items-center gap-1.5 rounded-lg bg-[#FFEFF8] px-4 text-[14px] font-semibold"
-            >
-              <SlidersHorizontal size={18} className="text-ink/45" />
-              Paramètres matching
-            </button>
-            <button
-              type="button"
-              onClick={() => exportWaitingCsv(filtered)}
-              className="inline-flex h-12 items-center gap-1.5 rounded-lg bg-white px-4 text-[14px] font-semibold shadow-sm"
-            >
-              <Download size={18} className="text-[#7B5900]" />
-              Exporter
-            </button>
           </div>
         </header>
 
@@ -992,142 +990,13 @@ export function WaitingListPageView() {
             )}
           </aside>
         </div>
-
-        <section className="relative overflow-hidden rounded-2xl bg-ink p-6 text-[#FEECF7] shadow-sm">
-          <div className="relative z-10 flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-center">
-            <div className="max-w-2xl space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C79A3B]/20 text-[#FFDEA4]">
-                  <Brain size={18} />
-                </span>
-                <span className="text-[11px] font-bold uppercase tracking-widest text-[#FFDEA4]">
-                  Copilote · remplissage & rentabilité
-                </span>
-              </div>
-              <h2 className="text-[28px] font-semibold tracking-tight text-white">
-                {kpis.bookedMonthRevenue
-                  ? `${formatWaitMad(kpis.bookedMonthRevenue)} récupérés ce mois-ci`
-                  : "Aucun RDV encore converti ce mois-ci"}
-              </h2>
-              <p className="text-[15px] leading-relaxed text-white/80">
-                {kpis.bookedMonth
-                  ? `${kpis.bookedMonth} entrée${kpis.bookedMonth > 1 ? "s" : ""} passée${kpis.bookedMonth > 1 ? "s" : ""} en rendez-vous. Les propositions restent manuelles (wa.me).`
-                  : "Ajoutez des clientes, puis proposez un créneau dès qu’une annulation apparaît à l’agenda."}
-              </p>
-              {mix.length ? (
-                <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-4">
-                  {mix.map((s) => (
-                    <div key={s.label} className="rounded bg-white/5 p-2">
-                      <div className="truncate text-[11px] text-white/60">{s.label}</div>
-                      <div className="text-[18px] font-semibold text-[#FFDEA4]">{s.pct}%</div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <div className="w-full space-y-3 rounded-xl bg-white/5 p-4 lg:w-96">
-              <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#FFDEA4]">
-                <Lightbulb size={18} />
-                Opportunité détectée
-              </div>
-              <p className="text-[13px] leading-relaxed text-white/90">
-                {saturday ? (
-                  <>
-                    <strong>{saturday.count} clientes</strong> attendent un samedi
-                    {saturday.staffName ? ` avec ${saturday.staffName.split(" ")[0]}` : ""}. Gain potentiel{" "}
-                    <strong>{formatWaitMad(saturday.revenue)}</strong>.
-                  </>
-                ) : (
-                  <>
-                    Le matching croise service, date souhaitée, praticienne et créneaux annulés du jour. Aucun
-                    booking automatique.
-                  </>
-                )}
-              </p>
-              <div className="space-y-2 pt-1">
-                {canAgenda ? (
-                  <Link
-                    href="/agenda/"
-                    className="flex h-10 w-full items-center justify-center rounded-lg bg-[#C79A3B] text-[14px] font-bold text-[#171018]"
-                  >
-                    Ouvrir l’agenda
-                  </Link>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => setTab("match")}
-                  className="flex h-10 w-full items-center justify-center rounded-lg text-[14px] font-semibold text-white hover:bg-white/10"
-                >
-                  Voir les {kpis.matches} correspondance{kpis.matches > 1 ? "s" : ""}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <footer className="flex flex-col items-center justify-between gap-2 rounded-xl bg-white p-4 text-[13px] text-ink/50 shadow-sm md:flex-row">
-          <div className="flex items-center gap-2">
-            <Shield size={18} className="text-[#7B5900]" />
-            <span>
-              Données cloisonnées par institut · conforme à la{" "}
-              <strong className="text-ink">loi marocaine CNDP 09-08</strong>.
-            </span>
-          </div>
-          {canWhatsapp ? (
-            <Link href="/whatsapp/" className="font-semibold text-ink/60 hover:text-ink">
-              Modèles WhatsApp →
-            </Link>
-          ) : null}
-        </footer>
       </div>
 
-      {addOpen && isDesktop ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-[22px] font-semibold">Ajouter une cliente en liste d’attente</h3>
-                <p className="text-[13px] text-ink/50">
-                  Liaison au matching agenda — pas de réservation automatique.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAddOpen(false)}
-                className="rounded-lg p-2 text-ink/40 hover:bg-[#FFEFF8]"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <AddForm
-              customers={customers}
-              services={services}
-              staffOpts={staffOpts}
-              customerId={customerId}
-              setCustomerId={setCustomerId}
-              serviceId={serviceId}
-              setServiceId={setServiceId}
-              staffId={staffId}
-              setStaffId={setStaffId}
-              days={days}
-              setDays={setDays}
-              windowId={windowId}
-              setWindowId={setWindowId}
-              notes={notes}
-              setNotes={setNotes}
-              submitting={submitting}
-              onCancel={() => setAddOpen(false)}
-              onSubmit={onCreate}
-            />
-          </div>
-        </div>
-      ) : null}
-
       <Drawer
-        open={addOpen && !isDesktop}
+        open={addOpen}
         onClose={() => setAddOpen(false)}
         title="Ajouter à la liste d’attente"
-        side="bottom"
+        side="right"
       >
         <div className="p-4">
           <AddForm
@@ -1136,6 +1005,12 @@ export function WaitingListPageView() {
             staffOpts={staffOpts}
             customerId={customerId}
             setCustomerId={setCustomerId}
+            customerMode={customerMode}
+            setCustomerMode={setCustomerMode}
+            newName={newName}
+            setNewName={setNewName}
+            newPhone={newPhone}
+            setNewPhone={setNewPhone}
             serviceId={serviceId}
             setServiceId={setServiceId}
             staffId={staffId}
@@ -1150,25 +1025,6 @@ export function WaitingListPageView() {
             onCancel={() => setAddOpen(false)}
             onSubmit={onCreate}
           />
-        </div>
-      </Drawer>
-
-      <Drawer open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Paramètres matching">
-        <div className="space-y-4 overflow-y-auto p-5 text-[14px] leading-relaxed text-ink/70">
-          <p>
-            Le moteur croise les clientes en <strong>attente</strong> avec les créneaux{" "}
-            <strong>annulés aujourd’hui</strong> : même prestation, praticienne (si indiquée), date et plage
-            horaire.
-          </p>
-          <ul className="list-disc space-y-1 pl-5">
-            <li>Aucune réservation n’est créée toute seule.</li>
-            <li>WhatsApp s’ouvre via wa.me — envoi manuel depuis le téléphone de l’institut.</li>
-            <li>« Bloquer 10 min » est un rappel local, pas un verrou agenda.</li>
-            <li>Confirmer le RDV inscrit réellement le créneau à l’agenda.</li>
-          </ul>
-          <p className="text-[12px] text-ink/45">
-            Ces règles sont celles du produit — il n’y a pas de seuils éditables en V1.
-          </p>
         </div>
       </Drawer>
     </>
@@ -1219,6 +1075,12 @@ function AddForm({
   staffOpts,
   customerId,
   setCustomerId,
+  customerMode,
+  setCustomerMode,
+  newName,
+  setNewName,
+  newPhone,
+  setNewPhone,
   serviceId,
   setServiceId,
   staffId,
@@ -1238,6 +1100,12 @@ function AddForm({
   staffOpts: { id: string; name: string }[];
   customerId: string;
   setCustomerId: (v: string) => void;
+  customerMode: "search" | "new";
+  setCustomerMode: (v: "search" | "new") => void;
+  newName: string;
+  setNewName: (v: string) => void;
+  newPhone: string;
+  setNewPhone: (v: string) => void;
   serviceId: string;
   setServiceId: (v: string) => void;
   staffId: string;
@@ -1252,19 +1120,117 @@ function AddForm({
   onCancel: () => void;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [listOpen, setListOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const selectedCustomer = customers.find((c) => c.id === customerId) ?? null;
+
+  const filteredCustomers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return customers.slice(0, 12);
+    const phoneVars = moroccoPhoneSearchVariants(q).map((v) => v.toLowerCase());
+    return customers
+      .filter((c) => {
+        const name = `${c.firstName} ${c.lastName}`.toLowerCase();
+        if (name.includes(q)) return true;
+        const stored = moroccoPhoneSearchVariants(c.phone ?? "");
+        return stored.some((s) => phoneVars.some((v) => s.includes(v) || v.includes(s)));
+      })
+      .slice(0, 12);
+  }, [customers, query]);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setListOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
   return (
     <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-      <label className="block text-sm">
+      <div className="block text-sm">
         <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Cliente</span>
-        <Select value={customerId} onChange={(e) => setCustomerId(e.target.value)} required>
-          <option value="">Choisir…</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.firstName} {c.lastName} · {c.phone}
-            </option>
-          ))}
-        </Select>
-      </label>
+        <div className="mb-2 flex gap-2 text-[12px]">
+          <button
+            type="button"
+            className={`rounded-lg px-2.5 py-1 font-semibold ${customerMode === "search" ? "bg-primary text-white" : "bg-[#FCE9F4]"}`}
+            onClick={() => setCustomerMode("search")}
+          >
+            Cliente existante
+          </button>
+          <button
+            type="button"
+            className={`rounded-lg px-2.5 py-1 font-semibold ${customerMode === "new" ? "bg-primary text-white" : "bg-[#FCE9F4]"}`}
+            onClick={() => {
+              setCustomerMode("new");
+              setCustomerId("");
+              setQuery("");
+            }}
+          >
+            + Nouvelle cliente
+          </button>
+        </div>
+        {customerMode === "new" ? (
+          <div className="grid gap-2">
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Nom complet"
+              required
+            />
+            <Input
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={newPhone}
+              onChange={(e) => setNewPhone(limitPhoneDigits(e.target.value))}
+              placeholder="0655443322"
+              required
+            />
+          </div>
+        ) : (
+          <div ref={searchRef} className="relative">
+            <Input
+              value={selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : query}
+              onChange={(e) => {
+                setCustomerId("");
+                setQuery(e.target.value);
+                setListOpen(true);
+              }}
+              onFocus={() => setListOpen(true)}
+              placeholder="Rechercher nom, prénom ou téléphone"
+            />
+            {listOpen ? (
+              <div className="absolute z-30 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-line bg-white shadow-lg">
+                {filteredCustomers.length === 0 ? (
+                  <p className="px-3 py-2 text-[12px] text-ink/45">
+                    Aucune cliente. Créez-en une avec « + Nouvelle cliente ».
+                  </p>
+                ) : (
+                  filteredCustomers.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]"
+                      onClick={() => {
+                        setCustomerId(c.id);
+                        setQuery("");
+                        setListOpen(false);
+                      }}
+                    >
+                      {c.firstName} {c.lastName}
+                      <span className="ml-2 text-[11px] text-ink/45">{c.phone}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block text-sm">
           <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Prestation</span>

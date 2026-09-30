@@ -134,13 +134,6 @@ export function AdminDashboardView() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href={adminHref("/organizations/new/")}
-            className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-sm"
-          >
-            <Store className="h-4 w-4" />
-            Créer un institut
-          </Link>
-          <Link
             href={adminHref("/users/")}
             className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-[#FFEFF8] px-4 text-sm font-semibold text-ink"
           >

@@ -13,8 +13,7 @@ export const metadata: Metadata = {
     "Rappel Beauté — trouvez un salon, un institut ou un spa au Maroc et réservez en ligne 24h/24. Simple, immédiat, sans téléphoner.",
 };
 
-const HERO_IMG =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuBsdpWrCeBcRo25PASMsrTR3U_6jkBWJJ8AlyWLA38hG4WfRJp1NbpY5jUf1HlRP_S3NXiDxrED3VpT5FTGQXtr_WSWN_f5YJObwoWuvc0eMbHvz2T4Gze8k4u72MUygiO4aOlRcntO9A_4eKdM7J7dhAqgnLiCBvWym3ADxI2YqNG02sh4zTVRUy-fmA0GQ11sPpXX6fs0bTlDKHY16WFA3LPHlWpVF-95enj4Wd2G74l8-U-4HYxc5w";
+const HERO_IMG = "/brand/hero.png";
 
 const IMG_NAIL =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuD0fvsDZQJS45sn9q57hA70EzY7OTfqUwQK_SXkzaaGePQ1dolTSzXOzbhXFC1s0KLBoecVlYqHWKxB_dra0hRbprTMVZahTn-RKhrjB5XBD4F_4mwmGg_CD1hBhiEmSuC-UO52SQaMH7LGuoxEvKkR5WoPy_VM6ICX4kuz8Mpdmsieg2gzGYxuscwYM5FWPQIz4lckMtHKXZqFndlcUFkF3Fb5qlUG8gQLhZRjPwgEe3ehZfGqq648Dg";

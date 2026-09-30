@@ -30,10 +30,7 @@ const GROUPS = [
     links: [
       { href: "/whatsapp/", label: "WhatsApp" },
       { href: "/waiting-list/", label: "Liste d'attente" },
-      { href: "/loyalty/", label: "Fidélité" },
-      { href: "/marketing/", label: "Marketing" },
       { href: "/promotions/", label: "Promotions" },
-      { href: "/gift-cards/", label: "Cartes cadeaux" },
       { href: "/reviews/", label: "Avis" },
     ],
   },

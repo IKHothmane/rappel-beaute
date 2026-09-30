@@ -1,7 +1,5 @@
-"use client";
-
-import { MarketingDetailView } from "@/components/marketing/marketing-detail-page";
+import { redirect } from "next/navigation";
 
 export default function MarketingDetailPage() {
-  return <MarketingDetailView />;
+  redirect("/dashboard/");
 }

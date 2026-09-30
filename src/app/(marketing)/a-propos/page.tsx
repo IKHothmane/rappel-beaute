@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "À propos — Le logiciel d'excellence pour instituts au Maroc",
   description:
     "Rappel Beauté naît d’un constat simple : les outils importés parlent mal le métier, la caisse en MAD et WhatsApp. Fait pour les instituts du Maroc.",
+  alternates: { canonical: "/a-propos/" },
 };
 
 const IMG_ATELIER =
@@ -18,24 +19,23 @@ const WA_HREF = `https://wa.me/${SITE.phone.replace(/\D/g, "")}`;
 
 const METRICS = [
   {
-    value: "24+",
-    label: "Instituts partenaires à Casablanca, Rabat & Marrakech",
+    value: "Maroc",
+    label: "Logiciel de gestion pour les instituts de beauté",
     tone: "text-ink",
   },
   {
-    value: "4.9",
-    suffix: true,
-    label: "Satisfaction des patronnes de salons marocains",
+    value: "MAD",
+    label: "Caisse, prix et encaissements en dirhams",
     tone: "text-ink",
   },
   {
-    value: "+35 000",
-    label: "Rendez-vous honorés sans double-réservation",
+    value: "7 jours",
+    label: "Essai gratuit, sans engagement et sans carte",
     tone: "text-primary",
   },
   {
-    value: "100% MAD",
-    label: "Caisse immuable, tickets & support WhatsApp 7j/7",
+    value: "WhatsApp",
+    label: "Message préparé, envoi par l'institut",
     tone: "text-ink",
   },
 ] as const;
@@ -48,7 +48,7 @@ const PILLARS = [
     nBg: "bg-primary-light text-primary border-primary/15",
     title: "Histoire : Du carnet manuscrit au geste d'excellence",
     p1: "Trop de patronnes d'instituts au Maroc tiennent encore l'agenda sur des cahiers volants, recalculent leur caisse le soir sur une calculette avec appréhension, et relancent leurs clientes tard le soir depuis leur numéro personnel WhatsApp.",
-    p2: "Rappel Beauté réunit ces trois gestes fondamentaux dans un logiciel hébergé de haute facture : chiffré en Dirhams (MAD), intuitif pour les esthéticiennes sur tablette, et taillé sur-mesure pour Casablanca, Rabat, Marrakech et l’ensemble du Royaume.",
+    p2: "Rappel Beauty réunit ces gestes dans un logiciel de gestion : caisse en dirhams (MAD), utilisable au quotidien dans l'institut, conçu pour les instituts de beauté au Maroc.",
   },
   {
     n: "02",
@@ -56,7 +56,7 @@ const PILLARS = [
     badgeTone: "text-primary",
     nBg: "bg-[#FBF5E9] text-gold border-gold/30",
     title: "Mission : Rendre la journée limpide et sans friction",
-    p1: "Rendre la journée immédiatement lisible pour la gérante : qui est en cabine en ce moment précis, quel praticien génère le plus de satisfaction, ce qui a été effectivement encaissé (espèces, TPE, virement) et quel sérum précieux commence à manquer en réserve.",
+    p1: "Rendre la journée lisible pour la gérante : les rendez-vous en cours, l'équipe, ce qui a été encaissé à l'institut et les produits dont le stock baisse.",
     p2: "Pas d'usines à gaz inutiles : zéro robot de discussion artificiel, respect absolu de la vie privée des clientes sans photos en V1, et conformité marocaine conforme aux exigences de la Loi 09-08 (CNDP).",
   },
   {
@@ -65,8 +65,8 @@ const PILLARS = [
     badgeTone: "text-ink/55",
     nBg: "bg-primary-light/60 text-ink border-line",
     title: "Équipe & Engagement : Le produit d'abord, l'accompagnement toujours",
-    p1: "Nous privilégions l’excellence du code et l’adéquation métier avant tout discours marketing. Notre équipe rassemble des ingénieurs marocains et des expertes ayant dirigé des instituts sur l'axe Casa-Rabat.",
-    p2: "Lorsque vous rejoignez Rappel Beauté, vous ne parlez pas à une boîte vocale européenne distante : notre support est disponible en français et en darija directement via WhatsApp pour sécuriser chaque transition d'agenda.",
+    p1: "Le produit décrit ce que l'institut peut faire : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne. Pas de promesse de résultat chiffré.",
+    p2: "WhatsApp reste assisté. Le logiciel prépare le message, et une personne de l'institut l'envoie. Les fiches clientes restent textuelles : aucune photo en V1.",
   },
 ] as const;
 
@@ -132,9 +132,9 @@ export default function AProposPage() {
                 </span>
               </h1>
               <p className="mb-8 max-w-2xl text-lg font-normal leading-relaxed text-ink/55 sm:text-xl">
-                {SITE.name} naît d’un constat simple sur le terrain : les logiciels importés
-                ignorent le rythme réel des salons marocains, les subtilités de la caisse en
-                Dirhams et l&apos;usage central de WhatsApp. Nous avons bâti la référence locale.
+                {SITE.name} est un logiciel de gestion conçu pour les instituts de beauté au
+                Maroc. Il réunit rendez-vous, clientes, équipe, stock, caisse et réservation
+                en ligne, avec une caisse en dirhams et WhatsApp en envoi assisté.
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <Link
@@ -164,11 +164,8 @@ export default function AProposPage() {
                   ))}
                 </div>
                 <p className="text-xs text-ink/55">
-                  Déjà adopté par les gérantes d&apos;établissements à{" "}
-                  <strong className="font-semibold text-ink">
-                    Casablanca, Rabat &amp; Marrakech
-                  </strong>
-                  .
+                  Conçu pour les instituts de beauté au{" "}
+                  <strong className="font-semibold text-ink">Maroc</strong>.
                 </p>
               </div>
             </Reveal>
@@ -180,7 +177,7 @@ export default function AProposPage() {
                   <div className="relative aspect-[4/3] overflow-hidden rounded-[18px] sm:aspect-auto">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      alt={`Équipe et partenaires ${SITE.name} — session à Casablanca`}
+                      alt="Ambiance d'un institut de beauté"
                       className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-[1.02] sm:max-h-[320px]"
                       src={IMG_ATELIER}
                     />
@@ -188,17 +185,17 @@ export default function AProposPage() {
                       <div className="flex items-center space-x-2">
                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
                         <span className="text-xs font-semibold text-ink">
-                          Atelier Partenaire — Casablanca
+                          Logiciel pour l&apos;institut
                         </span>
                       </div>
                       <span className="text-[11px] font-medium text-ink/55">
-                        Cliniques &amp; Salons 2026
+                        Instituts de beauté au Maroc
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-3 pb-1 pt-3 text-[11px] font-medium text-ink/55">
                     <span>Conçu avec et pour les praticiennes</span>
-                    <span className="font-bold text-gold">100% MAD &amp; CNDP</span>
+                    <span className="font-bold text-gold">Caisse en MAD</span>
                   </div>
                 </div>
               </div>
@@ -214,19 +211,9 @@ export default function AProposPage() {
             <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4 md:divide-x md:divide-line/70">
               {METRICS.map((m) => (
                 <div key={m.label} className="px-3">
-                  {"suffix" in m && m.suffix ? (
-                    <div className="mb-1 flex items-center justify-center space-x-1">
-                      <span className={`font-display text-3xl font-semibold sm:text-4xl ${m.tone}`}>
-                        {m.value}
-                      </span>
-                      <span className="text-xl font-bold text-amber-500">★</span>
-                      <span className="self-end pb-1 text-xs font-medium text-ink/55">/ 5</span>
-                    </div>
-                  ) : (
-                    <p className={`mb-1 font-display text-3xl font-semibold sm:text-4xl ${m.tone}`}>
-                      {m.value}
-                    </p>
-                  )}
+                  <p className={`mb-1 font-display text-3xl font-semibold sm:text-4xl ${m.tone}`}>
+                    {m.value}
+                  </p>
                   <p className="text-xs font-medium text-ink/55 sm:text-sm">{m.label}</p>
                 </div>
               ))}
@@ -288,7 +275,7 @@ export default function AProposPage() {
               Nos Principes Inviolables
             </span>
             <h2 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
-              Pourquoi les salons les plus raffinés nous font confiance
+              Ce qui guide le produit
             </h2>
           </Reveal>
 
@@ -317,21 +304,20 @@ export default function AProposPage() {
         <div className="relative z-10 mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
           <Reveal>
             <span className="mb-4 inline-block rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-gold">
-              Rejoignez les instituts partenaires
+              Essai gratuit
             </span>
             <h2 className="mb-6 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
               Prête à offrir à votre institut la clarté qu&apos;il mérite ?
             </h2>
             <p className="mx-auto mb-10 max-w-2xl text-base font-light leading-relaxed text-white/70 sm:text-lg">
-              Bénéficiez de 14 jours d&apos;essai sans engagement. Notre équipe marocaine effectue
-              avec vous le paramétrage de vos prestations et la reprise de votre fichier clientes.
+              7 jours pour tester le logiciel, sans engagement et sans carte bancaire.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/essai/"
                 className="w-full rounded-full bg-primary px-8 py-4 text-center text-sm font-bold text-white shadow-soft transition-all hover:bg-primary-dark sm:w-auto"
               >
-                Démarrer l&apos;essai 14 jours sans carte
+                Démarrer l&apos;essai 7 jours sans carte
               </Link>
               <a
                 href={WA_HREF}
@@ -340,14 +326,10 @@ export default function AProposPage() {
                 className="flex w-full items-center justify-center space-x-2 rounded-full border border-white/20 bg-white/10 px-8 py-4 text-center text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 sm:w-auto"
               >
                 <span>Échanger sur WhatsApp</span>
-                <span className="rounded bg-emerald-500 px-1.5 py-0.5 font-mono text-xs text-white">
-                  En ligne
-                </span>
               </a>
             </div>
             <p className="mt-6 text-xs text-white/45">
-              Configuration sur-mesure · Aucun frais caché · Formules transparentes dès 299 MAD /
-              mois
+              Sans engagement · 7 jours gratuits · Sans carte bancaire · 599 DH / mois ou 5 999 DH / an
             </p>
           </Reveal>
         </div>

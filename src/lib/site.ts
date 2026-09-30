@@ -5,7 +5,7 @@ export const SITE = {
   appUrl: "https://app.rappelbeauty.com",
   tagline: "Le logiciel de gestion pensé pour les instituts de beauté.",
   email: "contact@rappelbeauty.com",
-  phone: "+212 5 22 00 00 00",
+  phone: "+212 6 19 44 03 75",
 } as const;
 
 /** Connexion SaaS — jamais sur le site www (marketing) */
@@ -37,7 +37,7 @@ export function absoluteAppLoginUrl(opts?: {
 
 /**
  * Architecture marketing figée — 12 pages.
- * Prix plans (vérité unique avec moteur abonnement) : 299 / 499 / 899 MAD.
+ * Formule publique unique : 599 DH / mois, ou 5999 DH / an. Essai 7 jours.
  */
 export const MARKETING_PAGES = [
   { path: "/", group: "nav" },
@@ -69,31 +69,31 @@ export const FEATURES = [
   {
     id: "rdv",
     title: "Rendez-vous",
-    href: "/fonctionnalites/#rdv",
+    href: "/gestion-rendez-vous/",
     text: "Planning staff et cabines sans double-réservation. La base refuse le chevauchement.",
   },
   {
     id: "clientes",
     title: "Clientes",
-    href: "/fonctionnalites/#clientes",
+    href: "/gestion-clientes/",
     text: "Fiches, historique, notes et fidélité — sans photos clientes en V1.",
   },
   {
     id: "caisse",
     title: "Caisse & paiements",
-    href: "/fonctionnalites/#caisse",
+    href: "/caisse/",
     text: "Encaissements, tickets et historique immuable. Montants en Decimal, jamais en Float.",
   },
   {
     id: "stock",
     title: "Stock",
-    href: "/fonctionnalites/#stock",
+    href: "/gestion-stock/",
     text: "Ledger des mouvements, alertes rupture, fournisseurs et bons d’achat.",
   },
   {
     id: "fidelite",
     title: "Fidélité",
-    href: "/fonctionnalites/#fidelite",
+    href: "/fidelite/",
     text: "Points, forfaits, promotions. Campagnes WhatsApp préparées, envoi humain.",
   },
   {
@@ -116,61 +116,14 @@ export const FEATURES = [
   },
 ] as const;
 
-/** Vérité prix = moteur Plan (prisma) : STARTER 299 · INSTITUT 499 · PREMIUM 899 */
-export const PLANS = [
-  {
-    id: "starter",
-    code: "STARTER" as const,
-    name: "Starter",
-    price: 299,
-    quota: "150 RDV / mois",
-    sites: "1 site",
-    popular: false,
-    variant: "light" as const,
-    features: [
-      "Agenda & disponibilités",
-      "Fiches clientes",
-      "WhatsApp manuel assisté",
-      "1 utilisatrice propriétaire",
-      "Assistance par e-mail",
-    ],
-  },
-  {
-    id: "institut",
-    code: "INSTITUT" as const,
-    name: "Institut",
-    price: 499,
-    quota: "300 RDV / mois",
-    sites: "1 site",
-    popular: true,
-    share: "recommandé",
-    variant: "dark" as const,
-    features: [
-      "Tout Starter",
-      "Stock, achats, caisse",
-      "Fidélité & marketing",
-      "Analytics & rapports",
-      "Rôles employée / caisse",
-    ],
-  },
-  {
-    id: "premium",
-    code: "PREMIUM" as const,
-    name: "Premium",
-    price: 899,
-    quota: "RDV illimités",
-    sites: "Multi-sites",
-    popular: false,
-    variant: "rose" as const,
-    features: [
-      "Tout Institut",
-      "RDV illimités",
-      "Multi-sites consolidé",
-      "Priorité support",
-      "Onboarding dédié",
-    ],
-  },
-] as const;
+/** Formule affichée sur la vitrine. /tarifs/ peut surcharger le prix via PlatformConfig. */
+export const PUBLIC_OFFER = {
+  name: "Rappel Beauty",
+  price: 599,
+  yearlyPrice: 5999,
+  currency: "MAD",
+  trialDays: 7,
+} as const;
 
 export const CITIES = [
   "Casablanca",
@@ -187,27 +140,51 @@ export const CITIES = [
 
 export const FAQ_ITEMS = [
   {
-    q: "L’essai de 14 jours est-il vraiment gratuit ?",
-    a: "Oui, sans carte bancaire. Vous créez votre institut depuis la page professionnel : un mot de passe à 6 chiffres est envoyé par e-mail, à changer à la première connexion.",
+    q: "Qu'est-ce que Rappel Beauty ?",
+    a: "Rappel Beauty est un logiciel de gestion conçu pour les instituts de beauté au Maroc. Il sert à gérer les rendez-vous, les clientes, l'équipe, les services, le stock, la caisse, la fidélité et la réservation en ligne.",
   },
   {
-    q: "Rappel Beauty envoie-t-il des WhatsApp tout seul ?",
-    a: "Non. V1 est 100 % manuel assisté : le logiciel prépare le message, vous l’envoyez via wa.me, puis vous marquez « envoyé ». Aucun bot, aucune API Business.",
+    q: "Combien coûte Rappel Beauty ?",
+    a: `Rappel Beauty coûte ${PUBLIC_OFFER.price} DH par mois ou ${PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH par an. L'essai gratuit dure ${PUBLIC_OFFER.trialDays} jours.`,
   },
   {
-    q: "Mes photos clientes sont-elles stockées ?",
-    a: "Non. Aucune photo cliente en V1. Les fiches restent textuelles (identité, historique, notes, fidélité).",
+    q: "Que comprend la formule ?",
+    a: "La formule donne accès aux fonctionnalités de gestion proposées par Rappel Beauty pour les instituts de beauté : rendez-vous, clientes, équipe, services, stock, caisse, fidélité, réservation en ligne et outils de pilotage.",
   },
   {
-    q: "Puis-je gérer plusieurs instituts ?",
-    a: "Le plan Premium (899 MAD) ouvre le multi-sites. Starter et Institut couvrent un site.",
+    q: "Combien de temps dure l'essai gratuit ?",
+    a: `L'essai gratuit dure ${PUBLIC_OFFER.trialDays} jours.`,
   },
   {
-    q: "Comment fonctionne la connexion ?",
-    a: "Un e-mail = un compte Rappel Beauty. Vous vous connectez sur app.rappelbeauty.com — l’espace institut. Le site www est uniquement commercial (pas de login marketing).",
+    q: "Faut-il une carte bancaire pour essayer ?",
+    a: "Non. L'essai gratuit de 7 jours ne nécessite pas de carte bancaire.",
   },
   {
-    q: "Les données restent-elles isolées par institut ?",
-    a: "Chaque institut est isolé (organizationId + RLS PostgreSQL). Un institut ne voit jamais les clientes, RDV ou caisse d’un autre.",
+    q: "Y a-t-il un engagement ?",
+    a: "Non. La formule est sans engagement.",
+  },
+  {
+    q: "Les clientes paient-elles Rappel Beauty ?",
+    a: "Non. Rappel Beauty est le logiciel utilisé par l'institut. Les clientes règlent directement leurs prestations auprès de l'institut.",
+  },
+  {
+    q: "Comment fonctionne la réservation en ligne ?",
+    a: "Chaque institut peut publier sa page : services, durées et créneaux issus du planning. La cliente réserve auprès de l'institut, et le rendez-vous arrive dans le même agenda.",
+  },
+  {
+    q: "Où les clientes paient-elles leurs prestations ?",
+    a: "Les clientes paient directement à l'institut. Les règlements se font au comptoir : espèces, carte, virement, chèque ou carte cadeau.",
+  },
+  {
+    q: "Rappel Beauty est-il une marketplace ?",
+    a: "Non. Rappel Beauty est un logiciel de gestion. Chaque institut a sa propre page. Les clientes réservent auprès de l'institut, pas sur une place de marché.",
+  },
+  {
+    q: "WhatsApp est-il automatisé ?",
+    a: "Non. WhatsApp est assisté : le logiciel prépare le message, une personne de l'institut l'envoie.",
+  },
+  {
+    q: "Les photos des clientes sont-elles utilisées ?",
+    a: "Non. Aucune photo cliente en V1. Les fiches restent textuelles.",
   },
 ] as const;

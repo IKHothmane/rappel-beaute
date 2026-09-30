@@ -5,77 +5,77 @@ import { Reveal } from "@/components/www/Reveal";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Logiciel de gestion de stock pour institut de beauté",
+  title: "Réservation en ligne pour institut de beauté",
   description:
-    "Gérez les produits et le stock de votre institut de beauté avec Rappel Beauty : produits, fournisseurs, achats, mouvements de stock, alertes et suivi des quantités.",
+    "Permettez à vos clientes de réserver en ligne auprès de votre institut : page publique, services, tarifs, disponibilités, rendez-vous et vitrine produits avec retrait à l'institut.",
   alternates: {
-    canonical: "/gestion-stock/",
+    canonical: "/reservation-en-ligne/",
   },
 };
 
 const SECTIONS = [
   {
+    id: "page",
+    title: "Page publique de votre institut",
+    text: "Chaque institut abonné peut publier sa page : nom, coordonnées et services. C'est la vitrine de l'institut, pas une place de marché.",
+  },
+  {
+    id: "services",
+    title: "Services et tarifs",
+    text: "La page affiche les prestations de l'institut, leur durée et leur tarif. Les informations viennent du catalogue que vous tenez dans le logiciel.",
+  },
+  {
+    id: "disponibilites",
+    title: "Disponibilités",
+    text: "Les créneaux proposés tiennent compte du planning de l'équipe et des rendez-vous déjà pris. Un horaire occupé n'est pas proposé.",
+  },
+  {
+    id: "prise",
+    title: "Prise de rendez-vous",
+    text: "La cliente choisit un service et un créneau, laisse son nom et son téléphone, puis reçoit la confirmation. Le rendez-vous est enregistré pour votre institut.",
+  },
+  {
+    id: "agenda",
+    title: "Gestion côté institut",
+    text: "La réservation en ligne rejoint le même agenda que les rendez-vous pris à l'accueil. Vous la suivez depuis l'espace de gestion, avec les mêmes statuts.",
+  },
+  {
     id: "produits",
     title: "Produits",
-    text: "Tenez le catalogue de l'institut : nom, référence, marque, catégorie et unité. Chaque produit a un prix d'achat et, s'il est vendu, un prix de vente.",
+    text: "L'institut peut présenter les produits qu'il vend : nom, prix et disponibilité. C'est la vitrine de votre institut.",
   },
   {
-    id: "quantites",
-    title: "Quantités en stock",
-    text: "Voyez le niveau de chaque produit, le seuil minimum et les entrées comme les sorties. La quantité affichée suit les mouvements, elle n'est pas un chiffre saisi à part.",
+    id: "retrait",
+    title: "Retrait à l'institut",
+    text: "Une cliente peut demander un produit et le retirer directement auprès de votre institut. La demande n'est pas une livraison.",
   },
   {
-    id: "achats",
-    title: "Achats",
-    text: "Enregistrez les fournisseurs, préparez une commande, puis réceptionnez les produits en totalité ou en partie. La réception alimente le stock.",
+    id: "paiement",
+    title: "Paiement",
+    text: "Les clientes paient directement à l'institut. Il n'y a pas de paiement en ligne : ni pour le rendez-vous, ni pour le retrait des produits. Un acompte, s'il est prévu, est aussi encaissé à l'institut.",
   },
   {
-    id: "mouvements",
-    title: "Mouvements de stock",
-    text: "Chaque changement laisse une trace : achat, vente, retour, ajustement ou consommation. Les pertes, la casse et les produits expirés sont aussi des mouvements.",
-  },
-  {
-    id: "alertes",
-    title: "Alertes",
-    text: "Repérez le stock faible, la rupture et les produits dont la date approche ou est dépassée. L'institut voit ce qu'il faut surveiller avant de manquer en cabine.",
-  },
-  {
-    id: "fournisseurs",
-    title: "Fournisseurs",
-    text: "Gardez le contact du fournisseur, les produits qu'il fournit et l'historique de ses achats, avec le prix d'achat convenu.",
-  },
-  {
-    id: "ventes",
-    title: "Ventes et stock",
-    text: "Une vente au point de vente retire la quantité vendue du stock. Le comptoir et le stock restent sur les mêmes produits.",
-  },
-  {
-    id: "prestations",
-    title: "Produits utilisés pour les prestations",
-    text: "Les produits peuvent être liés à un service. Lorsqu'une prestation consomme un produit, le logiciel enregistre une consommation rattachée au rendez-vous.",
-  },
-  {
-    id: "institut",
-    title: "Côté institut",
-    text: "Sachez ce qui est disponible, relisez les mouvements et anticipez le réapprovisionnement à partir des alertes et des commandes en cours.",
+    id: "propre",
+    title: "Une page propre à chaque institut",
+    text: "Chaque institut a sa propre page publique. Les clientes réservent auprès de votre institut, pas sur une plateforme qui mélange plusieurs salons.",
   },
 ] as const;
 
-export default function GestionStockPage() {
+export default function ReservationEnLignePage() {
   return (
     <>
       <section className="border-b border-line bg-paper py-14 sm:py-20">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <Reveal>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
-              Stock pour instituts de beauté au Maroc
+              Réservation en ligne pour votre institut
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Gérez vos produits et votre stock
+              Permettez à vos clientes de réserver en ligne
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
-              Produits, fournisseurs, achats, mouvements et alertes, dans le logiciel de
-              l&apos;institut.
+              Une page publique pour votre institut : services, tarifs, disponibilités et prise de
+              rendez-vous. Les clientes paient directement à l&apos;institut.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
@@ -107,6 +107,16 @@ export default function GestionStockPage() {
             >
               <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">{section.title}</h2>
               <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{section.text}</p>
+              {section.id === "agenda" ? (
+                <p className="mt-4">
+                  <Link
+                    href="/gestion-rendez-vous/"
+                    className="text-sm font-semibold text-primary hover:text-primary-dark"
+                  >
+                    Découvrir la gestion des rendez-vous
+                  </Link>
+                </p>
+              ) : null}
             </section>
           </Reveal>
         ))}

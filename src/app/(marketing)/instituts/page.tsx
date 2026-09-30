@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Instituts inscrits",
   description:
     "Trouvez un institut de beauté inscrit sur Rappel Beauty et réservez en ligne.",
+  alternates: { canonical: "/instituts/" },
 };
 
 export default async function InstitutesPage() {

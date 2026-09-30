@@ -56,7 +56,7 @@ async function seedOrgSubscription(orgId: string) {
     `INSERT INTO "Subscription" (
       id, "organizationId", "planId", status, "priceSnapshot", "currencySnapshot",
       "startedAt", "currentPeriodStart", "currentPeriodEnd", "updatedAt"
-    ) VALUES ('sub_institut_royal', $1, 'plan_institut', 'ACTIVE', 499, 'MAD', $2, $2, $3, NOW())
+    ) VALUES ('sub_institut_royal', $1, 'plan_institut', 'ACTIVE', 599, 'MAD', $2, $2, $3, NOW())
     ON CONFLICT (id) DO UPDATE SET
       "planId" = EXCLUDED."planId",
       "priceSnapshot" = EXCLUDED."priceSnapshot",

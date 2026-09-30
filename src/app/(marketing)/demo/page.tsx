@@ -7,6 +7,7 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "Demander une démo",
   description: "Demandez une démonstration Rappel Beauté pour votre institut.",
+  alternates: { canonical: "/demo/" },
 };
 
 export default function DemoPage() {

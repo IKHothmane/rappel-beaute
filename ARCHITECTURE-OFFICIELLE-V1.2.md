@@ -107,11 +107,10 @@ Accès = **rôle** ∩ **plan** (`STARTER` / `INSTITUT` / `PREMIUM`). Un OWNER n
 
 Plans (rappel) :
 
-| Plan | Prix | Quotas clés |
+| Offre | Prix | Période |
 |---|---|---|
-| STARTER | 299 MAD | 150 RDV/mois, 1 site |
-| INSTITUT | 499 MAD | 300 RDV/mois, modules métier |
-| PREMIUM | 899 MAD | Illimité + multi-sites |
+| Formule unique | 599 DH | mois |
+| Formule unique | 5999 DH | an |
 
 ---
 

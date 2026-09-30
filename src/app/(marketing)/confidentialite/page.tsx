@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Politique de confidentialité",
   description:
     "Traitement des données personnelles Rappel Beauté — loi 09-08, CNDP. Aucune photo cliente en V1.",
+  alternates: { canonical: "/confidentialite/" },
 };
 
 export default function ConfidentialitePage() {

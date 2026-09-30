@@ -9,7 +9,7 @@ const COLS = [
       { href: "/fonctionnalites/", label: "Fonctionnalités" },
       { href: "/tarifs/", label: "Tarifs" },
       { href: "/whatsapp/", label: "WhatsApp manuel" },
-      { href: "/essai/", label: "Essai 14 jours" },
+      { href: "/essai/", label: "Essai 7 jours" },
     ],
   },
   {
@@ -17,9 +17,12 @@ const COLS = [
     links: [
       { href: "/instituts/", label: "Instituts inscrits" },
       { href: "/solutions/institut-beaute/", label: "Institut de beauté" },
-      { href: "/fonctionnalites/#rdv", label: "Rendez-vous" },
-      { href: "/fonctionnalites/#clientes", label: "Clientes" },
-      { href: "/fonctionnalites/#stock", label: "Stock" },
+      { href: "/gestion-rendez-vous/", label: "Rendez-vous" },
+      { href: "/gestion-clientes/", label: "Clientes" },
+      { href: "/gestion-stock/", label: "Stock" },
+      { href: "/caisse/", label: "Caisse" },
+      { href: "/reservation-en-ligne/", label: "Réservation en ligne" },
+      { href: "/fidelite/", label: "Fidélité" },
     ],
   },
   {

@@ -7,11 +7,10 @@ type LeadKind = "DEMO" | "ESSAI";
 
 type Props = {
   kind: LeadKind;
-  defaultPlan?: string;
   notice?: string;
 };
 
-export function LeadForm({ kind, defaultPlan = "", notice }: Props) {
+export function LeadForm({ kind, notice }: Props) {
   const [sent, setSent] = useState(false);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -65,21 +64,6 @@ export function LeadForm({ kind, defaultPlan = "", notice }: Props) {
 
       <Field label="Téléphone" name="phone" type="tel" required />
       <Field label="E-mail" name="email" type="email" required />
-
-      {kind === "ESSAI" ? (
-        <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Plan souhaité</span>
-          <select
-            name="plan"
-            defaultValue={defaultPlan || "institut"}
-            className="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-primary"
-          >
-            <option value="starter">Starter — 299 MAD · 150 RDV</option>
-            <option value="institut">Institut — 499 MAD · 300 RDV</option>
-            <option value="premium">Premium — 899 MAD · illimité</option>
-          </select>
-        </label>
-      ) : null}
 
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Message</span>

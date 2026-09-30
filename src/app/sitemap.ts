@@ -8,6 +8,9 @@ const entries: { path: string; priority: number; changeFrequency: "weekly" | "mo
   { path: "/tarifs/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/gestion-rendez-vous/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/gestion-stock/", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/caisse/", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/reservation-en-ligne/", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/fidelite/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/gestion-clientes/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/instituts/", priority: 0.7, changeFrequency: "weekly" },
   { path: "/whatsapp/", priority: 0.6, changeFrequency: "monthly" },
@@ -17,7 +20,6 @@ const entries: { path: string; priority: number; changeFrequency: "weekly" | "mo
   { path: "/demo/", priority: 0.5, changeFrequency: "monthly" },
   { path: "/a-propos/", priority: 0.5, changeFrequency: "monthly" },
   { path: "/contact/", priority: 0.4, changeFrequency: "monthly" },
-  { path: "/ressources/", priority: 0.4, changeFrequency: "monthly" },
   { path: "/mentions-legales/", priority: 0.2, changeFrequency: "monthly" },
   { path: "/confidentialite/", priority: 0.2, changeFrequency: "monthly" },
 ];

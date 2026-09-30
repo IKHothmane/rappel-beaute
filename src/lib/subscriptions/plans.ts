@@ -69,7 +69,7 @@ export async function getShowcaseMonthlyPrice(): Promise<number> {
   if (typeof raw === "number" && Number.isFinite(raw) && raw >= 0) return Math.round(raw);
   const plan = await getPlanByCode("INSTITUT");
   if (plan && Number.isFinite(plan.price) && plan.price >= 0) return Math.round(plan.price);
-  return 399;
+  return 599;
 }
 
 export async function publishShowcaseMonthlyPrice(

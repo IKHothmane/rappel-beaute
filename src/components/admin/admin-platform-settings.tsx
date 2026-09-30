@@ -140,8 +140,7 @@ export function AdminPlatformSettingsView() {
   const [footerLegal, setFooterLegal] = useState(
     "Rappel Beauté Prestige Maroc — Solution SaaS certifiée CNDP",
   );
-  const [trialDays, setTrialDays] = useState(14);
-  const [yearlyPrice, setYearlyPrice] = useState(3990);
+  const [trialDays, setTrialDays] = useState(7);
   const [founderCode] = useState("OFFRE_CASA_2026");
 
   const refresh = useCallback(async () => {
@@ -537,7 +536,7 @@ export function AdminPlatformSettingsView() {
             active={section === "billing"}
             onVisible={() => setSection("billing")}
           >
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="rounded-xl bg-[#FFEFF8] p-4">
                 <p className="text-[10px] font-bold uppercase text-ink/45">
                   Tarif mensuel
@@ -557,23 +556,6 @@ export function AdminPlatformSettingsView() {
                     }
                   />
                   <span className="font-bold text-ink">DH / mois</span>
-                </div>
-              </div>
-              <div className="rounded-xl bg-[#FFEFF8] p-4">
-                <p className="text-[10px] font-bold uppercase text-[#7B5900]">
-                  Tarif annuel (soft)
-                </p>
-                <div className="mt-1 flex items-baseline gap-1">
-                  <input
-                    className="w-28 bg-transparent text-3xl font-black text-ink outline-none"
-                    type="number"
-                    value={yearlyPrice}
-                    onChange={(e) => {
-                      setYearlyPrice(Number(e.target.value) || 0);
-                      setDirty(true);
-                    }}
-                  />
-                  <span className="font-bold text-ink">DH / an</span>
                 </div>
               </div>
               <div className="rounded-xl bg-[#FFEFF8] p-4">
@@ -646,7 +628,7 @@ export function AdminPlatformSettingsView() {
               <Field label="Période par défaut">
                 <select
                   className={inputClass}
-                  value={settings.billing.period}
+                  value={settings.billing.period === "YEARLY" ? "MONTHLY" : settings.billing.period}
                   onChange={(e) =>
                     patchLocal({
                       billing: {
@@ -657,7 +639,6 @@ export function AdminPlatformSettingsView() {
                   }
                 >
                   <option value="MONTHLY">Mensuel</option>
-                  <option value="YEARLY">Annuel</option>
                 </select>
               </Field>
             </div>

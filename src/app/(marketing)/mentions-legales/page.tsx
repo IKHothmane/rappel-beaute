@@ -6,6 +6,7 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "Mentions légales",
   description: "Mentions légales Rappel Beauté : éditeur, ICE, RC, hébergeur.",
+  alternates: { canonical: "/mentions-legales/" },
 };
 
 export default function MentionsLegalesPage() {

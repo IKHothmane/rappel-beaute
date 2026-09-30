@@ -3,14 +3,14 @@ import type { Metadata } from "next";
 import { HomeHero } from "@/components/www/HomeHero";
 import { MobileAutoCarousel } from "@/components/www/MobileAutoCarousel";
 import { Reveal, RevealItem, RevealStagger } from "@/components/www/Reveal";
-import { SITE } from "@/lib/site";
+import { PUBLIC_OFFER, SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   title: "Logiciel institut de beauté au Maroc",
   description:
-    "Logiciel de gestion pour institut de beauté au Maroc : agenda, réservation, stock, caisse et clientes. Essai 14 jours, prix en MAD, sans carte bancaire.",
+    "Rappel Beauty est le logiciel de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, ventes et réservation en ligne. Essai gratuit 7 jours.",
   alternates: { canonical: "/" },
 };
 
@@ -28,122 +28,52 @@ const IMG_SERUM =
 const IMG_TEAM =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBMz86RbBst2uEKW0W6aJCA_J2kvT2tULe700qf0jqyT28soEeagVbEjtrA1w9rWDFCZBkBIc5VV5yHpZvLcIlikKPb5BW58fLp-Q0KwvF6ZMXJvd7kHEIHusLemKkjgT1Nn4czy-KMk7vyjeZ3hTeZcq-1Ubqun9W0JQwmFgWLnmuOaKz4lQEEngJAoyN8g-PNv4T5vvbt1FVXSBFGXDJkLKMKn7W056yAclfaa6q-uWzEyS1pihUsuA";
 
-const STATS = [
-  {
-    value: "+ 50%",
-    text: "de fréquence sur les rendez-vous pris en ligne par vos clients réguliers.",
-  },
-  {
-    value: "4x",
-    text: "moins d'oublis et de no-shows grâce aux rappels instantanés SMS & WhatsApp.",
-  },
-  {
-    value: "50%",
-    text: "des rdv en ligne réservés en dehors de vos heures d'ouverture de boutique.",
-  },
-  {
-    value: "+60 000",
-    text: "Salons, spas & instituts partenaires équipés de notre logiciel de caisse et agenda.",
-  },
-  {
-    value: "6 RDV",
-    text: "Pris toutes les secondes sur notre écosystème mobile et web.",
-  },
-  {
-    value: "> 5 milliards MAD",
-    text: "De volume d'affaires de rendez-vous générés pour nos partenaires.",
-    gold: true,
-  },
+const CAPABILITIES = [
+  { title: "Agenda & rendez-vous", text: "Planning, disponibilités et rendez-vous de l'équipe." },
+  { title: "Clientes & équipe", text: "Fiches clientes, historique et organisation des employées." },
+  { title: "Services & ressources", text: "Prestations, cabines et déroulement au salon." },
+  { title: "Produits & stock", text: "Produits, fournisseurs, achats et niveaux de stock." },
+  { title: "Caisse & finances", text: "Encaissements, paiements, dépenses et factures." },
+  { title: "Réservation & fidélisation", text: "Page publique, prise de rendez-vous, fidélité et avis." },
 ];
 
-const DIRECTORY = [
-  {
-    title: "Coiffeur",
-    subtitle: "Salons populaires au Maroc",
-    links: [
-      "Casablanca Anfa",
-      "Rabat Hay Riad",
-      "Marrakech Hivernage",
-      "Tanger Centre",
-      "Fès Ville Nouvelle",
-      "Agadir Baie",
-      "Mohammedia",
-    ],
-  },
-  {
-    title: "Barbier",
-    subtitle: "Barbershops tendance",
-    links: [
-      "Casablanca Gauthier",
-      "Rabat Agdal",
-      "Marrakech Guéliz",
-      "Tanger Malabata",
-      "Kénitra",
-      "Meknès",
-      "El Jadida",
-    ],
-  },
-  {
-    title: "Manucure & Ongles",
-    subtitle: "Nail bars & prothésie",
-    links: [
-      "Casablanca Maarif",
-      "Rabat Hassan",
-      "Marrakech Targa",
-      "Tanger Boubana",
-      "Fès Atlas",
-      "Agadir Sonaba",
-      "Bouskoura",
-    ],
-  },
-  {
-    title: "Institut de beauté",
-    subtitle: "Soins visage & hammams",
-    links: [
-      "Casablanca Bourgogne",
-      "Rabat Souissi",
-      "Marrakech Palmeraie",
-      "Tanger Marshan",
-      "Agadir Founty",
-      "Tétouan",
-      "Dar Bouazza",
-    ],
-  },
-  {
-    title: "Massages & Rituel",
-    subtitle: "Hammam & relaxation",
-    links: [
-      "Casablanca Ain Diab",
-      "Rabat Aviation",
-      "Marrakech Medina",
-      "Tanger Iberia",
-      "Essaouira Mogador",
-      "Taghazout Bay",
-      "Oujda",
-    ],
-  },
+const BOOKING = [
+  "Page publique",
+  "Services et tarifs",
+  "Disponibilités",
+  "Prise de rendez-vous",
+  "Vitrine produits",
+  "Retrait à l'institut",
 ];
 
 const FAQ = [
   {
-    q: "Qu'est-ce que Rappel Beauté ?",
-    a: "Rappel Beauté est la plateforme marocaine de réservation de prestations beauté et bien-être en ligne. Elle permet aux clients de trouver un salon ou un institut vérifié, de consulter ses tarifs et disponibilités en temps réel, et de réserver gratuitement 24h/24 sans téléphoner.",
+    q: "Qu'est-ce que Rappel Beauty ?",
+    a: "Rappel Beauty est un logiciel SaaS marocain de gestion pour les instituts de beauté. L'institut s'abonne, gère son activité, et peut publier sa page pour que ses clientes prennent rendez-vous.",
   },
   {
-    q: "Comment prendre rendez-vous sur la plateforme ?",
-    a: "Indiquez la prestation désirée ainsi que votre ville (ex. Casablanca, Rabat, Marrakech). Sélectionnez l'établissement de votre choix, le collaborateur souhaité et le créneau idéal. Votre confirmation et rappel sont reçus instantanément par SMS et WhatsApp.",
+    q: "Combien coûte Rappel Beauty ?",
+    a: "Une seule formule : 599 DH par mois, ou 5 999 DH par an. Sans engagement. Essai de 7 jours, sans carte bancaire.",
   },
   {
-    q: "Est-ce que je dois payer en ligne sur Rappel Beauté ?",
-    a: "La majorité des établissements encaissent directement sur place (espèces, carte bancaire TPE). Certains salons proposent également le prépaiement ou acompte sécurisé par carte CMI pour bloquer les créneaux VIP.",
+    q: "Les clientes paient-elles Rappel Beauty ?",
+    a: "Non. Les clientes paient directement à l'institut. Le retrait des produits se fait aussi à l'institut.",
   },
   {
-    q: "Comment gérer ou reporter mes rendez-vous ?",
-    a: "Connectez-vous à votre espace personnel avec votre numéro de téléphone ou cliquez directement sur le lien sécurisé inclus dans votre confirmation SMS pour décaler ou annuler votre séance en un clic, dans le respect du délai d'annulation du salon.",
+    q: "Que comprend la formule ?",
+    a: "Agenda, clientes, équipe, stock, caisse, facturation, fidélité, marketing, réservation en ligne, vitrine produits et assistant IA.",
   },
   {
-    q: "Comment faire apparaître mon salon ou mon institut sur Rappel Beauté ?",
-    a: "Cliquez simplement sur « Je suis un professionnel ». Un conseiller commercial basé au Maroc prendra contact avec votre salon pour configurer votre planning, votre logiciel de caisse et lancer votre fiche en moins de 48h.",
+    q: "Quel est le prix de Rappel Beauty ?",
+    a: "Rappel Beauty propose une formule à 599 DH par mois ou 5 999 DH par an, sans engagement. L'essai gratuit dure 7 jours et ne nécessite pas de carte bancaire.",
+  },
+  {
+    q: "À quels instituts Rappel Beauty s'adresse-t-il ?",
+    a: "Rappel Beauty est conçu pour les instituts de beauté au Maroc.",
+  },
+  {
+    q: "Que peut-on gérer avec Rappel Beauty ?",
+    a: "Rendez-vous, clientes, équipe, services, cabines, produits, stock, caisse, paiements, factures, commissions, fidélité, marketing et réservation en ligne.",
   },
 ];
 
@@ -152,22 +82,43 @@ export default function HomePage() {
     <>
       <HomeHero imageSrc={HERO_IMG} />
 
+      <section className="border-b border-line bg-white py-10 sm:py-14">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
+            Une formule simple pour votre institut
+          </p>
+          <p className="mt-3 font-display text-3xl text-ink sm:text-4xl">
+            {PUBLIC_OFFER.price} DH / mois
+          </p>
+          <p className="mt-1 text-sm font-semibold text-ink/70">
+            ou {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH / an
+          </p>
+          <p className="mt-3 text-xs text-ink/55 sm:text-sm">
+            Sans engagement · 7 jours gratuits · Sans carte bancaire
+          </p>
+          <Link
+            href="/tarifs/"
+            className="mt-5 inline-flex items-center justify-center rounded-full border border-line bg-paper px-6 py-2.5 text-sm font-semibold text-ink transition hover:border-primary/40"
+          >
+            Voir les tarifs
+          </Link>
+        </div>
+      </section>
+
       {/* Découvrir les professionnels */}
       <section className="overflow-hidden bg-paper py-14 sm:py-24" id="explore">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal className="mb-6 flex flex-col justify-center px-1 sm:mb-8 sm:px-2 lg:hidden">
             <span className="mb-4 h-0.5 w-10 origin-left animate-rise bg-primary sm:mb-6 sm:w-12" />
             <h2 className="mb-4 text-2xl font-normal tracking-tight text-ink sm:mb-6 sm:text-4xl">
-              Découvrez nos <br />
-              <span className="font-display italic text-primary">Professionnels</span>
+              Une plateforme complète pour gérer votre institut
             </h2>
             <div className="space-y-3 sm:space-y-4">
-              <h3 className="text-base font-bold text-ink sm:text-lg">Institut de beauté</h3>
+              <h3 className="text-base font-bold text-ink sm:text-lg">La gestion quotidienne, au même endroit</h3>
               <p className="text-xs leading-relaxed text-ink/55 sm:text-sm">
-                Vos envies de bien-être ont besoin d&apos;être assouvies rapidement et
-                sereinement. Retrouvez les adresses les plus renommées pour vos
-                rituels spa, hammams traditionnels marocains et soins
-                dermo-esthétiques.
+                Gérez vos rendez-vous, clientes, équipe, services, stock et caisse depuis un seul
+                outil. La réservation en ligne permet ensuite à vos clientes de prendre rendez-vous
+                directement auprès de votre institut.
               </p>
               <div className="pt-1 sm:pt-2">
                 <Link
@@ -200,7 +151,7 @@ export default function HomePage() {
               <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  alt="Texture vernis"
+                  alt="Illustration de produits de beauté pour institut"
                   className="h-full w-full object-cover"
                   src={IMG_NAIL}
                 />
@@ -210,7 +161,7 @@ export default function HomePage() {
               <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  alt="Texture cosmétique"
+                  alt="Produits cosmétiques utilisés dans un institut de beauté"
                   className="h-full w-full object-cover"
                   src={IMG_CREAM}
                 />
@@ -220,7 +171,7 @@ export default function HomePage() {
               <div className="aspect-[2/3] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  alt="Sérum"
+                  alt="Produits et soins de beauté"
                   className="h-full w-full object-cover"
                   src={IMG_SERUM}
                 />
@@ -234,7 +185,7 @@ export default function HomePage() {
               <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  alt="Texture vernis"
+                  alt="Illustration de produits de beauté pour institut"
                   className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
                   src={IMG_NAIL}
                 />
@@ -245,7 +196,7 @@ export default function HomePage() {
               <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  alt="Texture cosmétique"
+                  alt="Produits cosmétiques utilisés dans un institut de beauté"
                   className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
                   src={IMG_CREAM}
                 />
@@ -255,16 +206,14 @@ export default function HomePage() {
             <Reveal className="flex flex-col justify-center px-2 lg:col-span-4 lg:px-6" delay={0.1}>
               <span className="mb-6 h-0.5 w-12 bg-primary" />
               <h2 className="mb-6 text-4xl font-normal tracking-tight text-ink">
-                Découvrez nos <br />
-                <span className="font-display italic text-primary">Professionnels</span>
+                Une plateforme complète pour gérer votre institut
               </h2>
               <div className="space-y-4">
-                <h3 className="text-lg font-bold text-ink">Institut de beauté</h3>
+                <h3 className="text-lg font-bold text-ink">La gestion quotidienne, au même endroit</h3>
                 <p className="text-sm leading-relaxed text-ink/55">
-                  Vos envies de bien-être ont besoin d&apos;être assouvies rapidement et
-                  sereinement. Retrouvez les adresses les plus renommées pour vos
-                  rituels spa, hammams traditionnels marocains et soins
-                  dermo-esthétiques.
+                  Gérez vos rendez-vous, clientes, équipe, services, stock et caisse depuis un seul
+                  outil. La réservation en ligne permet ensuite à vos clientes de prendre rendez-vous
+                  directement auprès de votre institut.
                 </p>
                 <div className="pt-2">
                   <Link
@@ -295,7 +244,7 @@ export default function HomePage() {
               <div className="aspect-[2/3] overflow-hidden rounded-2xl border border-line bg-primary-light shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  alt="Sérum"
+                  alt="Produits et soins de beauté"
                   className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
                   src={IMG_SERUM}
                 />
@@ -305,119 +254,58 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Presse */}
-      <section className="border-y border-line/10 bg-institut py-10 text-white sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <Reveal>
-            <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-gold sm:mb-8 sm:text-[11px] sm:tracking-[0.25em]">
-              Presse
-            </p>
-            <h3 className="mb-8 font-display text-xl font-light tracking-wide text-white sm:mb-12 sm:text-2xl">
-              Ils parlent de nous
-            </h3>
-          </Reveal>
-          <MobileAutoCarousel
-            hideFrom="md:hidden"
-            durationSec={14}
-            trackClassName="gap-8 pe-8 items-center opacity-80 sm:gap-10 sm:pe-10"
-          >
-            <span className="font-display text-lg font-semibold tracking-[0.25em] text-white sm:text-2xl sm:tracking-[0.3em]">
-              VOGUE
-            </span>
-            <span className="font-display text-lg font-semibold tracking-[0.2em] text-line sm:text-2xl sm:tracking-[0.25em]">
-              GRAZIA
-            </span>
-            <span className="font-display text-lg font-bold tracking-[0.3em] text-white sm:text-2xl sm:tracking-[0.35em]">
-              ELLE
-            </span>
-            <span className="font-display text-base lowercase italic tracking-wider text-line sm:text-xl sm:tracking-widest">
-              marie claire
-            </span>
-          </MobileAutoCarousel>
-
-          <div className="mx-auto hidden max-w-4xl items-center justify-center gap-12 opacity-80 md:flex">
-            <span className="font-display text-3xl font-semibold tracking-[0.3em] text-white">
-              VOGUE
-            </span>
-            <span className="font-display text-3xl font-semibold tracking-[0.25em] text-line">
-              GRAZIA
-            </span>
-            <span className="font-display text-3xl font-bold tracking-[0.35em] text-white">
-              ELLE
-            </span>
-            <span className="font-display text-2xl lowercase italic tracking-widest text-line">
-              marie claire
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* B2B Stats */}
       <section className="bg-paper py-14 sm:py-24" id="pro">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <Reveal className="mb-8 text-left sm:mb-14">
             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:mb-2 sm:text-[11px] sm:tracking-[0.2em]">
-              Une forte croissance
+              Le logiciel
             </p>
             <h2 className="text-xl font-normal tracking-tight text-ink sm:text-4xl lg:text-5xl">
-              Vous êtes un professionnel de la beauté ?
-              <br />
-              <span className="font-medium text-primary">
-                Découvrez la prise de RDV en ligne !
-              </span>
+              Une plateforme pensée pour les instituts de beauté marocains
             </h2>
           </Reveal>
 
-          {/* Mobile : carrousel auto des cartes */}
           <MobileAutoCarousel hideFrom="md:hidden" durationSec={22} trackClassName="gap-3 pe-3">
-            {STATS.map((stat) => (
+            {CAPABILITIES.map((item) => (
               <Link
-                key={`m-${stat.value}`}
-                href="/professionnel/"
-                className="group relative block w-[78vw] max-w-[300px] overflow-hidden rounded-2xl border border-line bg-paper p-5 shadow-sm transition-colors hover:bg-primary-light/40 sm:p-7"
+                key={`m-${item.title}`}
+                href="/fonctionnalites/"
+                className="block w-[78vw] max-w-[300px] rounded-2xl border border-line bg-paper p-5 shadow-sm transition-colors hover:bg-primary-light/40 sm:p-7"
               >
-                <div
-                  className={`mb-1.5 text-2xl font-semibold tracking-tight sm:mb-2 sm:text-3xl ${
-                    stat.gold ? "text-gold" : "text-primary"
-                  }`}
-                >
-                  {stat.value}
+                <div className="mb-1.5 text-xl font-semibold tracking-tight text-primary sm:mb-2 sm:text-2xl">
+                  {item.title}
                 </div>
-                <p className="text-xs font-normal leading-relaxed text-ink/55 sm:text-sm">{stat.text}</p>
-                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/90 px-4 text-center text-xs font-semibold text-white opacity-0 transition duration-200 group-hover:opacity-100 sm:text-sm">
-                  Je suis un professionnel
-                </span>
+                <p className="text-xs font-normal leading-relaxed text-ink/55 sm:text-sm">{item.text}</p>
               </Link>
             ))}
           </MobileAutoCarousel>
 
-          {/* Desktop : grille 3 colonnes */}
           <RevealStagger className="hidden overflow-hidden rounded-2xl border border-line bg-paper shadow-sm md:grid md:grid-cols-3" stagger={0.06}>
-            {STATS.map((stat, i) => (
-              <RevealItem key={stat.value} className="h-full">
+            {CAPABILITIES.map((item, i) => (
+              <RevealItem key={item.title} className="h-full">
                 <Link
-                  href="/professionnel/"
-                  className={`group relative flex h-full flex-col border-line p-8 transition-colors hover:bg-primary-light/40 sm:p-10 ${
+                  href="/fonctionnalites/"
+                  className={`flex h-full flex-col border-line p-8 transition-colors hover:bg-primary-light/40 sm:p-10 ${
                     i < 3 ? "border-b" : ""
-                  } ${i % 3 !== 2 ? "md:border-r" : ""} ${i >= 3 && i < 5 ? "md:border-b-0 border-b md:border-b-0" : ""} ${
-                    i === 3 || i === 4 ? "border-b md:border-b-0" : ""
-                  }`}
+                  } ${i % 3 !== 2 ? "md:border-r" : ""}`}
                 >
-                  <div
-                    className={`mb-2 text-3xl font-semibold tracking-tight sm:text-4xl ${
-                      stat.gold ? "text-gold" : "text-primary"
-                    }`}
-                  >
-                    {stat.value}
+                  <div className="mb-2 text-2xl font-semibold tracking-tight text-primary">
+                    {item.title}
                   </div>
-                  <p className="text-sm font-normal leading-relaxed text-ink/55">{stat.text}</p>
-                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/90 px-4 text-center text-sm font-semibold text-white opacity-0 transition duration-200 group-hover:opacity-100">
-                    Je suis un professionnel
-                  </span>
+                  <p className="text-sm font-normal leading-relaxed text-ink/55">{item.text}</p>
                 </Link>
               </RevealItem>
             ))}
           </RevealStagger>
+          <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-ink/60">
+            Et bien plus : facturation, commissions, campagnes, cartes cadeaux, liste d&apos;attente,
+            réactivation, avis, analytics et assistant IA.
+          </p>
+          <p className="mt-4 text-center">
+            <Link href="/fonctionnalites/" className="text-sm font-semibold text-primary hover:text-primary-dark">
+              Voir toutes les fonctionnalités
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -437,26 +325,20 @@ export default function HomePage() {
             </Reveal>
             <Reveal className="space-y-4 sm:space-y-6 lg:col-span-6" delay={0.12} x={20}>
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary sm:text-[11px] sm:tracking-[0.2em]">
-                Professionnel &amp; talents
+                Essai 7 jours
               </span>
               <h2 className="text-xl font-normal leading-snug tracking-tight text-ink sm:text-4xl">
-                {SITE.name} recrute et déploie ses équipes pour digitaliser le
-                secteur de la beauté au Maroc.
+                Essayez Rappel Beauty pendant 7 jours
               </h2>
               <p className="text-xs leading-relaxed text-ink/55 sm:text-sm">
-                Nous accompagnons chaque gérant de salon, barbier indépendant et
-                institut haut de gamme avec un service client basé à Casablanca et
-                une assistance dédiée 6j/7.
-              </p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gold sm:text-xs">
-                Direction Générale — Casablanca
+                Une seule formule pour gérer l&apos;institut, puis publier sa page si vous le souhaitez.
               </p>
               <div className="pt-1 sm:pt-2">
                 <Link
                   href="/essai/"
                   className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:scale-[1.03] hover:bg-primary-dark sm:px-7 sm:py-3 sm:text-sm"
                 >
-                  Découvrir nos offres pro
+                  Essayer gratuitement 7 jours
                 </Link>
               </div>
             </Reveal>
@@ -464,37 +346,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Annuaire SEO */}
       <section className="bg-paper py-14 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="mb-8 sm:mb-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <Reveal className="mb-8 sm:mb-12">
             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:mb-2 sm:text-[11px] sm:tracking-[0.2em]">
-              Partout au Maroc
+              Réservation
             </p>
             <h2 className="text-xl font-normal tracking-tight text-ink sm:text-4xl">
-              Trouvez votre établissement beauté{" "}
-              <br className="hidden sm:inline" />
-              partout au Maroc
+              Votre institut devient réservable en ligne
             </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/60">
+              Donnez à votre institut une page publique pour présenter vos services, afficher vos
+              disponibilités et permettre aux clientes de prendre rendez-vous.
+            </p>
           </Reveal>
 
-          <RevealStagger className="grid grid-cols-2 gap-5 text-[11px] leading-relaxed sm:grid-cols-3 sm:gap-8 sm:text-xs sm:leading-loose md:grid-cols-5" stagger={0.07}>
-            {DIRECTORY.map((col) => (
-              <RevealItem key={col.title}>
-                <h3 className="mb-1 text-xs font-bold text-ink sm:text-sm">{col.title}</h3>
-                <p className="mb-2 text-[10px] text-ink/55 sm:mb-3 sm:text-[11px]">{col.subtitle}</p>
-                <ul className="space-y-0.5 text-ink/55 sm:space-y-1">
-                  {col.links.map((link) => (
-                    <li key={link}>
-                      <Link href="/#explore" className="transition hover:text-primary">
-                        {link}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+          <RevealStagger className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" stagger={0.05}>
+            {BOOKING.map((item) => (
+              <RevealItem key={item}>
+                <p className="rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink">{item}</p>
               </RevealItem>
             ))}
           </RevealStagger>
+          <p className="mt-6 text-sm font-semibold text-ink">
+            Les clientes paient directement à l&apos;institut.
+          </p>
         </div>
       </section>
 
@@ -546,6 +422,23 @@ export default function HomePage() {
             </Link>
             .
           </Reveal>
+        </div>
+      </section>
+
+      <section className="bg-institut py-14 text-center text-white sm:py-20">
+        <div className="mx-auto max-w-2xl px-4">
+          <h2 className="font-display text-2xl font-light sm:text-4xl">
+            Essayez Rappel Beauty pendant 7 jours
+          </h2>
+          <p className="mt-4 text-sm text-white/75 sm:text-base">
+            Sans engagement et sans carte bancaire.
+          </p>
+          <Link
+            href="/essai/"
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+          >
+            Essayer gratuitement 7 jours
+          </Link>
         </div>
       </section>
     </>

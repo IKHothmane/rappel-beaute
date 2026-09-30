@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
-import { APP_LOGIN_HREF, CITIES, SITE } from "@/lib/site";
+import { APP_LOGIN_HREF, CITIES, PUBLIC_OFFER, SITE } from "@/lib/site";
 import { OsmMapPicker } from "@/components/www/OsmMapPicker";
 
 type OsmSuggestion = {
@@ -13,7 +13,7 @@ type OsmSuggestion = {
   mapsUrl: string;
 };
 
-export function ProfessionnelForm({ monthlyPrice = 399 }: { monthlyPrice?: number }) {
+export function ProfessionnelForm({ monthlyPrice = 599 }: { monthlyPrice?: number }) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -461,7 +461,8 @@ export function ProfessionnelForm({ monthlyPrice = 399 }: { monthlyPrice?: numbe
           <span className="text-sm font-bold text-primary">{monthlyPrice} DH/mois</span>
         </div>
         <p className="text-xs text-ink/45">
-          Toutes les fonctionnalités incluses · Sans engagement · Résiliable à tout moment
+          ou {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH/an · 7 jours gratuits · sans
+          engagement · sans carte bancaire
         </p>
       </div>
 

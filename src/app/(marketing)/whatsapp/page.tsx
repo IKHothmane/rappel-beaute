@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "WhatsApp manuel pour instituts de beauté",
   description:
     "Rappels et confirmations WhatsApp sans bot : préparez, envoyez, marquez. Aucune API Business en V1.",
+  alternates: { canonical: "/whatsapp/" },
 };
 
 export default function WhatsappPage() {

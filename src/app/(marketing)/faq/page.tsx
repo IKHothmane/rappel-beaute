@@ -7,8 +7,11 @@ import { FAQ_ITEMS } from "@/lib/site";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "FAQ",
-  description: "Questions fréquentes sur Rappel Beauté : essai, WhatsApp, photos, plans, connexion.",
+  title: {
+    absolute: "FAQ Rappel Beauty · Logiciel pour institut de beauté",
+  },
+  description:
+    "Retrouvez les réponses aux questions fréquentes sur Rappel Beauty : fonctionnalités, tarifs, essai gratuit, réservation en ligne, paiements et gestion des instituts de beauté au Maroc.",
   alternates: { canonical: "/faq/" },
 };
 
@@ -18,8 +21,8 @@ export default function FaqPage() {
       <JsonLd data={faqJsonLd()} />
       <PageHero
         eyebrow="FAQ"
-        title="Les questions qu’on nous pose vraiment."
-        text="Essai, WhatsApp, photos clientes, multi-sites, connexion unique."
+        title="Questions fréquentes sur Rappel Beauty"
+        text="Fonctionnalités, tarifs, essai gratuit, réservation en ligne et paiements à l'institut."
       />
       <div className="container-rb max-w-3xl space-y-4 py-16">
         {FAQ_ITEMS.map((item) => (

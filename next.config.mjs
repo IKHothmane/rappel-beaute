@@ -39,37 +39,6 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      // Anciennes pages SEO → ancres /fonctionnalites/
-      {
-        source: "/gestion-rendez-vous",
-        destination: "/fonctionnalites/#rdv",
-        permanent: true,
-      },
-      {
-        source: "/gestion-rendez-vous/",
-        destination: "/fonctionnalites/#rdv",
-        permanent: true,
-      },
-      {
-        source: "/gestion-clientes",
-        destination: "/fonctionnalites/#clientes",
-        permanent: true,
-      },
-      {
-        source: "/gestion-clientes/",
-        destination: "/fonctionnalites/#clientes",
-        permanent: true,
-      },
-      {
-        source: "/gestion-stock",
-        destination: "/fonctionnalites/#stock",
-        permanent: true,
-      },
-      {
-        source: "/gestion-stock/",
-        destination: "/fonctionnalites/#stock",
-        permanent: true,
-      },
       // Pages retirées du site marketing
       {
         source: "/ressources",

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Reveal } from "@/components/www/Reveal";
 import { ProfessionnelForm } from "@/components/www/ProfessionnelForm";
-import { APP_LOGIN_HREF, SITE } from "@/lib/site";
+import { APP_LOGIN_HREF, PUBLIC_OFFER, SITE } from "@/lib/site";
 import { getShowcaseMonthlyPrice } from "@/lib/subscriptions/plans";
 
 export const dynamic = "force-dynamic";
@@ -11,29 +11,27 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Je suis un professionnel",
   description:
-    "Agenda anti-chevauchement, caisse MAD, stock cabine et WhatsApp pour instituts de beauté.",
+    "Rappel Beauty est le logiciel de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, stock, caisse et réservation en ligne. Essai 7 jours, sans engagement et sans carte bancaire.",
+  alternates: { canonical: "/professionnel/" },
 };
 
 const HERO_IMG =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBSrIxf3esU3BPmabqXE0cgSVsJ4aLvcitvoh1_boJRv4DESrA7xW3ngAJcOcSrtyqzDi9-45ZPN-d52M1yxntjlHCG3oEpZQXlLtMMvrbt1FuvaZPapAzOvVnr2WFm-2mywpA2Me-any_uWSM8P1SBf73alPqZF03ShUPHeJNSoE_WEMnYbQi1tbR0GTStwtOr37llIc4mAlZ_ChT4uDu6SvALVTAqWKp-cK9oMNBg07IksAS7nTiIaQ";
 
-const QUOTE_IMG =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuBMz86RbBst2uEKW0W6aJCA_J2kvT2tULe700qf0jqyT28soEeagVbEjtrA1w9rWDFCZBkBIc5VV5yHpZvLcIlikKPb5BW58fLp-Q0KwvF6ZMXJvd7kHEIHusLemKkjgT1Nn4czy-KMk7vyjeZ3hTeZcq-1Ubqun9W0JQwmFgWLnmuOaKz4lQEEngJAoyN8g-PNv4T5vvbt1FVXSBFGXDJkLKMKn7W056yAclfaa6q-uWzEyS1pihUsuA";
-
 const REASONS = [
   {
-    title: "Paramétrage humain offert sous 24h",
-    text: "Notre équipe configure votre plan de cabines, durées de rituels et temps de pause entre les clientes. Prêt à l'emploi.",
+    title: "Rendez-vous et planning",
+    text: "Agenda, disponibilités de l'équipe, statuts et refus des créneaux qui se chevauchent pour une même personne ou une cabine.",
     tone: "text-primary",
   },
   {
-    title: "Import sécurisé de vos données actuelles",
-    text: "Fichiers Excel, ancien logiciel ou carnet papier : nous intégrons l'historique et les numéros de vos clientes sans perte.",
+    title: "Réduisez les oublis et facilitez le suivi des rendez-vous",
+    text: "Rappels préparés, suivi des rendez-vous, liste d'attente et réservation en ligne. WhatsApp reste assisté : le logiciel prépare le message, l'institut l'envoie.",
     tone: "text-gold",
   },
   {
-    title: "Concierge WhatsApp dédié 7j/7 au Maroc",
-    text: "Une assistance instantanée pour vous et votre équipe, sans tickets d'attente impersonnels.",
+    title: "Clientes, stock, caisse et fidélité",
+    text: "Fiches clientes, services, cabines, produits, encaissements à l'institut, fidélité et outils de pilotage.",
     tone: "text-primary",
   },
 ] as const;
@@ -64,13 +62,19 @@ export default async function ProfessionnelPage() {
             </span>
           </div>
           <h1 className="mt-1 font-display text-3xl font-semibold leading-[1.1] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
-            Rejoignez l&apos;élite des instituts de beauté au Maroc.
+            Le logiciel de gestion pour les instituts de beauté au Maroc.
           </h1>
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-ink/60 sm:text-lg">
-            Agenda anti-chevauchement, caisse certifiée MAD, suivi du stock cabine et relances
-            WhatsApp élégantes.
+            Rendez-vous, planning, clientes, stock, caisse, fidélité et réservation en ligne.
+            {PUBLIC_OFFER.price} DH/mois ou {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH/an.
           </p>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/essai/"
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+            >
+              Essayer gratuitement 7 jours
+            </Link>
             <Link
               href={APP_LOGIN_HREF}
               className="inline-flex items-center gap-2 rounded-xl bg-white/90 px-4 py-2.5 text-sm font-medium text-ink shadow-sm backdrop-blur-md transition hover:bg-primary-light"
@@ -99,41 +103,41 @@ export default async function ProfessionnelPage() {
               <div className="rounded-2xl bg-primary-light/80 p-6 shadow-md backdrop-blur-md">
                 <div className="mb-4 flex items-center justify-between pb-1">
                   <span className="text-[11px] font-bold uppercase tracking-widest text-gold">
-                    Confiance de l&apos;écosystème
+                    La formule
                   </span>
                   <span className="text-gold">◆</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">
                     <span className="font-display text-3xl font-bold leading-none text-primary">
-                      24+
+                      {PUBLIC_OFFER.price}
                     </span>
-                    <span className="mt-1 text-xs font-semibold text-ink">Instituts connectés</span>
-                    <span className="text-[10px] text-ink/45">Casablanca, Rabat &amp; Kech</span>
-                  </div>
-                  <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">
-                    <div className="flex items-center gap-1">
-                      <span className="font-display text-3xl font-bold leading-none text-gold">
-                        4.9
-                      </span>
-                      <span className="text-gold">★</span>
-                    </div>
-                    <span className="mt-1 text-xs font-semibold text-ink">Note de satisfaction</span>
-                    <span className="text-[10px] text-ink/45">Praticiennes &amp; Dirigeants</span>
-                  </div>
-                  <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">
-                    <span className="font-display text-3xl font-bold leading-none text-ink">
-                      +35k
-                    </span>
-                    <span className="mt-1 text-xs font-semibold text-ink">Rendez-vous honorés</span>
-                    <span className="text-[10px] text-ink/45">No-show divisé par 4</span>
+                    <span className="mt-1 text-xs font-semibold text-ink">DH / mois</span>
+                    <span className="text-[10px] text-ink/45">Formule unique</span>
                   </div>
                   <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">
                     <span className="font-display text-3xl font-bold leading-none text-gold">
-                      100%
+                      {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")}
                     </span>
-                    <span className="mt-1 text-xs font-semibold text-ink">Caisse certifiée MAD</span>
-                    <span className="text-[10px] text-ink/45">Reçus, tickets &amp; TVA</span>
+                    <span className="mt-1 text-xs font-semibold text-ink">DH / an</span>
+                    <span className="text-[10px] text-ink/45">
+                      Économisez{" "}
+                      {(PUBLIC_OFFER.price * 12 - PUBLIC_OFFER.yearlyPrice).toLocaleString("fr-FR")} DH
+                    </span>
+                  </div>
+                  <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">
+                    <span className="font-display text-3xl font-bold leading-none text-ink">
+                      {PUBLIC_OFFER.trialDays} jours
+                    </span>
+                    <span className="mt-1 text-xs font-semibold text-ink">Essai gratuit</span>
+                    <span className="text-[10px] text-ink/45">Sans engagement</span>
+                  </div>
+                  <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">
+                    <span className="font-display text-2xl font-bold leading-none text-gold">
+                      Sans carte
+                    </span>
+                    <span className="mt-1 text-xs font-semibold text-ink">Pour commencer</span>
+                    <span className="text-[10px] text-ink/45">Aucune carte bancaire</span>
                   </div>
                 </div>
               </div>
@@ -141,9 +145,7 @@ export default async function ProfessionnelPage() {
 
             <Reveal delay={0.12}>
               <div className="flex flex-col gap-4 rounded-2xl bg-white/90 p-6 shadow-md backdrop-blur-md">
-                <span className="text-lg font-bold text-ink">
-                  Pourquoi nous confier votre institut ?
-                </span>
+                <span className="text-lg font-bold text-ink">Ce que vous pouvez gérer</span>
                 <div className="flex flex-col gap-4">
                   {REASONS.map((r) => (
                     <div key={r.title} className="flex items-start gap-3">
@@ -160,33 +162,18 @@ export default async function ProfessionnelPage() {
                   ))}
                 </div>
                 <div className="mt-1 flex items-center justify-between rounded-xl bg-primary-light/60 p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-gold" />
-                    <span className="text-[11px] font-medium text-ink/60">
-                      Ligne VIP : {SITE.phone}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold text-primary">Casablanca</span>
+                  <span className="text-[11px] font-medium text-ink/60">Contact : {SITE.phone}</span>
                 </div>
               </div>
             </Reveal>
 
             <Reveal delay={0.16}>
-              <div className="flex items-center gap-4 rounded-2xl bg-primary-light/50 p-4 shadow-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  alt="Directrice d'institut"
-                  className="h-12 w-12 shrink-0 rounded-full object-cover shadow"
-                  src={QUOTE_IMG}
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-xs italic leading-snug text-ink">
-                    « Les rappels WhatsApp ont transformé la ponctualité de notre clientèle. »
-                  </p>
-                  <span className="mt-1 block text-[11px] font-semibold text-gold">
-                    Meryem E. — Spa Privé, Rabat
-                  </span>
-                </div>
+              <div className="rounded-2xl bg-primary-light/50 p-4 shadow-sm">
+                <p className="text-sm font-semibold text-ink">Réservation en ligne</p>
+                <p className="mt-1 text-xs leading-relaxed text-ink/60">
+                  Chaque institut peut publier sa page. Les clientes réservent auprès de
+                  l&apos;institut et règlent sur place.
+                </p>
               </div>
             </Reveal>
           </div>

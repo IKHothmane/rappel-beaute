@@ -1,12 +1,13 @@
-import { FAQ_ITEMS, PLANS, SITE } from "@/lib/site";
+import { FAQ_ITEMS, PUBLIC_OFFER, SITE } from "@/lib/site";
 
 export function absoluteUrl(path: string): string {
   if (path === "/") return `${SITE.url}/`;
   return `${SITE.url}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/** Organisation + logiciel, affichés sur les pages vitrine. */
-export function marketingJsonLd() {
+/** Identité publique : une seule Organization, un seul WebSite, un seul SoftwareApplication. */
+export function getOrganizationStructuredData() {
+  const telephone = SITE.phone.replace(/\s/g, "");
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -15,21 +16,25 @@ export function marketingJsonLd() {
         "@id": `${SITE.url}/#organization`,
         name: SITE.name,
         url: `${SITE.url}/`,
-        email: SITE.email,
         logo: `${SITE.url}/brand/logo.png`,
-        areaServed: { "@type": "Country", name: "Maroc" },
-        address: {
-          "@type": "PostalAddress",
-          addressCountry: "MA",
+        description:
+          "Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc.",
+        email: SITE.email,
+        telephone,
+        areaServed: {
+          "@type": "Country",
+          name: "Morocco",
         },
       },
       {
         "@type": "WebSite",
         "@id": `${SITE.url}/#website`,
-        name: SITE.name,
         url: `${SITE.url}/`,
+        name: SITE.name,
+        publisher: {
+          "@id": `${SITE.url}/#organization`,
+        },
         inLanguage: "fr-MA",
-        publisher: { "@id": `${SITE.url}/#organization` },
       },
       {
         "@type": "SoftwareApplication",
@@ -37,22 +42,33 @@ export function marketingJsonLd() {
         name: SITE.name,
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web",
-        inLanguage: "fr-MA",
         url: `${SITE.url}/`,
         description:
-          "Logiciel de gestion pour institut de beauté au Maroc : agenda, réservation, clientes, stock, caisse et WhatsApp manuel. Prix en MAD.",
-        areaServed: { "@type": "Country", name: "Maroc" },
-        offers: PLANS.map((plan) => ({
-          "@type": "Offer",
-          name: plan.name,
-          price: String(plan.price),
-          priceCurrency: "MAD",
-          url: `${SITE.url}/tarifs/`,
-        })),
-        publisher: { "@id": `${SITE.url}/#organization` },
+          "Logiciel de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, ventes, fidélité et réservation en ligne.",
+        offers: [
+          {
+            "@type": "Offer",
+            name: `${PUBLIC_OFFER.name} — Mensuel`,
+            price: String(PUBLIC_OFFER.price),
+            priceCurrency: PUBLIC_OFFER.currency,
+            url: `${SITE.url}/tarifs/`,
+          },
+          {
+            "@type": "Offer",
+            name: `${PUBLIC_OFFER.name} — Annuel`,
+            price: String(PUBLIC_OFFER.yearlyPrice),
+            priceCurrency: PUBLIC_OFFER.currency,
+            url: `${SITE.url}/tarifs/`,
+          },
+        ],
       },
     ],
   };
+}
+
+/** Conservé pour le layout vitrine : même graphe, pas un second JSON-LD. */
+export function marketingJsonLd() {
+  return getOrganizationStructuredData();
 }
 
 export function faqJsonLd() {

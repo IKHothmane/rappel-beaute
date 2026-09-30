@@ -172,7 +172,7 @@ export default function NewOrganizationPage() {
                   checked={form.plan === p}
                   onChange={() => setForm({ ...form, plan: p })}
                 />
-                {p === "STARTER" ? "Starter — 299 MAD" : p === "INSTITUT" ? "Institut — 499 MAD" : "Premium — 899 MAD"}
+                {p === "STARTER" ? "Starter" : p === "INSTITUT" ? "Institut" : "Premium"}
               </label>
             ))}
           </>

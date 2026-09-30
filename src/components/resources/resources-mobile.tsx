@@ -336,6 +336,7 @@ function ResourceCard({
   onMenu,
   onEdit,
   onToggle,
+  onDelete,
 }: {
   resource: ResourceListItem;
   current?: Appointment;
@@ -348,6 +349,7 @@ function ResourceCard({
   onMenu: () => void;
   onEdit: () => void;
   onToggle: () => void;
+  onDelete: () => void;
 }) {
   const status = liveStatus(r, current, next);
   const Icon = resourceTypeIcon(r.type);
@@ -420,6 +422,13 @@ function ResourceCard({
           </button>
           <button type="button" onClick={onToggle} className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]">
             {r.active ? "Désactiver" : "Réactiver"}
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="block w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50"
+          >
+            Supprimer
           </button>
         </div>
       ) : null}

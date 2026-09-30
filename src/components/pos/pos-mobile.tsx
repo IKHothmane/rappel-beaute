@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { RefObject } from "react";
+import type { Ref } from "react";
 import { Barcode, Package, Search, Sparkles, UserRound, Wallet } from "lucide-react";
 import {
   categoryCounts,
@@ -39,7 +39,7 @@ type Props = {
   onAdd: (p: PosProductItem) => void;
   onOpenCart: () => void;
   ticketNo: number;
-  customerRef?: RefObject<HTMLInputElement | null>;
+  customerRef?: Ref<HTMLInputElement>;
 };
 
 export function PosMobile({

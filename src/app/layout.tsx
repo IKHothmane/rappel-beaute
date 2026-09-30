@@ -24,12 +24,27 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
+
   title: {
-    default: `${SITE.name} — ${SITE.tagline}`,
-    template: `%s · ${SITE.name}`,
+    default: "Logiciel institut de beauté au Maroc | Rappel Beauty",
+    template: "%s · Rappel Beauty",
   },
+
   description:
-    "Agenda, clientes, stock, caisse et WhatsApp manuel pour instituts de beauté au Maroc. 14 jours pour essayer, activation sous 24 h, sans carte bancaire.",
+    "Rappel Beauty est le logiciel de gestion pour instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, ventes, fidélité et réservation en ligne.",
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -38,13 +53,29 @@ export const metadata: Metadata = {
     apple: [{ url: "/brand/logo.png", type: "image/png" }],
     shortcut: ["/favicon.ico"],
   },
+
   openGraph: {
-    title: SITE.name,
-    description: SITE.tagline,
-    locale: "fr_MA",
     type: "website",
+    locale: "fr_MA",
     url: SITE.url,
-    images: [{ url: "/brand/logo.png", alt: SITE.name }],
+    siteName: SITE.name,
+    title: "Logiciel institut de beauté au Maroc | Rappel Beauty",
+    description:
+      "Gérez vos rendez-vous, clientes, équipe, stock, caisse, ventes et réservation en ligne depuis une seule plateforme.",
+    images: [
+      {
+        url: "/brand/logo.png",
+        alt: "Rappel Beauty — logiciel de gestion pour instituts de beauté au Maroc",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Logiciel institut de beauté au Maroc | Rappel Beauty",
+    description:
+      "Gérez vos rendez-vous, clientes, équipe, stock, caisse, ventes et réservation en ligne.",
+    images: ["/brand/logo.png"],
   },
 };
 

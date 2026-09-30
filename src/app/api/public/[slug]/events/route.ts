@@ -6,11 +6,7 @@ import {
   resolvePublicStaffRef,
 } from "@/lib/db/public-booking";
 import { recordPublicBookingEvent } from "@/lib/db/public-booking-events";
-import {
-  checkRateLimit,
-  publicRateLimitKey,
-  PUBLIC_RATE_LIMITS,
-} from "@/lib/rate-limit";
+import { consumeDimensions, RATE_POLICIES } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/public-booking/validation";
 
 type Ctx = { params: Promise<{ slug: string }> };
@@ -18,10 +14,9 @@ type Ctx = { params: Promise<{ slug: string }> };
 export async function POST(request: NextRequest, context: Ctx) {
   const { slug } = await context.params;
   const ip = clientIp(request);
-  const rl = await checkRateLimit({
-    key: publicRateLimitKey(ip, slug, "events"),
-    ...PUBLIC_RATE_LIMITS.availability,
-  });
+  const rl = await consumeDimensions([
+    { key: `public:events:${ip}`, ...RATE_POLICIES.availability },
+  ]);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Trop de requêtes." },

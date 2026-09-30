@@ -1,7 +1,28 @@
+import { randomBytes } from "crypto";
 import { Pool } from "pg";
 import { hashPassword } from "@/lib/auth/crypto";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+/** Lien d'activation existant, réutilisé pour la réinitialisation. null si compte inconnu. */
+export async function issuePasswordResetToken(email: string): Promise<string | null> {
+  const normalized = email.trim().toLowerCase();
+  const { rows } = await pool.query<{ id: string }>(
+    `SELECT id FROM "User" WHERE LOWER(email) = $1 AND status = 'ACTIVE' LIMIT 1`,
+    [normalized],
+  );
+  const user = rows[0];
+  if (!user) return null;
+
+  const token = randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + 60 * 60 * 1000);
+  await pool.query(
+    `INSERT INTO "ActivationToken" (id, "userId", token, "expiresAt")
+     VALUES ($1, $2, $3, $4)`,
+    [`act_${randomBytes(6).toString("hex")}`, user.id, token, expires],
+  );
+  return token;
+}
 
 export async function activateAccount(token: string, password: string): Promise<{ email: string }> {
   const client = await pool.connect();

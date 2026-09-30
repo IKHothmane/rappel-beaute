@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
-import { AUTH_RATE_LIMITS, authRateLimitKey, checkRateLimit } from "@/lib/rate-limit";
+import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { EmailSendError, isEmailConfigured, sendTransactionalEmail } from "@/lib/email/send";
 import { signupPasswordEmail } from "@/lib/email/signup-password";
 import {
@@ -47,10 +47,11 @@ export async function POST(request: NextRequest) {
   }
 
   const email = str(form, "email").toLowerCase();
-  const rl = await checkRateLimit({
-    key: authRateLimitKey("signup", ip, email),
-    ...AUTH_RATE_LIMITS.signup,
-  });
+  const account = email ? emailKey(email) : "unknown";
+  const rl = await consumeDimensions([
+    { key: `auth:signup:ip:${ip}`, ...RATE_POLICIES.signup.ip, sensitivity: "sensitive" },
+    { key: `auth:signup:account:${account}`, ...RATE_POLICIES.signup.account, sensitivity: "sensitive" },
+  ]);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Trop de demandes. Réessayez plus tard." },

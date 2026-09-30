@@ -5,7 +5,7 @@ import { isAppSession } from "@/lib/auth/types";
 import { createSessionCookie } from "@/lib/auth/session";
 import { changeOwnPassword, getUserSessionState } from "@/lib/db/users";
 import { clientIp } from "@/lib/http/client-ip";
-import { AUTH_RATE_LIMITS, authRateLimitKey, checkRateLimit } from "@/lib/rate-limit";
+import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
 /**
@@ -20,10 +20,11 @@ export async function POST(request: NextRequest) {
   }
 
   const ip = clientIp(request);
-  const rl = await checkRateLimit({
-    key: authRateLimitKey("change-password", ip, auth.session.id),
-    ...AUTH_RATE_LIMITS.login,
-  });
+  const userKey = identityHash(auth.session.id);
+  const rl = await consumeDimensions([
+    { key: `auth:change-password:user:${userKey}`, ...RATE_POLICIES.changePassword.user, sensitivity: "sensitive" },
+    { key: `auth:change-password:ip:${ip}`, ...RATE_POLICIES.changePassword.ip, sensitivity: "sensitive" },
+  ]);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Trop de tentatives. Réessayez plus tard." },

@@ -3,7 +3,7 @@
  * Coller dans Cloudflare → Deploy
  */
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     const originUrl = new URL(
@@ -22,6 +22,12 @@ export default {
     }
 
     const headers = new Headers(request.headers);
+
+    // Le client ne choisit pas le secret : on écrase toute valeur reçue.
+    headers.delete("x-rappel-origin");
+    if (env?.ORIGIN_SECRET) {
+      headers.set("X-Rappel-Origin", env.ORIGIN_SECRET);
+    }
 
     // Next.js doit voir le hostname public admin
     headers.set("X-Forwarded-Host", "admin.rappelbeauty.com");

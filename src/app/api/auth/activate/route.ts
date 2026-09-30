@@ -2,16 +2,23 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { activateAccount } from "@/lib/db/activation";
 import { clientIp } from "@/lib/http/client-ip";
-import { AUTH_RATE_LIMITS, authRateLimitKey, checkRateLimit } from "@/lib/rate-limit";
+import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
-  const rl = await checkRateLimit({
-    key: authRateLimitKey("activate", ip),
-    ...AUTH_RATE_LIMITS.activate,
-  });
+  let tokenHint = "unknown";
+  try {
+    const peek = (await request.clone().json()) as { token?: string };
+    if (peek.token?.trim()) tokenHint = identityHash(peek.token.trim());
+  } catch {
+    /* corps relu plus bas */
+  }
+  const rl = await consumeDimensions([
+    { key: `auth:activate:ip:${ip}`, ...RATE_POLICIES.activate.ip, sensitivity: "sensitive" },
+    { key: `auth:activate:token:${tokenHint}`, ...RATE_POLICIES.activate.token, sensitivity: "sensitive" },
+  ]);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Trop de tentatives. Réessayez plus tard." },

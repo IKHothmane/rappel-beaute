@@ -3,18 +3,19 @@ import type { NextRequest } from "next/server";
 import { buildAIContext, requireAIWrite, sanitizeAIBody } from "@/lib/ai/guard";
 import { generateMessageDraft } from "@/lib/ai/service";
 import { parseGenerateMessageBody } from "@/lib/validation/ai-message";
-import { AI_RATE_LIMIT } from "@/types/ai";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/http/client-ip";
+import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   const auth = await requireAIWrite(request);
   if (!auth.ok) return auth.response;
 
-  const rl = await checkRateLimit({
-    key: `ai:generate:${auth.session.organizationId}:${auth.session.id}`,
-    limit: AI_RATE_LIMIT.limit,
-    windowMs: AI_RATE_LIMIT.windowMs,
-  });
+  const user = identityHash(auth.session.id);
+  const ip = getClientIp(request);
+  const rl = await consumeDimensions([
+    { key: `ai:generate:user:${user}`, ...RATE_POLICIES.ai.user },
+    { key: `ai:generate:ip:${ip}`, ...RATE_POLICIES.ai.ip },
+  ]);
   if (!rl.allowed) {
     return NextResponse.json(
       {

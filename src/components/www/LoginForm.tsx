@@ -148,7 +148,9 @@ function LoginFormFields() {
               >
                 Mot de passe
               </label>
-              <span className="text-xs font-medium text-ink/40">Mot de passe oublié ?</span>
+              <Link href="/forgot-password/" className="text-xs font-medium text-primary hover:underline">
+                Mot de passe oublié ?
+              </Link>
             </div>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-ink/40">

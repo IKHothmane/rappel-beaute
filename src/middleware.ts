@@ -9,6 +9,7 @@ import {
   resolvePublicHostname,
   type RappelDomain,
 } from "@/lib/domain";
+import { originAccessAllowed } from "@/lib/http/origin-guard";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -183,6 +184,15 @@ function isLoopbackHostname(hostname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  if (
+    !originAccessAllowed(
+      request.headers.get("x-rappel-origin"),
+      process.env.ORIGIN_SECRET,
+    )
+  ) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
+
   const path = request.nextUrl.pathname;
   const hostname = resolvePublicHostname(
     request.headers.get("host"),
@@ -337,6 +347,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/api/health",
+    "/api/health/",
+    "/api/:path*",
     "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)",
     "/",
   ],

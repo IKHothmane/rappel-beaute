@@ -9,7 +9,7 @@ import { isAppSession, isPlatformSession } from "@/lib/auth/types";
 import { stripOrganizationId } from "@/lib/auth/api-guard";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
-import { AUTH_RATE_LIMITS, authRateLimitKey, checkRateLimit } from "@/lib/rate-limit";
+import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { COOKIE_HOST } from "@/lib/domain";
 
 export async function POST(request: NextRequest) {
@@ -26,10 +26,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
     }
 
-    const rl = await checkRateLimit({
-      key: authRateLimitKey("login", ip, email),
-      ...AUTH_RATE_LIMITS.login,
-    });
+    const account = emailKey(email);
+    const rl = await consumeDimensions([
+      { key: `auth:login:ip:${ip}`, ...RATE_POLICIES.login.ip, sensitivity: "sensitive" },
+      { key: `auth:login:account:${account}`, ...RATE_POLICIES.login.account, sensitivity: "sensitive" },
+      { key: `auth:login:ip-account:${ip}:${account}`, ...RATE_POLICIES.login.pair, sensitivity: "sensitive" },
+    ]);
     if (!rl.allowed) {
       logger.warn("login rate limited", { route: "/api/auth/login", method: "POST" });
       return NextResponse.json(

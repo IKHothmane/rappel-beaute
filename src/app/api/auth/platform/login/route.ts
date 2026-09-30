@@ -5,7 +5,7 @@ import { createSessionCookie, clearSessionCookie, getSessionFromRequest } from "
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
-import { AUTH_RATE_LIMITS, authRateLimitKey, checkRateLimit } from "@/lib/rate-limit";
+import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 
 function errorDetails(error: unknown) {
   if (error instanceof Error) {
@@ -37,10 +37,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
     }
 
-    const rl = await checkRateLimit({
-      key: authRateLimitKey("platform-login", ip, email),
-      ...AUTH_RATE_LIMITS.platformLogin,
-    });
+    const account = emailKey(email);
+    const rl = await consumeDimensions([
+      { key: `auth:platform-login:ip:${ip}`, ...RATE_POLICIES.login.ip, sensitivity: "sensitive" },
+      { key: `auth:platform-login:account:${account}`, ...RATE_POLICIES.login.account, sensitivity: "sensitive" },
+      { key: `auth:platform-login:ip-account:${ip}:${account}`, ...RATE_POLICIES.login.pair, sensitivity: "sensitive" },
+    ]);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Trop de tentatives. Réessayez plus tard." },

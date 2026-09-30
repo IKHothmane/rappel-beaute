@@ -5,11 +5,7 @@ import {
   getPublicAvailableDates,
   resolveOrganizationBySlug,
 } from "@/lib/db/public-booking";
-import {
-  PUBLIC_RATE_LIMITS,
-  checkRateLimit,
-  publicRateLimitKey,
-} from "@/lib/rate-limit";
+import { consumeDimensions, RATE_POLICIES } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/public-booking/validation";
 
 type RouteContext = { params: Promise<{ slug: string }> };
@@ -17,10 +13,9 @@ type RouteContext = { params: Promise<{ slug: string }> };
 export async function GET(request: NextRequest, context: RouteContext) {
   const { slug } = await context.params;
   const ip = clientIp(request);
-  const rl = await checkRateLimit({
-    key: publicRateLimitKey(ip, slug, "availability"),
-    ...PUBLIC_RATE_LIMITS.availability,
-  });
+  const rl = await consumeDimensions([
+    { key: `public:availability:${ip}`, ...RATE_POLICIES.availability },
+  ]);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Trop de requêtes. Réessayez dans quelques instants." },

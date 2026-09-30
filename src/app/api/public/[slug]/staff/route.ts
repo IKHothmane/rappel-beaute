@@ -4,11 +4,23 @@ import {
   getPublicStaffForService,
   resolveOrganizationBySlug,
 } from "@/lib/db/public-booking";
+import { getClientIp } from "@/lib/http/client-ip";
+import { consumeDimensions, RATE_POLICIES } from "@/lib/rate-limit";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const { slug } = await context.params;
+  const ip = getClientIp(request);
+  const rl = await consumeDimensions([
+    { key: `public:staff:${ip}`, ...RATE_POLICIES.publicRead },
+  ]);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Trop de requêtes." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec ?? 60) } },
+    );
+  }
   const sp = new URL(request.url).searchParams;
   sp.delete("organizationId");
   const serviceId = sp.get("serviceId")?.trim();

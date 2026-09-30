@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHero } from "@/components/www/PageHero";
 
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Logiciel pour institut de beauté au Maroc",
+  title: "Logiciel institut de beauté Maroc",
   description:
-    "Rappel Beauté est le logiciel de gestion conçu pour les instituts de beauté marocains : agenda, clientes, stock, caisse.",
+    "Logiciel de gestion pour institut de beauté au Maroc : réservation, agenda, stock, caisse et clientes. Pensé pour les cabines, en MAD.",
+  alternates: { canonical: "/solutions/institut-beaute/" },
 };
 
 export default function InstitutBeautePage() {
@@ -29,8 +31,23 @@ export default function InstitutBeautePage() {
           trois WhatsApp.
         </p>
         <p>
-          Plans dès 299 MAD / mois. Essai 14 jours, activation sous 24 h, sans
-          carte bancaire.
+          Le logiciel couvre la journée d’un institut :{" "}
+          <Link href="/gestion-rendez-vous/" className="text-primary">
+            réservation et agenda
+          </Link>
+          ,{" "}
+          <Link href="/gestion-clientes/" className="text-primary">
+            fiches clientes
+          </Link>
+          ,{" "}
+          <Link href="/gestion-stock/" className="text-primary">
+            gestion de stock
+          </Link>{" "}
+          et{" "}
+          <Link href="/fonctionnalites/#caisse" className="text-primary">
+            caisse
+          </Link>
+          . Les prix sont en dirhams, dès 299 MAD / mois.
         </p>
       </article>
     </>

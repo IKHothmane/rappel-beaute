@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Gestion des clientes institut de beauté",
   description:
     "Fiches clientes, historique et fidélité pour instituts au Maroc. Aucune photo cliente en V1.",
+  alternates: { canonical: "/gestion-clientes/" },
 };
 
 export default function GestionClientesPage() {

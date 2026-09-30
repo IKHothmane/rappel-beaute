@@ -8,9 +8,10 @@ import { SITE } from "@/lib/site";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Réservez vos soins beauté et bien-être au Maroc",
+  title: "Logiciel institut de beauté au Maroc",
   description:
-    "Rappel Beauté — trouvez un salon, un institut ou un spa au Maroc et réservez en ligne 24h/24. Simple, immédiat, sans téléphoner.",
+    "Logiciel de gestion pour institut de beauté au Maroc : agenda, réservation, stock, caisse et clientes. Essai 14 jours, prix en MAD, sans carte bancaire.",
+  alternates: { canonical: "/" },
 };
 
 const HERO_IMG = "/brand/hero.png";

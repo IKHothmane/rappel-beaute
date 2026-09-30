@@ -7,6 +7,7 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "Blog",
   description: "Journal Rappel Beauté — articles à venir.",
+  robots: { index: false, follow: false },
 };
 
 export default function BlogPage() {

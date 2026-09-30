@@ -6,7 +6,8 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "Gestion de stock institut de beauté",
   description:
-    "Stock en ledger append-only pour instituts : achats, usage cabine, pertes. Alertes rupture. Plan Institut et Premium.",
+    "Gestion de stock pour institut de beauté : achats, usage cabine, pertes et alertes de rupture. Inclus dès le plan Institut.",
+  alternates: { canonical: "/gestion-stock/" },
 };
 
 export default function GestionStockPage() {

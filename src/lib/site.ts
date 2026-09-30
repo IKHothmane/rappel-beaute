@@ -1,7 +1,7 @@
 export const SITE = {
   name: "Rappel Beauty",
   version: "V1.2",
-  url: "https://www.rappelbeauty.com",
+  url: "https://rappelbeauty.com",
   appUrl: "https://app.rappelbeauty.com",
   tagline: "Le logiciel de gestion pensé pour les instituts de beauté.",
   email: "contact@rappelbeauty.com",
@@ -188,7 +188,7 @@ export const CITIES = [
 export const FAQ_ITEMS = [
   {
     q: "L’essai de 14 jours est-il vraiment gratuit ?",
-    a: "Oui, sans carte bancaire. Vous remplissez une demande d’essai : votre accès est activé sous 24 h par notre équipe. Pas de création de compte en libre-service en V1.",
+    a: "Oui, sans carte bancaire. Vous créez votre institut depuis la page professionnel : un mot de passe à 6 chiffres est envoyé par e-mail, à changer à la première connexion.",
   },
   {
     q: "Rappel Beauty envoie-t-il des WhatsApp tout seul ?",

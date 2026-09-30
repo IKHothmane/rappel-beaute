@@ -6,9 +6,10 @@ import { Reveal } from "@/components/www/Reveal";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Fonctionnalités — Logiciel tout-en-un pour instituts",
+  title: "Logiciel de gestion pour institut de beauté",
   description:
-    "Rendez-vous, clientes, caisse, stock, fidélité, WhatsApp et rapports. Ancres SEO prêtes à partager et rigueur comptable infaillible.",
+    "Agenda, réservation, caisse, stock et clientes pour un institut de beauté au Maroc. Une seule application, prix en MAD.",
+  alternates: { canonical: "/fonctionnalites/" },
 };
 
 const PILLS = [

@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Connexion Espace Pro",
   description:
     "Connexion à votre espace institut Rappel Beauté. Un e-mail, un mot de passe.",
+  robots: { index: false, follow: false },
 };
 
 const BG_IMG =

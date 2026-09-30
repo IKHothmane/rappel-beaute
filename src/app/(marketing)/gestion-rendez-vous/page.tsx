@@ -4,9 +4,10 @@ import { PageHero } from "@/components/www/PageHero";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Gestion des rendez-vous institut de beauté",
+  title: "Logiciel de réservation et agenda institut beauté",
   description:
-    "Planning anti double-réservation pour instituts au Maroc. Contrainte EXCLUDE en base, rappels WhatsApp manuels.",
+    "Logiciel de réservation pour institut de beauté : agenda des cabines, sans double réservation, rappels WhatsApp manuels.",
+  alternates: { canonical: "/gestion-rendez-vous/" },
 };
 
 export default function GestionRdvPage() {

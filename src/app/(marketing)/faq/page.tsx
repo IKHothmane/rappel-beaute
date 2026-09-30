@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/www/JsonLd";
 import { PageHero } from "@/components/www/PageHero";
+import { faqJsonLd } from "@/lib/seo";
 import { FAQ_ITEMS } from "@/lib/site";
 
 export const dynamic = "force-static";
@@ -7,11 +9,13 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "FAQ",
   description: "Questions fréquentes sur Rappel Beauté : essai, WhatsApp, photos, plans, connexion.",
+  alternates: { canonical: "/faq/" },
 };
 
 export default function FaqPage() {
   return (
     <>
+      <JsonLd data={faqJsonLd()} />
       <PageHero
         eyebrow="FAQ"
         title="Les questions qu’on nous pose vraiment."

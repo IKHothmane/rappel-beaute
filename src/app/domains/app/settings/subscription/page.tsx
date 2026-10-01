@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppPageHeader } from "@/components/app/AppUi";
 import { PLAN_FEATURE_LABELS, type PlanFeatureKey, type SubscriptionDto, type UsageDto } from "@/types/subscription";
+import { SITE } from "@/lib/site";
 
 export default function SubscriptionSettingsPage() {
   const [sub, setSub] = useState<SubscriptionDto | null>(null);
@@ -78,7 +79,7 @@ export default function SubscriptionSettingsPage() {
         </ul>
         <p className="mt-6 text-sm text-ink/60">
           Besoin de plus de capacité ?{" "}
-          <Link href="mailto:contact@rappelbeaute.ma" className="font-semibold text-primary">
+          <Link href={`mailto:${SITE.email}`} className="font-semibold text-primary">
             Contactez-nous
           </Link>
         </p>

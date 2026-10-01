@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHero } from "@/components/www/PageHero";
+import { SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -22,7 +23,7 @@ export default function ConfidentialitePage() {
         <section>
           <h2 className="font-display text-xl font-semibold text-ink">Responsable de traitement</h2>
           <p className="mt-2">
-            Rappel Beauté, contact@rappelbeaute.ma. Déclaration CNDP : à déposer
+            Rappel Beauté, {SITE.email}. Déclaration CNDP : à déposer
             avant le traitement opérationnel des fiches clientes en production.
           </p>
         </section>
@@ -55,7 +56,7 @@ export default function ConfidentialitePage() {
           <h2 className="font-display text-xl font-semibold text-ink">Vos droits</h2>
           <p className="mt-2">
             Accès, rectification, opposition, suppression dans les limites de la
-            loi 09-08. Demande : contact@rappelbeaute.ma. Recours possible auprès
+            loi 09-08. Demande : {SITE.email}. Recours possible auprès
             de la CNDP.
           </p>
         </section>

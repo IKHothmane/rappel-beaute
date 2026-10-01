@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHero } from "@/components/www/PageHero";
+import { SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -43,14 +44,14 @@ export default function MentionsLegalesPage() {
           <h2 className="font-display text-xl font-semibold text-ink">Hébergeur</h2>
           <p className="mt-2">
             Vitrine V1.2 servie en local / SSG. L’hébergeur de production
-            (nom, adresse, contact) sera indiqué ici avant mise en ligne sur
-            www.rappelbeaute.ma.
+            (nom, adresse, contact) sera indiqué ici. Le site public est{" "}
+            {SITE.url.replace("https://", "")}.
           </p>
         </section>
         <section>
           <h2 className="font-display text-xl font-semibold text-ink">Contact</h2>
           <p className="mt-2">
-            contact@rappelbeaute.ma — voir aussi la page{" "}
+            {SITE.email} — voir aussi la page{" "}
             <a href="/contact/" className="text-primary">
               Contact
             </a>

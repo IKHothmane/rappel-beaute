@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     id: "page",
     title: "Page publique de votre institut",
-    text: "Chaque institut abonné peut publier sa page : nom, coordonnées et services. C'est la vitrine de l'institut, pas une place de marché.",
+    text: "Chaque institut dispose de sa propre page publique de réservation : nom, coordonnées et services. C'est la vitrine de l'institut, pas une place de marché.",
   },
   {
     id: "services",
@@ -120,6 +120,13 @@ export default function ReservationEnLignePage() {
             </section>
           </Reveal>
         ))}
+        <p className="text-sm text-ink/60">
+          La formule est présentée sur la{" "}
+          <Link href="/tarifs/" className="font-semibold text-primary hover:text-primary-dark">
+            page tarifs
+          </Link>
+          .
+        </p>
       </div>
 
       <section className="bg-institut py-14 text-center text-white sm:py-20">

@@ -54,8 +54,8 @@ export function SiteFooter() {
         <div className="lg:col-span-1">
           <BrandLogo height={72} />
           <p className="mt-4 max-w-[16rem] text-sm leading-relaxed text-ink/65">
-            Le logiciel des instituts de beauté au Maroc. Agenda, caisse, stock,
-            WhatsApp manuel.
+            Rappel Beauty est un logiciel de gestion pour les instituts de beauté au
+            Maroc.
           </p>
         </div>
 

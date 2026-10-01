@@ -73,9 +73,9 @@ export default function FonctionnalitesPage() {
               Toutes les fonctionnalités pour gérer votre institut
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
-              Toutes les fonctionnalités dont un institut de beauté au Maroc a besoin pour gérer
-              son activité : rendez-vous, clientes, équipe, services, stock, caisse et réservation
-              en ligne.
+              Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc.
+              Cette page décrit ce qu&apos;il permet de faire : rendez-vous, clientes, équipe,
+              services, stock, caisse, fidélité et réservation en ligne.
             </p>
             <Link
               href="/essai/"

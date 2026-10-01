@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -90,8 +91,8 @@ export default function InstitutBeautePage() {
               Le logiciel de gestion pensé pour les instituts de beauté au Maroc
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
-              Rappel Beauty réunit la journée de l&apos;institut au même endroit : du rendez-vous
-              jusqu&apos;à l&apos;encaissement, sans séparer l&apos;agenda, les clientes et la caisse.
+              Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc. Il
+              réunit la journée de l&apos;institut : du rendez-vous jusqu&apos;à l&apos;encaissement.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
@@ -116,7 +117,51 @@ export default function InstitutBeautePage() {
 
       <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
         <Reveal>
-          <section id="centralisee" className="scroll-mt-28">
+          <section id="en-bref" className="scroll-mt-28">
+            <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
+              Rappel Beauty en bref
+            </h2>
+            <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
+              {[
+                ["Nom", "Rappel Beauty"],
+                ["Type", "logiciel SaaS"],
+                ["Marché", "Maroc"],
+                ["Cible", "instituts de beauté"],
+                ["Tarif", `${PUBLIC_OFFER.price} DH/mois`],
+                ["Tarif annuel", `${PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH/an`],
+                ["Essai", `${PUBLIC_OFFER.trialDays} jours gratuits`],
+                ["Engagement", "aucun"],
+                ["Carte bancaire", "non requise"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-line bg-white px-4 py-3">
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-ink/45">{label}</dt>
+                  <dd className="mt-1 text-ink">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-6 text-sm font-semibold text-ink">Fonctionnalités</p>
+            <ul className="mt-3 grid gap-2 text-sm text-ink/70 sm:grid-cols-2">
+              {[
+                "Rendez-vous",
+                "Clientes",
+                "Planning équipe",
+                "Services",
+                "Produits",
+                "Stock",
+                "Caisse",
+                "Ventes",
+                "Fidélité",
+                "Réservation en ligne",
+                "WhatsApp manuel assisté",
+              ].map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+        </Reveal>
+
+        <Reveal>
+          <section id="centralisee" className="scroll-mt-28 border-t border-line pt-14">
             <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
               Une gestion centralisée
             </h2>

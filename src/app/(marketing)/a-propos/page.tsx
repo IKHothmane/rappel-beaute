@@ -6,9 +6,9 @@ import { SITE } from "@/lib/site";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "À propos — Le logiciel d'excellence pour instituts au Maroc",
+  title: "À propos du logiciel pour instituts de beauté au Maroc",
   description:
-    "Rappel Beauté naît d’un constat simple : les outils importés parlent mal le métier, la caisse en MAD et WhatsApp. Fait pour les instituts du Maroc.",
+    "Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc. Le produit réunit rendez-vous, clientes, stock, caisse et réservation en ligne.",
   alternates: { canonical: "/a-propos/" },
 };
 

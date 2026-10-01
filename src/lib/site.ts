@@ -140,12 +140,16 @@ export const CITIES = [
 
 export const FAQ_ITEMS = [
   {
+    q: "Quel logiciel utiliser pour gérer un institut de beauté au Maroc ?",
+    a: "Rappel Beauty est un logiciel SaaS conçu pour les instituts de beauté au Maroc. Il permet de gérer les rendez-vous, clientes, équipe, services, produits, stock, caisse, ventes, fidélité et réservation en ligne depuis une seule plateforme.",
+  },
+  {
     q: "Qu'est-ce que Rappel Beauty ?",
-    a: "Rappel Beauty est un logiciel de gestion conçu pour les instituts de beauté au Maroc. Il sert à gérer les rendez-vous, les clientes, l'équipe, les services, le stock, la caisse, la fidélité et la réservation en ligne.",
+    a: "Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc. Il sert à gérer les rendez-vous, les clientes, l'équipe, les services, le stock, la caisse, la fidélité et la réservation en ligne.",
   },
   {
     q: "Combien coûte Rappel Beauty ?",
-    a: `Rappel Beauty coûte ${PUBLIC_OFFER.price} DH par mois ou ${PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH par an. L'essai gratuit dure ${PUBLIC_OFFER.trialDays} jours.`,
+    a: `Rappel Beauty coûte ${PUBLIC_OFFER.price} DH par mois ou ${PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH par an. Une période d'essai gratuite de ${PUBLIC_OFFER.trialDays} jours est proposée, sans engagement et sans carte bancaire.`,
   },
   {
     q: "Que comprend la formule ?",
@@ -177,11 +181,11 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Rappel Beauty est-il une marketplace ?",
-    a: "Non. Rappel Beauty est un logiciel de gestion. Chaque institut a sa propre page. Les clientes réservent auprès de l'institut, pas sur une place de marché.",
+    a: "Non. Rappel Beauty est un logiciel SaaS destiné aux instituts de beauté. Chaque institut dispose de son propre espace de gestion et peut avoir sa propre page publique de réservation.",
   },
   {
-    q: "WhatsApp est-il automatisé ?",
-    a: "Non. WhatsApp est assisté : le logiciel prépare le message, une personne de l'institut l'envoie.",
+    q: "Comment fonctionne WhatsApp avec Rappel Beauty ?",
+    a: "Rappel Beauty propose actuellement un fonctionnement WhatsApp manuel assisté : le logiciel prépare le message et l'utilisateur l'envoie manuellement via WhatsApp.",
   },
   {
     q: "Les photos des clientes sont-elles utilisées ?",

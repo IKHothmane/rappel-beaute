@@ -42,7 +42,7 @@ const SECTIONS = [
   {
     id: "attente",
     title: "Liste d'attente",
-    text: "Quand une cliente souhaite un soin sans créneau libre, elle peut rejoindre la liste d'attente. Si une place se libère, l'institut prépare un message WhatsApp et l'envoie lui-même.",
+    text: "Quand une cliente souhaite un soin sans créneau libre, elle peut rejoindre la liste d'attente. Les rappels se préparent dans le logiciel. Si une place se libère, l'institut prépare un message WhatsApp et l'envoie lui-même.",
   },
   {
     id: "reservation",
@@ -107,6 +107,16 @@ export default function GestionRdvPage() {
             >
               <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">{section.title}</h2>
               <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{section.text}</p>
+              {section.id === "institut" ? (
+                <p className="mt-4">
+                  <Link
+                    href="/gestion-clientes/"
+                    className="text-sm font-semibold text-primary hover:text-primary-dark"
+                  >
+                    Découvrir la gestion des clientes
+                  </Link>
+                </p>
+              ) : null}
             </section>
           </Reveal>
         ))}

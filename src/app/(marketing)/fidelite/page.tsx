@@ -107,6 +107,16 @@ export default function FidelitePage() {
             >
               <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">{section.title}</h2>
               <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{section.text}</p>
+              {section.id === "rendez-vous" ? (
+                <p className="mt-4">
+                  <Link
+                    href="/reservation-en-ligne/"
+                    className="text-sm font-semibold text-primary hover:text-primary-dark"
+                  >
+                    Découvrir la réservation en ligne
+                  </Link>
+                </p>
+              ) : null}
               {section.id === "fiche" ? (
                 <p className="mt-4">
                   <Link

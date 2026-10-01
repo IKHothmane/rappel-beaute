@@ -13,3 +13,15 @@ export function adminError(message: string, status: number) {
 export function requireAdmin(request: NextRequest) {
   return requirePlatformSession(request);
 }
+
+export function requireSuperAdmin(request: NextRequest) {
+  const auth = requireAdmin(request);
+  if (!auth.ok) return auth;
+  if (auth.session?.role !== "SUPER_ADMIN") {
+    return {
+      ok: false as const,
+      response: adminError("Réservé au super administrateur.", 403),
+    };
+  }
+  return auth;
+}

@@ -8,6 +8,7 @@ import {
   CreditCard,
   LayoutDashboard,
   LifeBuoy,
+  Megaphone,
   MonitorDot,
   PanelLeftClose,
   PanelLeftOpen,
@@ -46,6 +47,10 @@ const NAV: NavGroup[] = [
   {
     title: "Finance SaaS",
     items: [{ href: "/billing/", label: "MRR & Revenus", icon: Activity }],
+  },
+  {
+    title: "Marketing",
+    items: [{ href: "/marketing/ads/", label: "Agent Ads IA", icon: Megaphone }],
   },
   {
     title: "Opérations",
@@ -106,6 +111,9 @@ function isActive(pathname: string, href: string) {
   if (href === "/billing/") {
     return path.startsWith("/billing");
   }
+  if (href === "/marketing/ads/") {
+    return path.startsWith("/marketing");
+  }
   if (href === "/subscriptions/") {
     return path.startsWith("/subscriptions");
   }
@@ -118,6 +126,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [role, setRole] = useState<string | null>(null);
   const [recentCount, setRecentCount] = useState(0);
   const [openTickets, setOpenTickets] = useState(0);
   const href = adminHref;
@@ -136,6 +145,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     fetchAdminSession().then((u) => {
       if (!u) return;
       setDisplayName(`${u.firstName ?? ""} ${u.lastName ?? ""}`.trim());
+      setRole(u.role ?? null);
     });
     fetchAdminAudit(20)
       .then((res) => setRecentCount(res.items.length))
@@ -162,6 +172,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       window.location.href = href("/login/");
     });
   }
+
+  const visibleNav = NAV.filter((group) => group.title !== "Marketing" || role === "SUPER_ADMIN");
 
   if (path.startsWith("/login")) {
     return <>{children}</>;
@@ -297,7 +309,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             )}
             aria-label="Navigation Super Admin"
           >
-            {NAV.map((group) => (
+            {visibleNav.map((group) => (
               <div key={group.title ?? "root"}>
                 {group.title && !collapsed ? (
                   <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-wider text-ink/40">
@@ -392,7 +404,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto p-3">
-            {NAV.map((group) => (
+            {visibleNav.map((group) => (
               <div key={group.title} className="mb-4">
                 <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-ink/40">
                   {group.title}

@@ -2360,3 +2360,96 @@ model AIUsagePeriod {
   @@unique([organizationId, periodKey])
   @@index([organizationId])
 }
+
+// ─── Agent Google Ads (SUPER_ADMIN uniquement) ───────────────────────────────
+
+enum AdsAgentMode {
+  OBSERVE
+  LIMITED
+  OPTIMIZE
+}
+
+enum AdsCampaignStatus {
+  ACTIVE
+  PAUSED
+  UNKNOWN
+}
+
+enum AdsDecisionKind {
+  ANALYZE
+  PAUSE
+  ACTIVATE
+  REDUCE_BUDGET
+  INCREASE_BUDGET
+  BLOCKED
+}
+
+/// Réglages uniques de l'agent d'acquisition. L'agent est inactif par défaut.
+model AdsAgentConfig {
+  id                    String       @id @default("default")
+  agentEnabled          Boolean      @default(false)
+  mode                  AdsAgentMode @default(OBSERVE)
+  maxDailyBudgetDh      Decimal      @default(100) @db.Decimal(10, 2)
+  maxMonthlyBudgetDh    Decimal      @default(3000) @db.Decimal(10, 2)
+  maxIncreasePercent    Int          @default(20)
+  maxDecreasePercent    Int          @default(30)
+  maxCostPerSignupDh    Decimal      @default(80) @db.Decimal(10, 2)
+  watchSpend            Boolean      @default(true)
+  watchConversions      Boolean      @default(true)
+  pauseOnBudget         Boolean      @default(true)
+  pauseOnHighCost       Boolean      @default(true)
+  reactivateWhenOk     Boolean      @default(true)
+  optimizeBudget        Boolean      @default(false)
+  autoPause             Boolean      @default(true)
+  autoReactivate        Boolean      @default(true)
+  allowCreateCampaign   Boolean      @default(false)
+  allowIncreaseOverCap  Boolean      @default(false)
+  allowBidChanges       Boolean      @default(false)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@index([mode])
+}
+
+/// Dernière photo des campagnes Google Ads. Aucun chiffre n'est inventé.
+model AdsCampaignSnapshot {
+  id                 String             @id @default(cuid())
+  externalId         String             @unique
+  name               String
+  status             AdsCampaignStatus  @default(UNKNOWN)
+  budgetResourceName String?
+  dailyBudgetDh      Decimal            @default(0) @db.Decimal(10, 2)
+  todaySpendDh       Decimal            @default(0) @db.Decimal(10, 2)
+  monthSpendDh       Decimal            @default(0) @db.Decimal(10, 2)
+  clicks             Int                @default(0)
+  impressions        Int                @default(0)
+  cpcDh              Decimal            @default(0) @db.Decimal(10, 2)
+  ctr                Decimal            @default(0) @db.Decimal(8, 4)
+  googleConversions  Decimal            @default(0) @db.Decimal(10, 2)
+  syncedAt           DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  decisions AdsAgentDecision[]
+
+  @@index([status])
+  @@index([syncedAt])
+}
+
+model AdsAgentDecision {
+  id          String             @id @default(cuid())
+  campaignId  String?
+  kind        AdsDecisionKind
+  summary     String
+  reason      String
+  executed    Boolean            @default(false)
+  blocked     Boolean            @default(false)
+  metrics     Json?
+  createdAt   DateTime           @default(now())
+
+  campaign AdsCampaignSnapshot? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([campaignId])
+  @@index([kind])
+}

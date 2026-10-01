@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/contact/" },
 };
 
+
 export default function ContactPage() {
   return (
     <>

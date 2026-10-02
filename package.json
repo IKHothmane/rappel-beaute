@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@prisma/client": "^7.10.0",
+    "bullmq": "^5.81.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",

@@ -40,6 +40,7 @@ type Probe = {
   status: ProbeStatus;
   latencyMs: number | null;
   detail?: string;
+  body?: Record<string, unknown>;
 };
 
 type RefreshSec = 15 | 30 | 60 | 0;
@@ -98,6 +99,33 @@ async function probeEndpoint(path: string): Promise<{
   }
 }
 
+function jobCountMap(body?: Record<string, unknown>) {
+  const counts = body?.counts;
+  if (!counts || typeof counts !== "object") return null;
+  const row = counts as Record<string, unknown>;
+  return {
+    waiting: Number(row.waiting ?? 0),
+    active: Number(row.active ?? 0),
+    completed: Number(row.completed ?? 0),
+    failed: Number(row.failed ?? 0),
+    delayed: Number(row.delayed ?? 0),
+  };
+}
+
+function jobCardStatus(probe?: Probe) {
+  const raw = String(probe?.body?.status ?? probe?.status ?? "unknown");
+  if (raw === "ok") return "ok";
+  if (raw === "degraded") return "degraded";
+  if (raw === "skipped") return "skipped";
+  if (raw === "error") return "down";
+  return "unknown";
+}
+
+function countText(value: number | undefined, status: string) {
+  if (status === "skipped" || status === "unknown" || value == null || Number.isNaN(value)) return "—";
+  return String(value);
+}
+
 function relativeAgo(iso: string | null, tick: number) {
   if (!iso) return "—";
   void tick;
@@ -134,11 +162,12 @@ export function AdminSystemHealthView() {
     setChecking(true);
     const pipelineStart = performance.now();
     try {
-      const [dash, healthRoot, db, redis] = await Promise.all([
+      const [dash, healthRoot, db, redis, jobs] = await Promise.all([
         fetchAdminDashboard().catch(() => null),
         probeEndpoint("/api/health/"),
         probeEndpoint("/api/health/db/"),
         probeEndpoint("/api/health/redis/"),
+        probeEndpoint("/api/health/jobs/"),
       ]);
 
       if (dash?.health) setHealth(dash.health);
@@ -186,10 +215,11 @@ export function AdminSystemHealthView() {
         {
           path: "/api/health/jobs/",
           label: "/api/health/jobs/",
-          protocol: "GET BullMQ (soft)",
-          status: "skipped",
-          latencyMs: null,
-          detail: "Stats files non exposées en V1",
+          protocol: "GET BullMQ",
+          status: jobs.status,
+          latencyMs: jobs.latencyMs,
+          detail: String(jobs.body?.status ?? ""),
+          body: jobs.body,
         },
       ];
       setProbes(nextProbes);
@@ -218,7 +248,10 @@ export function AdminSystemHealthView() {
     const h = health;
     const dbProbe = probes.find((p) => p.path.includes("/db/"));
     const redisProbe = probes.find((p) => p.path.includes("/redis/"));
+    const jobsProbe = probes.find((p) => p.path.includes("/jobs/"));
     const rootProbe = probes.find((p) => p.path === "/api/health/");
+    const jobCounts = jobCountMap(jobsProbe?.body);
+    const jobStatus = jobCardStatus(jobsProbe);
 
     return [
       {
@@ -285,18 +318,18 @@ export function AdminSystemHealthView() {
       {
         id: "jobs",
         title: "Background Jobs",
-        subtitle: "BullMQ / workers (soft)",
+        subtitle: "BullMQ / workers",
         icon: Settings2,
-        status: "skipped",
+        status: jobStatus,
         rows: [
-          ["WAIT", "—"],
-          ["ACTIVE", "—"],
-          ["DONE / FAIL", "Non exposé"],
+          ["WAIT", countText(jobCounts?.waiting, jobStatus)],
+          ["ACTIVE", countText(jobCounts?.active, jobStatus)],
+          ["DONE", countText(jobCounts?.completed, jobStatus)],
+          ["FAIL", countText(jobCounts?.failed, jobStatus)],
+          ["DELAYED", countText(jobCounts?.delayed, jobStatus)],
         ],
-        action: {
-          label: "Soft-degrade",
-          onClick: () => setToast("Stats BullMQ non disponibles en V1"),
-        },
+        action: { label: "Vérifier les files", onClick: () => void runChecks() },
+        footer: lastCheck ? `Dernière vérification : ${relativeAgo(lastCheck, tick)}` : "En attente de sonde",
       },
       {
         id: "email",
@@ -369,7 +402,7 @@ export function AdminSystemHealthView() {
         footer: "API Cloud Meta volontairement limitée",
       },
     ];
-  }, [health, probes, runChecks]);
+  }, [health, probes, runChecks, lastCheck, tick]);
 
   const coreOk = useMemo(() => {
     const statuses = [
@@ -612,6 +645,9 @@ export function AdminSystemHealthView() {
                     ))}
                   </div>
                 </div>
+                {s.footer && s.action ? (
+                  <p className="text-center text-[11px] text-ink/45">{s.footer}</p>
+                ) : null}
                 {s.action ? (
                   <button
                     type="button"
@@ -705,8 +741,11 @@ export function AdminSystemHealthView() {
                 <code className="font-mono font-semibold text-primary">
                   /api/health/*
                 </code>{" "}
-                + agrégat dashboard admin. Storage / jobs en soft-degrade tant
-                que les routes dédiées n&apos;existent pas.
+                + agrégat dashboard admin. Les files BullMQ sont lues par{" "}
+                <code className="font-mono font-semibold text-primary">
+                  /api/health/jobs/
+                </code>
+                .
               </p>
             </div>
           </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  type LucideIcon,
   Bell,
   Bolt,
   CheckCircle2,
@@ -32,6 +33,17 @@ import { fetchAdminDashboard } from "@/modules/admin/client";
 
 type Health = Awaited<ReturnType<typeof fetchAdminDashboard>>["health"];
 type ProbeStatus = "ok" | "error" | "skipped" | "unknown";
+
+type ServiceCard = {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: LucideIcon;
+  status: string;
+  rows: Array<[string, string]>;
+  action: { label: string; onClick: () => void } | null;
+  footer?: string;
+};
 
 type Probe = {
   path: string;
@@ -244,7 +256,7 @@ export function AdminSystemHealthView() {
     return () => window.clearInterval(t);
   }, [refreshSec, runChecks]);
 
-  const services = useMemo(() => {
+  const services = useMemo((): ServiceCard[] => {
     const h = health;
     const dbProbe = probes.find((p) => p.path.includes("/db/"));
     const redisProbe = probes.find((p) => p.path.includes("/redis/"));
@@ -328,7 +340,12 @@ export function AdminSystemHealthView() {
           ["FAIL", countText(jobCounts?.failed, jobStatus)],
           ["DELAYED", countText(jobCounts?.delayed, jobStatus)],
         ],
-        action: { label: "Vérifier les files", onClick: () => void runChecks() },
+        action: {
+          label: "Vérifier les files",
+          onClick: (): void => {
+            void runChecks();
+          },
+        },
         footer: lastCheck ? `Dernière vérification : ${relativeAgo(lastCheck, tick)}` : "En attente de sonde",
       },
       {

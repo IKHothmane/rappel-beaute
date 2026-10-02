@@ -78,6 +78,22 @@ const FAQ = [
 export default function HomePage() {
   return (
     <>
+      <link
+        rel="preload"
+        as="image"
+        href="/brand/hero-mobile.avif"
+        type="image/avif"
+        media="(max-width: 767px)"
+        fetchPriority="high"
+      />
+      <link
+        rel="preload"
+        as="image"
+        href="/brand/hero.avif"
+        type="image/avif"
+        media="(min-width: 768px)"
+        fetchPriority="high"
+      />
       <HomeHero />
 
       <section className="border-b border-line bg-white py-10 sm:py-14">

@@ -141,7 +141,7 @@ export const CITIES = [
 export const FAQ_ITEMS = [
   {
     q: "Quel logiciel utiliser pour gérer un institut de beauté au Maroc ?",
-    a: "Rappel Beauty est un logiciel SaaS conçu pour les instituts de beauté au Maroc. Il permet de gérer les rendez-vous, clientes, équipe, services, produits, stock, caisse, ventes, fidélité et réservation en ligne depuis une seule plateforme.",
+    a: "Rappel Beauty est un logiciel SaaS conçu pour les instituts de beauté au Maroc. Il permet de gérer les rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne depuis une seule plateforme.",
   },
   {
     q: "Qu'est-ce que Rappel Beauty ?",

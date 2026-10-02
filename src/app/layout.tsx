@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "Rappel Beauty est le logiciel de gestion pour instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, ventes, fidélité et réservation en ligne.",
+    "Rappel Beauty est le logiciel de gestion pour instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne.",
 
   robots: {
     index: true,
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     siteName: SITE.name,
     title: "Logiciel de gestion pour institut de beauté au Maroc | Rappel Beauty",
     description:
-      "Gérez vos rendez-vous, clientes, équipe, stock, caisse, ventes et réservation en ligne depuis une seule plateforme.",
+      "Gérez vos rendez-vous, clientes, équipe, stock, caisse et réservation en ligne depuis une seule plateforme.",
     images: [
       {
         url: "/brand/logo.png",
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Logiciel de gestion pour institut de beauté au Maroc | Rappel Beauty",
     description:
-      "Gérez vos rendez-vous, clientes, équipe, stock, caisse, ventes et réservation en ligne.",
+      "Gérez vos rendez-vous, clientes, équipe, stock, caisse et réservation en ligne.",
     images: ["/brand/logo.png"],
   },
 };

@@ -44,7 +44,7 @@ export function getOrganizationStructuredData() {
         operatingSystem: "Web",
         url: `${SITE.url}/`,
         description:
-          "Logiciel de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, ventes, fidélité et réservation en ligne.",
+          "Logiciel de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne.",
         offers: [
           {
             "@type": "Offer",

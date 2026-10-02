@@ -15,6 +15,8 @@ export type AdsRuleConfig = {
   maxIncreasePercent: number;
   maxDecreasePercent: number;
   maxCostPerSignupDh: number;
+  watchSpend: boolean;
+  watchConversions: boolean;
   pauseOnBudget: boolean;
   pauseOnHighCost: boolean;
   reactivateWhenOk: boolean;
@@ -52,7 +54,7 @@ function hold(
   summary: string,
   reason: string,
   kind: AdsDecisionKind = "ANALYZE",
-  decision = "Aucune écriture Google Ads",
+  decision = "Aucune écriture Meta Ads",
 ): AdsRuleDecision {
   return { kind, execute: false, blocked: true, reason, summary, decision };
 }
@@ -203,7 +205,7 @@ function gate(
     const motive = !input.allowed && config.agentEnabled && config.mode !== "OBSERVE"
       ? `${input.blockReason} ${input.reason}`
       : input.reason;
-    return hold(input.summary, motive, input.kind, "Aucune écriture Google Ads");
+    return hold(input.summary, motive, input.kind, "Aucune écriture Meta Ads");
   }
   return {
     kind: input.kind,
@@ -218,13 +220,9 @@ function gate(
 
 function blockReason(config: AdsRuleConfig, action: "pause" | "reduce" | "increase" | "activate") {
   if (!config.agentEnabled) return "Agent en pause.";
-  if (config.mode === "OBSERVE") return "Mode observation : aucune modification envoyée à Google Ads.";
+  if (config.mode === "OBSERVE") return "Mode observation : aucune modification envoyée à Meta Ads.";
   if (action === "pause" && !config.autoPause) return "La pause automatique est désactivée.";
   if (action === "activate" && !config.autoReactivate) return "La réactivation automatique est désactivée.";
-  if (action === "reduce" && config.mode === "OBSERVE") return "Mode observation.";
-  if (action === "increase" && config.mode === "OBSERVE") {
-    return "Mode observation : aucune modification envoyée à Google Ads.";
-  }
   return "Action non autorisée par les règles.";
 }
 

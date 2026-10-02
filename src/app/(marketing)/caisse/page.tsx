@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
@@ -71,7 +72,7 @@ export default function CaissePage() {
               Caisse pour instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Gérez votre caisse et vos ventes
+              Caisse pour institut de beauté
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
               Encaissements, paiements, dépenses, factures et ventes de produits, dans le logiciel
@@ -122,6 +123,21 @@ export default function CaissePage() {
         ))}
       </div>
 
+      <SeoCloser
+        problem="Le soin est noté sur l'agenda, le produit vendu sur un ticket à part, et la dépense du jour sur un papier. Le chiffre de la journée ne se reconstitue pas."
+        solution="La caisse de Rappel Beauty réunit encaissements, ventes, dépenses et factures de l'institut. Les clientes paient à l'institut, pas en ligne."
+        useCase="En fin de journée, la responsable clôture la caisse : prestations encaissées, produits vendus et dépenses en espèces sont dans la même session."
+        faqs={[
+          {
+            q: "Les clientes paient-elles sur le site ?",
+            a: "Non. Le règlement se fait à l'institut : espèces, carte, virement, chèque ou carte cadeau.",
+          },
+          {
+            q: "Une vente de produit met-elle à jour le stock ?",
+            a: "Oui. La quantité vendue au comptoir est retirée du stock.",
+          },
+        ]}
+      />
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
@@ -71,7 +72,7 @@ export default function GestionStockPage() {
               Stock pour instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Gérez vos produits et votre stock
+              Gestion de stock pour institut de beauté
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
               Produits, fournisseurs, achats, mouvements et alertes, dans le logiciel de
@@ -122,6 +123,21 @@ export default function GestionStockPage() {
         ))}
       </div>
 
+      <SeoCloser
+        problem="Les crèmes partent en cabine et au comptoir. Le soir, le stock du fichier ne correspond plus à l'étagère, et personne ne sait quelle prestation a consommé le produit."
+        solution="Chaque mouvement est écrit : achat, usage en soin, vente, perte. Le niveau affiché se recalcule. Une vente au comptoir retire la quantité."
+        useCase="Après un soin du visage, la quantité utilisée est rattachée à la prestation. Le flacon suivant est commandé quand le seuil d'alerte est atteint, pas quand l'étagère est vide."
+        faqs={[
+          {
+            q: "Le stock se met-il à jour quand on vend un produit ?",
+            a: "Oui. La vente au point de vente retire la quantité du stock.",
+          },
+          {
+            q: "Peut-on suivre ce qui est utilisé en cabine ?",
+            a: "Oui. L'usage pendant une prestation est un mouvement, distinct de la vente au comptoir.",
+          },
+        ]}
+      />
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">

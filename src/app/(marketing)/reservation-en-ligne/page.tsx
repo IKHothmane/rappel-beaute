@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
@@ -71,7 +72,7 @@ export default function ReservationEnLignePage() {
               Réservation en ligne pour votre institut
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Permettez à vos clientes de réserver en ligne
+              Réservation en ligne pour institut de beauté
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
               Une page publique pour votre institut : services, tarifs, disponibilités et prise de
@@ -129,6 +130,21 @@ export default function ReservationEnLignePage() {
         </p>
       </div>
 
+      <SeoCloser
+        problem="Les demandes arrivent par WhatsApp le soir, les créneaux se recouvrent, et la cliente ne sait pas si le rendez-vous est vraiment noté."
+        solution="Chaque institut a sa page : services, durées et créneaux issus du planning. La réservation rejoint le même agenda. Ce n'est pas une place de marché, et le paiement reste à l'institut."
+        useCase="Une cliente choisit un soin et un horaire libre le dimanche soir. Le lundi, le rendez-vous est déjà dans l'agenda de l'employée, et le créneau n'est plus proposé."
+        faqs={[
+          {
+            q: "Est-ce une marketplace de salons ?",
+            a: "Non. La page publique appartient à l'institut. Les clientes réservent auprès de lui.",
+          },
+          {
+            q: "Peut-on payer le rendez-vous en ligne ?",
+            a: "Non. Les clientes paient directement à l'institut.",
+          },
+        ]}
+      />
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">

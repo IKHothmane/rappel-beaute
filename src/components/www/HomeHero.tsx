@@ -5,16 +5,26 @@ import { motion } from "framer-motion";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-export function HomeHero({ imageSrc }: { imageSrc: string }) {
+export function HomeHero() {
   return (
     <section className="relative flex min-h-[520px] items-center justify-center overflow-hidden bg-[#FFF8FB] text-ink sm:min-h-[640px] lg:min-h-[720px]">
       <div className="absolute inset-0 z-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          className="h-full w-full animate-kenburns object-cover object-center"
-          src={imageSrc}
-        />
+        <picture className="absolute inset-0 block h-full w-full">
+          <source media="(max-width: 767px)" srcSet="/brand/hero-mobile.avif" type="image/avif" />
+          <source media="(max-width: 767px)" srcSet="/brand/hero-mobile.webp" type="image/webp" />
+          <source srcSet="/brand/hero.avif" type="image/avif" />
+          <source srcSet="/brand/hero.webp" type="image/webp" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt=""
+            width={1600}
+            height={640}
+            className="h-full w-full animate-kenburns object-cover object-center"
+            src="/brand/hero.webp"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-r from-[#FFF8FB]/85 via-[#FFF8FB]/40 to-transparent" />
       </div>
 

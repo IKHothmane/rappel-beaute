@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
@@ -71,7 +72,7 @@ export default function GestionRdvPage() {
               Agenda pour instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Gérez les rendez-vous de votre institut simplement
+              Logiciel de rendez-vous pour institut de beauté
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
               Un agenda pour les rendez-vous, les disponibilités de l&apos;équipe, la liste
@@ -107,6 +108,16 @@ export default function GestionRdvPage() {
             >
               <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">{section.title}</h2>
               <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{section.text}</p>
+              {section.id === "reservation" ? (
+                <p className="mt-4">
+                  <Link
+                    href="/reservation-en-ligne/"
+                    className="text-sm font-semibold text-primary hover:text-primary-dark"
+                  >
+                    Découvrir la réservation en ligne
+                  </Link>
+                </p>
+              ) : null}
               {section.id === "institut" ? (
                 <p className="mt-4">
                   <Link
@@ -135,6 +146,21 @@ export default function GestionRdvPage() {
         </p>
       </div>
 
+      <SeoCloser
+        problem="Deux personnes prennent le même créneau, une cabine est déjà occupée, et le rappel part trop tard. Le cahier ne refuse pas le chevauchement."
+        solution="L'agenda de Rappel Beauty refuse deux rendez-vous sur la même employée ou la même cabine. Les créneaux en ligne viennent de ce planning."
+        useCase="Le samedi, l'accueil et la page de réservation proposent le même horaire. Quand une cliente confirme en ligne, le créneau disparaît pour l'autre."
+        faqs={[
+          {
+            q: "Le logiciel empêche-t-il vraiment la double réservation ?",
+            a: "Oui. Deux rendez-vous sur la même personne ou la même ressource, au même moment, ne peuvent pas être enregistrés.",
+          },
+          {
+            q: "Les rappels partent-ils tout seuls ?",
+            a: "Non. WhatsApp est assisté : le message est préparé, une personne de l'institut l'envoie.",
+          },
+        ]}
+      />
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">

@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest) {
         metrics: journalMetrics(
           { ...settings, agentEnabled: false },
           {
-            decision: "Aucune écriture Google Ads",
+            decision: "Aucune écriture Meta Ads",
             reason: "Pause d'urgence. Toute action automatique est arrêtée.",
             executed: false,
             todaySpendDh: 0,

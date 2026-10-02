@@ -121,7 +121,7 @@ export function AdminAdsAgentView() {
   if (!data || !form) {
     return (
       <AdminPageHeader
-        title="Google Ads · Agent IA"
+        title="Meta Ads · Agent IA"
         description={error ?? "Chargement de l'agent d'acquisition."}
       />
     );
@@ -131,7 +131,7 @@ export function AdminAdsAgentView() {
   return (
     <>
       <AdminPageHeader
-        title="Google Ads · Agent IA"
+        title="Meta Ads · Agent IA"
         description="Outil interne d'acquisition. Les instituts ne voient pas cette page. L'agent applique uniquement les règles ci-dessous."
         action={
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -169,8 +169,8 @@ export function AdminAdsAgentView() {
           </p>
           <p className="text-sm text-ink/60">
             {data.connection.connected
-              ? `Compte Google Ads ${data.connection.customerId}`
-              : "Google Ads non connecté : 0 dépense, aucune campagne inventée."}
+              ? `Compte Meta Ads ${data.connection.customerId} · Facebook et Instagram`
+              : "Meta Ads non connecté : 0 dépense, aucune campagne inventée."}
           </p>
         </div>
         <fieldset className="mt-4 grid gap-2 text-sm">
@@ -186,7 +186,7 @@ export function AdminAdsAgentView() {
             name="ads-mode"
             checked={active && form.mode === "OBSERVE"}
             label="Observation"
-            hint="Lecture, analyse, journal et audit. Aucune écriture Google Ads."
+            hint="Lecture, analyse, journal et audit. Aucune écriture Meta Ads."
             onSelect={() => save({ agentEnabled: true, mode: "OBSERVE" })}
           />
           <ModeChoice
@@ -224,7 +224,7 @@ export function AdminAdsAgentView() {
         </div>
         <p className="mt-3 text-xs leading-relaxed text-ink/55">
           Avec une seule campagne, le coût par inscription utilise les instituts créés aujourd&apos;hui dans Rappel Beauty.
-          Avec plusieurs campagnes, les règles utilisent les conversions renvoyées par Google Ads.
+          Avec plusieurs campagnes, les règles utilisent les conversions renvoyées par Meta Ads. Les écritures restent bloquées tant que les chiffres réels ne sont pas validés.
         </p>
       </section>
 
@@ -236,7 +236,7 @@ export function AdminAdsAgentView() {
               <th className="py-2 pr-3">Statut</th>
               <th className="py-2 pr-3">Budget / jour</th>
               <th className="py-2 pr-3">Dépense jour</th>
-              <th className="py-2 pr-3">Conversions Google</th>
+              <th className="py-2 pr-3">Conversions Meta</th>
               <th className="py-2">Action</th>
             </tr>
           </thead>
@@ -244,7 +244,7 @@ export function AdminAdsAgentView() {
             {data.metrics.campaigns.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-6 text-ink/55">
-                  Aucune campagne. La synchronisation reste vide tant que le compte Google Ads n&apos;est pas autorisé.
+                  Aucune campagne. La synchronisation reste vide tant que le compte Meta Ads n&apos;est pas autorisé.
                 </td>
               </tr>
             ) : (
@@ -351,7 +351,7 @@ function JournalEntry({ item }: { item: AdsDecisionRow }) {
   const mode = text(metrics?.mode) || "Observation";
   const decision = text(metrics?.decision) || item.summary;
   const motive = text(metrics?.motive) || item.reason;
-  const google = text(metrics?.googleAds);
+  const meta = text(metrics?.metaAds) || text(metrics?.googleAds);
   const spend = num(metrics?.todaySpendDh);
   const signups = num(metrics?.signups);
   const cpa = metrics?.cpa == null ? null : num(metrics.cpa);
@@ -387,11 +387,11 @@ function JournalEntry({ item }: { item: AdsDecisionRow }) {
         <br />
         {motive}
       </p>
-      {google ? (
+      {meta ? (
         <p className="mt-2 text-ink">
-          Google Ads :
+          Meta Ads :
           <br />
-          {google}
+          {meta}
         </p>
       ) : null}
     </li>

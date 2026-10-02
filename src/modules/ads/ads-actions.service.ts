@@ -1,16 +1,13 @@
-import {
-  mutateCampaignBudget,
-  mutateCampaignStatus,
-} from "@/modules/ads/google-ads.client";
+import { mutateCampaignBudget, mutateCampaignStatus } from "@/modules/ads/meta-ads.client";
 import { setAdsCampaignBudget, setAdsCampaignStatus } from "@/modules/ads/ads-store";
 
-export async function pauseGoogleCampaign(externalId: string) {
+export async function pauseMetaCampaign(externalId: string) {
   await mutateCampaignStatus(externalId, "PAUSED");
   await setAdsCampaignStatus(externalId, "PAUSED");
 }
 
-export async function activateGoogleCampaign(externalId: string) {
-  await mutateCampaignStatus(externalId, "ENABLED");
+export async function activateMetaCampaign(externalId: string) {
+  await mutateCampaignStatus(externalId, "ACTIVE");
   await setAdsCampaignStatus(externalId, "ACTIVE");
 }
 
@@ -20,7 +17,7 @@ export async function reduceOrRaiseBudget(input: {
   nextBudgetDh: number;
 }) {
   if (!input.budgetResourceName) {
-    throw new Error("Budget Google Ads introuvable pour cette campagne.");
+    throw new Error("Budget journalier Meta introuvable pour cette campagne.");
   }
   await mutateCampaignBudget(input.budgetResourceName, input.nextBudgetDh);
   await setAdsCampaignBudget(input.externalId, input.nextBudgetDh);

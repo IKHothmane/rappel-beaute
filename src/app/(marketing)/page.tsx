@@ -8,13 +8,11 @@ import { PUBLIC_OFFER, SITE } from "@/lib/site";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Logiciel institut de beauté au Maroc",
+  title: "Logiciel de gestion pour institut de beauté au Maroc",
   description:
     "Rappel Beauty est le logiciel de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, ventes et réservation en ligne. Essai gratuit 7 jours.",
   alternates: { canonical: "/" },
 };
-
-const HERO_IMG = "/brand/hero.png";
 
 const IMG_NAIL =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuD0fvsDZQJS45sn9q57hA70EzY7OTfqUwQK_SXkzaaGePQ1dolTSzXOzbhXFC1s0KLBoecVlYqHWKxB_dra0hRbprTMVZahTn-RKhrjB5XBD4F_4mwmGg_CD1hBhiEmSuC-UO52SQaMH7LGuoxEvKkR5WoPy_VM6ICX4kuz8Mpdmsieg2gzGYxuscwYM5FWPQIz4lckMtHKXZqFndlcUFkF3Fb5qlUG8gQLhZRjPwgEe3ehZfGqq648Dg";
@@ -80,7 +78,7 @@ const FAQ = [
 export default function HomePage() {
   return (
     <>
-      <HomeHero imageSrc={HERO_IMG} />
+      <HomeHero />
 
       <section className="border-b border-line bg-white py-10 sm:py-14">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">

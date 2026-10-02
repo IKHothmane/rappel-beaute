@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 import { PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
@@ -216,6 +217,11 @@ export default function TarifsPage() {
         </div>
       </section>
 
+      <SeoCloser
+        problem="Le prix d'un logiciel d'institut est souvent découpé en options : l'agenda d'un côté, la caisse de l'autre, le stock en supplément."
+        solution="Rappel Beauty a une formule : le logiciel de gestion complet, en dirhams, avec un essai de 7 jours sans carte bancaire."
+        useCase="L'institut compare le mois et l'année, démarre l'essai, puis décide sans engagement une fois la journée réelle passée dans l'outil."
+      />
       <section className="border-t border-line bg-paper px-4 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-3xl">
           <h2 className="text-center font-display text-2xl font-light text-ink sm:text-3xl">

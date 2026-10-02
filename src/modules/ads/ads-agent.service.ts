@@ -1,9 +1,9 @@
 import { recordAdsDecision } from "@/modules/ads/ads-audit.service";
-import { activateGoogleCampaign, pauseGoogleCampaign, reduceOrRaiseBudget } from "@/modules/ads/ads-actions.service";
+import { activateMetaCampaign, pauseMetaCampaign, reduceOrRaiseBudget } from "@/modules/ads/ads-actions.service";
 import { getAdsMetrics } from "@/modules/ads/ads-metrics.service";
 import { decideAdsAction } from "@/modules/ads/ads-rules.service";
 import { getAdsConfig, listAdsDecisions } from "@/modules/ads/ads-store";
-import { adsConnectionStatus, syncGoogleAdsCampaigns } from "@/modules/ads/google-ads.service";
+import { adsConnectionStatus, syncMetaAdsCampaigns } from "@/modules/ads/meta-ads.service";
 
 type Actor = { platformUserId?: string | null; platformUserName?: string | null };
 
@@ -33,7 +33,7 @@ export function journalMetrics(
     dailyLimit: config.maxDailyBudgetDh,
     dailyBudgetDh: input.dailyBudgetDh,
     nextBudgetDh: input.nextBudgetDh ?? null,
-    googleAds: input.executed ? "ACTION EFFECTUÉE" : "AUCUNE ÉCRITURE",
+    metaAds: input.executed ? "ACTION EFFECTUÉE" : "AUCUNE ÉCRITURE",
   };
 }
 
@@ -51,9 +51,9 @@ export async function runAdsAgent(actor: Actor, opts?: { sync?: boolean }) {
   const config = await getAdsConfig();
   if (opts?.sync) {
     if (!adsConnectionStatus().connected) {
-      throw new Error("Google Ads n'est pas connecté. Renseignez les variables d'environnement du serveur.");
+      throw new Error("Meta Ads n'est pas connecté. Renseignez le jeton et le compte publicitaire sur le serveur.");
     }
-    await syncGoogleAdsCampaigns();
+    await syncMetaAdsCampaigns();
   }
   const metrics = await getAdsMetrics();
   if (metrics.campaigns.length === 0) {
@@ -62,12 +62,12 @@ export async function runAdsAgent(actor: Actor, opts?: { sync?: boolean }) {
       campaignId: null,
       kind: "ANALYZE",
       summary: "Agent Ads IA",
-      reason: "Aucune campagne synchronisée. Les chiffres Google Ads ne sont pas inventés.",
+      reason: "Aucune campagne synchronisée. Les chiffres Meta Ads ne sont pas inventés.",
       executed: false,
       blocked: false,
       metrics: journalMetrics(config, {
-        decision: "Aucune écriture Google Ads",
-        reason: "Aucune campagne synchronisée. Les chiffres Google Ads ne sont pas inventés.",
+        decision: "Aucune écriture Meta Ads",
+        reason: "Aucune campagne synchronisée. Les chiffres Meta Ads ne sont pas inventés.",
         executed: false,
         todaySpendDh: 0,
         signups: metrics.signupsToday,
@@ -94,8 +94,8 @@ export async function runAdsAgent(actor: Actor, opts?: { sync?: boolean }) {
     const mayWrite = config.agentEnabled && config.mode !== "OBSERVE";
     if (decision.execute && mayWrite) {
       try {
-        if (decision.kind === "PAUSE") await pauseGoogleCampaign(campaign.externalId);
-        else if (decision.kind === "ACTIVATE") await activateGoogleCampaign(campaign.externalId);
+        if (decision.kind === "PAUSE") await pauseMetaCampaign(campaign.externalId);
+        else if (decision.kind === "ACTIVATE") await activateMetaCampaign(campaign.externalId);
         else if (
           (decision.kind === "REDUCE_BUDGET" || decision.kind === "INCREASE_BUDGET") &&
           decision.nextBudgetDh != null
@@ -109,8 +109,8 @@ export async function runAdsAgent(actor: Actor, opts?: { sync?: boolean }) {
         executed = true;
       } catch (error) {
         executed = false;
-        decisionText = "Aucune écriture Google Ads";
-        reason = `${decision.reason} Exécution refusée : ${error instanceof Error ? error.message : "erreur Google Ads"}.`;
+        decisionText = "Aucune écriture Meta Ads";
+        reason = `${decision.reason} Exécution refusée : ${error instanceof Error ? error.message : "erreur Meta Ads"}.`;
       }
     }
     await recordAdsDecision({

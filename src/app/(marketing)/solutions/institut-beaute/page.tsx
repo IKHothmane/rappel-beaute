@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 import { PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
@@ -250,6 +251,21 @@ export default function InstitutBeautePage() {
         </Reveal>
       </div>
 
+      <SeoCloser
+        problem="Un institut au Maroc enchaîne cabines, protocoles et passage en caisse. Quand chaque tâche a son outil, la journée ne se lit qu'à la fermeture."
+        solution="Rappel Beauty est le logiciel de gestion de l'institut : agenda, clientes, stock, caisse, fidélité et page de réservation, en dirhams."
+        useCase="L'institut publie sa page, reçoit une réservation, réalise le soin, encaisse au comptoir et met à jour la fiche, sans recopier le rendez-vous ailleurs."
+        faqs={[
+          {
+            q: "Rappel Beauty est-il fait pour le Maroc ?",
+            a: "Oui. Les prix et la caisse sont en dirhams, le règlement se fait à l'institut, et chaque institut a sa propre page.",
+          },
+          {
+            q: "Est-ce une place de marché ?",
+            a: "Non. C'est le logiciel utilisé par l'institut. Les clientes paient l'institut, pas Rappel Beauty.",
+          },
+        ]}
+      />
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">

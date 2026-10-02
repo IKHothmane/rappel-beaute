@@ -10,15 +10,14 @@ type BrandLogoProps = {
   priority?: boolean;
 };
 
-/** Logo officiel — /public/brand/logo.png */
+/** Logo officiel — /public/brand/logo.png (512×256) */
 export function BrandLogo({
   height = 48,
   className = "",
   href = "/",
   priority = false,
 }: BrandLogoProps) {
-  // Ratio approximatif du lockup carré (logo + textes)
-  const width = Math.round(height * 1.05);
+  const width = height * 2;
 
   const img = (
     <Image
@@ -26,6 +25,7 @@ export function BrandLogo({
       alt="Rappel Beauty — Gérez, réservez, développez"
       width={width}
       height={height}
+      sizes={`${width}px`}
       className={`h-auto w-auto object-contain ${className}`}
       style={{ height, width: "auto" }}
       priority={priority}

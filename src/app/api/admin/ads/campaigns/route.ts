@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireSuperAdmin } from "@/lib/admin/api-helpers";
 import { recordAdsDecision } from "@/modules/ads/ads-audit.service";
-import { activateGoogleCampaign, pauseGoogleCampaign } from "@/modules/ads/ads-actions.service";
+import { activateMetaCampaign, pauseMetaCampaign } from "@/modules/ads/ads-actions.service";
 import { listAdsCampaigns } from "@/modules/ads/ads-store";
 
 export async function POST(request: NextRequest) {
@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
     }
     const campaign = (await listAdsCampaigns()).find((item) => item.externalId === externalId);
     if (!campaign) return adminError("Campagne introuvable.", 404);
-    if (body.action === "PAUSE") await pauseGoogleCampaign(externalId);
-    else await activateGoogleCampaign(externalId);
+    if (body.action === "PAUSE") await pauseMetaCampaign(externalId);
+    else await activateMetaCampaign(externalId);
     await recordAdsDecision({
       platformUserId: auth.session?.id,
       platformUserName: `${auth.session?.firstName ?? ""} ${auth.session?.lastName ?? ""}`.trim(),
@@ -31,6 +31,6 @@ export async function POST(request: NextRequest) {
     return adminJson({ ok: true });
   } catch (error) {
     console.error("[POST /api/admin/ads/campaigns]", error);
-    return adminError(error instanceof Error ? error.message : "Action Google Ads impossible.", 500);
+    return adminError(error instanceof Error ? error.message : "Action Meta Ads impossible.", 500);
   }
 }

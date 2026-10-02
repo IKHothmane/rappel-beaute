@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
@@ -71,7 +72,7 @@ export default function GestionClientesPage() {
               Clientes pour instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Centralisez la gestion de vos clientes
+              Gestion des clientes d&apos;un institut de beauté
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
               Fiches, historique de rendez-vous, prestations, fidélité et suivi de la relation,
@@ -132,6 +133,21 @@ export default function GestionClientesPage() {
         ))}
       </div>
 
+      <SeoCloser
+        problem="Le numéro est dans un téléphone, le dernier soin dans un cahier, et la préférence de la cliente dans une conversation WhatsApp. À l'accueil, on recommence l'histoire."
+        solution="La fiche réunit identité, rendez-vous, notes, fidélité et accords de contact. Aucune photo cliente n'est stockée. La réservation en ligne alimente la même fiche."
+        useCase="Une cliente revient trois mois plus tard. L'accueil retrouve son téléphone, le dernier protocole et son solde de points avant de proposer le créneau."
+        faqs={[
+          {
+            q: "Les photos des clientes sont-elles enregistrées ?",
+            a: "Non. En V1, la fiche reste textuelle : identité, historique, notes et fidélité.",
+          },
+          {
+            q: "Une réservation en ligne crée-t-elle une autre liste de clientes ?",
+            a: "Non. Le rendez-vous pris en ligne est rattaché à la fiche de l'institut.",
+          },
+        ]}
+      />
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">

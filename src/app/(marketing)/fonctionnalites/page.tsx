@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
@@ -70,7 +71,7 @@ export default function FonctionnalitesPage() {
               Logiciel pour instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Toutes les fonctionnalités pour gérer votre institut
+              Logiciel de gestion pour institut de beauté
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
               Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc.
@@ -365,6 +366,11 @@ export default function FonctionnalitesPage() {
         </Reveal>
       </div>
 
+      <SeoCloser
+        problem="L'agenda est dans un cahier, les clientes dans WhatsApp, le stock dans un fichier et la caisse dans un autre outil. Le soir, personne ne retrouve la même journée."
+        solution="Rappel Beauty réunit rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne. C'est le logiciel de l'institut, pas une place de marché."
+        useCase="Une patronne à Casablanca ouvre le planning du matin, voit la cabine déjà prise, encaisse le soin à la fin et retrouve la fiche de la cliente sans changer d'application."
+      />
       <section className="border-t border-line bg-primary-light/20 py-14 sm:py-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <h2 className="text-center font-display text-2xl font-light text-ink sm:text-3xl">

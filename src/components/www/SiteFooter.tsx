@@ -48,7 +48,7 @@ const COLS = [
 export function SiteFooter() {
   return (
     <footer
-      className="mt-8 border-t border-line bg-[#FFF8FB] bg-[url('/brand/footer.png')] bg-cover bg-center bg-no-repeat"
+      className="mt-8 border-t border-line bg-[#FFF8FB] bg-[url('/brand/footer.webp')] bg-cover bg-center bg-no-repeat"
     >
       <div className="container-rb grid gap-10 py-14 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <div className="lg:col-span-1">

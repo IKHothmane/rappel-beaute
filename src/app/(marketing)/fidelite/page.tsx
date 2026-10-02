@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
@@ -71,7 +72,7 @@ export default function FidelitePage() {
               Fidélité pour instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Fidélisez vos clientes simplement
+              Fidélisation des clientes d&apos;un institut de beauté
             </h1>
             <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
               Un programme de points lié aux paiements, aux fiches clientes et aux ventes de
@@ -142,6 +143,21 @@ export default function FidelitePage() {
         ))}
       </div>
 
+      <SeoCloser
+        problem="Les cartes papier se perdent, et les points sont parfois donnés pour un rendez-vous qui n'a jamais été payé."
+        solution="Le programme suit les paiements enregistrés. Une annulation ou un absent ne crée pas de points tant qu'aucun règlement n'est passé. Le solde est sur la fiche."
+        useCase="Après trois soins encaissés, la cliente atteint le niveau prévu par l'institut et utilise ses points pour une remise, visible dans l'historique."
+        faqs={[
+          {
+            q: "Un rendez-vous annulé donne-t-il des points ?",
+            a: "Non. Les points suivent un paiement enregistré, pas le seul fait d'avoir pris rendez-vous.",
+          },
+          {
+            q: "Où voit-on le solde ?",
+            a: "Sur la fiche cliente, avec le niveau et les derniers mouvements.",
+          },
+        ]}
+      />
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">

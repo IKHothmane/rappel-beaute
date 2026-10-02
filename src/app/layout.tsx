@@ -3,6 +3,8 @@ import { Fraunces, IBM_Plex_Mono, Inter } from "next/font/google";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
+const GTM_ID = "GTM-W2GGKNPG";
+
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
@@ -26,7 +28,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
 
   title: {
-    default: "Logiciel institut de beauté au Maroc | Rappel Beauty",
+    default: "Logiciel de gestion pour institut de beauté au Maroc | Rappel Beauty",
     template: "%s · Rappel Beauty",
   },
 
@@ -46,10 +48,7 @@ export const metadata: Metadata = {
   },
 
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/brand/logo.png", type: "image/png" },
-    ],
+    icon: [{ url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" }],
     apple: [{ url: "/brand/logo.png", type: "image/png" }],
     shortcut: ["/favicon.ico"],
   },
@@ -59,7 +58,7 @@ export const metadata: Metadata = {
     locale: "fr_MA",
     url: SITE.url,
     siteName: SITE.name,
-    title: "Logiciel institut de beauté au Maroc | Rappel Beauty",
+    title: "Logiciel de gestion pour institut de beauté au Maroc | Rappel Beauty",
     description:
       "Gérez vos rendez-vous, clientes, équipe, stock, caisse, ventes et réservation en ligne depuis une seule plateforme.",
     images: [
@@ -72,7 +71,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Logiciel institut de beauté au Maroc | Rappel Beauty",
+    title: "Logiciel de gestion pour institut de beauté au Maroc | Rappel Beauty",
     description:
       "Gérez vos rendez-vous, clientes, équipe, stock, caisse, ventes et réservation en ligne.",
     images: ["/brand/logo.png"],
@@ -89,7 +88,28 @@ export default function RootLayout({
       lang="fr-MA"
       className={`${fraunces.variable} ${inter.variable} ${ibmPlexMono.variable}`}
     >
-      <body className="min-h-screen font-sans">{children}</body>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${GTM_ID}');`,
+          }}
+        />
+      </head>
+      <body className="min-h-screen font-sans">
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
+        {children}
+      </body>
     </html>
   );
 }

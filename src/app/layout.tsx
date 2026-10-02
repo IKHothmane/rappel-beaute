@@ -3,7 +3,8 @@ import { Fraunces, IBM_Plex_Mono, Inter } from "next/font/google";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
-const GTM_ID = "GTM-W2GGKNPG";
+const GTM_ID = "GTM-WZGGKNPG";
+const GA_ID = "G-SNZEX2P7KK";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -89,6 +90,15 @@ export default function RootLayout({
       className={`${fraunces.variable} ${inter.variable} ${ibmPlexMono.variable}`}
     >
       <head>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_ID}');`,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

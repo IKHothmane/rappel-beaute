@@ -125,6 +125,8 @@ export function LoyaltyPageView() {
   const [goldMin, setGoldMin] = useState("3000");
   const [vipMin, setVipMin] = useState("6000");
   const [programActive, setProgramActive] = useState(true);
+  const [visitsPerReward, setVisitsPerReward] = useState("10");
+  const [rewardLabelConfig, setRewardLabelConfig] = useState("Récompense");
 
   const [rewardName, setRewardName] = useState("");
   const [rewardCost, setRewardCost] = useState("500");
@@ -164,6 +166,8 @@ export function LoyaltyPageView() {
       setGoldMin(String(dash.program.goldMin));
       setVipMin(String(dash.program.vipMin));
       setProgramActive(dash.program.active);
+      setVisitsPerReward(String(dash.program.visitsPerReward ?? 10));
+      setRewardLabelConfig(dash.program.rewardLabel ?? "Récompense");
       setPackages(pkgs);
     } catch {
       toast("Impossible de charger la fidélité.", "error");
@@ -230,6 +234,8 @@ export function LoyaltyPageView() {
       goldMin: Number(goldMin),
       vipMin: Number(vipMin),
       active: programActive,
+      visitsPerReward: Number(visitsPerReward) || 10,
+      rewardLabel: rewardLabelConfig || "Récompense",
     });
     setSubmitting(false);
     if (!result.ok) {
@@ -898,6 +904,17 @@ export function LoyaltyPageView() {
 
       <Drawer open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Configurer le programme">
         <div className="space-y-3 text-sm">
+          <div className="rounded-xl bg-[#FFEFF8] p-3 space-y-2">
+            <p className="text-xs font-bold text-primary uppercase tracking-wider">Carte fidélité (Passages)</p>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink/70">Nombre de passages requis</span>
+              <Input type="number" min={1} max={50} value={visitsPerReward} onChange={(e) => setVisitsPerReward(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink/70">Nom de la récompense</span>
+              <Input placeholder="Récompense" value={rewardLabelConfig} onChange={(e) => setRewardLabelConfig(e.target.value)} />
+            </label>
+          </div>
           <label className="block">
             <span className="mb-1.5 block font-medium">MAD pour 1 point</span>
             <Input type="number" min={0.01} step={0.01} value={madPerPoint} onChange={(e) => setMadPerPoint(e.target.value)} />
@@ -922,7 +939,7 @@ export function LoyaltyPageView() {
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={programActive} onChange={(e) => setProgramActive(e.target.checked)} />
-            Programme actif
+            Statut : {programActive ? "Activé" : "Désactivé"}
           </label>
           <Button type="button" variant="primary" className="w-full" disabled={!canWrite || submitting} onClick={saveProgram}>
             Enregistrer

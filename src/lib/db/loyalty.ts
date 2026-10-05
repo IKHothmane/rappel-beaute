@@ -57,8 +57,10 @@ export async function getOrCreateLoyaltyProgram(
     goldMin: number;
     vipMin: number;
     active: boolean;
+    visitsPerReward: number;
+    rewardLabel: string;
   }>(
-    `SELECT id, "madPerPoint"::text, "bronzeMin", "silverMin", "goldMin", "vipMin", active
+    `SELECT id, "madPerPoint"::text, "bronzeMin", "silverMin", "goldMin", "vipMin", active, "visitsPerReward", "rewardLabel"
      FROM "LoyaltyProgram" WHERE "organizationId" = $1`,
     [organizationId],
   );
@@ -72,13 +74,15 @@ export async function getOrCreateLoyaltyProgram(
       goldMin: r.goldMin,
       vipMin: r.vipMin,
       active: r.active,
+      visitsPerReward: r.visitsPerReward && r.visitsPerReward > 0 ? r.visitsPerReward : 10,
+      rewardLabel: r.rewardLabel?.trim() || "Récompense",
     };
   }
   const id = newId("lprog");
   await c.query(
     `INSERT INTO "LoyaltyProgram" (
-      id, "organizationId", "madPerPoint", "bronzeMin", "silverMin", "goldMin", "vipMin", active, "updatedAt"
-    ) VALUES ($1,$2,1,0,1000,3000,6000,true,NOW())
+      id, "organizationId", "madPerPoint", "bronzeMin", "silverMin", "goldMin", "vipMin", active, "visitsPerReward", "rewardLabel", "updatedAt"
+    ) VALUES ($1,$2,1,0,1000,3000,6000,true,10,'Récompense',NOW())
     ON CONFLICT ("organizationId") DO NOTHING`,
     [id, organizationId],
   );
@@ -91,6 +95,8 @@ export async function updateLoyaltyProgram(
   actor: { id: string; name?: string | null },
 ): Promise<LoyaltyProgramConfig> {
   const before = await getOrCreateLoyaltyProgram(organizationId);
+  const visits = input.visitsPerReward ?? input.visitsRequired ?? null;
+  const label = input.rewardLabel ?? input.rewardName ?? null;
   await pool.query(
     `UPDATE "LoyaltyProgram" SET
       "madPerPoint" = COALESCE($1, "madPerPoint"),
@@ -99,8 +105,10 @@ export async function updateLoyaltyProgram(
       "goldMin" = COALESCE($4, "goldMin"),
       "vipMin" = COALESCE($5, "vipMin"),
       active = COALESCE($6, active),
+      "visitsPerReward" = COALESCE($7, "visitsPerReward"),
+      "rewardLabel" = COALESCE($8, "rewardLabel"),
       "updatedAt" = NOW()
-     WHERE "organizationId" = $7`,
+     WHERE "organizationId" = $9`,
     [
       input.madPerPoint ?? null,
       input.bronzeMin ?? null,
@@ -108,6 +116,8 @@ export async function updateLoyaltyProgram(
       input.goldMin ?? null,
       input.vipMin ?? null,
       input.active ?? null,
+      visits,
+      label,
       organizationId,
     ],
   );

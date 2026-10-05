@@ -43,6 +43,18 @@ export function validateUpdateProgram(
     }
   }
   if (raw.active !== undefined) data.active = Boolean(raw.active);
+  const visitsVal = raw.visitsPerReward ?? raw.visitsRequired;
+  if (visitsVal !== undefined) {
+    const v = int(visitsVal);
+    if (v === undefined || v <= 0) return { ok: false, errors: ["visitsPerReward"] };
+    data.visitsPerReward = v;
+  }
+  const labelVal = raw.rewardLabel ?? raw.rewardName;
+  if (labelVal !== undefined) {
+    const l = str(labelVal);
+    if (!l) return { ok: false, errors: ["rewardLabel"] };
+    data.rewardLabel = l;
+  }
   return { ok: true, data };
 }
 

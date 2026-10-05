@@ -28,6 +28,7 @@ function isMarketingPath(path: string): boolean {
     "/instituts",
     "/a-propos",
     "/professionnel",
+    "/assistant",
     "/connexion",
     "/contact",
     "/gestion-rendez-vous",
@@ -36,6 +37,7 @@ function isMarketingPath(path: string): boolean {
     "/caisse",
     "/reservation-en-ligne",
     "/fidelite",
+    "/carte",
     "/demo",
     "/essai",
     "/faq",
@@ -151,7 +153,13 @@ function publicRedirect(
     }
   }
   preserveHostParam(url, domain, hostname);
-  return NextResponse.redirect(url, status);
+  return withFrameDeny(NextResponse.redirect(url, status));
+}
+
+function withFrameDeny(response: NextResponse) {
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Content-Security-Policy", "frame-ancestors 'none'");
+  return response;
 }
 
 /** /admin → /domains/admin/dashboard ; /admin/users → /domains/admin/users */
@@ -213,11 +221,22 @@ export async function middleware(request: NextRequest) {
   ) {
     const httpsUrl = new URL(`https://${hostname}${path}`);
     httpsUrl.search = request.nextUrl.search;
-    return NextResponse.redirect(httpsUrl, 308);
+    return withFrameDeny(NextResponse.redirect(httpsUrl, 308));
   }
 
   if (path.startsWith("/api/")) {
-    return NextResponse.next();
+    if (path.startsWith("/api/public/assistant/frame")) return NextResponse.next();
+    const res = NextResponse.next();
+    res.headers.set("X-Frame-Options", "DENY");
+    res.headers.set("Content-Security-Policy", "frame-ancestors 'none'");
+    return res;
+  }
+
+  if (path === "/assistant" || path.startsWith("/assistant/")) {
+    const res = NextResponse.next();
+    res.headers.set("X-Frame-Options", "DENY");
+    res.headers.set("Content-Security-Policy", "frame-ancestors 'none'");
+    return res;
   }
 
   const queryHost = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
@@ -294,7 +313,7 @@ export async function middleware(request: NextRequest) {
 
     // Déjà sous /domains/admin (ré-entrée middleware après rewrite) → next, pas rewrite
     if (path.startsWith("/domains/admin")) {
-      const res = NextResponse.next({ request: { headers } });
+      const res = withFrameDeny(NextResponse.next({ request: { headers } }));
       res.cookies.set(COOKIE_HOST, "admin", { path: "/", sameSite: "lax" });
       return res;
     }
@@ -302,7 +321,7 @@ export async function middleware(request: NextRequest) {
     // Rewrite interne — /admin → Super Admin (pas la vitrine)
     const url = request.nextUrl.clone();
     url.pathname = adminInternalPath(path);
-    const res = NextResponse.rewrite(url, { request: { headers } });
+    const res = withFrameDeny(NextResponse.rewrite(url, { request: { headers } }));
     res.cookies.set(COOKIE_HOST, "admin", { path: "/", sameSite: "lax" });
     return res;
   }
@@ -312,10 +331,10 @@ export async function middleware(request: NextRequest) {
       const local = request.nextUrl.clone();
       local.pathname = "/connexion/";
       local.search = "";
-      return NextResponse.redirect(local, 308);
+      return withFrameDeny(NextResponse.redirect(local, 308));
     }
 
-    const res = NextResponse.next({ request: { headers } });
+    const res = withFrameDeny(NextResponse.next({ request: { headers } }));
     if (!queryHost) {
       res.cookies.set(COOKIE_HOST, "www", { path: "/", sameSite: "lax" });
     } else {
@@ -328,7 +347,7 @@ export async function middleware(request: NextRequest) {
   // Si on y est déjà (ré-entrée après rewrite), next() — sinon boucle infinie
   // et Playwright timeout (goto qui ne finit jamais / formulaire jamais monté).
   if (path.startsWith("/domains/app")) {
-    const res = NextResponse.next({ request: { headers } });
+    const res = withFrameDeny(NextResponse.next({ request: { headers } }));
     if (queryHost) {
       res.cookies.set(COOKIE_HOST, queryHost, { path: "/", sameSite: "lax" });
     }
@@ -343,7 +362,7 @@ export async function middleware(request: NextRequest) {
     url.pathname = joined.endsWith("/") ? joined : `${joined}/`;
   }
 
-  const res = NextResponse.rewrite(url, { request: { headers } });
+  const res = withFrameDeny(NextResponse.rewrite(url, { request: { headers } }));
   res.cookies.set(COOKIE_HOST, domain, { path: "/", sameSite: "lax" });
   return res;
 }

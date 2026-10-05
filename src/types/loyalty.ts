@@ -25,6 +25,8 @@ export type LoyaltyProgramConfig = {
   goldMin: number;
   vipMin: number;
   active: boolean;
+  visitsPerReward: number;
+  rewardLabel: string;
 };
 
 export type LoyaltyAccountSummary = {
@@ -146,6 +148,10 @@ export type UpdateLoyaltyProgramInput = {
   goldMin?: number;
   vipMin?: number;
   active?: boolean;
+  visitsPerReward?: number;
+  visitsRequired?: number;
+  rewardLabel?: string;
+  rewardName?: string;
 };
 
 export type CreateRewardInput = {

@@ -88,7 +88,7 @@ export const FEATURE_ACCESS: Record<AppRole, Record<AppFeature, AccessLevel>> = 
     "cash-register": "none",
     expenses: "none",
     commissions: "limited",
-    loyalty: "read",
+    loyalty: "limited",
     promotions: "read",
     whatsapp: "limited",
     reactivation: "limited",

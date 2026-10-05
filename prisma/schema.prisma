@@ -476,6 +476,9 @@ model Organization {
   loyaltyTransactions LoyaltyTransaction[]
   loyaltyRewards     LoyaltyReward[]
   loyaltyRedemptions LoyaltyRedemption[]
+  loyaltyCards       LoyaltyCard[]
+  loyaltyEvents      LoyaltyEvent[]
+  loyaltyVisitRewards LoyaltyVisitReward[]
   packages           Package[]
   packageSessions    PackageSession[]
   promotions         Promotion[]
@@ -505,6 +508,12 @@ model Organization {
   staffReplacements     StaffReplacement[]
   aiConversations       AIConversation[]
   aiUsagePeriods        AIUsagePeriod[]
+  publicWidgets         PublicWidget[]
+  assistantSettings     AssistantSettings?
+  assistantWidgetSessions AssistantWidgetSession[]
+  assistantCustomerSessions AssistantCustomerSession[]
+  assistantConversations AssistantConversation[]
+  assistantActions      AssistantAction[]
   googleCalendarConnection GoogleCalendarConnection?
 
   @@index([slug])
@@ -565,6 +574,9 @@ model Customer {
   payments     Payment[]
   invoices     Invoice[]
   loyaltyAccount LoyaltyAccount?
+  loyaltyCards   LoyaltyCard[]
+  loyaltyEvents  LoyaltyEvent[]
+  loyaltyVisitRewards LoyaltyVisitReward[]
   packages     Package[]
   loyaltyRedemptions LoyaltyRedemption[]
   giftCardsBought GiftCard[] @relation("GiftCardBuyer")
@@ -577,6 +589,8 @@ model Customer {
   waitingListEntries WaitingListEntry[]
   customerNotes      CustomerNote[]
   posSales           PosSale[]
+  assistantCustomerSessions AssistantCustomerSession[]
+  assistantActions          AssistantAction[]
 
   @@unique([organizationId, phone])
   @@index([organizationId])
@@ -877,6 +891,8 @@ model Appointment {
   source         AppointmentSource @default(MANUAL)
   /// Attribution marketing (ex. qr) — jamais de prix/durée client
   attributionSource String?
+  /// Secret remis à la cliente pour retrouver ce rendez-vous. Insuffisant sans le téléphone.
+  bookingRef        String?
   /// Identifiant de l'événement Google Calendar (sync agenda institut)
   googleEventId  String?
   notes          String?
@@ -896,7 +912,9 @@ model Appointment {
   packageSessions PackageSession[]
   whatsAppTasks WhatsAppTask[]
   reviewRequests ReviewRequest[]
+  loyaltyEvent   LoyaltyEvent?
 
+  @@unique([organizationId, bookingRef])
   @@index([organizationId, startAt])
   @@index([organizationId, source])
   @@index([organizationId, depositState])
@@ -1516,6 +1534,9 @@ model LoyaltyProgram {
   goldMin        Int      @default(3000)
   vipMin         Int      @default(6000)
   active         Boolean  @default(true)
+  /// Passages requis pour une récompense (programme par visites)
+  visitsPerReward Int     @default(10)
+  rewardLabel    String   @default("Récompense")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -1572,6 +1593,74 @@ model LoyaltyTransaction {
   @@index([customerId])
   @@index([organizationId, createdAt])
   @@index([paymentId])
+}
+
+/// Carte digitale. Le QR contient publicToken, jamais l'identifiant cliente.
+model LoyaltyCard {
+  id             String   @id
+  organizationId String
+  customerId     String
+  publicToken    String   @unique
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  events       LoyaltyEvent[]
+  visitRewards LoyaltyVisitReward[]
+
+  @@unique([organizationId, customerId])
+  @@index([organizationId])
+  @@index([customerId])
+}
+
+enum LoyaltyEventType {
+  VISIT
+}
+
+/// Ledger : un passage = un événement. Le total se recalcule.
+model LoyaltyEvent {
+  id             String           @id
+  organizationId String
+  customerId     String
+  loyaltyCardId  String
+  type           LoyaltyEventType @default(VISIT)
+  appointmentId  String           @unique
+  serviceId      String?
+  amount         Decimal          @db.Decimal(10, 2)
+  points         Int              @default(1)
+  validatedBy    String?
+  validatedAt    DateTime         @default(now())
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  card         LoyaltyCard        @relation(fields: [loyaltyCardId], references: [id], onDelete: Cascade)
+  appointment  Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  visitReward  LoyaltyVisitReward?
+
+  @@index([organizationId])
+  @@index([loyaltyCardId, validatedAt])
+  @@index([customerId])
+}
+
+model LoyaltyVisitReward {
+  id             String   @id
+  organizationId String
+  customerId     String
+  loyaltyCardId  String
+  loyaltyEventId String   @unique
+  name           String
+  status         String   @default("AVAILABLE")
+  earnedAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  card         LoyaltyCard  @relation(fields: [loyaltyCardId], references: [id], onDelete: Cascade)
+  event        LoyaltyEvent @relation(fields: [loyaltyEventId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([loyaltyCardId, status])
 }
 
 model LoyaltyReward {
@@ -2452,4 +2541,192 @@ model AdsAgentDecision {
   @@index([createdAt])
   @@index([campaignId])
   @@index([kind])
+}
+
+// ─── Assistant public (widget) — surveillance seulement, pas de BullMQ ──────
+// organizationId et customerId sont écrits par le serveur. Le modèle ne les choisit pas.
+
+enum PublicWidgetStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum AssistantChannel {
+  WIDGET
+  DASHBOARD
+  MOBILE
+}
+
+enum AssistantActionType {
+  CREATE_APPOINTMENT
+  RESCHEDULE_APPOINTMENT
+  CANCEL_APPOINTMENT
+}
+
+enum AssistantActionStatus {
+  PROPOSED
+  PENDING_CONFIRMATION
+  CONFIRMED
+  EXECUTING
+  EXECUTED
+  EXPIRED
+  CANCELLED
+  FAILED
+}
+
+/// Widget embarqué. publicId est public et n'accorde aucun accès aux données.
+model PublicWidget {
+  id             String             @id @default(cuid())
+  organizationId String
+  publicId       String             @unique
+  name           String
+  status         PublicWidgetStatus @default(ACTIVE)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  origins      PublicWidgetOrigin[]
+  sessions     AssistantWidgetSession[]
+
+  @@index([organizationId])
+}
+
+/// Domaine autorisé à embarquer l'iframe. Origin n'est pas une authentification.
+model PublicWidgetOrigin {
+  id        String   @id @default(cuid())
+  widgetId  String
+  origin    String
+  createdAt DateTime @default(now())
+
+  widget PublicWidget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+
+  @@unique([widgetId, origin])
+  @@index([origin])
+}
+
+/// Quota mensuel de l'assistant, par institut. La rétention reste non définie tant qu'elle est nulle.
+model AssistantSettings {
+  id                       String   @id @default(cuid())
+  organizationId           String   @unique
+  monthlyMessageLimit      Int      @default(2000)
+  alertPercent             Int      @default(80)
+  blockAtPercent           Int      @default(100)
+  allowOverage             Boolean  @default(false)
+  conversationRetentionDays Int?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+/// Session du navigateur et de la conversation. Aucun customerId.
+model AssistantWidgetSession {
+  id             String    @id @default(cuid())
+  widgetId       String
+  organizationId String
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+
+  widget          PublicWidget                    @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  organization    Organization                    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerSessions AssistantCustomerSession[]
+  challenges      AssistantVerificationChallenge[]
+  conversations   AssistantConversation[]
+
+  @@index([organizationId, expiresAt])
+  @@index([widgetId])
+}
+
+/// Session cliente. Hors du parcours de réservation public, qui n'utilise pas d'OTP.
+model AssistantCustomerSession {
+  id              String    @id @default(cuid())
+  widgetSessionId String
+  organizationId  String
+  customerId      String
+  tokenHash       String    @unique
+  verifiedAt      DateTime
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+
+  widgetSession AssistantWidgetSession @relation(fields: [widgetSessionId], references: [id], onDelete: Cascade)
+  organization  Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer      Customer               @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  conversations AssistantConversation[]
+
+  @@index([organizationId, customerId])
+  @@index([widgetSessionId])
+}
+
+/// Défi OTP. Hors du parcours de réservation public.
+model AssistantVerificationChallenge {
+  id              String    @id @default(cuid())
+  widgetSessionId String
+  organizationId  String
+  phone           String
+  codeHash        String
+  expiresAt       DateTime
+  attempts        Int       @default(0)
+  consumedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  widgetSession AssistantWidgetSession @relation(fields: [widgetSessionId], references: [id], onDelete: Cascade)
+
+  @@index([widgetSessionId, consumedAt])
+}
+
+model AssistantConversation {
+  id                String           @id @default(cuid())
+  organizationId    String
+  channel           AssistantChannel @default(WIDGET)
+  widgetSessionId   String?
+  customerSessionId String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  widgetSession   AssistantWidgetSession?   @relation(fields: [widgetSessionId], references: [id], onDelete: SetNull)
+  customerSession AssistantCustomerSession? @relation(fields: [customerSessionId], references: [id], onDelete: SetNull)
+  messages        AssistantMessage[]
+  actions         AssistantAction[]
+
+  @@index([organizationId, createdAt])
+  @@index([widgetSessionId])
+}
+
+model AssistantMessage {
+  id             String        @id @default(cuid())
+  conversationId String
+  role           AIMessageRole
+  content        String
+  createdAt      DateTime      @default(now())
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+/// Action proposée par l'assistant. L'écriture métier n'a lieu qu'après confirmation serveur.
+model AssistantAction {
+  id               String                @id @default(cuid())
+  conversationId   String
+  organizationId   String
+  customerId       String?
+  type             AssistantActionType
+  status           AssistantActionStatus @default(PROPOSED)
+  payload          Json
+  result           Json?
+  idempotencyKey   String
+  expiresAt        DateTime
+  confirmedAt      DateTime?
+  executedAt       DateTime?
+  createdAt        DateTime              @default(now())
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([conversationId, status])
+  @@index([organizationId, status])
 }

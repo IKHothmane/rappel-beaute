@@ -1,0 +1,322 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+type Preview = {
+  token: string;
+  customerName: string;
+  appointmentId: string | null;
+  serviceName: string | null;
+  amount: number | null;
+  visits: number;
+  visitsPerReward: number;
+  rewardLabel: string;
+  rewards: { id: string; name: string }[];
+};
+
+type Issued = {
+  publicToken: string;
+  firstName: string;
+  lastName: string;
+  cardUrl: string;
+};
+
+type CustomerHit = { id: string; firstName: string; lastName: string };
+
+function money(amount: number) {
+  return `${amount.toLocaleString("fr-FR")} DH`;
+}
+
+function extractToken(value: string) {
+  const match = value.toUpperCase().match(/RBLOY_[A-Z2-9]+/);
+  return match ? match[0] : value.trim().toUpperCase();
+}
+
+export function LoyaltyScanPage() {
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<CustomerHit[]>([]);
+  const [issued, setIssued] = useState<Issued | null>(null);
+  const [token, setToken] = useState("");
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [cameraOn, setCameraOn] = useState(false);
+
+  useEffect(() => {
+    const needle = query.trim();
+    if (needle.length < 2) {
+      setHits([]);
+      return;
+    }
+    const handle = setTimeout(() => {
+      void fetch(`/api/customers/?search=${encodeURIComponent(needle)}&limit=6`)
+        .then((res) => res.json())
+        .then((body: { data?: CustomerHit[] }) => setHits(body.data ?? []))
+        .catch(() => setHits([]));
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [query]);
+
+  useEffect(() => {
+    if (!cameraOn || !videoRef.current) return;
+    let stop = false;
+    let stream: MediaStream | null = null;
+    const video = videoRef.current;
+    const Detector = (window as unknown as {
+      BarcodeDetector?: new (opts: { formats: string[] }) => {
+        detect: (source: CanvasImageSource) => Promise<{ rawValue: string }[]>;
+      };
+    }).BarcodeDetector;
+
+    void (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = stream;
+        await video.play();
+        if (!Detector) return;
+        const detector = new Detector({ formats: ["qr_code"] });
+        const loop = async () => {
+          if (stop) return;
+          try {
+            const codes = await detector.detect(video);
+            const raw = codes[0]?.rawValue;
+            if (raw) {
+              setToken(extractToken(raw));
+              setCameraOn(false);
+              return;
+            }
+          } catch {
+            /* image pas encore prête */
+          }
+          requestAnimationFrame(() => void loop());
+        };
+        void loop();
+      } catch {
+        setError("La caméra n'est pas disponible. Saisissez le code de la carte.");
+        setCameraOn(false);
+      }
+    })();
+
+    return () => {
+      stop = true;
+      stream?.getTracks().forEach((track) => track.stop());
+    };
+  }, [cameraOn]);
+
+  async function issue(customerId: string) {
+    setBusy(true);
+    setError(null);
+    setDone(null);
+    try {
+      const res = await fetch("/api/loyalty/cards/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId }),
+      });
+      const body = (await res.json()) as Issued & { error?: string };
+      if (!res.ok) throw new Error(body.error || "Création impossible.");
+      setIssued(body);
+      setHits([]);
+      setQuery("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Création impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function scan() {
+    setBusy(true);
+    setError(null);
+    setDone(null);
+    setPreview(null);
+    try {
+      const res = await fetch(`/api/loyalty/scan/?token=${encodeURIComponent(extractToken(token))}`);
+      const body = (await res.json()) as Preview & { error?: string };
+      if (!res.ok) throw new Error(body.error || "Lecture impossible.");
+      setPreview(body);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lecture impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function markRewardUsed(rewardId: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/loyalty/scan/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "use-reward", rewardId }),
+      });
+      const body = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(body.error || "Récompense impossible à utiliser.");
+      setDone("Récompense marquée comme utilisée.");
+      setPreview((current) =>
+        current
+          ? { ...current, rewards: current.rewards.filter((reward) => reward.id !== rewardId) }
+          : current,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Récompense impossible à utiliser.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function validate() {
+    if (!preview?.appointmentId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/loyalty/scan/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: preview.token, appointmentId: preview.appointmentId }),
+      });
+      const body = (await res.json()) as { error?: string; visits?: number; serviceName?: string; amount?: number; customerName?: string };
+      if (!res.ok) throw new Error(body.error || "Validation impossible.");
+      setDone(
+        `Passage validé. ${body.customerName} · ${body.serviceName} · ${money(body.amount ?? 0)}. Total : ${body.visits} passages.`,
+      );
+      setPreview(null);
+      setToken("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Validation impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-8 px-4 py-8">
+      <div>
+        <h1 className="font-display text-3xl font-light text-ink">Carte fidélité</h1>
+        <p className="mt-2 text-sm text-ink/65">
+          Émettez une carte, puis scannez-la en institut. Le passage n&apos;est ajouté que pour un
+          rendez-vous déjà terminé, une seule fois.
+        </p>
+      </div>
+
+      <section className="surface space-y-3 p-5">
+        <h2 className="text-lg font-semibold text-ink">Émettre une carte</h2>
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Nom de la cliente"
+          className="w-full rounded-xl border border-line px-3 py-2 text-sm"
+        />
+        <ul className="space-y-2">
+          {hits.map((customer) => (
+            <li key={customer.id}>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void issue(customer.id)}
+                className="w-full rounded-xl border border-line px-3 py-2 text-left text-sm hover:border-primary/40"
+              >
+                {customer.firstName} {customer.lastName}
+              </button>
+            </li>
+          ))}
+        </ul>
+        {issued ? (
+          <p className="text-sm text-ink">
+            Carte de {issued.firstName} {issued.lastName} :{" "}
+            <a className="font-semibold text-primary" href={issued.cardUrl}>
+              {issued.cardUrl}
+            </a>
+          </p>
+        ) : null}
+      </section>
+
+      <section className="surface space-y-3 p-5">
+        <h2 className="text-lg font-semibold text-ink">Scanner une carte</h2>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            value={token}
+            onChange={(event) => setToken(event.target.value)}
+            placeholder="RBLOY_…"
+            className="w-full rounded-xl border border-line px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => setCameraOn((value) => !value)}
+            className="rounded-full border border-line px-4 py-2 text-sm font-semibold"
+          >
+            {cameraOn ? "Fermer la caméra" : "Caméra"}
+          </button>
+          <button
+            type="button"
+            disabled={busy || !token.trim()}
+            onClick={() => void scan()}
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            Lire
+          </button>
+        </div>
+        {cameraOn ? (
+          <video ref={videoRef} className="aspect-video w-full rounded-2xl bg-black" muted playsInline />
+        ) : null}
+
+        {preview ? (
+          <div className="rounded-2xl border border-line p-4 text-sm">
+            <p className="font-semibold text-ink">{preview.customerName}</p>
+            <p className="mt-1 text-ink/70">
+              {preview.visits} passages · prochaine {preview.rewardLabel} à {preview.visitsPerReward}
+            </p>
+            {preview.appointmentId ? (
+              <p className="mt-1 text-ink/70">
+                {preview.serviceName} · {money(preview.amount ?? 0)}
+              </p>
+            ) : (
+              <p className="mt-1 text-ink/70">Aucun rendez-vous terminé à valider.</p>
+            )}
+            {preview.rewards.length > 0 ? (
+              <ul className="mt-3 space-y-2">
+                {preview.rewards.map((reward) => (
+                  <li key={reward.id} className="flex items-center justify-between gap-2">
+                    <span>{reward.name}</span>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void markRewardUsed(reward.id)}
+                      className="rounded-full border border-line px-3 py-1 text-xs font-semibold"
+                    >
+                      Utiliser
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                className="rounded-full border border-line px-4 py-2 font-semibold"
+              >
+                Annuler
+              </button>
+              {preview.appointmentId ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void validate()}
+                  className="rounded-full bg-primary px-4 py-2 font-semibold text-white disabled:opacity-50"
+                >
+                  Valider le passage
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+        {done ? <p className="text-sm font-semibold text-ink">{done}</p> : null}
+        {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      </section>
+    </div>
+  );
+}

@@ -98,26 +98,6 @@ function Section({
   );
 }
 
-function ProgressBar({ value, max, label }: { value: number; max: number; label: string }) {
-  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  return (
-    <div>
-      <div className="mb-1 flex justify-between text-xs text-ink/60">
-        <span>{label}</span>
-        <span className="font-mono">
-          {value.toLocaleString("fr-MA")} / {max.toLocaleString("fr-MA")} · {pct}%
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-line">
-        <div
-          className="h-full rounded-full bg-primary transition-all"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
 function Heatmap({
   data,
 }: {
@@ -291,23 +271,6 @@ export function AnalyticsOverviewDashboard({
     }
     return items.slice(0, 5);
   }, [overview, services, cancelRate, customers, inventory, periodLabel]);
-
-  const goals = useMemo(() => {
-    const caGoal = Math.max(
-      overview.revenue.value,
-      Math.round((overview.revenue.previous ?? overview.revenue.value) * 1.15) || overview.revenue.value * 1.2,
-    );
-    const rdvGoal = Math.max(
-      overview.appointments.value,
-      Math.round((overview.appointments.previous ?? overview.appointments.value) * 1.15) ||
-        overview.appointments.value * 1.2,
-    );
-    const newGoal = Math.max(
-      customers?.kpis.newInPeriod ?? 0,
-      Math.round((customers?.kpis.newInPeriod ?? 10) * 1.2) || 10,
-    );
-    return { caGoal, rdvGoal, newGoal };
-  }, [overview, customers]);
 
   const peakHour = appointments?.byHour.reduce(
     (best, h) => (h.count > best.count ? h : best),
@@ -836,29 +799,6 @@ export function AnalyticsOverviewDashboard({
         ) : null}
       </Section>
 
-      {/* Objectifs */}
-      <Section title={`Objectifs — ${periodLabel}`}>
-        <p className="mb-3 text-xs text-ink/40">
-          Objectifs suggérés (+15 % vs période précédente) — personnalisables plus tard.
-        </p>
-        <div className="space-y-3">
-          <ProgressBar
-            label="CA"
-            value={Math.round(overview.revenue.value)}
-            max={Math.round(goals.caGoal)}
-          />
-          <ProgressBar
-            label="Rendez-vous"
-            value={overview.appointments.value}
-            max={Math.round(goals.rdvGoal)}
-          />
-          <ProgressBar
-            label="Nouvelles clientes"
-            value={customers?.kpis.newInPeriod ?? 0}
-            max={Math.round(goals.newGoal)}
-          />
-        </div>
-      </Section>
     </div>
   );
 }

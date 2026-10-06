@@ -221,15 +221,15 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
 
       {/* Health score */}
       <section className="rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-6">
           <div className="flex items-center gap-5">
-            <HealthGauge score={vm.loading ? 0 : vm.health.score} loading={vm.loading} />
+            <HealthGauge score={vm.loading ? null : vm.health.score} loading={vm.loading} />
             <div>
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-secondary-fixed px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-on-secondary-fixed">
                   {vm.loading ? "…" : vm.health.label}
                 </span>
-                {!vm.loading && vm.health.score >= 85 ? (
+                {!vm.loading && vm.health.score != null && vm.health.score >= 85 ? (
                   <span className="text-[10px] font-bold text-secondary">Top performance</span>
                 ) : null}
               </div>
@@ -242,17 +242,19 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
               </p>
             </div>
           </div>
-          <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+          <div className="grid grid-cols-4 gap-3 xl:grid-cols-7">
             {vm.health.pillars.map((p) => (
-              <div key={p.key} className="rounded-lg bg-surface-container-low p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{p.label}</p>
-                <p className={cn("mt-1 text-xl font-extrabold", p.tone)}>
-                  {vm.loading ? "—" : p.score}
+              <div key={p.key} className="min-w-0 rounded-lg bg-surface-container-low p-3">
+                <p className="text-[11px] font-bold uppercase leading-tight text-on-surface-variant">
+                  {p.label}
+                </p>
+                <p className={cn("mt-1 min-h-7 text-xl font-extrabold leading-none", p.tone)}>
+                  {vm.loading || p.score == null ? "" : p.score}
                 </p>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-container-high">
                   <div
                     className={cn("h-full rounded-full", p.bar)}
-                    style={{ width: vm.loading ? "0%" : `${p.score}%` }}
+                    style={{ width: vm.loading || p.score == null ? "0%" : `${p.score}%` }}
                   />
                 </div>
               </div>
@@ -615,7 +617,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
                     <div className="h-1.5 overflow-hidden rounded-full bg-surface-container">
                       <div
                         className="h-full rounded-full bg-primary-container"
-                        style={{ width: `${m != null ? Math.min(100, m) : 40}%` }}
+                        style={{ width: `${m != null ? Math.min(100, m) : 0}%` }}
                       />
                     </div>
                   </li>
@@ -876,10 +878,11 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
   );
 }
 
-function HealthGauge({ score, loading }: { score: number; loading?: boolean }) {
+function HealthGauge({ score, loading }: { score: number | null; loading?: boolean }) {
   const r = 52;
   const c = 2 * Math.PI * r;
-  const offset = c - ((loading ? 0 : score) / 100) * c;
+  const shown = loading || score == null ? 0 : score;
+  const offset = c - (shown / 100) * c;
   return (
     <div className="relative h-36 w-36 shrink-0">
       <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
@@ -905,7 +908,7 @@ function HealthGauge({ score, loading }: { score: number; loading?: boolean }) {
       </svg>
       <div className="absolute inset-0 flex rotate-0 flex-col items-center justify-center">
         <span className="text-[34px] font-extrabold leading-none tracking-tight text-on-surface">
-          {loading ? "…" : score}
+          {loading ? "…" : score == null ? "—" : score}
         </span>
         <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">/ 100</span>
       </div>

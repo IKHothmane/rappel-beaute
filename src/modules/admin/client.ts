@@ -119,12 +119,14 @@ export async function fetchAdminUsers(params?: {
   role?: string;
   status?: string;
   organizationId?: string;
+  fresh?: boolean;
 }) {
   const sp = new URLSearchParams();
   if (params?.search) sp.set("search", params.search);
   if (params?.role) sp.set("role", params.role);
   if (params?.status) sp.set("status", params.status);
   if (params?.organizationId) sp.set("organizationId", params.organizationId);
+  if (params?.fresh) sp.set("_", String(Date.now()));
   const q = sp.toString();
   return adminFetch<{
     items: PlatformOrgUser[];

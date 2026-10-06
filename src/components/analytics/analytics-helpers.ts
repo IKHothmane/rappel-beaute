@@ -117,20 +117,21 @@ export function weeklyRevenueBars(daily: RevenueDailyPoint[] | undefined): Weekl
   const max = Math.max(...points.map((p) => p.value), 1);
   return points.map((p) => ({
     ...p,
-    heightPct: Math.max(8, Math.round((p.value / max) * 100)),
+    heightPct: p.value > 0 ? Math.max(8, Math.round((p.value / max) * 100)) : 0,
   }));
 }
 
 export type HealthPillar = {
   key: string;
   label: string;
-  score: number;
+  /** Pourcentage mesuré. Null s'il n'y a pas de donnée réelle. */
+  score: number | null;
   tone: string;
   bar: string;
 };
 
 export type HealthScore = {
-  score: number;
+  score: number | null;
   label: string;
   pillars: HealthPillar[];
 };
@@ -152,28 +153,27 @@ export function buildHealthScore(opts: {
     opts.overview && opts.overview.revenue.value > 0
       ? (opts.overview.margin.value / opts.overview.revenue.value) * 100
       : null;
-  const finance = clampScore(marginRate != null ? 50 + marginRate * 0.6 : 55);
+  const finance = marginRate != null ? clampScore(marginRate) : null;
 
   const reviewScore = opts.reviews?.averageInternalScore;
-  const reputation = clampScore(reviewScore != null ? (reviewScore / 5) * 100 : 60);
+  const reputation = reviewScore != null ? clampScore((reviewScore / 5) * 100) : null;
 
-  const staffTotal = opts.staff.reduce((s, r) => s + r.revenue, 0);
-  const team = clampScore(opts.staff.length ? Math.min(95, 55 + opts.staff.length * 8 + (staffTotal > 0 ? 10 : 0)) : 50);
+  const staffAppointments = opts.staff.reduce((s, r) => s + r.appointments, 0);
+  const staffWithBookings = opts.staff.filter((r) => r.appointments > 0).length;
+  const team =
+    staffAppointments > 0 && opts.staff.length > 0
+      ? clampScore((staffWithBookings / opts.staff.length) * 100)
+      : null;
 
   const retention = opts.customers?.retention.retentionRate;
-  const clientes = clampScore(retention != null ? retention : opts.customers ? 55 + Math.min(30, opts.customers.kpis.active / 20) : 50);
+  const clientes = retention != null ? clampScore(retention) : null;
 
   const occ = avgOccupation(opts.appointments);
-  const cabines = clampScore(occ != null ? occ : 55);
+  const cabines = occ != null ? clampScore(occ) : null;
 
-  let stocks = 70;
-  if (opts.inventory) {
-    const alerts = opts.inventory.lowStockCount + opts.inventory.outOfStockCount;
-    stocks = clampScore(100 - alerts * 4);
-  }
-
-  const mktRev = opts.marketing.reduce((s, r) => s + r.associatedRevenue, 0);
-  const marketing = clampScore(opts.marketing.length ? Math.min(95, 50 + opts.marketing.length * 6 + (mktRev > 0 ? 15 : 0)) : 45);
+  const targeted = opts.marketing.reduce((s, r) => s + r.targeted, 0);
+  const sent = opts.marketing.reduce((s, r) => s + r.sent, 0);
+  const marketing = targeted > 0 ? clampScore((sent / targeted) * 100) : null;
 
   const pillars: HealthPillar[] = [
     { key: "finance", label: "Finance", score: finance, tone: "text-primary", bar: "bg-primary" },
@@ -181,12 +181,25 @@ export function buildHealthScore(opts: {
     { key: "team", label: "Équipe", score: team, tone: "text-on-surface", bar: "bg-primary-container" },
     { key: "customers", label: "Clientes", score: clientes, tone: "text-on-surface", bar: "bg-primary-container" },
     { key: "cabins", label: "Cabines", score: cabines, tone: "text-on-surface", bar: "bg-secondary" },
-    { key: "stock", label: "Stocks", score: stocks, tone: "text-on-surface", bar: "bg-secondary" },
+    { key: "stock", label: "Stocks", score: null, tone: "text-on-surface", bar: "bg-secondary" },
     { key: "marketing", label: "Marketing", score: marketing, tone: "text-on-surface", bar: "bg-outline" },
   ];
 
-  const score = clampScore(pillars.reduce((s, p) => s + p.score, 0) / pillars.length);
-  const label = score >= 85 ? "Niveau Excellence" : score >= 70 ? "Niveau Solide" : score >= 55 ? "Niveau Correct" : "À améliorer";
+  const measured = pillars.filter((p) => p.score != null);
+  const score =
+    measured.length > 0
+      ? clampScore(measured.reduce((s, p) => s + (p.score ?? 0), 0) / measured.length)
+      : null;
+  const label =
+    score == null
+      ? "Données insuffisantes"
+      : score >= 85
+        ? "Niveau Excellence"
+        : score >= 70
+          ? "Niveau Solide"
+          : score >= 55
+            ? "Niveau Correct"
+            : "À améliorer";
 
   return { score, label, pillars };
 }
@@ -200,17 +213,20 @@ export type RetentionStep = {
 };
 
 export function retentionFunnel(customers: CustomerAnalytics | null): RetentionStep[] {
-  if (!customers) {
+  if (!customers || customers.kpis.total <= 0) {
     return [
-      { step: 1, title: "1ère Visite Découverte", subtitle: "Fichier clientes", percent: 100 },
+      { step: 1, title: "1ère Visite Découverte", subtitle: "Fichier clientes", percent: 0 },
       { step: 2, title: "Clientes actives", subtitle: "Fenêtre 90 j", percent: 0 },
       { step: 3, title: "Rétention", subtitle: "Revenues", percent: 0 },
       { step: 4, title: "VIP", subtitle: "Segment premium", percent: 0, vip: true },
     ];
   }
-  const total = Math.max(1, customers.kpis.total);
+  const total = customers.kpis.total;
   const activePct = Math.round((customers.kpis.active / total) * 100);
-  const retPct = customers.retention.retentionRate != null ? Math.round(customers.retention.retentionRate) : Math.round(activePct * 0.8);
+  const retPct =
+    customers.retention.retentionRate != null
+      ? Math.round(customers.retention.retentionRate)
+      : Math.round((customers.retention.returning / total) * 100);
   const vipPct = Math.round((customers.kpis.vip / total) * 100);
   return [
     {

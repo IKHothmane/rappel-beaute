@@ -1,4 +1,6 @@
 import type { NextRequest } from "next/server";
+
+export const dynamic = "force-dynamic";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import {
   createPlatformAdmin,

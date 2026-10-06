@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bolt,
@@ -12,6 +12,7 @@ import {
   Hourglass,
   KeyRound,
   Lock,
+  Pencil,
   Power,
   Search,
   Shield,
@@ -317,6 +318,13 @@ export function AdminUsersView() {
   const [createEmail, setCreateEmail] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profile, setProfile] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  });
 
   useEffect(() => {
     const t = window.setTimeout(() => setQ(qInput.trim()), 280);
@@ -334,7 +342,10 @@ export function AdminUsersView() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const load = useCallback(() => {
+  const loadSeq = useRef(0);
+
+  const load = useCallback((fresh = false) => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError(null);
     fetchAdminUsers({
@@ -342,18 +353,25 @@ export function AdminUsersView() {
       role: role !== "ALL" ? role : undefined,
       status: status !== "ALL" ? status : undefined,
       organizationId: organizationId !== "ALL" ? organizationId : undefined,
+      fresh,
     })
       .then((res) => {
+        if (seq !== loadSeq.current) return;
         setItems(res.items);
         setKpis(res.kpis);
         setOrgs(res.organizations);
-        setSelectedId((prev) => prev ?? res.items[0]?.id ?? null);
+        setSelectedId((prev) =>
+          prev && res.items.some((item) => item.id === prev) ? prev : (res.items[0]?.id ?? null),
+        );
       })
       .catch((e) => {
+        if (seq !== loadSeq.current) return;
         setError(e instanceof Error ? e.message : "Erreur");
         setItems([]);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (seq === loadSeq.current) setLoading(false);
+      });
   }, [q, role, status, organizationId]);
 
   useEffect(() => {
@@ -463,15 +481,66 @@ export function AdminUsersView() {
         });
       } else if (kind === "invalidate_sessions") {
         await invalidateAdminUserSessions(user.id);
-      } else if (kind === "disable") {
-        await patchAdminUser(user.id, { status: "DISABLED" });
-      } else if (kind === "delete") {
-        await patchAdminUser(user.id, { status: "DISABLED", delete: true });
+      } else if (kind === "disable" || kind === "delete") {
+        await patchAdminUser(user.id, {
+          status: "DISABLED",
+          delete: kind === "delete",
+        });
+        setProfileOpen(false);
+        setItems((current) =>
+          current.map((item) =>
+            item.id === user.id ? { ...item, status: "DISABLED" } : item,
+          ),
+        );
       }
       setPending(null);
-      load();
+      load(true);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Action impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openProfileEditor(user: PlatformOrgUser) {
+    setSelectedId(user.id);
+    setProfile({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone ?? "",
+    });
+    setProfileOpen(true);
+  }
+
+  async function saveProfile(event: React.FormEvent) {
+    event.preventDefault();
+    if (!selected || selected.accountKind !== "ORG") return;
+    setBusy(true);
+    try {
+      await patchAdminUser(selected.id, {
+        firstName: profile.firstName.trim(),
+        lastName: profile.lastName.trim(),
+        email: profile.email.trim(),
+        phone: profile.phone.trim(),
+      });
+      setProfileOpen(false);
+      setItems((current) =>
+        current.map((item) =>
+          item.id === selected.id
+            ? {
+                ...item,
+                firstName: profile.firstName.trim(),
+                lastName: profile.lastName.trim(),
+                email: profile.email.trim(),
+                phone: profile.phone.trim() || null,
+              }
+            : item,
+        ),
+      );
+      load(true);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Enregistrement impossible.");
     } finally {
       setBusy(false);
     }
@@ -1025,14 +1094,19 @@ export function AdminUsersView() {
                                 >
                                   Voir la fiche
                                 </button>
-                                <Link
-                                  href={adminHref(`/users/${u.id}/`)}
-                                  className={adminMenuItemClass}
-                                  role="menuitem"
-                                  onClick={close}
-                                >
-                                  Fiche complète
-                                </Link>
+                                {u.accountKind === "ORG" ? (
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    className={adminMenuItemClass}
+                                    onClick={() => {
+                                      close();
+                                      openProfileEditor(u);
+                                    }}
+                                  >
+                                    Modifier les informations
+                                  </button>
+                                ) : null}
                                 {u.organizationId ? (
                                   <Link
                                     href={adminHref(
@@ -1073,17 +1147,30 @@ export function AdminUsersView() {
                                       Révoquer sessions
                                     </button>
                                     {u.status === "ACTIVE" ? (
-                                      <button
-                                        type="button"
-                                        role="menuitem"
-                                        className={`${adminMenuItemClass} font-bold text-red-700`}
-                                        onClick={() => {
-                                          close();
-                                          setPending({ kind: "disable", user: u });
-                                        }}
-                                      >
-                                        Bloquer le compte
-                                      </button>
+                                      <>
+                                        <button
+                                          type="button"
+                                          role="menuitem"
+                                          className={`${adminMenuItemClass} font-bold text-red-700`}
+                                          onClick={() => {
+                                            close();
+                                            setPending({ kind: "disable", user: u });
+                                          }}
+                                        >
+                                          Bloquer le compte
+                                        </button>
+                                        <button
+                                          type="button"
+                                          role="menuitem"
+                                          className={`${adminMenuItemClass} font-bold text-red-700`}
+                                          onClick={() => {
+                                            close();
+                                            setPending({ kind: "delete", user: u });
+                                          }}
+                                        >
+                                          Supprimer le compte
+                                        </button>
+                                      </>
                                     ) : (
                                       <button
                                         type="button"
@@ -1225,6 +1312,14 @@ export function AdminUsersView() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
+                    onClick={() => openProfileEditor(selected)}
+                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#FFEFF8] px-2 text-[12px] font-bold text-ink"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Modifier
+                  </button>
+                  <button
+                    type="button"
                     onClick={() =>
                       setPending({ kind: "reset_password", user: selected })
                     }
@@ -1243,7 +1338,84 @@ export function AdminUsersView() {
                     <Power className="h-4 w-4" />
                     Révoquer
                   </button>
+                  {selected.status === "ACTIVE" ? (
+                    <button
+                      type="button"
+                      onClick={() => setPending({ kind: "delete", user: selected })}
+                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-red-50 px-2 text-[12px] font-bold text-red-800"
+                    >
+                      Supprimer
+                    </button>
+                  ) : null}
                 </div>
+              ) : null}
+
+              {profileOpen && selected.accountKind === "ORG" ? (
+                <form onSubmit={(event) => void saveProfile(event)} className="space-y-2 rounded-xl bg-[#FFF7F9] p-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                    Modifier les informations
+                  </p>
+                  <label className="block text-[12px] font-bold text-ink/55">
+                    Prénom
+                    <input
+                      required
+                      value={profile.firstName}
+                      onChange={(event) =>
+                        setProfile((current) => ({ ...current, firstName: event.target.value }))
+                      }
+                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-ink"
+                    />
+                  </label>
+                  <label className="block text-[12px] font-bold text-ink/55">
+                    Nom
+                    <input
+                      required
+                      value={profile.lastName}
+                      onChange={(event) =>
+                        setProfile((current) => ({ ...current, lastName: event.target.value }))
+                      }
+                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-ink"
+                    />
+                  </label>
+                  <label className="block text-[12px] font-bold text-ink/55">
+                    E-mail
+                    <input
+                      required
+                      type="email"
+                      value={profile.email}
+                      onChange={(event) =>
+                        setProfile((current) => ({ ...current, email: event.target.value }))
+                      }
+                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-ink"
+                    />
+                  </label>
+                  <label className="block text-[12px] font-bold text-ink/55">
+                    Téléphone
+                    <input
+                      value={profile.phone}
+                      onChange={(event) =>
+                        setProfile((current) => ({ ...current, phone: event.target.value }))
+                      }
+                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-ink"
+                    />
+                  </label>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="submit"
+                      disabled={busy}
+                      className="h-9 flex-1 rounded-lg bg-primary text-[12px] font-bold text-white disabled:opacity-50"
+                    >
+                      Enregistrer
+                    </button>
+                    <button
+                      type="button"
+                      className="h-9 flex-1 rounded-lg bg-white text-[12px] font-bold text-ink"
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </form>
               ) : null}
 
               <div className="space-y-2 rounded-xl bg-[#FFF7F9] p-3">
@@ -1344,13 +1516,6 @@ export function AdminUsersView() {
                   Verrouiller temporairement ce compte
                 </button>
               ) : null}
-
-              <Link
-                href={adminHref(`/users/${selected.id}/`)}
-                className="text-center text-[12px] font-bold text-primary hover:underline"
-              >
-                Ouvrir la fiche complète
-              </Link>
             </div>
           ) : (
             <div className="rounded-2xl bg-white p-8 text-center text-sm text-ink/45 shadow-sm">

@@ -198,14 +198,14 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
       {/* Health */}
       <section className="rounded-2xl bg-surface-container-lowest p-4 shadow-sm">
         <div className="mb-3 flex items-center gap-3">
-          <HealthRing score={vm.loading ? 0 : vm.health.score} loading={vm.loading} />
+          <HealthRing score={vm.loading ? null : vm.health.score} loading={vm.loading} />
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-secondary">Santé globale</p>
             <p className="text-lg font-extrabold text-on-surface">
               {vm.loading ? "…" : vm.health.label}
             </p>
             <p className="text-[11px] text-on-surface-variant">
-              {vm.occupation != null ? `Occupation ${vm.occupation} %` : "7 piliers"}
+              {vm.occupation != null ? `Occupation ${vm.occupation} %` : "Indicateurs mesurés"}
             </p>
           </div>
         </div>
@@ -219,12 +219,12 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
                 {p.label}
               </p>
               <p className={cn("text-lg font-extrabold", p.tone)}>
-                {vm.loading ? "—" : p.score}
+                {vm.loading || p.score == null ? "—" : p.score}
               </p>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface-container-high">
                 <div
                   className={cn("h-full rounded-full", p.bar)}
-                  style={{ width: vm.loading ? "0%" : `${p.score}%` }}
+                  style={{ width: vm.loading || p.score == null ? "0%" : `${p.score}%` }}
                 />
               </div>
             </div>
@@ -476,7 +476,7 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-container">
                     <div
                       className="h-full rounded-full bg-primary-container"
-                      style={{ width: `${m != null ? Math.min(100, m) : 40}%` }}
+                      style={{ width: `${m != null ? Math.min(100, m) : 0}%` }}
                     />
                   </div>
                 </li>
@@ -671,10 +671,11 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
   );
 }
 
-function HealthRing({ score, loading }: { score: number; loading?: boolean }) {
+function HealthRing({ score, loading }: { score: number | null; loading?: boolean }) {
   const r = 28;
   const c = 2 * Math.PI * r;
-  const offset = c - ((loading ? 0 : score) / 100) * c;
+  const shown = loading || score == null ? 0 : score;
+  const offset = c - (shown / 100) * c;
   return (
     <div className="relative h-16 w-16 shrink-0">
       <svg viewBox="0 0 72 72" className="h-full w-full -rotate-90">
@@ -692,7 +693,7 @@ function HealthRing({ score, loading }: { score: number; loading?: boolean }) {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-sm font-extrabold text-on-surface">{loading ? "…" : score}</span>
+        <span className="text-sm font-extrabold text-on-surface">{loading ? "…" : score == null ? "—" : score}</span>
       </div>
     </div>
   );

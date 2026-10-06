@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { BookingQrPanel } from "@/components/settings/booking-qr-panel";
+import { InstituteWebsiteField } from "@/components/settings/institute-website-field";
 import { InstituteLogoField } from "@/components/settings/institute-logo-field";
 import type { AppRole } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -222,6 +223,7 @@ export function SettingsPageView() {
             subtitle="QR de réservation en ligne"
           >
             <BookingQrPanel />
+            <InstituteWebsiteField canEdit={user.role === "OWNER"} />
           </SectionCard>
 
           <SectionCard

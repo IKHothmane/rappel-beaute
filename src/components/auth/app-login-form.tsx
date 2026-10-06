@@ -65,7 +65,7 @@ export function AppLoginForm() {
           type="email"
           required
           autoComplete="username"
-          defaultValue="nadia@institutroyal.ma"
+          defaultValue="app@beauty.ma"
           className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-primary"
         />
       </label>
@@ -97,7 +97,7 @@ export function AppLoginForm() {
         </Link>
       </p>
       <p className="mt-6 text-xs text-ink/45">
-        Démo : nadia@institutroyal.ma / demo1234 (OWNER)
+        Démo : app@beauty.ma / demo1234 (OWNER)
       </p>
     </form>
   );

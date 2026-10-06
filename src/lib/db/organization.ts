@@ -17,3 +17,21 @@ export async function setOrganizationLogoUrl(
     [logoUrl, organizationId],
   );
 }
+
+export async function getOrganizationWebsite(organizationId: string): Promise<string | null> {
+  const { rows } = await pool.query<{ website: string | null }>(
+    `SELECT website FROM "Organization" WHERE id = $1`,
+    [organizationId],
+  );
+  return rows[0]?.website ?? null;
+}
+
+export async function setOrganizationWebsite(
+  organizationId: string,
+  website: string | null,
+): Promise<void> {
+  await pool.query(
+    `UPDATE "Organization" SET website = $1, "updatedAt" = NOW() WHERE id = $2`,
+    [website, organizationId],
+  );
+}

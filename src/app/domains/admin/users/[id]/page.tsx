@@ -49,7 +49,7 @@ function UserDetailInner() {
   const [pending, setPending] = useState<SensitiveActionKind | null>(null);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [messageTemplate, setMessageTemplate] = useState("");
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "" });
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const [roleDraft, setRoleDraft] = useState("STAFF");
 
   const reload = useCallback(async () => {
@@ -61,6 +61,7 @@ function UserDetailInner() {
       firstName: res.user.firstName,
       lastName: res.user.lastName,
       email: res.user.email,
+      phone: res.user.phone ?? "",
     });
     setRoleDraft(res.user.role);
   }, [id]);
@@ -113,7 +114,12 @@ function UserDetailInner() {
     e.preventDefault();
     setBusy(true);
     try {
-      await patchAdminUser(id, form);
+      await patchAdminUser(id, {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone.trim(),
+      });
       await reload();
       router.replace(adminHref(`/users/${id}/`));
     } catch (err) {
@@ -281,6 +287,14 @@ function UserDetailInner() {
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               required
+            />
+          </label>
+          <label className="block text-sm">
+            Téléphone
+            <input
+              className="ac-input mt-1"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
             />
           </label>
           <div className="flex gap-2">

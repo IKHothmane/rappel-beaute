@@ -85,6 +85,8 @@ export function InventoryPageView() {
   const [adjustType, setAdjustType] = useState<MovementType>("ADJUSTMENT_IN");
   const [adjustProductId, setAdjustProductId] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const productsRef = useRef<ProductListItem[]>([]);
+  productsRef.current = products;
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 250);
@@ -114,7 +116,7 @@ export function InventoryPageView() {
       setProducts(prods.data);
       setKpis(k);
       const init: Record<string, string> = {};
-      for (const p of prods.data) init[p.id] = String(p.stock);
+      for (const p of prods.data) init[p.id] = formatQtyInput(p.stock);
       setCounts(init);
       if (showPurchases) {
         listPurchases({ limit: 1 })
@@ -169,10 +171,51 @@ export function InventoryPageView() {
     setAdjustOpen(true);
   }
 
+  async function stepStock(id: string, mode: "IN" | "OUT") {
+    const row = productsRef.current.find((p) => p.id === id);
+    if (!row) return;
+    if (mode === "OUT" && row.stock <= 0) {
+      toast("Stock déjà à 0.", "info");
+      return;
+    }
+    const stock = mode === "IN" ? row.stock + 1 : row.stock - 1;
+    const alert: StockAlertLevel =
+      row.alert === "EXPIRING" || row.alert === "EXPIRED"
+        ? row.alert
+        : stock <= 0
+          ? "OUT"
+          : stock <= row.minStock
+            ? "LOW"
+            : "OK";
+    const next = productsRef.current.map((p) =>
+      p.id === id
+        ? {
+            ...p,
+            stock,
+            alert,
+            stockValue: Math.round(stock * p.purchasePrice * 100) / 100,
+          }
+        : p,
+    );
+    productsRef.current = next;
+    setProducts(next);
+    setCounts((current) => ({ ...current, [id]: formatQtyInput(stock) }));
+    const result = await createMovement({
+      productId: id,
+      type: mode === "IN" ? "ADJUSTMENT_IN" : "ADJUSTMENT_OUT",
+      quantity: 1,
+      referenceType: "MANUAL",
+    });
+    if (!result.ok) {
+      toast(result.error, "error");
+      refresh();
+    }
+  }
+
   async function handleInventory() {
     setSubmitting(true);
     const items = products
-      .map((p) => ({ productId: p.id, countedQuantity: Number(counts[p.id]) }))
+      .map((p) => ({ productId: p.id, countedQuantity: parseQty(counts[p.id] ?? "") }))
       .filter((i) => !Number.isNaN(i.countedQuantity));
     const result = await applyInventoryCount(items);
     setSubmitting(false);
@@ -240,8 +283,8 @@ export function InventoryPageView() {
         movementTotal={movementTotal}
         loading={loading}
         latestByProduct={latestByProduct}
-        onQuickIn={(id) => openAdjust(id, "ADJUSTMENT_IN")}
-        onQuickOut={(id) => openAdjust(id, "ADJUSTMENT_OUT")}
+        onQuickIn={(id) => void stepStock(id, "IN")}
+        onQuickOut={(id) => void stepStock(id, "OUT")}
         onAdjust={(id) => openAdjust(id)}
         onReceipt={() => setBlOpen(true)}
         onInventory={() => {
@@ -529,8 +572,8 @@ export function InventoryPageView() {
                 canWrite={canWrite}
                 showPurchases={showPurchases}
                 onExport={() => exportProductsCsv(filtered)}
-                onIn={(id) => openAdjust(id, "ADJUSTMENT_IN")}
-                onOut={(id) => openAdjust(id, "ADJUSTMENT_OUT")}
+                onIn={(id) => void stepStock(id, "IN")}
+                onOut={(id) => void stepStock(id, "OUT")}
                 onAdjust={(id) => openAdjust(id)}
               />
             )}
@@ -879,6 +922,30 @@ function FluxList({ movements }: { movements: InventoryMovementItem[] }) {
   );
 }
 
+function sanitizeQty(raw: string) {
+  const value = raw.replace(/\s/g, "").replace(/\./g, ",").replace(/[^\d,]/g, "");
+  const comma = value.indexOf(",");
+  if (comma === -1) return value;
+  return `${value.slice(0, comma)},${value.slice(comma + 1).replace(/,/g, "")}`;
+}
+
+function parseQty(raw: string) {
+  if (!raw.trim() || raw.trim() === ",") return Number.NaN;
+  const value = Number(raw.replace(/\s/g, "").replace(",", "."));
+  return Number.isFinite(value) ? value : Number.NaN;
+}
+
+function formatQtyInput(value: number) {
+  const rounded = Math.round(Math.max(0, value) * 1000) / 1000;
+  return String(rounded).replace(".", ",");
+}
+
+function stepWholeQty(raw: string, delta: number) {
+  const current = parseQty(raw);
+  const base = Number.isFinite(current) ? current : 0;
+  return formatQtyInput(base + delta);
+}
+
 function ReceiptForm({
   products,
   defaultId,
@@ -913,8 +980,8 @@ function ReceiptForm({
       className="grid grid-cols-1 gap-3 sm:grid-cols-2"
       onSubmit={(e) => {
         e.preventDefault();
-        const quantity = Number(qty);
-        if (!quantity || !productId) return;
+        const quantity = Number(qty.replace(",", "."));
+        if (!Number.isFinite(quantity) || quantity <= 0 || !productId) return;
         const parts = [bl.trim() && `BL ${bl.trim()}`, supplier.trim()].filter(Boolean);
         onSubmit({ productId, quantity, reason: parts.join(" · ") || undefined });
       }}
@@ -935,7 +1002,30 @@ function ReceiptForm({
       </label>
       <label className="block text-[12px]">
         <span className="mb-1 block font-bold text-ink">Quantité reçue</span>
-        <Input type="number" min={0.001} step={0.001} value={qty} onChange={(e) => setQty(e.target.value)} required />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Diminuer la quantité reçue"
+            onClick={() => setQty((current) => stepWholeQty(current, -1))}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-white text-lg font-bold text-ink hover:bg-[#FFEFF8]"
+          >
+            −
+          </button>
+          <Input
+            inputMode="decimal"
+            value={qty}
+            onChange={(e) => setQty(sanitizeQty(e.target.value))}
+            required
+          />
+          <button
+            type="button"
+            aria-label="Augmenter la quantité reçue"
+            onClick={() => setQty((current) => stepWholeQty(current, 1))}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-white text-lg font-bold text-ink hover:bg-[#FFEFF8]"
+          >
+            +
+          </button>
+        </div>
       </label>
       <label className="block text-[12px]">
         <span className="mb-1 block font-bold text-ink">N° bon de livraison</span>
@@ -980,7 +1070,8 @@ function InventoryCountForm({
     <div className="space-y-3">
       <ul className={cn("divide-y divide-[#F0E3E6]", compact ? "max-h-64 overflow-y-auto rounded-xl bg-[#FFF7F9]" : "rounded-xl bg-[#FFF7F9]")}>
         {products.map((p) => {
-          const counted = Number(counts[p.id]);
+          const raw = counts[p.id] ?? "";
+          const counted = parseQty(raw);
           const gap = !Number.isNaN(counted) ? counted - p.stock : 0;
           return (
             <li key={p.id} className="flex items-center gap-3 px-3 py-2.5 text-[12px]">
@@ -988,14 +1079,33 @@ function InventoryCountForm({
                 <p className="truncate font-bold text-ink">{p.name}</p>
                 <p className="text-[11px] text-ink/45">Théo. {formatQty(p.stock, p.unit)}</p>
               </div>
-              <Input
-                type="number"
-                step={0.001}
-                className="w-24"
-                value={counts[p.id] ?? ""}
-                onChange={(e) => onChange({ ...counts, [p.id]: e.target.value })}
-                disabled={!canWrite}
-              />
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label={`Diminuer ${p.name}`}
+                  disabled={!canWrite}
+                  onClick={() => onChange({ ...counts, [p.id]: stepWholeQty(raw, -1) })}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-white text-base font-bold text-ink hover:bg-[#FFEFF8] disabled:opacity-40"
+                >
+                  −
+                </button>
+                <Input
+                  inputMode="decimal"
+                  className="w-16 text-center"
+                  value={raw}
+                  onChange={(e) => onChange({ ...counts, [p.id]: sanitizeQty(e.target.value) })}
+                  disabled={!canWrite}
+                />
+                <button
+                  type="button"
+                  aria-label={`Augmenter ${p.name}`}
+                  disabled={!canWrite}
+                  onClick={() => onChange({ ...counts, [p.id]: stepWholeQty(raw, 1) })}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-white text-base font-bold text-ink hover:bg-[#FFEFF8] disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
               {gap !== 0 && !Number.isNaN(counted) ? (
                 <span className={cn("w-14 text-right font-bold", gap < 0 ? "text-red-600" : "text-emerald-700")}>
                   {gap > 0 ? "+" : ""}

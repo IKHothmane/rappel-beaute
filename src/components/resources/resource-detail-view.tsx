@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canWriteResources } from "@/lib/rbac";
+import { businessTodayIso } from "@/lib/time/business-timezone";
 import {
   createResourceMaintenance,
   getResource,
@@ -22,6 +23,7 @@ import type {
   MaintenanceType,
   ResourceAvailability,
   ResourceDetail,
+  ResourceMaintenanceItem,
 } from "@/types/resource";
 import {
   MAINTENANCE_STATUS_LABEL,
@@ -41,7 +43,7 @@ export function ResourceDetailView({ resourceId }: { resourceId: string }) {
   const [resource, setResource] = useState<ResourceDetail | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [availDate, setAvailDate] = useState("2026-08-30");
+  const [availDate, setAvailDate] = useState(businessTodayIso);
   const [availability, setAvailability] = useState<ResourceAvailability | null>(null);
 
   const refresh = useCallback(async () => {
@@ -259,6 +261,13 @@ export function ResourceDetailView({ resourceId }: { resourceId: string }) {
   );
 }
 
+function toDatetimeLocal(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function MaintenanceTab({
   resource,
   canWrite,
@@ -277,6 +286,7 @@ function MaintenanceTab({
   const [endAt, setEndAt] = useState("");
   const [type, setType] = useState<MaintenanceType>("PREVENTIVE");
   const [reason, setReason] = useState("");
+  const [editing, setEditing] = useState<ResourceMaintenanceItem | null>(null);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -348,25 +358,106 @@ function MaintenanceTab({
                 {m.reason ? <p className="text-xs text-ink/45">{m.reason}</p> : null}
               </div>
               {canWrite && (m.status === "SCHEDULED" || m.status === "IN_PROGRESS") ? (
-                <button
-                  type="button"
-                  className="text-xs text-red-600 hover:underline"
-                  disabled={submitting}
-                  onClick={async () => {
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-ink hover:underline"
+                    onClick={() => setEditing(editing?.id === m.id ? null : m)}
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-emerald-700 hover:underline"
+                    disabled={submitting}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      const result = await updateResourceMaintenance(resource.id, m.id, {
+                        status: "COMPLETED",
+                        endAt: new Date().toISOString(),
+                      });
+                      setSubmitting(false);
+                      if (!result.ok) toast(result.error, "error");
+                      else {
+                        toast("Maintenance terminée.", "success");
+                        if (editing?.id === m.id) setEditing(null);
+                        onRefresh();
+                      }
+                    }}
+                  >
+                    Terminer
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-red-600 hover:underline"
+                    disabled={submitting}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      const result = await updateResourceMaintenance(resource.id, m.id, {
+                        status: "CANCELLED",
+                      });
+                      setSubmitting(false);
+                      if (!result.ok) toast(result.error, "error");
+                      else {
+                        toast("Maintenance annulée.", "info");
+                        onRefresh();
+                      }
+                    }}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              ) : null}
+              {editing?.id === m.id ? (
+                <form
+                  className="mt-3 grid w-full basis-full gap-2 sm:grid-cols-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = new FormData(e.currentTarget);
+                    const start = String(form.get("start") ?? "");
+                    const end = String(form.get("end") ?? "");
+                    if (!start || !end) return;
                     setSubmitting(true);
                     const result = await updateResourceMaintenance(resource.id, m.id, {
-                      status: "CANCELLED",
+                      startAt: new Date(start).toISOString(),
+                      endAt: new Date(end).toISOString(),
+                      type: String(form.get("type") ?? m.type) as MaintenanceType,
+                      reason: String(form.get("reason") ?? "").trim() || undefined,
                     });
                     setSubmitting(false);
-                    if (!result.ok) toast(result.error, "error");
-                    else {
-                      toast("Maintenance annulée.", "info");
-                      onRefresh();
+                    if (!result.ok) {
+                      toast(result.error, "error");
+                      return;
                     }
+                    toast("Maintenance modifiée.", "success");
+                    setEditing(null);
+                    onRefresh();
                   }}
                 >
-                  Annuler
-                </button>
+                  <Input
+                    name="start"
+                    type="datetime-local"
+                    defaultValue={toDatetimeLocal(m.startAt)}
+                    required
+                  />
+                  <Input
+                    name="end"
+                    type="datetime-local"
+                    defaultValue={toDatetimeLocal(m.endAt)}
+                    required
+                  />
+                  <Select name="type" defaultValue={m.type}>
+                    {Object.entries(MAINTENANCE_TYPE_LABEL).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input name="reason" defaultValue={m.reason ?? ""} placeholder="Motif (optionnel)" />
+                  <Button type="submit" variant="primary" disabled={submitting} className="sm:col-span-2">
+                    Enregistrer
+                  </Button>
+                </form>
               ) : null}
             </li>
           ))}

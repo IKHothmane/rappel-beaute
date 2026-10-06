@@ -13,7 +13,6 @@ import { AgendaWeekBoard } from "@/components/agenda/agenda-week-board";
 import { AgendaMobile } from "@/components/agenda/agenda-mobile";
 import { AppointmentDetails } from "@/components/agenda/appointment-details";
 import { AppointmentForm } from "@/components/agenda/appointment-form";
-import { BlockSlotDialog } from "@/components/agenda/block-slot-dialog";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { Drawer } from "@/components/ui/drawer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";

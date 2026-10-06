@@ -1,5 +1,6 @@
 "use client";
 
+import { STAFF_STATUS_LABEL } from "@/types/staff";
 import type { ServiceFormOptions } from "@/types/service";
 
 type ServiceStaffSelectorProps = {

@@ -304,7 +304,7 @@ export default function HomePage() {
           </ol>
           <p className="mt-8 text-center">
             <Link
-              href="/essai/"
+              href="/professionnel/"
               className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-dark"
             >
               Commencer gratuitement
@@ -382,7 +382,7 @@ export default function HomePage() {
           </ul>
           <p className="mt-6 text-sm text-ink/60">7 jours gratuits · Sans carte bancaire · Sans engagement</p>
           <Link
-            href="/essai/"
+            href="/professionnel/"
             className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-dark"
           >
             Essai gratuit 7 jours
@@ -424,7 +424,7 @@ export default function HomePage() {
             7 jours pour essayer, sans carte bancaire et sans engagement.
           </p>
           <Link
-            href="/essai/"
+            href="/professionnel/"
             className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
           >
             Commencer gratuitement

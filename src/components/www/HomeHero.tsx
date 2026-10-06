@@ -41,13 +41,13 @@ export function HomeHero() {
 
         <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            href="/essai/"
+            href="/professionnel/"
             className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
           >
             Essayer gratuitement 7 jours
           </Link>
           <Link
-            href="/demo/"
+            href="/professionnel/"
             className="inline-flex items-center justify-center rounded-full border border-line bg-white/80 px-6 py-3 text-sm font-semibold text-ink backdrop-blur-sm transition hover:border-primary/40"
           >
             Voir une démo

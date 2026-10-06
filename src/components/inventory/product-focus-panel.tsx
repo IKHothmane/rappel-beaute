@@ -23,7 +23,8 @@ type ProductFocusPanelProps = {
   canWrite: boolean;
   financeHidden: boolean;
   onEdit: () => void;
-  onAdjust: () => void;
+  onIn: () => void;
+  onOut: () => void;
 };
 
 export function ProductFocusPanel({
@@ -33,7 +34,8 @@ export function ProductFocusPanel({
   canWrite,
   financeHidden,
   onEdit,
-  onAdjust,
+  onIn,
+  onOut,
 }: ProductFocusPanelProps) {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<ProductDetail | null>(null);
@@ -41,7 +43,6 @@ export function ProductFocusPanel({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setDetail(null);
     getProduct(productId)
       .then((res) => {
         if (!cancelled) setDetail(res);
@@ -55,20 +56,13 @@ export function ProductFocusPanel({
     return () => {
       cancelled = true;
     };
-  }, [
-    productId,
-    fallback.stock,
-    fallback.alert,
-    fallback.name,
-    fallback.purchasePrice,
-    fallback.salePrice,
-    fallback.minStock,
-    fallback.active,
-  ]);
+  }, [productId]);
 
   const product = detail ?? fallback;
+  const stockNow = fallback.stock;
+  const alertNow = fallback.alert;
   const margin = productMargin(product);
-  const fill = stockFillPercent(product);
+  const fill = stockFillPercent({ ...product, stock: stockNow, alert: alertNow });
   const preferred = (detail?.suppliers ?? []).slice().sort((a, b) => Number(b.preferred) - Number(a.preferred));
 
   return (
@@ -103,8 +97,8 @@ export function ProductFocusPanel({
           ) : null}
         </div>
 
-        <span className={cn("inline-flex w-fit rounded-full px-3 py-1 text-[11px] font-bold", alertChipClass(product.alert))}>
-          {STOCK_ALERT_LABEL[product.alert]}
+        <span className={cn("inline-flex w-fit rounded-full px-3 py-1 text-[11px] font-bold", alertChipClass(alertNow))}>
+          {STOCK_ALERT_LABEL[alertNow]}
         </span>
 
         <div className="rounded-xl bg-[#FFEFF8] p-3">
@@ -112,7 +106,7 @@ export function ProductFocusPanel({
             <div>
               <p className="text-[11px] uppercase text-ink/40">Stock disponible</p>
               <p className="font-display text-[28px] font-extrabold leading-8 text-ink">
-                {formatQty(product.stock, product.unit)}
+                {formatQty(stockNow, product.unit)}
               </p>
             </div>
             <p className="text-right text-[12px] text-ink/50">
@@ -129,7 +123,7 @@ export function ProductFocusPanel({
             <div className="mt-3 grid grid-cols-3 gap-1.5">
               <button
                 type="button"
-                onClick={onAdjust}
+                onClick={onIn}
                 className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-white text-[11px] font-semibold text-ink shadow-sm"
               >
                 <Plus size={13} />
@@ -137,9 +131,8 @@ export function ProductFocusPanel({
               </button>
               <button
                 type="button"
-                onClick={onAdjust}
+                onClick={onOut}
                 className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-white text-[11px] font-semibold text-ink shadow-sm"
-              >
                 <Minus size={13} />
                 Sortie
               </button>

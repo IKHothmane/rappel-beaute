@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { Reveal } from "@/components/www/Reveal";
 import { ProfessionnelForm } from "@/components/www/ProfessionnelForm";
 import { APP_LOGIN_HREF, PUBLIC_OFFER, SITE } from "@/lib/site";
-import { getShowcaseMonthlyPrice } from "@/lib/subscriptions/plans";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   title: "Je suis un professionnel",
@@ -36,8 +34,7 @@ const REASONS = [
   },
 ] as const;
 
-export default async function ProfessionnelPage() {
-  const monthlyPrice = await getShowcaseMonthlyPrice();
+export default function ProfessionnelPage() {
   return (
     <section className="relative w-full overflow-hidden">
       {/* Background */}
@@ -70,7 +67,7 @@ export default async function ProfessionnelPage() {
           </p>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/essai/"
+              href="#inscription"
               className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
             >
               Essayer gratuitement 7 jours
@@ -90,12 +87,8 @@ export default async function ProfessionnelPage() {
 
         {/* Grid: form + side */}
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-10">
-          <Reveal className="rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-xl sm:p-8 lg:col-span-7">
-            <Suspense
-              fallback={<div className="h-96 animate-pulse rounded-xl bg-primary-light/40" />}
-            >
-              <ProfessionnelForm monthlyPrice={monthlyPrice} />
-            </Suspense>
+          <Reveal id="inscription" className="rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-xl sm:p-8 lg:col-span-7">
+            <ProfessionnelForm />
           </Reveal>
 
           <div className="flex flex-col gap-6 lg:col-span-5">

@@ -5,8 +5,6 @@ import Link from "next/link";
 import {
   AlertTriangle,
   CalendarDays,
-  Cloud,
-  Lock,
   MessageCircle,
   Phone,
   PieChart,
@@ -51,7 +49,6 @@ type AgendaMobileProps = {
   whatsappConnected: boolean | null;
   onAppointmentClick: (id: string) => void;
   onCreate: (seed?: { startAt: string; endAt: string; staffId?: string }) => void;
-  onBlockSlot: () => void;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
 };
 
@@ -116,7 +113,6 @@ export function AgendaMobile({
   whatsappConnected,
   onAppointmentClick,
   onCreate,
-  onBlockSlot,
   onStatusChange,
 }: AgendaMobileProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -311,18 +307,10 @@ export function AgendaMobile({
               <div className="h-full rounded-full bg-primary" style={{ width: `${occ}%` }} />
             </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-5 gap-2">
-          <button
-            type="button"
-            onClick={() => onCreate()}
-            className="col-span-3 flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white shadow-[0_4px_16px_rgba(227,28,95,0.25)] active:scale-[0.98]"
+            className="col-span-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white shadow-[0_4px_16px_rgba(227,28,95,0.25)] active:scale-[0.98]"
           >
             <Plus size={18} />
             Nouveau RDV
-          </button>
-          <button
             type="button"
             onClick={onBlockSlot}
             className="col-span-2 flex h-12 items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-semibold text-ink shadow-sm active:scale-[0.98]"
@@ -446,36 +434,17 @@ export function AgendaMobile({
               <Plus size={14} /> Créer
             </span>
           </button>
-        ) : null}
-
-        {dayAppts.length > 0 && new Date(dayAppts[0].startAt).getHours() * 60 + new Date(dayAppts[0].startAt).getMinutes() > AGENDA_OPEN_HOUR * 60 + 30 ? (
-          <GapRow time="08:30" onCreate={() => seedAt(8, 30)} />
-        ) : null}
-
-        {dayAppts.map((apt, i) => {
-          const start = new Date(apt.startAt);
-          const showLunch =
-            lunchFree &&
-            start.getHours() >= 14 &&
-            (i === 0 || new Date(dayAppts[i - 1].startAt).getHours() < 13);
-          return (
-            <div key={apt.id}>
-              {showLunch ? <LunchBand /> : null}
-              <MobileAptRow
-                apt={apt}
-                expanded={expandedId === apt.id}
-                customer={expandedId === apt.id ? customer : null}
-                onToggle={() => setExpandedId((id) => (id === apt.id ? null : apt.id))}
-                onOpenDetail={() => onAppointmentClick(apt.id)}
-                onStatusChange={onStatusChange}
-              />
-            </div>
-          );
-        })}
-
-        {lunchFree && (dayAppts.length === 0 || new Date(dayAppts[dayAppts.length - 1].startAt).getHours() < 13) ? (
-          <LunchBand />
-        ) : null}
+        {dayAppts.map((apt) => (
+          <MobileAptRow
+            key={apt.id}
+            apt={apt}
+            expanded={expandedId === apt.id}
+            customer={expandedId === apt.id ? customer : null}
+            onToggle={() => setExpandedId((id) => (id === apt.id ? null : apt.id))}
+            onOpenDetail={() => onAppointmentClick(apt.id)}
+            onStatusChange={onStatusChange}
+          />
+        ))}
 
         {lateSlot && firstStaff ? (
           <div className="flex items-start gap-2">
@@ -510,11 +479,6 @@ export function AgendaMobile({
                 >
                   Proposer ce créneau
                 </button>
-                {waitingCount > 0 ? (
-                  <Link href="/waiting-list/" className="rounded-lg bg-white px-3 py-1 text-[11px] font-semibold text-ink">
-                    Voir la liste
-                  </Link>
-                ) : null}
               </div>
             </div>
           </div>
@@ -538,14 +502,6 @@ function GapRow({ time, onCreate }: { time: string; onCreate: () => void }) {
           <Plus size={14} /> Créer
         </span>
       </button>
-    </div>
-  );
-}
-
-function LunchBand() {
-  return (
-    <div className="flex items-center justify-between rounded-xl bg-[#FBF4F6] px-3 py-2.5 text-ink/55">
-      <div className="flex items-center gap-2">
         <Cloud size={16} className="text-gold" />
         <div>
           <p className="text-[11px] font-bold tracking-wide text-ink">Pause 13:00 – 14:00</p>

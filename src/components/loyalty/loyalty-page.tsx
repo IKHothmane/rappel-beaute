@@ -44,6 +44,7 @@ import {
   waMeHref,
 } from "@/components/loyalty/loyalty-helpers";
 import { LoyaltyMobile } from "@/components/loyalty/loyalty-mobile";
+import { LoyaltyPassQr } from "@/components/loyalty/loyalty-pass-qr";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -427,6 +428,12 @@ export function LoyaltyPageView() {
           </div>
         </section>
 
+        {selected ? (
+          <section className="rounded-xl bg-white p-4 shadow-sm">
+            <LoyaltyPassQr customerId={selected.customerId} />
+          </section>
+        ) : null}
+
         <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <Kpi
             label="Membres"
@@ -754,7 +761,7 @@ export function LoyaltyPageView() {
             </div>
           </div>
 
-          <div className="xl:col-span-4">
+          <div className="xl:sticky xl:top-4 xl:col-span-4">
             {selected && program ? (
               <FocusPanel
                 member={selected}
@@ -1194,6 +1201,8 @@ function FocusPanel({
           </Link>
         ) : null}
       </div>
+
+      <LoyaltyPassQr customerId={member.customerId} />
 
       <div className="rounded-xl bg-[#FFEFF8] p-3">
         <div className="flex items-center justify-between text-[12px] font-bold">

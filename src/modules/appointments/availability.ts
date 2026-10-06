@@ -185,52 +185,19 @@ export function getAvailableSlots(
 ): { time: string; available: boolean; reason?: string }[] {
   const slots: { time: string; available: boolean; reason?: string }[] = [];
   const businessDay = businessParts(params.date);
-  const day = businessDay.weekday;
-  const schedule = params.staffContext?.schedules.find((s) => s.dayOfWeek === day && s.active);
-  const overtimes = params.staffContext?.overtimes ?? [];
+  const now = businessParts(new Date());
+  const isToday =
+    now.year === businessDay.year &&
+    now.month === businessDay.month &&
+    now.day === businessDay.day;
+  const nowMinutes = now.hour * 60 + now.minute;
 
-  let openHour = schedule
-    ? parseInt(schedule.startTime.split(":")[0], 10)
-    : AGENDA_OPEN_HOUR;
-  let closeHour = schedule
-    ? parseInt(schedule.endTime.split(":")[0], 10) +
-      (parseInt(schedule.endTime.split(":")[1], 10) > 0 ? 1 : 0)
-    : AGENDA_CLOSE_HOUR;
-
-  // Étendre la fenêtre de slots avec les heures supplémentaires du jour
-  for (const ot of overtimes) {
-    const oStart = parseDate(ot.startAt);
-    const oEnd = parseDate(ot.endAt);
-    if (!isSameBusinessDay(oStart, params.date) && !isSameBusinessDay(oEnd, params.date)) {
-      if (!(oStart <= params.date && oEnd >= params.date)) continue;
-    }
-    const otStart = businessParts(oStart);
-    const otEnd = businessParts(oEnd);
-    openHour = Math.min(openHour, otStart.hour);
-    closeHour = Math.max(closeHour, otEnd.hour + (otEnd.minute > 0 ? 1 : 0));
-  }
-
-  openHour = Math.max(AGENDA_OPEN_HOUR, Math.min(openHour, AGENDA_CLOSE_HOUR - 1));
-  closeHour = Math.min(AGENDA_CLOSE_HOUR, Math.max(closeHour, openHour + 1));
-
-  if (params.staffContext && !schedule && overtimes.length === 0) return slots;
-
-  for (let h = openHour; h < closeHour; h++) {
+  for (let h = AGENDA_OPEN_HOUR; h < AGENDA_CLOSE_HOUR; h++) {
     for (let m = 0; m < 60; m += AGENDA_SLOT_MINUTES) {
+      if (isToday && h * 60 + m < nowMinutes) continue;
+
       const start = businessWallTime(businessDay, h, m);
       const end = new Date(start.getTime() + params.durationMinutes * 60_000);
-
-      if (schedule) {
-        const workEnd = businessTimeOnDate(params.date, schedule.endTime);
-        const workStart = businessTimeOnDate(params.date, schedule.startTime);
-        const withinSchedule = start >= workStart && end <= workEnd;
-        const coveredByOt = overtimes.some((ot) => {
-          const oStart = parseDate(ot.startAt);
-          const oEnd = parseDate(ot.endAt);
-          return start >= oStart && end <= oEnd;
-        });
-        if (!withinSchedule && !coveredByOt) continue;
-      }
 
       const result = checkAvailability(
         appointments,
@@ -246,7 +213,7 @@ export function getAvailableSlots(
       );
 
       slots.push({
-        time: formatBusinessTime(start),
+        time: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
         available: result.available,
         reason: result.conflicts[0],
       });

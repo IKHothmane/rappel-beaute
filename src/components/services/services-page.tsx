@@ -20,7 +20,6 @@ import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import { ServiceForm } from "@/components/services/service-form";
 import {
   categoryIcon,
-  hourlyRate,
   staffInitials,
 } from "@/components/services/services-helpers";
 import { ServicesMobile } from "@/components/services/services-mobile";
@@ -134,26 +133,6 @@ export function ServicesPageView() {
   const topByAppointments = useMemo(() => {
     if (!serviceStats.length) return null;
     return serviceStats.reduce((best, row) => (row.appointments > best.appointments ? row : best), serviceStats[0]);
-  }, [serviceStats]);
-
-  const topHourly = useMemo(() => {
-    let best: { service: ServiceListItem; rate: number } | null = null;
-    for (const s of catalog.filter((x) => x.active)) {
-      const rate = hourlyRate(s.price, s.durationMin);
-      if (rate == null) continue;
-      if (!best || rate > best.rate) best = { service: s, rate };
-    }
-    return best;
-  }, [catalog]);
-
-  const hourlyRanking = useMemo(() => {
-    return catalog
-      .filter((s) => s.active)
-      .map((s) => ({ service: s, rate: hourlyRate(s.price, s.durationMin) }))
-      .filter((x): x is { service: ServiceListItem; rate: number } => x.rate != null)
-      .sort((a, b) => b.rate - a.rate)
-      .slice(0, 4);
-  }, [catalog]);
   const maxHourly = hourlyRanking[0]?.rate ?? 0;
 
   async function ensureOptions() {
@@ -260,8 +239,6 @@ export function ServicesPageView() {
         onActiveFilterChange={setActiveFilter}
         filtered={filtered}
         statsById={statsById}
-        loading={loading}
-        topByAppointments={topByAppointments}
         topHourlyId={topHourly?.service.id ?? null}
         topHourlyRate={topHourly?.rate ?? null}
         menuId={menuId}
@@ -389,22 +366,6 @@ export function ServicesPageView() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
-            <TrendingUp size={16} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Le plus rentable / heure</p>
-            <p className="truncate text-[16px] font-bold text-ink">
-              {topHourly ? topHourly.service.name : "—"}
-              {topHourly && !financeHidden ? (
-                <span className="ml-1 text-[12px] font-semibold text-emerald-800">
-                  {formatMad(topHourly.rate)}/h
-                </span>
-              ) : null}
-            </p>
-          </div>
-        </div>
       </div>
 
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
@@ -427,43 +388,6 @@ export function ServicesPageView() {
           count={inactiveCount}
         />
       </div>
-
-      <div className="flex flex-col gap-5">
-        {!financeHidden && hourlyRanking.length > 0 ? (
-          <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h2 className="text-[16px] font-bold text-ink">Matrice de rentabilité</h2>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">Tarif / heure de soin</p>
-              </div>
-              <span className="rounded bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-800">
-                MAD / h
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {hourlyRanking.map(({ service, rate }) => (
-                <div key={service.id}>
-                  <div className="mb-1 flex items-center justify-between text-[13px]">
-                    <span className="truncate font-semibold text-ink">{service.name}</span>
-                    <span className="shrink-0 font-bold text-emerald-800">{formatMad(rate)}/h</span>
-                  </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-[#FCE9F4]">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${maxHourly ? Math.round((rate / maxHourly) * 100) : 0}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-start gap-2 rounded-lg bg-[#FFEFF8] p-3">
-              <Info size={16} className="mt-0.5 shrink-0 text-primary" />
-              <p className="text-[12px] leading-5 text-ink/60">
-                <strong className="text-ink">Impact agenda :</strong> modifier la durée d’une prestation recalcule
-                les créneaux disponibles.
-              </p>
-            </div>
-          </div>
         ) : null}
 
         {topByRevenue && !financeHidden ? (
@@ -498,9 +422,6 @@ export function ServicesPageView() {
                 service={s}
                 stats={statsById.get(s.id)}
                 financeHidden={financeHidden}
-                canWrite={canWrite}
-                isBestSeller={topByAppointments?.serviceId === s.id && (topByAppointments?.appointments ?? 0) > 0}
-                isTopHourly={topHourly?.service.id === s.id}
                 menuOpen={menuId === s.id}
                 onMenu={() => setMenuId(menuId === s.id ? null : s.id)}
                 onEdit={() => void openEdit(s.id)}
@@ -623,6 +544,7 @@ function ServiceCard({
   financeHidden,
   canWrite,
   isBestSeller,
+  isBestSeller,
   isTopHourly,
   menuOpen,
   onMenu,
@@ -633,15 +555,13 @@ function ServiceCard({
   service: ServiceListItem;
   stats?: ServiceAnalyticsRow;
   financeHidden: boolean;
-  canWrite: boolean;
-  isBestSeller: boolean;
-  isTopHourly: boolean;
   menuOpen: boolean;
   onMenu: () => void;
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
 }) {
+  const Icon = categoryIcon(s.category);
   const Icon = categoryIcon(s.category);
   const hourly = hourlyRate(s.price, s.durationMin);
   const rdv = stats?.appointments ?? 0;
@@ -665,13 +585,6 @@ function ServiceCard({
               <span className="inline-flex items-center gap-1 rounded-full bg-[#FCCA66] px-2 py-0.5 text-[11px] font-bold text-[#7B5900]">
                 <Star size={12} />
                 Best-seller
-              </span>
-            ) : null}
-            {isTopHourly && !financeHidden ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#FFDEA4]/60 px-2 py-0.5 text-[11px] font-bold text-[#7B5900]">
-                Rentabilité max
-              </span>
-            ) : null}
           </div>
           {canWrite ? (
             <div className="relative">
@@ -732,13 +645,9 @@ function ServiceCard({
         </div>
 
         {!financeHidden ? (
-          <div className="flex items-center justify-between rounded-lg bg-[#FFEFF8]/80 p-2.5 text-[13px]">
-            <div>
-              <span className="block text-[11px] font-bold uppercase text-ink/40">CA du mois</span>
-              <span className="font-bold text-ink">{formatMad(ca)}</span>
-            </div>
-            <div className="text-right">
-              <span className="block text-[11px] font-bold uppercase text-ink/40">Tarif / heure</span>
+          <div className="rounded-lg bg-[#FFEFF8]/80 p-2.5 text-[13px]">
+            <span className="block text-[11px] font-bold uppercase text-ink/40">CA du mois</span>
+            <span className="font-bold text-ink">{formatMad(ca)}</span>
               <span className="font-bold text-emerald-800">{hourly != null ? `${formatMad(hourly)}/h` : "—"}</span>
             </div>
           </div>

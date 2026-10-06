@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { EmailSendError, isEmailConfigured, sendTransactionalEmail } from "@/lib/email/send";
 import { signupPasswordEmail } from "@/lib/email/signup-password";
+import { PROFESSIONAL_SIGNUP_NOTIFY_EMAIL, signupLeadEmail } from "@/lib/email/signup-lead";
 import {
   PublicSignupError,
   createPublicSignup,
@@ -12,7 +13,7 @@ import {
 } from "@/lib/db/public-signup";
 import { setOrganizationLogoUrl } from "@/lib/db/organization";
 import { getStorageService } from "@/lib/storage";
-import { CITIES, absoluteAppLoginUrl } from "@/lib/site";
+import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
@@ -64,6 +65,10 @@ export async function POST(request: NextRequest) {
   const phone = str(form, "phone");
   const city = str(form, "ville");
   const address = str(form, "localisation");
+  const message = str(form, "message");
+  const noWebsite = form.get("no_website") === "1";
+  const website = noWebsite ? null : normalizeWebsite(str(form, "website"));
+  if (website instanceof NextResponse) return website;
 
   if (personName.length < 2 || personName.length > 80) {
     return validationError("Indiquez votre prénom et nom.");
@@ -74,8 +79,9 @@ export async function POST(request: NextRequest) {
   if (!EMAIL_RE.test(email) || email.length > 120) {
     return validationError("Adresse e-mail invalide.");
   }
-  if (phone.replace(/\D/g, "").length < 8 || phone.length > 30) {
-    return validationError("Numéro WhatsApp invalide.");
+  const phoneDigits = localPhoneDigits(phone);
+  if (phoneDigits.length < 8 || phoneDigits.length > PHONE_MAX_DIGITS) {
+    return validationError("Le numéro WhatsApp doit comporter entre 8 et 10 chiffres.");
   }
   if (!CITIES_SET.has(city)) {
     return validationError("Sélectionnez une ville.");
@@ -100,9 +106,10 @@ export async function POST(request: NextRequest) {
       personName,
       institut,
       email,
-      phone,
+      phone: phoneDigits,
       city,
       address,
+      website,
     });
 
     const tempPassword = created.temporaryPassword;
@@ -171,6 +178,41 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       await deletePublicSignupOrganization(created.organizationId);
       throw error;
+    }
+
+    try {
+      const lead = signupLeadEmail({
+        personName,
+        institut: created.institut,
+        email: created.email,
+        phone: phoneDigits,
+        city,
+        address,
+        website,
+        noWebsite,
+        message,
+        logoName: logoFile?.name || null,
+      });
+      const notified = await sendTransactionalEmail({
+        to: PROFESSIONAL_SIGNUP_NOTIFY_EMAIL,
+        replyTo: created.email,
+        subject: lead.subject,
+        html: lead.html,
+        text: lead.text,
+      });
+      logger.info("public signup lead email sent", {
+        route: "/api/public/signup",
+        organizationId: created.organizationId,
+        to: PROFESSIONAL_SIGNUP_NOTIFY_EMAIL,
+        messageId: notified.messageId,
+      });
+    } catch (error) {
+      logger.error("public signup lead email failed", {
+        route: "/api/public/signup",
+        organizationId: created.organizationId,
+        to: PROFESSIONAL_SIGNUP_NOTIFY_EMAIL,
+        error: error instanceof Error ? error.message : "unknown",
+      });
     }
 
     if (logoFile) {

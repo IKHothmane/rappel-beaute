@@ -10,6 +10,7 @@ import type {
 } from "@/types/public-booking";
 import { randomBytes } from "crypto";
 import { Pool } from "pg";
+import { limitPhoneDigits, localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -104,9 +105,10 @@ export async function createPublicProductOrder(
     throw new Error("Nom et prénom requis.");
   }
   if (!input.customer?.phone?.trim() || input.customer.phone.replace(/\D/g, "").length < 8) {
-    throw new Error("Téléphone invalide.");
+  if (localPhoneDigits(input.customer.phone ?? "").length > PHONE_MAX_DIGITS) {
+    throw new Error("Le téléphone ne doit pas dépasser 10 chiffres.");
   }
-
+  if (phone.length < 8) throw new Error("Téléphone invalide.");
   const qtyByProduct = new Map<string, number>();
   for (const line of input.lines) {
     const q = Math.floor(Number(line.quantity));

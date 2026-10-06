@@ -13,6 +13,7 @@ import {
   type AdminSettingsBundle,
 } from "@/modules/admin/settings";
 import { PLAN_LABEL } from "@/types/platform";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 
 type SectionId =
   | "profile"
@@ -146,7 +147,7 @@ export function AdminSettingsPage() {
       setFirstName(data.profile.firstName);
       setLastName(data.profile.lastName);
       setEmail(data.profile.email);
-      setPhone(data.profile.phone ?? "");
+      setPhone(limitPhoneDigits(data.profile.phone ?? ""));
       setLocale(data.profile.locale);
       setTimezone(data.profile.timezone);
     }

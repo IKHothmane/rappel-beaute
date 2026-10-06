@@ -11,6 +11,7 @@ import {
   submitPublicProductOrder,
 } from "@/modules/public-booking/service";
 import type { PublicOrganizationProfile } from "@/types/public-booking";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 
 export function PublicCheckoutPage({ slug }: { slug: string }) {
   const router = useRouter();

@@ -11,6 +11,7 @@ import type {
   PublicProductItem,
   PublicProductOrderResult,
 } from "@/types/public-booking";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 
 type CartLine = { productId: string; quantity: number };
 

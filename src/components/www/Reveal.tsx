@@ -12,6 +12,7 @@ export function Reveal({
   y = 28,
   x = 0,
   once = true,
+  id,
 }: {
   children: ReactNode;
   className?: string;
@@ -19,9 +20,11 @@ export function Reveal({
   y?: number;
   x?: number;
   once?: boolean;
+  id?: string;
 }) {
   return (
     <motion.div
+      id={id}
       className={className}
       initial={{ opacity: 0, y, x }}
       whileInView={{ opacity: 1, y: 0, x: 0 }}

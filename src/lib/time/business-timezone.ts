@@ -140,3 +140,11 @@ export function formatBusinessTime(instant: Date): string {
 export function formatBusinessDate(instant: Date): string {
   return instant.toLocaleDateString("fr-FR", { timeZone: BUSINESS_TZ });
 }
+
+/** « YYYY-MM-DD » du jour calendaire marocain. */
+export function businessTodayIso(instant = new Date()): string {
+  const p = businessParts(instant);
+  const month = String(p.month).padStart(2, "0");
+  const day = String(p.day).padStart(2, "0");
+  return `${p.year}-${month}-${day}`;
+}

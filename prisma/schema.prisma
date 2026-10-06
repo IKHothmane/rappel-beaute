@@ -443,6 +443,7 @@ model Organization {
   city      String?
   phone     String?
   email     String?
+  website   String?
   ice       String?
   logoUrl    String?
   status    OrganizationStatus @default(ACTIVE)

@@ -9,7 +9,6 @@ import {
   MessageCircle,
   Pencil,
   Sparkles,
-  Timer,
   Wallet,
   XCircle,
 } from "lucide-react";
@@ -140,20 +139,13 @@ export function StaffFocusPanel({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Link
           href="/planning/"
           className="flex flex-col items-center gap-1 rounded-lg bg-[#FCE9F4] px-2 py-2 text-center text-ink"
         >
           <CalendarDays size={16} className="text-primary" />
           <span className="text-[11px] font-semibold">Planning</span>
-        </Link>
-        <Link
-          href={`/staff/${staffId}/`}
-          className="flex flex-col items-center gap-1 rounded-lg bg-[#FCE9F4] px-2 py-2 text-center text-ink"
-        >
-          <Timer size={16} className="text-[#7B5900]" />
-          <span className="text-[11px] font-semibold">Fiche</span>
         </Link>
         <Link
           href={`/staff/${staffId}/`}
@@ -167,15 +159,15 @@ export function StaffFocusPanel({
             href={whatsappHref(person.phone, person.firstName)}
             target="_blank"
             rel="noreferrer"
-            className="flex flex-col items-center gap-1 rounded-lg bg-[#FCE9F4] px-2 py-2 text-center text-ink"
+            className="flex flex-col items-center gap-1 rounded-lg bg-[#25D366] px-2 py-2 text-center text-white"
           >
-            <MessageCircle size={16} className="text-[#B61149]" />
-            <span className="text-[11px] font-semibold">Message</span>
+            <MessageCircle size={16} />
+            <span className="text-[11px] font-semibold">WhatsApp</span>
           </a>
         ) : (
           <span className="flex flex-col items-center gap-1 rounded-lg bg-[#FCE9F4] px-2 py-2 text-center text-ink/35">
             <MessageCircle size={16} />
-            <span className="text-[11px] font-semibold">Message</span>
+            <span className="text-[11px] font-semibold">WhatsApp</span>
           </span>
         )}
       </div>
@@ -251,7 +243,7 @@ export function StaffFocusPanel({
             ))}
             {enabledServices.length > shownEnabled.length ? (
               <Link href={`/staff/${staffId}/`} className="text-[11px] font-semibold text-primary">
-                +{enabledServices.length - shownEnabled.length} autres — voir la fiche
+                +{enabledServices.length - shownEnabled.length} autres soins
               </Link>
             ) : null}
           </div>
@@ -279,9 +271,6 @@ export function StaffFocusPanel({
             ? `${activity.appointmentCount} RDV · ${formatMad(activity.revenue)}${share != null ? ` · ${share} % du CA équipe` : ""}`
             : `${activity.appointmentCount} RDV ce mois`}
         </span>
-        <Link href={`/staff/${staffId}/`} className="font-medium text-primary hover:underline">
-          Fiche complète
-        </Link>
       </div>
     </div>
   );

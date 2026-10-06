@@ -24,6 +24,7 @@ export async function sendTransactionalEmail(opts: {
   subject: string;
   html: string;
   text: string;
+  replyTo?: string;
 }): Promise<{ messageId: string | null }> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
@@ -49,7 +50,7 @@ export async function sendTransactionalEmail(opts: {
       body: JSON.stringify({
         from,
         to: [opts.to],
-        reply_to: SITE.email,
+        reply_to: opts.replyTo?.trim() || SITE.email,
         subject: opts.subject,
         html: opts.html,
         text: opts.text,

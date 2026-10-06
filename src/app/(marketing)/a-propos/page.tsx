@@ -138,7 +138,7 @@ export default function AProposPage() {
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <Link
-                  href="/demo/"
+                  href="/professionnel/"
                   className="rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-white shadow-soft transition-all hover:bg-primary-dark"
                 >
                   Demander une démo gratuite
@@ -314,7 +314,7 @@ export default function AProposPage() {
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
-                href="/essai/"
+                href="/professionnel/"
                 className="w-full rounded-full bg-primary px-8 py-4 text-center text-sm font-bold text-white shadow-soft transition-all hover:bg-primary-dark sm:w-auto"
               >
                 Démarrer l&apos;essai 7 jours sans carte

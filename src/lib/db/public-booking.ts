@@ -32,6 +32,14 @@ function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;
 }
 
+function newBookingRef(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = randomBytes(10);
+  let ref = "";
+  for (let i = 0; i < bytes.length; i++) ref += alphabet[bytes[i] % alphabet.length];
+  return ref;
+}
+
 function parseSlotDateTime(date: string, time: string): Date {
   return businessDateTime(date, time);
 }
@@ -198,6 +206,7 @@ async function loadResourceContexts(
 async function loadAppointmentsForDay(
   organizationId: string,
   date: string,
+  excludeAppointmentId?: string,
 ): Promise<Appointment[]> {
   const { start, end } = dayBounds(date);
   const { rows } = await pool.query<AppointmentRow>(
@@ -217,8 +226,9 @@ async function loadAppointmentsForDay(
      LEFT JOIN "Resource" r ON r.id = a."resourceId"
      WHERE a."organizationId" = $1
        AND a."startAt" >= $2 AND a."startAt" <= $3
-       AND a.status NOT IN ('CANCELLED', 'NO_SHOW')`,
-    [organizationId, start, end],
+       AND a.status NOT IN ('CANCELLED', 'NO_SHOW')
+       AND ($4::text IS NULL OR a.id <> $4)`,
+    [organizationId, start, end, excludeAppointmentId ?? null],
   );
   return rows.map(rowToDto);
 }
@@ -294,6 +304,7 @@ export async function getPublicAvailabilitySlots(
     serviceId: string;
     date: string;
     staffId?: string | null;
+    excludeAppointmentId?: string;
   },
 ): Promise<PublicAvailabilitySlot[]> {
   const service = await getServiceOption(organizationId, opts.serviceId);
@@ -309,7 +320,11 @@ export async function getPublicAvailabilitySlots(
 
   const staffList = await loadStaffContexts(organizationId, opts.serviceId);
   const resources = await loadResourceContexts(organizationId, opts.serviceId);
-  const appointments = await loadAppointmentsForDay(organizationId, opts.date);
+  const appointments = await loadAppointmentsForDay(
+    organizationId,
+    opts.date,
+    opts.excludeAppointmentId,
+  );
 
   const staffToCheck = opts.staffId
     ? staffList.filter((s) => s.id === opts.staffId)
@@ -381,31 +396,28 @@ export async function getPublicAvailableDates(
   return dates;
 }
 
-export async function createPublicBooking(
-  slug: string,
-  input: PublicBookingInput,
-): Promise<PublicBookingResult> {
-  const org = await resolveOrganizationBySlug(slug);
-  if (!org) throw new Error("ORG_NOT_FOUND");
-
-  const organizationId = org.id;
-
-  const subCheck = await enforcePublicBookingLimits(organizationId);
-  if (!subCheck.ok) {
-    if (subCheck.code === "LIMIT_REACHED") throw new Error("LIMIT_REACHED");
-    if (subCheck.code === "FEATURE_NOT_INCLUDED") throw new Error("FEATURE_NOT_INCLUDED");
-    throw new Error("SUBSCRIPTION_INACTIVE");
-  }
-
+export async function planPublicSlot(
+  organizationId: string,
+  input: {
+    serviceId: string;
+    date: string;
+    time: string;
+    staffId?: string | null;
+    excludeAppointmentId?: string;
+  },
+): Promise<{
+  service: ServiceAgendaOption;
+  staffId: string;
+  resourceId: string | null;
+  startAt: Date;
+  endAt: Date;
+}> {
   const service = await getServiceOption(organizationId, input.serviceId);
   if (!service || !service.active) throw new Error("SERVICE_NOT_FOUND");
 
   const startAt = parseSlotDateTime(input.date, input.time);
   const endAt = new Date(startAt.getTime() + service.totalBlockMin * 60_000);
-
-  if (startAt.getTime() < Date.now() - 60_000) {
-    throw new Error("SLOT_PAST");
-  }
+  if (startAt.getTime() < Date.now() - 60_000) throw new Error("SLOT_PAST");
 
   const { isOrganizationClosed } = await import("@/lib/db/planning");
   const closure = await isOrganizationClosed(organizationId, startAt, endAt);
@@ -413,11 +425,12 @@ export async function createPublicBooking(
 
   const staffList = await loadStaffContexts(organizationId, input.serviceId);
   const resources = await loadResourceContexts(organizationId, input.serviceId);
-  const appointments = await loadAppointmentsForDay(organizationId, input.date);
-
-  const preferredStaff =
-    input.staffId && input.staffId !== "any" ? input.staffId : null;
-
+  const appointments = await loadAppointmentsForDay(
+    organizationId,
+    input.date,
+    input.excludeAppointmentId,
+  );
+  const preferredStaff = input.staffId && input.staffId !== "any" ? input.staffId : null;
   const assignment = tryAssignSlot(
     appointments,
     service,
@@ -427,36 +440,68 @@ export async function createPublicBooking(
     endAt,
     preferredStaff,
   );
-
   if (!assignment) throw new Error("SLOT_UNAVAILABLE");
+  return {
+    service,
+    staffId: assignment.staffId,
+    resourceId: assignment.resourceId ?? null,
+    startAt,
+    endAt,
+  };
+}
 
-  const client = await pool.connect();
+export async function insertOrganizationBooking(
+  client: PoolClient,
+  organizationId: string,
+  input: PublicBookingInput,
+  options?: { customerId?: string },
+): Promise<PublicBookingResult> {
+  const subCheck = await enforcePublicBookingLimits(organizationId);
+  if (!subCheck.ok) {
+    if (subCheck.code === "LIMIT_REACHED") throw new Error("LIMIT_REACHED");
+    if (subCheck.code === "FEATURE_NOT_INCLUDED") throw new Error("FEATURE_NOT_INCLUDED");
+    throw new Error("SUBSCRIPTION_INACTIVE");
+  }
+
+  const planned = await planPublicSlot(organizationId, input);
+  const service = planned.service;
+  const startAt = planned.startAt;
+  const endAt = planned.endAt;
   const appointmentId = newId("apt");
+  const bookingRef = newBookingRef();
 
-  try {
-    await client.query("BEGIN");
-
-    if (assignment.resourceId) {
-      await assertResourceBookable({
-        organizationId,
-        resourceId: assignment.resourceId,
-        serviceId: service.id,
-        startAt,
-        endAt,
-      });
-    }
-
-    const { customerId, created } = await findOrCreateCustomerByPhone(
+  if (planned.resourceId) {
+    await assertResourceBookable({
       organizationId,
-      {
-        firstName: input.customer.firstName,
-        lastName: input.customer.lastName,
-        phone: input.customer.phone,
-        email: input.customer.email,
-        marketingOptIn: input.customer.marketingOptIn,
-      },
-      client,
-    );
+      resourceId: planned.resourceId,
+      serviceId: service.id,
+      startAt,
+      endAt,
+    });
+  }
+
+    const existingCustomerId = options?.customerId;
+    const { customerId, created } = existingCustomerId
+      ? { customerId: existingCustomerId, created: false }
+      : await findOrCreateCustomerByPhone(
+          organizationId,
+          {
+            firstName: input.customer.firstName,
+            lastName: input.customer.lastName,
+            phone: input.customer.phone,
+            email: input.customer.email,
+            marketingOptIn: input.customer.marketingOptIn,
+          },
+          client,
+        );
+    if (existingCustomerId) {
+      const owned = await client.query(
+        `SELECT 1 FROM "Customer"
+         WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
+        [existingCustomerId, organizationId],
+      );
+      if (owned.rowCount === 0) throw new Error("CUSTOMER_NOT_FOUND");
+    }
 
     const { resolveDepositRequirement } = await import("@/lib/db/booking-policy");
     const depositReq = await resolveDepositRequirement({
@@ -471,18 +516,18 @@ export async function createPublicBooking(
       `INSERT INTO "Appointment" (
         id, "organizationId", "customerId", "serviceId", "staffId", "resourceId",
         "startAt", "endAt", price, deposit, "depositState", "depositDueAt",
-        status, source, "attributionSource", notes, "updatedAt"
+        status, source, "attributionSource", notes, "bookingRef", "updatedAt"
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::"DepositState",$12,
-        'PENDING','ONLINE_BOOKING'::"AppointmentSource",$13,$14,NOW()
+        'PENDING','ONLINE_BOOKING'::"AppointmentSource",$13,$14,$15,NOW()
       )`,
       [
         appointmentId,
         organizationId,
         customerId,
         service.id,
-        assignment.staffId,
-        assignment.resourceId ?? null,
+        planned.staffId,
+        planned.resourceId,
         startAt,
         endAt,
         service.price,
@@ -491,12 +536,11 @@ export async function createPublicBooking(
         depositReq.dueAt,
         input.attributionSource?.trim().slice(0, 40) || null,
         input.notes ?? null,
+        bookingRef,
       ],
     );
 
-    await client.query("COMMIT");
-
-    const { rows } = await pool.query<AppointmentRow>(
+    const { rows } = await client.query<AppointmentRow>(
       `SELECT
         a.id, a."organizationId", a."customerId",
         c."firstName" AS "customerFirstName", c."lastName" AS "customerLastName",
@@ -516,48 +560,12 @@ export async function createPublicBooking(
     );
     const apt = rowToDto(rows[0]);
 
-    try {
-      const { notifyAppointmentCreated } = await import("@/lib/notifications/emitter");
-      await notifyAppointmentCreated(organizationId, apt);
-    } catch (e) {
-      console.error("[createPublicBooking] notification", e);
-    }
-
-    try {
-      const { syncAppointmentToGoogle } = await import("@/lib/integrations/google-calendar-sync");
-      syncAppointmentToGoogle(organizationId, apt);
-    } catch (e) {
-      console.error("[createPublicBooking] google calendar", e);
-    }
-
-    try {
-      const { enqueueOnlineBookingConfirmation } = await import("@/lib/db/whatsapp");
-      await enqueueOnlineBookingConfirmation(organizationId, appointmentId);
-    } catch (e) {
-      console.error("[createPublicBooking] whatsapp", e);
-    }
-
-    if (input.attributionSource) {
-      try {
-        const { recordPublicBookingEvent } = await import("@/lib/db/public-booking-events");
-        await recordPublicBookingEvent({
-          organizationId,
-          eventType: "BOOKED",
-          source: input.attributionSource,
-          serviceId: service.id,
-          staffId: assignment.staffId,
-          appointmentId,
-        });
-      } catch (e) {
-        console.error("[createPublicBooking] attribution event", e);
-      }
-    }
-
     return {
       appointmentId,
+      bookingRef,
       customerId,
       customerCreated: created,
-      staffId: assignment.staffId,
+      staffId: planned.staffId,
       staffName: apt.staffName,
       serviceName: service.name,
       startAt: apt.startAt,
@@ -569,6 +577,86 @@ export async function createPublicBooking(
       durationMin: service.durationMin,
       source: "ONLINE_BOOKING",
     };
+}
+
+export async function dispatchPublicBookingSideEffects(
+  organizationId: string,
+  result: PublicBookingResult,
+  input: Pick<PublicBookingInput, "serviceId" | "attributionSource">,
+): Promise<void> {
+  const { rows } = await pool.query<AppointmentRow>(
+    `SELECT
+      a.id, a."organizationId", a."customerId",
+      c."firstName" AS "customerFirstName", c."lastName" AS "customerLastName",
+      a."serviceId", s.name AS "serviceName",
+      a."staffId", st."firstName" AS "staffFirstName", st."lastName" AS "staffLastName",
+      a."resourceId", r.name AS "resourceName",
+      a."startAt", a."endAt", a.price::text, a.deposit::text,
+      a."depositState"::text AS "depositState", a."depositDueAt",
+      a.status, a.notes
+     FROM "Appointment" a
+     JOIN "Customer" c ON c.id = a."customerId"
+     JOIN "Service" s ON s.id = a."serviceId"
+     JOIN "Staff" st ON st.id = a."staffId"
+     LEFT JOIN "Resource" r ON r.id = a."resourceId"
+     WHERE a.id = $1`,
+    [result.appointmentId],
+  );
+  if (!rows[0]) return;
+  const apt = rowToDto(rows[0]);
+
+  try {
+    const { notifyAppointmentCreated } = await import("@/lib/notifications/emitter");
+    await notifyAppointmentCreated(organizationId, apt);
+  } catch (e) {
+    console.error("[createPublicBooking] notification", e);
+  }
+
+  try {
+    const { syncAppointmentToGoogle } = await import("@/lib/integrations/google-calendar-sync");
+    syncAppointmentToGoogle(organizationId, apt);
+  } catch (e) {
+    console.error("[createPublicBooking] google calendar", e);
+  }
+
+  try {
+    const { enqueueOnlineBookingConfirmation } = await import("@/lib/db/whatsapp");
+    await enqueueOnlineBookingConfirmation(organizationId, result.appointmentId);
+  } catch (e) {
+    console.error("[createPublicBooking] whatsapp", e);
+  }
+
+  if (input.attributionSource) {
+    try {
+      const { recordPublicBookingEvent } = await import("@/lib/db/public-booking-events");
+      await recordPublicBookingEvent({
+        organizationId,
+        eventType: "BOOKED",
+        source: input.attributionSource,
+        serviceId: input.serviceId,
+        staffId: result.staffId,
+        appointmentId: result.appointmentId,
+      });
+    } catch (e) {
+      console.error("[createPublicBooking] attribution event", e);
+    }
+  }
+}
+
+export async function createPublicBooking(
+  slug: string,
+  input: PublicBookingInput,
+): Promise<PublicBookingResult> {
+  const org = await resolveOrganizationBySlug(slug);
+  if (!org) throw new Error("ORG_NOT_FOUND");
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await insertOrganizationBooking(client, org.id, input);
+    await client.query("COMMIT");
+    await dispatchPublicBookingSideEffects(org.id, result, input);
+    return result;
   } catch (e) {
     await client.query("ROLLBACK");
     if (isExclusionViolation(e)) throw new Error("SLOT_CONFLICT");

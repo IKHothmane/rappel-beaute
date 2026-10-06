@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { slugifyLabel } from "@/lib/booking-qr";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 import {
   formatDuration,
   formatMad,
@@ -13,12 +14,7 @@ import {
   getPublicStaff,
   submitPublicBooking,
 } from "@/modules/public-booking/service";
-import type {
-  PublicBookingResult,
-  PublicOrganizationProfile,
-  PublicServiceItem,
-  PublicStaffItem,
-} from "@/types/public-booking";
+import { businessTodayIso } from "@/lib/time/business-timezone";
 
 type Step = "service" | "staff" | "date" | "slot" | "info" | "confirm" | "done";
 
@@ -74,7 +70,7 @@ export function BookingPageView({
 
   const [serviceId, setServiceId] = useState("");
   const [staffId, setStaffId] = useState<string | null>("any");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(businessTodayIso);
   const [time, setTime] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -333,7 +329,7 @@ export function BookingPageView({
             <input
               type="date"
               value={date}
-              min={new Date().toISOString().slice(0, 10)}
+              min={businessTodayIso()}
               onChange={(e) => {
                 setDate(e.target.value);
                 setTime("");
@@ -405,7 +401,9 @@ export function BookingPageView({
                 className="rounded-xl border border-line bg-white px-4 py-3 text-sm sm:col-span-2"
                 placeholder="Téléphone *"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(limitPhoneDigits(e.target.value))}
+                inputMode="numeric"
+                maxLength={10}
               />
               <input
                 className="rounded-xl border border-line bg-white px-4 py-3 text-sm sm:col-span-2"

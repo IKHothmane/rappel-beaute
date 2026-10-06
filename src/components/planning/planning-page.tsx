@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  Ban,
   Brain,
   CalendarCheck,
   CalendarDays,
@@ -13,15 +12,13 @@ import {
   Clock3,
   Gauge,
   Hourglass,
-  Lock,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
   Umbrella,
   Users,
 } from "lucide-react";
-import { BlockSlotDialog } from "@/components/agenda/block-slot-dialog";
-import { staffColor } from "@/components/agenda/staff-colors";
+import { assignStaffColors, STAFF_COLOR_LIST, type StaffColor } from "@/components/agenda/staff-colors";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
@@ -35,10 +32,8 @@ import {
 } from "@/modules/appointments/availability";
 import { listAppointments } from "@/modules/appointments/service";
 import {
-  createClosureApi,
   createOvertimeApi,
   createReplacementApi,
-  deletePlanningItemApi,
   loadPlanningApi,
 } from "@/modules/planning/service";
 import {
@@ -147,7 +142,6 @@ export function PlanningPageView() {
   const [hoursDraft, setHoursDraft] = useState<
     { day: number; open: boolean; start: string; end: string }[]
   >([]);
-  const [savingSchedule, setSavingSchedule] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [extraOpen, setExtraOpen] = useState<"overtime" | "replacement" | null>(null);
@@ -202,6 +196,7 @@ export function PlanningPageView() {
   const visibleStaff = useMemo(
     () => (staffFilter === "ALL" ? staff : staff.filter((item) => item.id === staffFilter)),
     [staff, staffFilter],
+  const staffColors = useMemo(() => assignStaffColors(staff.map((person) => person.id)), [staff]);
   );
   const selected = staff.find((item) => item.id === selectedId) ?? staff[0] ?? null;
   const activeCount = staff.filter((item) => item.status === "ACTIVE").length;
@@ -407,16 +402,6 @@ export function PlanningPageView() {
             réservations de l’Agenda.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setBlockOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-3.5 py-2 text-xs font-bold text-ink hover:bg-[#FBF5F7]"
-          >
-            <Ban size={14} className="text-amber-600" />
-            Bloquer un créneau
-          </button>
-        </div>
       </Card>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -524,6 +509,27 @@ export function PlanningPageView() {
           </label>
         </div>
       </div>
+      <ul className="flex flex-wrap gap-2">
+        {visibleStaff.map((person) => {
+          const color = staffColors.get(person.id) ?? STAFF_COLOR_LIST[0];
+          return (
+            <li key={person.id}>
+              <button
+                type="button"
+                onClick={() => selectStaffDay(person.id, weekDates[0])}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full border border-line bg-white px-2.5 py-1 text-xs font-bold text-ink",
+                )}
+              >
+                <span className={cn("h-2.5 w-2.5 rounded-full", color.bar)} />
+                {person.displayName}
+                <span className={cn("font-semibold", color.text)}>{color.name}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="space-y-6 xl:col-span-8">
@@ -575,8 +581,11 @@ export function PlanningPageView() {
                         className="cursor-pointer transition-colors hover:bg-[#FFF9FB]"
                         onClick={() => selectStaffDay(person.id, weekDates[0])}
                       >
-                        <td className="px-4 py-3">
-                          <StaffIdentity person={person} position={positions[person.id]} />
+                          <StaffIdentity
+                            person={person}
+                            position={positions[person.id]}
+                            color={staffColors.get(person.id) ?? STAFF_COLOR_LIST[0]}
+                          />
                         </td>
                         {weekDates.map((date, index) => {
                           const cell = cellForStaffDay(person, date);
@@ -589,7 +598,10 @@ export function PlanningPageView() {
                                 selectStaffDay(person.id, date);
                               }}
                             >
-                              <DayCellBadge staffId={person.id} cell={cell} />
+                              <DayCellBadge
+                                color={staffColors.get(person.id) ?? STAFF_COLOR_LIST[0]}
+                                cell={cell}
+                              />
                             </td>
                           );
                         })}
@@ -654,8 +666,8 @@ export function PlanningPageView() {
                   <p className="text-[11px] text-ink/50">Qui est en salon à chaque heure</p>
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs">
-                  {visibleStaff.slice(0, 6).map((person) => {
-                    const color = staffColor(person.id);
+                  {visibleStaff.map((person) => {
+                    const color = staffColors.get(person.id) ?? STAFF_COLOR_LIST[0];
                     return (
                       <span key={person.id} className="flex items-center gap-1.5">
                         <span className={cn("h-3 w-3 rounded", color.bar)} />
@@ -699,7 +711,7 @@ export function PlanningPageView() {
                               ) : col.length ? (
                                 <div className="space-y-1">
                                   {col.map(({ person, occ }) => {
-                                    const color = staffColor(person.id);
+                                    const color = staffColors.get(person.id) ?? STAFF_COLOR_LIST[0];
                                     return (
                                       <div
                                         key={person.id}
@@ -759,7 +771,7 @@ export function PlanningPageView() {
                   upcomingLeaves.map((leave) => (
                     <div key={leave.id} className="flex items-center justify-between gap-2 py-2.5">
                       <div className="flex items-center gap-2">
-                        <span className={cn("h-2 w-2 rounded-full", staffColor(leave.staff.id).bar)} />
+                        <span className={cn("h-2 w-2 rounded-full", (staffColors.get(leave.staff.id) ?? STAFF_COLOR_LIST[0]).bar)} />
                         <span className="font-bold text-ink">{leave.staff.firstName}</span>
                       </div>
                       <span className="text-ink/60">{formatLeaveSpan(leave.startAt, leave.endAt)}</span>
@@ -776,62 +788,18 @@ export function PlanningPageView() {
 
             <Card className="space-y-3">
               <div className="flex items-center justify-between border-b border-line pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                    <Lock size={14} />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-ink">Créneaux bloqués</h3>
-                    <p className="text-[10px] text-ink/45">Fermetures institut, formations, indisponibilités</p>
-                  </div>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-ink">Heures supp. & remplacements</h3>
+                  <p className="text-[10px] text-ink/45">Ajustements d’équipe en dehors du shift habituel</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setBlockOpen(true)}
-                  className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]"
-                >
-                  + Bloquer
-                </button>
-              </div>
-              {closures.length ? (
-                closures.map((item) => (
-                  <div key={item.id} className="space-y-1 rounded-xl border border-line bg-[#FFF9FA] p-3">
-                    <p className="text-xs font-bold text-ink">
-                      {new Date(item.startAt).toLocaleString("fr-FR", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
-                      → {new Date(item.endAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                    <div className="flex items-center justify-between text-[11px] text-ink/55">
-                      <span>Motif : <strong className="text-ink">{item.reason || "Fermeture institut"}</strong></span>
-                      <button
-                        type="button"
-                        className="font-bold text-primary hover:underline"
-                  onClick={() =>
-                          deletePlanningItemApi("closure", item.id)
-                      .then(refresh)
-                            .catch((e) => toast(e instanceof Error ? e.message : "Erreur", "error"))
-                        }
-                      >
-                        Débloquer
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-ink/45">Aucune fermeture institut enregistrée.</p>
-              )}
-              <div className="flex flex-wrap gap-2 pt-1">
-                <button type="button" className="text-[11px] font-bold text-ink/50 hover:text-primary" onClick={() => setExtraOpen("overtime")}>
-                  + Heures supp.
-                </button>
-                <button type="button" className="text-[11px] font-bold text-ink/50 hover:text-primary" onClick={() => setExtraOpen("replacement")}>
-                  + Remplacement
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]" onClick={() => setExtraOpen("overtime")}>
+                    + Heures supp.
+                  </button>
+                  <button type="button" className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]" onClick={() => setExtraOpen("replacement")}>
+                    + Remplacement
+                  </button>
+                </div>
               </div>
               {overtimes.slice(0, 3).map((item) => (
                 <p key={item.id} className="text-[11px] text-ink/55">
@@ -1011,22 +979,6 @@ export function PlanningPageView() {
           </Card>
         </div>
       </div>
-
-      <BlockSlotDialog
-        open={blockOpen}
-        date={anchor}
-        onClose={() => setBlockOpen(false)}
-        onConfirm={async ({ startAt, endAt, reason }) => {
-          try {
-            await createClosureApi({ startAt, endAt, reason });
-            toast("Créneau bloqué pour l’institut.", "success");
-            setBlockOpen(false);
-            await refresh();
-          } catch (e) {
-            toast(e instanceof Error ? e.message : "Erreur", "error");
-          }
-        }}
-      />
 
       <Modal open={leaveOpen} onClose={() => setLeaveOpen(false)} title="Ajouter une absence">
         <div className="space-y-3">
@@ -1302,7 +1254,15 @@ function KpiCard({
   );
 }
 
-function StaffIdentity({ person, position }: { person: StaffAgendaContext; position?: string }) {
+function StaffIdentity({
+  person,
+  position,
+  color,
+}: {
+  person: StaffAgendaContext;
+  position?: string;
+  color: StaffColor;
+}) {
   const color = staffColor(person.id);
   return (
     <div className="flex items-center gap-2.5">
@@ -1322,9 +1282,9 @@ function StaffIdentity({ person, position }: { person: StaffAgendaContext; posit
     </div>
   );
 }
-
-function DayCellBadge({ staffId, cell }: { staffId: string; cell: DayCell }) {
+function DayCellBadge({ color, cell }: { color: StaffColor; cell: DayCell }) {
   if (cell.kind === "work" || cell.kind === "overtime") {
+    return <ShiftChip color={color} cell={cell} />;
     return <ShiftChip staffId={staffId} cell={cell} />;
   }
   if (cell.kind === "leave") {

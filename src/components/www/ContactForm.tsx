@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SITE } from "@/lib/site";
+import { PHONE_MAX_DIGITS, limitPhoneDigits } from "@/lib/validation/customer";
 
 const field =
   "w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-primary";

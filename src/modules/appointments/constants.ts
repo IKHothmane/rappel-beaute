@@ -60,7 +60,8 @@ export const APPOINTMENT_STATUS_STYLE: Record<
 };
 
 export const AGENDA_OPEN_HOUR = 8;
-export const AGENDA_CLOSE_HOUR = 20;
+/** Minuit : les créneaux vont de 8 h à 00 h (dernier départ 23 h 30). */
+export const AGENDA_CLOSE_HOUR = 24;
 export const AGENDA_SLOT_MINUTES = 30;
 export const AGENDA_SLOT_HEIGHT_PX = 52;
 

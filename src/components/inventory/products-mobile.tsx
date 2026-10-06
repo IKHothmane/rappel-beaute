@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode, type RefObject, useEffect, useState } from "react";
-import { LayoutList, MoreHorizontal, Plus, Search, ShoppingBag, SlidersHorizontal, Sparkles } from "lucide-react";
+import { LayoutList, MoreHorizontal, Plus, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { ProductFocusPanel } from "@/components/inventory/product-focus-panel";
 import {
   alertChipClass,
@@ -51,7 +51,11 @@ type ProductsMobileProps = {
   onEdit: (id: string) => void;
   onToggle: (row: ProductListItem) => void;
   onDelete: (row: ProductListItem) => void;
-  onAdjust: () => void;
+  onAdjustIn: (id: string) => void;
+  onAdjustOut: (id: string) => void;
+  onStepIn: (id: string) => void;
+  onStepOut: (id: string) => void;
+  stockBusy?: boolean;
 };
 
 export function ProductsMobile({
@@ -86,7 +90,11 @@ export function ProductsMobile({
   onEdit,
   onToggle,
   onDelete,
-  onAdjust,
+  onAdjustIn,
+  onAdjustOut,
+  onStepIn,
+  onStepOut,
+  stockBusy,
 }: ProductsMobileProps) {
   const [view, setView] = useState<MobileView>("list");
   const focusName = selected?.name ?? "360°";
@@ -111,34 +119,23 @@ export function ProductsMobile({
             {catalogCount} {catalogCount > 1 ? "références" : "référence"} · {orgName || "Votre institut"}
           </p>
         </div>
-        <div className={cn("grid gap-2", canWrite ? "grid-cols-2" : "grid-cols-1")}>
-          {canWrite ? (
-            <button
-              type="button"
-              onClick={onCreate}
-              className="inline-flex h-12 items-center justify-center gap-1.5 rounded-xl bg-primary text-[13px] font-semibold text-white shadow-md active:scale-[0.98]"
-            >
-              <Plus size={18} />
-              Nouveau produit
-            </button>
-          ) : null}
-          {canWrite ? (
-            <button
-              type="button"
-              onClick={onAdjust}
-              className="inline-flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#F0DDE9] text-[13px] font-semibold text-ink"
-            >
-              Ajustement
-            </button>
-          ) : (
-            <Link
-              href="/stock/"
-              className="inline-flex h-12 items-center justify-center rounded-xl bg-[#F0DDE9] text-[13px] font-semibold text-ink"
-            >
-              Mouvements
-            </Link>
-          )}
-        </div>
+        {canWrite ? (
+          <button
+            type="button"
+            onClick={onCreate}
+            className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-primary text-[13px] font-semibold text-white shadow-md active:scale-[0.98]"
+          >
+            <Plus size={18} />
+            Nouveau produit
+          </button>
+        ) : (
+          <Link
+            href="/stock/"
+            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#F0DDE9] text-[13px] font-semibold text-ink"
+          >
+            Mouvements
+          </Link>
+        )}
       </section>
 
       <div className="rounded-xl bg-[#FFEFF8] p-3.5">
@@ -292,7 +289,8 @@ export function ProductsMobile({
                 onEdit={() => onEdit(p.id)}
                 onToggle={() => onToggle(p)}
                 onDelete={() => onDelete(p)}
-                onAdjust={onAdjust}
+                onIn={() => onAdjustIn(p.id)}
+                onOut={() => onAdjustOut(p.id)}
               />
             ))
           )}
@@ -305,8 +303,9 @@ export function ProductsMobile({
           canWrite={canWrite}
           financeHidden={financeHidden}
           onEdit={() => onEdit(selected.id)}
-          onAdjust={onAdjust}
-        />
+          onIn={() => onStepIn(selected.id)}
+          onOut={() => onStepOut(selected.id)}
+          stockBusy={stockBusy}
       ) : null}
     </div>
   );
@@ -322,6 +321,8 @@ function ProductCard({
   onToggle,
   onDelete,
   onAdjust,
+  onIn,
+  onOut,
 }: {
   product: ProductListItem;
   selected: boolean;
@@ -331,8 +332,8 @@ function ProductCard({
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
-  onAdjust: () => void;
-}) {
+  onIn: () => void;
+  onOut: () => void;
   const margin = productMargin(p);
   const [menuOpen, setMenuOpen] = useState(false);
   return (
@@ -410,28 +411,30 @@ function ProductCard({
       ) : null}
       <div className="mt-2 grid grid-cols-2 gap-2">
         <button
-          type="button"
-          onClick={onOpen}
-          className="inline-flex h-9 items-center justify-center rounded-lg bg-[#F0DDE9] text-[13px] font-semibold text-primary"
-        >
-          Voir la fiche
-        </button>
-        {canWrite && (p.alert === "OUT" || p.alert === "LOW") ? (
-          <Link
-            href="/purchases/"
-            className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-primary text-[13px] font-semibold text-white"
-          >
-            <ShoppingBag size={14} />
-            Commander
-          </Link>
+        {canWrite ? (
+          <>
+            <button
+              type="button"
+              onClick={onIn}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 text-[13px] font-semibold text-white"
+            >
+              Entrée
+            </button>
+            <button
+              type="button"
+              onClick={onOut}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
+            >
+              Sortie
+            </button>
+          </>
         ) : (
           <button
             type="button"
-            onClick={onAdjust}
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
+            onClick={onOpen}
+            className="col-span-2 inline-flex h-9 items-center justify-center rounded-lg bg-[#F0DDE9] text-[13px] font-semibold text-primary"
           >
-            Ajuster
-          </button>
+            Voir la fiche
         )}
       </div>
     </article>

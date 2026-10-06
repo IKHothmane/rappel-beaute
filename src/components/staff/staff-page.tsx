@@ -216,7 +216,7 @@ export function StaffPageView() {
       setEditing(detail);
       setDrawerOpen(true);
     } catch {
-      toast("Impossible de charger la fiche.", "error");
+      toast("Impossible de charger le profil.", "error");
     }
   }
 
@@ -230,7 +230,7 @@ export function StaffPageView() {
     }
     setDrawerOpen(false);
     setEditing(null);
-    toast(editing ? "Fiche mise à jour." : "Collaboratrice créée.", "success");
+    toast(editing ? "Profil mis à jour." : "Collaboratrice créée.", "success");
     refresh();
   }
 
@@ -481,7 +481,7 @@ export function StaffPageView() {
                         onClick={() => setSelectedId(s.id)}
                         className={cn(
                           "cursor-pointer border-b border-[#E4BDC2]/20 hover:bg-[#FFEFF8]/60",
-                          s.id === selectedId && "bg-[#FFEFF8]",
+                          s.id === selectedId && "bg-[#E8F1FF]",
                         )}
                       >
                         <td className="px-4 py-3">
@@ -539,7 +539,7 @@ export function StaffPageView() {
               />
             ) : (
               <div className="rounded-2xl bg-white p-8 text-center text-sm text-ink/45 shadow-sm">
-                Sélectionnez une collaboratrice pour afficher sa fiche 360°.
+                Sélectionnez une collaboratrice.
               </div>
             )}
           </div>
@@ -552,7 +552,7 @@ export function StaffPageView() {
           setDrawerOpen(false);
           setEditing(null);
         }}
-        title={editing ? "Modifier la fiche" : "Nouveau collaborateur"}
+        title={editing ? "Modifier" : "Nouveau collaborateur"}
       >
         <StaffForm
           key={editing?.id ?? "new"}
@@ -598,7 +598,7 @@ function StaffMasterCard({
       onClick={onSelect}
       className={cn(
         "relative cursor-pointer rounded-2xl bg-white p-4 shadow-sm transition-all",
-        selected && "bg-gradient-to-r from-primary/5 via-transparent to-transparent shadow-md ring-1 ring-primary/10",
+        selected && "bg-[#E8F1FF] shadow-md ring-2 ring-[#3B6FD8]",
       )}
     >
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
@@ -633,7 +633,7 @@ function StaffMasterCard({
                 {STAFF_STATUS_LABEL[s.status]}
               </span>
             </div>
-            <p className={cn("mt-0.5 text-[13px]", selected ? "font-medium text-primary" : "text-ink/50")}>
+            <p className={cn("mt-0.5 text-[13px]", selected ? "font-medium text-[#2457B8]" : "text-ink/50")}>
               {s.position || "Collaboratrice"}
             </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px] text-ink/50">
@@ -657,12 +657,7 @@ function StaffMasterCard({
             </div>
           </div>
         </div>
-        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:flex-col sm:items-end">
-          {selected ? (
-            <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">
-              Fiche active 360°
-            </span>
-          ) : null}
+        <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:flex-col sm:items-end">
           <span className="text-[11px] text-ink/40">{shortStaffRef(s.id)}</span>
         </div>
       </div>

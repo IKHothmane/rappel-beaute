@@ -4,7 +4,11 @@ const config: Config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "!./src/components/waiting-list",
+    "!./src/components/waiting-list/**",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "!./src/app/domains/app/waiting-list",
+    "!./src/app/domains/app/waiting-list/**",
   ],
   theme: {
     extend: {

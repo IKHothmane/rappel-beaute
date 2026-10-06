@@ -136,31 +136,6 @@ export function AgendaGrid({
                     />
                   ))}
 
-                  {/* Pauses (StaffBreak) */}
-                  {columnMode === "staff"
-                    ? (ctx?.breaks ?? [])
-                        .filter((brk) => brk.dayOfWeek === date.getDay())
-                        .map((brk) => {
-                          const bStart = new Date(date);
-                          const [sh, sm] = brk.startTime.split(":").map(Number);
-                          const [eh, em] = brk.endTime.split(":").map(Number);
-                          bStart.setHours(sh, sm, 0, 0);
-                          const bEnd = new Date(date);
-                          bEnd.setHours(eh, em, 0, 0);
-                          return (
-                            <div
-                              key={`brk-${brk.id ?? brk.startTime}`}
-                              className="pointer-events-none absolute inset-x-1 z-[1] rounded-md bg-ink/[0.04]"
-                              style={{
-                                top: slotTop(bStart) + 2,
-                                height: slotHeight(bStart, bEnd),
-                              }}
-                              title={`Pause ${brk.startTime}–${brk.endTime}`}
-                            />
-                          );
-                        })
-                    : null}
-
                   {/* Congés / absences approuvés (Staff réel) */}
                   {columnMode === "staff"
                     ? (ctx?.leaves ?? [])

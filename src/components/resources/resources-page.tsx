@@ -6,7 +6,6 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
-  Download,
   LayoutGrid,
   MoreHorizontal,
   Plus,
@@ -48,7 +47,7 @@ import {
   deleteResource,
   getResource,
   listResources,
-  updateResource,
+  updateResourceMaintenance,
 } from "@/modules/resources/service";
 import { listServices } from "@/modules/services/service";
 import type { AnalyticsOverview } from "@/types/analytics";
@@ -57,9 +56,10 @@ import type {
   MaintenanceType,
   ResourceDetail,
   ResourceListItem,
+  ResourceMaintenanceItem,
   ResourceType,
 } from "@/types/resource";
-import { MAINTENANCE_TYPE_LABEL, RESOURCE_TYPE_LABEL, RESOURCE_TYPES } from "@/types/resource";
+import { MAINTENANCE_STATUS_LABEL, MAINTENANCE_TYPE_LABEL, RESOURCE_TYPE_LABEL, RESOURCE_TYPES } from "@/types/resource";
 
 type StatusFilter = "all" | "available" | "occupied" | "soon" | "maintenance" | "inactive";
 type ViewMode = "grid" | "table";
@@ -85,6 +85,9 @@ export function ResourcesPageView() {
   const [serviceOptions, setServiceOptions] = useState<{ id: string; name: string }[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [openMaintenances, setOpenMaintenances] = useState<ResourceMaintenanceItem[]>([]);
+  const [editingMaintenance, setEditingMaintenance] = useState<ResourceMaintenanceItem | null>(null);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [editing, setEditing] = useState<ResourceDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -300,7 +303,38 @@ export function ResourcesPageView() {
     if (!selected) {
       toast("Sélectionnez d’abord une ressource.", "info");
       return;
+    setEditingMaintenance(null);
+    setMaintenanceOpen(true);
+    void loadOpenMaintenances(selected.id);
+  }
+
+  async function loadOpenMaintenances(resourceId: string) {
+    try {
+      const detail = await getResource(resourceId);
+      setOpenMaintenances(
+        detail.maintenances.filter((item) => item.status === "SCHEDULED" || item.status === "IN_PROGRESS"),
+      );
+    } catch {
+      setOpenMaintenances([]);
     }
+  }
+
+  async function finishMaintenance(item: ResourceMaintenanceItem) {
+    if (!selected) return;
+    setSubmitting(true);
+    const result = await updateResourceMaintenance(selected.id, item.id, {
+      status: "COMPLETED",
+      endAt: new Date().toISOString(),
+    });
+    setSubmitting(false);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    toast("Maintenance terminée.", "success");
+    if (editingMaintenance?.id === item.id) setEditingMaintenance(null);
+    await loadOpenMaintenances(selected.id);
+    refresh();
     setMaintenanceOpen(true);
   }
 
@@ -619,25 +653,81 @@ export function ResourcesPageView() {
           key={editing?.id ?? "new"}
           initial={editing ?? undefined}
           services={serviceOptions}
-          submitting={submitting}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setDrawerOpen(false);
-            setEditing(null);
-          }}
-        />
-      </Drawer>
-
-      <Drawer open={maintenanceOpen} onClose={() => setMaintenanceOpen(false)} title="Planifier une maintenance">
+      <Drawer
+        open={maintenanceOpen}
+        onClose={() => {
+          setMaintenanceOpen(false);
+          setEditingMaintenance(null);
+        }}
+        title={editingMaintenance ? "Modifier la maintenance" : "Maintenance"}
+      >
         {selected ? (
-          <MaintenanceForm
-            resourceName={selected.name}
-            submitting={submitting}
-            onCancel={() => setMaintenanceOpen(false)}
-            onSubmit={async (input) => {
-              setSubmitting(true);
-              const result = await createResourceMaintenance(selected.id, input);
-              setSubmitting(false);
+          <div className="space-y-5">
+            {openMaintenances.length ? (
+              <ul className="space-y-2">
+                {openMaintenances.map((item) => (
+                  <li key={item.id} className="rounded-xl border border-line p-3 text-sm">
+                    <p className="font-semibold text-ink">
+                      {MAINTENANCE_TYPE_LABEL[item.type]} · {MAINTENANCE_STATUS_LABEL[item.status]}
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-ink/55">
+                      {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      {" → "}
+                      {new Date(item.endAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                    {item.reason ? <p className="mt-0.5 text-[12px] text-ink/45">{item.reason}</p> : null}
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        className="rounded-lg border border-line px-2.5 py-1 text-[12px] font-bold text-ink hover:bg-[#FBF5F7]"
+                        onClick={() => setEditingMaintenance(item)}
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[12px] font-bold text-white disabled:opacity-50"
+                        disabled={submitting}
+                        onClick={() => void finishMaintenance(item)}
+                      >
+                        Terminer
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-ink/50">Aucune maintenance en cours.</p>
+            )}
+            <MaintenanceForm
+              key={editingMaintenance?.id ?? "new"}
+              resourceName={selected.name}
+              initial={editingMaintenance}
+              submitting={submitting}
+              onCancel={() => {
+                if (editingMaintenance) setEditingMaintenance(null);
+                else {
+                  setMaintenanceOpen(false);
+                  setEditingMaintenance(null);
+                }
+              }}
+              onSubmit={async (input) => {
+                setSubmitting(true);
+                const result = editingMaintenance
+                  ? await updateResourceMaintenance(selected.id, editingMaintenance.id, input)
+                  : await createResourceMaintenance(selected.id, input);
+                setSubmitting(false);
+                if (!result.ok) {
+                  toast(result.error, "error");
+                  return;
+                }
+                toast(editingMaintenance ? "Maintenance modifiée." : "Maintenance planifiée.", "success");
+                setEditingMaintenance(null);
+                await loadOpenMaintenances(selected.id);
+                refresh();
+              }}
+            />
+          </div>
               if (!result.ok) {
                 toast(result.error, "error");
                 return;
@@ -683,7 +773,7 @@ function MasterCard({
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
-}) {
+        selected && "bg-[#E8F1FF] shadow-md ring-2 ring-[#3B6FD8]",
   const Icon = resourceTypeIcon(r.type);
   const left = current ? remainingMinutes(current.endAt) : null;
 
@@ -788,30 +878,30 @@ function MasterCard({
             type="button"
             onClick={onDelete}
             className="block w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50"
-          >
-            Supprimer
-          </button>
-        </div>
-      ) : null}
-    </article>
-  );
+function toDatetimeLocal(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function MaintenanceForm({
   resourceName,
+  initial,
   submitting,
   onSubmit,
   onCancel,
 }: {
   resourceName: string;
+  initial?: ResourceMaintenanceItem | null;
   submitting: boolean;
   onSubmit: (input: { startAt: string; endAt: string; type: MaintenanceType; reason?: string }) => void;
   onCancel: () => void;
 }) {
-  const [startAt, setStartAt] = useState("");
-  const [endAt, setEndAt] = useState("");
-  const [type, setType] = useState<MaintenanceType>("PREVENTIVE");
-  const [reason, setReason] = useState("");
+  const [startAt, setStartAt] = useState(initial ? toDatetimeLocal(initial.startAt) : "");
+  const [endAt, setEndAt] = useState(initial ? toDatetimeLocal(initial.endAt) : "");
+  const [type, setType] = useState<MaintenanceType>(initial?.type ?? "PREVENTIVE");
+  const [reason, setReason] = useState(initial?.reason ?? "");
 
   return (
     <form
@@ -820,6 +910,15 @@ function MaintenanceForm({
         e.preventDefault();
         if (!startAt || !endAt) return;
         onSubmit({
+          startAt: new Date(startAt).toISOString(),
+          endAt: new Date(endAt).toISOString(),
+          type,
+          reason: reason.trim() || undefined,
+        });
+      }}
+    >
+      <p className="text-sm text-ink/55">
+        {initial ? "Modifier" : "Planifier"} · <strong className="text-ink">{resourceName}</strong>
           startAt: new Date(startAt).toISOString(),
           endAt: new Date(endAt).toISOString(),
           type,
@@ -844,7 +943,7 @@ function MaintenanceForm({
         {Object.entries(MAINTENANCE_TYPE_LABEL).map(([k, v]) => (
           <option key={k} value={k}>
             {v}
-          </option>
+          {submitting ? "Enregistrement…" : initial ? "Enregistrer" : "Planifier"}
         ))}
       </Select>
       <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motif (optionnel)" />

@@ -33,6 +33,10 @@ export const RATE_POLICIES = {
     phone: { limit: 3, windowMs: HOUR },
     pair: { limit: 3, windowMs: HOUR },
   },
+  assistantWidget: {
+    ip: { limit: 30, windowMs: MIN_10 },
+    widget: { limit: 60, windowMs: MIN_10 },
+  },
   productOrder: {
     ip: { limit: 10, windowMs: MIN_10 },
     phone: { limit: 20, windowMs: HOUR },

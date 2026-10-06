@@ -113,7 +113,7 @@ export const SERVICE_CATEGORIES = [
 ] as const;
 
 export type ServiceFormOptions = {
-  staff: { id: string; name: string; role: string | null }[];
+  staff: { id: string; name: string; role: string | null; status: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "ARCHIVED" }[];
   resources: { id: string; name: string; type: string }[];
   products: { id: string; name: string; sku: string; unit: string }[];
 };

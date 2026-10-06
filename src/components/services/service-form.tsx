@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/select";
 import { ServiceStaffSelector } from "@/components/services/service-staff-selector";
-import { DURATION_PRESETS } from "@/components/services/services-helpers";
+import { DURATION_PRESETS, SERVICE_NAME_SUGGESTIONS } from "@/components/services/services-helpers";
 import { cn } from "@/lib/utils";
 import type { CreateServiceInput, ServiceDetail, ServiceFormOptions } from "@/types/service";
 
@@ -33,6 +33,12 @@ export function ServiceForm({
   const [durationMin, setDurationMin] = useState(initial?.durationMin?.toString() ?? "60");
   const [staffIds, setStaffIds] = useState<string[]>(initial?.staff?.map((s) => s.staffId) ?? []);
   const [active, setActive] = useState(initial?.active ?? true);
+  const [nameOpen, setNameOpen] = useState(false);
+  const nameBox = useRef<HTMLDivElement>(null);
+  const nameQuery = name.trim().toLowerCase();
+  const nameSuggestions = SERVICE_NAME_SUGGESTIONS.filter((item) =>
+    nameQuery ? item.toLowerCase().includes(nameQuery) : true,
+  );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,10 +54,49 @@ export function ServiceForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <label className="block text-sm">
+      <div className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Hydrafacial" />
-      </label>
+        <div ref={nameBox} className="relative">
+          <Input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setNameOpen(true);
+            }}
+            onFocus={() => setNameOpen(true)}
+            onBlur={(e) => {
+              if (nameBox.current?.contains(e.relatedTarget as Node | null)) return;
+              setNameOpen(false);
+            }}
+            required
+            placeholder="Choisir ou saisir un soin"
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={nameOpen}
+            aria-autocomplete="list"
+          />
+          {nameOpen && nameSuggestions.length > 0 ? (
+            <ul className="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-line bg-white py-1 shadow-soft">
+              {nameSuggestions.map((item) => (
+                <li key={item}>
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-sm text-ink hover:bg-[#FFEFF8]"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setName(item);
+                      setNameOpen(false);
+                    }}
+                  >
+                    {item}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+        <p className="mt-1 text-[12px] text-ink/45">Choisissez dans la liste, ou saisissez un autre nom.</p>
+      </div>
 
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Description</span>
@@ -105,14 +150,22 @@ export function ServiceForm({
       </label>
 
       <div>
-        <span className="mb-1.5 block text-sm font-medium">Employées autorisées</span>
+        <span className="mb-1.5 block text-sm font-medium">Employées</span>
+        <p className="mb-2 text-[12px] leading-5 text-ink/50">
+          Toutes les employées de l’institut. Cochez celles qui réalisent ce soin.
+        </p>
         <ServiceStaffSelector options={options.staff} value={staffIds} onChange={setStaffIds} />
       </div>
 
       <div className="flex items-center justify-between gap-3 rounded-xl bg-[#FFEFF8] p-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink">Statut du service</p>
-          <p className="text-[12px] text-ink/50">{active ? "Actif" : "Inactif"}</p>
+          <p className="text-[12px] font-semibold text-ink">{active ? "Actif" : "Inactif"}</p>
+          <p className="mt-1 text-[12px] leading-5 text-ink/55">
+            {active
+              ? "Actif : le soin est proposé dans l’agenda et à la réservation. Les clientes peuvent le choisir."
+              : "Inactif : le soin reste enregistré, mais il n’est plus proposé à la réservation."}
+          </p>
         </div>
         <button
           type="button"

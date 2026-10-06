@@ -18,6 +18,7 @@ import { useCurrentUser } from "@/components/auth/session-provider";
 import { PurchaseDetailView } from "@/components/procurement/purchase-detail-view";
 import { PurchaseFocusPanel } from "@/components/procurement/purchase-focus-panel";
 import { PurchaseForm } from "@/components/procurement/purchase-form";
+import { SupplierForm } from "@/components/procurement/supplier-form";
 import {
   canReceiveStatus,
   formatPurchaseDate,
@@ -70,6 +71,12 @@ export function PurchasesPageView() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [supplierOpen, setSupplierOpen] = useState(false);
+  const [supplierPrefill, setSupplierPrefill] = useState("");
+  const [pickedSupplier, setPickedSupplier] = useState<{ id: string; name: string; token: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [supplierSubmitting, setSupplierSubmitting] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -146,8 +153,51 @@ export function PurchasesPageView() {
     if (next === "receipts") setStatus("");
   }
 
+  function selectSupplier(supplier: { id: string; name: string }) {
+    setPickedSupplier({ id: supplier.id, name: supplier.name, token: Date.now() });
+  }
+
+  function rememberSupplier(supplier: SupplierListItem) {
+    setSuppliers((current) => {
+      if (current.some((row) => row.id === supplier.id)) return current;
+      return [...current, supplier].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    });
+    selectSupplier(supplier);
+  }
+
+  function findSupplierByName(name: string) {
+    const key = name.trim().toLowerCase();
+    return suppliers.find((row) => row.name.trim().toLowerCase() === key) ?? null;
+  }
+
+  async function handleCreateSupplier(data: CreateSupplierInput) {
+    const name = data.name.trim();
+    if (!name) {
+      toast("Le nom du fournisseur est obligatoire.", "error");
+      return;
+    }
+    const existing = findSupplierByName(name);
+    if (existing) {
+      setPickedSupplier({ id: existing.id, name: existing.name, token: Date.now() });
+      setSupplierOpen(false);
+      toast("Ce fournisseur est déjà dans la liste.", "info");
+      return;
+    }
+    setSupplierSubmitting(true);
+    const result = await createSupplier({ ...data, name, active: data.active ?? true });
+    setSupplierSubmitting(false);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    rememberSupplier(result.supplier);
+    setSupplierOpen(false);
+    toast("Fournisseur ajouté.", "success");
+  }
+
   async function handleCreate(payload: {
     supplierId?: string;
+    supplierName?: string;
     notes?: string;
     submit: boolean;
     items: PurchaseItemInput[];
@@ -157,15 +207,37 @@ export function PurchasesPageView() {
       return;
     }
     setSubmitting(true);
-    const result = await createPurchase(payload);
+    let supplierId = payload.supplierId;
+    const typedName = payload.supplierName?.trim() ?? "";
+    if (!supplierId && typedName) {
+      const existing = findSupplierByName(typedName);
+      if (existing) {
+        supplierId = existing.id;
+      } else {
+        const created = await createSupplier({ name: typedName, active: true });
+        if (!created.ok) {
+          setSubmitting(false);
+          toast(created.error, "error");
+          return;
+        }
+        rememberSupplier(created.supplier);
+        supplierId = created.supplier.id;
+      }
+    }
+    const result = await createPurchase({
+      supplierId,
+      notes: payload.notes,
+      submit: payload.submit,
+      items: payload.items,
+    });
     setSubmitting(false);
     if (!result.ok) {
       toast(result.error, "error");
       return;
     }
     setDrawerOpen(false);
-    toast(payload.submit ? "Commande envoyée." : "Brouillon enregistré.", "success");
-    refresh();
+    setSupplierOpen(false);
+    setPickedSupplier(null);
   }
 
   return (
@@ -512,15 +584,46 @@ export function PurchasesPageView() {
 
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Nouvelle commande">
         <PurchaseForm
-          key={drawerOpen ? "open" : "closed"}
-          suppliers={suppliers}
-          catalog={catalog}
-          submitting={submitting}
-          onSubmit={(payload) => void handleCreate(payload)}
-          onCancel={() => setDrawerOpen(false)}
-        />
-      </Drawer>
-    </div>
+      <Drawer
+        open={drawerOpen}
+        onClose={() => {
+          if (supplierOpen) {
+            setSupplierOpen(false);
+            return;
+          }
+          setDrawerOpen(false);
+          setPickedSupplier(null);
+        }}
+        title={supplierOpen ? "Nouveau fournisseur" : "Nouvelle commande"}
+      >
+        <div className={supplierOpen ? "hidden" : undefined}>
+          <PurchaseForm
+            key={drawerOpen ? "open" : "closed"}
+            suppliers={suppliers}
+            catalog={catalog}
+            submitting={submitting}
+            pickedSupplier={pickedSupplier}
+            onAddSupplier={(name) => {
+              setSupplierPrefill(name);
+              setSupplierOpen(true);
+            }}
+            onSubmit={(payload) => void handleCreate(payload)}
+            onCancel={() => {
+              setDrawerOpen(false);
+              setSupplierOpen(false);
+              setPickedSupplier(null);
+            }}
+          />
+        </div>
+        {supplierOpen ? (
+          <SupplierForm
+            key={supplierPrefill}
+            initial={{ name: supplierPrefill }}
+            submitting={supplierSubmitting}
+            onSubmit={(data) => void handleCreateSupplier(data)}
+            onCancel={() => setSupplierOpen(false)}
+          />
+        ) : null}
   );
 }
 

@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Cloud,
   Filter,
-  Lock,
   Maximize2,
   Plus,
   Search,

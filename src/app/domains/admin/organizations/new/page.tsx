@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminUi";
 import { adminHref } from "@/lib/admin/href";
 import { CITIES } from "@/lib/site";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 import { createOrganizationApi } from "@/modules/admin/client";
 import type { SubscriptionPlan } from "@/types/platform";
 

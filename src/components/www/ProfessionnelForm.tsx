@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
-import { APP_LOGIN_HREF, CITIES, PUBLIC_OFFER, SITE } from "@/lib/site";
+import { APP_LOGIN_HREF, CITIES } from "@/lib/site";
 import { OsmMapPicker } from "@/components/www/OsmMapPicker";
+import { PHONE_MAX_DIGITS, limitPhoneDigits } from "@/lib/validation/customer";
 
 type OsmSuggestion = {
   id: string;
@@ -13,7 +14,7 @@ type OsmSuggestion = {
   mapsUrl: string;
 };
 
-export function ProfessionnelForm({ monthlyPrice = 599 }: { monthlyPrice?: number }) {
+export function ProfessionnelForm() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +30,9 @@ export function ProfessionnelForm({ monthlyPrice = 599 }: { monthlyPrice?: numbe
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [mapOpen, setMapOpen] = useState(false);
+  const [noWebsite, setNoWebsite] = useState(false);
+  const [website, setWebsite] = useState("");
+  const [phone, setPhone] = useState("");
   const skipSuggestRef = useRef(false);
   const listId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -430,9 +434,14 @@ export function ProfessionnelForm({ monthlyPrice = 599 }: { monthlyPrice?: numbe
           <input
             className={field}
             name="phone"
-            placeholder="+212 6 XX XX XX XX"
+            placeholder="0612345678"
             required
             type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            maxLength={PHONE_MAX_DIGITS}
+            value={phone}
+            onChange={(e) => setPhone(limitPhoneDigits(e.target.value))}
           />
         </label>
       </div>
@@ -449,21 +458,35 @@ export function ProfessionnelForm({ monthlyPrice = 599 }: { monthlyPrice?: numbe
       </label>
 
       <div className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-ink">Formule souhaitée</span>
-        <input type="hidden" name="plan" value="rappel-beauty" />
-        <div className="flex h-12 items-center justify-between rounded-lg border border-primary/25 bg-primary-light/40 px-4">
-          <div className="flex items-center gap-2.5">
-            <span className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
-              Formule unique
-            </span>
-            <span className="text-sm font-semibold text-ink">{SITE.name}</span>
-          </div>
-          <span className="text-sm font-bold text-primary">{monthlyPrice} DH/mois</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-medium text-ink">Site web de l&apos;institut</span>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-ink">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-primary"
+              checked={noWebsite}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setNoWebsite(checked);
+                if (checked) setWebsite("");
+              }}
+            />
+            Non
+          </label>
         </div>
-        <p className="text-xs text-ink/45">
-          ou {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH/an · 7 jours gratuits · sans
-          engagement · sans carte bancaire
-        </p>
+        {noWebsite ? <input type="hidden" name="no_website" value="1" /> : null}
+        <input
+          className={`${field} disabled:cursor-not-allowed disabled:bg-white disabled:text-ink/40`}
+          name={noWebsite ? undefined : "website"}
+          placeholder={noWebsite ? "Pas de site web" : "www.moninstitut.ma"}
+          type="text"
+          inputMode="url"
+          autoComplete="url"
+          maxLength={200}
+          value={website}
+          disabled={noWebsite}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
       </div>
 
       <label className="flex flex-col gap-1.5 text-sm">

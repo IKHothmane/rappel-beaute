@@ -83,7 +83,6 @@ const sections: { title: string | null; items: NavItem[] }[] = [
   {
     title: "Croissance",
     items: [
-      { label: "Liste d'attente", href: "/waiting-list/", icon: Users, key: "waiting-list" },
       { label: "Promotions", href: "/promotions/", icon: Megaphone, key: "promotions" },
       { label: "Avis", href: "/reviews/", icon: Star, key: "reviews" },
       { label: "Fidélité", href: "/loyalty/", icon: Star, key: "loyalty" },

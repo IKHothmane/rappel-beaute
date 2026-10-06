@@ -1,27 +1,15 @@
 import type { Metadata } from "next";
-import { EssaiForm } from "@/components/www/EssaiForm";
-import { PageHero } from "@/components/www/PageHero";
+import ProfessionnelPage from "../professionnel/page";
 
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Demande d’essai 7 jours",
+  title: "Je suis un professionnel",
   description:
-    "Essai Rappel Beauty 7 jours sans carte bancaire. Accès activé sous 24 h.",
+    "Rappel Beauty est le logiciel de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, stock, caisse et réservation en ligne. Essai 7 jours, sans engagement et sans carte bancaire.",
   alternates: { canonical: "/essai/" },
 };
 
 export default function EssaiPage() {
-  return (
-    <>
-      <PageHero
-        eyebrow="Essai 7 jours"
-        title="Votre accès sera activé sous 24 h."
-        text="Sans carte bancaire. Pas d’inscription libre : notre équipe crée le compte institut, puis vous recevez vos identifiants."
-      />
-      <div className="container-rb max-w-xl py-16">
-        <EssaiForm />
-      </div>
-    </>
-  );
+  return <ProfessionnelPage />;
 }

@@ -26,6 +26,7 @@ import {
   updateOrganizationApi,
 } from "@/modules/admin/client";
 import { PLAN_LABEL } from "@/types/platform";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 import type {
   OrganizationDetail,
   OrganizationListItem,
@@ -186,7 +187,7 @@ function TenantDrawer({
     const r = await fetchOrganization(orgId);
     setDetail(r.organization);
     setEditName(r.organization.name);
-    setEditPhone(r.organization.phone ?? "");
+    setEditPhone(limitPhoneDigits(r.organization.phone ?? ""));
     setEditEmail(r.organization.email ?? "");
     setEditCity(r.organization.city ?? "");
     setPeriodEnd(
@@ -465,7 +466,9 @@ function TenantDrawer({
                       className="h-10 w-full rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
                       placeholder="Téléphone"
                       value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
+                      onChange={(e) => setEditPhone(limitPhoneDigits(e.target.value))}
+                      inputMode="numeric"
+                      maxLength={10}
                     />
                     <input
                       className="h-10 w-full rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"

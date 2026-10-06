@@ -48,10 +48,10 @@ export function PageHero({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease, delay: 0.28 }}
         >
-          <Link href="/demo/" className="btn-primary transition hover:scale-[1.02]">
+          <Link href="/professionnel/" className="btn-primary transition hover:scale-[1.02]">
             Demander une démo
           </Link>
-          <Link href="/essai/" className="btn-ghost transition hover:scale-[1.02]">
+          <Link href="/professionnel/" className="btn-ghost transition hover:scale-[1.02]">
             Demande d’essai
           </Link>
         </motion.div>

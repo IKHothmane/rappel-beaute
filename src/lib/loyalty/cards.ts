@@ -74,11 +74,29 @@ export async function issueLoyaltyCard(
 
   const id = newLoyaltyId("lcard");
   const publicToken = newPublicToken();
-  await pool.query(
-    `INSERT INTO "LoyaltyCard" (id, "organizationId", "customerId", "publicToken", status, "updatedAt")
-     VALUES ($1, $2, $3, $4, 'ACTIVE', NOW())`,
-    [id, organizationId, customerId, publicToken],
-  );
+  try {
+    await pool.query(
+      `INSERT INTO "LoyaltyCard" (id, "organizationId", "customerId", "publicToken", status, "updatedAt")
+       VALUES ($1, $2, $3, $4, 'ACTIVE', NOW())`,
+      [id, organizationId, customerId, publicToken],
+    );
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code !== "23505") throw error;
+    const again = await pool.query<{ id: string; publicToken: string }>(
+      `SELECT id, "publicToken" FROM "LoyaltyCard"
+       WHERE "organizationId" = $1 AND "customerId" = $2`,
+      [organizationId, customerId],
+    );
+    if (!again.rows[0]) throw error;
+    return {
+      id: again.rows[0].id,
+      publicToken: again.rows[0].publicToken,
+      customerId,
+      firstName: customer.rows[0].firstName,
+      lastName: customer.rows[0].lastName,
+    };
+  }
   return {
     id,
     publicToken,
@@ -87,6 +105,19 @@ export async function issueLoyaltyCard(
     lastName: customer.rows[0].lastName,
   };
 }
+
+export type CardAppointment = {
+  at: string;
+  service: string;
+  staff: string;
+};
+
+export type CardSession = {
+  name: string;
+  used: number;
+  total: number;
+  remaining: number;
+};
 
 export type CardProgress = {
   organizationName: string;
@@ -99,6 +130,8 @@ export type CardProgress = {
   rewardsAvailable: number;
   history: { at: string; service: string; amount: number }[];
   rewards: { id: string; name: string; status: string; earnedAt: string }[];
+  appointments: CardAppointment[];
+  sessions: CardSession[];
 };
 
 export async function loadCardProgress(
@@ -153,6 +186,38 @@ export async function loadCardProgress(
   );
   const available = rewards.rows.filter((row) => row.status === "AVAILABLE").length;
 
+  const owner = await db.query<{ customerId: string }>(
+    `SELECT "customerId" FROM "LoyaltyCard" WHERE id = $1 AND "organizationId" = $2`,
+    [cardId, organizationId],
+  );
+  const customerId = owner.rows[0]?.customerId;
+  const appointments = customerId
+    ? await db.query<{ at: Date; service: string; staff: string }>(
+        `SELECT a."startAt" AS at,
+                COALESCE(a."serviceNameSnapshot", s.name, 'Rendez-vous') AS service,
+                COALESCE(st."firstName", '') AS staff
+         FROM "Appointment" a
+         LEFT JOIN "Service" s ON s.id = a."serviceId"
+         LEFT JOIN "Staff" st ON st.id = a."staffId"
+         WHERE a."organizationId" = $1 AND a."customerId" = $2
+           AND a.status IN ('PENDING', 'CONFIRMED', 'ARRIVED', 'IN_PROGRESS')
+           AND a."startAt" >= NOW() - INTERVAL '2 hours'
+         ORDER BY a."startAt" ASC
+         LIMIT 8`,
+        [organizationId, customerId],
+      )
+    : { rows: [] as { at: Date; service: string; staff: string }[] };
+  const sessions = customerId
+    ? await db.query<{ name: string; used: number; total: number }>(
+        `SELECT name, "sessionUsed" AS used, "sessionTotal" AS total
+         FROM "Package"
+         WHERE "organizationId" = $1 AND "customerId" = $2 AND status = 'ACTIVE'
+         ORDER BY "purchasedAt" DESC
+         LIMIT 12`,
+        [organizationId, customerId],
+      )
+    : { rows: [] as { name: string; used: number; total: number }[] };
+
   return {
     organizationName: card.rows[0].organizationName,
     firstName: card.rows[0].firstName,
@@ -172,6 +237,17 @@ export async function loadCardProgress(
       name: row.name,
       status: row.status,
       earnedAt: row.earnedAt.toISOString(),
+    })),
+    appointments: appointments.rows.map((row) => ({
+      at: row.at.toISOString(),
+      service: row.service,
+      staff: row.staff,
+    })),
+    sessions: sessions.rows.map((row) => ({
+      name: row.name,
+      used: Number(row.used),
+      total: Number(row.total),
+      remaining: Math.max(0, Number(row.total) - Number(row.used)),
     })),
   };
 }

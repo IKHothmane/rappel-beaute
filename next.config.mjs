@@ -3,7 +3,6 @@ const isProd = process.env.NODE_ENV === "production";
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
@@ -18,7 +17,7 @@ const securityHeaders = [
         {
           key: "Content-Security-Policy",
           value:
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: https://cloudflareinsights.com; frame-src https://www.openstreetmap.org https://www.googletagmanager.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: https://cloudflareinsights.com; frame-src https://www.openstreetmap.org https://www.googletagmanager.com; base-uri 'self'; form-action 'self'",
         },
       ]
     : []),
@@ -69,6 +68,18 @@ const nextConfig = {
         headers: securityHeaders,
       },
     ];
+  },
+  webpack: (config) => {
+    const ignored = [
+      "**/node_modules/**",
+      "**/waiting-list/**",
+      "**/waiting-list",
+    ];
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored,
+    };
+    return config;
   },
 };
 

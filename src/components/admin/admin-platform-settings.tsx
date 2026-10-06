@@ -35,6 +35,7 @@ import {
   patchAdminSettings,
   type AdminSettingsBundle,
 } from "@/modules/admin/settings";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 
 type SectionId =
   | "general"
@@ -132,7 +133,7 @@ export function AdminPlatformSettingsView() {
   const [phone, setPhone] = useState("");
   const [curPwd, setCurPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
-  const [supportPhone, setSupportPhone] = useState("+212 522-894000");
+  const [supportPhone, setSupportPhone] = useState(limitPhoneDigits("+212 522-894000"));
   const [legalAddress, setLegalAddress] = useState(
     "Boulevard d'Anfa, 20050 Casablanca, Maroc",
   );
@@ -151,7 +152,7 @@ export function AdminPlatformSettingsView() {
       setFirstName(data.profile.firstName);
       setLastName(data.profile.lastName);
       setEmail(data.profile.email);
-      setPhone(data.profile.phone ?? "");
+      setPhone(limitPhoneDigits(data.profile.phone ?? ""));
     }
     setDirty(false);
   }, []);

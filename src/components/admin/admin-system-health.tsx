@@ -38,8 +38,10 @@ type ServiceCard = {
   id: string;
   title: string;
   subtitle: string;
+  note?: string;
   icon: LucideIcon;
   status: string;
+  statusText?: string;
   rows: Array<[string, string]>;
   action: { label: string; onClick: () => void } | null;
   footer?: string;
@@ -69,7 +71,7 @@ function TonePill({ tone, text }: { tone: string; text: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold",
+        "inline-flex max-w-[9.5rem] items-center gap-1 rounded-full px-2 py-0.5 text-right text-[11px] font-bold leading-tight",
         tone === "ok" && "bg-emerald-50 text-emerald-700",
         tone === "manual" && "bg-[#FFDEA4]/50 text-[#5D4200]",
         tone === "degraded" && "bg-[#FFDEA4]/40 text-[#5D4200]",
@@ -330,9 +332,11 @@ export function AdminSystemHealthView() {
       {
         id: "jobs",
         title: "Background Jobs",
-        subtitle: "BullMQ / workers",
+        subtitle: "Surveillance BullMQ / workers",
+        note: "Files surveillées : emails, notifications, reminders, reports",
         icon: Settings2,
         status: jobStatus,
+        statusText: jobStatus === "ok" ? "Surveillance opérationnelle" : undefined,
         rows: [
           ["WAIT", countText(jobCounts?.waiting, jobStatus)],
           ["ACTIVE", countText(jobCounts?.active, jobStatus)],
@@ -633,7 +637,8 @@ export function AdminSystemHealthView() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {services.map((s) => {
             const Icon = s.icon;
-            const st = statusLabel(String(s.status));
+            const baseStatus = statusLabel(String(s.status));
+            const st = s.statusText ? { ...baseStatus, text: s.statusText } : baseStatus;
             return (
               <div
                 key={s.id}
@@ -649,6 +654,9 @@ export function AdminSystemHealthView() {
                   <div>
                     <h4 className="font-bold text-ink">{s.title}</h4>
                     <p className="text-[12px] text-ink/50">{s.subtitle}</p>
+                    {s.note ? (
+                      <p className="mt-1 text-[11px] leading-snug text-ink/40">{s.note}</p>
+                    ) : null}
                   </div>
                   <div className="space-y-1 rounded-xl bg-[#FFEFF8] p-2.5 font-mono text-[11px]">
                     {s.rows.map(([k, v]) => (

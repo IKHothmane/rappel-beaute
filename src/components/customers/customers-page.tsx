@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Download,
   MoreVertical,
   RefreshCw,
   Search,
@@ -57,8 +56,6 @@ export function CustomersPageView() {
   const user = useCurrentUser();
   const canWrite = canWriteFeatureLimited(user.role, "customers");
   const canMarketing = canEditCustomerMarketing(user.role);
-  const financeHidden = user.role === "STAFF" || user.role === "CASHIER";
-  const canExport = canReadAnalytics(user.role) && user.role !== "STAFF" && user.role !== "CASHIER";
 
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -196,7 +193,6 @@ export function CustomersPageView() {
         onSelect={setSelectedId}
         selected={selected}
         onNewCustomer={openCreate}
-        onEdit={openEdit}
         onExport={() => openReportExport("customers", "csv", { preset: "year" })}
       />
 
@@ -226,16 +222,6 @@ export function CustomersPageView() {
             className="h-12 w-full rounded-xl bg-white pl-12 pr-4 text-sm text-ink shadow-sm outline-none placeholder:text-ink/35 focus:ring-2 focus:ring-primary/20"
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto">
-          {canExport ? (
-            <button
-              type="button"
-              onClick={() => openReportExport("customers", "csv", { preset: "year" })}
-              className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-white px-4 text-[13px] font-semibold text-ink shadow-sm"
-            >
-              <Download size={16} />
-              Exporter
-            </button>
           ) : null}
           {canWrite ? (
             <button
@@ -372,14 +358,6 @@ export function CustomersPageView() {
                             </p>
                           </td>
                           <td className="whitespace-nowrap px-3 py-3.5">
-                            <span className="font-bold">{c.visits} RDV</span>
-                            <span
-                              className={cn(
-                                "ml-1 text-[11px] font-semibold",
-                                c.noShowCount > 0 ? "text-rose-600" : "text-emerald-600",
-                              )}
-                            >
-                              ({c.noShowCount} no-show)
                             </span>
                           </td>
                           <td className="whitespace-nowrap px-3 py-3.5 font-bold">{formatMad(c.revenue)}</td>

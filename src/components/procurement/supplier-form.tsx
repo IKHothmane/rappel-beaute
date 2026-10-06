@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/select";
 import type { CreateSupplierInput, SupplierDetail } from "@/types/procurement";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 
 type Props = {
   initial?: Partial<SupplierDetail>;

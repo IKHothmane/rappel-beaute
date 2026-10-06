@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  Download,
   LayoutGrid,
   MoreHorizontal,
   Package,
   Plus,
   Search,
   ShoppingBag,
-  SlidersHorizontal,
   Table2,
   Truck,
   Wallet,
@@ -21,7 +19,6 @@ import { ProductForm } from "@/components/inventory/product-form";
 import {
   alertBarClass,
   alertChipClass,
-  exportProductsCsv,
   isLowMargin,
   STOCK_ALERT_LABEL,
   stockFillPercent,
@@ -31,7 +28,6 @@ import { ProductsMobile } from "@/components/inventory/products-mobile";
 import { Drawer } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canReadAnalytics, canWriteStock } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -49,7 +45,6 @@ import {
 import { listPurchases, listSuppliers } from "@/modules/procurement/service";
 import type { InventoryAnalytics } from "@/types/analytics";
 import type {
-  MovementType,
   ProductCategory,
   ProductDetail,
   ProductListItem,
@@ -87,10 +82,13 @@ export function ProductsPageView() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [stockMode, setStockMode] = useState<"IN" | "OUT">("IN");
   const [editing, setEditing] = useState<ProductDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const catalogRef = useRef<ProductListItem[]>([]);
+  catalogRef.current = catalog;
 
   useEffect(() => {
     const a = new URLSearchParams(window.location.search).get("alert");
@@ -275,12 +273,57 @@ export function ProductsPageView() {
     refresh();
   }
 
-  function openAdjust() {
-    if (!selected) {
+  function openStock(mode: "IN" | "OUT", productId?: string) {
+    const id = productId ?? selected?.id;
+    if (!id) {
       toast("Sélectionnez d’abord un produit.", "info");
       return;
     }
+    if (productId) setSelectedId(productId);
+    setStockMode(mode);
     setAdjustOpen(true);
+  }
+
+  async function applyStock(mode: "IN" | "OUT", productId?: string) {
+    const id = productId ?? selected?.id;
+    if (!id) return;
+    const row = catalogRef.current.find((p) => p.id === id);
+    if (!row) return;
+    if (mode === "OUT" && row.stock <= 0) {
+      toast("Stock déjà à 0.", "info");
+      return;
+    }
+    const stock = mode === "IN" ? row.stock + 1 : row.stock - 1;
+    const alert: StockAlertLevel =
+      row.alert === "EXPIRING" || row.alert === "EXPIRED"
+        ? row.alert
+        : stock <= 0
+          ? "OUT"
+          : stock <= row.minStock
+            ? "LOW"
+            : "OK";
+    const next = catalogRef.current.map((p) =>
+      p.id === id
+        ? {
+            ...p,
+            stock,
+            alert,
+            stockValue: Math.round(stock * p.purchasePrice * 100) / 100,
+          }
+        : p,
+    );
+    catalogRef.current = next;
+    setCatalog(next);
+    const result = await createMovement({
+      productId: id,
+      type: mode === "IN" ? "ADJUSTMENT_IN" : "ADJUSTMENT_OUT",
+      quantity: 1,
+      referenceType: "MANUAL",
+    });
+    if (!result.ok) {
+      toast(result.error, "error");
+      refresh();
+    }
   }
 
   return (
@@ -317,7 +360,10 @@ export function ProductsPageView() {
         onEdit={(id) => void openEdit(id)}
         onToggle={(row) => void handleToggle(row)}
         onDelete={(row) => void handleDelete(row)}
-        onAdjust={openAdjust}
+        onAdjustIn={(id) => openStock("IN", id)}
+        onAdjustOut={(id) => openStock("OUT", id)}
+        onStepIn={(id) => void applyStock("IN", id)}
+        onStepOut={(id) => void applyStock("OUT", id)}
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
@@ -329,28 +375,10 @@ export function ProductsPageView() {
                 Produits, stocks & rentabilité
               </h1>
               <p className="mt-1 max-w-3xl text-[15px] text-ink/50">
-                Catalogue de revente et consommables — le stock se met à jour par les mouvements, jamais à la main.
+                Catalogue de revente et consommables. Une entrée augmente le stock, une sortie le diminue.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => exportProductsCsv(catalog)}
-                className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm"
-              >
-                <Download size={16} />
-                Exporter
-              </button>
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={openAdjust}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm"
-                >
-                  <SlidersHorizontal size={16} className="text-primary" />
-                  Ajustement
-                </button>
-              ) : null}
               {showPurchases ? (
                 <Link
                   href="/purchases/"
@@ -706,7 +734,8 @@ export function ProductsPageView() {
                 canWrite={canWrite}
                 financeHidden={financeHidden}
                 onEdit={() => void openEdit(selected.id)}
-                onAdjust={openAdjust}
+                onIn={() => void applyStock("IN")}
+                onOut={() => void applyStock("OUT")}
               />
             ) : (
               <div className="rounded-2xl bg-white p-8 text-center text-sm text-ink/45 shadow-sm">
@@ -737,20 +766,25 @@ export function ProductsPageView() {
         />
       </Drawer>
 
-      <Drawer open={adjustOpen} onClose={() => setAdjustOpen(false)} title="Ajuster le stock">
+      <Drawer
+        open={adjustOpen}
+        onClose={() => setAdjustOpen(false)}
+        title={stockMode === "IN" ? "Entrée de stock" : "Sortie de stock"}
+      >
         {selected ? (
-          <AdjustForm
+          <StockMoveForm
+            key={`${selected.id}-${stockMode}`}
+            mode={stockMode}
             productName={selected.name}
             unitLabel={formatQty(selected.stock, selected.unit)}
             submitting={submitting}
             onCancel={() => setAdjustOpen(false)}
-            onSubmit={async (input) => {
+            onSubmit={async (quantity) => {
               setSubmitting(true);
               const result = await createMovement({
                 productId: selected.id,
-                type: input.type,
-                quantity: input.quantity,
-                reason: input.reason,
+                type: stockMode === "IN" ? "ADJUSTMENT_IN" : "ADJUSTMENT_OUT",
+                quantity,
                 referenceType: "MANUAL",
               });
               setSubmitting(false);
@@ -759,7 +793,7 @@ export function ProductsPageView() {
                 return;
               }
               setAdjustOpen(false);
-              toast("Mouvement enregistré.", "success");
+              toast(stockMode === "IN" ? "Quantité ajoutée au stock." : "Quantité retirée du stock.", "success");
               refresh();
             }}
           />
@@ -804,22 +838,22 @@ function ProductActionsMenu({
   );
 }
 
-function AdjustForm({
+function StockMoveForm({
+  mode,
   productName,
   unitLabel,
   submitting,
   onSubmit,
   onCancel,
 }: {
+  mode: "IN" | "OUT";
   productName: string;
   unitLabel: string;
   submitting: boolean;
-  onSubmit: (input: { type: MovementType; quantity: number; reason?: string }) => void;
+  onSubmit: (quantity: number) => void;
   onCancel: () => void;
 }) {
-  const [type, setType] = useState<MovementType>("ADJUSTMENT_IN");
   const [quantity, setQuantity] = useState("1");
-  const [reason, setReason] = useState("");
 
   return (
     <form
@@ -827,30 +861,28 @@ function AdjustForm({
       onSubmit={(e) => {
         e.preventDefault();
         const qty = Number(quantity);
-        if (!qty) return;
-        onSubmit({ type, quantity: qty, reason: reason.trim() || undefined });
+        if (!qty || qty <= 0) return;
+        onSubmit(qty);
       }}
     >
       <p className="text-sm text-ink/55">
-        {productName} · stock actuel {unitLabel}
+        {productName} · stock actuel <strong className="text-ink">{unitLabel}</strong>
       </p>
-      <Select value={type} onChange={(e) => setType(e.target.value as MovementType)}>
-        <option value="ADJUSTMENT_IN">Entrée (ajustement +)</option>
-        <option value="ADJUSTMENT_OUT">Sortie (ajustement −)</option>
-        <option value="PURCHASE">Réception d’achat</option>
-        <option value="LOSS">Perte</option>
-      </Select>
+      <p className="text-[13px] text-ink/55">
+        {mode === "IN"
+          ? "Cette quantité est ajoutée directement au stock."
+          : "Cette quantité est retirée directement du stock."}
+      </p>
       <label className="block text-sm">
         <span className="mb-1 block text-xs text-ink/50">Quantité</span>
         <Input type="number" min={0.001} step={0.001} value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
       </label>
-      <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motif (optionnel)" />
       <div className="flex gap-2">
         <Button type="button" variant="ghost" className="flex-1" onClick={onCancel}>
           Annuler
         </Button>
         <Button type="submit" variant="primary" className="flex-1" disabled={submitting}>
-          {submitting ? "Enregistrement…" : "Enregistrer"}
+          {submitting ? "Enregistrement…" : mode === "IN" ? "Ajouter" : "Retirer"}
         </Button>
       </div>
     </form>

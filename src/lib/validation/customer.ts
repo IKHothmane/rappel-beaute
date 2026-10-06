@@ -11,12 +11,17 @@ export function normalizePhone(phone: string): string {
   return phone.replace(/\s+/g, "").trim();
 }
 
-/** Garde uniquement les chiffres, format local Maroc, 10 max (ex. 0655443322). */
-export function limitPhoneDigits(raw: string, max = PHONE_MAX_DIGITS): string {
+/** Chiffres locaux Maroc, sans le préfixe international. */
+export function localPhoneDigits(raw: string): string {
   let digits = raw.replace(/\D/g, "");
   if (digits.startsWith("00212")) digits = digits.slice(2);
   if (digits.startsWith("212")) digits = `0${digits.slice(3)}`;
-  return digits.slice(0, max);
+  return digits;
+}
+
+/** Garde uniquement les chiffres, format local Maroc, 10 max (ex. 0655443322). */
+export function limitPhoneDigits(raw: string, max = PHONE_MAX_DIGITS): string {
+  return localPhoneDigits(raw).slice(0, max);
 }
 
 export function moroccoPhoneSearchVariants(raw: string): string[] {
@@ -42,6 +47,14 @@ export function moroccoPhoneSearchVariants(raw: string): string[] {
     variants.add(`212${digits}`);
   }
   return [...variants];
+}
+
+/** Premier mot = prénom, le reste = nom. Un seul mot reste le prénom. */
+export function splitCustomerName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
 }
 
 function isValidEmail(email: string): boolean {
@@ -70,8 +83,7 @@ export function validateCreateCustomer(body: unknown): ValidationResult<CreateCu
   const lastName = String(raw.lastName ?? "").trim();
   const phone = limitPhoneDigits(String(raw.phone ?? ""));
 
-  if (!firstName) errors.firstName = "Le prénom est obligatoire.";
-  if (!lastName) errors.lastName = "Le nom est obligatoire.";
+  if (!firstName) errors.firstName = "Le nom complet est obligatoire.";
   if (!phone || phone.length < 8) errors.phone = "Le téléphone est obligatoire.";
   if (phone.length > PHONE_MAX_DIGITS) errors.phone = "Le téléphone ne doit pas dépasser 10 chiffres.";
 
@@ -117,13 +129,11 @@ export function validateUpdateCustomer(body: unknown): ValidationResult<UpdateCu
 
   if (raw.firstName !== undefined) {
     const v = String(raw.firstName).trim();
-    if (!v) errors.firstName = "Le prénom est obligatoire.";
+    if (!v) errors.firstName = "Le nom complet est obligatoire.";
     else data.firstName = v;
   }
   if (raw.lastName !== undefined) {
-    const v = String(raw.lastName).trim();
-    if (!v) errors.lastName = "Le nom est obligatoire.";
-    else data.lastName = v;
+    data.lastName = String(raw.lastName).trim();
   }
   if (raw.phone !== undefined) {
     const v = limitPhoneDigits(String(raw.phone));

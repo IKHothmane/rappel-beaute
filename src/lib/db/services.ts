@@ -550,10 +550,16 @@ export async function deleteService(
 
 export async function getServiceFormOptions(organizationId: string): Promise<ServiceFormOptions> {
   const [staff, resources, products] = await Promise.all([
-    pool.query<{ id: string; firstName: string; lastName: string; position: string | null }>(
-      `SELECT id, "firstName", "lastName", position FROM "Staff"
-       WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "deletedAt" IS NULL
-       ORDER BY "firstName", "lastName"`,
+    pool.query<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      position: string | null;
+      status: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "ARCHIVED";
+    }>(
+      `SELECT id, "firstName", "lastName", position, status::text AS status FROM "Staff"
+       WHERE "organizationId" = $1 AND "deletedAt" IS NULL AND status <> 'ARCHIVED'
+       ORDER BY status = 'ACTIVE' DESC, "firstName", "lastName"`,
       [organizationId],
     ),
     pool.query<{ id: string; name: string; type: string }>(
@@ -575,6 +581,7 @@ export async function getServiceFormOptions(organizationId: string): Promise<Ser
       id: s.id,
       name: `${s.firstName} ${s.lastName}`.trim(),
       role: s.position,
+      status: s.status,
     })),
     resources: resources.rows,
     products: products.rows,

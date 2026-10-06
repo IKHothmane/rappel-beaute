@@ -356,7 +356,7 @@ function ResourceCard({
   const left = current ? remainingMinutes(current.endAt) : null;
 
   return (
-    <article className={cn("relative rounded-xl bg-white p-3.5 shadow-sm", selected && "ring-1 ring-primary/25")}>
+    <article className={cn("relative rounded-xl bg-white p-3.5 shadow-sm", selected && "bg-[#E8F1FF] ring-2 ring-[#3B6FD8]")}>
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={onOpen} className="flex min-w-0 items-start gap-2 text-left">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFD9DE] text-primary">

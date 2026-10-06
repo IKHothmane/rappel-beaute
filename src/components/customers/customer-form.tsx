@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { limitPhoneDigits } from "@/lib/validation/customer";
+import { limitPhoneDigits, splitCustomerName } from "@/lib/validation/customer";
 import type { CreateCustomerInput, CustomerDetail } from "@/types/customer";
 
 type CustomerFormProps = {

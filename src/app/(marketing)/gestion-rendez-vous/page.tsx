@@ -80,7 +80,7 @@ export default function GestionRdvPage() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/essai/"
+                href="/professionnel/"
                 className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
               >
                 Essayer gratuitement 7 jours
@@ -170,7 +170,7 @@ export default function GestionRdvPage() {
             Sans engagement et sans carte bancaire.
           </p>
           <Link
-            href="/essai/"
+            href="/professionnel/"
             className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
           >
             Essayer gratuitement 7 jours

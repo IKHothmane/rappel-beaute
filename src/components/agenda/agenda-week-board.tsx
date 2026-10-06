@@ -200,16 +200,6 @@ export function AgendaWeekBoard({
                     />
                   ))}
 
-                  <div
-                    className="pointer-events-none absolute inset-x-0 z-[1] flex items-center justify-center bg-[#FBF4F6]/80 text-[10px] font-bold uppercase tracking-wider text-ink/40"
-                    style={{
-                      top: ((13 - AGENDA_OPEN_HOUR) * 60) / AGENDA_SLOT_MINUTES * AGENDA_SLOT_HEIGHT_PX,
-                      height: (60 / AGENDA_SLOT_MINUTES) * AGENDA_SLOT_HEIGHT_PX,
-                    }}
-                  >
-                    Pause
-                  </div>
-
                   {dayClosures.map((c) => {
                     const bStart = new Date(c.startAt);
                     const bEnd = new Date(c.endAt);

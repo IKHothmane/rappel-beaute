@@ -98,7 +98,6 @@ export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: 
   const cycle = useMemo(() => averageVisitGapDays(history), [history]);
   const latestNote = notes[0] ?? null;
   const honorRate = visits + noShows > 0 ? Math.round((visits / (visits + noShows)) * 100) : null;
-  const riskLow = (noShows ?? 0) <= 1;
   const birth = customer?.birthDate
     ? new Date(customer.birthDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
     : null;
@@ -299,16 +298,6 @@ export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: 
               );
             })
           )}
-          <div
-            className={cn(
-              "flex items-center justify-between rounded-xl p-2.5 text-[12px] font-bold",
-              riskLow ? "bg-emerald-500/5 text-emerald-800" : "bg-rose-50 text-rose-800",
-            )}
-          >
-            <span>
-              No-shows : {noShows} {riskLow ? "· risque faible" : "· à surveiller"}
-            </span>
-          </div>
         </div>
       ) : tab === "fidelity" ? (
         <div className="space-y-2 text-[13px] text-ink/70">
@@ -345,13 +334,6 @@ export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: 
           )}
         </div>
       )}
-
-      <Link
-        href={`/customers/${person.id}/`}
-        className="mt-1 flex h-10 items-center justify-center rounded-lg bg-[#F6E3EF] text-[13px] font-bold text-primary"
-      >
-        Ouvrir la fiche complète
-      </Link>
     </aside>
   );
 }

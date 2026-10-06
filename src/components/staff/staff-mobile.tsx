@@ -102,7 +102,7 @@ export function StaffMobile({
   onExport,
 }: StaffMobileProps) {
   const [view, setView] = useState<MobileView>("list");
-  const focusName = selected?.firstName ?? "360°";
+  const focusName = selected?.firstName ?? "Profil";
   const apptChange = overview?.appointments.changePercent;
 
   function openFocus(id: string) {
@@ -281,7 +281,7 @@ export function StaffMobile({
             view === "focus" ? "bg-white text-ink shadow-sm" : "text-ink/45",
           )}
         >
-          Fiche 360° : {focusName}
+          Profil : {focusName}
         </button>
       </div>
 
@@ -349,7 +349,7 @@ function StaffListCard({
     <article
       className={cn(
         "relative flex flex-col gap-2 rounded-xl bg-white p-3 shadow-sm",
-        selected && "ring-1 ring-primary/25",
+        selected && "bg-[#E8F1FF] ring-2 ring-[#3B6FD8]",
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -447,22 +447,13 @@ function StaffListCard({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-[#F0DDE9] text-[13px] font-semibold text-primary"
-        >
-          Voir fiche 360°
-        </button>
-        <Link
-          href="/planning/"
-          className="inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
-        >
-          <CalendarDays size={14} />
-          Planning
-        </Link>
-      </div>
+      <Link
+        href="/planning/"
+        className="inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
+      >
+        <CalendarDays size={14} />
+        Planning
+      </Link>
     </article>
   );
 }

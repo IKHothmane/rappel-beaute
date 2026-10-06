@@ -32,6 +32,7 @@ import {
   rewardChip,
   waMeHref,
 } from "@/components/loyalty/loyalty-helpers";
+import { LoyaltyPassQr } from "@/components/loyalty/loyalty-pass-qr";
 import { cn } from "@/lib/utils";
 import { formatMad } from "@/modules/finance/service";
 import { formatPoints } from "@/modules/loyalty/service";
@@ -558,6 +559,9 @@ function FocusCard({
             <ChevronRight size={18} />
           </Link>
         ) : null}
+      </div>
+      <div className="mt-3">
+        <LoyaltyPassQr customerId={member.customerId} />
       </div>
       {next ? (
         <div className="mt-3">

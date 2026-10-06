@@ -3,7 +3,6 @@
 import type { ReactNode, RefObject } from "react";
 import {
   CalendarDays,
-  Diamond,
   MoreVertical,
   Pencil,
   Plus,
@@ -69,11 +68,6 @@ export function ServicesMobile({
   activeFilter,
   onActiveFilterChange,
   filtered,
-  statsById,
-  loading,
-  topByAppointments,
-  topHourlyId,
-  topHourlyRate,
   menuId,
   onMenu,
   onCreate,
@@ -230,8 +224,6 @@ export function ServicesMobile({
               financeHidden={financeHidden}
               canWrite={canWrite}
               isBestSeller={topByAppointments?.serviceId === s.id && (topByAppointments?.appointments ?? 0) > 0}
-              isTopHourly={topHourlyId === s.id}
-              topHourlyRate={topHourlyId === s.id ? topHourlyRate : null}
               menuOpen={menuId === s.id}
               onMenu={() => onMenu(menuId === s.id ? null : s.id)}
               onEdit={() => onEdit(s.id)}
@@ -295,6 +287,7 @@ function MobileServiceCard({
   financeHidden,
   canWrite,
   isBestSeller,
+  isBestSeller,
   isTopHourly,
   topHourlyRate,
   menuOpen,
@@ -305,8 +298,6 @@ function MobileServiceCard({
 }: {
   service: ServiceListItem;
   stats?: ServiceAnalyticsRow;
-  financeHidden: boolean;
-  canWrite: boolean;
   isBestSeller: boolean;
   isTopHourly: boolean;
   topHourlyRate: number | null;
@@ -314,7 +305,6 @@ function MobileServiceCard({
   onMenu: () => void;
   onEdit: () => void;
   onToggle: () => void;
-  onDelete: () => void;
 }) {
   const Icon = categoryIcon(s.category);
   const hourly = hourlyRate(s.price, s.durationMin);
@@ -346,15 +336,6 @@ function MobileServiceCard({
             </span>
           ) : s.category ? (
             <span className="rounded-md bg-[#F6E3EF] px-2 py-0.5 text-[11px] font-semibold text-ink/50">
-              {s.category}
-            </span>
-          ) : null}
-          {isTopHourly && !financeHidden && topHourlyRate != null ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-[#7B5900] px-2 py-0.5 text-[11px] font-bold text-white">
-              <Diamond size={12} />
-              {formatMad(topHourlyRate)} / heure
-            </span>
-          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {canWrite ? (
@@ -445,10 +426,6 @@ function MobileServiceCard({
                     <span className="font-semibold text-ink">{formatMad(ca)}</span>
                   </>
                 ) : null}
-              </span>
-            </>
-          ) : hourly != null && !financeHidden ? (
-            <>
               <TrendingUp size={14} className="shrink-0 text-[#7B5900]" />
               <span>
                 Tarif / heure <strong className="text-ink">{formatMad(hourly)}</strong>

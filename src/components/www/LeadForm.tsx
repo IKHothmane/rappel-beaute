@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CITIES } from "@/lib/site";
+import { PHONE_MAX_DIGITS, limitPhoneDigits } from "@/lib/validation/customer";
 
 type LeadKind = "DEMO" | "ESSAI";
 
@@ -107,6 +108,17 @@ function Field({
         name={name}
         type={type}
         required={required}
+        inputMode={type === "tel" ? "numeric" : undefined}
+        maxLength={type === "tel" ? PHONE_MAX_DIGITS : undefined}
+        autoComplete={type === "tel" ? "tel" : undefined}
+        onInput={
+          type === "tel"
+            ? (e) => {
+                const next = limitPhoneDigits(e.currentTarget.value);
+                if (next !== e.currentTarget.value) e.currentTarget.value = next;
+              }
+            : undefined
+        }
         className="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-primary"
       />
     </label>

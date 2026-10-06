@@ -1,5 +1,5 @@
 import type { PublicBookingInput } from "@/types/public-booking";
-import { normalizePhone } from "@/lib/validation/customer";
+import { localPhoneDigits, limitPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 
 function str(v: unknown): string | undefined {
   if (typeof v !== "string") return undefined;
@@ -53,9 +53,13 @@ export function parsePublicBookingBody(
   const c = customerRaw as Record<string, unknown>;
   const firstName = str(c.firstName);
   const lastName = str(c.lastName);
-  const phone = normalizePhone(String(c.phone ?? ""));
+  const phoneRaw = String(c.phone ?? "");
+  const phone = limitPhoneDigits(phoneRaw);
   if (!firstName) return { ok: false, error: "Prénom requis." };
   if (!lastName) return { ok: false, error: "Nom requis." };
+  if (localPhoneDigits(phoneRaw).length > PHONE_MAX_DIGITS) {
+    return { ok: false, error: "Le téléphone ne doit pas dépasser 10 chiffres." };
+  }
   if (phone.length < 8) return { ok: false, error: "Téléphone invalide." };
 
   const email = str(c.email);

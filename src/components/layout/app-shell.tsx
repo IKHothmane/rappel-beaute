@@ -48,7 +48,7 @@ export function AppShell({ children }: AppShellProps) {
 
   if (loading || !user || !isAppSession(user)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper text-sm text-ink/60">
+      <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] text-sm text-ink/60">
         Chargement…
       </div>
     );
@@ -56,7 +56,7 @@ export function AppShell({ children }: AppShellProps) {
 
   if (user.mustChangePassword) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-paper text-sm text-ink/60">
+      <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] text-sm text-ink/60">
         Redirection…
       </div>
     );

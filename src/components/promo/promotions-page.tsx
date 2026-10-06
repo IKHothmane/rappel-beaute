@@ -28,7 +28,6 @@ import {
   type PromoTargetFilter,
   type PromoTypeFilter,
   PROMO_PAGE_SIZE,
-  WEEKDAY_OPTIONS,
   deltaPct,
   discountLabel,
   displayStatus,
@@ -40,7 +39,6 @@ import {
   overallConversion,
   perimeterLabel,
   promoShortId,
-  serializeWeekdays,
   simulatePromo,
   statusChip,
   tabCounts,
@@ -94,7 +92,6 @@ export function PromotionsPageView() {
   const [value, setValue] = useState("15");
   const [usageOnce, setUsageOnce] = useState(true);
   const [serviceId, setServiceId] = useState("");
-  const [weekdays, setWeekdays] = useState<number[]>([]);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 250);
@@ -215,7 +212,6 @@ export function PromotionsPageView() {
     setValue("15");
     setUsageOnce(true);
     setServiceId("");
-    setWeekdays([]);
   }
 
   function openCreate(prefill?: Partial<{ name: string; code: string; value: string }>) {
@@ -237,7 +233,6 @@ export function PromotionsPageView() {
       value: Number(value) || undefined,
       maxUsesPerCustomer: usageOnce ? 1 : undefined,
       serviceId: serviceId || undefined,
-      weekdays: serializeWeekdays(weekdays),
     });
     setSubmitting(false);
     if (!result.ok) {
@@ -279,8 +274,6 @@ export function PromotionsPageView() {
     setUsageOnce,
     serviceId,
     setServiceId,
-    weekdays,
-    setWeekdays,
     services,
     submitting,
     onCancel: () => setAddOpen(false),
@@ -842,8 +835,6 @@ function PromoForm({
   setUsageOnce,
   serviceId,
   setServiceId,
-  weekdays,
-  setWeekdays,
   services,
   submitting,
   onCancel,
@@ -861,8 +852,6 @@ function PromoForm({
   setUsageOnce: (v: boolean) => void;
   serviceId: string;
   setServiceId: (v: string) => void;
-  weekdays: number[];
-  setWeekdays: (v: number[]) => void;
   services: ServiceListItem[];
   submitting: boolean;
   onCancel: () => void;
@@ -912,27 +901,6 @@ function PromoForm({
             ))}
           </Select>
         </label>
-      </div>
-      <div>
-        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider">Jours (vide = tous)</p>
-        <div className="flex flex-wrap gap-1.5">
-          {WEEKDAY_OPTIONS.map((d) => {
-            const on = weekdays.includes(d.id);
-            return (
-              <button
-                key={d.id}
-                type="button"
-                onClick={() => setWeekdays(on ? weekdays.filter((x) => x !== d.id) : [...weekdays, d.id])}
-                className={cn(
-                  "rounded-lg px-3 py-2 text-[14px] font-semibold",
-                  on ? "bg-primary text-white" : "bg-[#FFEFF8] text-ink",
-                )}
-              >
-                {d.label}
-              </button>
-            );
-          })}
-        </div>
       </div>
       <div>
         <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider">Utilisation</p>

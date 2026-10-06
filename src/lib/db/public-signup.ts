@@ -22,6 +22,7 @@ export type PublicSignupInput = {
   phone: string;
   city: string;
   address: string;
+  website: string | null;
 };
 
 export type PublicSignupCreated = {
@@ -130,8 +131,8 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
 
     await client.query(
       `INSERT INTO "Organization" (
-        id, name, slug, address, city, phone, email, status, "updatedAt"
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,'ACTIVE',NOW())`,
+        id, name, slug, address, city, phone, email, website, status, "updatedAt"
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'ACTIVE',NOW())`,
       [
         orgId,
         institut,
@@ -140,6 +141,7 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
         input.city.trim() || null,
         input.phone.trim(),
         email,
+        input.website,
       ],
     );
 

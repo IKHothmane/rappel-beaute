@@ -49,7 +49,7 @@ export default function ContactPage() {
             </a>
           </p>
           <div className="flex flex-col items-start gap-3 pt-2">
-            <Link href="/essai/" className="text-sm font-semibold text-primary hover:text-primary-dark">
+            <Link href="/professionnel/" className="text-sm font-semibold text-primary hover:text-primary-dark">
               Essayer gratuitement 7 jours
             </Link>
             <Link

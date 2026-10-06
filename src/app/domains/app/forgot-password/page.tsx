@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] px-4">
       <form className="surface w-full max-w-md p-8" onSubmit={onSubmit}>
         <h1 className="font-display text-2xl font-semibold">Mot de passe oublié ?</h1>
         <p className="mt-2 text-sm text-ink/60">Entrez votre e-mail pour recevoir un lien.</p>

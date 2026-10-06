@@ -200,6 +200,7 @@ export const PLATFORM_AUDIT_ACTION_LABEL: Record<string, string> = {
   ORGANIZATION_SUSPENDED: "Institut suspendu",
   ORGANIZATION_REACTIVATED: "Institut réactivé",
   ORGANIZATION_ARCHIVED: "Institut archivé",
+  ORGANIZATION_DELETED: "Institut supprimé",
   USER_DISABLED: "Utilisateur désactivé",
   USER_REACTIVATED: "Utilisateur réactivé",
   USER_DELETED: "Utilisateur soft-supprimé",

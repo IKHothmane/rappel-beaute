@@ -65,7 +65,7 @@ export function AppShell({ children }: AppShellProps) {
   const isOwner = user.role === "OWNER";
 
   return (
-    <div className={cn("min-h-screen text-ink", isOwner ? "bg-[#FFF9FC]" : "bg-paper")}>
+    <div className="min-h-screen bg-[#F3F4F6] text-ink">
       {isOwner ? (
         <OwnerSidebar
           open={sidebarOpen}

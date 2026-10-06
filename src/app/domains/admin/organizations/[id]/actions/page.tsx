@@ -8,6 +8,7 @@ import { adminHref } from "@/lib/admin/href";
 import type { OrganizationDetail } from "@/types/platform";
 import {
   archiveOrganizationApi,
+  deleteOrganizationApi,
   fetchOrganization,
   reactivateOrganizationApi,
   resetOwnerAccessApi,
@@ -126,6 +127,29 @@ export default function OrganizationActionsPage() {
       label: "Mode assistance",
       description: "Ouvrir une session support",
       href: adminHref(`/organizations/${id}/support/`),
+    },
+    {
+      key: "delete",
+      label: "Supprimer",
+      description: "Effacer l’institut et toutes ses données",
+      danger: true,
+      onClick: () => {
+        const typed = window.prompt(
+          `Supprimer définitivement « ${org.name} » ?\n\nLes clientes, rendez-vous, stock, caisse et comptes de cet institut seront effacés. Cette action est irréversible.\n\nTapez le nom de l’institut pour confirmer.`,
+        );
+        if (typed == null) return;
+        if (typed.trim() !== org.name) {
+          alert("Le nom ne correspond pas. Suppression annulée.");
+          return;
+        }
+        setBusy("delete");
+        void deleteOrganizationApi(id)
+          .then(() => router.push(adminHref("/organizations/")))
+          .catch((e: unknown) => {
+            alert(e instanceof Error ? e.message : "Suppression impossible.");
+          })
+          .finally(() => setBusy(null));
+      },
     },
     {
       key: "archive",

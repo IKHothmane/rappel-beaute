@@ -449,7 +449,7 @@ export function AgendaPage() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className={fullscreen ? "fixed inset-0 z-[45] overflow-auto bg-paper p-4 lg:p-6" : undefined}
+      className={fullscreen ? "fixed inset-0 z-[45] overflow-auto bg-[#F3F4F6] p-4 lg:p-6" : undefined}
     >
       <div className="hidden md:block">
         <AgendaChrome

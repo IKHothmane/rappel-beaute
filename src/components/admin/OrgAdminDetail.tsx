@@ -10,6 +10,7 @@ import { PLAN_LABEL } from "@/types/subscription";
 import type { OrganizationDetail } from "@/types/platform";
 import {
   archiveOrganizationApi,
+  deleteOrganizationApi,
   fetchOrganization,
   reactivateOrganizationApi,
   resetOwnerAccessApi,
@@ -92,6 +93,24 @@ export function OrgAdminDetail() {
     await reload();
   }
 
+  async function onDelete() {
+    if (!org) return;
+    const typed = window.prompt(
+      `Supprimer définitivement « ${org.name} » ?\n\nLes clientes, rendez-vous, stock, caisse et comptes de cet institut seront effacés. Cette action est irréversible.\n\nTapez le nom de l’institut pour confirmer.`,
+    );
+    if (typed == null) return;
+    if (typed.trim() !== org.name) {
+      alert("Le nom ne correspond pas. Suppression annulée.");
+      return;
+    }
+    try {
+      await deleteOrganizationApi(id);
+      router.push(adminHref("/organizations/"));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Suppression impossible.");
+    }
+  }
+
   async function onArchive() {
     if (!org) return;
     if (
@@ -167,6 +186,9 @@ export function OrgAdminDetail() {
               Désactiver
             </button>
           ) : null}
+          <button type="button" className="ac-btn-ghost text-red-700" onClick={() => void onDelete()}>
+            Supprimer
+          </button>
           <button type="button" className="ac-btn-ghost" onClick={() => void onResetAccess()}>
             Réinitialiser accès
           </button>

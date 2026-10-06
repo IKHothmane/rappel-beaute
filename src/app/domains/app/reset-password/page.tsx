@@ -6,7 +6,7 @@ export default function ResetPasswordPage() {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] px-4">
       <form
         className="surface w-full max-w-md p-8"
         onSubmit={(e) => {

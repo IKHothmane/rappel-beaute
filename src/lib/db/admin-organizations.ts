@@ -517,6 +517,48 @@ export async function reactivateOrganization(actor: PlatformSessionUser, id: str
   });
 }
 
+const ORG_DELETE_FIRST = [
+  "LoyaltyEvent",
+  "LoyaltyRedemption",
+  "CommissionRecord",
+  "PosSale",
+  "Invoice",
+  "Purchase",
+  "Appointment",
+  "SupportTicket",
+] as const;
+
+export async function deleteOrganization(actor: PlatformSessionUser, id: string) {
+  const org = await getOrganizationById(id);
+  if (!org) throw new Error("NOT_FOUND");
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await writePlatformAuditLog({
+      platformUserId: actor.id,
+      platformUserName: actorName(actor),
+      organizationId: id,
+      entityType: "Organization",
+      entityId: id,
+      action: "ORGANIZATION_DELETED",
+      before: { name: org.name, slug: org.slug, status: org.status, city: org.city },
+      client,
+    });
+    for (const table of ORG_DELETE_FIRST) {
+      await client.query(`DELETE FROM "${table}" WHERE "organizationId" = $1`, [id]);
+    }
+    const deleted = await client.query(`DELETE FROM "Organization" WHERE id = $1`, [id]);
+    if (deleted.rowCount === 0) throw new Error("NOT_FOUND");
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function archiveOrganization(actor: PlatformSessionUser, id: string) {
   const org = await getOrganizationById(id);
   if (!org) throw new Error("NOT_FOUND");

@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import {
   archiveOrganizationApi,
   adminSubscriptionAction,
+  deleteOrganizationApi,
   fetchAdminDashboard,
   fetchOrganization,
   fetchOrganizations,
@@ -227,6 +228,28 @@ function TenantDrawer({
         city: editCity.trim() || undefined,
       });
     });
+  }
+
+  async function removeInstitut() {
+    if (!detail) return;
+    const typed = window.prompt(
+      `Supprimer définitivement « ${detail.name} » ?\n\nLes clientes, rendez-vous, stock, caisse et comptes de cet institut seront effacés. Cette action est irréversible.\n\nTapez le nom de l’institut pour confirmer.`,
+    );
+    if (typed == null) return;
+    if (typed.trim() !== detail.name) {
+      alert("Le nom ne correspond pas. Suppression annulée.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await deleteOrganizationApi(detail.id);
+      onChanged();
+      onClose();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Suppression impossible.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function applyStatus(next: OrganizationStatus) {
@@ -514,6 +537,14 @@ function TenantDrawer({
                     </button>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void removeInstitut()}
+                  className="mt-2 h-10 w-full rounded-xl bg-red-600 text-xs font-bold text-white disabled:opacity-60"
+                >
+                  Supprimer l’institut
+                </button>
               </div>
 
               <div className="border-t border-[#F0DDE9] pt-3">

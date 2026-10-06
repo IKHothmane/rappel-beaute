@@ -288,6 +288,12 @@ export async function archiveOrganizationApi(id: string) {
   });
 }
 
+export async function deleteOrganizationApi(id: string) {
+  return adminFetch<{ ok: boolean }>(`/api/admin/organizations/${id}/delete/`, {
+    method: "POST",
+  });
+}
+
 export async function updateOrganizationApi(
   id: string,
   input: {

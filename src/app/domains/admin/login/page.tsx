@@ -27,11 +27,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="admin-console relative flex min-h-screen items-center justify-center overflow-hidden bg-paper px-4 text-ink">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(227,28,95,0.12),_transparent_50%)]"
-      />
+    <div className="admin-console relative flex min-h-screen items-center justify-center overflow-hidden bg-[#F3F4F6] px-4 text-ink">
       <form onSubmit={onSubmit} className="surface relative w-full max-w-md p-8">
         <div className="flex flex-col items-start gap-2">
           <BrandLogo href={null} height={56} className="max-h-14" />

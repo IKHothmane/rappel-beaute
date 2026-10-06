@@ -243,7 +243,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="admin-console min-h-screen bg-[#FFF7F9] text-ink">
+    <div className="admin-console min-h-screen bg-[#F3F4F6] text-ink">
       <div className="flex min-h-screen">
         {/* Sidebar desktop */}
         <aside
@@ -501,7 +501,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
           {/* Mobile layout */}
           <div className="lg:hidden">
-            <header className="sticky top-0 z-20 border-b border-line bg-[#FFF7F9]/90 backdrop-blur-xl">
+            <header className="sticky top-0 z-20 border-b border-line bg-[#F3F4F6] backdrop-blur-xl">
               <div className="flex h-16 items-center justify-between gap-2 px-4">
                 <button
                   type="button"

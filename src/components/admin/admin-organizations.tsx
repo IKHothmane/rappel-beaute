@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -168,10 +168,12 @@ function TenantDrawer({
   orgId,
   onClose,
   onChanged,
+  onDeleted,
 }: {
   orgId: string;
   onClose: () => void;
   onChanged: () => void;
+  onDeleted: (id: string) => void;
 }) {
   const [detail, setDetail] = useState<OrganizationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -243,7 +245,7 @@ function TenantDrawer({
     setBusy(true);
     try {
       await deleteOrganizationApi(detail.id);
-      onChanged();
+      onDeleted(detail.id);
       onClose();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Suppression impossible.");
@@ -325,8 +327,8 @@ function TenantDrawer({
   }
 
   return (
-    <aside className="flex max-h-[85vh] w-full shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-sm xl:sticky xl:top-4 xl:max-h-[calc(100dvh-7rem)] xl:w-[400px]">
-      <div className="flex shrink-0 items-start justify-between gap-2 px-4 pb-0 pt-4">
+    <aside className="flex w-full flex-col rounded-2xl bg-white shadow-sm">
+      <div className="flex shrink-0 items-start justify-between gap-2 px-3 pb-0 pt-3">
         {loading || !detail ? (
           <p className="text-sm text-ink/45">Chargement…</p>
         ) : (
@@ -334,7 +336,7 @@ function TenantDrawer({
             <OrgAvatar
               name={detail.name}
               logoUrl={detail.logoUrl}
-              className="h-12 w-12 rounded-2xl text-sm font-black shadow-md"
+              className="h-10 w-10 rounded-xl text-sm font-black shadow-md"
               fallbackClassName="bg-gradient-to-br from-primary to-[#B61149] text-white"
             />
             <div className="min-w-0">
@@ -360,67 +362,54 @@ function TenantDrawer({
       </div>
 
       {detail ? (
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-[#FFEFF8] p-3">
-              <p className="text-[11px] text-ink/45">Clientes</p>
-              <p className="text-xl font-black text-ink">{detail.stats.customers}</p>
+        <div className="space-y-2 p-3">
+          <div className="grid grid-cols-4 gap-1.5">
+            <div className="rounded-xl bg-[#FFEFF8] px-2 py-2">
+              <p className="text-[10px] text-ink/45">Clientes</p>
+              <p className="text-base font-black text-ink">{detail.stats.customers}</p>
             </div>
-            <div className="rounded-xl bg-[#FFEFF8] p-3">
-              <p className="text-[11px] text-ink/45">RDV</p>
-              <p className="text-xl font-black text-ink">{detail.stats.appointments}</p>
+            <div className="rounded-xl bg-[#FFEFF8] px-2 py-2">
+              <p className="text-[10px] text-ink/45">RDV</p>
+              <p className="text-base font-black text-ink">{detail.stats.appointments}</p>
             </div>
-            <div className="rounded-xl bg-[#FFEFF8] p-3">
-              <p className="text-[11px] text-ink/45">CA encaissé</p>
-              <p className="text-lg font-black text-ink">{mad(detail.stats.revenue)}</p>
+            <div className="rounded-xl bg-[#FFEFF8] px-2 py-2">
+              <p className="text-[10px] text-ink/45">CA</p>
+              <p className="text-sm font-black text-ink">{mad(detail.stats.revenue)}</p>
             </div>
-            <div className="rounded-xl bg-[#FFEFF8] p-3">
-              <p className="text-[11px] text-ink/45">Staff / Prod.</p>
-              <p className="text-lg font-black text-ink">
+            <div className="rounded-xl bg-[#FFEFF8] px-2 py-2">
+              <p className="text-[10px] text-ink/45">Staff</p>
+              <p className="text-sm font-black text-ink">
                 {detail.stats.staff} · {detail.stats.products}
               </p>
             </div>
           </div>
 
-          <div className="rounded-2xl bg-[#FFEFF8]/80 p-3">
+          <div className="rounded-2xl bg-[#FFEFF8]/80 px-3 py-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
                 Propriétaire
               </span>
               <span className="text-[10px] font-semibold text-primary">OWNER</span>
             </div>
-            <div className="mt-2 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xs font-bold">
-                {ownerInitials(detail.ownerName)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-ink">
-                  {detail.ownerName ?? "—"}
-                </p>
-                <p className="truncate text-xs text-ink/45">
-                  {detail.ownerEmail ?? detail.email ?? "—"}
-                </p>
-                {detail.ownerPhone || detail.phone ? (
-                  <p className="font-mono text-[11px] text-ink/50">
-                    {detail.ownerPhone ?? detail.phone}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            <p className="mt-2 border-t border-white/60 pt-2 text-[11px] text-ink/45">
-              Inscrit le{" "}
-              <span className="font-semibold text-ink">{formatDate(detail.createdAt)}</span>
+            <p className="mt-1 truncate text-sm font-bold text-ink">
+              {detail.ownerName ?? "—"}
+            </p>
+            <p className="truncate text-xs text-ink/45">
+              {detail.ownerEmail ?? detail.email ?? "—"}
+              {detail.ownerPhone || detail.phone
+                ? ` · ${detail.ownerPhone ?? detail.phone}`
+                : ""}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-[#FFEFF8]/80 p-3">
-            <div className="mb-2 flex items-center justify-between">
+          <div className="rounded-2xl bg-[#FFEFF8]/80 px-3 py-2">
+            <div className="mb-1 flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
                 Abonnement
               </span>
               <Shield className="h-3.5 w-3.5 text-[#7B5900]" />
             </div>
-            <div className="space-y-1 text-xs text-ink/55">
+            <div className="space-y-0.5 text-xs text-ink/55">
               <div className="flex justify-between">
                 <span>Formule</span>
                 <span className="font-bold text-ink">
@@ -462,15 +451,17 @@ function TenantDrawer({
           </div>
 
           {/* Actions */}
-          <div className="rounded-2xl border border-line p-3">
+          <div className="rounded-2xl border border-line p-2.5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
               Actions
             </p>
 
-            <div className="mt-3 space-y-3">
-              <div>
-                <p className="mb-1.5 text-xs font-semibold text-ink">Modifier</p>
-                <div className="flex flex-col gap-2">
+            <div className="mt-2 space-y-2">
+              <details className="group">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                  Modifier
+                </summary>
+                <div className="mt-1.5 flex flex-col gap-2">
                   <input
                     className="h-10 w-full rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
                     placeholder="Nom"
@@ -509,10 +500,10 @@ function TenantDrawer({
                     {busy ? "…" : "Enregistrer les modifications"}
                   </button>
                 </div>
-              </div>
+              </details>
 
-              <div className="border-t border-[#F0DDE9] pt-3">
-                <p className="mb-1.5 text-xs font-semibold text-ink">Changer le statut</p>
+                <div className="border-t border-[#F0DDE9] pt-2">
+                <p className="mb-1 text-xs font-semibold text-ink">Changer le statut</p>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(
                     [
@@ -541,15 +532,17 @@ function TenantDrawer({
                   type="button"
                   disabled={busy}
                   onClick={() => void removeInstitut()}
-                  className="mt-2 h-10 w-full rounded-xl bg-red-600 text-xs font-bold text-white disabled:opacity-60"
+                  className="mt-1.5 h-9 w-full rounded-xl bg-red-600 text-xs font-bold text-white disabled:opacity-60"
                 >
                   Supprimer l’institut
                 </button>
               </div>
 
-              <div className="border-t border-[#F0DDE9] pt-3">
-                <p className="mb-1.5 text-xs font-semibold text-ink">Changer la période</p>
-                <div className="mb-2 grid grid-cols-2 gap-1.5">
+              <details className="border-t border-[#F0DDE9] pt-2">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                  Changer la période
+                </summary>
+                <div className="mb-2 mt-1.5 grid grid-cols-2 gap-1.5">
                   {(
                     [
                       ["date", "Date d’échéance"],
@@ -601,48 +594,49 @@ function TenantDrawer({
                     {busy ? "…" : "Appliquer la période"}
                   </button>
                 </div>
-              </div>
+              </details>
 
-              <div className="border-t border-[#F0DDE9] pt-3">
-                <p className="mb-1.5 text-xs font-semibold text-ink">Paiement</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {(
-                    [
-                      [true, "Payé"],
-                      [false, "Non payé"],
-                    ] as const
-                  ).map(([value, label]) => (
-                    <button
-                      key={label}
-                      type="button"
-                      disabled={busy || !detail.subscriptionId || detail.subscription?.paid === value}
-                      onClick={() => void applyPaid(value)}
-                      className={cn(
-                        "rounded-lg py-2 text-[11px] font-bold transition disabled:opacity-60",
-                        detail.subscription?.paid === value
-                          ? value
-                            ? "bg-emerald-600 text-white"
-                            : "bg-red-600 text-white"
-                          : "bg-[#FFEFF8] text-ink hover:bg-primary/10",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
+              <div className="grid grid-cols-2 gap-2 border-t border-[#F0DDE9] pt-2">
+                <div>
+                  <p className="mb-1 text-xs font-semibold text-ink">Paiement</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {(
+                      [
+                        [true, "Payé"],
+                        [false, "Impayé"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={label}
+                        type="button"
+                        disabled={busy || !detail.subscriptionId || detail.subscription?.paid === value}
+                        onClick={() => void applyPaid(value)}
+                        className={cn(
+                          "rounded-lg py-1.5 text-[11px] font-bold transition disabled:opacity-60",
+                          detail.subscription?.paid === value
+                            ? value
+                              ? "bg-emerald-600 text-white"
+                              : "bg-red-600 text-white"
+                            : "bg-[#FFEFF8] text-ink hover:bg-primary/10",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              <div className="border-t border-[#F0DDE9] pt-3">
-                <p className="mb-1.5 text-xs font-semibold text-ink">Mode démo</p>
-                <button
-                  type="button"
-                  disabled={busy || !detail.subscriptionId}
-                  onClick={() => void applyDemo()}
-                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-[#FFDEA4]/60 text-xs font-bold text-[#5D4200] disabled:opacity-60"
-                >
-                  <Hourglass className="h-3.5 w-3.5" />
-                  Activer démo 7 jours
-                </button>
+                <div>
+                  <p className="mb-1 text-xs font-semibold text-ink">Démo</p>
+                  <button
+                    type="button"
+                    disabled={busy || !detail.subscriptionId}
+                    onClick={() => void applyDemo()}
+                    className="flex h-8 w-full items-center justify-center gap-1 rounded-lg bg-[#FFDEA4]/60 text-[11px] font-bold text-[#5D4200] disabled:opacity-60"
+                  >
+                    <Hourglass className="h-3.5 w-3.5" />
+                    7 jours
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -663,6 +657,7 @@ export function AdminOrganizationsView() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const loadSeq = useRef(0);
 
   useEffect(() => {
     const t = window.setTimeout(() => setQ(qInput.trim()), 280);
@@ -681,6 +676,7 @@ export function AdminOrganizationsView() {
   }, []);
 
   const load = useCallback(() => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     Promise.all([
       fetchOrganizations({
@@ -690,16 +686,25 @@ export function AdminOrganizationsView() {
       fetchAdminDashboard().catch(() => null),
     ])
       .then(([orgRes, d]) => {
+        if (seq !== loadSeq.current) return;
         setItems(orgRes.items);
         if (d) setDash(d);
       })
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (seq === loadSeq.current) setLoading(false);
+      });
   }, [q, plan]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  function forgetOrganization(id: string) {
+    setItems((rows) => rows.filter((row) => row.id !== id));
+    setSelectedId((current) => (current === id ? null : current));
+    load();
+  }
 
   useEffect(() => {
     setPage(1);
@@ -978,7 +983,7 @@ export function AdminOrganizationsView() {
       ) : null}
 
       {/* Layout table + drawer */}
-      <div className="relative flex flex-col items-start gap-5 xl:flex-row">
+      <div className="relative flex flex-col items-start gap-5 md:flex-row">
         <div className="min-w-0 flex-1 space-y-3">
           {/* Mobile cards */}
           <ul className="space-y-3 xl:hidden">
@@ -1217,16 +1222,13 @@ export function AdminOrganizationsView() {
         </div>
 
         {selectedId ? (
-          <div className="w-full xl:w-auto">
-            {/* Mobile: overlay-style drawer peek */}
-            <div className="fixed inset-0 z-40 bg-ink/40 xl:hidden" onClick={() => setSelectedId(null)} />
-            <div className="fixed inset-x-0 bottom-0 z-50 xl:static xl:z-auto">
-              <TenantDrawer
-                orgId={selectedId}
-                onClose={() => setSelectedId(null)}
-                onChanged={load}
-              />
-            </div>
+          <div className="order-first w-full shrink-0 self-start md:sticky md:top-20 md:order-none md:w-[340px] lg:top-4 xl:w-[400px]">
+            <TenantDrawer
+              orgId={selectedId}
+              onClose={() => setSelectedId(null)}
+              onChanged={load}
+              onDeleted={forgetOrganization}
+            />
           </div>
         ) : null}
       </div>

@@ -182,7 +182,8 @@ export function ProfessionnelForm() {
           </p>
           <p className="mt-1 text-sm leading-relaxed text-ink/60">
             Vérifiez votre boîte mail (et les spams). Vous y trouverez un mot de passe temporaire
-            pour vous connecter. Vous le changerez à la première connexion.
+            pour vous connecter. Votre essai de 7 jours est déjà actif. Vous changerez le mot de
+            passe à la première connexion.
           </p>
           <a
             className="mt-3 inline-flex text-sm font-semibold text-primary hover:underline"

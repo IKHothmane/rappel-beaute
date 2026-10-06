@@ -144,7 +144,10 @@ export default function OrganizationActionsPage() {
         }
         setBusy("delete");
         void deleteOrganizationApi(id)
-          .then(() => router.push(adminHref("/organizations/")))
+          .then(() => {
+            router.refresh();
+            router.push(adminHref("/organizations/"));
+          })
           .catch((e: unknown) => {
             alert(e instanceof Error ? e.message : "Suppression impossible.");
           })

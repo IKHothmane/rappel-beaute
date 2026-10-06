@@ -105,6 +105,7 @@ export function OrgAdminDetail() {
     }
     try {
       await deleteOrganizationApi(id);
+      router.refresh();
       router.push(adminHref("/organizations/"));
     } catch (e) {
       alert(e instanceof Error ? e.message : "Suppression impossible.");

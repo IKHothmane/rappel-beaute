@@ -5,7 +5,7 @@ import { newPlatformId } from "@/lib/db/platform-users";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 import { getPlanByCode } from "@/lib/subscriptions/plans";
 import { changeSubscriptionPlan } from "@/lib/db/admin-subscriptions";
-import { addMonths } from "@/lib/subscriptions/subscription-service";
+import { newInstituteTrialEnd } from "@/lib/subscriptions/subscription-service";
 import type { PlanCode } from "@/types/subscription";
 import {
   type CreateOrganizationInput,
@@ -324,7 +324,7 @@ export async function createOrganization(
   const activationToken = randomBytes(32).toString("hex");
   const tokenExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const now = new Date();
-  const periodEnd = addMonths(now, 1);
+  const trialEnd = newInstituteTrialEnd(now);
   const ownerEmail = input.owner.email.trim().toLowerCase();
 
   const client = await pool.connect();
@@ -369,9 +369,9 @@ export async function createOrganization(
     await client.query(
       `INSERT INTO "Subscription" (
         id, "organizationId", "planId", status, "priceSnapshot", "currencySnapshot",
-        "startedAt", "currentPeriodStart", "currentPeriodEnd", "updatedAt"
-      ) VALUES ($1,$2,$3,'ACTIVE',$4,$5,$6,$6,$7,NOW())`,
-      [subId, orgId, plan.id, plan.price, plan.currency, now, periodEnd],
+        "startedAt", "currentPeriodStart", "currentPeriodEnd", "trialEndsAt", "updatedAt"
+      ) VALUES ($1,$2,$3,'TRIAL',$4,$5,$6,$6,$7,$7,NOW())`,
+      [subId, orgId, plan.id, plan.price, plan.currency, now, trialEnd],
     );
 
     await client.query(
@@ -394,6 +394,8 @@ export async function createOrganization(
         slug,
         plan: input.plan,
         ownerEmail,
+        subscriptionStatus: "TRIAL",
+        trialDays: 7,
       },
       client,
     });

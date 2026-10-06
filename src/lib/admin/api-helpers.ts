@@ -3,7 +3,10 @@ import type { NextRequest } from "next/server";
 import { requirePlatformSession } from "@/lib/auth/api-guard";
 
 export function adminJson<T>(data: T, status = 200) {
-  return NextResponse.json(data, { status });
+  return NextResponse.json(data, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }
 
 export function adminError(message: string, status: number) {

@@ -97,7 +97,8 @@ export default function NewOrganizationPage() {
           </div>
         </dl>
         <p className="mt-4 text-xs text-[var(--admin-muted)]">
-          Envoyez ce lien d&apos;activation au propriétaire (mot de passe choisi par lui/elle) :
+          Essai de 7 jours activé. Envoyez ce lien d&apos;activation au propriétaire (mot de passe
+          choisi par lui/elle) :
         </p>
         <p className="mt-2 break-all rounded bg-[#FBF4F6] p-2 font-mono text-[10px]">{done.activationUrl}</p>
         <div className="mt-8 flex flex-col gap-2">

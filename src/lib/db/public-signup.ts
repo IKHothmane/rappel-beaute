@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import type { PoolClient } from "pg";
 import { generateSignupPin, hashPassword } from "@/lib/auth/crypto";
 import { pool } from "@/lib/db/pool";
-import { addMonths } from "@/lib/subscriptions/subscription-service";
+import { newInstituteTrialEnd } from "@/lib/subscriptions/subscription-service";
 import { getPlanByCode, listPlans } from "@/lib/subscriptions/plans";
 
 export class PublicSignupError extends Error {
@@ -106,7 +106,7 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
   const ownerId = newId("u");
   const subId = newId("sub");
   const now = new Date();
-  const periodEnd = addMonths(now, 1);
+  const trialEnd = newInstituteTrialEnd(now);
 
   const client = await pool.connect();
   try {
@@ -156,9 +156,9 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
     await client.query(
       `INSERT INTO "Subscription" (
         id, "organizationId", "planId", status, "priceSnapshot", "currencySnapshot",
-        "startedAt", "currentPeriodStart", "currentPeriodEnd", "updatedAt"
-      ) VALUES ($1,$2,$3,'ACTIVE',$4,$5,$6,$6,$7,NOW())`,
-      [subId, orgId, plan.id, plan.price, plan.currency, now, periodEnd],
+        "startedAt", "currentPeriodStart", "currentPeriodEnd", "trialEndsAt", "updatedAt"
+      ) VALUES ($1,$2,$3,'TRIAL',$4,$5,$6,$6,$7,$7,NOW())`,
+      [subId, orgId, plan.id, plan.price, plan.currency, now, trialEnd],
     );
 
     await seedOrgDefaults(client, orgId);

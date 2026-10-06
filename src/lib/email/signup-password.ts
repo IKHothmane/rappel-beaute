@@ -27,6 +27,7 @@ export function signupPasswordEmail(opts: {
     `Bonjour ${opts.firstName},`,
     ``,
     `Votre institut « ${opts.institut} » est prêt.`,
+    `Une période d'essai de 7 jours est déjà activée.`,
     `Connectez-vous avec :`,
     `E-mail : ${opts.email}`,
     `Mot de passe temporaire (6 chiffres) : ${opts.password}`,
@@ -45,7 +46,7 @@ export function signupPasswordEmail(opts: {
         <td>
           <p style="margin:0 0 8px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#b0894d;">${escapeHtml(SITE.name)}</p>
           <h1 style="margin:0 0 16px;font-size:22px;">Votre accès est prêt</h1>
-          <p style="margin:0 0 16px;line-height:1.5;">Bonjour ${firstName}, le compte de <strong>${institut}</strong> a été créé.</p>
+          <p style="margin:0 0 16px;line-height:1.5;">Bonjour ${firstName}, le compte de <strong>${institut}</strong> a été créé. Une période d'essai de 7 jours est déjà activée.</p>
           <p style="margin:0 0 8px;line-height:1.5;">Identifiant : <strong>${email}</strong></p>
           <p style="margin:0 0 20px;line-height:1.5;">Mot de passe temporaire (6 chiffres) : <strong style="font-family:Consolas,monospace;letter-spacing:.2em;font-size:20px;">${password}</strong></p>
           <p style="margin:0 0 24px;">

@@ -14,6 +14,7 @@ import type {
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       ...init?.headers,
@@ -251,7 +252,7 @@ export async function fetchOrganizations(params?: {
   if (params?.plan) sp.set("plan", params.plan);
   const q = sp.toString();
   return adminFetch<{ items: OrganizationListItem[] }>(
-    `/api/admin/organizations${q ? `?${q}` : ""}`,
+    `/api/admin/organizations/${q ? `?${q}` : ""}`,
   );
 }
 

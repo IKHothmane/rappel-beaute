@@ -185,6 +185,7 @@ function TenantDrawer({
   const [periodMonths, setPeriodMonths] = useState(1);
   const [periodEnd, setPeriodEnd] = useState("");
   const [periodMode, setPeriodMode] = useState<"date" | "extend">("date");
+  const [priceInput, setPriceInput] = useState("");
 
   async function reload() {
     const r = await fetchOrganization(orgId);
@@ -195,6 +196,9 @@ function TenantDrawer({
     setEditCity(r.organization.city ?? "");
     setPeriodEnd(
       (r.organization.subscription?.renewAt ?? r.organization.renewAt)?.slice(0, 10) ?? "",
+    );
+    setPriceInput(
+      r.organization.subscription ? String(r.organization.subscription.price) : "",
     );
   }
 
@@ -289,6 +293,24 @@ function TenantDrawer({
           months: periodMonths,
         });
       }
+    });
+  }
+
+  async function applyPrice() {
+    if (!detail?.subscriptionId) {
+      alert("Aucun abonnement lié à cet institut.");
+      return;
+    }
+    const price = Number(priceInput.replace(",", "."));
+    if (!Number.isFinite(price) || price < 0) {
+      alert("Indiquez un prix en dirhams.");
+      return;
+    }
+    await run(async () => {
+      await adminSubscriptionAction(detail.subscriptionId!, {
+        action: "set-price",
+        price,
+      });
     });
   }
 
@@ -595,6 +617,31 @@ function TenantDrawer({
                   </button>
                 </div>
               </details>
+
+              <div className="border-t border-[#F0DDE9] pt-2">
+                <p className="mb-1 text-xs font-semibold text-ink">Prix de l’institut</p>
+                <div className="flex gap-1.5">
+                  <input
+                    className="h-9 min-w-0 flex-1 rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
+                    inputMode="decimal"
+                    min={0}
+                    onChange={(e) => setPriceInput(e.target.value)}
+                    placeholder="599"
+                    step="1"
+                    type="number"
+                    value={priceInput}
+                  />
+                  <span className="flex h-9 items-center text-xs font-bold text-ink/45">DH</span>
+                  <button
+                    type="button"
+                    disabled={busy || !detail.subscriptionId}
+                    onClick={() => void applyPrice()}
+                    className="h-9 shrink-0 rounded-lg bg-ink px-3 text-[11px] font-bold text-white disabled:opacity-60"
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 gap-2 border-t border-[#F0DDE9] pt-2">
                 <div>

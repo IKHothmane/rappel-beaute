@@ -8,27 +8,17 @@ export const SITE = {
   phone: "+212 6 19 44 03 75",
 } as const;
 
-/** Connexion SaaS — jamais sur le site www (marketing) */
+/** Connexion publique. En production, toujours le site canonique — jamais l’URL Railway. */
 export const APP_LOGIN_HREF =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")
-    ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/connexion/`
-    : process.env.NODE_ENV === "production"
-      ? `${SITE.appUrl}/connexion/`
-      : "/connexion/";
+  process.env.NODE_ENV === "production" ? `${SITE.url}/connexion/` : "/connexion/";
 
 /** URL absolue de connexion — e-mails transactionnels (préremplissage optionnel). */
 export function absoluteAppLoginUrl(opts?: {
   email?: string;
   password?: string;
 }): string {
-  const fromEnv = (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_BASE_URL ||
-    ""
-  ).replace(/\/$/, "");
   const base =
-    fromEnv ||
-    (process.env.NODE_ENV === "production" ? SITE.appUrl : "http://localhost:3000");
+    process.env.NODE_ENV === "production" ? SITE.url : "http://localhost:3000";
   const url = new URL(`${base}/connexion/`);
   if (opts?.email?.trim()) url.searchParams.set("email", opts.email.trim().toLowerCase());
   if (opts?.password) url.searchParams.set("password", opts.password);

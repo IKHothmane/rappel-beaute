@@ -11,6 +11,7 @@ import type { OrganizationDetail } from "@/types/platform";
 import {
   archiveOrganizationApi,
   deleteOrganizationApi,
+  adminSubscriptionAction,
   fetchOrganization,
   reactivateOrganizationApi,
   resetOwnerAccessApi,
@@ -39,6 +40,7 @@ export function OrgAdminDetail() {
     { id: string; firstName: string; lastName: string; email: string; role: string; status: string }[]
   >([]);
   const [saving, setSaving] = useState(false);
+  const [priceInput, setPriceInput] = useState("");
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -58,6 +60,7 @@ export function OrgAdminDetail() {
       address: organization.address ?? "",
       city: organization.city ?? "",
     });
+    setPriceInput(organization.subscription ? String(organization.subscription.price) : "");
   }, [id]);
 
   useEffect(() => {
@@ -350,6 +353,38 @@ export function OrgAdminDetail() {
             <p className="font-display text-xl font-semibold">
               {org.subscription.price.toLocaleString("fr-FR")} MAD / mois
             </p>
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const price = Number(priceInput.replace(",", "."));
+                if (!org.subscriptionId || !Number.isFinite(price) || price < 0) {
+                  alert("Indiquez un prix en dirhams.");
+                  return;
+                }
+                setSaving(true);
+                void adminSubscriptionAction(org.subscriptionId, { action: "set-price", price })
+                  .then(() => reload())
+                  .catch((err: unknown) =>
+                    alert(err instanceof Error ? err.message : "Prix impossible à enregistrer."),
+                  )
+                  .finally(() => setSaving(false));
+              }}
+            >
+              <input
+                className="h-10 w-32 rounded-lg border border-line px-3 text-sm outline-none focus:border-primary"
+                inputMode="decimal"
+                min={0}
+                onChange={(e) => setPriceInput(e.target.value)}
+                step="1"
+                type="number"
+                value={priceInput}
+              />
+              <span className="text-xs font-bold text-[var(--admin-muted)]">DH / mois</span>
+              <button type="submit" className="ac-btn" disabled={saving || !org.subscriptionId}>
+                {saving ? "…" : "Enregistrer le prix"}
+              </button>
+            </form>
             <p>{PLAN_LABEL[org.subscription.plan]}</p>
             <p>Début : {new Date(org.subscription.startAt).toLocaleDateString("fr-FR")}</p>
             <p>Renouvellement : {new Date(org.subscription.renewAt).toLocaleDateString("fr-FR")}</p>

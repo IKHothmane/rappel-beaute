@@ -9,6 +9,7 @@ import {
   listSubscriptionHistory,
   setSubscriptionPaid,
   setSubscriptionPeriodEnd,
+  setSubscriptionPrice,
   setSubscriptionStatus,
 } from "@/lib/db/admin-subscriptions";
 import { getPlanByCode, getPlanById, listPlans } from "@/lib/subscriptions/plans";
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     days?: number;
     periodEnd?: string;
     paid?: boolean;
+    price?: number;
     reason?: string;
     applyAt?: "now" | "next_period";
   };
@@ -118,6 +120,21 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       if (typeof body.paid !== "boolean") return adminError("Indiquez si l’abonnement est payé.", 400);
       await setSubscriptionPaid(auth.session, id, body.paid);
       return adminJson({ ok: true });
+    }
+    if (body.action === "set-price") {
+      const price = typeof body.price === "number" ? body.price : Number(body.price);
+      if (!Number.isFinite(price) || price < 0 || price > 1_000_000) {
+        return adminError("Indiquez un prix en dirhams, entre 0 et 1 000 000.", 400);
+      }
+      try {
+        const result = await setSubscriptionPrice(auth.session, id, price);
+        return adminJson({ ok: true, ...result });
+      } catch (error) {
+        if (error instanceof Error && error.message === "NOT_FOUND") {
+          return adminError("Abonnement introuvable.", 404);
+        }
+        throw error;
+      }
     }
     if (body.action === "set-period") {
       const raw = typeof body.periodEnd === "string" ? body.periodEnd : "";

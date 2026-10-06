@@ -579,6 +579,41 @@ export async function grantDemoTrial(
   return { newEnd: newEnd.toISOString() };
 }
 
+export async function setSubscriptionPrice(
+  actor: PlatformSessionUser,
+  subscriptionId: string,
+  price: number,
+): Promise<{ price: number }> {
+  if (!Number.isFinite(price) || price < 0 || price > 1_000_000) {
+    throw new Error("INVALID_PRICE");
+  }
+  const next = Math.round(price * 100) / 100;
+  const { rows } = await pool.query<{ organizationId: string; priceSnapshot: string }>(
+    `SELECT "organizationId", "priceSnapshot"::text FROM "Subscription" WHERE id = $1`,
+    [subscriptionId],
+  );
+  const sub = rows[0];
+  if (!sub) throw new Error("NOT_FOUND");
+
+  await pool.query(
+    `UPDATE "Subscription" SET "priceSnapshot" = $2, "updatedAt" = NOW() WHERE id = $1`,
+    [subscriptionId, next],
+  );
+
+  await writePlatformAuditLog({
+    platformUserId: actor.id,
+    platformUserName: actorName(actor),
+    organizationId: sub.organizationId,
+    entityType: "Subscription",
+    entityId: subscriptionId,
+    action: "SUBSCRIPTION_PRICE_CHANGED",
+    before: { priceSnapshot: parseFloat(sub.priceSnapshot) },
+    after: { priceSnapshot: next },
+  });
+
+  return { price: next };
+}
+
 export async function setSubscriptionPeriodEnd(
   actor: PlatformSessionUser,
   subscriptionId: string,

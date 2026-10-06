@@ -220,6 +220,7 @@ export const PLATFORM_AUDIT_ACTION_LABEL: Record<string, string> = {
   SUBSCRIPTION_EXTENDED: "Abonnement prolongé",
   SUBSCRIPTION_MARKED_PAID: "Abonnement marqué payé",
   SUBSCRIPTION_MARKED_UNPAID: "Abonnement marqué non payé",
+  SUBSCRIPTION_PRICE_CHANGED: "Prix de l’institut modifié",
   SUBSCRIPTION_TRIAL_GRANTED: "Période gratuite accordée",
   SUBSCRIPTION_CREATED: "Abonnement créé",
   SUPPORT_SESSION_STARTED: "Session assistance démarrée",

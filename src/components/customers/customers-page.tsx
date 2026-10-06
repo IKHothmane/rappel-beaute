@@ -56,6 +56,8 @@ export function CustomersPageView() {
   const user = useCurrentUser();
   const canWrite = canWriteFeatureLimited(user.role, "customers");
   const canMarketing = canEditCustomerMarketing(user.role);
+  const financeHidden = user.role === "STAFF" || user.role === "CASHIER";
+  const canExport = canReadAnalytics(user.role) && !financeHidden;
 
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -193,6 +195,7 @@ export function CustomersPageView() {
         onSelect={setSelectedId}
         selected={selected}
         onNewCustomer={openCreate}
+        onEdit={openEdit}
         onExport={() => openReportExport("customers", "csv", { preset: "year" })}
       />
 
@@ -222,8 +225,7 @@ export function CustomersPageView() {
             className="h-12 w-full rounded-xl bg-white pl-12 pr-4 text-sm text-ink shadow-sm outline-none placeholder:text-ink/35 focus:ring-2 focus:ring-primary/20"
           />
         </div>
-          ) : null}
-          {canWrite ? (
+        {canWrite ? (
             <button
               type="button"
               onClick={openCreate}
@@ -234,7 +236,6 @@ export function CustomersPageView() {
             </button>
           ) : null}
         </div>
-      </div>
 
       <CustomerKpisRow
         kpis={kpis}
@@ -357,9 +358,7 @@ export function CustomersPageView() {
                               {formatRelativeVisit(c.lastVisitAt)}
                             </p>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-3.5">
-                            </span>
-                          </td>
+                          <td className="whitespace-nowrap px-3 py-3.5 text-ink/45">—</td>
                           <td className="whitespace-nowrap px-3 py-3.5 font-bold">{formatMad(c.revenue)}</td>
                           <td className="whitespace-nowrap px-3 py-3.5">
                             <span

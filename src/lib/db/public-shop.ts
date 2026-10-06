@@ -104,8 +104,8 @@ export async function createPublicProductOrder(
   if (!input.customer?.firstName?.trim() || !input.customer?.lastName?.trim()) {
     throw new Error("Nom et prénom requis.");
   }
-  if (!input.customer?.phone?.trim() || input.customer.phone.replace(/\D/g, "").length < 8) {
-  if (localPhoneDigits(input.customer.phone ?? "").length > PHONE_MAX_DIGITS) {
+  const phone = localPhoneDigits(input.customer.phone ?? "");
+  if (phone.length > PHONE_MAX_DIGITS) {
     throw new Error("Le téléphone ne doit pas dépasser 10 chiffres.");
   }
   if (phone.length < 8) throw new Error("Téléphone invalide.");

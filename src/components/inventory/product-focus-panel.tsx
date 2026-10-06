@@ -25,6 +25,7 @@ type ProductFocusPanelProps = {
   onEdit: () => void;
   onIn: () => void;
   onOut: () => void;
+  stockBusy?: boolean;
 };
 
 export function ProductFocusPanel({
@@ -36,6 +37,7 @@ export function ProductFocusPanel({
   onEdit,
   onIn,
   onOut,
+  stockBusy = false,
 }: ProductFocusPanelProps) {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<ProductDetail | null>(null);
@@ -124,7 +126,8 @@ export function ProductFocusPanel({
               <button
                 type="button"
                 onClick={onIn}
-                className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-white text-[11px] font-semibold text-ink shadow-sm"
+                disabled={stockBusy}
+                className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-white text-[11px] font-semibold text-ink shadow-sm disabled:opacity-50"
               >
                 <Plus size={13} />
                 Entrée
@@ -132,7 +135,9 @@ export function ProductFocusPanel({
               <button
                 type="button"
                 onClick={onOut}
-                className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-white text-[11px] font-semibold text-ink shadow-sm"
+                disabled={stockBusy}
+                className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-white text-[11px] font-semibold text-ink shadow-sm disabled:opacity-50"
+              >
                 <Minus size={13} />
                 Sortie
               </button>

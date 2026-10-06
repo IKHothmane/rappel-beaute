@@ -133,7 +133,7 @@ export function ServicesPageView() {
   const topByAppointments = useMemo(() => {
     if (!serviceStats.length) return null;
     return serviceStats.reduce((best, row) => (row.appointments > best.appointments ? row : best), serviceStats[0]);
-  const maxHourly = hourlyRanking[0]?.rate ?? 0;
+  }, [serviceStats]);
 
   async function ensureOptions() {
     if (options) return options;
@@ -239,8 +239,8 @@ export function ServicesPageView() {
         onActiveFilterChange={setActiveFilter}
         filtered={filtered}
         statsById={statsById}
-        topHourlyId={topHourly?.service.id ?? null}
-        topHourlyRate={topHourly?.rate ?? null}
+        loading={loading}
+        topByAppointments={topByAppointments}
         menuId={menuId}
         onMenu={setMenuId}
         onCreate={() => void openCreate()}
@@ -388,7 +388,6 @@ export function ServicesPageView() {
           count={inactiveCount}
         />
       </div>
-        ) : null}
 
         {topByRevenue && !financeHidden ? (
           <div className="flex items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-sm">
@@ -422,6 +421,8 @@ export function ServicesPageView() {
                 service={s}
                 stats={statsById.get(s.id)}
                 financeHidden={financeHidden}
+                canWrite={canWrite}
+                isBestSeller={topByAppointments?.serviceId === s.id}
                 menuOpen={menuId === s.id}
                 onMenu={() => setMenuId(menuId === s.id ? null : s.id)}
                 onEdit={() => void openEdit(s.id)}
@@ -437,7 +438,6 @@ export function ServicesPageView() {
         Les tarifs et durées affichés sont ceux de votre catalogue. Aucune recommandation IA n’est appliquée sans
         votre action.
       </p>
-      </div>
 
       <Drawer
         open={drawerOpen}
@@ -544,8 +544,6 @@ function ServiceCard({
   financeHidden,
   canWrite,
   isBestSeller,
-  isBestSeller,
-  isTopHourly,
   menuOpen,
   onMenu,
   onEdit,
@@ -555,6 +553,8 @@ function ServiceCard({
   service: ServiceListItem;
   stats?: ServiceAnalyticsRow;
   financeHidden: boolean;
+  canWrite: boolean;
+  isBestSeller: boolean;
   menuOpen: boolean;
   onMenu: () => void;
   onEdit: () => void;
@@ -562,8 +562,6 @@ function ServiceCard({
   onDelete: () => void;
 }) {
   const Icon = categoryIcon(s.category);
-  const Icon = categoryIcon(s.category);
-  const hourly = hourlyRate(s.price, s.durationMin);
   const rdv = stats?.appointments ?? 0;
   const ca = stats?.revenue ?? 0;
 
@@ -585,6 +583,8 @@ function ServiceCard({
               <span className="inline-flex items-center gap-1 rounded-full bg-[#FCCA66] px-2 py-0.5 text-[11px] font-bold text-[#7B5900]">
                 <Star size={12} />
                 Best-seller
+              </span>
+            ) : null}
           </div>
           {canWrite ? (
             <div className="relative">
@@ -648,8 +648,6 @@ function ServiceCard({
           <div className="rounded-lg bg-[#FFEFF8]/80 p-2.5 text-[13px]">
             <span className="block text-[11px] font-bold uppercase text-ink/40">CA du mois</span>
             <span className="font-bold text-ink">{formatMad(ca)}</span>
-              <span className="font-bold text-emerald-800">{hourly != null ? `${formatMad(hourly)}/h` : "—"}</span>
-            </div>
           </div>
         ) : null}
 

@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import {
   categoryIcon,
-  hourlyRate,
   staffInitials,
 } from "@/components/services/services-helpers";
 import { cn } from "@/lib/utils";
@@ -43,8 +42,6 @@ type ServicesMobileProps = {
   statsById: Map<string, ServiceAnalyticsRow>;
   loading: boolean;
   topByAppointments: ServiceAnalyticsRow | null;
-  topHourlyId: string | null;
-  topHourlyRate: number | null;
   menuId: string | null;
   onMenu: (id: string | null) => void;
   onCreate: () => void;
@@ -68,6 +65,9 @@ export function ServicesMobile({
   activeFilter,
   onActiveFilterChange,
   filtered,
+  statsById,
+  loading,
+  topByAppointments,
   menuId,
   onMenu,
   onCreate,
@@ -287,9 +287,6 @@ function MobileServiceCard({
   financeHidden,
   canWrite,
   isBestSeller,
-  isBestSeller,
-  isTopHourly,
-  topHourlyRate,
   menuOpen,
   onMenu,
   onEdit,
@@ -298,16 +295,16 @@ function MobileServiceCard({
 }: {
   service: ServiceListItem;
   stats?: ServiceAnalyticsRow;
+  financeHidden: boolean;
+  canWrite: boolean;
   isBestSeller: boolean;
-  isTopHourly: boolean;
-  topHourlyRate: number | null;
   menuOpen: boolean;
   onMenu: () => void;
   onEdit: () => void;
   onToggle: () => void;
+  onDelete: () => void;
 }) {
   const Icon = categoryIcon(s.category);
-  const hourly = hourlyRate(s.price, s.durationMin);
   const rdv = stats?.appointments ?? 0;
   const ca = stats?.revenue ?? 0;
 
@@ -336,6 +333,9 @@ function MobileServiceCard({
             </span>
           ) : s.category ? (
             <span className="rounded-md bg-[#F6E3EF] px-2 py-0.5 text-[11px] font-semibold text-ink/50">
+              {s.category}
+            </span>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {canWrite ? (
@@ -426,9 +426,6 @@ function MobileServiceCard({
                     <span className="font-semibold text-ink">{formatMad(ca)}</span>
                   </>
                 ) : null}
-              <TrendingUp size={14} className="shrink-0 text-[#7B5900]" />
-              <span>
-                Tarif / heure <strong className="text-ink">{formatMad(hourly)}</strong>
               </span>
             </>
           ) : (

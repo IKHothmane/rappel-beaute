@@ -15,6 +15,12 @@ import {
   submitPublicBooking,
 } from "@/modules/public-booking/service";
 import { businessTodayIso } from "@/lib/time/business-timezone";
+import type {
+  PublicBookingResult,
+  PublicOrganizationProfile,
+  PublicServiceItem,
+  PublicStaffItem,
+} from "@/types/public-booking";
 
 type Step = "service" | "staff" | "date" | "slot" | "info" | "confirm" | "done";
 

@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { listProducts } from "@/modules/inventory/service";
 import {
   createPurchase,
+  createSupplier,
   formatMad,
   listPurchases,
   listSuppliers,
@@ -41,6 +42,7 @@ import {
 } from "@/modules/procurement/service";
 import type { ProductListItem } from "@/types/inventory";
 import type {
+  CreateSupplierInput,
   PurchaseItemInput,
   PurchaseKpis,
   PurchaseListItem,
@@ -75,9 +77,7 @@ export function PurchasesPageView() {
   const [supplierOpen, setSupplierOpen] = useState(false);
   const [supplierPrefill, setSupplierPrefill] = useState("");
   const [pickedSupplier, setPickedSupplier] = useState<{ id: string; name: string; token: number } | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [supplierSubmitting, setSupplierSubmitting] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 250);
@@ -582,8 +582,6 @@ export function PurchasesPageView() {
         ) : null}
       </Drawer>
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Nouvelle commande">
-        <PurchaseForm
       <Drawer
         open={drawerOpen}
         onClose={() => {
@@ -624,6 +622,8 @@ export function PurchasesPageView() {
             onCancel={() => setSupplierOpen(false)}
           />
         ) : null}
+      </Drawer>
+    </div>
   );
 }
 

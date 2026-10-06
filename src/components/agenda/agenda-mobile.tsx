@@ -197,12 +197,6 @@ export function AgendaMobile({
       .catch(() => setWaitingCount(0));
   }, []);
 
-  const lunchStart = atHour(date, 13);
-  const lunchEnd = atHour(date, 14);
-  const lunchFree = !dayAppts.some((a) =>
-    overlaps(new Date(a.startAt), new Date(a.endAt), lunchStart, lunchEnd),
-  );
-
   const firstStaff = staffOptions[0];
   const firstCtx = staffContexts.find((c) => c.id === firstStaff?.id);
   const lateSlot = useMemo(() => {
@@ -307,18 +301,15 @@ export function AgendaMobile({
               <div className="h-full rounded-full bg-primary" style={{ width: `${occ}%` }} />
             </div>
           </div>
-            className="col-span-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white shadow-[0_4px_16px_rgba(227,28,95,0.25)] active:scale-[0.98]"
+          <button
+            type="button"
+            onClick={() => onCreate()}
+            className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white shadow-[0_4px_16px_rgba(227,28,95,0.25)] active:scale-[0.98]"
           >
             <Plus size={18} />
             Nouveau RDV
-            type="button"
-            onClick={onBlockSlot}
-            className="col-span-2 flex h-12 items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-semibold text-ink shadow-sm active:scale-[0.98]"
-          >
-            <Lock size={16} className="text-ink/45" />
-            Bloquer
           </button>
-          <div className="col-span-5">
+          <div className="col-span-2">
             <GoogleCalendarConnect className="h-11 w-full max-w-none justify-center rounded-xl bg-white shadow-sm" />
           </div>
         </div>
@@ -434,7 +425,8 @@ export function AgendaMobile({
               <Plus size={14} /> Créer
             </span>
           </button>
-        {dayAppts.map((apt) => (
+        ) : (
+          dayAppts.map((apt) => (
           <MobileAptRow
             key={apt.id}
             apt={apt}
@@ -444,7 +436,8 @@ export function AgendaMobile({
             onOpenDetail={() => onAppointmentClick(apt.id)}
             onStatusChange={onStatusChange}
           />
-        ))}
+          ))
+        )}
 
         {lateSlot && firstStaff ? (
           <div className="flex items-start gap-2">
@@ -484,30 +477,6 @@ export function AgendaMobile({
           </div>
         ) : null}
       </section>
-    </div>
-  );
-}
-
-function GapRow({ time, onCreate }: { time: string; onCreate: () => void }) {
-  return (
-    <div className="flex items-start gap-2">
-      <div className="w-12 shrink-0 pt-1 text-right text-[11px] font-bold text-ink/35">{time}</div>
-      <button
-        type="button"
-        onClick={onCreate}
-        className="flex flex-1 items-center justify-between rounded-xl bg-[#FFF1F6] px-3 py-2"
-      >
-        <span className="text-[13px] italic text-ink/45">Créneau libre</span>
-        <span className="flex items-center gap-0.5 text-[11px] font-bold text-primary">
-          <Plus size={14} /> Créer
-        </span>
-      </button>
-        <Cloud size={16} className="text-gold" />
-        <div>
-          <p className="text-[11px] font-bold tracking-wide text-ink">Pause 13:00 – 14:00</p>
-          <p className="text-[11px] text-ink/45">Créneau déjeuner</p>
-        </div>
-      </div>
     </div>
   );
 }

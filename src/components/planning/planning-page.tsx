@@ -101,13 +101,12 @@ function OffBadge({ children = "OFF" }: { children?: string }) {
 }
 
 function ShiftChip({
-  staffId,
+  color,
   cell,
 }: {
-  staffId: string;
+  color: StaffColor;
   cell: Extract<DayCell, { kind: "work" | "overtime" }>;
 }) {
-  const color = staffColor(staffId);
   return (
     <span
       className={cn(
@@ -136,6 +135,7 @@ export function PlanningPageView() {
   const [staffFilter, setStaffFilter] = useState("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editDay, setEditDay] = useState(() => new Date().getDay());
+  const [savingSchedule, setSavingSchedule] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [hoursOpen, setHoursOpen] = useState(false);
   const [weekDraft, setWeekDraft] = useState<StaffScheduleSlot[]>([]);
@@ -196,8 +196,8 @@ export function PlanningPageView() {
   const visibleStaff = useMemo(
     () => (staffFilter === "ALL" ? staff : staff.filter((item) => item.id === staffFilter)),
     [staff, staffFilter],
-  const staffColors = useMemo(() => assignStaffColors(staff.map((person) => person.id)), [staff]);
   );
+  const staffColors = useMemo(() => assignStaffColors(staff.map((person) => person.id)), [staff]);
   const selected = staff.find((item) => item.id === selectedId) ?? staff[0] ?? null;
   const activeCount = staff.filter((item) => item.status === "ACTIVE").length;
   const onDutyToday = staff.filter((item) => isOnDutyToday(item)).length;
@@ -581,6 +581,7 @@ export function PlanningPageView() {
                         className="cursor-pointer transition-colors hover:bg-[#FFF9FB]"
                         onClick={() => selectStaffDay(person.id, weekDates[0])}
                       >
+                        <td className="px-4 py-3">
                           <StaffIdentity
                             person={person}
                             position={positions[person.id]}
@@ -1263,7 +1264,6 @@ function StaffIdentity({
   position?: string;
   color: StaffColor;
 }) {
-  const color = staffColor(person.id);
   return (
     <div className="flex items-center gap-2.5">
       <div
@@ -1285,7 +1285,6 @@ function StaffIdentity({
 function DayCellBadge({ color, cell }: { color: StaffColor; cell: DayCell }) {
   if (cell.kind === "work" || cell.kind === "overtime") {
     return <ShiftChip color={color} cell={cell} />;
-    return <ShiftChip staffId={staffId} cell={cell} />;
   }
   if (cell.kind === "leave") {
     return (

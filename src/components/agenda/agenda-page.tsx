@@ -11,6 +11,7 @@ import {
 import { AgendaChrome } from "@/components/agenda/agenda-toolbar";
 import { AgendaWeekBoard } from "@/components/agenda/agenda-week-board";
 import { AgendaMobile } from "@/components/agenda/agenda-mobile";
+import { BlockSlotDialog } from "@/components/agenda/block-slot-dialog";
 import { AppointmentDetails } from "@/components/agenda/appointment-details";
 import { AppointmentForm } from "@/components/agenda/appointment-form";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
@@ -624,7 +625,6 @@ export function AgendaPage() {
               whatsappConnected={whatsappConnected}
               onAppointmentClick={openDetail}
               onCreate={(seed) => openCreate(seed)}
-              onBlockSlot={() => setBlockOpen(true)}
               onStatusChange={(id, status) => void handleStatus(status, id)}
             />
           </motion.div>

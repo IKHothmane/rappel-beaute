@@ -306,6 +306,7 @@ export function ProductsMobile({
           onIn={() => onStepIn(selected.id)}
           onOut={() => onStepOut(selected.id)}
           stockBusy={stockBusy}
+        />
       ) : null}
     </div>
   );
@@ -320,7 +321,6 @@ function ProductCard({
   onEdit,
   onToggle,
   onDelete,
-  onAdjust,
   onIn,
   onOut,
 }: {
@@ -334,6 +334,7 @@ function ProductCard({
   onDelete: () => void;
   onIn: () => void;
   onOut: () => void;
+}) {
   const margin = productMargin(p);
   const [menuOpen, setMenuOpen] = useState(false);
   return (
@@ -410,7 +411,6 @@ function ProductCard({
         </div>
       ) : null}
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <button
         {canWrite ? (
           <>
             <button
@@ -435,6 +435,7 @@ function ProductCard({
             className="col-span-2 inline-flex h-9 items-center justify-center rounded-lg bg-[#F0DDE9] text-[13px] font-semibold text-primary"
           >
             Voir la fiche
+          </button>
         )}
       </div>
     </article>

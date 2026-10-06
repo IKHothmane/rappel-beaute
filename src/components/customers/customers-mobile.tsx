@@ -8,6 +8,7 @@ import {
   CalendarPlus,
   ChevronLeft,
   ChevronRight,
+  Download,
   Eye,
   Lock,
   Mail,

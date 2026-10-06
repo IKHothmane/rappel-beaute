@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   LayoutGrid,
   MoreHorizontal,
+  Download,
   Plus,
   Search,
   Table2,
@@ -47,6 +48,7 @@ import {
   deleteResource,
   getResource,
   listResources,
+  updateResource,
   updateResourceMaintenance,
 } from "@/modules/resources/service";
 import { listServices } from "@/modules/services/service";
@@ -88,7 +90,6 @@ export function ResourcesPageView() {
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [openMaintenances, setOpenMaintenances] = useState<ResourceMaintenanceItem[]>([]);
   const [editingMaintenance, setEditingMaintenance] = useState<ResourceMaintenanceItem | null>(null);
-  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const [editing, setEditing] = useState<ResourceDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -303,6 +304,7 @@ export function ResourcesPageView() {
     if (!selected) {
       toast("Sélectionnez d’abord une ressource.", "info");
       return;
+    }
     setEditingMaintenance(null);
     setMaintenanceOpen(true);
     void loadOpenMaintenances(selected.id);
@@ -653,6 +655,15 @@ export function ResourcesPageView() {
           key={editing?.id ?? "new"}
           initial={editing ?? undefined}
           services={serviceOptions}
+          submitting={submitting}
+          onSubmit={(data) => void handleSubmit(data)}
+          onCancel={() => {
+            setDrawerOpen(false);
+            setEditing(null);
+          }}
+        />
+      </Drawer>
+
       <Drawer
         open={maintenanceOpen}
         onClose={() => {
@@ -728,15 +739,6 @@ export function ResourcesPageView() {
               }}
             />
           </div>
-              if (!result.ok) {
-                toast(result.error, "error");
-                return;
-              }
-              setMaintenanceOpen(false);
-              toast("Maintenance planifiée.", "success");
-              refresh();
-            }}
-          />
         ) : (
           <p className="text-sm text-ink/50">Sélectionnez une ressource.</p>
         )}
@@ -773,7 +775,7 @@ function MasterCard({
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
-        selected && "bg-[#E8F1FF] shadow-md ring-2 ring-[#3B6FD8]",
+}) {
   const Icon = resourceTypeIcon(r.type);
   const left = current ? remainingMinutes(current.endAt) : null;
 
@@ -782,7 +784,7 @@ function MasterCard({
       onClick={onSelect}
       className={cn(
         "relative cursor-pointer rounded-xl bg-white p-4 shadow-sm transition-all",
-        selected && "shadow-md ring-1 ring-primary/15",
+        selected && "bg-[#E8F1FF] shadow-md ring-2 ring-[#3B6FD8]",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -878,6 +880,15 @@ function MasterCard({
             type="button"
             onClick={onDelete}
             className="block w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50"
+          >
+            Supprimer
+          </button>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 function toDatetimeLocal(iso: string) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
@@ -919,15 +930,6 @@ function MaintenanceForm({
     >
       <p className="text-sm text-ink/55">
         {initial ? "Modifier" : "Planifier"} · <strong className="text-ink">{resourceName}</strong>
-          startAt: new Date(startAt).toISOString(),
-          endAt: new Date(endAt).toISOString(),
-          type,
-          reason: reason.trim() || undefined,
-        });
-      }}
-    >
-      <p className="text-sm text-ink/55">
-        Ressource : <strong className="text-ink">{resourceName}</strong>
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
@@ -943,7 +945,7 @@ function MaintenanceForm({
         {Object.entries(MAINTENANCE_TYPE_LABEL).map(([k, v]) => (
           <option key={k} value={k}>
             {v}
-          {submitting ? "Enregistrement…" : initial ? "Enregistrer" : "Planifier"}
+          </option>
         ))}
       </Select>
       <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motif (optionnel)" />
@@ -952,7 +954,7 @@ function MaintenanceForm({
           Annuler
         </Button>
         <Button type="submit" variant="primary" className="flex-1" disabled={submitting}>
-          {submitting ? "Enregistrement…" : "Planifier"}
+          {submitting ? "Enregistrement…" : initial ? "Enregistrer" : "Planifier"}
         </Button>
       </div>
     </form>

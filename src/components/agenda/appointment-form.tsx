@@ -160,7 +160,7 @@ export function AppointmentForm({
   useEffect(() => {
     if (service && !initial?.price) setPrice(String(catalogTotal));
   }, [service, extraIds, catalogTotal, initial?.price]);
-    if (!date) return [];
+
   const slots = useMemo(() => {
     if (!serviceId || !date) return [];
     const [y, m, d] = date.split("-").map(Number);
@@ -446,10 +446,10 @@ export function AppointmentForm({
         <Input value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="CODE" />
       </FieldGroup>
 
-        {date ? (
+      <FieldGroup className="sm:col-span-2">
+        <Label>Créneau</Label>
+        {serviceId && date ? (
           <AvailabilitySlots slots={slots} value={time} onSelect={setTime} loading={submitting} />
-        ) : (
-          <p className="text-[12px] text-ink/45">Choisissez une date.</p>
         ) : (
           <p className="text-[12px] text-ink/45">Choisissez un service et une date.</p>
         )}

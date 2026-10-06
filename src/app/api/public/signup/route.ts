@@ -13,12 +13,30 @@ import {
 } from "@/lib/db/public-signup";
 import { setOrganizationLogoUrl } from "@/lib/db/organization";
 import { getStorageService } from "@/lib/storage";
+import { absoluteAppLoginUrl, CITIES } from "@/lib/site";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 const CITIES_SET = new Set<string>(CITIES);
+
+function normalizeWebsite(raw: string): string | null | NextResponse {
+  if (!raw) return null;
+  const withProto = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const url = new URL(withProto);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return validationError("Site web invalide.");
+    }
+    if (url.hostname.length < 3 || !url.hostname.includes(".")) {
+      return validationError("Site web invalide.");
+    }
+    return url.toString();
+  } catch {
+    return validationError("Site web invalide.");
+  }
+}
 
 function str(form: FormData, key: string): string {
   const value = form.get(key);

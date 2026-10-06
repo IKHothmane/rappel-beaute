@@ -9,6 +9,7 @@ import {
   Cloud,
   Filter,
   Maximize2,
+  Lock,
   Plus,
   Search,
   SlidersHorizontal,

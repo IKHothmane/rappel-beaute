@@ -1180,7 +1180,7 @@ export function AdminUsersView() {
                                           close();
                                           void patchAdminUser(u.id, {
                                             status: "ACTIVE",
-                                          }).then(load);
+                                          }).then(() => load());
                                         }}
                                       >
                                         Réactiver

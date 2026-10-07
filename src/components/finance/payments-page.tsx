@@ -17,9 +17,10 @@ import {
   PAYMENT_PAGE_SIZE,
   type PaymentPeriod,
   type PaymentTab,
+  billableToDuePayment,
   filterPayments,
   formatPaymentDateTime,
-  formatPaymentTime,
+  isUnpaidDue,
   paymentInsight,
   paymentInitials,
   paymentKpis,
@@ -34,6 +35,15 @@ import {
   waMeLink,
 } from "@/components/finance/payment-helpers";
 import { PaymentsMobile } from "@/components/finance/payments-mobile";
+import { PaymentTicketModal } from "@/components/finance/payment-ticket";
+import {
+  ProductSalePanel,
+  type ProductAddonCart,
+} from "@/components/finance/product-sale-panel";
+import {
+  createPosSaleApi,
+  newPosIdempotencyKey,
+} from "@/modules/pos/service";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -44,6 +54,7 @@ import { cn } from "@/lib/utils";
 import {
   createPayments,
   formatMad,
+  getCashRegister,
   getPaymentSummary,
   listBillableAppointments,
   listPayments,
@@ -73,7 +84,6 @@ export function PaymentsPageView() {
   const canPos = canAccessNav(user.role, "pos");
   const canCash = canAccessNav(user.role, "cash-register");
   const canCustomers = canAccessNav(user.role, "customers");
-  const canInvoices = canAccessNav(user.role, "invoices");
 
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<PaymentItem[]>([]);
@@ -91,16 +101,35 @@ export function PaymentsPageView() {
   const [refundMethod, setRefundMethod] = useState<PaymentMethod>("CASH");
   const [refundReason, setRefundReason] = useState("");
 
+  const [ticketPayment, setTicketPayment] = useState<PaymentItem | null>(null);
   const [payOpen, setPayOpen] = useState(false);
+  const [payMode, setPayMode] = useState<"service" | "products">("service");
   const [billable, setBillable] = useState<Billable[]>([]);
   const [aptId, setAptId] = useState("");
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState<PaymentMethod>("CASH");
   const [submitting, setSubmitting] = useState(false);
+  const [cashOpen, setCashOpen] = useState(true);
+  const [addonCart, setAddonCart] = useState<ProductAddonCart>({
+    lines: [],
+    total: 0,
+    discount: 0,
+    promoCode: null,
+  });
+  const [addonReset, setAddonReset] = useState(0);
 
   const refresh = useCallback(async () => {
     try {
-      setRows(await listPayments({ limit: 80 }));
+      const [payments, unpaid] = await Promise.all([
+        listPayments({ limit: 120 }),
+        listBillableAppointments().catch(() => [] as Billable[]),
+      ]);
+      setBillable(unpaid);
+      const dueRows = unpaid.map(billableToDuePayment);
+      const merged = [...dueRows, ...payments].sort(
+        (a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime(),
+      );
+      setRows(merged);
     } catch {
       toast("Impossible de charger les paiements.", "error");
     }
@@ -167,6 +196,7 @@ export function PaymentsPageView() {
   function canRefundRow(p: PaymentItem) {
     return (
       canWrite &&
+      !isUnpaidDue(p) &&
       p.kind !== "REFUND" &&
       p.status === "COMPLETED" &&
       canCreateRefund(user.role, p.amount)
@@ -182,7 +212,11 @@ export function PaymentsPageView() {
 
   async function openPay(preset?: { appointmentId?: string; amount?: number }) {
     try {
-      const list = await listBillableAppointments();
+      const [list, cash] = await Promise.all([
+        listBillableAppointments(),
+        getCashRegister().catch(() => null),
+      ]);
+      setCashOpen(cash?.session?.status === "OPEN");
       let next = list;
       if (
         preset?.appointmentId &&
@@ -205,8 +239,11 @@ export function PaymentsPageView() {
       setBillable(next);
       const id = preset?.appointmentId || next[0]?.id || "";
       setAptId(id);
+      setPayMode("service");
       const fromList = next.find((b) => b.id === id);
       setPayAmount(String(preset?.amount ?? fromList?.remaining ?? ""));
+      setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
+      setAddonReset((n) => n + 1);
       setPayOpen(true);
     } catch {
       toast("Impossible de charger les RDV à encaisser.", "error");
@@ -215,19 +252,52 @@ export function PaymentsPageView() {
 
   async function handlePay() {
     if (!aptId) return;
+    const serviceAmount = Number(payAmount);
+    if (!serviceAmount || serviceAmount <= 0) {
+      toast("Indiquez le montant du service.", "error");
+      return;
+    }
+    if (addonCart.lines.length > 0 && payMethod === "CASH" && !cashOpen) {
+      toast("Ouvrez la caisse pour encaisser des produits en espèces.", "error");
+      return;
+    }
     setSubmitting(true);
     const result = await createPayments({
       appointmentId: aptId,
-      items: [{ amount: Number(payAmount), method: payMethod }],
+      items: [{ amount: serviceAmount, method: payMethod }],
       idempotencyKey: newIdempotencyKey("pay"),
     });
-    setSubmitting(false);
     if (!result.ok) {
+      setSubmitting(false);
       toast(result.error, "error");
       return;
     }
-    toast("Paiement enregistré.", "success");
+
+    let productMsg = "";
+    if (addonCart.lines.length > 0) {
+      const sale = await createPosSaleApi({
+        lines: addonCart.lines,
+        paymentMethod: payMethod,
+        discountTotal: addonCart.discount > 0 ? addonCart.discount : 0,
+        notes: addonCart.promoCode
+          ? `Vente POS · avec service · Promo: ${addonCart.promoCode}`
+          : "Vente POS · avec service",
+        idempotencyKey: newPosIdempotencyKey(),
+      });
+      if (!sale.ok) {
+        setSubmitting(false);
+        toast(`Service encaissé, mais produits : ${sale.error}`, "error");
+        setPayOpen(false);
+        await refresh();
+        return;
+      }
+      productMsg = ` · produits ${formatMad(sale.sale.total)}`;
+    }
+
+    setSubmitting(false);
+    toast(`Paiement enregistré${productMsg}.`, "success");
     setPayOpen(false);
+    setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
     await refresh();
   }
 
@@ -285,12 +355,22 @@ export function PaymentsPageView() {
         onNew={() => openPay()}
         onRefund={openRefund}
         onCollectRemaining={() => {
-          if (selected?.appointmentId && remaining) {
-            openPay({ appointmentId: selected.appointmentId, amount: remaining.remaining });
-          }
+          if (!selected?.appointmentId) return;
+          const amount = remaining?.remaining ?? selected.amount;
+          void openPay({ appointmentId: selected.appointmentId, amount });
         }}
         canRefund={canRefundRow}
+        onTicket={setTicketPayment}
       />
+
+      {ticketPayment && !isUnpaidDue(ticketPayment) ? (
+        <PaymentTicketModal
+          payment={ticketPayment}
+          orgName={user.orgName}
+          remaining={ticketPayment.id === selected?.id ? remaining : null}
+          onClose={() => setTicketPayment(null)}
+        />
+      ) : null}
 
       <div className="hidden space-y-4 lg:block">
         <section className="flex flex-col justify-between gap-4 rounded-xl bg-white p-6 shadow-sm lg:flex-row lg:items-center">
@@ -456,7 +536,7 @@ export function PaymentsPageView() {
           <section className="overflow-hidden rounded-xl bg-white shadow-sm lg:col-span-8">
             <div className="flex items-center justify-between bg-[#FFEFF8] px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="text-[18px] font-semibold">Journal des règlements</span>
+                <span className="text-[18px] font-semibold">Journal · paiements & RDV non payés</span>
                 <span className="rounded-full bg-[#F0DDE9] px-2 py-0.5 text-[11px] font-bold text-ink/55">
                   {filtered.length} transaction{filtered.length > 1 ? "s" : ""}
                 </span>
@@ -473,7 +553,7 @@ export function PaymentsPageView() {
                   <table className="w-full min-w-[720px] text-left text-[13px]">
                     <thead>
                       <tr className="bg-[#FCE9F4] text-[11px] font-bold uppercase tracking-wider text-ink/50">
-                        <th className="px-3 py-2.5">Id & heure</th>
+                        <th className="px-3 py-2.5">Id · date et heure</th>
                         <th className="px-3 py-2.5">Cliente</th>
                         <th className="px-3 py-2.5">Origine</th>
                         <th className="px-3 py-2.5">Méthode</th>
@@ -507,7 +587,7 @@ export function PaymentsPageView() {
                               <div className={cn("font-bold", p.kind === "REFUND" && "text-[#BA1A1A]")}>
                                 {paymentShortId(p.id)}
                               </div>
-                              <div className="text-[11px] text-ink/50">{formatPaymentTime(p.paidAt)}</div>
+                              <div className="text-[11px] text-ink/50">{formatPaymentDateTime(p.paidAt)}</div>
                             </td>
                             <td className="px-3 py-3">
                               <div className="flex items-center gap-2">
@@ -527,17 +607,23 @@ export function PaymentsPageView() {
                               <div className="text-[11px] text-ink/45">{origin.label}</div>
                             </td>
                             <td className="px-3 py-3">
-                              <span className="inline-flex items-center gap-1 rounded bg-[#F6E3EF] px-2 py-1 text-[11px] font-semibold">
-                                <MethodGlyph method={p.method} />
-                                {PAYMENT_METHOD_LABEL[p.method]}
-                              </span>
+                              {isUnpaidDue(p) ? (
+                                <span className="text-[11px] font-semibold text-ink/40">—</span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded bg-[#F6E3EF] px-2 py-1 text-[11px] font-semibold">
+                                  <MethodGlyph method={p.method} />
+                                  {PAYMENT_METHOD_LABEL[p.method]}
+                                </span>
+                              )}
                             </td>
                             <td className="whitespace-nowrap px-3 py-3 text-right">
                               <div className={cn("font-bold", signed < 0 && "text-[#BA1A1A]")}>
                                 {signed < 0 ? "−" : ""}
                                 {formatMad(Math.abs(signed))}
                               </div>
-                              <div className="text-[10px] uppercase text-ink/45">{PAYMENT_KIND_LABEL[p.kind]}</div>
+                              <div className="text-[10px] uppercase text-ink/45">
+                                {isUnpaidDue(p) ? "Reste à payer" : PAYMENT_KIND_LABEL[p.kind]}
+                              </div>
                             </td>
                             <td className="px-3 py-3 text-center">
                               <span
@@ -550,17 +636,40 @@ export function PaymentsPageView() {
                               </span>
                             </td>
                             <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                              {canRefundRow(p) ? (
-                                <button
-                                  type="button"
-                                  className="text-[12px] font-semibold text-[#BA1A1A] hover:underline"
-                                  onClick={() => openRefund(p)}
-                                >
-                                  Rembourser
-                                </button>
-                              ) : (
-                                <span className="text-[12px] text-ink/30">—</span>
-                              )}
+                              <div className="flex flex-col items-center gap-1">
+                                {isUnpaidDue(p) && p.appointmentId && canWrite ? (
+                                  <button
+                                    type="button"
+                                    className="text-[12px] font-semibold text-primary hover:underline"
+                                    onClick={() =>
+                                      void openPay({
+                                        appointmentId: p.appointmentId!,
+                                        amount: p.amount,
+                                      })
+                                    }
+                                  >
+                                    Encaisser
+                                  </button>
+                                ) : null}
+                                {!isUnpaidDue(p) ? (
+                                  <button
+                                    type="button"
+                                    className="text-[12px] font-semibold text-primary hover:underline"
+                                    onClick={() => setTicketPayment(p)}
+                                  >
+                                    Ticket
+                                  </button>
+                                ) : null}
+                                {canRefundRow(p) ? (
+                                  <button
+                                    type="button"
+                                    className="text-[12px] font-semibold text-[#BA1A1A] hover:underline"
+                                    onClick={() => openRefund(p)}
+                                  >
+                                    Rembourser
+                                  </button>
+                                ) : null}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -608,15 +717,15 @@ export function PaymentsPageView() {
                 remaining={remaining}
                 canWrite={canWrite}
                 canCustomers={canCustomers}
-                canInvoices={canInvoices}
                 canPos={canPos}
                 canCash={canCash}
                 canRefund={canRefundRow(selected)}
                 onRefund={() => openRefund(selected)}
+                onTicket={() => setTicketPayment(selected)}
                 onCollect={() => {
-                  if (selected.appointmentId && remaining) {
-                    openPay({ appointmentId: selected.appointmentId, amount: remaining.remaining });
-                  }
+                  if (!selected.appointmentId) return;
+                  const amount = remaining?.remaining ?? selected.amount;
+                  void openPay({ appointmentId: selected.appointmentId, amount });
                 }}
               />
             ) : (
@@ -662,55 +771,127 @@ export function PaymentsPageView() {
 
       <Drawer open={payOpen} onClose={() => setPayOpen(false)} title="Nouveau paiement">
         <div className="space-y-4">
-          <p className="text-[13px] text-ink/55">
-            Encaissement sur un rendez-vous facturable. Les ventes boutique se font depuis le POS.
-          </p>
-          <label className="block text-sm">
-            <span className="mb-1.5 block font-medium">Rendez-vous</span>
-            <Select
-              value={aptId}
-              onChange={(e) => {
-                setAptId(e.target.value);
-                const b = billable.find((x) => x.id === e.target.value);
-                if (b) setPayAmount(String(b.remaining));
-              }}
-            >
-              {billable.length === 0 ? (
-                <option value="">Aucun RDV à encaisser</option>
-              ) : (
-                billable.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.customerName} · {b.serviceName} · reste {formatMad(b.remaining)}
-                  </option>
-                ))
-              )}
-            </Select>
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span className="mb-1.5 block font-medium">Montant</span>
-              <Input
-                type="number"
-                min={0.01}
-                step={0.01}
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1.5 block font-medium">Méthode</span>
-              <Select value={payMethod} onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}>
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABEL[m]}
-                  </option>
-                ))}
-              </Select>
-            </label>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#FFEFF8] p-1">
+            {(
+              [
+                ["service", "Service / RDV"],
+                ["products", "Produits"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPayMode(id)}
+                className={cn(
+                  "rounded-lg py-2 text-[12px] font-semibold",
+                  payMode === id ? "bg-white text-ink shadow-sm" : "text-ink/55",
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <Button type="button" variant="primary" className="w-full" disabled={submitting || !aptId} onClick={handlePay}>
-            {submitting ? "Encaissement…" : "Encaisser"}
-          </Button>
+
+          {payMode === "products" ? (
+            <ProductSalePanel
+              disabled={!canWrite || submitting}
+              cashOpen={cashOpen}
+              onError={(message) => toast(message, "error")}
+              onSold={(sale) => {
+                toast(`Vente produits · ${formatMad(sale.total)}`, "success");
+                setPayOpen(false);
+                setTab("all");
+                setPeriod("all");
+                setSearch("");
+                if (sale.paymentId) setSelectedId(sale.paymentId);
+                void refresh().then(() => {
+                  if (sale.paymentId) setSelectedId(sale.paymentId);
+                });
+              }}
+            />
+          ) : (
+            <>
+              <p className="text-[13px] text-ink/55">
+                Encaissez le rendez-vous et, si besoin, ajoutez des produits au même encaissement.
+              </p>
+              <label className="block text-sm">
+                <span className="mb-1.5 block font-medium">Rendez-vous</span>
+                <Select
+                  value={aptId}
+                  onChange={(e) => {
+                    setAptId(e.target.value);
+                    const b = billable.find((x) => x.id === e.target.value);
+                    if (b) setPayAmount(String(b.remaining));
+                  }}
+                >
+                  {billable.length === 0 ? (
+                    <option value="">Aucun RDV à encaisser</option>
+                  ) : (
+                    billable.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.customerName} · {b.serviceName} · reste {formatMad(b.remaining)}
+                      </option>
+                    ))
+                  )}
+                </Select>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-sm">
+                  <span className="mb-1.5 block font-medium">Montant service</span>
+                  <Input
+                    type="number"
+                    min={0.01}
+                    step={0.01}
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="mb-1.5 block font-medium">Méthode</span>
+                  <Select value={payMethod} onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}>
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {PAYMENT_METHOD_LABEL[m]}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+              </div>
+
+              <ProductSalePanel
+                embedded
+                resetToken={addonReset}
+                disabled={!canWrite || submitting}
+                cashOpen={cashOpen}
+                onError={(message) => toast(message, "error")}
+                onCartChange={setAddonCart}
+              />
+
+              {addonCart.lines.length > 0 ? (
+                <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/60">
+                  Total à encaisser : service {formatMad(Number(payAmount) || 0)} + produits{" "}
+                  {formatMad(addonCart.total)} ={" "}
+                  <strong className="text-ink">
+                    {formatMad((Number(payAmount) || 0) + addonCart.total)}
+                  </strong>
+                </p>
+              ) : null}
+
+              <Button
+                type="button"
+                variant="primary"
+                className="w-full"
+                disabled={submitting || !aptId}
+                onClick={() => void handlePay()}
+              >
+                {submitting
+                  ? "Encaissement…"
+                  : addonCart.lines.length > 0
+                    ? `Encaisser service + produits · ${formatMad((Number(payAmount) || 0) + addonCart.total)}`
+                    : "Encaisser le service"}
+              </Button>
+            </>
+          )}
         </div>
       </Drawer>
 
@@ -809,34 +990,37 @@ function PaymentInspect({
   remaining,
   canWrite,
   canCustomers,
-  canInvoices,
   canPos,
   canCash,
   canRefund,
   onRefund,
+  onTicket,
   onCollect,
 }: {
   payment: PaymentItem;
   remaining: AppointmentPaymentSummary | null;
   canWrite: boolean;
   canCustomers: boolean;
-  canInvoices: boolean;
   canPos: boolean;
   canCash: boolean;
   canRefund: boolean;
   onRefund: () => void;
+  onTicket: () => void;
   onCollect: () => void;
 }) {
   const chip = paymentStatusChip(payment);
   const signed = signedPaymentAmount(payment);
   const wa = waMeLink(payment.customerPhone);
   const origin = paymentOrigin(payment);
+  const due = isUnpaidDue(payment);
 
   return (
     <section className="relative space-y-4 overflow-hidden rounded-xl bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#7B5900]">Fiche règlement</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#7B5900]">
+            {due ? "Rendez-vous à encaisser" : "Fiche règlement"}
+          </p>
           <div className="mt-0.5 flex flex-wrap items-center gap-2">
             <h3 className="text-[22px] font-bold">{paymentShortId(payment.id)}</h3>
             <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", chip.className)}>{chip.label}</span>
@@ -847,7 +1031,7 @@ function PaymentInspect({
             {signed < 0 ? "−" : ""}
             {formatMad(Math.abs(signed))}
           </p>
-          <p className="text-[11px] text-ink/45">{PAYMENT_KIND_LABEL[payment.kind]}</p>
+          <p className="text-[11px] text-ink/45">{due ? "Reste à payer" : PAYMENT_KIND_LABEL[payment.kind]}</p>
         </div>
       </div>
 
@@ -867,13 +1051,23 @@ function PaymentInspect({
         {payment.customerPhone ? <InspectRow label="Téléphone" value={payment.customerPhone} /> : null}
         <InspectRow label="Prestation" value={payment.serviceName ?? "—"} />
         <InspectRow label="Origine" value={origin.label} />
-        <InspectRow label="Horodatage" value={formatPaymentDateTime(payment.paidAt)} />
-        <InspectRow label="Opérateur" value={payment.userName ?? "—"} />
-        <InspectRow label="Méthode" value={PAYMENT_METHOD_LABEL[payment.method]} />
-        {payment.notes ? <InspectRow label="Notes" value={payment.notes} /> : null}
+        <InspectRow label="Date RDV" value={formatPaymentDateTime(payment.paidAt)} />
+        {!due ? <InspectRow label="Opérateur" value={payment.userName ?? "—"} /> : null}
+        {!due ? <InspectRow label="Méthode" value={PAYMENT_METHOD_LABEL[payment.method]} /> : null}
+        {payment.notes && !due ? <InspectRow label="Notes" value={payment.notes} /> : null}
       </dl>
 
-      {remaining && remaining.remaining > 0 ? (
+      {due && canWrite ? (
+        <button
+          type="button"
+          onClick={onCollect}
+          className="flex h-11 w-full items-center justify-center rounded-lg bg-primary text-[14px] font-semibold text-white"
+        >
+          Encaisser {formatMad(payment.amount)}
+        </button>
+      ) : null}
+
+      {!due && remaining && remaining.remaining > 0 ? (
         <div className="space-y-2 rounded-xl bg-amber-500/10 p-3">
           <p className="text-[11px] font-bold uppercase tracking-wider text-amber-900">Solde du rendez-vous</p>
           <p className="text-[13px] text-amber-950">
@@ -898,18 +1092,19 @@ function PaymentInspect({
             </button>
           ) : null}
         </div>
-      ) : remaining && remaining.remaining === 0 && payment.appointmentId ? (
+      ) : !due && remaining && remaining.remaining === 0 && payment.appointmentId ? (
         <p className="rounded-lg bg-emerald-50 p-2 text-[12px] text-emerald-800">RDV soldé · {formatMad(remaining.netPaid)}</p>
       ) : null}
 
       <div className="grid grid-cols-2 gap-2">
-        {canInvoices ? (
-          <Link
-            href="/invoices/"
+        {!due ? (
+          <button
+            type="button"
+            onClick={onTicket}
             className="flex h-10 items-center justify-center rounded-lg bg-[#F6E3EF] text-[13px] font-semibold"
           >
-            Factures
-          </Link>
+            Ticket
+          </button>
         ) : null}
         {wa ? (
           <a

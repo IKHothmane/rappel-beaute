@@ -1,12 +1,13 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AvailabilitySlots } from "@/components/agenda/availability-slots";
 import { Button } from "@/components/ui/button";
 import { FieldGroup, Label, Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { createCustomer, listCustomers } from "@/modules/customers/service";
-import { getAvailableSlots, isStaffAvailableOnDate, isResourceAvailableOnDate } from "@/modules/appointments/availability";
+import { getAvailableSlots, isResourceAvailableOnDate } from "@/modules/appointments/availability";
 import { limitPhoneDigits, moroccoPhoneSearchVariants } from "@/lib/validation/customer";
 import { businessParts } from "@/lib/time/business-timezone";
 import type { ServiceAgendaOption } from "@/types/service";
@@ -72,6 +73,9 @@ export function AppointmentForm({
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [staffOpen, setStaffOpen] = useState(false);
+  const staffRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +96,9 @@ export function AppointmentForm({
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (!searchRef.current?.contains(e.target as Node)) setListOpen(false);
+      const target = e.target as Node;
+      if (!searchRef.current?.contains(target)) setListOpen(false);
+      if (!staffRef.current?.contains(target)) setStaffOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -110,21 +116,27 @@ export function AppointmentForm({
   const resourceContext = resourceContexts.find((r) => r.id === resourceId);
 
   const allowedStaff = useMemo(() => {
-    if (!formOptions) return [];
-    let list = formOptions.staff;
-    if (service?.staffIds.length) {
-      list = list.filter((s) => service.staffIds.includes(s.id));
-    }
-    if (date) {
-      const [y, m, d] = date.split("-").map(Number);
-      const day = new Date(y, m - 1, d);
-      list = list.filter((s) => {
-        const ctx = staffContexts.find((c) => c.id === s.id);
-        return ctx ? isStaffAvailableOnDate(ctx, day) : true;
-      });
-    }
-    return list;
-  }, [formOptions, service, date, staffContexts]);
+    const fromOptions = (formOptions?.staff ?? [])
+      .filter((s) => s.status === "ACTIVE" || s.status === "ON_LEAVE")
+      .map((s) => ({
+        id: s.id,
+        name: s.name.trim() || "Employée",
+        onLeave: s.status === "ON_LEAVE",
+      }));
+    const source =
+      fromOptions.length > 0
+        ? fromOptions
+        : staffContexts
+            .filter((s) => s.status === "ACTIVE" || s.status === "ON_LEAVE")
+            .map((s) => ({
+              id: s.id,
+              name: (s.displayName || `${s.firstName} ${s.lastName}`).trim() || "Employée",
+              onLeave: s.status === "ON_LEAVE",
+            }));
+    if (!service?.staffIds.length) return source;
+    const linked = source.filter((s) => service.staffIds.includes(s.id));
+    return linked.length > 0 ? linked : source;
+  }, [formOptions, service, staffContexts]);
 
   const allowedResources = useMemo(() => {
     if (!formOptions) return [];
@@ -165,8 +177,8 @@ export function AppointmentForm({
     if (!serviceId || !date) return [];
     const [y, m, d] = date.split("-").map(Number);
     const day = new Date(y, m - 1, d);
-    const slotStaff = staffId || allowedStaff[0]?.id || "";
-    const ctx = staffContexts.find((s) => s.id === slotStaff);
+    const slotStaff = staffId;
+    const ctx = slotStaff ? staffContexts.find((s) => s.id === slotStaff) : undefined;
     return getAvailableSlots(appointments, {
       date: day,
       staffId: slotStaff,
@@ -175,11 +187,11 @@ export function AppointmentForm({
       excludeAppointmentId: initial?.id,
       staffContext: ctx,
       resourceContext,
+      ignoreStaffSchedule: true,
     });
   }, [
     appointments,
     staffId,
-    allowedStaff,
     serviceId,
     resourceId,
     date,
@@ -189,40 +201,62 @@ export function AppointmentForm({
     resourceContext,
   ]);
 
-  async function resolveCustomerId(): Promise<string | null> {
-    if (customerId) return customerId;
+  async function resolveCustomerId(): Promise<{ id: string } | { error: string }> {
+    if (customerId) return { id: customerId };
     if (customerMode === "new") {
       const full = newName.trim();
       const phone = limitPhoneDigits(newPhone);
-      if (!full || phone.length < 8) return null;
+      if (!full || phone.length < 8) {
+        return { error: "Indiquez le nom et un téléphone d’au moins 8 chiffres." };
+      }
       const parts = full.split(/\s+/);
       const firstName = parts[0] ?? full;
       const lastName = parts.slice(1).join(" ") || "—";
       const created = await createCustomer({ firstName, lastName, phone });
-      return created.ok ? created.customer.id : null;
+      return created.ok ? { id: created.customer.id } : { error: created.error };
     }
     const created = await createCustomer({
       firstName: "Cliente",
       lastName: "de passage",
       phone: `06${Date.now().toString().slice(-8)}`,
     });
-    return created.ok ? created.customer.id : null;
+    return created.ok ? { id: created.customer.id } : { error: created.error };
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!serviceId || !date || !time || !price) return;
+    if (!serviceId) {
+      setFormError("Choisissez un service.");
+      return;
+    }
+    if (!date) {
+      setFormError("Choisissez une date.");
+      return;
+    }
+    const chosen = slots.find((slot) => slot.time === time && slot.available);
+    if (!chosen) {
+      setFormError(
+        slots.some((slot) => slot.available)
+          ? "Choisissez un créneau libre."
+          : staffId
+            ? "Aucun créneau libre pour cette employée à cette date."
+            : "Aucun créneau libre à cette date.",
+      );
+      return;
+    }
+    if (!price) {
+      setFormError("Indiquez le prix.");
+      return;
+    }
+    setFormError("");
     setCreating(true);
     const resolvedCustomer = await resolveCustomerId();
-    if (!resolvedCustomer) {
+    if (!("id" in resolvedCustomer)) {
       setCreating(false);
+      setFormError(resolvedCustomer.error);
       return;
     }
-    const resolvedStaff = staffId || allowedStaff[0]?.id;
-    if (!resolvedStaff) {
-      setCreating(false);
-      return;
-    }
+    const resolvedStaff = staffId || undefined;
 
     const [h, min] = time.split(":").map(Number);
     const [y, mo, d] = date.split("-").map(Number);
@@ -231,7 +265,7 @@ export function AppointmentForm({
     const extraLabel = extraServices.map((s) => s.name).join(" + ");
 
     onSubmit({
-      customerId: resolvedCustomer,
+      customerId: resolvedCustomer.id,
       serviceId,
       staffId: resolvedStaff,
       resourceId: resourceId || undefined,
@@ -248,8 +282,15 @@ export function AppointmentForm({
     setCreating(false);
   }
 
+  const selectedStaff = allowedStaff.find((member) => member.id === staffId);
+  const selectedStaffLabel = !selectedStaff
+    ? "Sans employée"
+    : selectedStaff.onLeave
+      ? `${selectedStaff.name} · en congé`
+      : selectedStaff.name;
+
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="grid gap-3 sm:grid-cols-2">
+    <form noValidate onSubmit={(e) => void handleSubmit(e)} className="grid gap-3 sm:grid-cols-2">
       <FieldGroup className="sm:col-span-2">
         <Label>Cliente</Label>
         <div className="mb-2 flex gap-2 text-[12px]">
@@ -360,14 +401,63 @@ export function AppointmentForm({
 
       <FieldGroup>
         <Label>Employée</Label>
-        <Select value={staffId} onChange={(e) => setStaffId(e.target.value)}>
-          <option value="">Sans employée</option>
-          {allowedStaff.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </Select>
+        <div ref={staffRef} className="relative">
+          <button
+            type="button"
+            aria-expanded={staffOpen}
+            aria-haspopup="listbox"
+            onClick={() => setStaffOpen((open) => !open)}
+            className="flex h-11 w-full items-center justify-between rounded-xl border border-line bg-white px-3 text-left text-sm text-ink outline-none transition focus:border-primary"
+          >
+            <span className="truncate">{selectedStaffLabel}</span>
+            <ChevronDown size={16} className="shrink-0 text-ink/35" />
+          </button>
+          {staffOpen ? (
+            <div className="mt-1.5 flex max-h-52 flex-col gap-1.5 overflow-y-auto" role="listbox" aria-label="Employée">
+              <button
+                type="button"
+                role="option"
+                aria-selected={staffId === ""}
+                onClick={() => {
+                  setStaffId("");
+                  setTime("");
+                  setStaffOpen(false);
+                }}
+                className={`h-10 shrink-0 rounded-xl border px-3 text-left text-sm ${
+                  staffId === ""
+                    ? "border-primary bg-primary-light font-semibold text-ink"
+                    : "border-line bg-white text-ink/70"
+                }`}
+              >
+                Sans employée
+              </button>
+              {allowedStaff.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="option"
+                  aria-selected={staffId === s.id}
+                  onClick={() => {
+                    setStaffId(s.id);
+                    setTime("");
+                    setStaffOpen(false);
+                  }}
+                  className={`h-10 shrink-0 rounded-xl border px-3 text-left text-sm ${
+                    staffId === s.id
+                      ? "border-primary bg-primary-light font-semibold text-ink"
+                      : "border-line bg-white text-ink hover:bg-[#FFEFF8]"
+                  }`}
+                >
+                  {s.name}
+                  {s.onLeave ? <span className="text-ink/45"> · en congé</span> : null}
+                </button>
+              ))}
+              {allowedStaff.length === 0 ? (
+                <p className="text-xs text-ink/45">Aucune employée pour cet institut.</p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </FieldGroup>
 
       <FieldGroup>
@@ -455,13 +545,20 @@ export function AppointmentForm({
         )}
       </FieldGroup>
 
-      <div className="flex flex-col gap-2 border-t border-line pt-4 sm:col-span-2 sm:flex-row">
-        <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>
-          Annuler
-        </Button>
-        <Button type="submit" variant="primary" className="w-full sm:flex-1" disabled={submitting || creating || !time}>
-          {submitting || creating ? "Création…" : initial?.id ? "Enregistrer" : "Créer le RDV"}
-        </Button>
+      <div className="flex flex-col gap-2 border-t border-line pt-4 sm:col-span-2">
+        {formError ? (
+          <p className="rounded-xl bg-[#FCE9F4] px-3 py-2 text-sm font-medium text-ink" role="alert">
+            {formError}
+          </p>
+        ) : null}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button type="submit" variant="primary" className="w-full sm:flex-1" disabled={submitting || creating}>
+            {submitting || creating ? "Création…" : initial?.id ? "Enregistrer" : "Créer le RDV"}
+          </Button>
+        </div>
       </div>
     </form>
   );

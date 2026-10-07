@@ -11,6 +11,8 @@ export type AppointmentSource = "MANUAL" | "ONLINE_BOOKING" | "PHONE" | "WHATSAP
 
 export type AgendaView = "day" | "3days" | "week" | "month";
 
+export type AppointmentPaymentState = "paid" | "partial" | "unpaid";
+
 export interface Appointment {
   id: string;
   organizationId: string;
@@ -31,6 +33,11 @@ export interface Appointment {
   endAt: string;
 
   price: number;
+  /** Montant à encaisser (facture si elle existe, sinon le prix du RDV). */
+  amountDue?: number;
+  /** Somme nette déjà encaissée (paiements moins remboursements). */
+  netPaid?: number;
+  paymentState?: AppointmentPaymentState;
   deposit?: number;
   depositState?: import("@/types/booking-policy").DepositState;
   depositDueAt?: string | null;
@@ -43,7 +50,7 @@ export interface Appointment {
 export interface CreateAppointmentInput {
   customerId: string;
   serviceId: string;
-  staffId: string;
+  staffId?: string | null;
   resourceId?: string;
   startAt: string;
   endAt: string;
@@ -54,7 +61,7 @@ export interface CreateAppointmentInput {
 }
 
 export interface AvailabilityCheckInput {
-  staffId: string;
+  staffId?: string;
   resourceId?: string;
   startAt: string;
   endAt: string;

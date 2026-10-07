@@ -1,5 +1,14 @@
 import { pool } from "@/lib/db/pool";
-import type { Appointment, CreateAppointmentInput } from "@/types/appointment";
+import type { Appointment, AppointmentPaymentState, CreateAppointmentInput } from "@/types/appointment";
+
+function paymentState(amountDue: number, netPaid: number): AppointmentPaymentState {
+  const due = Math.round(Math.max(0, amountDue) * 100) / 100;
+  const paid = Math.round(netPaid * 100) / 100;
+  const remaining = Math.max(0, Math.round((due - paid) * 100) / 100);
+  if (remaining <= 0.01) return "paid";
+  if (paid > 0.009) return "partial";
+  return "unpaid";
+}
 
 export type AppointmentRow = {
   id: string;
@@ -9,7 +18,7 @@ export type AppointmentRow = {
   customerLastName: string | null;
   serviceId: string | null;
   serviceName: string | null;
-  staffId: string;
+  staffId: string | null;
   staffFirstName: string | null;
   staffLastName: string | null;
   resourceId: string | null;
@@ -17,6 +26,8 @@ export type AppointmentRow = {
   startAt: Date;
   endAt: Date;
   price: string;
+  amountDue: string | null;
+  netPaid: string | null;
   deposit: string | null;
   depositState: string;
   depositDueAt: Date | null;
@@ -41,6 +52,24 @@ const SELECT = `
     a."startAt",
     a."endAt",
     a.price::text,
+    COALESCE((
+      SELECT i.total::text
+      FROM "Invoice" i
+      WHERE i."appointmentId" = a.id
+        AND i."organizationId" = a."organizationId"
+        AND i.status <> 'VOID'
+      ORDER BY i."createdAt" DESC
+      LIMIT 1
+    ), a.price::text) AS "amountDue",
+    COALESCE((
+      SELECT SUM(
+        CASE WHEN p.kind = 'REFUND' THEN -p.amount ELSE p.amount END
+      )::text
+      FROM "Payment" p
+      WHERE p."appointmentId" = a.id
+        AND p."organizationId" = a."organizationId"
+        AND p.status = 'COMPLETED'
+    ), '0') AS "netPaid",
     a.deposit::text,
     a."depositState"::text AS "depositState",
     a."depositDueAt",
@@ -70,13 +99,18 @@ export function rowToDto(row: AppointmentRow): Appointment {
     customerName: personName(row.customerFirstName, row.customerLastName, "Cliente inconnue"),
     serviceId: row.serviceId ?? "",
     serviceName: row.serviceName?.trim() || "Service inconnu",
-    staffId: row.staffId,
-    staffName: personName(row.staffFirstName, row.staffLastName, "Employée inconnue"),
+    staffId: row.staffId ?? "",
+    staffName: row.staffId
+      ? personName(row.staffFirstName, row.staffLastName, "Employée")
+      : "Sans employée",
     resourceId: row.resourceId ?? undefined,
     resourceName: row.resourceName ?? undefined,
     startAt: row.startAt.toISOString(),
     endAt: row.endAt.toISOString(),
     price: Number(row.price),
+    amountDue: Number(row.amountDue ?? row.price),
+    netPaid: Number(row.netPaid ?? 0),
+    paymentState: paymentState(Number(row.amountDue ?? row.price), Number(row.netPaid ?? 0)),
     deposit: row.deposit != null ? Number(row.deposit) : undefined,
     depositState: (row.depositState as Appointment["depositState"]) ?? "NOT_REQUIRED",
     depositDueAt: row.depositDueAt?.toISOString() ?? null,
@@ -209,7 +243,7 @@ export async function createAppointmentRow(
       organizationId,
       input.customerId,
       input.serviceId,
-      input.staffId,
+      input.staffId || null,
       input.resourceId ?? null,
       new Date(input.startAt),
       new Date(input.endAt),
@@ -279,8 +313,11 @@ export async function updateAppointmentRow(
   };
 
   if (patch.customerId) set("customerId", patch.customerId);
-  if (patch.serviceId) set("serviceId", patch.serviceId);
-  if (patch.staffId) set("staffId", patch.staffId);
+  if (patch.serviceId) {
+    set("serviceId", patch.serviceId);
+    fields.push(`"serviceNameSnapshot" = (SELECT name FROM "Service" WHERE id = $${i - 1})`);
+  }
+  if (patch.staffId !== undefined) set("staffId", patch.staffId || null);
   if (patch.resourceId !== undefined) set("resourceId", patch.resourceId ?? null);
   if (patch.startAt) set("startAt", new Date(patch.startAt));
   if (patch.endAt) set("endAt", new Date(patch.endAt));

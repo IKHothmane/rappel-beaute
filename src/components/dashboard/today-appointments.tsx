@@ -81,9 +81,28 @@ export function TodayAppointments({ appointments, loading }: TodayAppointmentsPr
                     {appointment.serviceName || "Service"} · {staff}
                   </p>
                 </div>
-                <Badge className="hidden sm:inline-flex" variant={confirmed ? "success" : "warning"}>
-                  {APPOINTMENT_STATUS_LABEL[appointment.status]}
-                </Badge>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <Badge className="hidden sm:inline-flex" variant={confirmed ? "success" : "warning"}>
+                    {APPOINTMENT_STATUS_LABEL[appointment.status]}
+                  </Badge>
+                  {appointment.paymentState ? (
+                    <span
+                      className={
+                        appointment.paymentState === "paid"
+                          ? "text-[11px] font-bold text-emerald-700"
+                          : appointment.paymentState === "partial"
+                            ? "text-[11px] font-bold text-amber-800"
+                            : "text-[11px] font-bold text-ink/45"
+                      }
+                    >
+                      {appointment.paymentState === "paid"
+                        ? "Payé"
+                        : appointment.paymentState === "partial"
+                          ? "Partiel"
+                          : "Non payé"}
+                    </span>
+                  ) : null}
+                </div>
               </motion.div>
             );
           })}

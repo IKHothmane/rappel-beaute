@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -12,7 +12,7 @@ import {
   UserX,
   Wallet,
 } from "lucide-react";
-import type { Appointment, AppointmentStatus } from "@/types/appointment";
+import type { Appointment, AppointmentStatus, CreateAppointmentInput } from "@/types/appointment";
 import type { CustomerDetail } from "@/types/customer";
 import {
   APPOINTMENT_STATUS_LABEL,
@@ -22,14 +22,27 @@ import {
 import { formatMad } from "@/modules/analytics/service";
 import { getCustomer } from "@/modules/customers/service";
 import { staffColor } from "@/components/agenda/staff-colors";
+import {
+  AppointmentPayBadge,
+  appointmentPayDetail,
+  appointmentRemaining,
+} from "@/components/agenda/appointment-pay-badge";
 import { cn } from "@/lib/utils";
 import { DEPOSIT_STATE_LABEL } from "@/types/booking-policy";
 
+type ServiceChoice = { id: string; name: string; price: number; durationMin: number };
+type StaffChoice = { id: string; name: string };
+
 type AppointmentDetailsProps = {
   appointment: Appointment;
+  services: ServiceChoice[];
+  staff: StaffChoice[];
   onEdit: () => void;
   onStatusChange: (status: AppointmentStatus) => void;
   onCancel: () => void;
+  onChange: (
+    patch: Partial<CreateAppointmentInput>,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
 };
 
 function durationMin(startAt: string, endAt: string) {
@@ -43,11 +56,47 @@ function waDigits(phone: string) {
   return d;
 }
 
+function extraIdsFromNotes(notes: string | undefined, services: ServiceChoice[], mainId: string) {
+  const line = notes?.split("\n").find((item) => item.startsWith("extras:"));
+  if (line) {
+    return line
+      .slice("extras:".length)
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => id && id !== mainId && services.some((service) => service.id === id));
+  }
+  const soins = notes?.split("\n").find((item) => item.startsWith("Soins:"));
+  if (!soins) return [];
+  const mainName = services.find((service) => service.id === mainId)?.name;
+  return soins
+    .slice("Soins:".length)
+    .split("+")
+    .map((name) => name.trim())
+    .filter((name) => name && name !== mainName)
+    .map((name) => services.find((service) => service.name === name)?.id)
+    .filter((id): id is string => Boolean(id));
+}
+
+function notesWithServices(notes: string | undefined, services: ServiceChoice[], mainId: string, extraIds: string[]) {
+  const kept = (notes ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("Soins:") && !line.startsWith("extras:"));
+  if (extraIds.length === 0) return kept.join("\n");
+  const labels = [mainId, ...extraIds]
+    .map((id) => services.find((service) => service.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+  return [`extras:${extraIds.join(",")}`, `Soins: ${labels.join(" + ")}`, ...kept].join("\n");
+}
+
 export function AppointmentDetails({
   appointment,
+  services,
+  staff,
   onEdit,
   onStatusChange,
   onCancel,
+  onChange,
 }: AppointmentDetailsProps) {
   const s = APPOINTMENT_STATUS_STYLE[appointment.status];
   const start = new Date(appointment.startAt);
@@ -73,6 +122,45 @@ export function AppointmentDetails({
     };
   }, [appointment.customerId]);
 
+  const extraIds = useMemo(
+    () => extraIdsFromNotes(appointment.notes, services, appointment.serviceId),
+    [appointment.notes, appointment.serviceId, services],
+  );
+  const [staffOpen, setStaffOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  async function saveServices(serviceId: string, nextExtras: string[]) {
+    const extras = nextExtras.filter((id, index) => id !== serviceId && nextExtras.indexOf(id) === index);
+    const picked = [serviceId, ...extras]
+      .map((id) => services.find((service) => service.id === id))
+      .filter((service): service is ServiceChoice => Boolean(service));
+    const duration = picked.reduce((sum, service) => sum + service.durationMin, 0) || mins || 30;
+    const price = picked.reduce((sum, service) => sum + service.price, 0);
+    const endAt = new Date(new Date(appointment.startAt).getTime() + duration * 60_000).toISOString();
+    setBusy(true);
+    setSaveError("");
+    const result = await onChange({
+      serviceId,
+      price,
+      startAt: appointment.startAt,
+      endAt,
+      notes: notesWithServices(appointment.notes, services, serviceId, extras),
+    });
+    setBusy(false);
+    if (!result.ok) setSaveError(result.error);
+  }
+
+  async function saveStaff(staffId: string | null) {
+    setStaffOpen(false);
+    setBusy(true);
+    setSaveError("");
+    const result = await onChange({ staffId });
+    setBusy(false);
+    if (!result.ok) setSaveError(result.error);
+  }
+
+  const payDetail = appointmentPayDetail(appointment);
   const phone = customer?.phone?.trim() || "";
   const noShows = customer?.noShowCount ?? 0;
   const vip = customer?.segment === "VIP";
@@ -91,9 +179,12 @@ export function AppointmentDetails({
             Fiche rendez-vous
           </span>
         </div>
-        <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold", s.bg, s.text)}>
-          {APPOINTMENT_STATUS_LABEL[appointment.status]}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold", s.bg, s.text)}>
+            {APPOINTMENT_STATUS_LABEL[appointment.status]}
+          </span>
+          <AppointmentPayBadge appointment={appointment} className="text-[11px]" />
+        </div>
       </div>
 
       <div className="flex items-center gap-3 rounded-lg bg-[#FBF4F6] p-3">
@@ -148,15 +239,103 @@ export function AppointmentDetails({
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-2 rounded-lg bg-[#FBF4F6]/70 p-3.5 text-sm">
-        <Row label="Prestation" value={appointment.serviceName} />
+      <div className="flex flex-col gap-3 rounded-lg bg-[#FBF4F6]/70 p-3.5 text-sm">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-ink/45">Prestations</span>
+          <select
+            value={appointment.serviceId}
+            disabled={busy}
+            onChange={(event) => void saveServices(event.target.value, extraIds)}
+            className="h-10 w-full rounded-xl border border-line bg-white px-3 text-sm font-semibold text-ink outline-none focus:border-primary"
+          >
+            {services.some((service) => service.id === appointment.serviceId) ? null : (
+              <option value={appointment.serviceId}>{appointment.serviceName}</option>
+            )}
+            {services.map((service) => (
+              <option key={service.id} value={service.id}>
+                {service.name} · {service.durationMin} min · {service.price} MAD
+              </option>
+            ))}
+          </select>
+          {extraIds.map((id) => {
+            const service = services.find((item) => item.id === id);
+            return (
+              <div key={id} className="flex items-center justify-between gap-2 rounded-xl border border-line bg-white px-3 py-2">
+                <span className="font-semibold text-ink">{service?.name ?? "Service"}</span>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void saveServices(appointment.serviceId, extraIds.filter((item) => item !== id))}
+                  className="text-xs font-semibold text-red-600"
+                >
+                  Retirer
+                </button>
+              </div>
+            );
+          })}
+          <select
+            value=""
+            disabled={busy}
+            onChange={(event) => {
+              const id = event.target.value;
+              if (!id) return;
+              void saveServices(appointment.serviceId, [...extraIds, id]);
+            }}
+            className="h-10 w-full rounded-xl border border-dashed border-primary/40 bg-white px-3 text-sm font-semibold text-primary outline-none"
+          >
+            <option value="">Ajouter un service</option>
+            {services
+              .filter((service) => service.id !== appointment.serviceId && !extraIds.includes(service.id))
+              .map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name} · {service.durationMin} min · {service.price} MAD
+                </option>
+              ))}
+          </select>
+        </div>
         <Row
           label="Créneau"
           value={`${start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} → ${end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} (${mins} min)`}
           mono
         />
-        <Row label="Praticienne" value={appointment.staffName} accent />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-ink/45">Praticienne</span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setStaffOpen((open) => !open)}
+            className="h-10 rounded-xl border border-line bg-white px-3 text-left text-sm font-semibold text-gold"
+          >
+            {appointment.staffId ? appointment.staffName : "Sans employée"}
+          </button>
+          {staffOpen ? (
+            <div className="flex max-h-48 flex-col gap-1 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => void saveStaff(null)}
+                className="h-9 rounded-xl border border-line bg-white px-3 text-left text-sm"
+              >
+                Sans employée
+              </button>
+              {staff.map((member) => (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => void saveStaff(member.id)}
+                  className={`h-9 rounded-xl border px-3 text-left text-sm ${
+                    member.id === appointment.staffId
+                      ? "border-primary bg-primary-light font-semibold"
+                      : "border-line bg-white"
+                  }`}
+                >
+                  {member.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
         <Row label="Espace" value={appointment.resourceName || "—"} />
+        {saveError ? <p className="rounded-xl bg-white px-3 py-2 text-sm text-red-600">{saveError}</p> : null}
         <div className="mt-1 flex items-center justify-between rounded-lg bg-white p-2">
           <span className="font-bold text-ink">Total</span>
           <div className="text-right">
@@ -164,6 +343,9 @@ export function AppointmentDetails({
             <p className="text-[11px] text-ink/45">
               Acompte : {formatMad(appointment.deposit ?? 0)}
             </p>
+            {payDetail ? (
+              <p className="mt-0.5 text-[11px] font-semibold text-ink/70">{payDetail}</p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -201,13 +383,21 @@ export function AppointmentDetails({
         ) : (
           <span />
         )}
-        <Link
-          href={`/cash-register/?appointmentId=${appointment.id}`}
-          className="flex items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark"
-        >
-          <Wallet size={16} />
-          Encaisser
-        </Link>
+        {appointment.paymentState === "paid" ? (
+          <span className="flex items-center justify-center gap-1 rounded-lg bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-800">
+            Payé
+          </span>
+        ) : (
+          <Link
+            href={`/cash-register/?appointmentId=${appointment.id}`}
+            className="flex items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark"
+          >
+            <Wallet size={16} />
+            {appointment.paymentState === "partial"
+              ? `Encaisser ${formatMad(appointmentRemaining(appointment))}`
+              : "Encaisser"}
+          </Link>
+        )}
         <button
           type="button"
           onClick={onEdit}

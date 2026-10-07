@@ -35,6 +35,7 @@ function checkStaffAvailability(
   staff: StaffAgendaContext | undefined,
   start: Date,
   end: Date,
+  ignoreSchedule = false,
 ): string[] {
   const conflicts: string[] = [];
   if (!staff) return conflicts;
@@ -64,19 +65,21 @@ function checkStaffAvailability(
     return start >= oStart && end <= oEnd;
   });
 
-  if (!schedule && !coveredByOt) {
-    conflicts.push(`${staff.displayName} ne travaille pas ce jour.`);
-    return conflicts;
-  }
+  if (!ignoreSchedule) {
+    if (!schedule && !coveredByOt) {
+      conflicts.push(`${staff.displayName} ne travaille pas ce jour.`);
+      return conflicts;
+    }
 
-  if (schedule) {
-    const workStart = businessTimeOnDate(start, schedule.startTime);
-    const workEnd = businessTimeOnDate(start, schedule.endTime);
-    const withinSchedule = start >= workStart && end <= workEnd;
-    if (!withinSchedule && !coveredByOt) {
-      conflicts.push(
-        `Hors horaires de ${staff.displayName} (${schedule.startTime}–${schedule.endTime}).`,
-      );
+    if (schedule) {
+      const workStart = businessTimeOnDate(start, schedule.startTime);
+      const workEnd = businessTimeOnDate(start, schedule.endTime);
+      const withinSchedule = start >= workStart && end <= workEnd;
+      if (!withinSchedule && !coveredByOt) {
+        conflicts.push(
+          `Hors horaires de ${staff.displayName} (${schedule.startTime}–${schedule.endTime}).`,
+        );
+      }
     }
   }
 
@@ -132,6 +135,7 @@ export function checkAvailability(
   input: AvailabilityCheckInput,
   staffContext?: StaffAgendaContext,
   resourceContext?: ResourceAgendaContext,
+  options?: { ignoreStaffSchedule?: boolean },
 ): AvailabilityResult {
   const conflicts: string[] = [];
   const start = parseDate(input.startAt);
@@ -141,7 +145,9 @@ export function checkAvailability(
     conflicts.push("L'heure de fin doit être après l'heure de début.");
   }
 
-  conflicts.push(...checkStaffAvailability(staffContext, start, end));
+  conflicts.push(
+    ...checkStaffAvailability(staffContext, start, end, options?.ignoreStaffSchedule === true),
+  );
   if (input.resourceId) {
     conflicts.push(...checkResourceAvailability(resourceContext, start, end));
   }
@@ -155,7 +161,7 @@ export function checkAvailability(
     if (!isSameBusinessDay(start, aptStart)) continue;
     if (!overlaps(start, end, aptStart, aptEnd)) continue;
 
-    if (apt.staffId === input.staffId) {
+    if (input.staffId && apt.staffId === input.staffId) {
       conflicts.push(
         `${apt.staffName} occupée · ${apt.serviceName} (${formatBusinessTime(aptStart)}–${formatBusinessTime(aptEnd)}).`,
       );
@@ -181,6 +187,7 @@ export function getAvailableSlots(
     excludeAppointmentId?: string;
     staffContext?: StaffAgendaContext;
     resourceContext?: ResourceAgendaContext;
+    ignoreStaffSchedule?: boolean;
   },
 ): { time: string; available: boolean; reason?: string }[] {
   const slots: { time: string; available: boolean; reason?: string }[] = [];
@@ -210,6 +217,7 @@ export function getAvailableSlots(
         },
         params.staffContext,
         params.resourceContext,
+        { ignoreStaffSchedule: params.ignoreStaffSchedule },
       );
 
       slots.push({

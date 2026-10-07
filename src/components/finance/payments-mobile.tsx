@@ -15,7 +15,8 @@ import {
 import {
   type PaymentPeriod,
   type PaymentTab,
-  formatPaymentTime,
+  formatPaymentDateTime,
+  isUnpaidDue,
   paymentOrigin,
   paymentShortId,
   paymentStatusChip,
@@ -66,6 +67,7 @@ type Props = {
   onRefund: (p: PaymentItem) => void;
   onCollectRemaining: () => void;
   canRefund: (p: PaymentItem) => boolean;
+  onTicket: (p: PaymentItem) => void;
 };
 
 function MethodGlyph({ method }: { method: PaymentMethod }) {
@@ -102,6 +104,7 @@ export function PaymentsMobile({
   onRefund,
   onCollectRemaining,
   canRefund,
+  onTicket,
 }: Props) {
   const [view, setView] = useState<"list" | "focus">("list");
 
@@ -154,12 +157,23 @@ export function PaymentsMobile({
             <Row label="Cliente" value={selected.customerName ?? "—"} />
             {selected.customerPhone ? <Row label="Téléphone" value={selected.customerPhone} /> : null}
             <Row label="Prestation" value={selected.serviceName ?? "—"} />
-            <Row label="Méthode" value={PAYMENT_METHOD_LABEL[selected.method]} />
-            <Row label="Horodatage" value={new Date(selected.paidAt).toLocaleString("fr-FR")} />
-            <Row label="Opérateur" value={selected.userName ?? "—"} />
-            {selected.notes ? <Row label="Notes" value={selected.notes} /> : null}
+            {!isUnpaidDue(selected) ? (
+              <Row label="Méthode" value={PAYMENT_METHOD_LABEL[selected.method]} />
+            ) : null}
+            <Row label="Date RDV" value={new Date(selected.paidAt).toLocaleString("fr-FR")} />
+            {!isUnpaidDue(selected) ? <Row label="Opérateur" value={selected.userName ?? "—"} /> : null}
+            {selected.notes && !isUnpaidDue(selected) ? <Row label="Notes" value={selected.notes} /> : null}
           </dl>
-          {remaining && remaining.remaining > 0 ? (
+          {isUnpaidDue(selected) && canWrite ? (
+            <button
+              type="button"
+              onClick={onCollectRemaining}
+              className="flex h-11 w-full items-center justify-center rounded-lg bg-primary text-[14px] font-semibold text-white"
+            >
+              Encaisser {formatMad(selected.amount)}
+            </button>
+          ) : null}
+          {!isUnpaidDue(selected) && remaining && remaining.remaining > 0 ? (
             <div className="space-y-2 rounded-xl bg-[#FFDEA4]/40 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-[#5D4200]">
                 Solde RDV
@@ -180,6 +194,15 @@ export function PaymentsMobile({
             </div>
           ) : null}
           <div className="grid grid-cols-2 gap-2">
+            {!isUnpaidDue(selected) ? (
+              <button
+                type="button"
+                onClick={() => onTicket(selected)}
+                className="flex h-10 items-center justify-center rounded-lg bg-[#F6E3EF] text-[13px] font-semibold"
+              >
+                Ticket
+              </button>
+            ) : null}
             {wa ? (
               <a
                 href={wa}
@@ -194,7 +217,7 @@ export function PaymentsMobile({
               <button
                 type="button"
                 onClick={() => onRefund(selected)}
-                className="flex h-10 items-center justify-center rounded-lg bg-[#FFDAD6] text-[13px] font-semibold text-[#93000A]"
+                className="col-span-2 flex h-10 items-center justify-center rounded-lg bg-[#FFDAD6] text-[13px] font-semibold text-[#93000A]"
               >
                 Rembourser
               </button>
@@ -373,7 +396,7 @@ export function PaymentsMobile({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-start gap-2.5">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFEFF8] text-primary">
-                      <MethodGlyph method={p.method} />
+                      {isUnpaidDue(p) ? <Wallet className="h-[18px] w-[18px]" /> : <MethodGlyph method={p.method} />}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-[14px] font-bold">{p.customerName ?? "—"}</p>
@@ -381,8 +404,8 @@ export function PaymentsMobile({
                         {p.serviceName ?? origin.label}
                       </p>
                       <p className="mt-1 text-[11px] text-ink/45">
-                        {paymentShortId(p.id)} · {formatPaymentTime(p.paidAt)} ·{" "}
-                        {PAYMENT_METHOD_LABEL[p.method]}
+                        {paymentShortId(p.id)} · {formatPaymentDateTime(p.paidAt)}
+                        {isUnpaidDue(p) ? " · À encaisser" : ` · ${PAYMENT_METHOD_LABEL[p.method]}`}
                       </p>
                     </div>
                   </div>

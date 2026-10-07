@@ -299,12 +299,6 @@ export function SalesPageView() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-base font-bold text-ink">{formatMad(sale.total)}</span>
-                    <Link
-                      href={`/invoices/${sale.invoiceId}/`}
-                      className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-xs font-semibold text-ink transition hover:bg-primary-light/40"
-                    >
-                      Voir ticket
-                    </Link>
                     {canWrite && sale.status === "COMPLETED" ? (
                       <button
                         type="button"

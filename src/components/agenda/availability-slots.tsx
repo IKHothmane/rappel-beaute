@@ -43,12 +43,13 @@ export function AvailabilitySlots({
             key={slot.time}
             type="button"
             title={slot.reason}
+            disabled={!slot.available}
             onClick={() => onSelect(slot.time)}
             className={cn(
               "flex items-center justify-center gap-1 rounded-lg border py-2 font-mono text-sm transition",
-              selected
-                ? "border-primary bg-primary-light text-primary-dark"
-                : "border-line bg-white hover:border-primary/40",
+              !slot.available && "cursor-not-allowed border-line bg-[#F3F4F6] text-ink/30",
+              slot.available && selected && "border-primary bg-primary-light text-primary-dark",
+              slot.available && !selected && "border-line bg-white hover:border-primary/40",
             )}
           >
             {selected ? <Check size={14} /> : null}

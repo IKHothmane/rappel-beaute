@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const bookingChanged = Boolean(
       body.resourceId !== undefined ||
         body.serviceId ||
-        body.staffId ||
+        body.staffId !== undefined ||
         body.startAt ||
         body.endAt,
     );
@@ -99,7 +99,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     const resourceId = body.resourceId !== undefined ? body.resourceId : existing.resourceId;
     const serviceId = body.serviceId ?? existing.serviceId;
-    const staffId = body.staffId ?? existing.staffId;
+    const staffId = body.staffId === undefined ? existing.staffId : body.staffId || undefined;
     const startAt = body.startAt ?? existing.startAt;
     const endAt = body.endAt ?? existing.endAt;
 

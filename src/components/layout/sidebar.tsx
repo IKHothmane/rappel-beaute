@@ -11,7 +11,6 @@ import {
   ChevronDown,
   CircleDollarSign,
   ClipboardList,
-  FileText,
   LayoutDashboard,
   Megaphone,
   MessageCircle,
@@ -78,7 +77,6 @@ const sections: { title: string | null; items: NavItem[] }[] = [
       { label: "Caisse", href: "/cash-register/", icon: WalletCards, key: "cash-register" },
       { label: "Paiements", href: "/payments/", icon: CircleDollarSign, key: "payments" },
       { label: "Dépenses", href: "/expenses/", icon: CircleDollarSign, key: "expenses" },
-      { label: "Factures", href: "/invoices/", icon: FileText, key: "invoices" },
     ],
   },
   {

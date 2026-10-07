@@ -879,7 +879,7 @@ model Appointment {
   serviceId      String?
   /// Conservé si le service est supprimé
   serviceNameSnapshot String?
-  staffId        String
+  staffId        String?
   resourceId     String?
   startAt        DateTime
   endAt          DateTime
@@ -904,7 +904,7 @@ model Appointment {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
   service      Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  staff        Staff        @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  staff        Staff?       @relation(fields: [staffId], references: [id], onDelete: Restrict)
   resource     Resource?    @relation(fields: [resourceId], references: [id], onDelete: SetNull)
   promotion    Promotion?   @relation(fields: [promotionId], references: [id], onDelete: SetNull)
   payments     Payment[]

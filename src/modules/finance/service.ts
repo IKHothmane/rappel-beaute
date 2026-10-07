@@ -101,7 +101,7 @@ export async function listPayments(params?: {
   return data.data;
 }
 
-export async function listBillableAppointments(): Promise<
+export async function listBillableAppointments(appointmentId?: string): Promise<
   {
     id: string;
     customerName: string;
@@ -110,9 +110,11 @@ export async function listBillableAppointments(): Promise<
     remaining: number;
     status: string;
     startAt: string;
+    customerPhone?: string | null;
   }[]
 > {
-  const res = await fetch("/api/payments/?billable=1", fetchOpts);
+  const q = appointmentId ? `&appointmentId=${encodeURIComponent(appointmentId)}` : "";
+  const res = await fetch(`/api/payments/?billable=1${q}`, fetchOpts);
   const data = await parseJson<{ data: Awaited<ReturnType<typeof listBillableAppointments>> }>(
     res,
   );

@@ -74,6 +74,7 @@ const nextConfig = {
       "**/node_modules/**",
       "**/waiting-list/**",
       "**/waiting-list",
+      "**/domains/app/invoices/**",
     ];
     config.watchOptions = {
       ...config.watchOptions,

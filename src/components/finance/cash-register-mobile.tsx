@@ -12,6 +12,7 @@ import {
 import {
   type CashTab,
   closedHistoryLabel,
+  formatCashDateTime,
   formatCashTime,
   opsCount,
   paymentMix,
@@ -401,7 +402,7 @@ export function CashRegisterMobile({
                   <div className="flex items-center gap-1.5">
                     <span className="truncate text-[14px] font-bold">{CASH_TXN_LABEL[t.type]}</span>
                     <span className="rounded bg-[#FCE9F4] px-1.5 text-[10px] text-ink/50">
-                      {formatCashTime(t.createdAt)}
+                      {formatCashDateTime(t.createdAt)}
                     </span>
                   </div>
                   <p className="truncate text-[13px] text-ink/55">{t.reason || "—"}</p>

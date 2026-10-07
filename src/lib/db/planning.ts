@@ -355,7 +355,7 @@ export async function isOrganizationClosed(
  */
 export async function assertAppointmentBookable(params: {
   organizationId: string;
-  staffId: string;
+  staffId?: string | null;
   resourceId?: string | null;
   startAt: Date | string;
   endAt: Date | string;
@@ -385,9 +385,9 @@ export async function assertAppointmentBookable(params: {
     listAppointmentsByOrg(params.organizationId),
   ]);
 
-  const staffContext = (staffRes.items as StaffAgendaContext[]).find(
-    (s) => s.id === params.staffId,
-  );
+  const staffContext = params.staffId
+    ? (staffRes.items as StaffAgendaContext[]).find((s) => s.id === params.staffId)
+    : undefined;
   const resourceContext = params.resourceId
     ? (resourceRes.items as ResourceAgendaContext[]).find((r) => r.id === params.resourceId)
     : undefined;
@@ -400,7 +400,7 @@ export async function assertAppointmentBookable(params: {
   const result = checkAvailability(
     dayAppointments,
     {
-      staffId: params.staffId,
+      staffId: params.staffId || undefined,
       resourceId: params.resourceId ?? undefined,
       startAt: start.toISOString(),
       endAt: end.toISOString(),
@@ -408,6 +408,7 @@ export async function assertAppointmentBookable(params: {
     },
     staffContext,
     resourceContext,
+    { ignoreStaffSchedule: true },
   );
 
   if (!result.available) {

@@ -22,7 +22,6 @@ const GROUPS = [
       { href: "/purchases/", label: "Achats" },
       { href: "/payments/", label: "Paiements" },
       { href: "/expenses/", label: "Dépenses" },
-      { href: "/invoices/", label: "Factures" },
     ],
   },
   {

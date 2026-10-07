@@ -20,7 +20,10 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     if (url.searchParams.get("billable") === "1") {
-      const data = await listBillableAppointments(auth.session.organizationId);
+      const data = await listBillableAppointments(
+        auth.session.organizationId,
+        url.searchParams.get("appointmentId"),
+      );
       return NextResponse.json({ data });
     }
     const appointmentId = url.searchParams.get("appointmentId");

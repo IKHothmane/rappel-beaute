@@ -20,6 +20,7 @@ import {
   closedHistoryLabel,
   exportCashCsv,
   filterCashTxns,
+  formatCashDateTime,
   formatCashTime,
   opsCount,
   paymentMix,
@@ -28,6 +29,14 @@ import {
   txnTypeChip,
 } from "@/components/finance/cash-helpers";
 import { CashRegisterMobile } from "@/components/finance/cash-register-mobile";
+import {
+  ProductSalePanel,
+  type ProductAddonCart,
+} from "@/components/finance/product-sale-panel";
+import {
+  createPosSaleApi,
+  newPosIdempotencyKey,
+} from "@/modules/pos/service";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -73,12 +82,18 @@ export function CashRegisterPageView() {
   const [outKind, setOutKind] = useState<"out" | "bank">("out");
 
   const [billable, setBillable] = useState<Billable[]>([]);
+  const [payMode, setPayMode] = useState<"service" | "products" | "float">("service");
   const [aptId, setAptId] = useState("");
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState<PaymentMethod>("CASH");
-  const [payMethod2, setPayMethod2] = useState<PaymentMethod | "">("");
-  const [payAmount2, setPayAmount2] = useState("");
   const [inReason, setInReason] = useState("Alimentation de caisse");
+  const [addonCart, setAddonCart] = useState<ProductAddonCart>({
+    lines: [],
+    total: 0,
+    discount: 0,
+    promoCode: null,
+  });
+  const [addonReset, setAddonReset] = useState(0);
 
   const [outAmount, setOutAmount] = useState("");
   const [outReason, setOutReason] = useState("");
@@ -131,19 +146,33 @@ export function CashRegisterPageView() {
     toast("Caisse ouverte.", "success");
   }
 
-  async function openPayDrawer() {
+  async function openPayDrawer(presetId?: string) {
+    const id = typeof presetId === "string" ? presetId : undefined;
     try {
-      const list = await listBillableAppointments();
+      const list = await listBillableAppointments(id);
       setBillable(list);
-      setAptId("");
-      setPayAmount("");
+      const chosen = id && list.some((item) => item.id === id) ? id : "";
+      setAptId(chosen);
+      setPayMode("service");
+      const found = list.find((item) => item.id === chosen);
+      setPayAmount(found ? String(found.remaining) : "");
       setInReason("Alimentation de caisse");
+      setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
+      setAddonReset((n) => n + 1);
       payKeyRef.current = newIdempotencyKey();
       setPayOpen(true);
     } catch {
       toast("Impossible de charger les RDV.", "error");
     }
   }
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("appointmentId");
+    if (!id) return;
+    void openPayDrawer(id);
+    // Ouverture unique depuis le lien Encaisser de l’agenda.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handlePay() {
     const amount = Number(payAmount);
@@ -152,7 +181,7 @@ export function CashRegisterPageView() {
       return;
     }
 
-    if (!aptId) {
+    if (payMode === "float") {
       setSubmitting(true);
       const result = await createCashTxn({
         type: "CASH_IN",
@@ -172,27 +201,57 @@ export function CashRegisterPageView() {
       return;
     }
 
+    if (!aptId) {
+      toast("Choisissez un rendez-vous.", "error");
+      return;
+    }
+
+    if (addonCart.lines.length > 0 && payMethod === "CASH" && !isOpen) {
+      toast("Ouvrez la caisse pour encaisser des produits en espèces.", "error");
+      return;
+    }
+
     const items: { amount: number; method: PaymentMethod }[] = [
       { amount, method: payMethod },
     ];
-    if (payMethod2 && Number(payAmount2) > 0) {
-      items.push({ amount: Number(payAmount2), method: payMethod2 });
-    }
     setSubmitting(true);
     const result = await createPayments({
       appointmentId: aptId,
       items,
       idempotencyKey: payKeyRef.current,
     });
-    setSubmitting(false);
     if (!result.ok) {
+      setSubmitting(false);
       toast(result.error, "error");
       return;
     }
-    toast("Paiement enregistré.", "success");
+
+    let productMsg = "";
+    if (addonCart.lines.length > 0) {
+      const sale = await createPosSaleApi({
+        lines: addonCart.lines,
+        paymentMethod: payMethod,
+        discountTotal: addonCart.discount > 0 ? addonCart.discount : 0,
+        notes: addonCart.promoCode
+          ? `Vente POS · avec service · Promo: ${addonCart.promoCode}`
+          : "Vente POS · avec service",
+        idempotencyKey: newPosIdempotencyKey(),
+      });
+      if (!sale.ok) {
+        setSubmitting(false);
+        toast(`Service encaissé, mais produits : ${sale.error}`, "error");
+        setPayOpen(false);
+        payKeyRef.current = newIdempotencyKey();
+        refresh();
+        return;
+      }
+      productMsg = ` · produits ${formatMad(sale.sale.total)}`;
+    }
+
+    setSubmitting(false);
+    toast(`Paiement enregistré${productMsg}.`, "success");
     setPayOpen(false);
-    setPayMethod2("");
-    setPayAmount2("");
+    setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
     payKeyRef.current = newIdempotencyKey();
     refresh();
   }
@@ -288,7 +347,7 @@ export function CashRegisterPageView() {
         onCloseReason={setCloseReason}
         submitting={submitting}
         onOpen={handleOpen}
-        onPay={openPayDrawer}
+        onPay={() => void openPayDrawer()}
         onOut={() => openOut("out")}
         onClose={handleClose}
       />
@@ -326,7 +385,7 @@ export function CashRegisterPageView() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={openPayDrawer}
+                onClick={() => void openPayDrawer()}
                 className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-primary px-4 text-[14px] font-semibold text-white shadow-md"
               >
                 <Plus size={18} />
@@ -535,7 +594,7 @@ export function CashRegisterPageView() {
                   <table className="w-full min-w-[640px] text-left text-[13px]">
                     <thead>
                       <tr className="bg-[#FFEFF8] text-[11px] font-bold uppercase tracking-wider text-ink/50">
-                        <th className="rounded-l-lg px-3 py-2.5">Heure</th>
+                        <th className="rounded-l-lg px-3 py-2.5">Date et heure</th>
                         <th className="px-3 py-2.5">Type / motif</th>
                         <th className="px-3 py-2.5">Mode</th>
                         <th className="px-3 py-2.5">Opérateur</th>
@@ -547,7 +606,7 @@ export function CashRegisterPageView() {
                       {filtered.map((t) => (
                         <tr key={t.id} className="border-t border-transparent hover:bg-[#FFEFF8]/60">
                           <td className="whitespace-nowrap px-3 py-3 font-semibold">
-                            {formatCashTime(t.createdAt)}
+                            {formatCashDateTime(t.createdAt)}
                           </td>
                           <td className="px-3 py-3">
                             <div className="font-semibold">{CASH_TXN_LABEL[t.type]}</div>
@@ -774,104 +833,161 @@ export function CashRegisterPageView() {
 
       <Drawer open={payOpen} onClose={() => setPayOpen(false)} title="Encaisser">
         <div className="space-y-4">
-          <label className="block text-sm">
-            <span className="mb-1.5 block font-medium">Rendez-vous (facultatif)</span>
-            <Select
-              value={aptId}
-              onChange={(e) => {
-                setAptId(e.target.value);
-                const b = billable.find((x) => x.id === e.target.value);
-                if (b) setPayAmount(String(b.remaining));
-              }}
-            >
-              <option value="">Alimenter la caisse (sans RDV)</option>
-              {billable.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.customerName} · {b.serviceName} · reste {formatMad(b.remaining)}
-                </option>
-              ))}
-            </Select>
-          </label>
-          {!aptId ? (
-            <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/55">
-              Sans rendez-vous, le montant entre en espèces dans le tiroir (alimentation).
-            </p>
-          ) : null}
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span className="mb-1.5 block font-medium">Montant</span>
-              <Input
-                type="number"
-                min={0.01}
-                step={0.01}
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-              />
-            </label>
-            {aptId ? (
-              <label className="block text-sm">
-                <span className="mb-1.5 block font-medium">Méthode</span>
-                <Select
-                  value={payMethod}
-                  onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {PAYMENT_METHOD_LABEL[m]}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-            ) : (
-              <label className="block text-sm">
-                <span className="mb-1.5 block font-medium">Motif</span>
-                <Input
-                  value={inReason}
-                  onChange={(e) => setInReason(e.target.value)}
-                  placeholder="Alimentation de caisse"
-                />
-              </label>
-            )}
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#FFEFF8] p-1">
+            {(
+              [
+                ["service", "Service"],
+                ["products", "Produits"],
+                ["float", "Alimenter"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  setPayMode(id);
+                  if (id === "float") setAptId("");
+                }}
+                className={cn(
+                  "rounded-lg py-2 text-[12px] font-semibold",
+                  payMode === id ? "bg-white text-ink shadow-sm" : "text-ink/55",
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          {aptId ? (
-            <div className="border-t border-line pt-3">
-              <p className="mb-2 text-xs text-ink/45">Paiement multi-méthodes (optionnel)</p>
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  placeholder="2ᵉ montant"
-                  value={payAmount2}
-                  onChange={(e) => setPayAmount2(e.target.value)}
-                />
+
+          {payMode === "products" ? (
+            <ProductSalePanel
+              disabled={!canWrite || submitting}
+              cashOpen={isOpen}
+              onError={(message) => toast(message, "error")}
+              onSold={(sale) => {
+                toast(`Vente produits · ${formatMad(sale.total)}`, "success");
+                setPayOpen(false);
+                void refresh();
+              }}
+            />
+          ) : null}
+
+          {payMode === "service" ? (
+            <>
+              <label className="block text-sm">
+                <span className="mb-1.5 block font-medium">Rendez-vous</span>
                 <Select
-                  value={payMethod2}
-                  onChange={(e) => setPayMethod2(e.target.value as PaymentMethod | "")}
+                  value={aptId}
+                  onChange={(e) => {
+                    setAptId(e.target.value);
+                    const b = billable.find((x) => x.id === e.target.value);
+                    if (b) setPayAmount(String(b.remaining));
+                  }}
                 >
-                  <option value="">—</option>
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {PAYMENT_METHOD_LABEL[m]}
+                  <option value="">Choisir un RDV…</option>
+                  {billable.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.customerName} · {b.serviceName} · reste {formatMad(b.remaining)}
                     </option>
                   ))}
                 </Select>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-sm">
+                  <span className="mb-1.5 block font-medium">Montant service</span>
+                  <Input
+                    type="number"
+                    min={0.01}
+                    step={0.01}
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="mb-1.5 block font-medium">Méthode</span>
+                  <Select
+                    value={payMethod}
+                    onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {PAYMENT_METHOD_LABEL[m]}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
               </div>
-            </div>
+
+              <ProductSalePanel
+                embedded
+                resetToken={addonReset}
+                disabled={!canWrite || submitting}
+                cashOpen={isOpen}
+                onError={(message) => toast(message, "error")}
+                onCartChange={setAddonCart}
+              />
+
+              {addonCart.lines.length > 0 ? (
+                <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/60">
+                  Total : service {formatMad(Number(payAmount) || 0)} + produits{" "}
+                  {formatMad(addonCart.total)} ={" "}
+                  <strong className="text-ink">
+                    {formatMad((Number(payAmount) || 0) + addonCart.total)}
+                  </strong>
+                </p>
+              ) : null}
+
+              <Button
+                type="button"
+                variant="primary"
+                className="w-full"
+                disabled={submitting || !aptId || !payAmount || Number(payAmount) <= 0}
+                onClick={() => void handlePay()}
+              >
+                {submitting
+                  ? "Enregistrement…"
+                  : addonCart.lines.length > 0
+                    ? `Encaisser service + produits · ${formatMad((Number(payAmount) || 0) + addonCart.total)}`
+                    : "Encaisser le service"}
+              </Button>
+            </>
           ) : null}
-          <Button
-            type="button"
-            variant="primary"
-            className="w-full"
-            disabled={submitting || !payAmount || Number(payAmount) <= 0}
-            onClick={handlePay}
-          >
-            {submitting
-              ? "Enregistrement…"
-              : aptId
-                ? "Encaisser"
-                : "Alimenter la caisse"}
-          </Button>
+
+          {payMode === "float" ? (
+            <>
+              <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/55">
+                Le montant entre en espèces dans le tiroir (alimentation, sans vente).
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-sm">
+                  <span className="mb-1.5 block font-medium">Montant</span>
+                  <Input
+                    type="number"
+                    min={0.01}
+                    step={0.01}
+                    value={payAmount}
+                    onChange={(e) => setPayAmount(e.target.value)}
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="mb-1.5 block font-medium">Motif</span>
+                  <Input
+                    value={inReason}
+                    onChange={(e) => setInReason(e.target.value)}
+                    placeholder="Alimentation de caisse"
+                  />
+                </label>
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                className="w-full"
+                disabled={submitting || !payAmount || Number(payAmount) <= 0}
+                onClick={() => void handlePay()}
+              >
+                {submitting ? "Enregistrement…" : "Alimenter la caisse"}
+              </Button>
+            </>
+          ) : null}
         </div>
       </Drawer>
 

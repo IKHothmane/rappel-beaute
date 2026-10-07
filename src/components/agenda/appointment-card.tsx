@@ -1,6 +1,7 @@
 "use client";
 
 import type { Appointment } from "@/types/appointment";
+import { AppointmentPayBadge } from "@/components/agenda/appointment-pay-badge";
 import {
   APPOINTMENT_STATUS_LABEL,
   APPOINTMENT_STATUS_STYLE,
@@ -63,11 +64,12 @@ export function AppointmentCard({
           {appointment.resourceName ? ` · ${appointment.resourceName}` : ""}
         </p>
       ) : null}
-      <div className="mt-1.5 flex items-center gap-1.5">
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
         <span className={cn("text-[10px] font-semibold", s.text)}>
           {APPOINTMENT_STATUS_LABEL[appointment.status]}
         </span>
+        <AppointmentPayBadge appointment={appointment} />
       </div>
     </div>
   );

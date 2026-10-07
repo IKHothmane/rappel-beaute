@@ -113,24 +113,31 @@ export function AgendaPage() {
   const [columnMode, setColumnMode] = useState<AgendaColumnMode>("staff");
 
   const refreshMeta = useCallback(async () => {
+    const servicesP = listServicesForAgenda().catch(() => []);
+    const optionsP = getServiceFormOptions().catch(() => null);
+    const staffP = listStaffForAgenda().catch(() => []);
+    const resourcesP = listResourcesForAgenda().catch(() => []);
     try {
-      const [svc, opts, staffCtx, resCtx, plan, wa] = await Promise.all([
-        listServicesForAgenda(),
-        getServiceFormOptions(),
-        listStaffForAgenda(),
-        listResourcesForAgenda(),
-        loadPlanningApi().catch(() => ({ closures: [] as OrganizationClosureItem[] })),
-        getWhatsAppDashboard("pending").catch(() => null),
+      const [svc, opts, staffCtx, resCtx] = await Promise.all([
+        servicesP,
+        optionsP,
+        staffP,
+        resourcesP,
       ]);
       setServices(svc);
       setFormOptions(opts);
       setStaffContexts(staffCtx);
       setResourceContexts(resCtx);
-      setClosures(plan.closures);
-      setWhatsappConnected(wa != null);
     } catch {
       toast("Impossible de charger les services.", "error");
     }
+
+    const [plan, wa] = await Promise.all([
+      loadPlanningApi().catch(() => ({ closures: [] as OrganizationClosureItem[] })),
+      getWhatsAppDashboard("pending").catch(() => null),
+    ]);
+    setClosures(plan.closures);
+    setWhatsappConnected(wa != null);
   }, [toast]);
 
   const refresh = useCallback(async () => {
@@ -219,8 +226,12 @@ export function AgendaPage() {
       const s = allStaff.find((x) => x.id === staffFilter);
       return s ? [{ id: s.id, name: s.name }] : allStaff.map((x) => ({ id: x.id, name: x.name }));
     }
-    return allStaff.map((s) => ({ id: s.id, name: s.name }));
-  }, [columnMode, staffFilter, resourceFilter, formOptions]);
+    const cols = allStaff.map((s) => ({ id: s.id, name: s.name }));
+    if (appointments.some((a) => !a.staffId && a.status !== "CANCELLED" && a.status !== "NO_SHOW")) {
+      cols.push({ id: "", name: "Sans employée" });
+    }
+    return cols;
+  }, [columnMode, staffFilter, resourceFilter, formOptions, appointments]);
 
   const weekDates = useMemo(() => getWeekDates(date), [date]);
   const monthDates = useMemo(() => getMonthGrid(date), [date]);
@@ -357,6 +368,20 @@ export function AgendaPage() {
     await refresh();
     setDrawer(isXl ? null : "detail");
     toast("Rendez-vous mis à jour.", "success");
+  }
+
+  async function patchSelected(
+    patch: Partial<CreateAppointmentInput>,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (!selectedId) return { ok: false, error: "Rendez-vous introuvable." };
+    const result = await updateAppointment(selectedId, patch);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return result;
+    }
+    await refresh();
+    toast("Rendez-vous mis à jour.", "success");
+    return { ok: true };
   }
 
   async function handleStatus(status: AppointmentStatus, id?: string) {
@@ -566,9 +591,15 @@ export function AgendaPage() {
                   {selected ? (
                     <AppointmentDetails
                       appointment={selected}
+                      services={services}
+                      staff={(formOptions?.staff ?? []).map((member) => ({
+                        id: member.id,
+                        name: member.name,
+                      }))}
                       onEdit={() => setDrawer("edit")}
                       onStatusChange={handleStatus}
                       onCancel={() => setConfirmCancel(true)}
+                      onChange={patchSelected}
                     />
                   ) : (
                     <div className="flex flex-col gap-3 text-sm text-ink/55">
@@ -700,9 +731,15 @@ export function AgendaPage() {
         {selected ? (
           <AppointmentDetails
             appointment={selected}
+            services={services}
+            staff={(formOptions?.staff ?? []).map((member) => ({
+              id: member.id,
+              name: member.name,
+            }))}
             onEdit={() => setDrawer("edit")}
             onStatusChange={handleStatus}
             onCancel={() => setConfirmCancel(true)}
+            onChange={patchSelected}
           />
         ) : null}
       </Drawer>

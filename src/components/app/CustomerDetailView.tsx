@@ -508,12 +508,6 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-mono font-semibold">{mad(sale.total)}</span>
-                  <Link
-                    href={`/invoices/${sale.invoiceId}/`}
-                    className="text-xs text-primary underline"
-                  >
-                    Facture
-                  </Link>
                 </div>
               </li>
             ))}

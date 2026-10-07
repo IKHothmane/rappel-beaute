@@ -32,15 +32,17 @@ export function isUniqueViolation(error: unknown): boolean {
 }
 
 function mapPaymentRow(r: Record<string, unknown>): PaymentItem {
+  const fromCustomer =
+    r.customerFirst || r.customerLast
+      ? `${r.customerFirst ?? ""} ${r.customerLast ?? ""}`.trim()
+      : "";
+  const fromInvoice = String(r.invoiceCustomerName ?? "").trim();
   return {
     id: String(r.id),
     appointmentId: (r.appointmentId as string) ?? null,
     customerId: (r.customerId as string) ?? null,
-    customerName:
-      r.customerFirst || r.customerLast
-        ? `${r.customerFirst ?? ""} ${r.customerLast ?? ""}`.trim()
-        : null,
-    customerPhone: (r.customerPhone as string) ?? null,
+    customerName: fromCustomer || fromInvoice || null,
+    customerPhone: (r.customerPhone as string) ?? (r.invoiceCustomerPhone as string) ?? null,
     serviceName: (r.serviceName as string) ?? null,
     amount: parseFloat(String(r.amount)) || 0,
     method: r.method as PaymentMethod,
@@ -517,12 +519,26 @@ export async function listPayments(
       p."paidAt", p."createdAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
       c.phone AS "customerPhone",
-      s.name AS "serviceName",
+      inv."customerNameSnapshot" AS "invoiceCustomerName",
+      inv."customerPhoneSnapshot" AS "invoiceCustomerPhone",
+      COALESCE(
+        s.name,
+        (
+          SELECT string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder")
+          FROM "InvoiceItem" ii
+          WHERE ii."invoiceId" = p."invoiceId"
+        ),
+        CASE
+          WHEN p.notes ILIKE '%POS%' OR p.notes ILIKE '%vente%' THEN 'Vente produits'
+          ELSE NULL
+        END
+      ) AS "serviceName",
       u."firstName" AS "userFirst", u."lastName" AS "userLast"
      FROM "Payment" p
      LEFT JOIN "Customer" c ON c.id = p."customerId"
      LEFT JOIN "Appointment" a ON a.id = p."appointmentId"
      LEFT JOIN "Service" s ON s.id = a."serviceId"
+     LEFT JOIN "Invoice" inv ON inv.id = p."invoiceId"
      LEFT JOIN "User" u ON u.id = p."userId"
      WHERE ${conditions.join(" AND ")}
      ORDER BY p."paidAt" DESC
@@ -543,12 +559,26 @@ export async function getPaymentById(
       p."paidAt", p."createdAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
       c.phone AS "customerPhone",
-      s.name AS "serviceName",
+      inv."customerNameSnapshot" AS "invoiceCustomerName",
+      inv."customerPhoneSnapshot" AS "invoiceCustomerPhone",
+      COALESCE(
+        s.name,
+        (
+          SELECT string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder")
+          FROM "InvoiceItem" ii
+          WHERE ii."invoiceId" = p."invoiceId"
+        ),
+        CASE
+          WHEN p.notes ILIKE '%POS%' OR p.notes ILIKE '%vente%' THEN 'Vente produits'
+          ELSE NULL
+        END
+      ) AS "serviceName",
       u."firstName" AS "userFirst", u."lastName" AS "userLast"
      FROM "Payment" p
      LEFT JOIN "Customer" c ON c.id = p."customerId"
      LEFT JOIN "Appointment" a ON a.id = p."appointmentId"
      LEFT JOIN "Service" s ON s.id = a."serviceId"
+     LEFT JOIN "Invoice" inv ON inv.id = p."invoiceId"
      LEFT JOIN "User" u ON u.id = p."userId"
      WHERE p.id = $1 AND p."organizationId" = $2`,
     [paymentId, organizationId],
@@ -896,9 +926,10 @@ export async function refundPayment(
   return created;
 }
 
-/** RDVs du jour avec solde restant (pour encaissement rapide) */
+/** RDVs à encaisser (solde > 0), y compris dès la création. */
 export async function listBillableAppointments(
   organizationId: string,
+  includeAppointmentId?: string | null,
 ): Promise<
   {
     id: string;
@@ -908,14 +939,19 @@ export async function listBillableAppointments(
     remaining: number;
     status: string;
     startAt: string;
+    customerPhone: string | null;
   }[]
 > {
+  const params: unknown[] = [organizationId];
+  const forced = includeAppointmentId ? "a.id = $2 OR" : "";
+  if (includeAppointmentId) params.push(includeAppointmentId);
+
   const { rows } = await pool.query(
     `SELECT
       a.id, a.status::text, a.price::text, a."startAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
       c.phone AS "customerPhone",
-      s.name AS "serviceName",
+      COALESCE(s.name, a."serviceNameSnapshot", 'Prestation') AS "serviceName",
       COALESCE((
         SELECT SUM(CASE WHEN p.kind = 'REFUND' THEN -p.amount ELSE p.amount END)
         FROM "Payment" p
@@ -923,14 +959,19 @@ export async function listBillableAppointments(
       ), 0)::text AS "netPaid"
      FROM "Appointment" a
      JOIN "Customer" c ON c.id = a."customerId"
-     JOIN "Service" s ON s.id = a."serviceId"
+     LEFT JOIN "Service" s ON s.id = a."serviceId"
      WHERE a."organizationId" = $1
-       AND a.status IN ('COMPLETED', 'IN_PROGRESS', 'ARRIVED', 'CONFIRMED')
-       AND a."startAt" >= date_trunc('day', NOW()) - INTERVAL '1 day'
-       AND a."startAt" < date_trunc('day', NOW()) + INTERVAL '2 days'
+       AND a.status NOT IN ('CANCELLED', 'NO_SHOW')
+       AND (
+         ${forced}
+         (
+           a."startAt" >= (date_trunc('day', NOW() AT TIME ZONE 'Africa/Casablanca') AT TIME ZONE 'Africa/Casablanca') - INTERVAL '365 days'
+           AND a."startAt" < (date_trunc('day', NOW() AT TIME ZONE 'Africa/Casablanca') AT TIME ZONE 'Africa/Casablanca') + INTERVAL '365 days'
+         )
+       )
      ORDER BY a."startAt" DESC
-     LIMIT 40`,
-    [organizationId],
+     LIMIT 200`,
+    params,
   );
 
   return rows
@@ -946,7 +987,8 @@ export async function listBillableAppointments(
         remaining,
         status: r.status as string,
         startAt: new Date(r.startAt as Date).toISOString(),
+        customerPhone: (r.customerPhone as string) ?? null,
       };
     })
-    .filter((r) => r.remaining > 0);
+    .filter((r) => r.remaining > 0 || r.id === includeAppointmentId);
 }

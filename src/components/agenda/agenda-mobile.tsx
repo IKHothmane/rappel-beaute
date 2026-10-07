@@ -27,6 +27,7 @@ import { formatMad } from "@/modules/analytics/service";
 import { getCustomer } from "@/modules/customers/service";
 import { listWaitingList } from "@/modules/waiting-list/service";
 import { staffColor } from "@/components/agenda/staff-colors";
+import { AppointmentPayBadge } from "@/components/agenda/appointment-pay-badge";
 import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
 import { cn } from "@/lib/utils";
 import type { AgendaKpis } from "@/components/agenda/agenda-toolbar";
@@ -543,6 +544,9 @@ function MobileAptRow({
           </div>
           <div className="shrink-0 text-right">
             <p className="text-sm font-extrabold text-primary">{apt.price.toLocaleString("fr-MA")} MAD</p>
+            <div className="mt-1 flex justify-end">
+              <AppointmentPayBadge appointment={apt} />
+            </div>
             <p className={cn("mt-0.5 flex items-center justify-end gap-1 text-[11px] font-semibold", tone.className)}>
               <span className={cn("h-1.5 w-1.5 rounded-full bg-current", tone.pulse && "animate-pulse")} />
               {tone.label}
@@ -596,13 +600,19 @@ function MobileAptRow({
                 <MessageCircle size={16} />
                 WhatsApp
               </a>
-              <Link
-                href={`/cash-register/?appointmentId=${apt.id}`}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-primary text-[11px] font-bold text-white"
-              >
-                <Wallet size={16} />
-                Encaisser
-              </Link>
+              {apt.paymentState === "paid" ? (
+                <span className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-emerald-50 text-[11px] font-bold text-emerald-800">
+                  Payé
+                </span>
+              ) : (
+                <Link
+                  href={`/cash-register/?appointmentId=${apt.id}`}
+                  className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-primary text-[11px] font-bold text-white"
+                >
+                  <Wallet size={16} />
+                  {apt.paymentState === "partial" ? "Encaisser le reste" : "Encaisser"}
+                </Link>
+              )}
             </div>
             <button type="button" className="text-center text-[11px] font-semibold text-primary" onClick={onOpenDetail}>
               Fiche complète

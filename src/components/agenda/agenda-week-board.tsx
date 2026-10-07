@@ -8,6 +8,7 @@ import {
   APPOINTMENT_STATUS_LABEL,
 } from "@/modules/appointments/constants";
 import { staffColor } from "@/components/agenda/staff-colors";
+import { AppointmentPayBadge } from "@/components/agenda/appointment-pay-badge";
 import { cn } from "@/lib/utils";
 import type { Appointment } from "@/types/appointment";
 import type { OrganizationClosureItem } from "@/types/planning";
@@ -251,8 +252,11 @@ export function AgendaWeekBoard({
                               <span className="truncate text-xs font-bold text-ink">
                                 {apt.customerName.trim() || "Cliente"}
                               </span>
-                              <span className="shrink-0 text-[10px] font-semibold text-ink/45">
-                                {APPOINTMENT_STATUS_LABEL[apt.status]}
+                              <span className="flex shrink-0 flex-col items-end gap-0.5">
+                                <span className="text-[10px] font-semibold text-ink/45">
+                                  {APPOINTMENT_STATUS_LABEL[apt.status]}
+                                </span>
+                                <AppointmentPayBadge appointment={apt} />
                               </span>
                             </div>
                             <p className="truncate text-[11px] text-ink/55">{apt.serviceName}</p>

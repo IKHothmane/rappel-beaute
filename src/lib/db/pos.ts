@@ -53,10 +53,7 @@ export async function listPosProducts(
   const conditions = [
     `p."organizationId" = $1`,
     `p.active = true`,
-    `p.sellable = true`,
     `p."deletedAt" IS NULL`,
-    `p."salePrice" IS NOT NULL`,
-    `p."salePrice" > 0`,
   ];
   const params: unknown[] = [organizationId];
   let pi = 2;
@@ -85,12 +82,13 @@ export async function listPosProducts(
     unit: string;
     brand: string | null;
   }>(
-    `SELECT p.id, p.name, p.sku, p.category::text, p."salePrice"::text,
+    `SELECT p.id, p.name, p.sku, p.category::text,
+            COALESCE(NULLIF(p."salePrice", 0), NULLIF(p."purchasePrice", 0), 0)::text AS "salePrice",
             p.stock::text, p."minStock"::text, p.unit::text, p.brand
      FROM "Product" p
      WHERE ${conditions.join(" AND ")}
-     ORDER BY p.name
-     LIMIT 200`,
+     ORDER BY p.name ASC
+     LIMIT 500`,
     params,
   );
 
@@ -99,7 +97,7 @@ export async function listPosProducts(
     name: r.name,
     sku: r.sku,
     category: r.category as PosProductItem["category"],
-    salePrice: parseFloat(r.salePrice),
+    salePrice: parseFloat(r.salePrice) || 0,
     stock: parseFloat(r.stock),
     minStock: parseFloat(r.minStock) || 0,
     unit: r.unit,
@@ -308,7 +306,9 @@ export async function createPosSale(
 
     for (const [productId, quantity] of qtyByProduct) {
       const { rows } = await client.query<LockedProduct>(
-        `SELECT id, name, sku, "salePrice"::text, stock::text, category::text,
+        `SELECT id, name, sku,
+                COALESCE(NULLIF("salePrice", 0), NULLIF("purchasePrice", 0), 0)::text AS "salePrice",
+                stock::text, category::text,
                 sellable, active
          FROM "Product"
          WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL
@@ -316,7 +316,7 @@ export async function createPosSale(
         [productId, organizationId],
       );
       const p = rows[0];
-      if (!p || !p.active || !p.sellable) throw new Error("PRODUCT_NOT_FOUND");
+      if (!p || !p.active) throw new Error("PRODUCT_NOT_FOUND");
       const unitPrice = parseFloat(p.salePrice);
       if (!Number.isFinite(unitPrice) || unitPrice <= 0) throw new Error("PRODUCT_NO_PRICE");
       const stock = parseFloat(p.stock);

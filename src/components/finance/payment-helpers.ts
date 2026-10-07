@@ -79,7 +79,46 @@ export function signedPaymentAmount(p: PaymentItem) {
   return p.kind === "REFUND" ? -Math.abs(p.amount) : p.amount;
 }
 
+export function isUnpaidDue(p: PaymentItem) {
+  return p.id.startsWith("due:") || p.notes === "RDV non payé";
+}
+
+export function unpaidDueId(appointmentId: string) {
+  return `due:${appointmentId}`;
+}
+
+export function billableToDuePayment(b: {
+  id: string;
+  customerName: string;
+  serviceName: string;
+  price: number;
+  remaining: number;
+  startAt: string;
+  customerPhone?: string | null;
+}): PaymentItem {
+  return {
+    id: unpaidDueId(b.id),
+    appointmentId: b.id,
+    customerId: null,
+    customerName: b.customerName,
+    customerPhone: b.customerPhone ?? null,
+    serviceName: b.serviceName,
+    amount: b.remaining,
+    method: "CASH",
+    kind: "PAYMENT",
+    status: "PENDING",
+    parentPaymentId: null,
+    giftCardId: null,
+    notes: "RDV non payé",
+    userId: null,
+    userName: null,
+    paidAt: b.startAt,
+    createdAt: b.startAt,
+  };
+}
+
 export function paymentShortId(id: string) {
+  if (id.startsWith("due:")) return "DÛ";
   return id.slice(-6).toUpperCase();
 }
 
@@ -90,15 +129,25 @@ export function paymentInitials(name: string | null) {
 }
 
 export function paymentOrigin(p: PaymentItem) {
+  if (isUnpaidDue(p)) return { label: "Agenda · non payé", kind: "agenda" as const };
   if (p.appointmentId) return { label: "Agenda", kind: "agenda" as const };
   const notes = (p.notes ?? "").toLowerCase();
-  if (notes.includes("pos") || notes.includes("vente")) {
-    return { label: "POS", kind: "pos" as const };
+  const label = (p.serviceName ?? "").toLowerCase();
+  if (
+    notes.includes("pos") ||
+    notes.includes("vente") ||
+    label.includes("vente produits") ||
+    label.includes(" + ")
+  ) {
+    return { label: "Produits", kind: "pos" as const };
   }
   return { label: "Comptoir", kind: "other" as const };
 }
 
 export function paymentStatusChip(p: PaymentItem) {
+  if (isUnpaidDue(p)) {
+    return { label: "Non payé", className: "bg-amber-100 text-amber-900" };
+  }
   if (p.kind === "REFUND" || p.status === "REFUNDED") {
     return { label: "Remboursé", className: "bg-purple-100 text-purple-900" };
   }
@@ -154,7 +203,10 @@ export function filterPayments(
 ) {
   return rows.filter((p) => {
     if (!inPaymentPeriod(p.paidAt, opts.period)) return false;
-    if (opts.method && p.method !== opts.method) return false;
+    if (opts.method) {
+      if (isUnpaidDue(p)) return false;
+      if (p.method !== opts.method) return false;
+    }
     if (opts.staff && (p.userName ?? "") !== opts.staff) return false;
     if (!matchesPaymentSearch(p, opts.search)) return false;
     return matchesPaymentTab(p, opts.tab);
@@ -179,6 +231,10 @@ export function paymentKpis(rows: PaymentItem[]): PaymentKpis {
   let failedCount = 0;
 
   for (const p of rows) {
+    if (isUnpaidDue(p)) {
+      pendingCount += 1;
+      continue;
+    }
     if (p.kind === "REFUND" || p.status === "REFUNDED") refundedCount += 1;
     else if (p.status === "PENDING") pendingCount += 1;
     else if (p.status === "FAILED") failedCount += 1;
@@ -190,7 +246,7 @@ export function paymentKpis(rows: PaymentItem[]): PaymentKpis {
       refunds += p.amount;
       continue;
     }
-    if (p.status === "COMPLETED" || p.status === "PENDING") {
+    if (p.status === "COMPLETED") {
       inflow += p.amount;
       byMethod[p.method] += p.amount;
     }

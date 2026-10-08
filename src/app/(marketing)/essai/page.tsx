@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ProfessionnelPage from "../professionnel/page";
+import { ProfessionnelSignup } from "@/components/www/professionnel-signup";
 import { marketingPageMetadata } from "@/lib/seo";
 import { PUBLIC_OFFER } from "@/lib/site";
 
@@ -12,5 +12,5 @@ export const metadata: Metadata = marketingPageMetadata({
 });
 
 export default function EssaiPage() {
-  return <ProfessionnelPage heading="Essayez Rappel Beauty gratuitement" />;
+  return <ProfessionnelSignup heading="Essayez Rappel Beauty gratuitement" />;
 }

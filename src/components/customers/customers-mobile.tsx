@@ -314,6 +314,7 @@ export function CustomersMobile({
               <CustomerListCard
                 key={c.id}
                 customer={c}
+                orgName={orgName}
                 onOpen={() => openFocus(c.id)}
               />
             ))
@@ -352,6 +353,7 @@ export function CustomersMobile({
           key={selected.id}
           customerId={selected.id}
           fallback={selected}
+          orgName={orgName}
           canWrite={canWrite}
           onEdit={() => onEdit(selected.id)}
         />
@@ -412,7 +414,15 @@ function KpiCard({
   );
 }
 
-function CustomerListCard({ customer: c, onOpen }: { customer: CustomerListItem; onOpen: () => void }) {
+function CustomerListCard({
+  customer: c,
+  orgName,
+  onOpen,
+}: {
+  customer: CustomerListItem;
+  orgName: string;
+  onOpen: () => void;
+}) {
   const badge = segmentBadge(c.segment);
   const statusDot =
     c.segment === "AT_RISK" || c.segment === "INACTIVE"
@@ -484,11 +494,13 @@ function CustomerListCard({ customer: c, onOpen }: { customer: CustomerListItem;
 function CustomerFocusMobile({
   customerId,
   fallback,
+  orgName,
   canWrite,
   onEdit,
 }: {
   customerId: string;
   fallback: CustomerListItem;
+  orgName: string;
   canWrite: boolean;
   onEdit: () => void;
 }) {

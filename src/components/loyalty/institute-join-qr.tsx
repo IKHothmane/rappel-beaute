@@ -115,7 +115,7 @@ export function InstituteJoinQr({ canWrite }: { canWrite: boolean }) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-primary">QR de l'institut</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-primary">QR de l&apos;institut</p>
           <h3 className="mt-1 text-[18px] font-bold text-ink">{qr?.programName || "Carte de fidélité"}</h3>
           <p className="mt-1 text-[13px] text-ink/55">
             Scannez pour rejoindre. Ce QR ne donne jamais un passage.

@@ -14,6 +14,7 @@ import {
 import { SupplierFocusPanel } from "@/components/procurement/supplier-focus-panel";
 import {
   supplierInitials,
+  supplierWhatsappMessage,
   telHref,
   whatsappHref,
 } from "@/components/procurement/supplier-helpers";
@@ -103,6 +104,7 @@ export function SuppliersMobile({
           <SupplierFocusPanel
             supplierId={selected.id}
             fallback={selected}
+            orgName={orgName}
             canWrite={canWrite}
             financeHidden={financeHidden}
             showPurchases={showPurchases}
@@ -250,7 +252,14 @@ export function SuppliersMobile({
           ) : (
             <div className="space-y-3">
               {rows.map((s) => {
-                const wa = whatsappHref(s.phone);
+                const wa = whatsappHref(
+                  s.phone,
+                  supplierWhatsappMessage({
+                    supplierName: s.name,
+                    contactName: s.contactName,
+                    orgName,
+                  }),
+                );
                 const tel = telHref(s.phone);
                 return (
                   <article

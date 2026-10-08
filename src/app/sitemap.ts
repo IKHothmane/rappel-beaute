@@ -12,7 +12,6 @@ const entries: { path: string; priority: number; changeFrequency: "weekly" | "mo
   { path: "/reservation-en-ligne/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/fidelite/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/gestion-clientes/", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/instituts/", priority: 0.7, changeFrequency: "weekly" },
   { path: "/whatsapp/", priority: 0.6, changeFrequency: "monthly" },
   { path: "/faq/", priority: 0.6, changeFrequency: "monthly" },
   { path: "/essai/", priority: 0.6, changeFrequency: "monthly" },

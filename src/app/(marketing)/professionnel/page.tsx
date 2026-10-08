@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
 import { ProfessionnelForm } from "@/components/www/ProfessionnelForm";
-import { APP_LOGIN_HREF, formatPrice, PUBLIC_OFFER, SITE } from "@/lib/site";
+import { SitePhone } from "@/components/www/SitePhone";
+import { APP_LOGIN_HREF, formatPrice, PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -159,7 +160,7 @@ export default function ProfessionnelPage({
                   ))}
                 </div>
                 <div className="mt-1 flex items-center justify-between rounded-xl bg-primary-light/60 p-3">
-                  <span className="text-[11px] font-medium text-ink/60">Contact : {SITE.phone}</span>
+                  <SitePhone className="text-[11px] font-medium text-ink/60" iconClassName="h-3.5 w-3.5 shrink-0 text-primary" />
                 </div>
               </div>
             </Reveal>

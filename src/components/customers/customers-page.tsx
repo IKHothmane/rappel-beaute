@@ -416,6 +416,7 @@ export function CustomersPageView() {
               customerId={selected.id}
               fallback={selected}
               canWrite={canWrite}
+              orgName={user.orgName}
               onEdit={() => openEdit(selected.id)}
             />
           ) : (

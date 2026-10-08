@@ -5,7 +5,8 @@ export const SITE = {
   appUrl: "https://app.rappelbeauty.com",
   tagline: "Le logiciel de gestion pensé pour les instituts de beauté.",
   email: "contact@rappelbeauty.com",
-  phone: "+212 6 19 44 03 75",
+  phone: "06 91 56 72 46",
+  phoneInternational: "+212691567246",
 } as const;
 
 /**
@@ -59,7 +60,6 @@ export const MARKETING_PAGES = [
   { path: "/", group: "nav" },
   { path: "/fonctionnalites/", group: "nav" },
   { path: "/tarifs/", group: "nav" },
-  { path: "/instituts/", group: "nav" },
   { path: "/a-propos/", group: "nav" },
   { path: "/essai/", group: "conversion" },
   { path: "/professionnel/", group: "conversion" },
@@ -77,7 +77,6 @@ export const NAV = [
   { href: "/", label: "Accueil" },
   { href: "/fonctionnalites/", label: "Fonctionnalités" },
   { href: "/tarifs/", label: "Tarifs" },
-  { href: "/instituts/", label: "Instituts" },
   { href: "/a-propos/", label: "À propos" },
 ] as const;
 

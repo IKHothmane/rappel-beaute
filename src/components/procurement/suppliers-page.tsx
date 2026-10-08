@@ -19,6 +19,7 @@ import { SupplierForm } from "@/components/procurement/supplier-form";
 import {
   supplierInitials,
   supplierInsight,
+  supplierWhatsappMessage,
   telHref,
   whatsappHref,
 } from "@/components/procurement/supplier-helpers";
@@ -332,7 +333,14 @@ export function SuppliersPageView() {
                     </thead>
                     <tbody>
                       {rows.map((s) => {
-                        const wa = whatsappHref(s.phone);
+                        const wa = whatsappHref(
+                          s.phone,
+                          supplierWhatsappMessage({
+                            supplierName: s.name,
+                            contactName: s.contactName,
+                            orgName: user.orgName,
+                          }),
+                        );
                         const tel = telHref(s.phone);
                         const activeRow = s.id === selectedId;
                         return (
@@ -439,6 +447,7 @@ export function SuppliersPageView() {
               <SupplierFocusPanel
                 supplierId={selected.id}
                 fallback={selected}
+                orgName={user.orgName}
                 canWrite={canWrite}
                 financeHidden={financeHidden}
                 showPurchases={showPurchases}

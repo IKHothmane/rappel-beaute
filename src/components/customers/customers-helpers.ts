@@ -24,14 +24,36 @@ export function formatRelativeVisit(iso: string | null): string {
   return `Il y a ${d} j`;
 }
 
-export function whatsappHref(phone: string, firstName: string) {
+export function customerWhatsappMessage(firstName: string, orgName?: string | null) {
+  const institute = orgName?.trim();
+  const follow = institute
+    ? `C'est ${institute}. Souhaitez-vous prendre rendez-vous ?`
+    : "Souhaitez-vous prendre rendez-vous ?";
+  return `Bonjour ${firstName} 👋\n\n${follow}`;
+}
+
+export function appointmentWhatsappMessage(input: {
+  firstName: string;
+  orgName?: string | null;
+  serviceName: string;
+  startAt: string;
+}) {
+  const start = new Date(input.startAt);
+  const date = start.toLocaleDateString("fr-FR");
+  const time = start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const institute = input.orgName?.trim();
+  const who = institute ? `C'est ${institute}. ` : "";
+  return `Bonjour ${input.firstName} 👋\n\n${who}Votre rendez-vous ${input.serviceName} est prévu le ${date} à ${time}.\n\nMerci de nous confirmer votre présence.`;
+}
+
+export function whatsappHref(phone: string, firstName: string, message?: string) {
   const digits = phone.replace(/\D/g, "");
   const normalized = digits.startsWith("212")
     ? digits
     : digits.startsWith("0")
       ? `212${digits.slice(1)}`
       : digits;
-  const text = encodeURIComponent(`Bonjour ${firstName} 👋`);
+  const text = encodeURIComponent(message?.trim() || `Bonjour ${firstName} 👋`);
   return `https://wa.me/${normalized}?text=${text}`;
 }
 

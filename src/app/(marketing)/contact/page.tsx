@@ -25,8 +25,7 @@ export default function ContactPage() {
             Contactez Rappel Beauty
           </h1>
           <p className="mt-5 max-w-2xl text-sm leading-relaxed text-ink/70 sm:text-lg">
-            Une question sur le logiciel, l&apos;essai ou la formule. Écrivez-nous ou appelez le
-            numéro ci-dessous.
+            Une question sur le logiciel, l&apos;essai ou la formule. Écrivez-nous.
           </p>
         </div>
       </section>
@@ -38,14 +37,6 @@ export default function ContactPage() {
             </span>
             <a href={`mailto:${SITE.email}`} className="mt-1 inline-block text-primary">
               {SITE.email}
-            </a>
-          </p>
-          <p>
-            <span className="block font-mono text-[10px] uppercase tracking-widest text-ink/40">
-              Téléphone
-            </span>
-            <a href={`tel:${SITE.phone.replace(/\s/g, "")}`} className="mt-1 inline-block text-primary">
-              {SITE.phone}
             </a>
           </p>
           <div className="flex flex-col items-start gap-3 pt-2">

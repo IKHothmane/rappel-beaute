@@ -13,6 +13,8 @@ import {
   Star,
   Wallet,
 } from "lucide-react";
+import { useCurrentUser } from "@/components/auth/session-provider";
+import { appointmentWhatsappMessage, whatsappHref } from "@/components/customers/customers-helpers";
 import type { AgendaView, Appointment, AppointmentStatus } from "@/types/appointment";
 import type { CustomerDetail } from "@/types/customer";
 import type { StaffAgendaContext } from "@/types/staff";
@@ -75,13 +77,6 @@ function atHour(day: Date, h: number, m = 0) {
 
 function overlaps(a0: Date, a1: Date, b0: Date, b1: Date) {
   return a0 < b1 && a1 > b0;
-}
-
-function waDigits(phone: string) {
-  const d = phone.replace(/\D/g, "");
-  if (d.startsWith("212")) return d;
-  if (d.startsWith("0") && d.length >= 9) return `212${d.slice(1)}`;
-  return d;
 }
 
 function statusTone(apt: Appointment) {
@@ -497,6 +492,7 @@ function MobileAptRow({
   onOpenDetail: () => void;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
 }) {
+  const user = useCurrentUser();
   const tone = statusTone(apt);
   const phone = customer?.phone?.trim() || "";
   const noShows = customer?.noShowCount ?? 0;
@@ -504,10 +500,18 @@ function MobileAptRow({
   const visits = customer?.visits ?? 0;
   const isNew = customer?.status === "NEW" || visits <= 1;
   const transitions = STATUS_TRANSITIONS[apt.status] ?? [];
+  const firstName = apt.customerName.trim().split(/\s+/)[0] || "Cliente";
   const waHref = phone
-    ? `https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(
-        `Bonjour ${apt.customerName.split(" ")[0]}, votre rendez-vous ${apt.serviceName} est prévu à ${timeLabel(apt.startAt)}.`,
-      )}`
+    ? whatsappHref(
+        phone,
+        firstName,
+        appointmentWhatsappMessage({
+          firstName,
+          orgName: user.orgName,
+          serviceName: apt.serviceName,
+          startAt: apt.startAt,
+        }),
+      )
     : "/whatsapp/";
 
   return (

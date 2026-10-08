@@ -12,6 +12,8 @@ import {
   UserX,
   Wallet,
 } from "lucide-react";
+import { useCurrentUser } from "@/components/auth/session-provider";
+import { appointmentWhatsappMessage, whatsappHref } from "@/components/customers/customers-helpers";
 import type { Appointment, AppointmentStatus, CreateAppointmentInput } from "@/types/appointment";
 import type { CustomerDetail } from "@/types/customer";
 import {
@@ -47,13 +49,6 @@ type AppointmentDetailsProps = {
 
 function durationMin(startAt: string, endAt: string) {
   return Math.max(0, Math.round((new Date(endAt).getTime() - new Date(startAt).getTime()) / 60_000));
-}
-
-function waDigits(phone: string) {
-  const d = phone.replace(/\D/g, "");
-  if (d.startsWith("212")) return d;
-  if (d.startsWith("0") && d.length >= 9) return `212${d.slice(1)}`;
-  return d;
 }
 
 function extraIdsFromNotes(notes: string | undefined, services: ServiceChoice[], mainId: string) {
@@ -98,6 +93,7 @@ export function AppointmentDetails({
   onCancel,
   onChange,
 }: AppointmentDetailsProps) {
+  const user = useCurrentUser();
   const s = APPOINTMENT_STATUS_STYLE[appointment.status];
   const start = new Date(appointment.startAt);
   const end = new Date(appointment.endAt);
@@ -164,10 +160,18 @@ export function AppointmentDetails({
   const phone = customer?.phone?.trim() || "";
   const noShows = customer?.noShowCount ?? 0;
   const vip = customer?.segment === "VIP";
+  const firstName = appointment.customerName.trim().split(/\s+/)[0] || "Cliente";
   const waHref = phone
-    ? `https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(
-        `Bonjour ${appointment.customerName.split(" ")[0]}, votre rendez-vous ${appointment.serviceName} est prévu le ${start.toLocaleDateString("fr-FR")} à ${start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.`,
-      )}`
+    ? whatsappHref(
+        phone,
+        firstName,
+        appointmentWhatsappMessage({
+          firstName,
+          orgName: user.orgName,
+          serviceName: appointment.serviceName,
+          startAt: appointment.startAt,
+        }),
+      )
     : "/whatsapp/";
 
   return (

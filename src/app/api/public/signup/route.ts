@@ -104,8 +104,8 @@ export async function POST(request: NextRequest) {
   if (!CITIES_SET.has(city)) {
     return validationError("Sélectionnez une ville.");
   }
-  if (address.length < 3 || address.length > 200) {
-    return validationError("Indiquez l'adresse de l'institut.");
+  if (address.length > 200) {
+    return validationError("L'adresse est trop longue.");
   }
 
   const logo = form.get("logo");

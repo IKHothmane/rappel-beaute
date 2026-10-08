@@ -15,7 +15,6 @@ const COLS = [
   {
     title: "Solutions",
     links: [
-      { href: "/instituts/", label: "Instituts inscrits" },
       { href: "/solutions/institut-beaute/", label: "Institut de beauté" },
       { href: "/gestion-rendez-vous/", label: "Rendez-vous" },
       { href: "/gestion-clientes/", label: "Clientes" },

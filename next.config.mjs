@@ -59,6 +59,16 @@ const nextConfig = {
         destination: "/faq/",
         permanent: true,
       },
+      {
+        source: "/instituts",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/instituts/",
+        destination: "/",
+        permanent: true,
+      },
     ];
   },
   async headers() {

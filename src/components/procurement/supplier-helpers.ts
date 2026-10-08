@@ -8,13 +8,29 @@ export function supplierInitials(name: string) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export function whatsappHref(phone: string | null | undefined): string | null {
+export function supplierWhatsappMessage(input: {
+  supplierName: string;
+  contactName?: string | null;
+  orgName?: string | null;
+}) {
+  const contact = input.contactName?.trim().split(/\s+/)[0];
+  const greeting = contact ? `Bonjour ${contact} 👋` : "Bonjour 👋";
+  const institute = input.orgName?.trim();
+  const from = institute ? `C'est ${institute}. ` : "";
+  const about = input.supplierName.trim()
+    ? `Nous vous contactons au sujet de nos commandes chez ${input.supplierName.trim()}.`
+    : "Nous vous contactons au sujet de nos commandes.";
+  return `${greeting}\n\n${from}${about}`;
+}
+
+export function whatsappHref(phone: string | null | undefined, message?: string): string | null {
   if (!phone) return null;
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 8) return null;
   let n = digits;
   if (n.startsWith("0") && (n.length === 9 || n.length === 10)) n = `212${n.slice(1)}`;
-  return `https://wa.me/${n}`;
+  const text = message?.trim();
+  return text ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : `https://wa.me/${n}`;
 }
 
 export function telHref(phone: string | null | undefined): string | null {

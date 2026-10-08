@@ -6,6 +6,7 @@ import { MessageCircle, Pencil, Phone, ShoppingCart, Star } from "lucide-react";
 import {
   leadTimeLabel,
   supplierInitials,
+  supplierWhatsappMessage,
   telHref,
   whatsappHref,
 } from "@/components/procurement/supplier-helpers";
@@ -22,6 +23,7 @@ import type { ProductSupplierLink, SupplierDetail, SupplierListItem } from "@/ty
 type Props = {
   supplierId: string;
   fallback: SupplierListItem;
+  orgName?: string | null;
   canWrite: boolean;
   financeHidden: boolean;
   showPurchases: boolean;
@@ -45,6 +47,7 @@ function stockHint(catalog: ProductListItem[], productId: string) {
 export function SupplierFocusPanel({
   supplierId,
   fallback,
+  orgName,
   canWrite,
   financeHidden,
   showPurchases,
@@ -96,7 +99,14 @@ export function SupplierFocusPanel({
   }, [detail]);
 
   const s = detail ?? fallback;
-  const wa = whatsappHref(s.phone);
+  const wa = whatsappHref(
+    s.phone,
+    supplierWhatsappMessage({
+      supplierName: s.name,
+      contactName: s.contactName,
+      orgName,
+    }),
+  );
   const tel = telHref(s.phone);
   const preferred = (detail?.products ?? []).some((p) => p.preferred);
   const products: ProductSupplierLink[] = detail?.products ?? [];

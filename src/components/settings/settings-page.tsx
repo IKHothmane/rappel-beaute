@@ -12,8 +12,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser, useSession } from "@/components/auth/session-provider";
-import { BookingQrPanel } from "@/components/settings/booking-qr-panel";
 import { InstituteWebsiteField } from "@/components/settings/institute-website-field";
+import { InstituteAddressField } from "@/components/settings/institute-address-field";
 import { InstituteLogoField } from "@/components/settings/institute-logo-field";
 import type { AppRole } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -77,7 +77,7 @@ export function SettingsPageView() {
             Paramètres de l’institut
           </h1>
           <p className="mt-1 max-w-2xl text-[15px] text-ink/55">
-            Profil, équipe, QR de réservation et abonnement.
+            Profil, équipe et abonnement.
           </p>
         </div>
       </header>
@@ -177,6 +177,7 @@ export function SettingsPageView() {
           >
             <div className="grid gap-3 sm:grid-cols-2">
               <InstituteLogoField name={user.orgName} canEdit={user.role === "OWNER"} />
+              <InstituteAddressField canEdit={user.role === "OWNER"} />
               <ReadonlyField label="Enseigne" value={user.orgName || "—"} />
               <ReadonlyField label="Identifiant public" value={user.orgSlug || "—"} />
             </div>
@@ -220,9 +221,8 @@ export function SettingsPageView() {
             id="agenda"
             icon={<CalendarDays size={22} />}
             title="Agenda & réservations"
-            subtitle="QR de réservation en ligne"
+            subtitle="Site web de l’institut"
           >
-            <BookingQrPanel />
             <InstituteWebsiteField canEdit={user.role === "OWNER"} />
           </SectionCard>
 

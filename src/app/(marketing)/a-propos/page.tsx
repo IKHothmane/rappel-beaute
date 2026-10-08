@@ -16,7 +16,7 @@ export const metadata: Metadata = marketingPageMetadata({
 const IMG_ATELIER =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBMz86RbBst2uEKW0W6aJCA_J2kvT2tULe700qf0jqyT28soEeagVbEjtrA1w9rWDFCZBkBIc5VV5yHpZvLcIlikKPb5BW58fLp-Q0KwvF6ZMXJvd7kHEIHusLemKkjgT1Nn4czy-KMk7vyjeZ3hTeZcq-1Ubqun9W0JQwmFgWLnmuOaKz4lQEEngJAoyN8g-PNv4T5vvbt1FVXSBFGXDJkLKMKn7W056yAclfaa6q-uWzEyS1pihUsuA";
 
-const WA_HREF = `https://wa.me/${SITE.phone.replace(/\D/g, "")}`;
+const WA_HREF = `https://wa.me/${SITE.phoneInternational.replace(/\D/g, "")}`;
 
 const METRICS = [
   {

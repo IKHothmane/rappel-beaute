@@ -33,6 +33,7 @@ import {
   formatRelativeVisit,
   segmentBadge,
   shortCustomerRef,
+  customerWhatsappMessage,
   whatsappHref,
 } from "@/components/customers/customers-helpers";
 import { cn } from "@/lib/utils";
@@ -459,7 +460,7 @@ function CustomerListCard({ customer: c, onOpen }: { customer: CustomerListItem;
       </div>
       <div className="flex items-center gap-2">
         <a
-          href={whatsappHref(c.phone, c.firstName)}
+          href={whatsappHref(c.phone, c.firstName, customerWhatsappMessage(c.firstName, orgName))}
           target="_blank"
           rel="noreferrer"
           className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[12px] font-semibold text-white shadow-sm"
@@ -648,7 +649,7 @@ function CustomerFocusMobile({
             Nouveau RDV
           </Link>
           <a
-            href={whatsappHref(person.phone, person.firstName)}
+            href={whatsappHref(person.phone, person.firstName, customerWhatsappMessage(person.firstName, orgName))}
             target="_blank"
             rel="noreferrer"
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[12px] font-semibold text-white shadow-sm"
@@ -722,7 +723,7 @@ function CustomerFocusMobile({
             ) : null}
           </p>
           <a
-            href={whatsappHref(person.phone, person.firstName)}
+            href={whatsappHref(person.phone, person.firstName, customerWhatsappMessage(person.firstName, orgName))}
             target="_blank"
             rel="noreferrer"
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-white text-[12px] font-semibold text-primary shadow-sm"

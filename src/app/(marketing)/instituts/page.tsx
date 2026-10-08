@@ -1,17 +1,5 @@
-import type { Metadata } from "next";
-import { InstituteDirectory } from "@/components/www/institute-directory";
-import { listPublicInstitutes } from "@/lib/db/public-directory";
+import { permanentRedirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export const metadata: Metadata = {
-  title: "Instituts inscrits",
-  description:
-    "Trouvez un institut de beauté inscrit sur Rappel Beauty et réservez en ligne.",
-  alternates: { canonical: "/instituts/" },
-};
-
-export default async function InstitutesPage() {
-  const institutes = await listPublicInstitutes();
-  return <InstituteDirectory institutes={institutes} />;
+export default function InstitutesPage() {
+  permanentRedirect("/");
 }

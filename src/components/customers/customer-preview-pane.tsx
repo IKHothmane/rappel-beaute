@@ -22,6 +22,7 @@ import {
   formatRelativeVisit,
   segmentBadge,
   shortCustomerRef,
+  customerWhatsappMessage,
   whatsappHref,
 } from "@/components/customers/customers-helpers";
 import { formatMad } from "@/modules/analytics/service";
@@ -43,10 +44,17 @@ type CustomerPreviewPaneProps = {
   customerId: string;
   fallback: CustomerListItem;
   canWrite: boolean;
+  orgName?: string | null;
   onEdit: () => void;
 };
 
-export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: CustomerPreviewPaneProps) {
+export function CustomerPreviewPane({
+  customerId,
+  fallback,
+  canWrite,
+  orgName,
+  onEdit,
+}: CustomerPreviewPaneProps) {
   const [tab, setTab] = useState<PreviewTab>("rdv");
   const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
@@ -192,7 +200,7 @@ export function CustomerPreviewPane({ customerId, fallback, canWrite, onEdit }: 
           Nouveau RDV
         </Link>
         <a
-          href={whatsappHref(person.phone, person.firstName)}
+          href={whatsappHref(person.phone, person.firstName, customerWhatsappMessage(person.firstName, orgName))}
           target="_blank"
           rel="noreferrer"
           className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[12px] font-semibold text-white shadow-sm"

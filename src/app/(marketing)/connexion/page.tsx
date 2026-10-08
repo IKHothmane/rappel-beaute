@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/www/LoginForm";
+import { SitePhone } from "@/components/www/SitePhone";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +28,12 @@ export default function ConnexionPage() {
         <div className="absolute inset-0 bg-white/35" />
       </div>
 
-      <div className="z-10 my-4 w-full max-w-lg">
+      <div className="z-10 my-4 flex w-full max-w-lg flex-col items-center gap-4">
         <LoginForm />
+        <SitePhone
+          className="rounded-full border border-line bg-white/90 px-4 py-2 text-sm font-semibold text-ink shadow-sm hover:text-primary"
+          iconClassName="h-4 w-4 shrink-0 text-primary"
+        />
       </div>
     </section>
   );

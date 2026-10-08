@@ -35,3 +35,21 @@ export async function setOrganizationWebsite(
     [website, organizationId],
   );
 }
+
+export async function getOrganizationAddress(organizationId: string): Promise<string | null> {
+  const { rows } = await pool.query<{ address: string | null }>(
+    `SELECT address FROM "Organization" WHERE id = $1`,
+    [organizationId],
+  );
+  return rows[0]?.address ?? null;
+}
+
+export async function setOrganizationAddress(
+  organizationId: string,
+  address: string | null,
+): Promise<void> {
+  await pool.query(
+    `UPDATE "Organization" SET address = $1, "updatedAt" = NOW() WHERE id = $2`,
+    [address, organizationId],
+  );
+}

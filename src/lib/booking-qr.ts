@@ -1,4 +1,4 @@
-import { SITE } from "@/lib/site";
+import { publicAppOrigin, SITE } from "@/lib/site";
 
 /** Slug marketing pour query ?service= / ?staff= */
 export function slugifyLabel(input: string): string {
@@ -28,7 +28,7 @@ export function buildPublicBookingUrl(opts: {
   source?: string | null;
   baseUrl?: string;
 }): string {
-  const base = (opts.baseUrl ?? process.env.NEXT_PUBLIC_APP_URL ?? SITE.appUrl).replace(
+  const base = ((opts.baseUrl ?? publicAppOrigin()) || SITE.appUrl).replace(
     /\/$/,
     "",
   );

@@ -17,7 +17,7 @@ Portée : 3 propriétés distinctes sous un seul modular monolith Next.js
 - **Stack** : Next.js, Tailwind, PostgreSQL, Prisma, Redis + BullMQ, S3/R2, Docker, Cloudflare.
 - **Multi-tenant** : `organizationId` sur chaque table métier + RLS PostgreSQL en deuxième couche (la couche applicative reste la protection principale).
 - **Rôles V1** (matrice statique en code, pas de table `Permission`) : `OWNER`, `MANAGER`, `STAFF`, `CASHIER`, `ACCOUNTANT`.
-- **Prix public** : une seule formule à 599 DH / mois, ou 5999 DH / an. Sans engagement, essai 7 jours.
+- **Prix public** : une seule formule à 799 DH / mois, ou 7 990 DH / an. Sans engagement, essai 7 jours.
 - **WhatsApp V1** : manuel assisté uniquement — le système prépare, l'humain envoie et marque. Pas de bot, pas d'API Business officielle avant Phase 3.
 - **Photos clientes** : aucune en V1.
 - **Argent** : toujours `Decimal`, jamais `Float`.

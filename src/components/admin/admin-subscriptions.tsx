@@ -170,7 +170,7 @@ export function AdminSubscriptionsView() {
     expired: 0,
     mrr: 0,
   });
-  const [plans, setPlans] = useState<{ id: string; code: string; name: string; price: number }[]>(
+  const [plans, setPlans] = useState<{ id: string; code: string; name: string; price: number; annualPrice: number }[]>(
     [],
   );
   const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
@@ -1652,7 +1652,7 @@ export function AdminSubscriptionsView() {
                   >
                     {plans.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.code} — {p.price} DH/mois
+                        {p.code} — {p.price} DH/mois ou {p.annualPrice.toLocaleString("fr-FR")} DH/an
                       </option>
                     ))}
                   </select>

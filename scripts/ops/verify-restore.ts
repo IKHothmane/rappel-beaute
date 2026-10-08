@@ -9,6 +9,8 @@ const CRITICAL_TABLES = [
   "Customer",
   "Staff",
   "Appointment",
+  "Product",
+  "PosSale",
   "Payment",
   "Invoice",
   "InventoryMovement",

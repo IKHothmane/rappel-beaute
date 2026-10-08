@@ -109,8 +109,8 @@ Plans (rappel) :
 
 | Offre | Prix | Période |
 |---|---|---|
-| Formule unique | 599 DH | mois |
-| Formule unique | 5999 DH | an |
+| Formule unique | 799 DH | mois |
+| Formule unique | 7990 DH | an |
 
 ---
 

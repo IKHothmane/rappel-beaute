@@ -5,20 +5,14 @@ import { sendTransactionalEmail } from "@/lib/email/send";
 import { getClientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
-import { SITE } from "@/lib/site";
+import { publicAppOrigin, SITE } from "@/lib/site";
 
 const GENERIC = {
   message: "Si ce compte existe, un lien de réinitialisation a été envoyé.",
 };
 
-function appBase(): string {
-  const fromEnv = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || "").replace(
-    /\/$/,
-    "",
-  );
-  if (fromEnv) return fromEnv;
-  if (process.env.NODE_ENV === "production") return SITE.appUrl;
-  return "http://localhost:3000";
+function appBase(requestOrigin: string): string {
+  return publicAppOrigin() || requestOrigin.replace(/\/$/, "");
 }
 
 export async function POST(request: NextRequest) {
@@ -54,7 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     const token = await issuePasswordResetToken(email);
     if (token) {
-      const link = `${appBase()}/activate/?token=${token}`;
+      const link = `${appBase(request.nextUrl.origin)}/activate/?token=${token}`;
       await sendTransactionalEmail({
         to: email,
         subject: `Réinitialisation du mot de passe — ${SITE.name}`,

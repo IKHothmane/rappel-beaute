@@ -88,7 +88,7 @@ run("Super Admin — création institut atomique", () => {
     const org = await getOrganizationById(orgId);
     expect(org?.status).toBe("ACTIVE");
     expect(org?.subscription?.plan).toBe("INSTITUT");
-    expect(org?.subscription?.price).toBe(599);
+    expect(org?.subscription?.price).toBe(799);
 
     const users = await listOrganizationUsers(orgId);
     expect(users.some((u) => u.role === "OWNER" && u.email === email)).toBe(true);

@@ -156,8 +156,8 @@ run("Abonnements — changement plan & snapshot", () => {
 
   afterAll(async () => {
     const premium = await getPlanByCode("PREMIUM");
-    if (premium && premium.price !== 599) {
-      await updatePlan(premium.id, { price: 599 });
+    if (premium && premium.price !== 799) {
+      await updatePlan(premium.id, { price: 799 });
     }
   });
 

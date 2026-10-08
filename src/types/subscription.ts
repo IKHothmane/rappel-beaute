@@ -43,6 +43,8 @@ export type PlanDto = {
   name: string;
   description: string | null;
   price: number;
+  /** Prix annuel officiel. 10 mois payés. */
+  annualPrice: number;
   currency: string;
   billingInterval: BillingInterval;
   maxStaff: number | null;

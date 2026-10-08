@@ -378,7 +378,7 @@ export async function fetchAdminSubscriptions(params?: {
       expired: number;
       mrr: number;
     };
-    plans: { id: string; code: string; name: string; price: number }[];
+    plans: { id: string; code: string; name: string; price: number; annualPrice: number }[];
     organizations: { id: string; name: string }[];
     showcasePrice: number;
   }>(`/api/admin/subscriptions/${q ? `?${q}` : ""}`);
@@ -395,7 +395,7 @@ export async function fetchAdminSubscription(id: string) {
       after: unknown;
       createdAt: string;
     }[];
-    plans: { id: string; code: string; name: string; price: number }[];
+    plans: { id: string; code: string; name: string; price: number; annualPrice: number }[];
   }>(`/api/admin/subscriptions/${id}/`);
 }
 

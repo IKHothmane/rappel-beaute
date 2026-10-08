@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { appEnvironment } from "@/lib/site";
 import { pingRedis } from "@/lib/redis/client";
 import { Pool } from "pg";
 
@@ -30,7 +31,7 @@ export async function GET() {
     status: ok ? "ok" : "degraded",
     database: database ? "ok" : "error",
     redis: redisStatus,
-    app: process.env.APP_ENV ?? process.env.NODE_ENV ?? "unknown",
+    app: appEnvironment(),
     version: process.env.npm_package_version ?? "unknown",
     timestamp: new Date().toISOString(),
   };

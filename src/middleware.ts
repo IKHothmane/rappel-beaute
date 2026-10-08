@@ -199,6 +199,7 @@ export async function middleware(request: NextRequest) {
     !originAccessAllowed(
       request.headers.get("x-rappel-origin"),
       process.env.ORIGIN_SECRET,
+      request.headers.get("host"),
     )
   ) {
     return new NextResponse("Forbidden", { status: 403 });

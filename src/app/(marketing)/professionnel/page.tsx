@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
 import { ProfessionnelForm } from "@/components/www/ProfessionnelForm";
-import { APP_LOGIN_HREF, PUBLIC_OFFER, SITE } from "@/lib/site";
+import { APP_LOGIN_HREF, formatPrice, PUBLIC_OFFER, SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -34,7 +34,11 @@ const REASONS = [
   },
 ] as const;
 
-export default function ProfessionnelPage() {
+export default function ProfessionnelPage({
+  heading = "Le logiciel de gestion pour les instituts de beauté au Maroc.",
+}: {
+  heading?: string;
+}) {
   return (
     <section className="relative w-full overflow-hidden">
       {/* Background */}
@@ -59,11 +63,11 @@ export default function ProfessionnelPage() {
             </span>
           </div>
           <h1 className="mt-1 font-display text-3xl font-semibold leading-[1.1] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
-            Le logiciel de gestion pour les instituts de beauté au Maroc.
+            {heading}
           </h1>
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-ink/60 sm:text-lg">
             Rendez-vous, planning, clientes, stock, caisse, fidélité et réservation en ligne.
-            {PUBLIC_OFFER.price} DH/mois ou {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH/an.
+            {PUBLIC_OFFER.monthlyPrice} DH/mois ou {formatPrice(PUBLIC_OFFER.annualPrice)} DH/an.
           </p>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -103,19 +107,19 @@ export default function ProfessionnelPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">
                     <span className="font-display text-3xl font-bold leading-none text-primary">
-                      {PUBLIC_OFFER.price}
+                      {PUBLIC_OFFER.monthlyPrice}
                     </span>
                     <span className="mt-1 text-xs font-semibold text-ink">DH / mois</span>
                     <span className="text-[10px] text-ink/45">Formule unique</span>
                   </div>
                   <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">
                     <span className="font-display text-3xl font-bold leading-none text-gold">
-                      {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")}
+                      {formatPrice(PUBLIC_OFFER.annualPrice)}
                     </span>
                     <span className="mt-1 text-xs font-semibold text-ink">DH / an</span>
                     <span className="text-[10px] text-ink/45">
                       Économisez{" "}
-                      {(PUBLIC_OFFER.price * 12 - PUBLIC_OFFER.yearlyPrice).toLocaleString("fr-FR")} DH
+                      {formatPrice(PUBLIC_OFFER.annualSavings)} DH
                     </span>
                   </div>
                   <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm">

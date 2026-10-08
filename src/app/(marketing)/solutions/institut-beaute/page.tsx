@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
 import { SeoCloser } from "@/components/www/SeoCloser";
-import { PUBLIC_OFFER } from "@/lib/site";
+import { formatPrice, PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -128,8 +128,8 @@ export default function InstitutBeautePage() {
                 ["Type", "logiciel SaaS"],
                 ["Marché", "Maroc"],
                 ["Cible", "instituts de beauté"],
-                ["Tarif", `${PUBLIC_OFFER.price} DH/mois`],
-                ["Tarif annuel", `${PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH/an`],
+                ["Tarif", `${PUBLIC_OFFER.monthlyPrice} DH/mois`],
+                ["Tarif annuel", `${formatPrice(PUBLIC_OFFER.annualPrice)} DH/an`],
                 ["Essai", `${PUBLIC_OFFER.trialDays} jours gratuits`],
                 ["Engagement", "aucun"],
                 ["Carte bancaire", "non requise"],

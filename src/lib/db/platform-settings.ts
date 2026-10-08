@@ -16,8 +16,10 @@ export type PlatformSettingsData = {
   };
   billing: {
     price: number;
-    /** Prix mensuel affiché sur la vitrine. Absent = 599 DH. */
+    /** Prix mensuel affiché sur la vitrine. Absent = tarif officiel. */
     publicPrice?: number;
+    /** Prix annuel (10 mois). */
+    annualPrice?: number;
     currency: string;
     vatPercent: number;
     period: "MONTHLY" | "YEARLY";
@@ -71,7 +73,9 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettingsData = {
     maintenance: false,
   },
   billing: {
-    price: 400,
+    price: 799,
+    publicPrice: 799,
+    annualPrice: 7990,
     currency: "MAD",
     vatPercent: 20,
     period: "MONTHLY",

@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
-import { SITE } from "@/lib/site";
+import { marketingPageMetadata } from "@/lib/seo";
+import { formatPrice, PUBLIC_OFFER, SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "À propos du logiciel pour instituts de beauté au Maroc",
+export const metadata: Metadata = marketingPageMetadata({
+  title: "À propos de Rappel Beauty · Logiciel institut de beauté au Maroc",
   description:
-    "Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc. Le produit réunit rendez-vous, clientes, stock, caisse et réservation en ligne.",
-  alternates: { canonical: "/a-propos/" },
-};
+    "Rappel Beauty est le logiciel SaaS de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse et réservation en ligne.",
+  canonical: "/a-propos/",
+});
 
 const IMG_ATELIER =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBMz86RbBst2uEKW0W6aJCA_J2kvT2tULe700qf0jqyT28soEeagVbEjtrA1w9rWDFCZBkBIc5VV5yHpZvLcIlikKPb5BW58fLp-Q0KwvF6ZMXJvd7kHEIHusLemKkjgT1Nn4czy-KMk7vyjeZ3hTeZcq-1Ubqun9W0JQwmFgWLnmuOaKz4lQEEngJAoyN8g-PNv4T5vvbt1FVXSBFGXDJkLKMKn7W056yAclfaa6q-uWzEyS1pihUsuA";
@@ -125,7 +126,7 @@ export default function AProposPage() {
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-14">
             <Reveal className="lg:col-span-7">
               <h1 className="mb-6 font-display text-4xl font-semibold leading-[1.12] text-ink sm:text-5xl lg:text-6xl">
-                Fait pour les instituts du Maroc.
+                À propos de Rappel Beauty
                 <br />
                 <span className="font-normal italic text-primary">
                   Pensé pour leur sérénité.
@@ -329,7 +330,7 @@ export default function AProposPage() {
               </a>
             </div>
             <p className="mt-6 text-xs text-white/45">
-              Sans engagement · 7 jours gratuits · Sans carte bancaire · 599 DH / mois ou 5 999 DH / an
+              Sans engagement · {PUBLIC_OFFER.trialDays} jours gratuits · Sans carte bancaire · {PUBLIC_OFFER.monthlyPrice} DH / mois ou {formatPrice(PUBLIC_OFFER.annualPrice)} DH / an
             </p>
           </Reveal>
         </div>

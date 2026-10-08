@@ -31,7 +31,7 @@ export function HomeHero() {
         </p>
 
         <h1 className="mb-4 max-w-4xl font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl md:text-6xl">
-          Le logiciel de gestion tout-en-un pour votre institut de beauté
+          Logiciel de gestion pour institut de beauté au Maroc
         </h1>
 
         <p className="mb-8 max-w-2xl text-sm leading-relaxed text-ink/70 sm:text-lg">

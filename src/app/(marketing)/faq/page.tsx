@@ -1,19 +1,16 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/www/JsonLd";
 import { PageHero } from "@/components/www/PageHero";
-import { faqJsonLd } from "@/lib/seo";
-import { FAQ_ITEMS } from "@/lib/site";
+import { faqJsonLd, marketingPageMetadata } from "@/lib/seo";
+import { FAQ_ITEMS, formatPrice, PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "FAQ Rappel Beauty · Logiciel pour institut de beauté",
-  },
-  description:
-    "Retrouvez les réponses aux questions fréquentes sur Rappel Beauty : fonctionnalités, tarifs, essai gratuit, réservation en ligne, paiements et gestion des instituts de beauté au Maroc.",
-  alternates: { canonical: "/faq/" },
-};
+export const metadata: Metadata = marketingPageMetadata({
+  title: "FAQ Rappel Beauty · Logiciel pour institut de beauté",
+  description: `Rappel Beauty : ${PUBLIC_OFFER.monthlyPrice} DH/mois ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH/an, essai ${PUBLIC_OFFER.trialDays} jours sans carte bancaire. Fonctionnement, réservation en ligne et gestion d'un institut de beauté au Maroc.`,
+  canonical: "/faq/",
+});
 
 export default function FaqPage() {
   return (
@@ -21,7 +18,7 @@ export default function FaqPage() {
       <JsonLd data={faqJsonLd()} />
       <PageHero
         eyebrow="FAQ"
-        title="Questions fréquentes sur Rappel Beauty"
+        title="FAQ Rappel Beauty"
         text="Fonctionnalités, tarifs, essai gratuit, réservation en ligne et paiements à l'institut."
       />
       <div className="container-rb max-w-3xl space-y-4 py-16">

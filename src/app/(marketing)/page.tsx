@@ -2,39 +2,19 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { HomeHero } from "@/components/www/HomeHero";
 import { Reveal, RevealItem, RevealStagger } from "@/components/www/Reveal";
-import { PUBLIC_OFFER, SITE } from "@/lib/site";
+import { marketingPageMetadata } from "@/lib/seo";
+import { formatPrice, PUBLIC_OFFER, SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-const YEAR_AT_MONTHLY = PUBLIC_OFFER.price * 12;
-const YEARLY_SAVINGS = YEAR_AT_MONTHLY - PUBLIC_OFFER.yearlyPrice;
+const YEAR_AT_MONTHLY = PUBLIC_OFFER.monthlyPrice * 12;
+const YEARLY_SAVINGS = PUBLIC_OFFER.annualSavings;
 
-const HOME_TITLE = "Rappel Beauty – Logiciel de gestion pour institut de beauté au Maroc";
-const HOME_DESCRIPTION =
-  "Rappel Beauty est le logiciel de gestion pour instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne. Essai gratuit 7 jours.";
-
-export const metadata: Metadata = {
-  title: { absolute: HOME_TITLE },
-  description: HOME_DESCRIPTION,
-  alternates: { canonical: "/" },
-  openGraph: {
-    title: HOME_TITLE,
-    description: HOME_DESCRIPTION,
-    url: "/",
-    images: [
-      {
-        url: "/brand/logo.png",
-        alt: "Rappel Beauty — logiciel de gestion pour instituts de beauté au Maroc",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: HOME_TITLE,
-    description: HOME_DESCRIPTION,
-    images: ["/brand/logo.png"],
-  },
-};
+export const metadata: Metadata = marketingPageMetadata({
+  title: "Rappel Beauty – Logiciel de gestion pour institut de beauté au Maroc",
+  description: `Rappel Beauty est le logiciel de gestion pour instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne. Essai gratuit ${PUBLIC_OFFER.trialDays} jours.`,
+  canonical: "/",
+});
 
 const BENEFITS = [
   {
@@ -86,7 +66,10 @@ const INCLUDED = [
 
 const TRUST = [
   { title: "Pensé pour le marché marocain", text: "Interface en français, prix en dirhams, usage institut." },
-  { title: "Prix en MAD", text: "599 DH par mois, ou 5 999 DH par an." },
+  {
+    title: "Prix en MAD",
+    text: `${PUBLIC_OFFER.monthlyPrice} DH par mois, ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH par an.`,
+  },
   { title: "Ordinateur et téléphone", text: "Application web, dans le navigateur, sans installation." },
   { title: "Accès réservé", text: "Connexion HTTPS. Chaque institut ne voit que ses données." },
   { title: "Réservation en ligne", text: "Une page publique reliée au même agenda." },
@@ -362,16 +345,16 @@ export default function HomePage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
             Une formule
           </p>
-          <p className="mt-3 font-display text-4xl text-ink">{PUBLIC_OFFER.price} DH / mois</p>
+          <p className="mt-3 font-display text-4xl text-ink">{PUBLIC_OFFER.monthlyPrice} DH / mois</p>
           <p className="mt-2 text-sm font-semibold text-ink/70">
-            ou {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH / an
+            ou {formatPrice(PUBLIC_OFFER.annualPrice)} DH / an
           </p>
           <p className="mt-4 text-sm font-semibold text-primary">
             Économisez {YEARLY_SAVINGS.toLocaleString("fr-FR")} DH avec la formule annuelle
           </p>
           <p className="mt-1 text-xs text-ink/55">
-            {PUBLIC_OFFER.price} DH × 12 = {YEAR_AT_MONTHLY.toLocaleString("fr-FR")} DH, contre{" "}
-            {PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH par an.
+            {PUBLIC_OFFER.monthlyPrice} DH × 12 = {formatPrice(YEAR_AT_MONTHLY)} DH, contre{" "}
+            {formatPrice(PUBLIC_OFFER.annualPrice)} DH par an.
           </p>
           <ul className="mx-auto mt-8 grid max-w-lg gap-2 text-left text-sm text-ink sm:grid-cols-2">
             {INCLUDED.map((item) => (

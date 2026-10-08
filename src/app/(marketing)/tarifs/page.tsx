@@ -2,18 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
 import { SeoCloser } from "@/components/www/SeoCloser";
-import { PUBLIC_OFFER } from "@/lib/site";
+import { marketingPageMetadata } from "@/lib/seo";
+import { formatPrice, PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Tarif logiciel institut de beauté",
-  description:
-    "Rappel Beauty propose une formule simple à 599 DH/mois ou 5 999 DH/an pour les instituts de beauté au Maroc. 7 jours gratuits, sans engagement et sans carte bancaire.",
-  alternates: {
-    canonical: "/tarifs/",
-  },
-};
+export const metadata: Metadata = marketingPageMetadata({
+  title: "Tarifs Rappel Beauty – Logiciel institut de beauté au Maroc",
+  description: `Rappel Beauty à ${PUBLIC_OFFER.monthlyPrice} DH/mois ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH/an. ${PUBLIC_OFFER.trialDays} jours gratuits, sans carte bancaire et sans engagement. Gérez votre institut de beauté simplement.`,
+  canonical: "/tarifs/",
+});
 
 const GROUPS = [
   {
@@ -68,7 +66,7 @@ const FAQS = [
   {
     question: "Combien coûte Rappel Beauty ?",
     answer:
-      "Rappel Beauty coûte 599 DH par mois ou 5 999 DH par an. L'essai gratuit dure 7 jours.",
+      `Rappel Beauty coûte ${PUBLIC_OFFER.monthlyPrice} DH par mois ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH par an. L'essai gratuit dure ${PUBLIC_OFFER.trialDays} jours.`,
   },
   {
     question: "Y a-t-il un engagement ?",
@@ -91,9 +89,9 @@ const FAQS = [
 ] as const;
 
 export default function TarifsPage() {
-  const price = PUBLIC_OFFER.price;
-  const yearly = PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR");
-  const savings = (price * 12 - PUBLIC_OFFER.yearlyPrice).toLocaleString("fr-FR");
+  const price = PUBLIC_OFFER.monthlyPrice;
+  const yearly = formatPrice(PUBLIC_OFFER.annualPrice);
+  const savings = formatPrice(PUBLIC_OFFER.annualSavings);
 
   return (
     <>
@@ -104,9 +102,10 @@ export default function TarifsPage() {
               Une formule pour les instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Un logiciel complet pour votre institut à {price} DH/mois
+              Tarifs Rappel Beauty
             </h1>
-            <p className="mt-5 text-lg font-semibold text-ink sm:text-xl">ou {yearly} DH / an</p>
+            <p className="mt-5 font-display text-4xl text-ink">{price} DH / mois</p>
+            <p className="mt-2 text-lg font-semibold text-ink sm:text-xl">ou {yearly} DH / an</p>
             <p className="mt-2 text-sm text-ink/70 sm:text-base">
               Économisez {savings} DH par rapport au paiement mensuel
             </p>

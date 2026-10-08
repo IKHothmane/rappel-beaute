@@ -8,26 +8,52 @@ export const SITE = {
   phone: "+212 6 19 44 03 75",
 } as const;
 
-/** Connexion publique. En production, toujours le site canonique — jamais l’URL Railway. */
-export const APP_LOGIN_HREF =
-  process.env.NODE_ENV === "production" ? `${SITE.url}/connexion/` : "/connexion/";
+/**
+ * Origine des liens (e-mails, WhatsApp, reset).
+ * Staging Railway a NODE_ENV=production : ne pas retomber sur rappelbeauty.com.
+ * Définir NEXT_PUBLIC_APP_URL (URL Railway ou domaine staging).
+ */
+export function publicAppOrigin(): string {
+  const configured = (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    process.env.APP_BASE_URL ||
+    ""
+  ).replace(/\/$/, "");
+  if (configured) return configured;
+  if (appEnvironment() === "staging") return "";
+  if (process.env.NODE_ENV === "production") return SITE.appUrl;
+  return "http://localhost:3000";
+}
 
-/** URL absolue de connexion — e-mails transactionnels (préremplissage optionnel). */
+/** Staging Railway garde NODE_ENV=production. L'environnement métier vient d'APP_ENV ou de l'URL. */
+export function appEnvironment(): string {
+  const explicit = process.env.APP_ENV?.trim();
+  if (explicit) return explicit;
+  const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "";
+  if (/staging|\.up\.railway\.app/i.test(origin)) return "staging";
+  return process.env.NODE_ENV ?? "unknown";
+}
+
+/** Connexion sur l’hôte courant (Railway staging inclus), pas le domaine public. */
+export const APP_LOGIN_HREF = "/connexion/";
+
+/** URL de connexion — e-mails transactionnels (préremplissage optionnel). */
 export function absoluteAppLoginUrl(opts?: {
   email?: string;
   password?: string;
 }): string {
-  const base =
-    process.env.NODE_ENV === "production" ? SITE.url : "http://localhost:3000";
-  const url = new URL(`${base}/connexion/`);
+  const base = publicAppOrigin();
+  const url = new URL(`${base || "http://localhost:3000"}/connexion/`);
   if (opts?.email?.trim()) url.searchParams.set("email", opts.email.trim().toLowerCase());
   if (opts?.password) url.searchParams.set("password", opts.password);
+  if (!base) return `${url.pathname}${url.search}`;
   return url.toString();
 }
 
 /**
  * Architecture marketing figée — 12 pages.
- * Formule publique unique : 599 DH / mois, ou 5999 DH / an. Essai 7 jours.
+ * Formule publique unique : 799 DH / mois, ou 7 990 DH / an. Essai 7 jours.
  */
 export const MARKETING_PAGES = [
   { path: "/", group: "nav" },
@@ -106,14 +132,30 @@ export const FEATURES = [
   },
 ] as const;
 
-/** Formule affichée sur la vitrine. /tarifs/ peut surcharger le prix via PlatformConfig. */
+/** Formule affichée sur la vitrine et dans le SEO. Une seule source. */
+const MONTHLY_PRICE = 799;
+const ANNUAL_PRICE = 7990;
+
 export const PUBLIC_OFFER = {
   name: "Rappel Beauty",
-  price: 599,
-  yearlyPrice: 5999,
-  currency: "MAD",
+  monthlyPrice: MONTHLY_PRICE,
+  annualPrice: ANNUAL_PRICE,
+  /** 799 × 12 − 7 990 = 1 598 DH */
+  annualSavings: MONTHLY_PRICE * 12 - ANNUAL_PRICE,
+  /** Alias historique : même valeur que monthlyPrice. */
+  price: MONTHLY_PRICE,
+  /** Alias historique : même valeur que annualPrice. */
+  yearlyPrice: ANNUAL_PRICE,
+  currency: "MAD" as const,
   trialDays: 7,
+  noCard: true,
+  noCommitment: true,
 } as const;
+
+/** « 7 990 » pour l'affichage public. */
+export function formatPrice(amount: number): string {
+  return amount.toLocaleString("fr-FR");
+}
 
 export const CITIES = [
   "Casablanca",
@@ -139,7 +181,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Combien coûte Rappel Beauty ?",
-    a: `Rappel Beauty coûte ${PUBLIC_OFFER.price} DH par mois ou ${PUBLIC_OFFER.yearlyPrice.toLocaleString("fr-FR")} DH par an. Une période d'essai gratuite de ${PUBLIC_OFFER.trialDays} jours est proposée, sans engagement et sans carte bancaire.`,
+    a: `Rappel Beauty coûte ${PUBLIC_OFFER.monthlyPrice} DH par mois ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH par an. Une période d'essai gratuite de ${PUBLIC_OFFER.trialDays} jours est proposée, sans engagement et sans carte bancaire.`,
   },
   {
     q: "Que comprend la formule ?",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureWrite } from "@/lib/auth/api-guard";
 import { adminResetTemporaryPassword } from "@/lib/db/users";
+import { publicAppOrigin } from "@/lib/site";
 
 /**
  * POST /api/users/[id]/reset-password
@@ -30,8 +31,7 @@ export async function POST(
       },
     });
 
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://app.rappelbeauty.com";
+    const appUrl = publicAppOrigin() || new URL(request.url).origin;
 
     return NextResponse.json({
       email: result.email,

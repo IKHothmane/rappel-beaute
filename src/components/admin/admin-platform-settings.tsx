@@ -142,7 +142,6 @@ export function AdminPlatformSettingsView() {
     "Rappel Beauté Prestige Maroc — Solution SaaS certifiée CNDP",
   );
   const [trialDays, setTrialDays] = useState(7);
-  const [founderCode] = useState("OFFRE_CASA_2026");
 
   const refresh = useCallback(async () => {
     const data = await fetchAdminSettings();
@@ -642,19 +641,6 @@ export function AdminPlatformSettingsView() {
                   <option value="MONTHLY">Mensuel</option>
                 </select>
               </Field>
-            </div>
-            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-[#FFDEA4]/35 p-4">
-              <div>
-                <p className="font-bold text-ink">
-                  Code fondateur {founderCode}
-                </p>
-                <p className="text-[12px] text-ink/55">
-                  Soft — campagne marketing (non branchée au checkout)
-                </p>
-              </div>
-              <span className="rounded-full bg-[#7B5900] px-2.5 py-1 text-[10px] font-bold uppercase text-white">
-                Soft
-              </span>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4 text-center text-[12px]">
               {[

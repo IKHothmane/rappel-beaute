@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { publicAppOrigin } from "@/lib/site";
 import { pool } from "@/lib/db/pool";
 import { writeAuditLog } from "@/lib/db/audit";
 import {
@@ -923,7 +924,8 @@ export async function enqueueWaitingListOffer(input: {
   if (!row) return;
 
   const org = await loadOrg(input.organizationId);
-  const bookingUrl = `https://app.rappelbeauty.com/book/${row.slug}/`;
+  const origin = publicAppOrigin();
+  const bookingUrl = origin ? `${origin}/book/${row.slug}/` : `/book/${row.slug}/`;
   const message = renderTemplateBody(tpl.body, {
     customer: { firstName: row.firstName, lastName: row.lastName },
     appointment: {

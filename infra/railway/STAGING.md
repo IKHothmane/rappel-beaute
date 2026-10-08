@@ -50,9 +50,9 @@ PostgreSQL  Redis
 1. **+ New** → **GitHub Repo** → `IKHothmane/rappel-beaute`
 2. Branche : `main`
 3. Railway détecte `railway.toml` :
-   - **Build** : `npm ci && npx prisma generate && npm run build`
-   - **Release** : `npx prisma migrate deploy`
-   - **Start** : `npm run start`
+   - **Build** : `npm run build` (`prisma generate` inclus)
+   - **Release / Pre-Deploy** : `npx prisma migrate deploy`
+   - **Start** : `next start` (`npm run start` — **sans** migrate)
 
 ### 5. Variables d'environnement (service App)
 

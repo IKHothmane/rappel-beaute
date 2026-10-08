@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { FAQ_ITEMS, PUBLIC_OFFER, SITE } from "@/lib/site";
 
 export function absoluteUrl(path: string): string {
@@ -46,23 +47,63 @@ export function getOrganizationStructuredData() {
         description:
           "Logiciel de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne.",
         offers: [
-          {
-            "@type": "Offer",
-            name: `${PUBLIC_OFFER.name} — Mensuel`,
-            price: String(PUBLIC_OFFER.price),
-            priceCurrency: PUBLIC_OFFER.currency,
-            url: `${SITE.url}/tarifs/`,
-          },
-          {
-            "@type": "Offer",
-            name: `${PUBLIC_OFFER.name} — Annuel`,
-            price: String(PUBLIC_OFFER.yearlyPrice),
-            priceCurrency: PUBLIC_OFFER.currency,
-            url: `${SITE.url}/tarifs/`,
-          },
+          offerSpec("Mensuel", PUBLIC_OFFER.monthlyPrice, "MON"),
+          offerSpec("Annuel", PUBLIC_OFFER.annualPrice, "ANN"),
         ],
       },
     ],
+  };
+}
+
+/** Deux offres distinctes (mois / an), pas deux prix mensuels concurrents. */
+function offerSpec(label: "Mensuel" | "Annuel", price: number, unitCode: "MON" | "ANN") {
+  return {
+    "@type": "Offer",
+    name: `${PUBLIC_OFFER.name} — ${label}`,
+    price: String(price),
+    priceCurrency: PUBLIC_OFFER.currency,
+    url: `${SITE.url}/tarifs/`,
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price: String(price),
+      priceCurrency: PUBLIC_OFFER.currency,
+      unitCode,
+      referenceQuantity: {
+        "@type": "QuantitativeValue",
+        value: 1,
+        unitCode,
+      },
+    },
+  };
+}
+
+/** Title, description, canonical, Open Graph et Twitter à partir des mêmes textes. */
+export function marketingPageMetadata(input: {
+  title: string;
+  description: string;
+  canonical: string;
+}): Metadata {
+  return {
+    title: { absolute: input.title },
+    description: input.description,
+    alternates: { canonical: input.canonical },
+    openGraph: {
+      title: input.title,
+      description: input.description,
+      url: input.canonical,
+      images: [
+        {
+          url: "/brand/logo.png",
+          alt: "Rappel Beauty — logiciel de gestion pour instituts de beauté au Maroc",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: input.title,
+      description: input.description,
+      images: ["/brand/logo.png"],
+    },
   };
 }
 

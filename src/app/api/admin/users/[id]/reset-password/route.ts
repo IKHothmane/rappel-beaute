@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { platformResetUserPassword } from "@/lib/db/admin-users";
+import { publicAppOrigin } from "@/lib/site";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -11,9 +12,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
   const { id } = await ctx.params;
   try {
     const result = await platformResetUserPassword(auth.session, id);
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-      "https://app.rappelbeauty.com";
+    const appUrl = publicAppOrigin() || new URL(request.url).origin;
 
     return adminJson({
       ...result,

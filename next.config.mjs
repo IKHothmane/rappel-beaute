@@ -80,6 +80,12 @@ const nextConfig = {
       ...config.watchOptions,
       ignored,
     };
+    // Le disque D: est en FAT32 : readlink y renvoie EISDIR et fait échouer
+    // le snapshot webpack (next/dist/pages/_app.js). Linux/Railway n'est pas concerné.
+    if (process.platform === "win32") {
+      config.resolve.symlinks = false;
+      config.cache = false;
+    }
     return config;
   },
 };

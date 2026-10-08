@@ -19,4 +19,19 @@ describe("origine Cloudflare", () => {
   it("header exact → accès", () => {
     expect(originAccessAllowed("secret-origine", "secret-origine")).toBe(true);
   });
+
+  it("staging : le host public Railway passe sans header", () => {
+    const prevEnv = process.env.APP_ENV;
+    const prevUrl = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.APP_ENV = "staging";
+    process.env.NEXT_PUBLIC_APP_URL = "https://rappel-beaute-staging.up.railway.app";
+    expect(
+      originAccessAllowed(null, "secret-origine", "rappel-beaute-staging.up.railway.app"),
+    ).toBe(true);
+    expect(originAccessAllowed(null, "secret-origine", "app.rappelbeauty.com")).toBe(false);
+    if (prevEnv === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = prevEnv;
+    if (prevUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = prevUrl;
+  });
 });

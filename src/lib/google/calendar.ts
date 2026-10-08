@@ -1,12 +1,13 @@
 import { getSessionSecret, signJwt, verifyJwt } from "@/lib/auth/crypto";
-import { SITE } from "@/lib/site";
+import { publicAppOrigin, SITE } from "@/lib/site";
+import { BUSINESS_TZ } from "@/lib/time/business-timezone";
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const CALENDAR_LIST_SCOPE = "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
 const EMAIL_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
 const SCOPES = `${CALENDAR_SCOPE} ${CALENDAR_LIST_SCOPE} ${EMAIL_SCOPE}`;
 
-const TIMEZONE = "Africa/Casablanca";
+const TIMEZONE = BUSINESS_TZ;
 
 export type GoogleOAuthState = {
   purpose: "gcal";
@@ -49,11 +50,7 @@ function clientSecret(): string {
 export function googleRedirectUri(origin: string): string {
   const explicit = process.env.GOOGLE_REDIRECT_URI?.trim();
   if (explicit) return explicit.replace(/\/$/, "");
-  const base = (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_BASE_URL ||
-    origin
-  ).replace(/\/$/, "");
+  const base = (publicAppOrigin() || origin).replace(/\/$/, "");
   return `${base}/api/integrations/google-calendar/callback`;
 }
 
@@ -180,7 +177,7 @@ function eventBody(input: GoogleCalendarEventInput) {
     status: input.cancelled ? "cancelled" : "confirmed",
     source: {
       title: SITE.name,
-      url: (process.env.NEXT_PUBLIC_APP_URL || SITE.appUrl).replace(/\/$/, "") + "/agenda/",
+      url: (publicAppOrigin() || SITE.appUrl) + "/agenda/",
     },
     extendedProperties: {
       private: { rappelAppointmentId: input.appointmentId },

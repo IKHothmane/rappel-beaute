@@ -7,7 +7,7 @@
  * Le décalage n'est jamais codé en dur : le Maroc est à UTC+1 mais repasse à
  * UTC+0 pendant le Ramadan, donc il est toujours résolu via la base IANA.
  */
-export const BUSINESS_TZ = "Africa/Casablanca";
+export const BUSINESS_TZ = process.env.TIMEZONE?.trim() || "Africa/Casablanca";
 
 const PARTS_FORMAT = new Intl.DateTimeFormat("en-US", {
   timeZone: BUSINESS_TZ,

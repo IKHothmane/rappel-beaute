@@ -6,6 +6,7 @@ import type { PlatformSessionUser } from "@/lib/auth/types";
 import { getPlanByCode } from "@/lib/subscriptions/plans";
 import { changeSubscriptionPlan } from "@/lib/db/admin-subscriptions";
 import { newInstituteTrialEnd } from "@/lib/subscriptions/subscription-service";
+import { publicAppOrigin } from "@/lib/site";
 import type { PlanCode } from "@/types/subscription";
 import {
   type CreateOrganizationInput,
@@ -413,7 +414,7 @@ export async function createOrganization(
 
     await client.query("COMMIT");
 
-    const baseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
+    const baseUrl = publicAppOrigin() || "http://localhost:3000";
     return {
       organizationId: orgId,
       ownerUserId: ownerId,
@@ -678,7 +679,7 @@ export async function resetOwnerAccess(
     after: { email: owner.email },
   });
 
-  const baseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
+  const baseUrl = publicAppOrigin() || "http://localhost:3000";
   return {
     activationToken,
     activationUrl: `${baseUrl}/activate/?token=${activationToken}&__host=app`,

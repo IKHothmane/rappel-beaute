@@ -68,8 +68,9 @@ Si Postgres + Redis existent déjà → **ne rien recréer**.
 1. **+ New → GitHub Repo** → ce repo, branche `main`
 2. `railway.toml` gère déjà :
    - Build : `npm run build` (`prisma generate` inclus)
-   - Release : `npx prisma migrate deploy`
-   - Start : `npm run start`
+   - Release / Pre-Deploy : `npx prisma migrate deploy`
+   - Start : `next start` (`npm run start` — **sans** migrate)
+   - Restart : `ALWAYS`
 
 ### Variables (service Next.js)
 
@@ -106,6 +107,30 @@ https://<xxx>.up.railway.app/api/health/
 ```
 
 Attendu : `database: ok`, `redis: ok`.
+
+---
+
+## ÉTAPE C2 — Trois niveaux de backup (Postgres prod)
+
+Les backups de volume Railway restent dans le même projet. Un dump logique peut être restauré ailleurs.
+
+| Niveau | Où | Réglage |
+|--------|----|---------|
+| 1 Volume | Postgres → **Backups** | Daily + Weekly + Monthly |
+| 2 PITR | Même écran, si le plan Railway l’affiche | Point-in-time recovery activé |
+| 3 Dump | Machine locale ou CI, **hors** Railway | `railway run npm run ops:backup` puis copier le `.dump` vers un stockage externe (R2 / disque hors projet) |
+
+Restore de contrôle (jamais sur la base live) :
+
+```bash
+# base VIDE de test uniquement
+RESTORE_DATABASE_URL=postgresql://... npm run ops:restore
+DATABASE_URL=$RESTORE_DATABASE_URL npm run ops:verify-restore
+```
+
+`ops:verify-restore` compte Organization, User, Appointment, Product, PosSale, Payment, Invoice, InventoryMovement, AuditLog, et la contrainte EXCLUDE des rendez-vous.
+
+❌ Ne pas lancer `db:seed` ni `db:reset` sur la production.
 
 ---
 

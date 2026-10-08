@@ -626,7 +626,7 @@ function TenantDrawer({
                     inputMode="decimal"
                     min={0}
                     onChange={(e) => setPriceInput(e.target.value)}
-                    placeholder="599"
+                    placeholder="799"
                     step="1"
                     type="number"
                     value={priceInput}

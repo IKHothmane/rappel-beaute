@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db/pool";
+import { PUBLIC_OFFER } from "@/lib/site";
 import type { PlanCode, PlanDto } from "@/types/subscription";
 import { parsePlanFeatures } from "@/lib/subscriptions/features";
 
@@ -8,6 +9,7 @@ type PlanRow = {
   name: string;
   description: string | null;
   price: string;
+  annualPrice: string | null;
   currency: string;
   billingInterval: "MONTHLY" | "YEARLY";
   maxStaff: number | null;
@@ -26,6 +28,7 @@ function mapPlan(row: PlanRow): PlanDto {
     name: row.name,
     description: row.description,
     price: parseFloat(row.price),
+    annualPrice: row.annualPrice != null ? parseFloat(row.annualPrice) : PUBLIC_OFFER.yearlyPrice,
     currency: row.currency,
     billingInterval: row.billingInterval,
     maxStaff: row.maxStaff,
@@ -40,7 +43,7 @@ function mapPlan(row: PlanRow): PlanDto {
 
 export async function listPlans(activeOnly = true): Promise<PlanDto[]> {
   const { rows } = await pool.query<PlanRow>(
-    `SELECT id, code, name, description, price::text, currency, "billingInterval",
+    `SELECT id, code, name, description, price::text, "annualPrice"::text, currency, "billingInterval",
             "maxStaff", "maxCustomers", "maxAppointmentsPerMonth", "maxResources",
             "trialDays", active, features
      FROM "Plan"
@@ -52,7 +55,7 @@ export async function listPlans(activeOnly = true): Promise<PlanDto[]> {
 
 export async function getPlanById(id: string): Promise<PlanDto | null> {
   const { rows } = await pool.query<PlanRow>(
-    `SELECT id, code, name, description, price::text, currency, "billingInterval",
+    `SELECT id, code, name, description, price::text, "annualPrice"::text, currency, "billingInterval",
             "maxStaff", "maxCustomers", "maxAppointmentsPerMonth", "maxResources",
             "trialDays", active, features
      FROM "Plan" WHERE id = $1 LIMIT 1`,
@@ -69,7 +72,7 @@ export async function getShowcaseMonthlyPrice(): Promise<number> {
   if (typeof raw === "number" && Number.isFinite(raw) && raw >= 0) return Math.round(raw);
   const plan = await getPlanByCode("INSTITUT");
   if (plan && Number.isFinite(plan.price) && plan.price >= 0) return Math.round(plan.price);
-  return 599;
+  return PUBLIC_OFFER.price;
 }
 
 export async function publishShowcaseMonthlyPrice(
@@ -91,7 +94,7 @@ export async function publishShowcaseMonthlyPrice(
 
 export async function getPlanByCode(code: PlanCode | string): Promise<PlanDto | null> {
   const { rows } = await pool.query<PlanRow>(
-    `SELECT id, code, name, description, price::text, currency, "billingInterval",
+    `SELECT id, code, name, description, price::text, "annualPrice"::text, currency, "billingInterval",
             "maxStaff", "maxCustomers", "maxAppointmentsPerMonth", "maxResources",
             "trialDays", active, features
      FROM "Plan" WHERE code = $1 LIMIT 1`,

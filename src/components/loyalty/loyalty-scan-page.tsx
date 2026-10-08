@@ -63,6 +63,7 @@ export function LoyaltyScanPage() {
   const [services, setServices] = useState<{ id: string; name: string }[]>([]);
   const [canCredit, setCanCredit] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const needle = query.trim();

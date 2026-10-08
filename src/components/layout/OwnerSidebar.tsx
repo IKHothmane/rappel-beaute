@@ -12,6 +12,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
+  Gift,
   LayoutDashboard,
   Lock,
   Megaphone,
@@ -81,6 +82,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
   {
     title: "Croissance",
     items: [
+      { label: "Fidélité", href: "/loyalty/", icon: Gift, key: "loyalty" },
       { label: "Promotions", href: "/promotions/", icon: Megaphone, key: "promotions" },
       { label: "Avis", href: "/reviews/", icon: Star, key: "reviews" },
     ],

@@ -24,7 +24,8 @@ export default async function JoinLoyaltyPage({ params }: { params: { token: str
           Bienvenue chez {qr.organizationName}
         </h1>
         <p className="mt-3 text-center text-sm text-ink/60">
-          {qr.visitsPerReward} passages pour {qr.rewardLabel}. Créer la carte ne compte aucun passage.
+          {qr.visitsPerReward} passages pour {qr.rewardLabel}. Aucun compte n&apos;est demandé.
+          Créer la carte ne compte aucun passage.
         </p>
         <JoinLoyaltyForm token={params.token.trim().toUpperCase()} disabled={!qr.active} />
       </div>

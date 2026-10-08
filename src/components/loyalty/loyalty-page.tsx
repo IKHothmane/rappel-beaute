@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import { InstituteJoinQr } from "@/components/loyalty/institute-join-qr";
+import { VisitCardsList, type VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { VisitAdjustPanel } from "@/components/loyalty/visit-adjust-panel";
 import {
   type LoyaltyFilter,
@@ -143,6 +144,7 @@ export function LoyaltyPageView() {
   const [rewardType, setRewardType] = useState("DISCOUNT_FIXED");
   const [rewardValue, setRewardValue] = useState("50");
 
+  const [visitCards, setVisitCards] = useState<VisitCardRow[]>([]);
   const [customers, setCustomers] = useState<{ id: string; name: string }[]>([]);
   const [services, setServices] = useState<{ id: string; name: string }[]>([]);
   const [pkgCustomerId, setPkgCustomerId] = useState("");
@@ -170,6 +172,7 @@ export function LoyaltyPageView() {
       setProgram(dash.program);
       setJournal(dash.journal ?? []);
       setBirthdays(dash.birthdays ?? []);
+      setVisitCards(dash.visitCards ?? []);
       setMadPerPoint(String(dash.program.madPerPoint));
       setBronzeMin(String(dash.program.bronzeMin));
       setSilverMin(String(dash.program.silverMin));
@@ -385,6 +388,7 @@ export function LoyaltyPageView() {
     onBirthdayBonus: handleBirthdayBonus,
     birthdayBusy,
     onExport: () => exportLoyaltyCsv(filtered),
+    visitCards,
   };
 
   return (
@@ -452,6 +456,7 @@ export function LoyaltyPageView() {
         </section>
 
         <InstituteJoinQr canWrite={canWrite} />
+        <VisitCardsList cards={visitCards} />
         <VisitAdjustPanel canWrite={canWrite} />
 
         {selected ? (

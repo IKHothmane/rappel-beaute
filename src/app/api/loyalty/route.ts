@@ -16,6 +16,7 @@ import {
   redeemReward,
   updateLoyaltyProgram,
 } from "@/lib/db/loyalty";
+import { listVisitCards } from "@/lib/loyalty/cards";
 import { canRedeemLoyalty, canWriteLoyalty } from "@/lib/rbac";
 import {
   validateAdjustment,
@@ -49,7 +50,8 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await listLoyaltyLeaderboard(auth.session.organizationId);
-    return NextResponse.json(data);
+    const visitCards = await listVisitCards(auth.session.organizationId);
+    return NextResponse.json({ ...data, visitCards });
   } catch (error) {
     console.error("[GET /api/loyalty]", error);
     return NextResponse.json({ error: "Impossible de charger la fidélité." }, { status: 500 });

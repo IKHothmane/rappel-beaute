@@ -50,6 +50,15 @@ export async function getLoyaltyDashboard() {
     program: LoyaltyProgramConfig;
     journal: LoyaltyJournalItem[];
     birthdays: LoyaltyBirthdayItem[];
+    visitCards?: {
+      id: string;
+      customerId: string;
+      customerName: string;
+      phone: string | null;
+      visits: number;
+      visitsPerReward: number;
+      createdAt: string;
+    }[];
   }>(res);
 }
 

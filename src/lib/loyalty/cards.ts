@@ -74,6 +74,7 @@ export async function issueLoyaltyCard(
     [customerId, organizationId],
   );
   if (!customer.rows[0]) throw new Error("CUSTOMER_NOT_FOUND");
+  await ensureLoyaltyAccount(organizationId, customerId);
 
   const existing = await pool.query<{ id: string; publicToken: string }>(
     `SELECT id, "publicToken" FROM "LoyaltyCard"
@@ -122,6 +123,69 @@ export async function issueLoyaltyCard(
     firstName: customer.rows[0].firstName,
     lastName: customer.rows[0].lastName,
   };
+}
+
+async function ensureLoyaltyAccount(organizationId: string, customerId: string) {
+  await pool.query(
+    `INSERT INTO "LoyaltyAccount" (
+      id, "organizationId", "customerId", balance, "lifetimePoints", level, "updatedAt"
+    ) VALUES ($1, $2, $3, 0, 0, 'BRONZE', NOW())
+     ON CONFLICT ("organizationId", "customerId") DO NOTHING`,
+    [newLoyaltyId("lacc"), organizationId, customerId],
+  );
+}
+
+export type VisitCardListItem = {
+  id: string;
+  customerId: string;
+  customerName: string;
+  phone: string | null;
+  visits: number;
+  visitsPerReward: number;
+  createdAt: string;
+};
+
+export async function listVisitCards(organizationId: string): Promise<VisitCardListItem[]> {
+  const program = await getVisitProgram(organizationId);
+  const holders = await pool.query<{ customerId: string }>(
+    `SELECT "customerId" FROM "LoyaltyCard"
+     WHERE "organizationId" = $1 AND status = 'ACTIVE'`,
+    [organizationId],
+  );
+  for (const holder of holders.rows) {
+    await ensureLoyaltyAccount(organizationId, holder.customerId);
+  }
+  const { rows } = await pool.query<{
+    id: string;
+    customerId: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    visits: number;
+    createdAt: Date;
+  }>(
+    `SELECT lc.id, c.id AS "customerId", c."firstName", c."lastName", c.phone,
+            COALESCE((
+              SELECT SUM(e.points) FROM "LoyaltyEvent" e
+              WHERE e."loyaltyCardId" = lc.id AND e.type = 'VISIT'
+            ), 0)::int AS visits,
+            lc."createdAt"
+     FROM "LoyaltyCard" lc
+     JOIN "Customer" c ON c.id = lc."customerId"
+     WHERE lc."organizationId" = $1 AND lc.status = 'ACTIVE' AND c."deletedAt" IS NULL
+     ORDER BY lc."createdAt" DESC
+     LIMIT 50`,
+    [organizationId],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    customerId: row.customerId,
+    customerName: `${row.firstName} ${row.lastName}`.trim(),
+    phone: row.phone,
+    visits: row.visits,
+    visitsPerReward: program.visitsPerReward,
+    createdAt: row.createdAt.toISOString(),
+  }));
 }
 
 export type CardAppointment = {

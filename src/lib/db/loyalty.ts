@@ -628,7 +628,7 @@ export async function listLoyaltyLeaderboard(
       activePackages: number;
     }>(
       `SELECT
-         (SELECT COUNT(*)::int FROM "LoyaltyAccount" WHERE "organizationId" = $1 AND "lifetimePoints" > 0) AS "membersCount",
+         (SELECT COUNT(*)::int FROM "LoyaltyAccount" WHERE "organizationId" = $1) AS "membersCount",
          (SELECT COUNT(*)::int FROM "LoyaltyAccount"
            WHERE "organizationId" = $1
              AND "createdAt" >= date_trunc('month', timezone('Africa/Casablanca', now()))) AS "membersThisMonth",
@@ -666,7 +666,7 @@ export async function listLoyaltyLeaderboard(
     pool.query<{ level: string; n: number }>(
       `SELECT level::text, COUNT(*)::int AS n
        FROM "LoyaltyAccount"
-       WHERE "organizationId" = $1 AND "lifetimePoints" > 0
+       WHERE "organizationId" = $1
        GROUP BY level`,
       [organizationId],
     ),

@@ -33,6 +33,7 @@ import {
   waMeHref,
 } from "@/components/loyalty/loyalty-helpers";
 import { InstituteJoinQr } from "@/components/loyalty/institute-join-qr";
+import { VisitCardsList, type VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { VisitAdjustPanel } from "@/components/loyalty/visit-adjust-panel";
 import { LoyaltyPassQr } from "@/components/loyalty/loyalty-pass-qr";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,7 @@ type Props = {
   onBirthdayBonus: () => void;
   birthdayBusy: boolean;
   onExport: () => void;
+  visitCards: VisitCardRow[];
 };
 
 const LEVEL_TABS: { id: LoyaltyFilter; label: string }[] = [
@@ -123,6 +125,7 @@ export function LoyaltyMobile(props: Props) {
     onBirthdayBonus,
     birthdayBusy,
     onExport,
+    visitCards,
   } = props;
   const [sheetOpen, setSheetOpen] = useState(false);
   const weekBirthdays = birthdaysThisWeek(birthdays);
@@ -141,6 +144,7 @@ export function LoyaltyMobile(props: Props) {
   return (
     <div className="space-y-3 lg:hidden">
       <InstituteJoinQr canWrite={canWrite} />
+      <VisitCardsList cards={visitCards} />
       <VisitAdjustPanel canWrite={canWrite} />
       <section className="rounded-xl bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-1.5">

@@ -39,8 +39,12 @@ function daysLeft(iso: string | null) {
 }
 
 function extractToken(value: string) {
-  const match = value.toUpperCase().match(/RBLOY_[A-Z2-9]+/);
-  return match ? match[0] : value.trim().toUpperCase();
+  const upper = value.toUpperCase();
+  const join = upper.match(/RBJOIN_[A-Z2-9]+/);
+  if (join) return join[0];
+  const card = upper.match(/RBLOY_[A-Z2-9]+/);
+  if (card) return card[0];
+  return upper.trim();
 }
 
 export function LoyaltyScanPage() {
@@ -95,8 +99,10 @@ export function LoyaltyScanPage() {
             const codes = await detector.detect(video);
             const raw = codes[0]?.rawValue;
             if (raw) {
-              setToken(extractToken(raw));
+              const next = extractToken(raw);
+              setToken(next);
               setCameraOn(false);
+              void scan(next);
               return;
             }
           } catch {
@@ -139,13 +145,19 @@ export function LoyaltyScanPage() {
     }
   }
 
-  async function scan() {
+  async function scan(rawToken?: string) {
+    const next = extractToken(rawToken ?? token);
     setBusy(true);
     setError(null);
     setDone(null);
     setPreview(null);
+    if (next.startsWith("RBJOIN_")) {
+      setError("Ce QR est pour la cliente. Elle le scanne sans se connecter, et sa carte apparaît dans Cartes de fidélité.");
+      setBusy(false);
+      return;
+    }
     try {
-      const res = await fetch(`/api/loyalty/scan/?token=${encodeURIComponent(extractToken(token))}`);
+      const res = await fetch(`/api/loyalty/scan/?token=${encodeURIComponent(next)}`);
       const body = (await res.json()) as Preview & { error?: string };
       if (!res.ok) throw new Error(body.error || "Lecture impossible.");
       setPreview(body);

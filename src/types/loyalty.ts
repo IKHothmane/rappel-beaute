@@ -27,6 +27,13 @@ export type LoyaltyProgramConfig = {
   active: boolean;
   visitsPerReward: number;
   rewardLabel: string;
+  name: string;
+  rewardKind: "FREE_SERVICE" | "DISCOUNT";
+  rewardValue: number | null;
+  rewardValidityDays: number;
+  productsEligible: boolean;
+  stackRewards: boolean;
+  eligibleServiceIds: string[];
 };
 
 export type LoyaltyAccountSummary = {
@@ -152,6 +159,13 @@ export type UpdateLoyaltyProgramInput = {
   visitsRequired?: number;
   rewardLabel?: string;
   rewardName?: string;
+  name?: string;
+  rewardKind?: "FREE_SERVICE" | "DISCOUNT";
+  rewardValue?: number | null;
+  rewardValidityDays?: number;
+  productsEligible?: boolean;
+  stackRewards?: boolean;
+  eligibleServiceIds?: string[];
 };
 
 export type CreateRewardInput = {

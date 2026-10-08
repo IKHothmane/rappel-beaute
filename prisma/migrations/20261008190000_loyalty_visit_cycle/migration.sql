@@ -1,0 +1,5 @@
+ALTER TABLE "LoyaltyEvent" ALTER COLUMN "appointmentId" DROP NOT NULL;
+ALTER TABLE "LoyaltyEvent" ADD COLUMN IF NOT EXISTS note TEXT;
+
+ALTER TABLE "LoyaltyVisitReward"
+  ADD COLUMN IF NOT EXISTS value DECIMAL(10, 2);

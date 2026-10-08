@@ -21,12 +21,26 @@ export type VisitProgram = {
   visitsPerReward: number;
   rewardLabel: string;
   active: boolean;
+  rewardValidityDays: number;
+  stackRewards: boolean;
+  eligibleServiceIds: string[];
+  rewardValue: number | null;
 };
 
 export async function getVisitProgram(organizationId: string): Promise<VisitProgram> {
   await getOrCreateLoyaltyProgram(organizationId);
-  const { rows } = await pool.query<{ visitsPerReward: number; rewardLabel: string; active: boolean }>(
-    `SELECT "visitsPerReward", "rewardLabel", active FROM "LoyaltyProgram" WHERE "organizationId" = $1`,
+  const { rows } = await pool.query<{
+    visitsPerReward: number;
+    rewardLabel: string;
+    active: boolean;
+    rewardValidityDays: number;
+    stackRewards: boolean;
+    eligibleServiceIds: string[] | null;
+    rewardValue: string | null;
+  }>(
+    `SELECT "visitsPerReward", "rewardLabel", active, "rewardValidityDays", "stackRewards", "eligibleServiceIds",
+            "rewardValue"::text AS "rewardValue"
+     FROM "LoyaltyProgram" WHERE "organizationId" = $1`,
     [organizationId],
   );
   const row = rows[0];
@@ -34,6 +48,10 @@ export async function getVisitProgram(organizationId: string): Promise<VisitProg
     visitsPerReward: row?.visitsPerReward && row.visitsPerReward > 0 ? row.visitsPerReward : 10,
     rewardLabel: row?.rewardLabel?.trim() || "Récompense",
     active: row?.active ?? true,
+    rewardValidityDays: row?.rewardValidityDays && row.rewardValidityDays > 0 ? row.rewardValidityDays : 30,
+    stackRewards: row?.stackRewards ?? true,
+    eligibleServiceIds: row?.eligibleServiceIds ?? [],
+    rewardValue: row?.rewardValue != null ? parseFloat(row.rewardValue) : null,
   };
 }
 
@@ -128,8 +146,15 @@ export type CardProgress = {
   remaining: number;
   rewardLabel: string;
   rewardsAvailable: number;
-  history: { at: string; service: string; amount: number }[];
-  rewards: { id: string; name: string; status: string; earnedAt: string }[];
+  history: { at: string; service: string; amount: number; points: number }[];
+  rewards: {
+    id: string;
+    name: string;
+    status: string;
+    earnedAt: string;
+    expiresAt: string | null;
+    value: number | null;
+  }[];
   appointments: CardAppointment[];
   sessions: CardSession[];
 };
@@ -155,7 +180,7 @@ export async function loadCardProgress(
 
   const program = await getVisitProgram(organizationId);
   const visitsRow = await db.query<{ count: string }>(
-    `SELECT COUNT(*)::text AS count FROM "LoyaltyEvent" WHERE "loyaltyCardId" = $1 AND type = 'VISIT'`,
+    `SELECT COALESCE(SUM(points), 0)::text AS count FROM "LoyaltyEvent" WHERE "loyaltyCardId" = $1 AND type = 'VISIT'`,
     [cardId],
   );
   const visits = Number(visitsRow.rows[0]?.count ?? 0);
@@ -164,10 +189,11 @@ export async function loadCardProgress(
   const cycle = visits > 0 && mod === 0 ? threshold : mod;
   const remaining = threshold - cycle;
 
-  const history = await db.query<{ at: Date; service: string; amount: string }>(
+  const history = await db.query<{ at: Date; service: string; amount: string; points: number }>(
     `SELECT e."validatedAt" AS at,
-            COALESCE(a."serviceNameSnapshot", s.name, 'Prestation') AS service,
-            e.amount::text AS amount
+            COALESCE(a."serviceNameSnapshot", s.name, e.note, 'Ajustement') AS service,
+            e.amount::text AS amount,
+            e.points
      FROM "LoyaltyEvent" e
      LEFT JOIN "Appointment" a ON a.id = e."appointmentId"
      LEFT JOIN "Service" s ON s.id = e."serviceId"
@@ -176,8 +202,22 @@ export async function loadCardProgress(
      LIMIT 30`,
     [cardId],
   );
-  const rewards = await db.query<{ id: string; name: string; status: string; earnedAt: Date }>(
-    `SELECT id, name, status, "earnedAt"
+  await db.query(
+    `UPDATE "LoyaltyVisitReward"
+     SET status = 'EXPIRED'
+     WHERE "loyaltyCardId" = $1 AND status = 'AVAILABLE'
+       AND "expiresAt" IS NOT NULL AND "expiresAt" < NOW()`,
+    [cardId],
+  );
+  const rewards = await db.query<{
+    id: string;
+    name: string;
+    status: string;
+    earnedAt: Date;
+    expiresAt: Date | null;
+    value: string | null;
+  }>(
+    `SELECT id, name, status, "earnedAt", "expiresAt", value::text AS value
      FROM "LoyaltyVisitReward"
      WHERE "loyaltyCardId" = $1
      ORDER BY "earnedAt" DESC
@@ -231,12 +271,15 @@ export async function loadCardProgress(
       at: row.at.toISOString(),
       service: row.service,
       amount: Number(row.amount),
+      points: row.points,
     })),
     rewards: rewards.rows.map((row) => ({
       id: row.id,
       name: row.name,
       status: row.status,
       earnedAt: row.earnedAt.toISOString(),
+      expiresAt: row.expiresAt ? row.expiresAt.toISOString() : null,
+      value: row.value != null ? Number(row.value) : null,
     })),
     appointments: appointments.rows.map((row) => ({
       at: row.at.toISOString(),

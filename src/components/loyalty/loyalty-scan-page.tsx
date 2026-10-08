@@ -11,7 +11,12 @@ type Preview = {
   visits: number;
   visitsPerReward: number;
   rewardLabel: string;
-  rewards: { id: string; name: string }[];
+  rewards: {
+    id: string;
+    name: string;
+    expiresAt: string | null;
+    value: number | null;
+  }[];
 };
 
 type Issued = {
@@ -25,6 +30,12 @@ type CustomerHit = { id: string; firstName: string; lastName: string };
 
 function money(amount: number) {
   return `${amount.toLocaleString("fr-FR")} DH`;
+}
+
+function daysLeft(iso: string | null) {
+  if (!iso) return null;
+  const ms = new Date(iso).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / 86_400_000));
 }
 
 function extractToken(value: string) {
@@ -41,6 +52,7 @@ export function LoyaltyScanPage() {
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pendingReward, setPendingReward] = useState<Preview["rewards"][number] | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraOn, setCameraOn] = useState(false);
 
@@ -144,7 +156,9 @@ export function LoyaltyScanPage() {
     }
   }
 
-  async function markRewardUsed(rewardId: string) {
+  async function confirmRewardUsed() {
+    if (!pendingReward) return;
+    const rewardId = pendingReward.id;
     setBusy(true);
     setError(null);
     try {
@@ -155,7 +169,8 @@ export function LoyaltyScanPage() {
       });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error || "Récompense impossible à utiliser.");
-      setDone("Récompense marquée comme utilisée.");
+      setDone("Récompense confirmée comme utilisée.");
+      setPendingReward(null);
       setPreview((current) =>
         current
           ? { ...current, rewards: current.rewards.filter((reward) => reward.id !== rewardId) }
@@ -197,8 +212,8 @@ export function LoyaltyScanPage() {
       <div>
         <h1 className="font-display text-3xl font-light text-ink">Carte fidélité</h1>
         <p className="mt-2 text-sm text-ink/65">
-          Émettez une carte, puis scannez-la en institut. Le passage n&apos;est ajouté que pour un
-          rendez-vous déjà terminé, une seule fois.
+          Le passage est crédité automatiquement quand la prestation est terminée et payée. Cette
+          page sert à lire la carte, confirmer une récompense, ou valider un passage oublié.
         </p>
       </div>
 
@@ -276,23 +291,50 @@ export function LoyaltyScanPage() {
             ) : (
               <p className="mt-1 text-ink/70">Aucun rendez-vous terminé à valider.</p>
             )}
-            {preview.rewards.length > 0 ? (
-              <ul className="mt-3 space-y-2">
-                {preview.rewards.map((reward) => (
-                  <li key={reward.id} className="flex items-center justify-between gap-2">
-                    <span>{reward.name}</span>
+            {preview.rewards.map((reward) => {
+              const left = daysLeft(reward.expiresAt);
+              return (
+                <div key={reward.id} className="mt-3 rounded-2xl bg-[#FFEFF8] p-4">
+                  <p className="text-base font-semibold text-ink">Récompense disponible</p>
+                  <p className="mt-1 font-display text-2xl text-ink">{reward.name}</p>
+                  {reward.value != null ? (
+                    <p className="mt-1 text-ink/80">Valeur : {money(reward.value)}</p>
+                  ) : null}
+                  {left != null ? (
+                    <p className="text-ink/70">Expire dans {left} jour{left > 1 ? "s" : ""}</p>
+                  ) : null}
+                  {pendingReward?.id === reward.id ? (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setPendingReward(null)}
+                        className="rounded-full border border-line px-4 py-2 text-sm font-semibold"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void confirmRewardUsed()}
+                        className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                      >
+                        Confirmer l&apos;utilisation
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => void markRewardUsed(reward.id)}
-                      className="rounded-full border border-line px-3 py-1 text-xs font-semibold"
+                      onClick={() => setPendingReward(reward)}
+                      className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                     >
                       Utiliser
                     </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+                  )}
+                </div>
+              );
+            })}
             <div className="mt-4 flex gap-2">
               <button
                 type="button"

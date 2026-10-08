@@ -1,0 +1,28 @@
+ALTER TABLE "LoyaltyProgram"
+  ADD COLUMN IF NOT EXISTS "name" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS "rewardKind" TEXT NOT NULL DEFAULT 'FREE_SERVICE',
+  ADD COLUMN IF NOT EXISTS "rewardValue" DECIMAL(10, 2),
+  ADD COLUMN IF NOT EXISTS "rewardValidityDays" INTEGER NOT NULL DEFAULT 30,
+  ADD COLUMN IF NOT EXISTS "productsEligible" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "stackRewards" BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS "eligibleServiceIds" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
+
+ALTER TABLE "LoyaltyVisitReward"
+  ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS "usedAt" TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS "usedById" TEXT;
+
+CREATE TABLE IF NOT EXISTS "LoyaltyJoinQr" (
+  id TEXT PRIMARY KEY,
+  "organizationId" TEXT NOT NULL,
+  token TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'ACTIVE',
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "revokedAt" TIMESTAMPTZ,
+  CONSTRAINT "LoyaltyJoinQr_organizationId_fkey"
+    FOREIGN KEY ("organizationId") REFERENCES "Organization"(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "LoyaltyJoinQr_token_key" ON "LoyaltyJoinQr"(token);
+CREATE INDEX IF NOT EXISTS "LoyaltyJoinQr_organizationId_status_idx"
+  ON "LoyaltyJoinQr"("organizationId", status);

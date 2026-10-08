@@ -146,17 +146,28 @@ export async function completeElapsedAppointments(organizationId: string): Promi
   if (rows.length === 0) return;
 
   const { onAppointmentCompleted } = await import("@/lib/db/invoices");
+  const { creditVisitIfEligible } = await import("@/lib/loyalty/validation");
   for (const row of rows) {
-    if (!row.serviceId) continue;
+    if (row.serviceId) {
+      try {
+        await onAppointmentCompleted({
+          organizationId,
+          appointmentId: row.id,
+          serviceId: row.serviceId,
+          userId: null,
+        });
+      } catch (e) {
+        console.error("[completeElapsedAppointments]", row.id, e);
+      }
+    }
     try {
-      await onAppointmentCompleted({
+      await creditVisitIfEligible({
         organizationId,
         appointmentId: row.id,
-        serviceId: row.serviceId,
-        userId: null,
+        actorId: null,
       });
     } catch (e) {
-      console.error("[completeElapsedAppointments]", row.id, e);
+      console.error("[completeElapsedAppointments] loyalty visit", row.id, e);
     }
   }
 }
@@ -411,6 +422,19 @@ export async function updateAppointmentRow(
       });
     } catch (e) {
       console.error("[updateAppointmentRow] deposit policy", e);
+    }
+
+    if (patch.status === "COMPLETED" && previous.status !== "COMPLETED") {
+      try {
+        const { creditVisitIfEligible } = await import("@/lib/loyalty/validation");
+        await creditVisitIfEligible({
+          organizationId,
+          appointmentId: id,
+          actorId: opts?.actor?.id ?? null,
+        });
+      } catch (e) {
+        console.error("[updateAppointmentRow] loyalty visit", e);
+      }
     }
 
     if (patch.status === "CANCELLED" && previous.status !== "CANCELLED") {

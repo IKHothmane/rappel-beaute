@@ -480,6 +480,7 @@ model Organization {
   loyaltyCards       LoyaltyCard[]
   loyaltyEvents      LoyaltyEvent[]
   loyaltyVisitRewards LoyaltyVisitReward[]
+  loyaltyJoinQrs     LoyaltyJoinQr[]
   packages           Package[]
   packageSessions    PackageSession[]
   promotions         Promotion[]
@@ -1536,10 +1537,19 @@ model LoyaltyProgram {
   vipMin         Int      @default(6000)
   active         Boolean  @default(true)
   /// Passages requis pour une récompense (programme par visites)
-  visitsPerReward Int     @default(10)
-  rewardLabel    String   @default("Récompense")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  visitsPerReward    Int      @default(10)
+  rewardLabel        String   @default("Récompense")
+  name               String   @default("")
+  /// FREE_SERVICE ou DISCOUNT
+  rewardKind         String   @default("FREE_SERVICE")
+  rewardValue        Decimal? @db.Decimal(10, 2)
+  rewardValidityDays Int      @default(30)
+  productsEligible   Boolean  @default(false)
+  stackRewards       Boolean  @default(true)
+  /// Vide = tous les services
+  eligibleServiceIds String[] @default([])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
@@ -1627,17 +1637,18 @@ model LoyaltyEvent {
   customerId     String
   loyaltyCardId  String
   type           LoyaltyEventType @default(VISIT)
-  appointmentId  String           @unique
+  appointmentId  String?          @unique
   serviceId      String?
   amount         Decimal          @db.Decimal(10, 2)
   points         Int              @default(1)
+  note           String?
   validatedBy    String?
   validatedAt    DateTime         @default(now())
 
   organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer     Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
   card         LoyaltyCard        @relation(fields: [loyaltyCardId], references: [id], onDelete: Cascade)
-  appointment  Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  appointment  Appointment?       @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
   visitReward  LoyaltyVisitReward?
 
   @@index([organizationId])
@@ -1653,7 +1664,11 @@ model LoyaltyVisitReward {
   loyaltyEventId String   @unique
   name           String
   status         String   @default("AVAILABLE")
+  value          Decimal? @db.Decimal(10, 2)
   earnedAt       DateTime @default(now())
+  expiresAt      DateTime?
+  usedAt         DateTime?
+  usedById       String?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -1662,6 +1677,20 @@ model LoyaltyVisitReward {
 
   @@index([organizationId])
   @@index([loyaltyCardId, status])
+}
+
+/// QR d'accueil. Le jeton n'identifie pas une cliente et ne crédite aucun passage.
+model LoyaltyJoinQr {
+  id             String    @id
+  organizationId String
+  token          String    @unique
+  status         String    @default("ACTIVE")
+  createdAt      DateTime  @default(now())
+  revokedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
 }
 
 model LoyaltyReward {

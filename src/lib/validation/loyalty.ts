@@ -55,6 +55,38 @@ export function validateUpdateProgram(
     if (!l) return { ok: false, errors: ["rewardLabel"] };
     data.rewardLabel = l;
   }
+  if (raw.name !== undefined) {
+    const name = typeof raw.name === "string" ? raw.name.trim() : "";
+    if (name.length > 80) return { ok: false, errors: ["name"] };
+    data.name = name;
+  }
+  if (raw.rewardKind !== undefined) {
+    const kind = str(raw.rewardKind);
+    if (kind !== "FREE_SERVICE" && kind !== "DISCOUNT") {
+      return { ok: false, errors: ["rewardKind"] };
+    }
+    data.rewardKind = kind;
+  }
+  if (raw.rewardValue !== undefined && raw.rewardValue !== null && raw.rewardValue !== "") {
+    const value = num(raw.rewardValue);
+    if (value === undefined || value < 0) return { ok: false, errors: ["rewardValue"] };
+    data.rewardValue = Math.round(value * 100) / 100;
+  }
+  if (raw.rewardValidityDays !== undefined) {
+    const days = int(raw.rewardValidityDays);
+    if (days === undefined || days < 1 || days > 365) {
+      return { ok: false, errors: ["rewardValidityDays"] };
+    }
+    data.rewardValidityDays = days;
+  }
+  if (raw.productsEligible !== undefined) data.productsEligible = Boolean(raw.productsEligible);
+  if (raw.stackRewards !== undefined) data.stackRewards = Boolean(raw.stackRewards);
+  if (raw.eligibleServiceIds !== undefined) {
+    if (!Array.isArray(raw.eligibleServiceIds)) return { ok: false, errors: ["eligibleServiceIds"] };
+    data.eligibleServiceIds = raw.eligibleServiceIds
+      .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+      .slice(0, 80);
+  }
   return { ok: true, data };
 }
 

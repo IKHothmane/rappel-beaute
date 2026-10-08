@@ -66,12 +66,34 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
             </div>
             <p className="mt-3 text-sm font-medium text-ink/80">
               {card.rewardsAvailable > 0
-                ? `${card.rewardLabel} disponible`
+                ? "Récompense disponible"
                 : card.remaining > 0
                   ? `Encore ${card.remaining} passage${card.remaining > 1 ? "s" : ""} pour ${card.rewardLabel}`
                   : "Récompense utilisée"}
             </p>
           </div>
+          {card.rewards
+            .filter((reward) => reward.status === "AVAILABLE")
+            .map((reward) => {
+              const left = reward.expiresAt
+                ? Math.max(0, Math.ceil((new Date(reward.expiresAt).getTime() - Date.now()) / 86_400_000))
+                : null;
+              return (
+                <div key={reward.id} className="mt-4 rounded-2xl border border-primary/20 bg-[#FFEFF8] p-4 text-left">
+                  <p className="text-sm font-semibold text-ink">Récompense disponible</p>
+                  <p className="mt-1 font-display text-2xl text-ink">{reward.name}</p>
+                  {reward.value != null ? (
+                    <p className="mt-1 text-sm text-ink/80">Valeur : {money(reward.value)}</p>
+                  ) : null}
+                  {left != null ? (
+                    <p className="text-sm text-ink/70">
+                      Expire dans {left} jour{left > 1 ? "s" : ""}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-xs text-ink/60">L&apos;institut confirme l&apos;utilisation en salon.</p>
+                </div>
+              );
+            })}
         </article>
 
         <div className="mt-8">
@@ -93,7 +115,7 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
                     <p className="text-xs text-ink/70">{money(item.amount)}</p>
                   </div>
                   <span className="rounded-full bg-[#FCE9F4] px-3 py-1 text-xs font-bold text-primary">
-                    +1 passage
+                    {item.points > 0 ? `+${item.points}` : item.points} passage
                   </span>
                 </li>
               ))

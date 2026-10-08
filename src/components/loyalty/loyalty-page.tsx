@@ -18,6 +18,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { InstituteJoinQr } from "@/components/loyalty/institute-join-qr";
+import { VisitAdjustPanel } from "@/components/loyalty/visit-adjust-panel";
 import {
   type LoyaltyFilter,
   BIRTHDAY_BONUS_PTS,
@@ -128,6 +130,13 @@ export function LoyaltyPageView() {
   const [programActive, setProgramActive] = useState(true);
   const [visitsPerReward, setVisitsPerReward] = useState("10");
   const [rewardLabelConfig, setRewardLabelConfig] = useState("Récompense");
+  const [programName, setProgramName] = useState("");
+  const [rewardKind, setRewardKind] = useState<"FREE_SERVICE" | "DISCOUNT">("FREE_SERVICE");
+  const [visitRewardValue, setVisitRewardValue] = useState("");
+  const [rewardValidityDays, setRewardValidityDays] = useState("30");
+  const [productsEligible, setProductsEligible] = useState(false);
+  const [stackRewards, setStackRewards] = useState(true);
+  const [eligibleServiceIds, setEligibleServiceIds] = useState<string[]>([]);
 
   const [rewardName, setRewardName] = useState("");
   const [rewardCost, setRewardCost] = useState("500");
@@ -169,6 +178,13 @@ export function LoyaltyPageView() {
       setProgramActive(dash.program.active);
       setVisitsPerReward(String(dash.program.visitsPerReward ?? 10));
       setRewardLabelConfig(dash.program.rewardLabel ?? "Récompense");
+      setProgramName(dash.program.name ?? "");
+      setRewardKind(dash.program.rewardKind === "DISCOUNT" ? "DISCOUNT" : "FREE_SERVICE");
+      setVisitRewardValue(dash.program.rewardValue != null ? String(dash.program.rewardValue) : "");
+      setRewardValidityDays(String(dash.program.rewardValidityDays ?? 30));
+      setProductsEligible(Boolean(dash.program.productsEligible));
+      setStackRewards(dash.program.stackRewards !== false);
+      setEligibleServiceIds(dash.program.eligibleServiceIds ?? []);
       setPackages(pkgs);
     } catch {
       toast("Impossible de charger la fidélité.", "error");
@@ -237,6 +253,13 @@ export function LoyaltyPageView() {
       active: programActive,
       visitsPerReward: Number(visitsPerReward) || 10,
       rewardLabel: rewardLabelConfig || "Récompense",
+      name: programName,
+      rewardKind,
+      rewardValue: visitRewardValue.trim() ? Number(visitRewardValue) : null,
+      rewardValidityDays: Number(rewardValidityDays) || 30,
+      productsEligible,
+      stackRewards,
+      eligibleServiceIds,
     });
     setSubmitting(false);
     if (!result.ok) {
@@ -427,6 +450,9 @@ export function LoyaltyPageView() {
             ) : null}
           </div>
         </section>
+
+        <InstituteJoinQr canWrite={canWrite} />
+        <VisitAdjustPanel canWrite={canWrite} />
 
         {selected ? (
           <section className="rounded-xl bg-white p-4 shadow-sm">
@@ -918,8 +944,72 @@ export function LoyaltyPageView() {
               <Input type="number" min={1} max={50} value={visitsPerReward} onChange={(e) => setVisitsPerReward(e.target.value)} />
             </label>
             <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink/70">Nom du programme</span>
+              <Input placeholder="Fidélité de l'institut" value={programName} onChange={(e) => setProgramName(e.target.value)} />
+            </label>
+            <label className="block">
               <span className="mb-1 block text-xs font-medium text-ink/70">Nom de la récompense</span>
-              <Input placeholder="Récompense" value={rewardLabelConfig} onChange={(e) => setRewardLabelConfig(e.target.value)} />
+              <Input placeholder="Soin visage offert" value={rewardLabelConfig} onChange={(e) => setRewardLabelConfig(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink/70">Type de récompense</span>
+              <Select value={rewardKind} onChange={(e) => setRewardKind(e.target.value === "DISCOUNT" ? "DISCOUNT" : "FREE_SERVICE")}>
+                <option value="FREE_SERVICE">Service offert</option>
+                <option value="DISCOUNT">Réduction</option>
+              </Select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink/70">Valeur (DH, facultatif)</span>
+              <Input type="number" min={0} value={visitRewardValue} onChange={(e) => setVisitRewardValue(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink/70">Validité de la récompense (jours)</span>
+              <Input type="number" min={1} max={365} value={rewardValidityDays} onChange={(e) => setRewardValidityDays(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-ink/70">Services éligibles</span>
+              <Select
+                value=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (!id || eligibleServiceIds.includes(id)) return;
+                  setEligibleServiceIds((current) => [...current, id]);
+                }}
+              >
+                <option value="">Tous les services</option>
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </Select>
+              {eligibleServiceIds.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {eligibleServiceIds.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setEligibleServiceIds((current) => current.filter((item) => item !== id))}
+                      className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold"
+                    >
+                      {services.find((service) => service.id === id)?.name ?? "Service"} ×
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-[11px] text-ink/45">Aucun filtre : toutes les prestations comptent.</p>
+              )}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={productsEligible} onChange={(e) => setProductsEligible(e.target.checked)} />
+              Produits éligibles
+            </label>
+            <p className="text-[11px] text-ink/45">
+              Un passage est validé sur une prestation terminée. Une vente produit seule n&apos;ajoute pas de passage.
+            </p>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={stackRewards} onChange={(e) => setStackRewards(e.target.checked)} />
+              Cumuler plusieurs récompenses
             </label>
           </div>
           <label className="block">

@@ -32,6 +32,8 @@ import {
   rewardChip,
   waMeHref,
 } from "@/components/loyalty/loyalty-helpers";
+import { InstituteJoinQr } from "@/components/loyalty/institute-join-qr";
+import { VisitAdjustPanel } from "@/components/loyalty/visit-adjust-panel";
 import { LoyaltyPassQr } from "@/components/loyalty/loyalty-pass-qr";
 import { cn } from "@/lib/utils";
 import { formatMad } from "@/modules/finance/service";
@@ -138,6 +140,8 @@ export function LoyaltyMobile(props: Props) {
 
   return (
     <div className="space-y-3 lg:hidden">
+      <InstituteJoinQr canWrite={canWrite} />
+      <VisitAdjustPanel canWrite={canWrite} />
       <section className="rounded-xl bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">

@@ -59,8 +59,17 @@ export async function getOrCreateLoyaltyProgram(
     active: boolean;
     visitsPerReward: number;
     rewardLabel: string;
+    name: string;
+    rewardKind: string;
+    rewardValue: string | null;
+    rewardValidityDays: number;
+    productsEligible: boolean;
+    stackRewards: boolean;
+    eligibleServiceIds: string[] | null;
   }>(
-    `SELECT id, "madPerPoint"::text, "bronzeMin", "silverMin", "goldMin", "vipMin", active, "visitsPerReward", "rewardLabel"
+    `SELECT id, "madPerPoint"::text, "bronzeMin", "silverMin", "goldMin", "vipMin", active,
+            "visitsPerReward", "rewardLabel", name, "rewardKind", "rewardValue"::text,
+            "rewardValidityDays", "productsEligible", "stackRewards", "eligibleServiceIds"
      FROM "LoyaltyProgram" WHERE "organizationId" = $1`,
     [organizationId],
   );
@@ -76,6 +85,13 @@ export async function getOrCreateLoyaltyProgram(
       active: r.active,
       visitsPerReward: r.visitsPerReward && r.visitsPerReward > 0 ? r.visitsPerReward : 10,
       rewardLabel: r.rewardLabel?.trim() || "Récompense",
+      name: r.name?.trim() || "",
+      rewardKind: r.rewardKind === "DISCOUNT" ? "DISCOUNT" : "FREE_SERVICE",
+      rewardValue: r.rewardValue != null ? parseFloat(r.rewardValue) : null,
+      rewardValidityDays: r.rewardValidityDays > 0 ? r.rewardValidityDays : 30,
+      productsEligible: r.productsEligible,
+      stackRewards: r.stackRewards,
+      eligibleServiceIds: r.eligibleServiceIds ?? [],
     };
   }
   const id = newId("lprog");
@@ -107,8 +123,15 @@ export async function updateLoyaltyProgram(
       active = COALESCE($6, active),
       "visitsPerReward" = COALESCE($7, "visitsPerReward"),
       "rewardLabel" = COALESCE($8, "rewardLabel"),
+      name = COALESCE($9, name),
+      "rewardKind" = COALESCE($10, "rewardKind"),
+      "rewardValue" = COALESCE($11, "rewardValue"),
+      "rewardValidityDays" = COALESCE($12, "rewardValidityDays"),
+      "productsEligible" = COALESCE($13, "productsEligible"),
+      "stackRewards" = COALESCE($14, "stackRewards"),
+      "eligibleServiceIds" = COALESCE($15, "eligibleServiceIds"),
       "updatedAt" = NOW()
-     WHERE "organizationId" = $9`,
+     WHERE "organizationId" = $16`,
     [
       input.madPerPoint ?? null,
       input.bronzeMin ?? null,
@@ -118,6 +141,13 @@ export async function updateLoyaltyProgram(
       input.active ?? null,
       visits,
       label,
+      input.name ?? null,
+      input.rewardKind ?? null,
+      input.rewardValue ?? null,
+      input.rewardValidityDays ?? null,
+      input.productsEligible ?? null,
+      input.stackRewards ?? null,
+      input.eligibleServiceIds ?? null,
       organizationId,
     ],
   );

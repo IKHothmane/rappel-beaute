@@ -481,6 +481,7 @@ model Organization {
   loyaltyEvents      LoyaltyEvent[]
   loyaltyVisitRewards LoyaltyVisitReward[]
   loyaltyJoinQrs     LoyaltyJoinQr[]
+  loyaltyCreditCodes LoyaltyCreditCode[]
   packages           Package[]
   packageSessions    PackageSession[]
   promotions         Promotion[]
@@ -1677,6 +1678,21 @@ model LoyaltyVisitReward {
 
   @@index([organizationId])
   @@index([loyaltyCardId, status])
+}
+
+/// Code institut à usage unique. Il autorise un passage exceptionnel, il n'est pas le QR public.
+model LoyaltyCreditCode {
+  id             String    @id
+  organizationId String
+  codeHash       String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, expiresAt])
 }
 
 /// QR d'accueil. Le jeton n'identifie pas une cliente et ne crédite aucun passage.

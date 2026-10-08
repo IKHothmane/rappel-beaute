@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { ClientPassCard } from "@/components/loyalty/client-pass-card";
+import { WalletInstall } from "@/components/loyalty/wallet-install";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 import { SITE } from "@/lib/site";
 
@@ -53,9 +54,12 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
 
         <article className="mt-6 rounded-3xl border border-line bg-white p-6 text-center shadow-md">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-            {card.organizationName}
+            Bienvenue chez {card.organizationName}
           </p>
-          <h1 className="mt-2 font-display text-3xl font-light text-ink">Passages</h1>
+          <h1 className="mt-2 font-display text-3xl font-light text-ink">Votre carte fidélité est prête</h1>
+          <p className="mt-2 text-sm text-ink/60">
+            {card.firstName} {card.lastName}
+          </p>
           <div className="my-6 rounded-2xl bg-[#FFEFF8] p-5">
             <p className="font-display text-4xl text-ink">
               {card.cycle} / {card.visitsPerReward}{" "}
@@ -94,6 +98,7 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
                 </div>
               );
             })}
+          <WalletInstall token={token} />
         </article>
 
         <div className="mt-8">

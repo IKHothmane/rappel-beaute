@@ -1,3 +1,4 @@
+import { createHash, randomInt } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
 import { isUniqueViolation } from "@/lib/db/loyalty";
@@ -472,6 +473,146 @@ export async function adjustLoyaltyVisit(opts: {
     await client.query("COMMIT");
     finished = true;
     return { visits: saved.visits };
+  } catch (error) {
+    if (!finished) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        /* transaction déjà terminée */
+      }
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+const CREDIT_CODE_MS = 10 * 60 * 1000;
+
+function hashCreditCode(organizationId: string, code: string) {
+  return createHash("sha256").update(`${organizationId}:${code}`).digest("hex");
+}
+
+export async function issueLoyaltyCreditCode(opts: {
+  organizationId: string;
+  actorId: string;
+}): Promise<{ code: string; expiresAt: string }> {
+  const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+  const expiresAt = new Date(Date.now() + CREDIT_CODE_MS);
+  await pool.query(
+    `INSERT INTO "LoyaltyCreditCode" (id, "organizationId", "codeHash", "expiresAt", "createdBy")
+     VALUES ($1, $2, $3, $4, $5)`,
+    [newLoyaltyId("lcode"), opts.organizationId, hashCreditCode(opts.organizationId, code), expiresAt, opts.actorId],
+  );
+  return { code, expiresAt: expiresAt.toISOString() };
+}
+
+export async function listCreditServices(organizationId: string) {
+  const { rows } = await pool.query<{ id: string; name: string }>(
+    `SELECT id, name FROM "Service"
+     WHERE "organizationId" = $1 AND active = true
+     ORDER BY name ASC
+     LIMIT 80`,
+    [organizationId],
+  );
+  return rows;
+}
+
+/** Passage exceptionnel : code institut à usage unique, jamais le QR public. */
+export async function creditVisitWithInstituteCode(opts: {
+  organizationId: string;
+  rawToken: string;
+  code: string;
+  serviceId: string;
+  actorId: string;
+  actorName?: string | null;
+}): Promise<CardProgress & { customerName: string; serviceName: string }> {
+  const program = await getVisitProgram(opts.organizationId);
+  if (!program.active) throw new Error("PROGRAM_DISABLED");
+  const token = opts.rawToken.trim().toUpperCase();
+  const digits = opts.code.replace(/\s/g, "");
+  if (!/^\d{6}$/.test(digits)) throw new Error("CODE_INVALID");
+
+  const client = await pool.connect();
+  let finished = false;
+  try {
+    await client.query("BEGIN");
+    const locked = await client.query<{ id: string }>(
+      `SELECT id FROM "LoyaltyCreditCode"
+       WHERE "organizationId" = $1 AND "codeHash" = $2 AND "usedAt" IS NULL AND "expiresAt" > NOW()
+       ORDER BY "createdAt" DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [opts.organizationId, hashCreditCode(opts.organizationId, digits)],
+    );
+    if (!locked.rows[0]) throw new Error("CODE_INVALID");
+    const consumed = await client.query<{ id: string }>(
+      `UPDATE "LoyaltyCreditCode" SET "usedAt" = NOW() WHERE id = $1 AND "usedAt" IS NULL RETURNING id`,
+      [locked.rows[0].id],
+    );
+    if (!consumed.rows[0]) throw new Error("CODE_INVALID");
+
+    const card = await client.query<{ id: string; customerId: string; firstName: string; lastName: string }>(
+      `SELECT lc.id, lc."customerId", c."firstName", c."lastName"
+       FROM "LoyaltyCard" lc
+       JOIN "Customer" c ON c.id = lc."customerId"
+       WHERE lc."publicToken" = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'
+       FOR UPDATE OF lc`,
+      [token, opts.organizationId],
+    );
+    if (!card.rows[0]) throw new Error("CARD_NOT_FOUND");
+
+    const service = await client.query<{ id: string; name: string; price: string }>(
+      `SELECT id, name, price::text AS price FROM "Service"
+       WHERE id = $1 AND "organizationId" = $2 AND active = true`,
+      [opts.serviceId, opts.organizationId],
+    );
+    if (!service.rows[0]) throw new Error("SERVICE_NOT_FOUND");
+    if (
+      program.eligibleServiceIds.length > 0 &&
+      !program.eligibleServiceIds.includes(service.rows[0].id)
+    ) {
+      throw new Error("SERVICE_NOT_ELIGIBLE");
+    }
+
+    const saved = await insertVisitAndMaybeReward(client, {
+      organizationId: opts.organizationId,
+      cardId: card.rows[0].id,
+      customerId: card.rows[0].customerId,
+      appointmentId: null,
+      serviceId: service.rows[0].id,
+      amount: service.rows[0].price,
+      points: 1,
+      validatedBy: opts.actorId,
+      note: "Passage exceptionnel",
+      program,
+      actorName: opts.actorName,
+    });
+    await writeAuditLog({
+      organizationId: opts.organizationId,
+      actorId: opts.actorId,
+      actorName: opts.actorName,
+      entityType: "LoyaltyEvent",
+      entityId: saved.eventId,
+      action: "LOYALTY_VISIT_ADJUSTED",
+      before: { customerId: card.rows[0].customerId },
+      after: {
+        visits: saved.visits,
+        serviceId: service.rows[0].id,
+        creditCodeId: consumed.rows[0].id,
+        customerId: card.rows[0].customerId,
+      },
+      client,
+    });
+    await client.query("COMMIT");
+    finished = true;
+    const progress = await loadCardProgress(card.rows[0].id, opts.organizationId);
+    if (!progress) throw new Error("CARD_NOT_FOUND");
+    return {
+      ...progress,
+      customerName: `${card.rows[0].firstName} ${card.rows[0].lastName}`.trim(),
+      serviceName: service.rows[0].name,
+    };
   } catch (error) {
     if (!finished) {
       try {

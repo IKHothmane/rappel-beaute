@@ -57,7 +57,11 @@ export function LoyaltyScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pendingReward, setPendingReward] = useState<Preview["rewards"][number] | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [issuedCode, setIssuedCode] = useState<string | null>(null);
+  const [creditCode, setCreditCode] = useState("");
+  const [serviceId, setServiceId] = useState("");
+  const [services, setServices] = useState<{ id: string; name: string }[]>([]);
+  const [canCredit, setCanCredit] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
 
   useEffect(() => {
@@ -145,6 +149,39 @@ export function LoyaltyScanPage() {
     }
   }
 
+  useEffect(() => {
+    void fetch("/api/loyalty/credit-code/")
+      .then(async (res) => {
+        if (!res.ok) {
+          setCanCredit(false);
+          return;
+        }
+        const body = (await res.json()) as { services?: { id: string; name: string }[] };
+        setCanCredit(true);
+        setServices(body.services ?? []);
+      })
+      .catch(() => setCanCredit(false));
+  }, []);
+
+  async function issueCode() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/loyalty/credit-code/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "issue" }),
+      });
+      const body = (await res.json()) as { code?: string; error?: string };
+      if (!res.ok || !body.code) throw new Error(body.error || "Code impossible à générer.");
+      setIssuedCode(body.code);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Code impossible à générer.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function scan(rawToken?: string) {
     const next = extractToken(rawToken ?? token);
     setBusy(true);
@@ -163,6 +200,42 @@ export function LoyaltyScanPage() {
       setPreview(body);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lecture impossible.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function redeem() {
+    if (!preview) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/loyalty/credit-code/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "redeem",
+          token: preview.token,
+          code: creditCode,
+          serviceId,
+        }),
+      });
+      const body = (await res.json()) as {
+        error?: string;
+        customerName?: string;
+        serviceName?: string;
+        cycle?: number;
+        visitsPerReward?: number;
+      };
+      if (!res.ok) throw new Error(body.error || "Passage impossible.");
+      setDone(
+        `Passage ajouté. ${body.customerName} · ${body.serviceName}. Carte : ${body.cycle} / ${body.visitsPerReward}.`,
+      );
+      setPreview(null);
+      setCreditCode("");
+      setIssuedCode(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Passage impossible.");
     } finally {
       setBusy(false);
     }
@@ -224,10 +297,31 @@ export function LoyaltyScanPage() {
       <div>
         <h1 className="font-display text-3xl font-light text-ink">Carte fidélité</h1>
         <p className="mt-2 text-sm text-ink/65">
-          Le passage est crédité automatiquement quand la prestation est terminée et payée. Cette
-          page sert à lire la carte, confirmer une récompense, ou valider un passage oublié.
+          Le passage est crédité automatiquement quand la prestation est terminée et payée. Un code
+          institut, valable dix minutes et une seule fois, sert seulement pour une séance
+          exceptionnelle. Le QR public n&apos;ajoute jamais de passage.
         </p>
       </div>
+
+      {canCredit ? (
+      <section className="surface space-y-3 p-5">
+        <h2 className="text-lg font-semibold text-ink">Code institut</h2>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void issueCode()}
+          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          Générer un code
+        </button>
+        {issuedCode ? (
+          <p className="text-sm text-ink">
+            Code : <span className="font-mono text-lg font-bold tracking-widest">{issuedCode}</span>
+            <span className="block text-ink/55">Valable 10 minutes, une seule utilisation.</span>
+          </p>
+        ) : null}
+      </section>
+      ) : null}
 
       <section className="surface space-y-3 p-5">
         <h2 className="text-lg font-semibold text-ink">Émettre une carte</h2>
@@ -303,6 +397,38 @@ export function LoyaltyScanPage() {
             ) : (
               <p className="mt-1 text-ink/70">Aucun rendez-vous terminé à valider.</p>
             )}
+            {canCredit ? (
+            <div className="mt-4 space-y-2 border-t border-line pt-4">
+              <p className="font-semibold text-ink">Ajouter un passage exceptionnel</p>
+              <select
+                value={serviceId}
+                onChange={(event) => setServiceId(event.target.value)}
+                className="w-full rounded-xl border border-line px-3 py-2 text-sm"
+              >
+                <option value="">Choisir la prestation</option>
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={creditCode}
+                onChange={(event) => setCreditCode(event.target.value)}
+                inputMode="numeric"
+                placeholder="Code institut"
+                className="w-full rounded-xl border border-line px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                disabled={busy || !serviceId || creditCode.trim().length < 6}
+                onClick={() => void redeem()}
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Ajouter le passage
+              </button>
+            </div>
+            ) : null}
             {preview.rewards.map((reward) => {
               const left = daysLeft(reward.expiresAt);
               return (

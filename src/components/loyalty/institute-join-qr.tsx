@@ -14,11 +14,7 @@ type JoinQr = {
 };
 
 function publicJoinUrl(token: string) {
-  const origin =
-    typeof window !== "undefined" && window.location.hostname === "localhost"
-      ? window.location.origin
-      : SITE.url;
-  return `${origin.replace(/\/$/, "")}/carte/rejoindre/${token}/`;
+  return `${SITE.url.replace(/\/$/, "")}/carte/rejoindre/${token}/`;
 }
 
 export function InstituteJoinQr({ canWrite }: { canWrite: boolean }) {

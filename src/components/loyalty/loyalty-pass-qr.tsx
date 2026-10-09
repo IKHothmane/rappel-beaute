@@ -21,10 +21,6 @@ export function LoyaltyPassQr({ customerId }: { customerId: string }) {
         const body = (await res.json()) as { cardUrl?: string; error?: string };
         if (!res.ok || !body.cardUrl) throw new Error(body.error || "Carte indisponible.");
         const url = new URL(body.cardUrl);
-        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-          url.protocol = window.location.protocol;
-          url.host = window.location.host;
-        }
         url.pathname = `${url.pathname.replace(/\/$/, "")}/google/`;
         const image = await QRCode.toDataURL(url.toString(), {
           margin: 1,

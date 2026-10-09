@@ -92,7 +92,7 @@ export function ClientPassCard({
       ) : null}
 
       <div className="rounded-2xl border border-line bg-white p-4 text-center">
-        <p className="text-xs text-ink/45">Scanner ajoute la carte à Google Wallet</p>
+        <p className="text-xs text-ink/45">iPhone : Apple Wallet. Android : Google Wallet.</p>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qr} alt="QR code de la carte" width={180} height={180} className="mx-auto mt-2 h-44 w-44" />
       </div>

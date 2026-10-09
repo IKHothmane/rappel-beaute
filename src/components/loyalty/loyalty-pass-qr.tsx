@@ -45,7 +45,7 @@ export function LoyaltyPassQr({ customerId }: { customerId: string }) {
     <div className="rounded-xl border border-line bg-white p-4 text-center">
       <p className="text-[11px] font-bold uppercase tracking-wider text-primary">QR à scanner</p>
       <p className="mt-1 text-[13px] text-ink/60">
-        La cliente scanne ce code avec l&apos;appareil photo. Google Wallet s&apos;ouvre pour enregistrer la carte.
+        La cliente scanne ce code. Un iPhone l&apos;ajoute à Apple Wallet, un Android à Google Wallet.
       </p>
       {error ? <p className="mt-3 text-[13px] font-semibold text-primary">{error}</p> : null}
       {qr ? (

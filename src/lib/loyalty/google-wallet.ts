@@ -2,7 +2,8 @@ import { createSign } from "crypto";
 import { readFileSync } from "fs";
 import type { CardProgress } from "@/lib/loyalty/cards";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
-import { googleWalletClassId, googleWalletConfigured } from "@/lib/loyalty/wallet-config";
+import { publicAppOrigin, SITE } from "@/lib/site";
+import { googleWalletClassId, googleWalletConfigured, googleWalletIssuerId } from "@/lib/loyalty/wallet-config";
 
 type ServiceAccount = { client_email: string; private_key: string };
 
@@ -48,8 +49,15 @@ function expiryLabel(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", { timeZone: "Africa/Casablanca" });
 }
 
+function walletOrigins(requestOrigin?: string) {
+  const values = [requestOrigin, publicAppOrigin(), SITE.url, "https://www.rappelbeauty.com"].filter(
+    (value): value is string => Boolean(value?.trim()),
+  );
+  return [...new Set(values.map((value) => value.replace(/\/$/, "")))];
+}
+
 function genericObject(token: string, card: CardProgress) {
-  const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID?.trim() || "338800000023216027";
+  const issuerId = googleWalletIssuerId();
   const name = `${card.firstName} ${card.lastName}`.trim();
   const progress = `${card.cycle} / ${card.visitsPerReward}`;
   const available = card.rewards.find((reward) => reward.status === "AVAILABLE");
@@ -89,8 +97,8 @@ function genericObject(token: string, card: CardProgress) {
   };
 }
 
-/** Lien officiel d'ajout. La classe rappel_beauty existe déjà : seul l'objet de la cliente est envoyé. */
-export async function createGoogleWalletSaveUrl(token: string): Promise<string | null> {
+/** Lien officiel d'ajout. La classe est créée au premier scan si elle n'existe pas encore. */
+export async function createGoogleWalletSaveUrl(token: string, requestOrigin?: string): Promise<string | null> {
   if (!googleWalletConfigured()) return null;
   const account = loadServiceAccount();
   if (!account) return null;
@@ -104,6 +112,7 @@ export async function createGoogleWalletSaveUrl(token: string): Promise<string |
   } catch (error) {
     const message = error instanceof Error ? error.message : "objet";
     console.error("[google-wallet]", message);
+    return null;
   }
 
   const claims = {
@@ -111,7 +120,7 @@ export async function createGoogleWalletSaveUrl(token: string): Promise<string |
     aud: "google",
     typ: "savetowallet",
     iat: Math.floor(Date.now() / 1000),
-    origins: ["rappelbeauty.com", "www.rappelbeauty.com"],
+    origins: walletOrigins(requestOrigin),
     payload: {
       genericObjects: [object],
     },
@@ -144,22 +153,48 @@ async function accessToken(account: ServiceAccount) {
   return body.access_token;
 }
 
-async function walletFetch(account: ServiceAccount, path: string, method: "POST" | "PATCH", body: unknown) {
+async function walletFetch(
+  account: ServiceAccount,
+  path: string,
+  method: "GET" | "POST" | "PATCH",
+  body?: unknown,
+) {
   const bearer = await accessToken(account);
   return fetch(`https://walletobjects.googleapis.com/walletobjects/v1/${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${bearer}`,
-      "Content-Type": "application/json",
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
     },
-    body: JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
 
+async function walletFailure(response: Response, step: string) {
+  const payload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+  const detail = payload?.error?.message?.replace(/\s+/g, " ").slice(0, 180) || "";
+  throw new Error(detail ? `${step}_${response.status} ${detail}` : `${step}_${response.status}`);
+}
+
+async function ensureGenericClass(account: ServiceAccount, classId: string) {
+  const existing = await walletFetch(account, `genericClass/${encodeURIComponent(classId)}`, "GET");
+  if (existing.ok) return;
+  if (existing.status !== 404) await walletFailure(existing, "GOOGLE_WALLET_CLASS");
+  const missing = (await existing.json().catch(() => null)) as { error?: { message?: string } } | null;
+  const message = missing?.error?.message || "";
+  if (/issuer/i.test(message)) await walletFailure(new Response(JSON.stringify(missing), { status: 404 }), "GOOGLE_WALLET_CLASS");
+  const created = await walletFetch(account, "genericClass", "POST", {
+    id: classId,
+    reviewStatus: "UNDER_REVIEW",
+  });
+  if (!created.ok && created.status !== 409) await walletFailure(created, "GOOGLE_WALLET_CLASS");
+}
+
 async function upsertGenericObject(account: ServiceAccount, object: ReturnType<typeof genericObject>) {
+  await ensureGenericClass(account, object.classId);
   const created = await walletFetch(account, "genericObject", "POST", object);
   if (created.ok) return;
-  if (created.status !== 409) throw new Error(`GOOGLE_WALLET_SYNC_${created.status}`);
+  if (created.status !== 409) await walletFailure(created, "GOOGLE_WALLET_SYNC");
   const patched = await walletFetch(account, `genericObject/${object.id}`, "PATCH", {
     cardTitle: object.cardTitle,
     subheader: object.subheader,
@@ -167,7 +202,7 @@ async function upsertGenericObject(account: ServiceAccount, object: ReturnType<t
     textModulesData: object.textModulesData,
     barcode: object.barcode,
   });
-  if (!patched.ok) throw new Error(`GOOGLE_WALLET_SYNC_${patched.status}`);
+  if (!patched.ok) await walletFailure(patched, "GOOGLE_WALLET_SYNC");
 }
 
 async function syncGoogleWalletCard(token: string) {

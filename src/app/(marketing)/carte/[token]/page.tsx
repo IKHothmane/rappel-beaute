@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { ClientPassCard } from "@/components/loyalty/client-pass-card";
@@ -26,6 +27,8 @@ function day(iso: string) {
 }
 
 function cardOrigin() {
+  const host = headers().get("x-forwarded-host") || headers().get("host") || "";
+  if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) return `http://${host}`;
   return SITE.url.replace(/\/$/, "");
 }
 
@@ -33,7 +36,7 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
   const card = await getPublicCardByToken(params.token);
   if (!card) notFound();
   const token = params.token.trim().toUpperCase();
-  const cardUrl = `${cardOrigin()}/carte/${token}/`;
+  const cardUrl = `${cardOrigin()}/carte/${token}/google/`;
   const qr = await QRCode.toDataURL(cardUrl, {
     margin: 1,
     width: 280,

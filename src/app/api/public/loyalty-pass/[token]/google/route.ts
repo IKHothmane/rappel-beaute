@@ -8,7 +8,7 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
   if (!token.ok) return token.response;
   if (!googleWalletConfigured()) return walletUnavailable("google");
   try {
-    const url = await createGoogleWalletSaveUrl(token.token);
+    const url = await createGoogleWalletSaveUrl(token.token, new URL(request.url).origin);
     if (!url) return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
     return NextResponse.json({ url });
   } catch (error) {

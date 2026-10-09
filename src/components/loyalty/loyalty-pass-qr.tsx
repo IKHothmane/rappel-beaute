@@ -25,6 +25,7 @@ export function LoyaltyPassQr({ customerId }: { customerId: string }) {
           url.protocol = window.location.protocol;
           url.host = window.location.host;
         }
+        url.pathname = `${url.pathname.replace(/\/$/, "")}/google/`;
         const image = await QRCode.toDataURL(url.toString(), {
           margin: 1,
           width: 280,
@@ -44,7 +45,7 @@ export function LoyaltyPassQr({ customerId }: { customerId: string }) {
     <div className="rounded-xl border border-line bg-white p-4 text-center">
       <p className="text-[11px] font-bold uppercase tracking-wider text-primary">QR à scanner</p>
       <p className="mt-1 text-[13px] text-ink/60">
-        La cliente scanne ce code. Elle voit ses rendez-vous, puis ses séances en touchant la carte.
+        La cliente scanne ce code avec l&apos;appareil photo. Google Wallet s&apos;ouvre pour enregistrer la carte.
       </p>
       {error ? <p className="mt-3 text-[13px] font-semibold text-primary">{error}</p> : null}
       {qr ? (

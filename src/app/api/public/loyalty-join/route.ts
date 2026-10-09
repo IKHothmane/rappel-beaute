@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     });
     let googleWalletUrl: string | null = null;
     try {
-      googleWalletUrl = await createGoogleWalletSaveUrl(created.cardToken);
+      googleWalletUrl = await createGoogleWalletSaveUrl(created.cardToken, new URL(request.url).origin);
     } catch (walletError) {
       console.error("[POST /api/public/loyalty-join] google wallet", walletError instanceof Error ? walletError.message : "objet");
     }

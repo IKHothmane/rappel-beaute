@@ -22,13 +22,17 @@ export function readCardToken(request: NextRequest, token: string) {
   return { ok: true as const, token: normalized, request };
 }
 
+function appleMaterial(inlineName: string, pathName: string) {
+  return Boolean(process.env[inlineName]?.trim() || process.env[pathName]?.trim());
+}
+
 export function appleWalletConfigured() {
   return Boolean(
     process.env.APPLE_PASS_TYPE_ID?.trim() &&
       process.env.APPLE_TEAM_ID?.trim() &&
-      process.env.APPLE_WWDR_PATH?.trim() &&
-      process.env.APPLE_PASS_CERT_PATH?.trim() &&
-      process.env.APPLE_PASS_KEY_PATH?.trim(),
+      appleMaterial("APPLE_WWDR", "APPLE_WWDR_PATH") &&
+      appleMaterial("APPLE_PASS_CERT", "APPLE_PASS_CERT_PATH") &&
+      appleMaterial("APPLE_PASS_KEY", "APPLE_PASS_KEY_PATH"),
   );
 }
 

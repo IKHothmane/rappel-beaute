@@ -25,6 +25,11 @@ export function WalletInstall({ token }: { token: string }) {
       const res = await fetch(`/api/public/loyalty-pass/${token}/${kind}/`);
       const type = res.headers.get("content-type") ?? "";
       if (kind === "apple" && res.ok && type.includes("application/vnd.apple.pkpass")) {
+        const iphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (iphone) {
+          window.location.assign(`/api/public/loyalty-pass/${token}/apple/`);
+          return;
+        }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");

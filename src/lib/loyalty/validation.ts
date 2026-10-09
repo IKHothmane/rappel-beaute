@@ -1,6 +1,7 @@
 import { createHash, randomInt } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
+import { notifyGoogleWallet } from "@/lib/loyalty/google-wallet";
 import { isUniqueViolation } from "@/lib/db/loyalty";
 import {
   getVisitProgram,
@@ -304,6 +305,7 @@ export async function validateLoyaltyVisit(
     };
     finished = true;
     client.release();
+    notifyGoogleWallet(token);
     const progress = await loadCardProgress(saved.cardId, organizationId);
     if (!progress) throw new Error("CARD_NOT_FOUND");
     return {
@@ -366,8 +368,8 @@ export async function creditVisitIfEligible(opts: {
     return { credited: false };
   }
 
-  const card = await pool.query<{ id: string }>(
-    `SELECT id FROM "LoyaltyCard"
+  const card = await pool.query<{ id: string; publicToken: string }>(
+    `SELECT id, "publicToken" FROM "LoyaltyCard"
      WHERE "organizationId" = $1 AND "customerId" = $2 AND status = 'ACTIVE'
      LIMIT 1`,
     [opts.organizationId, appt.customerId],
@@ -393,6 +395,7 @@ export async function creditVisitIfEligible(opts: {
     });
     await client.query("COMMIT");
     finished = true;
+    notifyGoogleWallet(card.rows[0].publicToken);
     return { credited: true };
   } catch (error) {
     if (error instanceof Error && error.message === "ALREADY_VALIDATED") {
@@ -426,8 +429,8 @@ export async function adjustLoyaltyVisit(opts: {
   const program = await getVisitProgram(opts.organizationId);
   if (!program.active) throw new Error("PROGRAM_DISABLED");
 
-  const card = await pool.query<{ id: string }>(
-    `SELECT id FROM "LoyaltyCard"
+  const card = await pool.query<{ id: string; publicToken: string }>(
+    `SELECT id, "publicToken" FROM "LoyaltyCard"
      WHERE "organizationId" = $1 AND "customerId" = $2 AND status = 'ACTIVE'
      LIMIT 1`,
     [opts.organizationId, opts.customerId],
@@ -472,6 +475,7 @@ export async function adjustLoyaltyVisit(opts: {
     });
     await client.query("COMMIT");
     finished = true;
+    notifyGoogleWallet(card.rows[0].publicToken);
     return { visits: saved.visits };
   } catch (error) {
     if (!finished) {
@@ -606,6 +610,7 @@ export async function creditVisitWithInstituteCode(opts: {
     });
     await client.query("COMMIT");
     finished = true;
+    notifyGoogleWallet(token);
     const progress = await loadCardProgress(card.rows[0].id, opts.organizationId);
     if (!progress) throw new Error("CARD_NOT_FOUND");
     return {

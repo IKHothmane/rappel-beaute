@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http/client-ip";
+import { createGoogleWalletSaveUrl } from "@/lib/loyalty/google-wallet";
 import { enrollFromJoinQr, previewJoinQr } from "@/lib/loyalty/join-qr";
 import { consumeDimensions } from "@/lib/rate-limit";
 
@@ -63,7 +64,17 @@ export async function POST(request: NextRequest) {
       phone: body.phone ?? "",
       email: body.email,
     });
-    return NextResponse.json({ ok: true, cardPath: `/carte/${created.cardToken}/` });
+    let googleWalletUrl: string | null = null;
+    try {
+      googleWalletUrl = await createGoogleWalletSaveUrl(created.cardToken);
+    } catch (walletError) {
+      console.error("[POST /api/public/loyalty-join] google wallet", walletError instanceof Error ? walletError.message : "objet");
+    }
+    return NextResponse.json({
+      ok: true,
+      cardPath: `/carte/${created.cardToken}/`,
+      googleWalletUrl,
+    });
   } catch (error) {
     const known = publicError(error);
     if (known) return known;

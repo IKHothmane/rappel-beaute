@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { JoinLoyaltyForm } from "@/components/loyalty/join-loyalty-form";
 import { previewJoinQr } from "@/lib/loyalty/join-qr";
+import { googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,11 @@ export default async function JoinLoyaltyPage({ params }: { params: { token: str
           {qr.visitsPerReward} passages pour {qr.rewardLabel}. Aucun compte n&apos;est demandé.
           Créer la carte ne compte aucun passage.
         </p>
-        <JoinLoyaltyForm token={params.token.trim().toUpperCase()} disabled={!qr.active} />
+        <JoinLoyaltyForm
+          token={params.token.trim().toUpperCase()}
+          disabled={!qr.active}
+          googleWallet={googleWalletConfigured()}
+        />
       </div>
     </section>
   );

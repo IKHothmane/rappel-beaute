@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { limitPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 
-export function JoinLoyaltyForm({ token, disabled }: { token: string; disabled: boolean }) {
+export function JoinLoyaltyForm({
+  token,
+  disabled,
+  googleWallet,
+}: {
+  token: string;
+  disabled: boolean;
+  googleWallet: boolean;
+}) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -21,9 +29,13 @@ export function JoinLoyaltyForm({ token, disabled }: { token: string; disabled: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, firstName, lastName, phone, email }),
       });
-      const data = (await res.json()) as { error?: string; cardPath?: string };
+      const data = (await res.json()) as { error?: string; cardPath?: string; googleWalletUrl?: string | null };
       if (!res.ok || !data.cardPath) {
         setError(data.error || "Impossible de créer la carte.");
+        return;
+      }
+      if (data.googleWalletUrl) {
+        window.location.assign(data.googleWalletUrl);
         return;
       }
       window.location.assign(data.cardPath);
@@ -47,9 +59,13 @@ export function JoinLoyaltyForm({ token, disabled }: { token: string; disabled: 
 
   return (
     <form onSubmit={onSubmit} className="mt-8 space-y-3 rounded-3xl bg-white p-6 shadow-md">
-      <p className="text-sm font-semibold text-ink">Créer ma carte fidélité</p>
+      <p className="text-sm font-semibold text-ink">
+        {googleWallet ? "Ajouter ma carte à Google Wallet" : "Créer ma carte fidélité"}
+      </p>
       <p className="text-xs text-ink/50">
-        Si ce téléphone est déjà dans l&apos;institut, la carte existante s&apos;ouvre.
+        {googleWallet
+          ? "Une seule fois : votre nom et votre téléphone. Google Wallet s'ouvre ensuite pour enregistrer la carte sur ce téléphone."
+          : "Si ce téléphone est déjà dans l'institut, la carte existante s'ouvre."}
       </p>
       <input className={field} required placeholder="Prénom" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
       <input className={field} required placeholder="Nom" value={lastName} onChange={(e) => setLastName(e.target.value)} />
@@ -75,7 +91,13 @@ export function JoinLoyaltyForm({ token, disabled }: { token: string; disabled: 
         disabled={loading}
         className="h-12 w-full rounded-xl bg-primary text-sm font-bold text-white disabled:opacity-60"
       >
-        {loading ? "Création…" : "Créer ma carte"}
+        {loading
+          ? googleWallet
+            ? "Ouverture de Google Wallet…"
+            : "Création…"
+          : googleWallet
+            ? "Ajouter à Google Wallet"
+            : "Créer ma carte"}
       </button>
     </form>
   );

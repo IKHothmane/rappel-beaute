@@ -32,9 +32,16 @@ export function appleWalletConfigured() {
   );
 }
 
+/** Classe générique déjà créée dans la console : 338800000023216027.rappel_beauty */
+export function googleWalletClassId() {
+  const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID?.trim() || "338800000023216027";
+  const suffix = process.env.GOOGLE_WALLET_CLASS_SUFFIX?.trim() || "rappel_beauty";
+  return `${issuerId}.${suffix}`;
+}
+
 export function googleWalletConfigured() {
   return Boolean(
-    process.env.GOOGLE_WALLET_ISSUER_ID?.trim() &&
+    process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_JSON?.trim() ||
       process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_PATH?.trim(),
   );
 }

@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { SITE } from "@/lib/site";
 
 export function LoyaltyPassQr({ customerId }: { customerId: string }) {
   const [qr, setQr] = useState<string | null>(null);
+  const [scanUrl, setScanUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setQr(null);
+    setScanUrl(null);
     setError(null);
     void (async () => {
       try {
@@ -18,16 +21,19 @@ export function LoyaltyPassQr({ customerId }: { customerId: string }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ customerId }),
         });
-        const body = (await res.json()) as { cardUrl?: string; error?: string };
-        if (!res.ok || !body.cardUrl) throw new Error(body.error || "Carte indisponible.");
-        const url = new URL(body.cardUrl);
-        url.pathname = `${url.pathname.replace(/\/$/, "")}/google/`;
-        const image = await QRCode.toDataURL(url.toString(), {
+        const body = (await res.json()) as { publicToken?: string; cardUrl?: string; error?: string };
+        const token = body.publicToken || body.cardUrl?.match(/RBLOY_[A-Z2-9]+/i)?.[0];
+        if (!res.ok || !token) throw new Error(body.error || "Carte indisponible.");
+        const scanUrl = `${SITE.url}/carte/${token.toUpperCase()}/google/`;
+        const image = await QRCode.toDataURL(scanUrl, {
           margin: 1,
           width: 280,
           errorCorrectionLevel: "M",
         });
-        if (!cancelled) setQr(image);
+        if (!cancelled) {
+          setScanUrl(scanUrl);
+          setQr(image);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Carte indisponible.");
       }
@@ -48,6 +54,7 @@ export function LoyaltyPassQr({ customerId }: { customerId: string }) {
         <div className="mt-3 inline-block rounded-xl border border-line bg-white p-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qr} alt="QR code à scanner" width={220} height={220} className="h-52 w-52" />
+          {scanUrl ? <p className="mt-2 break-all text-[11px] text-ink/45">{scanUrl}</p> : null}
         </div>
       ) : !error ? (
         <p className="mt-3 text-[13px] text-ink/45">Préparation du QR…</p>

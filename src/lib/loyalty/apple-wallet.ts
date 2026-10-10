@@ -2,7 +2,10 @@ import { readFileSync } from "fs";
 import { PKPass } from "passkit-generator";
 import { applePassImages } from "@/lib/loyalty/apple-pass-png";
 import { getPublicCardByToken, type CardProgress } from "@/lib/loyalty/cards";
+import { APPLE_PASS_TYPE_ID, appleChangeMessage, appleWebServiceUrl } from "@/lib/loyalty/apple-passkit";
+import { ensureApplePass } from "@/lib/loyalty/apple-wallet-store";
 import { appleWalletConfigured } from "@/lib/loyalty/wallet-config";
+import { publicAppOrigin } from "@/lib/site";
 
 function loadPem(inlineName: string, pathName: string) {
   const inline = process.env[inlineName]?.trim();
@@ -39,6 +42,8 @@ export async function createAppleWalletPass(token: string): Promise<Buffer | nul
   if (!card) return null;
 
   const fields = passFields(normalized, card);
+  const record = await ensureApplePass(normalized).catch(() => null);
+  const webServiceURL = record ? appleWebServiceUrl(publicAppOrigin()) : null;
   const pass = new PKPass(
     applePassImages(),
     {
@@ -50,20 +55,29 @@ export async function createAppleWalletPass(token: string): Promise<Buffer | nul
       formatVersion: 1,
       description: "Carte fidélité",
       organizationName: card.organizationName,
-      passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID!.trim(),
+      passTypeIdentifier: APPLE_PASS_TYPE_ID,
       teamIdentifier: process.env.APPLE_TEAM_ID!.trim(),
       serialNumber: normalized,
       logoText: card.organizationName,
       foregroundColor: "rgb(255, 255, 255)",
       backgroundColor: "rgb(186, 0, 73)",
       labelColor: "rgb(255, 222, 236)",
+      ...(webServiceURL && record
+        ? { webServiceURL, authenticationToken: record.authenticationToken }
+        : {}),
     },
   );
 
   pass.type = "storeCard";
   pass.headerFields.push({ key: "progress", label: "PASSAGES", value: fields.progress });
   pass.primaryFields.push({ key: "client", label: "CLIENTE", value: fields.name });
-  pass.secondaryFields.push({ key: "state", label: "ÉTAT", value: fields.state });
+  const changeMessage = appleChangeMessage(card.rewardsAvailable);
+  pass.secondaryFields.push({
+    key: "state",
+    label: "ÉTAT",
+    value: fields.state,
+    ...(changeMessage ? { changeMessage } : {}),
+  });
   pass.auxiliaryFields.push({
     key: "reward",
     label: "RÉCOMPENSE",

@@ -21,4 +21,6 @@ if (process.env.NODE_ENV !== "production") {
 
 if (process.env.NEXT_PHASE !== "phase-production-build") {
   void import("@/lib/push/scheduler").then((mod) => mod.startCustomerPushScheduler());
+  void import("@/lib/loyalty/google-wallet-notify").then((mod) => mod.startGoogleWalletNotifier());
+  void import("@/lib/loyalty/apple-wallet-sync").then((mod) => mod.startAppleWalletUpdates());
 }

@@ -195,6 +195,9 @@ function isLoopbackHostname(hostname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (path.startsWith("/api/apple-wallet/")) return NextResponse.next();
+
   if (
     !originAccessAllowed(
       request.headers.get("x-rappel-origin"),
@@ -205,7 +208,6 @@ export async function middleware(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  const path = request.nextUrl.pathname;
   const hostname = resolvePublicHostname(
     request.headers.get("host"),
     request.headers.get("x-forwarded-host"),

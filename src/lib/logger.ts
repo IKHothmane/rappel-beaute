@@ -28,6 +28,10 @@ const SENSITIVE_KEYS = new Set([
   "apikey",
   "api_key",
   "s3_secret",
+  "pushtoken",
+  "authenticationtoken",
+  "signercert",
+  "signerkey",
 ]);
 
 function sanitize(value: unknown): unknown {

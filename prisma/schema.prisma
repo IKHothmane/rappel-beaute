@@ -508,6 +508,8 @@ model Organization {
   webPushSubscriptions WebPushSubscription[]
   customerPushDeliveries CustomerPushDelivery[]
   pushAccessGrants PushAccessGrant[]
+  googleWalletMessages GoogleWalletMessage[]
+  appleWalletPasses AppleWalletPass[]
   subscriptions        Subscription[]
   platformAuditLogs    PlatformAuditLog[]
   supportSessions      SupportSession[]
@@ -606,6 +608,7 @@ model Customer {
   webPushSubscriptions WebPushSubscription[]
   customerPushDeliveries CustomerPushDelivery[]
   pushAccessGrants PushAccessGrant[]
+  googleWalletMessages GoogleWalletMessage[]
   waitingListEntries WaitingListEntry[]
   customerNotes      CustomerNote[]
   posSales           PosSale[]
@@ -1739,10 +1742,76 @@ model LoyaltyCard {
   customer     Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
   events       LoyaltyEvent[]
   visitRewards LoyaltyVisitReward[]
+  googleWalletMessages GoogleWalletMessage[]
+  appleWalletPass AppleWalletPass?
 
   @@unique([organizationId, customerId])
   @@index([organizationId])
   @@index([customerId])
+}
+
+/// Historique des messages Google Wallet. Distinct des notifications du personnel et du Web Push.
+model GoogleWalletMessage {
+  id              String    @id
+  organizationId  String
+  customerId      String
+  loyaltyCardId   String
+  kind            String
+  idempotencyKey  String
+  header          String
+  body            String
+  status          String    @default("PENDING")
+  attemptCount    Int       @default(0)
+  error           String?
+  sentAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  card         LoyaltyCard  @relation(fields: [loyaltyCardId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([loyaltyCardId, sentAt])
+  @@index([status, createdAt])
+}
+
+model AppleWalletPass {
+  id                   String   @id
+  organizationId       String
+  loyaltyCardId        String   @unique
+  serialNumber         String   @unique
+  authenticationToken  String
+  updatedAt            DateTime @default(now())
+  createdAt            DateTime @default(now())
+
+  organization  Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  card          LoyaltyCard               @relation(fields: [loyaltyCardId], references: [id], onDelete: Cascade)
+  registrations AppleWalletRegistration[]
+
+  @@index([organizationId])
+}
+
+model AppleWalletDevice {
+  id                      String   @id
+  deviceLibraryIdentifier String   @unique
+  pushToken               String
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  registrations AppleWalletRegistration[]
+}
+
+model AppleWalletRegistration {
+  id        String   @id
+  passId    String
+  deviceId  String
+  createdAt DateTime @default(now())
+
+  pass   AppleWalletPass   @relation(fields: [passId], references: [id], onDelete: Cascade)
+  device AppleWalletDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([passId, deviceId])
+  @@index([deviceId])
 }
 
 enum LoyaltyEventType {

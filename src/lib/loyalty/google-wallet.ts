@@ -1,5 +1,6 @@
 import { createSign } from "crypto";
 import { readFileSync } from "fs";
+import { logger } from "@/lib/logger";
 import type { CardProgress } from "@/lib/loyalty/cards";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 import { publicAppOrigin, SITE } from "@/lib/site";
@@ -212,6 +213,8 @@ async function syncGoogleWalletCard(token: string) {
   const card = await getPublicCardByToken(normalized);
   if (!card) return;
   await upsertGenericObject(account, genericObject(normalized, card));
+  const { deliverWalletMessagesForToken } = await import("@/lib/loyalty/google-wallet-notify");
+  await deliverWalletMessagesForToken(normalized);
 }
 
 /** Après un passage déjà enregistré. Sans compte de service, ne fait rien. */
@@ -219,6 +222,47 @@ export function notifyGoogleWallet(token: string) {
   if (!googleWalletConfigured()) return;
   void syncGoogleWalletCard(token).catch((error) => {
     const message = error instanceof Error ? error.message : "sync";
-    console.error("[google-wallet]", message);
+    console.error("[google-wallet]", message.slice(0, 180));
   });
+}
+
+let classStatusCache: { at: number; status: string | null } | null = null;
+
+export async function googleWalletClassReviewStatus(): Promise<string | null> {
+  const account = loadServiceAccount();
+  const classId = googleWalletClassId();
+  if (!account || !classId) {
+    logger.warn("google wallet class unread", { status: account ? 0 : -1 });
+    return null;
+  }
+  if (classStatusCache && Date.now() - classStatusCache.at < 10 * 60 * 1000) return classStatusCache.status;
+  const response = await walletFetch(account, `genericClass/${encodeURIComponent(classId)}`, "GET");
+  if (!response.ok) {
+    logger.warn("google wallet class unread", { status: response.status });
+    classStatusCache = { at: Date.now(), status: null };
+    return null;
+  }
+  const body = (await response.json()) as { reviewStatus?: string };
+  const status = body.reviewStatus ?? null;
+  classStatusCache = { at: Date.now(), status };
+  return status;
+}
+
+export async function addGoogleWalletTextMessage(
+  token: string,
+  message: { id: string; header: string; body: string },
+): Promise<number> {
+  const account = loadServiceAccount();
+  const issuerId = googleWalletIssuerId();
+  if (!account || !issuerId) return 0;
+  const objectId = `${issuerId}.${token.trim().toUpperCase()}`;
+  const response = await walletFetch(account, `genericObject/${encodeURIComponent(objectId)}/addMessage`, "POST", {
+    message: {
+      header: message.header.slice(0, 80),
+      body: message.body.slice(0, 240),
+      id: message.id.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 64),
+      messageType: "TEXT_AND_NOTIFY",
+    },
+  });
+  return response.status;
 }

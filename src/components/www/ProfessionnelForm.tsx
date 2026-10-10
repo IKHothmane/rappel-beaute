@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { APP_LOGIN_HREF, CITIES } from "@/lib/site";
 import { PHONE_MAX_DIGITS, limitPhoneDigits } from "@/lib/validation/customer";
 
@@ -34,6 +34,11 @@ export function ProfessionnelForm() {
     }
   }
 
+  useEffect(() => {
+    if (!sent) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [sent]);
+
   if (sent) {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-line bg-primary-light/50 p-5">
@@ -57,10 +62,10 @@ export function ProfessionnelForm() {
             passe à la première connexion.
           </p>
           <a
-            className="mt-3 inline-flex text-sm font-semibold text-primary hover:underline"
+            className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white"
             href={APP_LOGIN_HREF}
           >
-            Aller à la connexion
+            Se connecter
           </a>
         </div>
       </div>

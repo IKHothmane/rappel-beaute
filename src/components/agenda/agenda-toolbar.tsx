@@ -9,7 +9,6 @@ import {
   Cloud,
   Filter,
   Maximize2,
-  Lock,
   Plus,
   Search,
   SlidersHorizontal,
@@ -19,6 +18,7 @@ import type { AgendaView, AppointmentStatus } from "@/types/appointment";
 import { APPOINTMENT_STATUS_LABEL } from "@/modules/appointments/constants";
 import { formatMad } from "@/modules/analytics/service";
 import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { cn } from "@/lib/utils";
 import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
 import type { ServiceAgendaOption } from "@/types/service";
@@ -44,7 +44,6 @@ type ChromeProps = {
   onNext: () => void;
   onToday: () => void;
   onCreate: () => void;
-  onBlockSlot: () => void;
   onFullscreen?: () => void;
   kpis: AgendaKpis;
   staffFilter: string;
@@ -80,7 +79,6 @@ export function AgendaChrome({
   onNext,
   onToday,
   onCreate,
-  onBlockSlot,
   onFullscreen,
   kpis,
   staffFilter,
@@ -99,6 +97,7 @@ export function AgendaChrome({
   onStatusFilter,
   onSearch,
 }: ChromeProps) {
+  const palette = useStaffPalette();
   return (
     <div className="mb-6 flex flex-col gap-4">
       <section className="flex flex-col gap-5 rounded-xl bg-white p-5 shadow-soft xl:flex-row xl:items-center xl:justify-between">
@@ -131,14 +130,6 @@ export function AgendaChrome({
             />
           </div>
           <GoogleCalendarConnect />
-          <button
-            type="button"
-            onClick={onBlockSlot}
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#FBF4F6] px-3 text-sm font-semibold text-ink hover:bg-[#F0DDE9]"
-          >
-            <Lock size={16} />
-            Bloquer créneau
-          </button>
           <button
             type="button"
             onClick={onCreate}
@@ -324,7 +315,7 @@ export function AgendaChrome({
             Praticiennes
           </span>
           {staffOptions.map((s) => {
-            const color = staffColor(s.id);
+            const color = staffColor(s.id, palette);
             const active = staffFilter === "ALL" || staffFilter === s.id;
             return (
               <button

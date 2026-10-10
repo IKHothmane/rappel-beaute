@@ -102,6 +102,14 @@ export type StaffAgendaContext = {
     substituteStaffId: string;
     substituteName: string;
   }[];
+  /** Périodes où cette employée remplace une collègue */
+  replacementsAsSubstitute?: {
+    id: string;
+    startAt: string;
+    endAt: string;
+    absentStaffId: string;
+    absentName: string;
+  }[];
 };
 
 export type CreateStaffInput = {

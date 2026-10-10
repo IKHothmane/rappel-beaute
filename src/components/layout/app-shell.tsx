@@ -9,6 +9,7 @@ import { MobileNav } from "./mobile-nav";
 import { Sidebar } from "./sidebar";
 import OwnerSidebar from "./OwnerSidebar";
 import { PlanFeatureRouteGuard } from "@/components/subscriptions/PlanFeatureRouteGuard";
+import { StaffColorProvider } from "@/components/agenda/staff-color-provider";
 import { cn } from "@/lib/utils";
 
 type AppShellProps = {
@@ -65,7 +66,7 @@ export function AppShell({ children }: AppShellProps) {
   const isOwner = user.role === "OWNER";
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] text-ink">
+    <div className="min-h-dvh bg-[#F3F4F6] text-ink">
       {isOwner ? (
         <OwnerSidebar
           open={sidebarOpen}
@@ -79,7 +80,7 @@ export function AppShell({ children }: AppShellProps) {
 
       <div
         className={cn(
-          "min-h-screen transition-[margin] duration-300",
+          "min-h-dvh transition-[margin] duration-300",
           isOwner
             ? collapsed
               ? "lg:ml-[76px]"
@@ -91,7 +92,9 @@ export function AppShell({ children }: AppShellProps) {
 
         <main className="min-h-[calc(100vh-64px)] px-4 pb-28 pt-5 sm:min-h-[calc(100vh-72px)] sm:px-6 lg:px-8 lg:pb-8">
           <div className="mx-auto max-w-[1600px]">
-            <PlanFeatureRouteGuard>{children}</PlanFeatureRouteGuard>
+            <StaffColorProvider>
+              <PlanFeatureRouteGuard>{children}</PlanFeatureRouteGuard>
+            </StaffColorProvider>
           </div>
         </main>
       </div>

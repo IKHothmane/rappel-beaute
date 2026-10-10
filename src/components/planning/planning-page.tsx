@@ -12,8 +12,10 @@ import {
   Clock3,
   Gauge,
   Hourglass,
+  Pencil,
   ShieldCheck,
   Sparkles,
+  Trash2,
   TriangleAlert,
   Umbrella,
   Users,
@@ -34,23 +36,29 @@ import { listAppointments } from "@/modules/appointments/service";
 import {
   createOvertimeApi,
   createReplacementApi,
+  deletePlanningItemApi,
   loadPlanningApi,
+  loadPlanningHistoryApi,
+  updateOvertimeApi,
+  updateReplacementApi,
 } from "@/modules/planning/service";
 import {
   createStaffLeave,
   listStaff,
   listStaffForAgenda,
+  updateStaffLeave,
   updateStaffSchedule,
 } from "@/modules/staff/service";
 import { cn } from "@/lib/utils";
 import type { Appointment } from "@/types/appointment";
 import type {
   OrganizationClosureItem,
+  PlanningLeaveHistoryItem,
   StaffOvertimeItem,
   StaffReplacementItem,
 } from "@/types/planning";
 import type { LeaveType, StaffAgendaContext, StaffScheduleSlot } from "@/types/staff";
-import { DAY_LABELS, LEAVE_TYPE_LABEL } from "@/types/staff";
+import { DAY_LABELS, LEAVE_STATUS_LABEL, LEAVE_TYPE_LABEL } from "@/types/staff";
 import {
   appointmentsInRange,
   breaksForEditor,
@@ -66,6 +74,9 @@ import {
   isOnDutyToday,
   isThisWeek,
   openingHoursFromStaff,
+  overtimeSpanOnDay,
+  replacementSpanOnDay,
+  coveringSpanOnDay,
   schedulesForEditor,
   staffAtHour,
   startOfDay,
@@ -116,6 +127,7 @@ function ShiftChip({
         cell.kind === "overtime" ? "border-amber-200" : "border-transparent",
       )}
     >
+      {cell.kind === "overtime" ? "HS " : ""}
       {formatShiftBadge(cell.start, cell.end)}
     </span>
   );
@@ -159,20 +171,36 @@ export function PlanningPageView() {
   const [repStart, setRepStart] = useState("");
   const [repEnd, setRepEnd] = useState("");
   const [repReason, setRepReason] = useState("");
+  const [editingLeaveId, setEditingLeaveId] = useState<string | null>(null);
+  const [editingOtId, setEditingOtId] = useState<string | null>(null);
+  const [editingRepId, setEditingRepId] = useState<string | null>(null);
+  const [historyStaffId, setHistoryStaffId] = useState("ALL");
+  const [historyLeaves, setHistoryLeaves] = useState<PlanningLeaveHistoryItem[]>([]);
+  const [historyOvertimes, setHistoryOvertimes] = useState<StaffOvertimeItem[]>([]);
+  const [historyReplacements, setHistoryReplacements] = useState<StaffReplacementItem[]>([]);
 
   const weekDates = useMemo(() => getWeekDates(anchor), [anchor]);
   const monthCells = useMemo(() => getMonthGrid(anchor), [anchor]);
 
   const refresh = useCallback(async () => {
-    const [plan, staffList, apts, roster] = await Promise.all([
+    const [plan, staffList, apts, roster, history] = await Promise.all([
       loadPlanningApi(),
       listStaffForAgenda(),
       listAppointments(),
       listStaff({ limit: 100 }),
+      loadPlanningHistoryApi().catch(() => ({
+        closures: [],
+        overtimes: [],
+        replacements: [],
+        leaves: [],
+      })),
     ]);
     setClosures(plan.closures);
     setOvertimes(plan.overtimes);
     setReplacements(plan.replacements);
+    setHistoryLeaves(history.leaves);
+    setHistoryOvertimes(history.overtimes);
+    setHistoryReplacements(history.replacements);
     setStaff(staffList);
     setAppointments(apts);
     const nextPositions: Record<string, string> = {};
@@ -193,12 +221,57 @@ export function PlanningPageView() {
       .finally(() => setLoading(false));
   }, [refresh, toast]);
 
+  const calendarStaff = useMemo(
+    () =>
+      staff.map((person) => {
+        const merged = new Map((person.overtimes ?? []).map((item) => [item.id, item]));
+        for (const item of overtimes) {
+          if (item.staffId !== person.id) continue;
+          merged.set(item.id, {
+            id: item.id,
+            startAt: item.startAt,
+            endAt: item.endAt,
+            reason: item.reason,
+          });
+        }
+        const absent = new Map((person.replacementsAsAbsent ?? []).map((item) => [item.id, item]));
+        const covering = new Map((person.replacementsAsSubstitute ?? []).map((item) => [item.id, item]));
+        for (const item of replacements) {
+          if (!item.active) continue;
+          if (item.absentStaffId === person.id) {
+            absent.set(item.id, {
+              id: item.id,
+              startAt: item.startAt,
+              endAt: item.endAt,
+              substituteStaffId: item.substituteStaffId,
+              substituteName: item.substituteName,
+            });
+          }
+          if (item.substituteStaffId === person.id) {
+            covering.set(item.id, {
+              id: item.id,
+              startAt: item.startAt,
+              endAt: item.endAt,
+              absentStaffId: item.absentStaffId,
+              absentName: item.absentName,
+            });
+          }
+        }
+        return {
+          ...person,
+          overtimes: [...merged.values()],
+          replacementsAsAbsent: [...absent.values()],
+          replacementsAsSubstitute: [...covering.values()],
+        };
+      }),
+    [staff, overtimes, replacements],
+  );
   const visibleStaff = useMemo(
-    () => (staffFilter === "ALL" ? staff : staff.filter((item) => item.id === staffFilter)),
-    [staff, staffFilter],
+    () => (staffFilter === "ALL" ? calendarStaff : calendarStaff.filter((item) => item.id === staffFilter)),
+    [calendarStaff, staffFilter],
   );
   const staffColors = useMemo(() => assignStaffColors(staff.map((person) => person.id)), [staff]);
-  const selected = staff.find((item) => item.id === selectedId) ?? staff[0] ?? null;
+  const selected = calendarStaff.find((item) => item.id === selectedId) ?? calendarStaff[0] ?? null;
   const activeCount = staff.filter((item) => item.status === "ACTIVE").length;
   const onDutyToday = staff.filter((item) => isOnDutyToday(item)).length;
   const totalHours = Math.round(staff.reduce((sum, item) => sum + weekHours(item, weekDates), 0));
@@ -206,15 +279,16 @@ export function PlanningPageView() {
   const plannedHours = staff.reduce((sum, item) => sum + templateWeekHours(item), 0);
   const availability = plannedHours > 0 ? Math.round((totalHours / plannedHours) * 100) : 100;
   const conflicts = useMemo(
-    () => detectConflicts(staff, appointments, closures, weekDates),
-    [staff, appointments, closures, weekDates],
+    () => detectConflicts(calendarStaff, appointments, closures, weekDates),
+    [calendarStaff, appointments, closures, weekDates],
   );
   const openingHours = useMemo(() => openingHoursFromStaff(staff), [staff]);
   const aiHint = useMemo(
     () => buildAiSuggestion(staff, appointments, weekDates),
     [staff, appointments, weekDates],
   );
-  const hours = hourWindow(staff);
+  const gridDates = view === "day" ? [anchor] : weekDates;
+  const hours = hourWindow(visibleStaff, gridDates);
   const hourRows = Array.from({ length: Math.max(1, hours.endHour - hours.startHour) }, (_, i) => hours.startHour + i);
   const peakDayIndex = weekDates.reduce((best, date, index) => {
     const count = appointmentsInRange(appointments, date, date).length;
@@ -226,7 +300,6 @@ export function PlanningPageView() {
       .filter((leave) => new Date(leave.endAt) >= startOfDay(weekDates[0]))
       .map((leave) => ({ ...leave, staff: person })),
   );
-  const gridDates = view === "day" ? [anchor] : weekDates;
 
   function openScheduleEditor() {
     if (!selected) return;
@@ -327,21 +400,67 @@ export function PlanningPageView() {
     await refresh();
   }
 
+  function focusHistory(staffId = "ALL") {
+    setHistoryStaffId(staffId);
+    document.getElementById("planning-history")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function beginEditLeave(leave: {
+    id: string;
+    staffId?: string;
+    staff?: { id: string };
+    startAt: string;
+    endAt: string;
+    type: LeaveType;
+    reason: string | null;
+  }) {
+    setEditingLeaveId(leave.id);
+    setLeaveStaff(leave.staffId ?? leave.staff?.id ?? "");
+    setLeaveStart(toDateInput(leave.startAt));
+    setLeaveEnd(toDateInput(leave.endAt));
+    setLeaveType(leave.type);
+    setLeaveReason(leave.reason ?? "");
+    setLeaveOpen(true);
+  }
+
+  function beginEditOvertime(item: StaffOvertimeItem) {
+    setEditingOtId(item.id);
+    setOtStaff(item.staffId);
+    setOtStart(toDatetimeLocal(item.startAt));
+    setOtEnd(toDatetimeLocal(item.endAt));
+    setOtReason(item.reason ?? "");
+    setExtraOpen("overtime");
+  }
+
+  function beginEditReplacement(item: StaffReplacementItem) {
+    setEditingRepId(item.id);
+    setRepAbsent(item.absentStaffId);
+    setRepSub(item.substituteStaffId);
+    setRepStart(toDatetimeLocal(item.startAt));
+    setRepEnd(toDatetimeLocal(item.endAt));
+    setRepReason(item.reason ?? "");
+    setExtraOpen("replacement");
+  }
+
   async function addLeave() {
     try {
-      const result = await createStaffLeave(leaveStaff, {
+      const payload = {
         startAt: new Date(`${leaveStart}T00:00:00`).toISOString(),
         endAt: new Date(`${leaveEnd}T23:59:59`).toISOString(),
         type: leaveType,
         reason: leaveReason || undefined,
-        status: "APPROVED",
-      });
+        status: "APPROVED" as const,
+      };
+      const result = editingLeaveId
+        ? await updateStaffLeave(leaveStaff, editingLeaveId, payload)
+        : await createStaffLeave(leaveStaff, payload);
       if (!result.ok) {
         toast(result.error, "error");
         return;
       }
-      toast("Absence enregistrée. L’agenda ne proposera plus ce créneau.", "success");
+      toast(editingLeaveId ? "Absence modifiée." : "Absence enregistrée. L’agenda ne proposera plus ce créneau.", "success");
       setLeaveOpen(false);
+      setEditingLeaveId(null);
       setLeaveReason("");
       await refresh();
     } catch (e) {
@@ -349,16 +468,42 @@ export function PlanningPageView() {
     }
   }
 
+  async function removeLeave(staffId: string, leaveId: string) {
+    if (!window.confirm("Supprimer cette absence ?")) return;
+    const result = await updateStaffLeave(staffId, leaveId, { status: "CANCELLED" });
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    toast("Absence supprimée.", "success");
+    await refresh();
+  }
+
   async function addOt() {
     try {
-      await createOvertimeApi({
+      const payload = {
         staffId: otStaff,
         startAt: new Date(otStart).toISOString(),
         endAt: new Date(otEnd).toISOString(),
         reason: otReason || null,
-      });
-      toast("Heures supplémentaires enregistrées.", "success");
+      };
+      if (editingOtId) await updateOvertimeApi(editingOtId, payload);
+      else await createOvertimeApi(payload);
+      toast(editingOtId ? "Heures supplémentaires modifiées." : "Heures supplémentaires enregistrées.", "success");
       setExtraOpen(null);
+      setEditingOtId(null);
+      setOtReason("");
+      await refresh();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Erreur", "error");
+    }
+  }
+
+  async function removeOvertime(id: string) {
+    if (!window.confirm("Supprimer ces heures supplémentaires ?")) return;
+    try {
+      await deletePlanningItemApi("overtime", id);
+      toast("Heures supplémentaires supprimées.", "success");
       await refresh();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Erreur", "error");
@@ -367,15 +512,30 @@ export function PlanningPageView() {
 
   async function addRep() {
     try {
-      await createReplacementApi({
+      const payload = {
         absentStaffId: repAbsent,
         substituteStaffId: repSub,
         startAt: new Date(repStart).toISOString(),
         endAt: new Date(repEnd).toISOString(),
         reason: repReason || null,
-      });
-      toast("Remplacement enregistré.", "success");
+      };
+      if (editingRepId) await updateReplacementApi(editingRepId, payload);
+      else await createReplacementApi(payload);
+      toast(editingRepId ? "Remplacement modifié." : "Remplacement enregistré.", "success");
       setExtraOpen(null);
+      setEditingRepId(null);
+      setRepReason("");
+      await refresh();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Erreur", "error");
+    }
+  }
+
+  async function removeReplacement(id: string) {
+    if (!window.confirm("Supprimer ce remplacement ?")) return;
+    try {
+      await deletePlanningItemApi("replacement", id);
+      toast("Remplacement supprimé.", "success");
       await refresh();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Erreur", "error");
@@ -590,6 +750,16 @@ export function PlanningPageView() {
                         </td>
                         {weekDates.map((date, index) => {
                           const cell = cellForStaffDay(person, date);
+                          const extraHours = overtimeSpanOnDay(person, date);
+                          const replaced = replacementSpanOnDay(person, date);
+                          const covering = coveringSpanOnDay(person, date);
+                          const notable =
+                            cell.kind === "leave" ||
+                            cell.kind === "overtime" ||
+                            cell.kind === "replaced" ||
+                            Boolean(extraHours) ||
+                            Boolean(replaced) ||
+                            Boolean(covering);
                           return (
                             <td
                               key={date.toISOString()}
@@ -597,12 +767,28 @@ export function PlanningPageView() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 selectStaffDay(person.id, date);
+                                if (notable) void focusHistory(person.id);
                               }}
                             >
                               <DayCellBadge
                                 color={staffColors.get(person.id) ?? STAFF_COLOR_LIST[0]}
                                 cell={cell}
                               />
+                              {extraHours && cell.kind !== "overtime" ? (
+                                <span className="mt-1 block text-[10px] font-bold text-amber-700">
+                                  HS {formatShiftBadge(extraHours.start, extraHours.end)}
+                                </span>
+                              ) : null}
+                              {replaced ? (
+                                <span className="mt-1 block text-[10px] font-bold text-violet-700">
+                                  Rempl. {replaced.substituteName.split(" ")[0]} {formatShiftBadge(replaced.start, replaced.end)}
+                                </span>
+                              ) : null}
+                              {covering ? (
+                                <span className="mt-1 block text-[10px] font-bold text-violet-700">
+                                  Remplace {covering.absentName.split(" ")[0]} {formatShiftBadge(covering.start, covering.end)}
+                                </span>
+                              ) : null}
                             </td>
                           );
                         })}
@@ -626,7 +812,10 @@ export function PlanningPageView() {
                 ))}
                 {monthCells.map((date) => {
                   const inMonth = date.getMonth() === anchor.getMonth();
-                  const leaveCount = staff.filter((person) => cellForStaffDay(person, date).kind === "leave").length;
+                  const cells = calendarStaff.map((person) => cellForStaffDay(person, date));
+                  const leaveCount = cells.filter((cell) => cell.kind === "leave").length;
+                  const overtimeCount = calendarStaff.filter((person) => overtimeSpanOnDay(person, date)).length;
+                  const replacementCount = calendarStaff.filter((person) => replacementSpanOnDay(person, date) || coveringSpanOnDay(person, date)).length;
                   const closed = closures.some((item) => {
                     const start = new Date(item.startAt);
                     const end = new Date(item.endAt);
@@ -639,6 +828,7 @@ export function PlanningPageView() {
                       onClick={() => {
                         setAnchor(date);
                         setView("day");
+                        if (leaveCount || overtimeCount || replacementCount) void focusHistory("ALL");
                       }}
                       className={cn(
                         "min-h-[64px] rounded-xl border p-1.5 text-left",
@@ -650,6 +840,12 @@ export function PlanningPageView() {
                       {closed ? <p className="mt-1 text-[9px] font-bold text-slate-500">Fermé</p> : null}
                       {leaveCount ? (
                         <p className="mt-0.5 text-[9px] font-bold text-primary">{leaveCount} abs.</p>
+                      ) : null}
+                      {overtimeCount ? (
+                        <p className="mt-0.5 text-[9px] font-bold text-amber-700">{overtimeCount} HS</p>
+                      ) : null}
+                      {replacementCount ? (
+                        <p className="mt-0.5 text-[9px] font-bold text-violet-700">{replacementCount} rempl.</p>
                       ) : null}
                     </button>
                   );
@@ -718,12 +914,24 @@ export function PlanningPageView() {
                                         key={person.id}
                                         className={cn(
                                           "flex items-center justify-between rounded-lg border px-1.5 py-1 text-[11px] font-extrabold",
-                                          occ.onBreak
+                                          occ.replacement
+                                            ? "border-violet-300 bg-violet-50 text-violet-800"
+                                            : occ.overtime
+                                            ? "border-amber-300 bg-amber-50 text-amber-900"
+                                            : occ.onBreak
                                             ? "border-dashed border-line bg-white text-ink/40"
                                             : cn(color.soft, color.text, "border-transparent"),
                                         )}
                                       >
-                                        <span>{occ.onBreak ? `Pause ${person.firstName}` : person.firstName}</span>
+                                        <span>
+                                          {occ.onBreak
+                                            ? `Pause ${person.firstName}`
+                                            : occ.replacement
+                                              ? `Rempl. ${person.firstName}`
+                                              : occ.overtime
+                                                ? `HS ${person.firstName}`
+                                                : person.firstName}
+                                        </span>
                                         {!occ.onBreak && occ.startedThisHour ? (
                                           <span className="rounded bg-white px-1.5 py-0.5 text-[9px] font-bold shadow-sm">
                                             {occ.label}
@@ -750,34 +958,46 @@ export function PlanningPageView() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Card className="space-y-3">
               <div className="flex items-center justify-between border-b border-line pb-3">
-                <div className="flex items-center gap-2">
+                <button type="button" onClick={() => void focusHistory("ALL")} className="flex items-center gap-2 text-left">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-primary">
                     <Umbrella size={14} />
                   </div>
                   <div>
                     <h3 className="text-xs font-black uppercase tracking-wider text-ink">Congés & absences</h3>
-                    <p className="text-[10px] text-ink/45">Bloque automatiquement les RDV de l’Agenda</p>
+                    <p className="text-[10px] text-ink/45">Carte à droite · bloque les RDV</p>
                   </div>
-                </div>
+                </button>
                 <button
                   type="button"
-                  onClick={() => setLeaveOpen(true)}
+                  onClick={() => {
+                    setEditingLeaveId(null);
+                    setLeaveReason("");
+                    setLeaveOpen(true);
+                  }}
                   className="rounded-lg border border-primary/20 bg-primary-light px-2 py-1 text-[11px] font-bold text-primary"
                 >
                   + Ajouter absence
                 </button>
               </div>
-              <div className="divide-y divide-line/80 text-xs">
+              <div className="max-h-72 divide-y divide-line/80 overflow-y-auto text-xs">
                 {upcomingLeaves.length ? (
                   upcomingLeaves.map((leave) => (
                     <div key={leave.id} className="flex items-center justify-between gap-2 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className={cn("h-2 w-2 rounded-full", (staffColors.get(leave.staff.id) ?? STAFF_COLOR_LIST[0]).bar)} />
+                      <button type="button" onClick={() => void focusHistory(leave.staff.id)} className="flex min-w-0 items-center gap-2 text-left">
+                        <span className={cn("h-2 w-2 shrink-0 rounded-full", (staffColors.get(leave.staff.id) ?? STAFF_COLOR_LIST[0]).bar)} />
                         <span className="font-bold text-ink">{leave.staff.firstName}</span>
-                      </div>
-                      <span className="text-ink/60">{formatLeaveSpan(leave.startAt, leave.endAt)}</span>
-                      <span className="rounded border border-primary/20 bg-primary-light px-2 py-0.5 text-[10px] font-extrabold text-primary">
+                        <span className="truncate text-ink/60">{formatLeaveSpan(leave.startAt, leave.endAt)}</span>
+                      </button>
+                      <span className="shrink-0 rounded border border-primary/20 bg-primary-light px-2 py-0.5 text-[10px] font-extrabold text-primary">
                         {LEAVE_TYPE_LABEL[leave.type]}
+                      </span>
+                      <span className="flex shrink-0 gap-1">
+                        <button type="button" aria-label="Modifier l’absence" onClick={() => beginEditLeave(leave)} className="rounded-lg p-1 text-ink/50 hover:bg-[#FBF5F7] hover:text-ink">
+                          <Pencil size={13} />
+                        </button>
+                        <button type="button" aria-label="Supprimer l’absence" onClick={() => void removeLeave(leave.staff.id, leave.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
+                          <Trash2 size={13} />
+                        </button>
                       </span>
                     </div>
                   ))
@@ -789,30 +1009,56 @@ export function PlanningPageView() {
 
             <Card className="space-y-3">
               <div className="flex items-center justify-between border-b border-line pb-3">
-                <div>
+                <button type="button" onClick={() => void focusHistory("ALL")} className="text-left">
                   <h3 className="text-xs font-black uppercase tracking-wider text-ink">Heures supp. & remplacements</h3>
-                  <p className="text-[10px] text-ink/45">Ajustements d’équipe en dehors du shift habituel</p>
-                </div>
+                  <p className="text-[10px] text-ink/45">Carte à droite</p>
+                </button>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]" onClick={() => setExtraOpen("overtime")}>
+                  <button type="button" className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]" onClick={() => { setEditingOtId(null); setOtReason(""); setExtraOpen("overtime"); }}>
                     + Heures supp.
                   </button>
-                  <button type="button" className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]" onClick={() => setExtraOpen("replacement")}>
+                  <button type="button" className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]" onClick={() => { setEditingRepId(null); setRepReason(""); setExtraOpen("replacement"); }}>
                     + Remplacement
                   </button>
                 </div>
               </div>
-              {overtimes.slice(0, 3).map((item) => (
-                <p key={item.id} className="text-[11px] text-ink/55">
-                  HS {staff.find((s) => s.id === item.staffId)?.firstName ?? ""} ·{" "}
-                  {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </p>
-              ))}
-              {replacements.filter((r) => r.active).slice(0, 3).map((item) => (
-                <p key={item.id} className="text-[11px] text-ink/55">
-                  Remplacement {item.absentName} → {item.substituteName}
-                </p>
-              ))}
+              <div className="max-h-72 space-y-2 overflow-y-auto">
+                {overtimes.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-2 text-[11px] text-ink/70">
+                    <button type="button" onClick={() => void focusHistory(item.staffId)} className="min-w-0 text-left">
+                      <span className="font-bold text-amber-800">HS</span>{" "}
+                      {item.staffName ?? staff.find((s) => s.id === item.staffId)?.firstName ?? ""} ·{" "}
+                      {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </button>
+                    <span className="flex shrink-0 gap-1">
+                      <button type="button" aria-label="Modifier les heures supplémentaires" onClick={() => beginEditOvertime(item)} className="rounded-lg p-1 text-ink/50 hover:bg-[#FBF5F7] hover:text-ink">
+                        <Pencil size={13} />
+                      </button>
+                      <button type="button" aria-label="Supprimer les heures supplémentaires" onClick={() => void removeOvertime(item.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
+                        <Trash2 size={13} />
+                      </button>
+                    </span>
+                  </div>
+                ))}
+                {replacements.filter((r) => r.active).map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-2 text-[11px] text-ink/70">
+                    <button type="button" onClick={() => void focusHistory(item.absentStaffId)} className="min-w-0 text-left">
+                      <span className="font-bold text-violet-700">Rempl.</span> {item.absentName} → {item.substituteName}
+                    </button>
+                    <span className="flex shrink-0 gap-1">
+                      <button type="button" aria-label="Modifier le remplacement" onClick={() => beginEditReplacement(item)} className="rounded-lg p-1 text-ink/50 hover:bg-[#FBF5F7] hover:text-ink">
+                        <Pencil size={13} />
+                      </button>
+                      <button type="button" aria-label="Supprimer le remplacement" onClick={() => void removeReplacement(item.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
+                        <Trash2 size={13} />
+                      </button>
+                    </span>
+                  </div>
+                ))}
+                {!overtimes.length && !replacements.some((r) => r.active) ? (
+                  <p className="py-4 text-xs text-ink/45">Aucune heure supplémentaire ni remplacement.</p>
+                ) : null}
+              </div>
             </Card>
           </div>
 
@@ -874,6 +1120,9 @@ export function PlanningPageView() {
                     const label = DAY_LABELS[day];
                     const date = weekDates.find((d) => d.getDay() === day) ?? weekDates[0];
                     const cell = cellForStaffDay(selected, date);
+                    const extra = cell.kind === "work" ? overtimeSpanOnDay(selected, date) : null;
+                    const replaced = replacementSpanOnDay(selected, date);
+                    const covering = coveringSpanOnDay(selected, date);
                     return (
                       <button
                         key={label}
@@ -889,8 +1138,26 @@ export function PlanningPageView() {
                       >
                         <span className="font-bold text-ink/70">{label}</span>
                         {cell.kind === "work" || cell.kind === "overtime" ? (
-                          <span className="rounded bg-primary-light px-2 py-0.5 text-[11px] font-extrabold text-primary">
-                            {cell.start} → {cell.end}
+                          <span className="flex flex-col items-end gap-1">
+                            <span className="rounded bg-primary-light px-2 py-0.5 text-[11px] font-extrabold text-primary">
+                              {cell.kind === "overtime" ? "HS " : ""}
+                              {cell.start} → {cell.end}
+                            </span>
+                            {extra ? (
+                              <span className="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-extrabold text-amber-800">
+                                HS {extra.start} → {extra.end}
+                              </span>
+                            ) : null}
+                            {replaced ? (
+                              <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-800">
+                                Rempl. {replaced.substituteName.split(" ")[0]} {replaced.start} → {replaced.end}
+                              </span>
+                            ) : null}
+                            {covering ? (
+                              <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-800">
+                                Remplace {covering.absentName.split(" ")[0]} {covering.start} → {covering.end}
+                              </span>
+                            ) : null}
                           </span>
                         ) : cell.kind === "leave" ? (
                           <span className="rounded bg-rose-50 px-2 py-0.5 text-[11px] font-extrabold text-rose-600">
@@ -917,6 +1184,113 @@ export function PlanningPageView() {
               </Card>
             </>
           ) : null}
+
+          <Card id="planning-history" className="space-y-4">
+            <div className="border-b border-line pb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-ink">
+                Historique congés, absences et remplacements
+              </h3>
+              <p className="text-[10px] text-ink/45">Toute l’équipe, y compris les périodes passées</p>
+            </div>
+            <Select value={historyStaffId} onChange={(e) => setHistoryStaffId(e.target.value)}>
+              <option value="ALL">Toute l’équipe</option>
+              {staff.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.displayName}
+                </option>
+              ))}
+            </Select>
+            <div className="max-h-[32rem] space-y-5 overflow-y-auto">
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-ink">Congés & absences</h3>
+                {historyLeaves.filter((leave) => historyStaffId === "ALL" || leave.staffId === historyStaffId).length ? (
+                  historyLeaves
+                    .filter((leave) => historyStaffId === "ALL" || leave.staffId === historyStaffId)
+                    .map((leave) => (
+                      <div key={leave.id} className="flex items-start justify-between gap-2 rounded-xl border border-line px-3 py-2 text-xs">
+                        <div>
+                          <p className="font-bold text-ink">{leave.staffName}</p>
+                          <p className="text-ink/55">
+                            {formatLeaveSpan(leave.startAt, leave.endAt)} · {LEAVE_TYPE_LABEL[leave.type]} · {LEAVE_STATUS_LABEL[leave.status]}
+                          </p>
+                          {leave.reason ? <p className="text-ink/45">{leave.reason}</p> : null}
+                        </div>
+                        {leave.status !== "CANCELLED" ? (
+                          <span className="flex shrink-0 gap-1">
+                            <button type="button" aria-label="Modifier l’absence" onClick={() => beginEditLeave(leave)} className="rounded-lg p-1 text-ink/50 hover:bg-[#FBF5F7]">
+                              <Pencil size={13} />
+                            </button>
+                            <button type="button" aria-label="Supprimer l’absence" onClick={() => void removeLeave(leave.staffId, leave.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
+                              <Trash2 size={13} />
+                            </button>
+                          </span>
+                        ) : null}
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-xs text-ink/45">Aucun congé ni absence.</p>
+                )}
+              </section>
+              <section className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-ink">Heures supp. & remplacements</h3>
+                {historyOvertimes
+                  .filter((item) => historyStaffId === "ALL" || item.staffId === historyStaffId)
+                  .map((item) => (
+                    <div key={item.id} className="flex items-start justify-between gap-2 rounded-xl border border-amber-100 bg-amber-50/40 px-3 py-2 text-xs">
+                      <div>
+                        <p className="font-bold text-ink">HS · {item.staffName ?? staff.find((s) => s.id === item.staffId)?.displayName ?? "Employée"}</p>
+                        <p className="text-ink/55">
+                          {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {" → "}
+                          {new Date(item.endAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        {item.reason ? <p className="text-ink/45">{item.reason}</p> : null}
+                      </div>
+                      <span className="flex shrink-0 gap-1">
+                        <button type="button" aria-label="Modifier les heures supplémentaires" onClick={() => beginEditOvertime(item)} className="rounded-lg p-1 text-ink/50 hover:bg-white">
+                          <Pencil size={13} />
+                        </button>
+                        <button type="button" aria-label="Supprimer les heures supplémentaires" onClick={() => void removeOvertime(item.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
+                          <Trash2 size={13} />
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                {historyReplacements
+                  .filter((item) => historyStaffId === "ALL" || item.absentStaffId === historyStaffId || item.substituteStaffId === historyStaffId)
+                  .map((item) => (
+                    <div key={item.id} className="flex items-start justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2 text-xs">
+                      <div>
+                        <p className="font-bold text-ink">
+                          {item.absentName} → {item.substituteName}
+                          {!item.active ? " · annulé" : ""}
+                        </p>
+                        <p className="text-ink/55">
+                          {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {" → "}
+                          {new Date(item.endAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        {item.reason ? <p className="text-ink/45">{item.reason}</p> : null}
+                      </div>
+                      {item.active ? (
+                        <span className="flex shrink-0 gap-1">
+                          <button type="button" aria-label="Modifier le remplacement" onClick={() => beginEditReplacement(item)} className="rounded-lg p-1 text-ink/50 hover:bg-white">
+                            <Pencil size={13} />
+                          </button>
+                          <button type="button" aria-label="Supprimer le remplacement" onClick={() => void removeReplacement(item.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
+                            <Trash2 size={13} />
+                          </button>
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                {!historyOvertimes.filter((item) => historyStaffId === "ALL" || item.staffId === historyStaffId).length &&
+                !historyReplacements.filter((item) => historyStaffId === "ALL" || item.absentStaffId === historyStaffId || item.substituteStaffId === historyStaffId).length ? (
+                  <p className="text-xs text-ink/45">Aucune heure supplémentaire ni remplacement.</p>
+                ) : null}
+              </section>
+            </div>
+          </Card>
 
           {aiHint ? (
             <div className="space-y-4 rounded-2xl border border-[#3a2b38] bg-gradient-to-br from-[#241a22] to-institut p-5 text-white shadow-lg">
@@ -981,7 +1355,14 @@ export function PlanningPageView() {
         </div>
       </div>
 
-      <Modal open={leaveOpen} onClose={() => setLeaveOpen(false)} title="Ajouter une absence">
+      <Modal
+        open={leaveOpen}
+        onClose={() => {
+          setLeaveOpen(false);
+          setEditingLeaveId(null);
+        }}
+        title={editingLeaveId ? "Modifier l’absence" : "Ajouter une absence"}
+      >
         <div className="space-y-3">
           <Label>Employée</Label>
           <Select value={leaveStaff} onChange={(e) => setLeaveStaff(e.target.value)}>
@@ -1011,11 +1392,11 @@ export function PlanningPageView() {
           </Select>
           <Input placeholder="Motif (optionnel)" value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} />
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setLeaveOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => { setLeaveOpen(false); setEditingLeaveId(null); }}>
               Annuler
             </Button>
             <Button type="button" variant="brand" disabled={!leaveStaff || !leaveStart || !leaveEnd} onClick={addLeave}>
-              Enregistrer
+              {editingLeaveId ? "Enregistrer" : "Enregistrer"}
             </Button>
           </div>
         </div>
@@ -1023,8 +1404,11 @@ export function PlanningPageView() {
 
       <Modal
         open={extraOpen === "overtime"}
-        onClose={() => setExtraOpen(null)}
-        title="Heures supplémentaires"
+        onClose={() => {
+          setExtraOpen(null);
+          setEditingOtId(null);
+        }}
+        title={editingOtId ? "Modifier les heures supplémentaires" : "Heures supplémentaires"}
       >
         <div className="space-y-3">
           <Select value={otStaff} onChange={(e) => setOtStaff(e.target.value)}>
@@ -1038,12 +1422,19 @@ export function PlanningPageView() {
           <Input type="datetime-local" value={otEnd} onChange={(e) => setOtEnd(e.target.value)} />
           <Input placeholder="Motif" value={otReason} onChange={(e) => setOtReason(e.target.value)} />
           <Button type="button" variant="brand" disabled={!otStaff || !otStart || !otEnd} onClick={addOt}>
-            Ajouter
+            {editingOtId ? "Enregistrer" : "Ajouter"}
           </Button>
         </div>
       </Modal>
 
-      <Modal open={extraOpen === "replacement"} onClose={() => setExtraOpen(null)} title="Remplacement">
+      <Modal
+        open={extraOpen === "replacement"}
+        onClose={() => {
+          setExtraOpen(null);
+          setEditingRepId(null);
+        }}
+        title={editingRepId ? "Modifier le remplacement" : "Remplacement"}
+      >
         <div className="space-y-3">
           <Label>Absente</Label>
           <Select value={repAbsent} onChange={(e) => setRepAbsent(e.target.value)}>
@@ -1065,7 +1456,7 @@ export function PlanningPageView() {
           <Input type="datetime-local" value={repEnd} onChange={(e) => setRepEnd(e.target.value)} />
           <Input placeholder="Motif" value={repReason} onChange={(e) => setRepReason(e.target.value)} />
           <Button type="button" variant="brand" disabled={!repAbsent || !repSub || !repStart || !repEnd} onClick={addRep}>
-            Ajouter
+            {editingRepId ? "Enregistrer" : "Ajouter"}
           </Button>
         </div>
       </Modal>
@@ -1209,6 +1600,18 @@ export function PlanningPageView() {
   );
 }
 
+function toDateInput(iso: string) {
+  const value = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+}
+
+function toDatetimeLocal(iso: string) {
+  const value = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+}
+
 function sameCalendarDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -1294,7 +1697,11 @@ function DayCellBadge({ color, cell }: { color: StaffColor; cell: DayCell }) {
     );
   }
   if (cell.kind === "replaced") {
-    return <OffBadge>{cell.substituteName}</OffBadge>;
+    return (
+      <span className="inline-flex rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-bold text-violet-700">
+        Rempl. {cell.substituteName.split(" ")[0]}
+      </span>
+    );
   }
   return <OffBadge />;
 }

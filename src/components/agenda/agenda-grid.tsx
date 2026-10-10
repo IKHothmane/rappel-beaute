@@ -10,6 +10,8 @@ import type { Appointment } from "@/types/appointment";
 import type { StaffAgendaContext } from "@/types/staff";
 import { LEAVE_TYPE_LABEL } from "@/types/staff";
 import { AppointmentCard } from "@/components/agenda/appointment-card";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { cn } from "@/lib/utils";
 
 type StaffCol = { id: string; name: string };
@@ -51,6 +53,7 @@ export function AgendaGrid({
   onSlotDrop,
   onEmptySlotClick,
 }: AgendaGridProps) {
+  const palette = useStaffPalette();
   const slots = Array.from(
     { length: ((AGENDA_CLOSE_HOUR - AGENDA_OPEN_HOUR) * 60) / AGENDA_SLOT_MINUTES },
     (_, i) => {
@@ -74,11 +77,15 @@ export function AgendaGrid({
             <div className="px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-ink/40">
               Heure
             </div>
-            {staff.map((s) => (
-              <div key={s.id} className="border-l border-line px-3 py-3 text-sm font-semibold">
-                {s.name}
+            {staff.map((s) => {
+              const color = columnMode === "staff" ? staffColor(s.id, palette) : null;
+              return (
+              <div key={s.id} className="flex items-center gap-2 border-l border-line px-3 py-3 text-sm font-semibold">
+                {color ? <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", color.bar)} /> : null}
+                <span className="truncate">{s.name}</span>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div

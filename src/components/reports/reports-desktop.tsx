@@ -37,6 +37,8 @@ import {
   type ReportsViewModel,
 } from "@/components/reports/reports-helpers";
 import { cn } from "@/lib/utils";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { formatMad, formatPct } from "@/modules/analytics/service";
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
 import type { LoyaltyAnalytics } from "@/types/analytics";
@@ -53,6 +55,7 @@ export function ReportsDesktop({
   ledger: StockLedgerReportRow[];
   loyalty: LoyaltyAnalytics | null;
 }) {
+  const palette = useStaffPalette();
   const ov = vm.overview;
   const completed = statusCount(vm.agenda, "COMPLETED");
   const cancelled = statusCount(vm.agenda, "CANCELLED");
@@ -488,11 +491,13 @@ export function ReportsDesktop({
                     </tr>
                   </thead>
                   <tbody>
-                    {vm.staffRows.map((s) => (
+                    {vm.staffRows.map((s) => {
+                      const color = staffColor(s.staffId, palette);
+                      return (
                       <tr key={s.staffId} className="border-b border-surface-container-low">
                         <td className="px-2 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-container text-xs font-bold text-white">
+                            <div className={cn("flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold", color.soft, color.text)}>
                               {initials(s.staffName)}
                             </div>
                             <span className="font-bold">{s.staffName}</span>
@@ -502,7 +507,8 @@ export function ReportsDesktop({
                         <td className="px-2 py-3 text-right font-extrabold">{formatMad(s.revenue)}</td>
                         <td className="px-2 py-3 text-right font-bold text-primary">{formatMad(s.commission)}</td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-surface-container font-bold">

@@ -27,6 +27,8 @@ import {
   statusDotClass,
 } from "@/components/staff/staff-helpers";
 import { StaffMobile } from "@/components/staff/staff-mobile";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { Drawer } from "@/components/ui/drawer";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -592,6 +594,7 @@ function StaffMasterCard({
 }) {
   const showFinance = canPerf && !financeHidden;
   const share = showFinance && teamRevenue > 0 && s.revenue > 0 ? Math.round((s.revenue / teamRevenue) * 100) : null;
+  const color = staffColor(s.id, useStaffPalette());
 
   return (
     <article
@@ -606,7 +609,9 @@ function StaffMasterCard({
           <div className="relative">
             <div
               className={cn(
-                "flex items-center justify-center rounded-xl bg-[#FFD9DE] font-bold text-primary",
+                "flex items-center justify-center rounded-xl font-bold",
+                color.soft,
+                color.text,
                 selected ? "h-16 w-16 text-[18px]" : "h-14 w-14 text-[15px]",
               )}
             >

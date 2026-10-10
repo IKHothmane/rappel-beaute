@@ -11,6 +11,7 @@ import type {
   CreateStaffOvertimeInput,
   CreateStaffReplacementInput,
   OrganizationClosureItem,
+  PlanningLeaveHistoryItem,
   StaffOvertimeItem,
   StaffReplacementItem,
 } from "@/types/planning";
@@ -126,19 +127,24 @@ export async function listStaffOvertimes(
   const { rows } = await pool.query<{
     id: string;
     staffId: string;
+    staffName: string;
     startAt: Date;
     endAt: Date;
     reason: string | null;
   }>(
-    `SELECT o.id, o."staffId", o."startAt", o."endAt", o.reason
+    `SELECT o.id, o."staffId",
+            CONCAT(st."firstName", ' ', st."lastName") AS "staffName",
+            o."startAt", o."endAt", o.reason
      FROM "StaffOvertime" o
+     JOIN "Staff" st ON st.id = o."staffId"
      WHERE ${conditions.join(" AND ")}
-     ORDER BY o."startAt"`,
+     ORDER BY o."startAt" DESC`,
     params,
   );
   return rows.map((r) => ({
     id: r.id,
     staffId: r.staffId,
+    staffName: r.staffName.trim(),
     startAt: r.startAt.toISOString(),
     endAt: r.endAt.toISOString(),
     reason: r.reason,
@@ -185,6 +191,64 @@ export async function createStaffOvertime(
   };
 }
 
+export async function updateStaffOvertime(
+  organizationId: string,
+  id: string,
+  input: Partial<CreateStaffOvertimeInput>,
+  actor: { id: string; name?: string | null },
+): Promise<StaffOvertimeItem> {
+  const current = await pool.query<{
+    staffId: string;
+    startAt: Date;
+    endAt: Date;
+    reason: string | null;
+  }>(
+    `SELECT "staffId", "startAt", "endAt", reason
+     FROM "StaffOvertime"
+     WHERE id = $1 AND "organizationId" = $2`,
+    [id, organizationId],
+  );
+  const row = current.rows[0];
+  if (!row) throw new Error("NOT_FOUND");
+
+  const staffId = input.staffId ?? row.staffId;
+  const start = input.startAt ? new Date(input.startAt) : row.startAt;
+  const end = input.endAt ? new Date(input.endAt) : row.endAt;
+  const reason = input.reason !== undefined ? input.reason : row.reason;
+  if (!(end > start)) throw new Error("INVALID_RANGE");
+
+  if (input.staffId && input.staffId !== row.staffId) {
+    const staff = await pool.query(
+      `SELECT id FROM "Staff" WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
+      [staffId, organizationId],
+    );
+    if (!staff.rows[0]) throw new Error("STAFF_NOT_FOUND");
+  }
+
+  await pool.query(
+    `UPDATE "StaffOvertime"
+     SET "staffId" = $3, "startAt" = $4, "endAt" = $5, reason = $6, "updatedAt" = NOW()
+     WHERE id = $1 AND "organizationId" = $2`,
+    [id, organizationId, staffId, start, end, reason],
+  );
+  await writeAuditLog({
+    organizationId,
+    actorId: actor.id,
+    actorName: actor.name,
+    entityType: "StaffOvertime",
+    entityId: id,
+    action: "STAFF_OVERTIME_UPDATED",
+    after: { staffId, startAt: start.toISOString(), endAt: end.toISOString() },
+  });
+  return {
+    id,
+    staffId,
+    startAt: start.toISOString(),
+    endAt: end.toISOString(),
+    reason,
+  };
+}
+
 export async function deleteStaffOvertime(
   organizationId: string,
   id: string,
@@ -207,9 +271,10 @@ export async function deleteStaffOvertime(
 
 export async function listStaffReplacements(
   organizationId: string,
-  opts?: { from?: Date; to?: Date },
+  opts?: { from?: Date; to?: Date; includeInactive?: boolean },
 ): Promise<StaffReplacementItem[]> {
-  const conditions = [`r."organizationId" = $1`, `r.active = true`];
+  const conditions = [`r."organizationId" = $1`];
+  if (!opts?.includeInactive) conditions.push(`r.active = true`);
   const params: unknown[] = [organizationId];
   if (opts?.from) {
     params.push(opts.from);
@@ -309,6 +374,115 @@ export async function createStaffReplacement(
   const found = list.find((r) => r.id === id);
   if (!found) throw new Error("NOT_FOUND");
   return found;
+}
+
+export async function updateStaffReplacement(
+  organizationId: string,
+  id: string,
+  input: Partial<CreateStaffReplacementInput>,
+  actor: { id: string; name?: string | null },
+): Promise<StaffReplacementItem> {
+  const current = await pool.query<{
+    absentStaffId: string;
+    substituteStaffId: string;
+    startAt: Date;
+    endAt: Date;
+    reason: string | null;
+  }>(
+    `SELECT "absentStaffId", "substituteStaffId", "startAt", "endAt", reason
+     FROM "StaffReplacement"
+     WHERE id = $1 AND "organizationId" = $2 AND active = true`,
+    [id, organizationId],
+  );
+  const row = current.rows[0];
+  if (!row) throw new Error("NOT_FOUND");
+
+  const absentStaffId = input.absentStaffId ?? row.absentStaffId;
+  const substituteStaffId = input.substituteStaffId ?? row.substituteStaffId;
+  if (absentStaffId === substituteStaffId) throw new Error("SAME_STAFF");
+  const start = input.startAt ? new Date(input.startAt) : row.startAt;
+  const end = input.endAt ? new Date(input.endAt) : row.endAt;
+  const reason = input.reason !== undefined ? input.reason : row.reason;
+  if (!(end > start)) throw new Error("INVALID_RANGE");
+
+  const staffCheck = await pool.query(
+    `SELECT id FROM "Staff"
+     WHERE "organizationId" = $1 AND "deletedAt" IS NULL
+       AND id IN ($2, $3)`,
+    [organizationId, absentStaffId, substituteStaffId],
+  );
+  if (staffCheck.rows.length !== 2) throw new Error("STAFF_NOT_FOUND");
+
+  await pool.query(
+    `UPDATE "StaffReplacement"
+     SET "absentStaffId" = $3, "substituteStaffId" = $4, "startAt" = $5, "endAt" = $6,
+         reason = $7, "updatedAt" = NOW()
+     WHERE id = $1 AND "organizationId" = $2`,
+    [id, organizationId, absentStaffId, substituteStaffId, start, end, reason],
+  );
+  await writeAuditLog({
+    organizationId,
+    actorId: actor.id,
+    actorName: actor.name,
+    entityType: "StaffReplacement",
+    entityId: id,
+    action: "STAFF_REPLACEMENT_UPDATED",
+    after: {
+      absentStaffId,
+      substituteStaffId,
+      startAt: start.toISOString(),
+      endAt: end.toISOString(),
+    },
+  });
+  const list = await listStaffReplacements(organizationId, { includeInactive: true });
+  const found = list.find((item) => item.id === id);
+  if (!found) throw new Error("NOT_FOUND");
+  return found;
+}
+
+export async function listOrganizationLeaves(
+  organizationId: string,
+  opts?: { from?: Date; to?: Date },
+): Promise<PlanningLeaveHistoryItem[]> {
+  const conditions = [`st."organizationId" = $1`, `st."deletedAt" IS NULL`];
+  const params: unknown[] = [organizationId];
+  if (opts?.from) {
+    params.push(opts.from);
+    conditions.push(`l."endAt" >= $${params.length}`);
+  }
+  if (opts?.to) {
+    params.push(opts.to);
+    conditions.push(`l."startAt" <= $${params.length}`);
+  }
+  const { rows } = await pool.query<{
+    id: string;
+    staffId: string;
+    staffName: string;
+    startAt: Date;
+    endAt: Date;
+    type: PlanningLeaveHistoryItem["type"];
+    reason: string | null;
+    status: PlanningLeaveHistoryItem["status"];
+  }>(
+    `SELECT l.id, l."staffId",
+            CONCAT(st."firstName", ' ', st."lastName") AS "staffName",
+            l."startAt", l."endAt", l.type::text AS type, l.reason, l.status::text AS status
+     FROM "StaffLeave" l
+     JOIN "Staff" st ON st.id = l."staffId"
+     WHERE ${conditions.join(" AND ")}
+     ORDER BY l."startAt" DESC`,
+    params,
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    staffId: row.staffId,
+    staffName: row.staffName.trim(),
+    startAt: row.startAt.toISOString(),
+    endAt: row.endAt.toISOString(),
+    type: row.type,
+    reason: row.reason,
+    status: row.status,
+  }));
 }
 
 export async function deactivateStaffReplacement(

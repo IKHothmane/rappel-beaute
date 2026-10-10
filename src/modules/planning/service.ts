@@ -3,6 +3,7 @@ import type {
   CreateStaffOvertimeInput,
   CreateStaffReplacementInput,
   OrganizationClosureItem,
+  PlanningLeaveHistoryItem,
   StaffOvertimeItem,
   StaffReplacementItem,
 } from "@/types/planning";
@@ -56,6 +57,36 @@ export async function createReplacementApi(input: CreateStaffReplacementInput) {
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ kind: "replacement", ...input }),
+  });
+  return parseJson<StaffReplacementItem>(res);
+}
+
+export async function loadPlanningHistoryApi() {
+  const res = await fetch("/api/planning/?history=1", fetchOpts);
+  return parseJson<{
+    closures: OrganizationClosureItem[];
+    overtimes: StaffOvertimeItem[];
+    replacements: StaffReplacementItem[];
+    leaves: PlanningLeaveHistoryItem[];
+  }>(res);
+}
+
+export async function updateOvertimeApi(id: string, input: CreateStaffOvertimeInput) {
+  const res = await fetch("/api/planning/", {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind: "overtime", id, ...input }),
+  });
+  return parseJson<StaffOvertimeItem>(res);
+}
+
+export async function updateReplacementApi(id: string, input: CreateStaffReplacementInput) {
+  const res = await fetch("/api/planning/", {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind: "replacement", id, ...input }),
   });
   return parseJson<StaffReplacementItem>(res);
 }

@@ -43,15 +43,19 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2.5">
-          <div className="hidden items-center gap-2.5 lg:flex">
-            <Link href="/professionnel/" className="btn-ghost px-4 py-2 transition hover:scale-[1.02]">
-              Je suis un professionnel
-            </Link>
-            <Link href="/connexion/" className="btn-primary px-4 py-2 transition hover:scale-[1.02]">
-              Se connecter
-            </Link>
-          </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Link
+            href="/professionnel/"
+            className="btn-ghost hidden px-4 py-2 transition hover:scale-[1.02] lg:inline-flex"
+          >
+            Je suis un professionnel
+          </Link>
+          <Link
+            href="/connexion/"
+            className="btn-primary px-3 py-2 text-[13px] transition hover:scale-[1.02] sm:px-4"
+          >
+            Se connecter
+          </Link>
 
           <button
             type="button"

@@ -7,6 +7,8 @@ import {
   APPOINTMENT_STATUS_STYLE,
 } from "@/modules/appointments/constants";
 import { cn } from "@/lib/utils";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 
 type AppointmentCardProps = {
   appointment: Appointment;
@@ -25,6 +27,8 @@ export function AppointmentCard({
   style,
   className,
 }: AppointmentCardProps) {
+  const palette = useStaffPalette();
+  const color = staffColor(appointment.staffId, palette);
   const s = APPOINTMENT_STATUS_STYLE[appointment.status];
   const start = new Date(appointment.startAt);
   const end = new Date(appointment.endAt);
@@ -59,9 +63,12 @@ export function AppointmentCard({
       </p>
       <p className="truncate text-xs text-ink/60">{appointment.customerName}</p>
       {!compact ? (
-        <p className="mt-1 truncate text-[10px] text-ink/45">
-          {appointment.staffName}
-          {appointment.resourceName ? ` · ${appointment.resourceName}` : ""}
+        <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] text-ink/45">
+          <span className={cn("h-2 w-2 shrink-0 rounded-full", color.bar)} />
+          <span className="truncate">
+            {appointment.staffName}
+            {appointment.resourceName ? ` · ${appointment.resourceName}` : ""}
+          </span>
         </p>
       ) : null}
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

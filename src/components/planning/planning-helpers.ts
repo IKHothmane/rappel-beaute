@@ -124,13 +124,6 @@ export function cellForStaffDay(staff: StaffAgendaContext, date: Date): DayCell 
     return { kind: "leave", label: LEAVE_TYPE_LABEL[leave.type], type: leave.type };
   }
 
-  const replacement = (staff.replacementsAsAbsent ?? []).find((item) =>
-    overlaps(dayStart, dayEnd, new Date(item.startAt), new Date(item.endAt)),
-  );
-  if (replacement) {
-    return { kind: "replaced", substituteName: replacement.substituteName };
-  }
-
   const schedule = staff.schedules.find((item) => item.dayOfWeek === dow && item.active);
   if (schedule) {
     return {
@@ -158,6 +151,61 @@ export function cellForStaffDay(staff: StaffAgendaContext, date: Date): DayCell 
   }
 
   return { kind: "off" };
+}
+
+export function overtimeSpanOnDay(
+  staff: StaffAgendaContext,
+  date: Date,
+): { start: string; end: string } | null {
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+  const overtime = (staff.overtimes ?? []).find((item) =>
+    overlaps(dayStart, dayEnd, new Date(item.startAt), new Date(item.endAt)),
+  );
+  if (!overtime) return null;
+  const start = new Date(overtime.startAt);
+  const end = new Date(overtime.endAt);
+  const stamp = (value: Date) =>
+    `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+  return { start: stamp(start), end: stamp(end) };
+}
+
+function stampClock(value: Date) {
+  return `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+}
+
+export function replacementSpanOnDay(
+  staff: StaffAgendaContext,
+  date: Date,
+): { start: string; end: string; substituteName: string } | null {
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+  const item = (staff.replacementsAsAbsent ?? []).find((row) =>
+    overlaps(dayStart, dayEnd, new Date(row.startAt), new Date(row.endAt)),
+  );
+  if (!item) return null;
+  return {
+    start: stampClock(new Date(item.startAt)),
+    end: stampClock(new Date(item.endAt)),
+    substituteName: item.substituteName,
+  };
+}
+
+export function coveringSpanOnDay(
+  staff: StaffAgendaContext,
+  date: Date,
+): { start: string; end: string; absentName: string } | null {
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+  const item = (staff.replacementsAsSubstitute ?? []).find((row) =>
+    overlaps(dayStart, dayEnd, new Date(row.startAt), new Date(row.endAt)),
+  );
+  if (!item) return null;
+  return {
+    start: stampClock(new Date(item.startAt)),
+    end: stampClock(new Date(item.endAt)),
+    absentName: item.absentName,
+  };
 }
 
 export function weekHours(staff: StaffAgendaContext, dates: Date[]): number {
@@ -234,6 +282,17 @@ export function detectConflicts(
       });
       continue;
     }
+    const rep = (person.replacementsAsAbsent ?? []).find((item) =>
+      overlaps(start, end, new Date(item.startAt), new Date(item.endAt)),
+    );
+    if (rep) {
+      conflicts.push({
+        kind: "off_rdv",
+        title: "Conflit remplacement / RDV Agenda",
+        detail: `${person.firstName} : RDV ${apt.customerName} alors qu’elle est remplacée par ${rep.substituteName}.`,
+      });
+      continue;
+    }
     if (cell.kind === "off" || cell.kind === "replaced") {
       conflicts.push({
         kind: "off_rdv",
@@ -252,7 +311,7 @@ export function detectConflicts(
   });
 }
 
-export function hourWindow(staff: StaffAgendaContext[]): { startHour: number; endHour: number } {
+export function hourWindow(staff: StaffAgendaContext[], dates: Date[] = []): { startHour: number; endHour: number } {
   let min = 9;
   let max = 19;
   for (const person of staff) {
@@ -260,24 +319,84 @@ export function hourWindow(staff: StaffAgendaContext[]): { startHour: number; en
       min = Math.min(min, Math.floor(minutesFromTime(schedule.startTime) / 60));
       max = Math.max(max, Math.ceil(minutesFromTime(schedule.endTime) / 60));
     }
+    for (const date of dates) {
+      const dayStart = startOfDay(date);
+      const dayEnd = endOfDay(date);
+      const ranges = [
+        ...(person.overtimes ?? []).map((item) => ({ startAt: item.startAt, endAt: item.endAt })),
+        ...(person.replacementsAsAbsent ?? []).map((item) => ({ startAt: item.startAt, endAt: item.endAt })),
+        ...(person.replacementsAsSubstitute ?? []).map((item) => ({ startAt: item.startAt, endAt: item.endAt })),
+      ];
+      for (const range of ranges) {
+        const start = new Date(range.startAt);
+        const end = new Date(range.endAt);
+        if (!overlaps(dayStart, dayEnd, start, end)) continue;
+        const startHour = sameDay(start, date) ? start.getHours() : 0;
+        const endHour = sameDay(end, date)
+          ? end.getHours() + (end.getMinutes() > 0 || end.getSeconds() > 0 ? 1 : 0)
+          : 24;
+        min = Math.min(min, startHour);
+        max = Math.max(max, endHour === 0 ? 24 : endHour);
+      }
+    }
   }
-  return { startHour: Math.max(8, min), endHour: Math.min(21, Math.max(max, min + 1)) };
+  return { startHour: Math.max(0, min), endHour: Math.min(24, Math.max(max, min + 1)) };
 }
 
 export function staffAtHour(
   staff: StaffAgendaContext,
   date: Date,
   hour: number,
-): { present: boolean; onBreak: boolean; label?: string; startedThisHour?: boolean } {
+): { present: boolean; onBreak: boolean; overtime?: boolean; replacement?: boolean; label?: string; startedThisHour?: boolean } {
+  const hourStart = new Date(date);
+  hourStart.setHours(hour, 0, 0, 0);
+  const hourEnd = new Date(hourStart);
+  hourEnd.setHours(hour + 1, 0, 0, 0);
+  const absent = (staff.replacementsAsAbsent ?? []).find((item) =>
+    overlaps(hourStart, hourEnd, new Date(item.startAt), new Date(item.endAt)),
+  );
+  if (absent) return { present: false, onBreak: false };
+  const cover = (staff.replacementsAsSubstitute ?? []).find((item) =>
+    overlaps(hourStart, hourEnd, new Date(item.startAt), new Date(item.endAt)),
+  );
+  const overtime = (staff.overtimes ?? []).find((item) =>
+    overlaps(hourStart, hourEnd, new Date(item.startAt), new Date(item.endAt)),
+  );
   const cell = cellForStaffDay(staff, date);
-  if (cell.kind !== "work" && cell.kind !== "overtime") {
+  const hourM = hour * 60;
+  let inShift = false;
+  let shiftStart = 0;
+  if (cell.kind === "work") {
+    shiftStart = minutesFromTime(cell.start);
+    const shiftEnd = minutesFromTime(cell.end);
+    inShift = hourM >= shiftStart && hourM < shiftEnd;
+  }
+  if (!inShift && !overtime && !cover) {
     return { present: false, onBreak: false };
   }
-  const startM = minutesFromTime(cell.start);
-  const endM = minutesFromTime(cell.end);
-  const hourM = hour * 60;
-  if (hourM < startM || hourM >= endM) {
-    return { present: false, onBreak: false, label: hourM === endM ? `Fin ${cell.end}` : undefined };
+  if (!inShift && cover) {
+    const start = new Date(cover.startAt);
+    const end = new Date(cover.endAt);
+    return {
+      present: true,
+      onBreak: false,
+      replacement: true,
+      label: `Rempl. ${cover.absentName.split(" ")[0]} ${formatShiftBadge(stampClock(start), stampClock(end))}`,
+      startedThisHour: sameDay(start, date) && start.getHours() === hour,
+    };
+  }
+  if (!inShift && overtime) {
+    const start = new Date(overtime.startAt);
+    const end = new Date(overtime.endAt);
+    const stamp = (value: Date) =>
+      `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+    return {
+      present: true,
+      onBreak: false,
+      overtime: true,
+      label: `HS ${formatShiftBadge(stamp(start), stamp(end))}`,
+      startedThisHour: sameDay(start, date) && start.getHours() === hour,
+    };
   }
   const onBreak = staff.breaks.some((item) => {
     if (item.dayOfWeek !== date.getDay()) return false;
@@ -288,8 +407,15 @@ export function staffAtHour(
   return {
     present: !onBreak,
     onBreak,
-    label: formatShiftBadge(cell.start, cell.end),
-    startedThisHour: Math.floor(startM / 60) === hour,
+    replacement: Boolean(cover),
+    label: cover
+      ? `Rempl. ${cover.absentName.split(" ")[0]} ${formatShiftBadge(stampClock(new Date(cover.startAt)), stampClock(new Date(cover.endAt)))}`
+      : cell.kind === "work"
+        ? formatShiftBadge(cell.start, cell.end)
+        : undefined,
+    startedThisHour: cover
+      ? sameDay(new Date(cover.startAt), date) && new Date(cover.startAt).getHours() === hour
+      : Math.floor(shiftStart / 60) === hour,
   };
 }
 

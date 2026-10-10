@@ -64,9 +64,15 @@ function checkStaffAvailability(
     const oEnd = parseDate(ot.endAt);
     return start >= oStart && end <= oEnd;
   });
+  const coveredByReplacement = (staff.replacementsAsSubstitute ?? []).some((rep) => {
+    const rStart = parseDate(rep.startAt);
+    const rEnd = parseDate(rep.endAt);
+    return start >= rStart && end <= rEnd;
+  });
+  const covered = coveredByOt || coveredByReplacement;
 
   if (!ignoreSchedule) {
-    if (!schedule && !coveredByOt) {
+    if (!schedule && !covered) {
       conflicts.push(`${staff.displayName} ne travaille pas ce jour.`);
       return conflicts;
     }
@@ -75,7 +81,7 @@ function checkStaffAvailability(
       const workStart = businessTimeOnDate(start, schedule.startTime);
       const workEnd = businessTimeOnDate(start, schedule.endTime);
       const withinSchedule = start >= workStart && end <= workEnd;
-      if (!withinSchedule && !coveredByOt) {
+      if (!withinSchedule && !covered) {
         conflicts.push(
           `Hors horaires de ${staff.displayName} (${schedule.startTime}–${schedule.endTime}).`,
         );
@@ -313,8 +319,11 @@ export function isStaffAvailableOnDate(
     const oEnd = parseDate(ot.endAt);
     return overlaps(dayStart, dayEnd, oStart, oEnd);
   });
+  const covering = (staff.replacementsAsSubstitute ?? []).some((rep) =>
+    overlaps(dayStart, dayEnd, parseDate(rep.startAt), parseDate(rep.endAt)),
+  );
 
-  if (!hasSchedule && !hasOt) return false;
+  if (!hasSchedule && !hasOt && !covering) return false;
 
   for (const leave of staff.leaves) {
     if (leave.status !== "APPROVED") continue;
@@ -323,11 +332,6 @@ export function isStaffAvailableOnDate(
     if (overlaps(dayStart, dayEnd, lStart, lEnd)) return false;
   }
 
-  for (const rep of staff.replacementsAsAbsent ?? []) {
-    if (overlaps(dayStart, dayEnd, parseDate(rep.startAt), parseDate(rep.endAt))) {
-      return false;
-    }
-  }
   return true;
 }
 

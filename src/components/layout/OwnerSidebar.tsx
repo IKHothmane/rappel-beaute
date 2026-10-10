@@ -141,7 +141,7 @@ export default function OwnerSidebar({
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-line bg-white transition-[width,transform] duration-300 lg:z-40 lg:translate-x-0",
+          "app-sidebar fixed left-0 top-0 z-50 flex flex-col border-r border-line bg-white transition-[width,transform] duration-300 lg:z-40 lg:translate-x-0",
           collapsed ? "lg:w-[76px]" : "lg:w-[280px]",
           "w-[280px]",
           open ? "translate-x-0" : "-translate-x-full",

@@ -32,9 +32,12 @@ import {
   type ReportsViewModel,
 } from "@/components/reports/reports-helpers";
 import { cn } from "@/lib/utils";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { formatMad, formatPct } from "@/modules/analytics/service";
 
 export function ReportsMobile(vm: ReportsViewModel) {
+  const palette = useStaffPalette();
   const ov = vm.overview;
   const completed = statusCount(vm.agenda, "COMPLETED");
   const presence = presenceRate(vm.agenda);
@@ -409,13 +412,15 @@ export function ReportsMobile(vm: ReportsViewModel) {
             </span>
           </div>
           <div className="space-y-2">
-            {vm.staffRows.map((s) => (
+            {vm.staffRows.map((s) => {
+              const color = staffColor(s.staffId, palette);
+              return (
               <div
                 key={s.staffId}
                 className="flex items-center justify-between gap-2 rounded-lg bg-surface-container-low p-2.5"
               >
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-container text-xs font-bold text-on-primary-container shadow-sm">
+                  <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-sm", color.soft, color.text)}>
                     {initials(s.staffName)}
                   </div>
                   <div className="min-w-0">
@@ -430,7 +435,8 @@ export function ReportsMobile(vm: ReportsViewModel) {
                   <p className="text-sm font-bold text-primary">{formatMad(s.commission)}</p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       ) : null}

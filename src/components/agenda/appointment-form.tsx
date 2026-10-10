@@ -3,6 +3,8 @@
 import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AvailabilitySlots } from "@/components/agenda/availability-slots";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { Button } from "@/components/ui/button";
 import { FieldGroup, Label, Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -45,6 +47,7 @@ export function AppointmentForm({
   onSubmit,
   onCancel,
 }: AppointmentFormProps) {
+  const palette = useStaffPalette();
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   const [customerMode, setCustomerMode] = useState<"search" | "new">("search");
   const [query, setQuery] = useState("");
@@ -448,8 +451,13 @@ export function AppointmentForm({
                       : "border-line bg-white text-ink hover:bg-[#FFEFF8]"
                   }`}
                 >
-                  {s.name}
-                  {s.onLeave ? <span className="text-ink/45"> · en congé</span> : null}
+                  <span className="flex items-center gap-2">
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${staffColor(s.id, palette).bar}`} />
+                    <span>
+                      {s.name}
+                      {s.onLeave ? <span className="text-ink/45"> · en congé</span> : null}
+                    </span>
+                  </span>
                 </button>
               ))}
               {allowedStaff.length === 0 ? (

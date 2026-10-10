@@ -8,6 +8,7 @@ import {
   APPOINTMENT_STATUS_LABEL,
 } from "@/modules/appointments/constants";
 import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { AppointmentPayBadge } from "@/components/agenda/appointment-pay-badge";
 import { cn } from "@/lib/utils";
 import type { Appointment } from "@/types/appointment";
@@ -59,6 +60,7 @@ export function AgendaWeekBoard({
   onEmptySlotClick,
   onDrop,
 }: AgendaWeekBoardProps) {
+  const palette = useStaffPalette();
   const slots = Array.from(
     { length: ((AGENDA_CLOSE_HOUR - AGENDA_OPEN_HOUR) * 60) / AGENDA_SLOT_MINUTES },
     (_, i) => {
@@ -225,7 +227,7 @@ export function AgendaWeekBoard({
                   {dayAppts.map((apt) => {
                     const start = new Date(apt.startAt);
                     const end = new Date(apt.endAt);
-                    const color = staffColor(apt.staffId);
+                    const color = staffColor(apt.staffId, palette);
                     const active = apt.id === selectedAppointmentId;
                     return (
                       <div

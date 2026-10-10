@@ -24,6 +24,7 @@ import {
 import { formatMad } from "@/modules/analytics/service";
 import { getCustomer } from "@/modules/customers/service";
 import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import {
   AppointmentPayBadge,
   appointmentPayDetail,
@@ -93,6 +94,7 @@ export function AppointmentDetails({
   onCancel,
   onChange,
 }: AppointmentDetailsProps) {
+  const palette = useStaffPalette();
   const user = useCurrentUser();
   const s = APPOINTMENT_STATUS_STYLE[appointment.status];
   const start = new Date(appointment.startAt);
@@ -100,7 +102,7 @@ export function AppointmentDetails({
   const transitions = STATUS_TRANSITIONS[appointment.status] ?? [];
   const depositState = appointment.depositState ?? "NOT_REQUIRED";
   const awaitingDeposit = depositState === "AWAITING";
-  const color = staffColor(appointment.staffId);
+  const color = staffColor(appointment.staffId, palette);
   const mins = durationMin(appointment.startAt, appointment.endAt);
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
 

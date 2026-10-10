@@ -29,6 +29,8 @@ import {
   type AnalyticsViewModel,
 } from "@/components/analytics/analytics-helpers";
 import { cn } from "@/lib/utils";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { formatMad, formatPct } from "@/modules/analytics/service";
 
 function paymentBarColor(method: string): string {
@@ -51,6 +53,7 @@ function paymentBarColor(method: string): string {
 }
 
 export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
+  const palette = useStaffPalette();
   const ov = vm.overview;
   const topServices = vm.services.slice(0, 4);
   const topStaff = [...vm.staff].sort((a, b) => b.revenue - a.revenue).slice(0, 4);
@@ -649,14 +652,15 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
             <p className="text-sm text-on-surface-variant">Aucune donnée équipe.</p>
           ) : (
             <ul className="space-y-3">
-              {topStaff.map((s, idx) => (
+              {topStaff.map((s) => {
+                const color = staffColor(s.staffId, palette);
+                return (
                 <li key={s.staffId} className="flex items-center gap-3">
                   <span
                     className={cn(
                       "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                      idx === 0
-                        ? "bg-primary-container text-on-primary"
-                        : "bg-surface-container-high text-on-surface",
+                      color.soft,
+                      color.text,
                     )}
                   >
                     {initials(s.staffName)}
@@ -669,7 +673,8 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
                   </div>
                   <span className="shrink-0 text-sm font-bold">{formatMad(s.revenue)}</span>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
           <Link

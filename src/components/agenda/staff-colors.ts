@@ -31,7 +31,10 @@ export function assignStaffColors(ids: string[]): Map<string, StaffColor> {
 }
 
 export function staffColor(staffId: string | null | undefined, assigned?: Map<string, StaffColor>) {
-  if (staffId && assigned?.has(staffId)) return assigned.get(staffId)!;
+  if (assigned) {
+    if (staffId && assigned.has(staffId)) return assigned.get(staffId)!;
+    return STAFF_COLOR_LIST[0];
+  }
   const id = staffId ?? "";
   let hash = 0;
   for (let i = 0; i < id.length; i += 1) hash = (hash + id.charCodeAt(i) * (i + 1)) % STAFF_COLOR_LIST.length;

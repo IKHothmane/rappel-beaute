@@ -145,7 +145,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-screen w-[260px] flex-col border-r border-line bg-white transition-transform duration-300 lg:z-40 lg:translate-x-0",
+          "app-sidebar fixed left-0 top-0 z-50 flex w-[260px] flex-col border-r border-line bg-white transition-transform duration-300 lg:z-40 lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >

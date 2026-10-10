@@ -26,6 +26,8 @@ import {
   statusDotClass,
 } from "@/components/staff/staff-helpers";
 import { cn } from "@/lib/utils";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { formatMad, formatPct } from "@/modules/analytics/service";
 import type { AnalyticsOverview, ReviewAnalytics } from "@/types/analytics";
 import type { StaffListItem } from "@/types/staff";
@@ -345,6 +347,7 @@ function StaffListCard({
   canWrite: boolean;
 }) {
   const showFinance = canPerf && !financeHidden;
+  const color = staffColor(s.id, useStaffPalette());
   return (
     <article
       className={cn(
@@ -355,7 +358,7 @@ function StaffListCard({
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={onOpen} className="flex min-w-0 items-center gap-2 text-left">
           <div className="relative">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FFD9DE] text-[13px] font-bold text-primary">
+            <div className={cn("flex h-12 w-12 items-center justify-center rounded-full text-[13px] font-bold", color.soft, color.text)}>
               {staffInitials(s.firstName, s.lastName)}
             </div>
             <span

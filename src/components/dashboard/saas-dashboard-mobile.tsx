@@ -20,6 +20,8 @@ import {
 import { formatMad, formatPct } from "@/modules/analytics/service";
 import { APPOINTMENT_STATUS_LABEL } from "@/modules/appointments/constants";
 import { cn } from "@/lib/utils";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
 import type { Appointment } from "@/types/appointment";
 import type {
@@ -73,6 +75,7 @@ export type SaasDashboardMobileProps = {
 };
 
 export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
+  const palette = useStaffPalette();
   const {
     firstName,
     orgName,
@@ -446,14 +449,17 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
           <p className="text-sm text-ink/45">Pas encore de performance sur la période.</p>
         ) : (
           <div className="flex flex-col gap-4">
-            {staffRows.map((row, i) => (
+            {staffRows.map((row) => {
+              const color = staffColor(row.staffId, palette);
+              return (
               <div key={row.staffId} className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
                         "flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold",
-                        i === 0 ? "bg-primary/10 text-primary" : "bg-[#FBF4F6] text-ink/60",
+                        color.soft,
+                        color.text,
                       )}
                     >
                       {row.staffName.charAt(0)}
@@ -467,12 +473,13 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-[#FBF4F6]">
                   <div
-                    className="h-full rounded-full bg-primary"
+                    className={cn("h-full rounded-full", color.bar)}
                     style={{ width: `${Math.round((row.revenue / maxStaffRev) * 100)}%` }}
                   />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

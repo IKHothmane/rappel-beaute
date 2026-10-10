@@ -22,6 +22,8 @@ import {
   todayScheduleLabel,
 } from "@/components/staff/staff-helpers";
 import { cn } from "@/lib/utils";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { formatMad as formatCommissionMad, getStaffCommissions } from "@/modules/commissions/service";
 import { formatMad } from "@/modules/analytics/service";
 import { getStaff } from "@/modules/staff/service";
@@ -99,12 +101,13 @@ export function StaffFocusPanel({
   const disabledServices = detail?.services.filter((s) => !s.active) ?? [];
   const shownEnabled = enabledServices.slice(0, 4);
   const shownDisabled = disabledServices.slice(0, 2);
+  const color = staffColor(person.id, useStaffPalette());
   return (
     <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-md">
       <div className="flex items-start justify-between gap-3 border-b border-[#E4BDC2]/30 pb-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className="relative">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FFD9DE] text-[15px] font-bold text-primary ring-2 ring-primary/15">
+            <div className={cn("flex h-14 w-14 items-center justify-center rounded-full text-[15px] font-bold ring-2", color.soft, color.text, color.ring)}>
               {staffInitials(person.firstName, person.lastName)}
             </div>
           </div>

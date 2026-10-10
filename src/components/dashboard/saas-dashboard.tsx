@@ -47,6 +47,8 @@ import { listSupportTickets } from "@/modules/support/service";
 import { getWhatsAppDashboard } from "@/modules/whatsapp/service";
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
 import { cn } from "@/lib/utils";
+import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import type { Appointment } from "@/types/appointment";
 import type {
   AnalyticsOverview,
@@ -111,6 +113,7 @@ function heatClass(count: number, max: number) {
 }
 
 export function SaasDashboard() {
+  const palette = useStaffPalette();
   const user = useCurrentUser();
   const { isEnabled } = usePlanFeatures();
   const { open: drawerOpen, setOpen: setDrawerOpen } = useQuickActions();
@@ -776,14 +779,17 @@ export function SaasDashboard() {
               <p className="text-sm text-ink/45">Pas encore de performance sur la période.</p>
             ) : (
               <div className="flex flex-col gap-4">
-                {staffRows.map((row, i) => (
+                {staffRows.map((row) => {
+                  const color = staffColor(row.staffId, palette);
+                  return (
                   <div key={row.staffId} className="flex flex-col gap-1">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span
                           className={cn(
                             "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold",
-                            i === 0 ? "bg-primary text-white" : "bg-[#F0DDE9] text-ink",
+                            color.soft,
+                            color.text,
                           )}
                         >
                           {row.staffName.charAt(0)}
@@ -794,7 +800,7 @@ export function SaasDashboard() {
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-[#F0DDE9]">
                       <div
-                        className="h-full rounded-full bg-primary"
+                        className={cn("h-full rounded-full", color.bar)}
                         style={{ width: `${Math.round((row.revenue / maxStaffRev) * 100)}%` }}
                       />
                     </div>
@@ -803,7 +809,8 @@ export function SaasDashboard() {
                       <span className="font-semibold text-gold">Com. : {formatMad(row.commission)}</span>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>

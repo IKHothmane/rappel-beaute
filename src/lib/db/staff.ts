@@ -135,12 +135,13 @@ export async function listStaff(
 
     const items: StaffAgendaContext[] = [];
     for (const row of rows) {
-      const [schedules, breaks, leaves, overtimes, replacementsAsAbsent] = await Promise.all([
+      const [schedules, breaks, leaves, overtimes, replacementsAsAbsent, replacementsAsSubstitute] = await Promise.all([
         loadSchedules(row.id),
         loadBreaks(row.id),
         loadLeaves(row.id, organizationId),
         loadOvertimes(row.id, organizationId),
         loadReplacementsAsAbsent(row.id, organizationId),
+        loadReplacementsAsSubstitute(row.id, organizationId),
       ]);
       items.push({
         id: row.id,
@@ -153,6 +154,7 @@ export async function listStaff(
         leaves: leaves.filter((l) => l.status === "APPROVED"),
         overtimes,
         replacementsAsAbsent,
+        replacementsAsSubstitute,
       });
     }
     return { items, total: items.length };
@@ -322,6 +324,36 @@ async function loadReplacementsAsAbsent(staffId: string, organizationId: string)
     endAt: r.endAt.toISOString(),
     substituteStaffId: r.substituteStaffId,
     substituteName: r.substituteName.trim(),
+  }));
+}
+
+async function loadReplacementsAsSubstitute(staffId: string, organizationId: string) {
+  const from = new Date();
+  from.setDate(from.getDate() - 7);
+  const to = new Date();
+  to.setDate(to.getDate() + 90);
+  const { rows } = await pool.query<{
+    id: string;
+    startAt: Date;
+    endAt: Date;
+    absentStaffId: string;
+    absentName: string;
+  }>(
+    `SELECT r.id, r."startAt", r."endAt", r."absentStaffId",
+            CONCAT(a."firstName", ' ', a."lastName") AS "absentName"
+     FROM "StaffReplacement" r
+     JOIN "Staff" a ON a.id = r."absentStaffId"
+     WHERE r."substituteStaffId" = $1 AND r."organizationId" = $2 AND r.active = true
+       AND r."endAt" >= $3 AND r."startAt" <= $4
+     ORDER BY r."startAt"`,
+    [staffId, organizationId, from, to],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    startAt: r.startAt.toISOString(),
+    endAt: r.endAt.toISOString(),
+    absentStaffId: r.absentStaffId,
+    absentName: r.absentName.trim(),
   }));
 }
 

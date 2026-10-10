@@ -29,6 +29,7 @@ import { formatMad } from "@/modules/analytics/service";
 import { getCustomer } from "@/modules/customers/service";
 import { listWaitingList } from "@/modules/waiting-list/service";
 import { staffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { AppointmentPayBadge } from "@/components/agenda/appointment-pay-badge";
 import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
 import { cn } from "@/lib/utils";
@@ -111,6 +112,7 @@ export function AgendaMobile({
   onCreate,
   onStatusChange,
 }: AgendaMobileProps) {
+  const palette = useStaffPalette();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [waitingCount, setWaitingCount] = useState(0);
@@ -399,7 +401,7 @@ export function AgendaMobile({
                 staffFilter === s.id && "ring-2 ring-primary",
               )}
             >
-              <span className={cn("h-2 w-2 rounded-full", staffColor(s.id).bar)} />
+              <span className={cn("h-2 w-2 rounded-full", staffColor(s.id, palette).bar)} />
               {s.name.split(" ")[0]}
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#F6E3EF] text-[10px] font-bold text-primary">
                 {dayStaffCounts[s.id] ?? 0}
@@ -493,6 +495,7 @@ function MobileAptRow({
   onStatusChange: (id: string, status: AppointmentStatus) => void;
 }) {
   const user = useCurrentUser();
+  const palette = useStaffPalette();
   const tone = statusTone(apt);
   const phone = customer?.phone?.trim() || "";
   const noShows = customer?.noShowCount ?? 0;
@@ -559,7 +562,7 @@ function MobileAptRow({
         </button>
         <div className="flex items-center justify-between text-[11px] text-ink/45">
           <span className="flex items-center gap-1 text-ink">
-            <span className={cn("h-2 w-2 rounded-full", staffColor(apt.staffId).bar)} />
+            <span className={cn("h-2 w-2 rounded-full", staffColor(apt.staffId, palette).bar)} />
             {apt.staffName.split(" ")[0]}
             {apt.resourceName ? ` · ${apt.resourceName}` : ""}
           </span>

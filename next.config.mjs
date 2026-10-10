@@ -28,6 +28,9 @@ const nextConfig = {
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
+  experimental: {
+    serverComponentsExternalPackages: ["web-push"],
+  },
   images: {
     remotePatterns: [
       {

@@ -187,6 +187,12 @@ export async function listAppointmentsByOrg(
   } catch {
     /* ignore */
   }
+  try {
+    const { dispatchDueCustomerPushes } = await import("@/lib/push/customer-push");
+    await dispatchDueCustomerPushes(organizationId);
+  } catch {
+    /* ignore */
+  }
   const params: unknown[] = [organizationId];
   let where = `WHERE a."organizationId" = $1`;
   if (range?.from) {

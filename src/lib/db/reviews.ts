@@ -18,6 +18,7 @@ import type {
   UpdateReviewSettingsInput,
 } from "@/types/review";
 import { REVIEW_SATISFACTION_SCORE } from "@/types/review";
+import { newPublicReviewToken, publicReviewPath, reviewTokenExpiry } from "@/lib/reviews/public-review";
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;
@@ -189,8 +190,10 @@ export async function syncReviewRequests(organizationId: string): Promise<void> 
       organization: orgCtx,
     });
 
-    const reviewId = newId("rev");
-    const taskId = newId("wtask");
+      const reviewId = newId("rev");
+      const taskId = newId("wtask");
+      const publicToken = newPublicReviewToken();
+      const tokenExpiresAt = reviewTokenExpiry();
     const idempotencyKey = `review:${apt.id}`;
 
     const client = await pool.connect();
@@ -226,12 +229,12 @@ export async function syncReviewRequests(organizationId: string): Promise<void> 
       await client.query(
         `INSERT INTO "ReviewRequest" (
           id, "organizationId", "customerId", "appointmentId", "whatsappTaskId",
-          status, "scheduledFor", "updatedAt"
+          status, "scheduledFor", "publicToken", "tokenExpiresAt", "updatedAt"
         ) VALUES (
-          $1,$2,$3,$4,$5,'PENDING'::"ReviewRequestStatus",NOW(),NOW()
+          $1,$2,$3,$4,$5,'PENDING'::"ReviewRequestStatus",NOW(),$6,$7,NOW()
         )
         ON CONFLICT ("appointmentId") DO NOTHING`,
-        [reviewId, organizationId, apt.customerId, apt.id, waTaskId],
+        [reviewId, organizationId, apt.customerId, apt.id, waTaskId, publicToken, tokenExpiresAt],
       );
 
       await client.query("COMMIT");
@@ -402,6 +405,10 @@ function mapReviewItem(
       ? new Date(r.satisfactionRecordedAt as Date).toISOString()
       : null,
     googleReviewUrl: settings.googleReviewUrl,
+    publicReviewPath:
+      r.publicToken && r.organizationSlug
+        ? publicReviewPath(String(r.organizationSlug), String(r.publicToken))
+        : null,
   };
 }
 
@@ -426,6 +433,7 @@ export async function listReviewRequests(
 
   const { rows } = await pool.query(
     `SELECT rr.*,
+            o.slug AS "organizationSlug",
             c."firstName" || ' ' || c."lastName" AS "customerName",
             s.name AS "serviceName",
             NULLIF(TRIM(COALESCE(st."firstName", '') || ' ' || COALESCE(st."lastName", '')), '') AS "staffName",
@@ -435,6 +443,7 @@ export async function listReviewRequests(
             wt."phoneSnapshot",
             wt."sentAt"
      FROM "ReviewRequest" rr
+     JOIN "Organization" o ON o.id = rr."organizationId"
      JOIN "Customer" c ON c.id = rr."customerId"
      JOIN "Appointment" a ON a.id = rr."appointmentId"
      JOIN "Service" s ON s.id = a."serviceId"

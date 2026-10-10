@@ -79,6 +79,7 @@ export type ReviewRequestItem = {
   satisfaction: ReviewSatisfaction | null;
   satisfactionRecordedAt: string | null;
   googleReviewUrl: string | null;
+  publicReviewPath: string | null;
 };
 
 export type UpdateReviewSettingsInput = Partial<ReviewSettings>;

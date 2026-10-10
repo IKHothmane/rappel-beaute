@@ -55,6 +55,14 @@ export const metadata: Metadata = {
     shortcut: ["/favicon.ico"],
   },
 
+  manifest: "/manifest.webmanifest",
+
+  appleWebApp: {
+    capable: true,
+    title: "Rappel Beauty",
+    statusBarStyle: "default",
+  },
+
   openGraph: {
     type: "website",
     locale: "fr_MA",

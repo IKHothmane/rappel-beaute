@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { ClientPassCard } from "@/components/loyalty/client-pass-card";
+import { CustomerPushPanel } from "@/components/loyalty/customer-push-panel";
 import { WalletInstall } from "@/components/loyalty/wallet-install";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 import { SITE } from "@/lib/site";
@@ -100,6 +101,8 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
             })}
           <WalletInstall token={token} />
         </article>
+
+        <CustomerPushPanel token={token} />
 
         <div className="mt-8">
           <h2 className="font-display text-2xl font-light text-ink">Historique</h2>

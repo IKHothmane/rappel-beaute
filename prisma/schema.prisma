@@ -400,6 +400,13 @@ enum ReviewRequestStatus {
   RECORDED
 }
 
+enum PublicReviewStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+  REPORTED
+}
+
 enum ReviewSatisfaction {
   VERY_SATISFIED
   SATISFIED
@@ -495,7 +502,12 @@ model Organization {
   campaigns            Campaign[]
   reviewSettings       ReviewSettings?
   reviewRequests       ReviewRequest[]
+  reviews              Review[]
   notifications        Notification[]
+  notificationPreferences NotificationPreference[]
+  webPushSubscriptions WebPushSubscription[]
+  customerPushDeliveries CustomerPushDelivery[]
+  pushAccessGrants PushAccessGrant[]
   subscriptions        Subscription[]
   platformAuditLogs    PlatformAuditLog[]
   supportSessions      SupportSession[]
@@ -589,6 +601,11 @@ model Customer {
   reactivationSnoozes ReactivationSnooze[]
   campaignRecipients CampaignRecipient[]
   reviewRequests     ReviewRequest[]
+  reviews            Review[]
+  notificationPreference NotificationPreference[]
+  webPushSubscriptions WebPushSubscription[]
+  customerPushDeliveries CustomerPushDelivery[]
+  pushAccessGrants PushAccessGrant[]
   waitingListEntries WaitingListEntry[]
   customerNotes      CustomerNote[]
   posSales           PosSale[]
@@ -915,6 +932,7 @@ model Appointment {
   packageSessions PackageSession[]
   whatsAppTasks WhatsAppTask[]
   reviewRequests ReviewRequest[]
+  reviews        Review[]
   loyaltyEvent   LoyaltyEvent?
 
   @@unique([organizationId, bookingRef])
@@ -1505,6 +1523,106 @@ model Notification {
   @@index([organizationId, userId, createdAt])
   @@index([organizationId, userId, readAt])
   @@index([organizationId, userId, type])
+}
+
+enum CustomerPushCategory {
+  LOYALTY_REWARD
+  LOYALTY_PROGRESS
+  REVIEW_REQUEST
+  REWARD_EXPIRY
+  OFFER
+}
+
+enum CustomerPushStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+/// Consentements Web Push de la cliente. Distinct des notifications du personnel.
+model NotificationPreference {
+  id               String    @id @default(cuid())
+  organizationId   String
+  customerId       String
+  loyaltyReward    Boolean   @default(false)
+  loyaltyProgress  Boolean   @default(false)
+  reviewRequest    Boolean   @default(false)
+  rewardExpiry     Boolean   @default(false)
+  offers           Boolean   @default(false)
+  consentedAt      DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, customerId])
+  @@index([organizationId])
+}
+
+model WebPushSubscription {
+  id             String    @id @default(cuid())
+  organizationId String
+  customerId     String
+  endpoint       String    @unique
+  p256dh         String
+  auth           String
+  expirationTime DateTime?
+  revokedAt      DateTime?
+  failureCount   Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, customerId])
+}
+
+/// File d'envoi cliente. L'idempotence empêche un double envoi du même événement.
+model CustomerPushDelivery {
+  id              String               @id @default(cuid())
+  organizationId  String
+  customerId      String
+  category        CustomerPushCategory
+  idempotencyKey  String
+  title           String
+  body            String
+  url             String?
+  status          CustomerPushStatus   @default(PENDING)
+  scheduledFor    DateTime             @default(now())
+  nextAttemptAt   DateTime             @default(now())
+  lockedUntil     DateTime?
+  attemptCount    Int                  @default(0)
+  sentAt          DateTime?
+  error           String?
+  createdAt       DateTime             @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, status, scheduledFor])
+  @@index([status, nextAttemptAt])
+  @@index([customerId])
+}
+
+/// Autorisation de gérer les notifications. Le jeton public RBLOY_ ne suffit pas.
+model PushAccessGrant {
+  id             String    @id @default(cuid())
+  organizationId String
+  customerId     String
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, customerId])
 }
 
 model AuditLog {
@@ -2202,6 +2320,9 @@ model ReviewRequest {
   satisfaction            ReviewSatisfaction?
   satisfactionRecordedAt  DateTime?
   satisfactionRecordedById String?
+  /// Lien public « Donner mon avis ». Ne contient pas l'identifiant cliente.
+  publicToken             String               @unique
+  tokenExpiresAt          DateTime
   createdAt               DateTime             @default(now())
   updatedAt               DateTime             @updatedAt
 
@@ -2209,11 +2330,39 @@ model ReviewRequest {
   customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   appointment  Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   whatsAppTask WhatsAppTask? @relation(fields: [whatsappTaskId], references: [id], onDelete: SetNull)
+  review       Review?
 
   @@index([organizationId])
   @@index([organizationId, status])
   @@index([organizationId, scheduledFor])
   @@index([customerId])
+}
+
+/// Avis public 1 à 5. Distinct de la satisfaction interne WhatsApp.
+model Review {
+  id               String             @id @default(cuid())
+  organizationId   String
+  customerId       String
+  appointmentId    String             @unique
+  reviewRequestId  String             @unique
+  rating           Int
+  comment          String
+  status           PublicReviewStatus @default(PENDING)
+  publishedAt      DateTime?
+  moderatedAt      DateTime?
+  moderatedById    String?
+  reportReason     String?
+  reportedAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  appointment   Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  reviewRequest ReviewRequest @relation(fields: [reviewRequestId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
 }
 
 // ─── Plateforme (Super Admin) ────────────────────────────────────────────────

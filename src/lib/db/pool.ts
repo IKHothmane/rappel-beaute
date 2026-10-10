@@ -18,3 +18,7 @@ export const pool =
 if (process.env.NODE_ENV !== "production") {
   globalForPg.pgPool = pool;
 }
+
+if (process.env.NEXT_PHASE !== "phase-production-build") {
+  void import("@/lib/push/scheduler").then((mod) => mod.startCustomerPushScheduler());
+}

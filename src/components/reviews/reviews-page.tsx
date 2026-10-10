@@ -28,6 +28,7 @@ import {
   waHref,
 } from "@/components/reviews/reviews-helpers";
 import { ReviewsMobile } from "@/components/reviews/reviews-mobile";
+import { PublicReviewsModeration } from "@/components/reviews/public-reviews-moderation";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canSendReviews } from "@/lib/rbac";
@@ -192,6 +193,9 @@ export function ReviewsPageView() {
 
   return (
     <>
+      <div className="mb-6">
+        <PublicReviewsModeration />
+      </div>
       <ReviewsMobile {...shared} />
 
       <div className="hidden space-y-6 lg:block">
@@ -547,6 +551,15 @@ function FocusPanel({
         )}
       </div>
       <div className="rounded-xl bg-[#FFEFF8] p-4">
+        {item.publicReviewPath ? (
+          <button
+            type="button"
+            onClick={() => onCopy(`${window.location.origin}${item.publicReviewPath}`, "Lien avis")}
+            className="mb-3 text-sm font-semibold text-primary"
+          >
+            Copier le lien « Donner mon avis »
+          </button>
+        ) : null}
         <p className="text-[18px] font-bold">{item.customerName}</p>
         <p className="text-[13px] text-ink/55">
           {item.serviceName}

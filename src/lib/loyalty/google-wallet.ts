@@ -61,10 +61,11 @@ function walletOrigins(requestOrigin?: string) {
 
 function heroImage(card: CardProgress, origin?: string) {
   const raw = card.cardBackgroundUrl?.trim();
-  if (!raw || raw.includes("/api/storage/local/")) return undefined;
-  const base = origin?.replace(/\/$/, "") || "";
-  const uri = raw.startsWith("https://") ? raw : base.startsWith("https://") && raw.startsWith("/") ? `${base}${raw}` : "";
-  if (!uri) return undefined;
+  if (!raw) return undefined;
+  const preferred = origin && !/localhost|127\.0\.0\.1/.test(origin) ? origin : SITE.url;
+  const base = preferred.replace(/\/$/, "");
+  const uri = raw.startsWith("https://") ? raw : raw.startsWith("/") ? `${base}${raw}` : "";
+  if (!uri.startsWith("https://")) return undefined;
   return {
     sourceUri: { uri },
     contentDescription: fr("Arrière-plan de la carte"),

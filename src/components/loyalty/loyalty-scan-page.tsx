@@ -24,7 +24,15 @@ function extractToken(value: string) {
   return upper.trim();
 }
 
-export function LoyaltyScanPage() {
+export function LoyaltyScanPage({
+  embedded = false,
+  onPreview,
+  onValidated,
+}: {
+  embedded?: boolean;
+  onPreview?: (preview: Preview | null) => void;
+  onValidated?: () => void;
+}) {
   const [token, setToken] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -39,11 +47,13 @@ export function LoyaltyScanPage() {
     setPreview(null);
     if (!next) {
       setError("Entrez le code scanné de la cliente.");
+      onPreview?.(null);
       setBusy(false);
       return;
     }
     if (next.startsWith("RBJOIN_")) {
       setError("Ce code est le QR de l'institut. Entrez le code de la carte cliente.");
+      onPreview?.(null);
       setBusy(false);
       return;
     }
@@ -52,8 +62,10 @@ export function LoyaltyScanPage() {
       const body = (await res.json()) as Preview & { error?: string };
       if (!res.ok) throw new Error(body.error || "Code introuvable.");
       setPreview(body);
+      onPreview?.(body);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Code introuvable.");
+      onPreview?.(null);
     } finally {
       setBusy(false);
     }
@@ -81,6 +93,8 @@ export function LoyaltyScanPage() {
         `Passage validé. ${body.customerName} · ${body.serviceName} · ${money(body.amount ?? 0)}. Total : ${body.visits} passages.`,
       );
       setPreview(null);
+      onPreview?.(null);
+      onValidated?.();
       setToken("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Validation impossible.");
@@ -89,12 +103,8 @@ export function LoyaltyScanPage() {
     }
   }
 
-  return (
-    <section className="rounded-xl bg-white p-4 shadow-sm">
-      <h3 className="text-[18px] font-bold text-ink">Code scanné</h3>
-      <p className="mt-1 text-[13px] text-ink/55">
-        Entrez le code de la carte de la cliente, après l&apos;avoir scanné.
-      </p>
+  const form = (
+    <>
       <form
         className="mt-3 flex flex-col gap-2 sm:flex-row"
         onSubmit={(event) => {
@@ -103,10 +113,11 @@ export function LoyaltyScanPage() {
         }}
       >
         <input
+          id="loyalty-card-code"
           value={token}
           onChange={(event) => setToken(event.target.value)}
-          placeholder="Code de la cliente"
-          className="h-11 w-full rounded-xl border border-line px-3 text-sm"
+          placeholder="Ex : RBLOY…"
+          className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-white px-3 text-sm"
           autoComplete="off"
         />
         <button
@@ -114,7 +125,7 @@ export function LoyaltyScanPage() {
           disabled={busy || !token.trim()}
           className="h-11 shrink-0 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
         >
-          Lire le code
+          {embedded ? "Valider" : "Lire le code"}
         </button>
       </form>
       {preview ? (
@@ -133,7 +144,10 @@ export function LoyaltyScanPage() {
           <div className="mt-3 flex gap-2">
             <button
               type="button"
-              onClick={() => setPreview(null)}
+              onClick={() => {
+                setPreview(null);
+                onPreview?.(null);
+              }}
               className="rounded-full border border-line px-4 py-2 text-sm font-semibold"
             >
               Effacer
@@ -153,6 +167,18 @@ export function LoyaltyScanPage() {
       ) : null}
       {done ? <p className="mt-3 text-sm font-semibold text-ink">{done}</p> : null}
       {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
+    </>
+  );
+
+  if (embedded) return form;
+
+  return (
+    <section className="rounded-xl bg-white p-4 shadow-sm">
+      <h3 className="text-[18px] font-bold text-ink">Code scanné</h3>
+      <p className="mt-1 text-[13px] text-ink/55">
+        Entrez le code de la carte de la cliente, après l&apos;avoir scanné.
+      </p>
+      {form}
     </section>
   );
 }

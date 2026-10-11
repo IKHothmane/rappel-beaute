@@ -17,9 +17,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
-import { InstituteJoinQr } from "@/components/loyalty/institute-join-qr";
-import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
-import { VisitCardsList, type VisitCardRow } from "@/components/loyalty/visit-cards-list";
+import { LoyaltyBoard } from "@/components/loyalty/loyalty-board";
+import { type VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import {
   type LoyaltyFilter,
   BIRTHDAY_BONUS_PTS,
@@ -43,7 +42,6 @@ import {
   rewardChip,
   waMeHref,
 } from "@/components/loyalty/loyalty-helpers";
-import { LoyaltyMobile } from "@/components/loyalty/loyalty-mobile";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -353,489 +351,39 @@ export function LoyaltyPageView() {
     setRedeemRewardId(ready?.id ?? "");
   }
 
-  const mobileProps = {
-    orgName: user.orgName,
-    roleLabel: ROLE_LABEL[user.role],
-    insight,
-    kpis,
-    program,
-    ranking,
-    rewards,
-    birthdays,
-    packages,
-    search: searchInput,
-    onSearch: setSearchInput,
-    tab,
-    onTab: setTab,
-    loading,
-    selected,
-    onSelect: setSelectedId,
-    canWrite,
-    canRedeem,
-    canPos,
-    canCustomers,
-    canWhatsapp,
-    canMarketing,
-    canReactivation,
-    onSettings: () => setSettingsOpen(true),
-    onNewReward: () => setRewardOpen(true),
-    onNewPackage: () => setPkgOpen(true),
-    onRedeem: openRedeem,
-    onBirthdayBonus: handleBirthdayBonus,
-    birthdayBusy,
-    onExport: () => exportLoyaltyCsv(filtered),
-    visitCards,
-  };
-
   return (
     <>
-      <LoyaltyMobile {...mobileProps} />
-
-      <div className="hidden space-y-4 lg:block">
-        <section className="flex flex-col justify-between gap-4 rounded-xl bg-white p-6 shadow-sm xl:flex-row xl:items-center">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-              <span className="text-ink/40">Croissance & CRM</span>
-              <span className="text-[#E4BDC2]">/</span>
-              <span className="text-primary">Programme fidélité</span>
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <h1 className="text-[28px] font-semibold leading-9 tracking-tight">
-                Programme fidélité & gamification
-              </h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
-                <Shield size={12} />
-                {ROLE_LABEL[user.role]}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#FFDEA4]/40 px-2.5 py-1 text-[11px] font-bold text-[#5D4200]">
-                <Star size={12} />
-                {ratio} MAD = 1 pt
-              </span>
-              <span className="rounded-full bg-[#FCE9F4] px-2.5 py-1 text-[11px] font-bold text-ink/60">
-                {user.orgName}
-              </span>
-            </div>
-            <p className="mt-1 max-w-3xl text-[13px] text-ink/55">
-              Soldes réels, paliers calculés sur le cumul, récompenses utilisables au POS.
-              {program && !program.active ? " Programme actuellement inactif." : ""}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-white px-4 text-[14px] font-semibold shadow-sm"
-            >
-              <Settings size={16} />
-              Configurer
-            </button>
-            {canWrite ? (
-              <button
-                type="button"
-                onClick={() => setRewardOpen(true)}
-                className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-[#FFEFF8] px-4 text-[14px] font-semibold"
-              >
-                <Gift size={16} className="text-primary" />
-                + Récompense
-              </button>
-            ) : null}
-            {canWrite || canMarketing || canWhatsapp ? (
-              <Link
-                href={campaignHref}
-                className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-primary px-5 text-[14px] font-bold text-white shadow-sm"
-              >
-                <Rocket size={16} />
-                Campagne
-              </Link>
-            ) : null}
-          </div>
-        </section>
-
-        <InstituteJoinQr canWrite={canWrite} />
-        <LoyaltyScanPage />
-        <VisitCardsList cards={visitCards} />
-
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <Kpi
-            label="Membres"
-            value={String(kpiSafe.membersCount)}
-            hint={`+${kpiSafe.membersThisMonth} ce mois`}
-            icon={<Star size={18} className="text-primary" />}
-          />
-          <Kpi
-            label="Points actifs"
-            value={kpiSafe.pointsActive.toLocaleString("fr-MA")}
-            hint={`${kpiSafe.pointsRedeemed.toLocaleString("fr-MA")} utilisés`}
-            icon={<Wallet size={18} className="text-[#7B5900]" />}
-          />
-          <Kpi
-            label="Récompenses"
-            value={String(kpiSafe.rewardsUsed)}
-            hint={`${kpiSafe.rewardsReady} prêtes`}
-            icon={<Gift size={18} className="text-primary" />}
-          />
-          <Kpi
-            label="CA membres"
-            value={formatMad(kpiSafe.memberRevenue)}
-            hint={kpiSafe.memberAvgTicket ? `Panier ${formatMad(kpiSafe.memberAvgTicket)}` : "Ce mois"}
-            icon={<Wallet size={18} className="text-[#7B5900]" />}
-          />
-          <Kpi
-            label="Actifs 30 j"
-            value={String(kpiSafe.active30d)}
-            hint={kpiSafe.membersCount ? `${engagement} % d’engagement` : "Mouvements"}
-            icon={<Star size={18} className="text-[#7B5900]" />}
-          />
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="relative overflow-hidden rounded-xl bg-ink p-6 text-[#FEECF7] shadow-sm lg:col-span-2">
-            <p className="inline-flex items-center gap-1 rounded-full bg-[#FFDEA4] px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#261900]">
-              {program?.active ? "Programme actif" : "Programme inactif"}
-            </p>
-            <h2 className="mt-3 text-[22px] font-bold text-white">
-              {ratio} MAD dépensé = 1 point au POS
-            </h2>
-            <p className="mt-1 max-w-xl text-[15px] text-white/70">
-              {rewards.filter((r) => r.active).length} récompense
-              {rewards.filter((r) => r.active).length > 1 ? "s" : ""} au catalogue.
-              Cumul {formatPts(kpiSafe.pointsDistributed)} · utilisé {formatPts(kpiSafe.pointsRedeemed)}.
-            </p>
-            <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-              <div className="flex gap-6">
-                <div>
-                  <p className="text-[11px] font-bold uppercase text-[#FFDEA4]">CA membres (mois)</p>
-                  <p className="text-[18px] font-extrabold text-white">{formatMad(kpiSafe.memberRevenue)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase text-[#FFDEA4]">Coupons prêts</p>
-                  <p className="text-[18px] font-extrabold text-white">{kpiSafe.rewardsReady}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(true)}
-                className="inline-flex h-11 items-center gap-1 rounded-lg bg-white px-4 text-[14px] font-bold text-ink"
-              >
-                Ajuster le ratio
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col justify-between rounded-xl bg-white p-5 shadow-sm">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Cake size={18} className="text-[#7B5900]" />
-                  <h2 className="text-[18px] font-bold">Anniversaires</h2>
-                </div>
-                <span className="rounded-full bg-[#FFDEA4] px-2 py-0.5 text-[11px] font-bold text-[#261900]">
-                  {weekBirthdays.length} cette semaine
-                </span>
-              </div>
-              {weekBirthdays.length === 0 ? (
-                <p className="mt-3 text-[13px] text-ink/50">Aucune date renseignée cette semaine.</p>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {weekBirthdays.slice(0, 3).map((b) => (
-                    <button
-                      key={b.customerId}
-                      type="button"
-                      onClick={() => setSelectedId(b.customerId)}
-                      className="flex w-full items-center justify-between rounded-lg bg-[#FFEFF8] p-2 text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FFDEA4] text-[11px] font-bold">
-                          {memberInitials(b.customerName)}
-                        </span>
-                        <div>
-                          <p className="text-[14px] font-bold">{b.customerName}</p>
-                          <p className="text-[11px] text-ink/45">
-                            {birthdayWhenLabel(b.daysUntil)} · {LOYALTY_LEVEL_LABEL[b.level]}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-[12px] font-bold text-primary">+{BIRTHDAY_BONUS_PTS} pts</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {canWrite && weekBirthdays.length > 0 ? (
-              <button
-                type="button"
-                disabled={birthdayBusy}
-                onClick={handleBirthdayBonus}
-                className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#FCE9F4] text-[14px] font-bold text-primary disabled:opacity-60"
-              >
-                <Gift size={16} />
-                Offrir +{BIRTHDAY_BONUS_PTS} pts
-              </button>
-            ) : null}
-          </div>
-        </section>
-
-        {program ? (
-          <section>
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-[22px] font-bold">Paliers & statuts</h2>
-              <span className="text-[12px] text-ink/40">Cumul lifetime, réévalué après encaissement</span>
-            </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {(["BRONZE", "SILVER", "GOLD", "VIP"] as LoyaltyLevel[]).map((level) => (
-                <TierCard
-                  key={level}
-                  level={level}
-                  program={program}
-                  count={kpiSafe.levelCounts[level]}
-                  total={kpiSafe.membersCount}
-                  rewards={rewards}
-                  onClick={() => setTab(level)}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
-          <div className="rounded-xl bg-white p-4 shadow-sm xl:col-span-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-1 overflow-x-auto">
-                {LEVEL_TABS.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    className={cn(
-                      "whitespace-nowrap rounded-lg px-3 py-1.5 text-[12px] font-semibold",
-                      tab === t.id ? "bg-primary text-white shadow-sm" : "text-ink/50 hover:bg-[#FFEFF8]",
-                    )}
-                  >
-                    {t.label(kpiSafe)}
-                  </button>
-                ))}
-              </div>
-              <div className="relative min-w-[220px]">
-                <Search className="absolute left-2.5 top-2 h-4 w-4 text-ink/35" />
-                <input
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Nom, mobile, réf. membre…"
-                  className="h-8 w-full rounded-lg bg-[#FFEFF8] pl-8 pr-3 text-[13px] outline-none"
-                />
-              </div>
-            </div>
-
-            {loading ? (
-              <p className="p-10 text-center text-sm text-ink/50">Chargement…</p>
-            ) : pageRows.length === 0 ? (
-              <p className="p-10 text-center text-sm text-ink/50">Aucun membre sur ce filtre.</p>
-            ) : (
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-[13px]">
-                  <thead>
-                    <tr className="bg-[#FFEFF8] text-[11px] font-bold uppercase tracking-wider text-ink/50">
-                      <th className="rounded-l-lg px-3 py-2.5">Cliente</th>
-                      <th className="px-3 py-2.5">Palier</th>
-                      <th className="px-3 py-2.5">Solde</th>
-                      <th className="px-3 py-2.5">Dernier soin</th>
-                      <th className="px-3 py-2.5">Récompense</th>
-                      <th className="px-3 py-2.5">Réf.</th>
-                      <th className="rounded-r-lg px-3 py-2.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pageRows.map((m) => {
-                      const next = program ? nextLevelTarget(m.lifetimePoints, program) : null;
-                      const ready = readyReward(m, rewards);
-                      const active = selected?.customerId === m.customerId;
-                      const wa = waMeHref(
-                        m.phone,
-                        firstNameOf(m.customerName),
-                        `Bonjour ${firstNameOf(m.customerName)}, solde fidélité : ${m.balance} pts.`,
-                      );
-                      return (
-                        <tr
-                          key={m.customerId}
-                          onClick={() => setSelectedId(m.customerId)}
-                          className={cn(
-                            "cursor-pointer border-t border-[#FFEFF8] transition-colors",
-                            active ? "bg-[#F6E3EF]/70" : "hover:bg-[#FFEFF8]",
-                          )}
-                        >
-                          <td className="px-3 py-3">
-                            <div className="flex items-center gap-2">
-                              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-white">
-                                {memberInitials(m.customerName)}
-                              </span>
-                              <div>
-                                <p className="font-extrabold">{m.customerName}</p>
-                                <p className="text-[11px] text-ink/40">{m.phone ?? "—"}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            <span
-                              className={cn(
-                                "rounded-full px-2 py-0.5 text-[11px] font-bold",
-                                m.level === "VIP"
-                                  ? "bg-ink text-[#FFDEA4]"
-                                  : m.level === "GOLD"
-                                    ? "bg-[#FFDEA4] text-[#261900]"
-                                    : "bg-[#FCE9F4] text-ink/70",
-                              )}
-                            >
-                              {LOYALTY_LEVEL_LABEL[m.level]}
-                            </span>
-                          </td>
-                          <td className="min-w-[140px] px-3 py-3">
-                            <div className="mb-1 flex justify-between text-[11px]">
-                              <span className="font-extrabold text-primary">{formatPts(m.balance)}</span>
-                              {next?.label ? (
-                                <span className="text-ink/40">/ {next.min.toLocaleString("fr-MA")}</span>
-                              ) : (
-                                <span className="text-ink/40">max</span>
-                              )}
-                            </div>
-                            <div className="h-1.5 overflow-hidden rounded-full bg-[#F0DDE9]">
-                              <div
-                                className="h-1.5 rounded-full bg-primary"
-                                style={{ width: `${next?.progress ?? 100}%` }}
-                              />
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            <p className="font-semibold">{m.lastServiceName ?? "—"}</p>
-                            <p className="text-[11px] text-ink/40">{formatRelativeVisit(m.lastVisitAt)}</p>
-                          </td>
-                          <td className="px-3 py-3">
-                            {ready ? (
-                              <span className="inline-flex items-center rounded-md bg-[#FCE9F4] px-2 py-1 text-[11px] font-bold text-primary">
-                                {rewardChip(ready)}
-                              </span>
-                            ) : (
-                              <span className="text-[12px] text-ink/40">En cumul</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-3 font-mono text-[11px] font-bold text-ink/50">
-                            {memberRef(m.customerName, m.customerId)}
-                          </td>
-                          <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex justify-end gap-1">
-                              {canWhatsapp && wa ? (
-                                <a
-                                  href={wa}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="rounded p-1 text-[#7B5900] hover:bg-[#FFEFF8]"
-                                  title="WhatsApp"
-                                >
-                                  <MessageCircle size={16} />
-                                </a>
-                              ) : null}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[12px] text-ink/50">
-              <span>
-                {filtered.length === 0
-                  ? "0 membre"
-                  : `Affichage ${page * pageSize + 1}–${Math.min(filtered.length, page * pageSize + pageSize)} sur ${filtered.length}`}
-                {ranking.length < kpiSafe.membersCount
-                  ? ` · ${ranking.length} chargés sur ${kpiSafe.membersCount}`
-                  : ""}
-              </span>
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  className="rounded bg-[#FCE9F4] px-2.5 py-1 disabled:opacity-40"
-                >
-                  Précédent
-                </button>
-                <span className="rounded bg-primary px-2.5 py-1 font-bold text-white">
-                  {page + 1}/{pageCount}
-                </span>
-                <button
-                  type="button"
-                  disabled={page + 1 >= pageCount}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="rounded bg-[#FCE9F4] px-2.5 py-1 disabled:opacity-40"
-                >
-                  Suivant
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="xl:sticky xl:top-4 xl:col-span-4">
-            {selected && program ? (
-              <FocusPanel
-                member={selected}
-                program={program}
-                rewards={rewards}
-                canPos={canPos}
-                canCustomers={canCustomers}
-                canWhatsapp={canWhatsapp}
-                canRedeem={canRedeem}
-                onRedeem={() => openRedeem(selected)}
-              />
-            ) : (
-              <div className="rounded-xl bg-white p-8 text-center text-sm text-ink/50 shadow-sm">
-                Sélectionnez une cliente.
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-xl bg-ink p-6 text-white shadow-sm">
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFDEA4] text-[#261900]">
-                <Sparkles size={20} />
-              </span>
-              <div>
-                <h3 className="text-[18px] font-extrabold">{insight.headline}</h3>
-                <p className="text-[13px] text-white/65">{insight.body}</p>
-              </div>
-            </div>
-            <Link
-              href={canReactivation ? "/reactivation/" : "/ai/"}
-              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg bg-[#FFDEA4] px-4 text-[14px] font-extrabold text-[#261900]"
-            >
-              {canReactivation ? "Ouvrir réactivation" : "Copilote IA"}
-            </Link>
-          </div>
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div className="rounded-xl bg-white/10 p-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">Membres & CA</p>
-              <p className="mt-2 text-[15px]">
-                Gold + VIP : {kpiSafe.levelCounts.GOLD + kpiSafe.levelCounts.VIP} / {kpiSafe.membersCount}. CA du mois{" "}
-                {formatMad(kpiSafe.memberRevenue)}.
-              </p>
-            </div>
-            <div className="rounded-xl bg-white/10 p-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">Ledger</p>
-              <p className="mt-2 text-[15px]">
-                {formatPts(kpiSafe.pointsDistributed)} gagnés · {formatPts(kpiSafe.pointsRedeemed)} utilisés ·{" "}
-                {formatPts(kpiSafe.pointsActive)} en circulation.
-              </p>
-            </div>
-            <div className="rounded-xl bg-primary/20 p-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">Piste</p>
-              <p className="mt-2 text-[15px]">{insight.rec}</p>
-            </div>
-          </div>
-        </section>
-      </div>
+      <LoyaltyBoard
+        orgName={user.orgName}
+        canWrite={canWrite}
+        canRedeem={canRedeem}
+        program={program}
+        visitCards={visitCards}
+        ranking={ranking}
+        rewards={rewards}
+        journal={journal}
+        services={services}
+        onRefresh={() => void refresh()}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onCreateReward={async (input) => {
+          const result = await createReward(input);
+          if (!result.ok) {
+            toast(result.error, "error");
+            return result.error;
+          }
+          toast("Récompense créée.", "success");
+          return null;
+        }}
+        onRedeem={async (customerId, rewardId) => {
+          const result = await redeemReward({ customerId, rewardId });
+          if (!result.ok) {
+            toast(result.error, "error");
+            return result.error;
+          }
+          toast("Récompense utilisée.", "success");
+          return null;
+        }}
+      />
 
       <Drawer open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Configurer le programme">
         <div className="space-y-3 text-sm">

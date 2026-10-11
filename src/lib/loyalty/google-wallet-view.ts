@@ -45,9 +45,14 @@ export function compactLogo(
   );
 }
 
-/** Bandeau de la carte ouverte. Google ne pose pas cette image en fond de la vignette. */
+/** Image large de la carte ouverte. Google l'affiche en 1032×812 sous les textes. */
+export const WALLET_HERO_PATH = "/loyalty/fond-bordeaux-hero.png";
+
 export function cardArtwork(origin: string | undefined, backgroundUrl: string | null | undefined) {
-  return walletImage(absoluteWalletUri(origin, backgroundUrl), "Arrière-plan de la carte");
+  const raw = backgroundUrl?.trim() || "";
+  const path =
+    raw.endsWith("/fond-bordeaux.png") || raw.endsWith("/institut-royal.png") ? WALLET_HERO_PATH : raw;
+  return walletImage(absoluteWalletUri(origin, path), "Arrière-plan de la carte");
 }
 
 /**

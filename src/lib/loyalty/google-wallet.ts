@@ -84,7 +84,7 @@ function genericObject(token: string, card: CardProgress, origin?: string) {
     header: fr(header),
     hexBackgroundColor: loyaltyCardHex(card.cardBackgroundColor),
     ...(logo ? { logo } : {}),
-    ...(image ? { heroImage: image, wideLogo: image } : {}),
+    ...(image ? { heroImage: image } : {}),
     textModulesData: [
       { id: "institut", header: "Institut", body: card.organizationName },
       { id: "progress", header: "Passages", body: progress },

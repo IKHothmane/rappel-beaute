@@ -31,7 +31,7 @@ export function ClientPassCard({
         className="w-full rounded-3xl p-5 text-left text-white shadow-lg"
         style={{
           background: backgroundUrl
-            ? `linear-gradient(135deg, rgba(18, 8, 12, 0.72), rgba(18, 8, 12, 0.45)), url(${backgroundUrl}) center / cover`
+            ? `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${backgroundUrl}") center / cover no-repeat`
             : "linear-gradient(135deg, #221820 0%, #4A2033 48%, #ba0049 100%)",
         }}
       >

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 function cardBackground(url: string | null) {
   if (!url) return "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)";
-  return `linear-gradient(145deg, rgba(18, 8, 12, 0.72), rgba(18, 8, 12, 0.45)), url(${url}) center / cover`;
+  return `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${url}") center / cover no-repeat`;
 }
 
 export function AdminLoyaltyView() {

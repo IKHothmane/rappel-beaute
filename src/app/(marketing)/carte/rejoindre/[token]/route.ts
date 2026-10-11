@@ -6,7 +6,6 @@ import { createGoogleWalletSaveUrl } from "@/lib/loyalty/google-wallet";
 import { cardTokenForJoinQr, enrollAnonymousFromJoinQr, previewJoinQr } from "@/lib/loyalty/join-qr";
 import { appleWalletConfigured, googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { consumeDimensions } from "@/lib/rate-limit";
-import { SITE } from "@/lib/site";
 import { requestCardOrigin } from "@/lib/loyalty/public-origin";
 
 const COOKIE = "rb_join_card";
@@ -47,8 +46,7 @@ async function walletResponse(request: NextRequest, cardToken: string) {
   }
   if (googleWalletConfigured()) {
     try {
-      const publicOrigin = /localhost|127\.0\.0\.1/.test(origin) ? SITE.url : origin;
-      const save = await createGoogleWalletSaveUrl(cardToken, publicOrigin);
+      const save = await createGoogleWalletSaveUrl(cardToken, origin);
       if (save?.startsWith("https://pay.google.com/gp/v/save/")) {
         return NextResponse.redirect(save);
       }

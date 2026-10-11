@@ -61,7 +61,7 @@ function walletOrigins(requestOrigin?: string) {
 
 function heroImage(card: CardProgress, origin?: string) {
   const raw = card.cardBackgroundUrl?.trim();
-  if (!raw) return undefined;
+  if (!raw || raw.includes("/api/storage/local/")) return undefined;
   const base = origin?.replace(/\/$/, "") || "";
   const uri = raw.startsWith("https://") ? raw : base.startsWith("https://") && raw.startsWith("/") ? `${base}${raw}` : "";
   if (!uri) return undefined;
@@ -131,7 +131,6 @@ export async function createGoogleWalletSaveUrl(token: string, requestOrigin?: s
   } catch (error) {
     const message = error instanceof Error ? error.message : "objet";
     console.error("[google-wallet]", message);
-    return null;
   }
 
   const claims = {

@@ -5,6 +5,7 @@ import type { CardProgress } from "@/lib/loyalty/cards";
 import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 import { loyaltyCardHex } from "@/lib/loyalty/card-color";
+import { genericClassAppearance, genericObjectUpdate, passLogo } from "@/lib/loyalty/google-wallet-view";
 import { publicAppOrigin, SITE } from "@/lib/site";
 import { googleWalletClassId, googleWalletConfigured, googleWalletIssuerId } from "@/lib/loyalty/wallet-config";
 
@@ -94,6 +95,7 @@ function genericObject(token: string, card: CardProgress, origin?: string) {
     subheader: fr("Carte fidélité"),
     header: fr(header),
     hexBackgroundColor: loyaltyCardHex(card.cardBackgroundColor),
+    logo: passLogo(origin),
     ...(image ? { heroImage: image } : {}),
     textModulesData: [
       { id: "client", header: "Cliente", body: name },
@@ -196,8 +198,16 @@ async function walletFailure(response: Response, step: string) {
 }
 
 async function ensureGenericClass(account: ServiceAccount, classId: string) {
+  const appearance = genericClassAppearance();
   const existing = await walletFetch(account, `genericClass/${encodeURIComponent(classId)}`, "GET");
-  if (existing.ok) return;
+  if (existing.ok) {
+    const updated = await walletFetch(account, `genericClass/${encodeURIComponent(classId)}`, "PATCH", appearance);
+    if (!updated.ok) {
+      const message = await updated.text().catch(() => "");
+      console.error("[google-wallet] class", updated.status, message.replace(/\s+/g, " ").slice(0, 180));
+    }
+    return;
+  }
   if (existing.status !== 404) await walletFailure(existing, "GOOGLE_WALLET_CLASS");
   const missing = (await existing.json().catch(() => null)) as { error?: { message?: string } } | null;
   const message = missing?.error?.message || "";
@@ -205,6 +215,7 @@ async function ensureGenericClass(account: ServiceAccount, classId: string) {
   const created = await walletFetch(account, "genericClass", "POST", {
     id: classId,
     reviewStatus: "UNDER_REVIEW",
+    ...appearance,
   });
   if (!created.ok && created.status !== 409) await walletFailure(created, "GOOGLE_WALLET_CLASS");
 }
@@ -214,15 +225,7 @@ async function upsertGenericObject(account: ServiceAccount, object: ReturnType<t
   const created = await walletFetch(account, "genericObject", "POST", object);
   if (created.ok) return;
   if (created.status !== 409) await walletFailure(created, "GOOGLE_WALLET_SYNC");
-  const patched = await walletFetch(account, `genericObject/${object.id}`, "PATCH", {
-    cardTitle: object.cardTitle,
-    subheader: object.subheader,
-    header: object.header,
-    hexBackgroundColor: object.hexBackgroundColor,
-    ...(object.heroImage ? { heroImage: object.heroImage } : {}),
-    textModulesData: object.textModulesData,
-    barcode: object.barcode,
-  });
+  const patched = await walletFetch(account, `genericObject/${object.id}`, "PATCH", genericObjectUpdate(object));
   if (!patched.ok) await walletFailure(patched, "GOOGLE_WALLET_SYNC");
 }
 

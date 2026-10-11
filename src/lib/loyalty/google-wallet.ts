@@ -2,6 +2,7 @@ import { createSign } from "crypto";
 import { readFileSync } from "fs";
 import { logger } from "@/lib/logger";
 import type { CardProgress } from "@/lib/loyalty/cards";
+import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 import { publicAppOrigin, SITE } from "@/lib/site";
 import { googleWalletClassId, googleWalletConfigured, googleWalletIssuerId } from "@/lib/loyalty/wallet-config";
@@ -60,6 +61,7 @@ function walletOrigins(requestOrigin?: string) {
 function genericObject(token: string, card: CardProgress) {
   const issuerId = googleWalletIssuerId();
   const name = `${card.firstName} ${card.lastName}`.trim();
+  const code = shortCardCode(token);
   const progress = `${card.cycle} / ${card.visitsPerReward}`;
   const available = card.rewards.find((reward) => reward.status === "AVAILABLE");
   const rewardName = available?.name || card.rewardLabel;
@@ -79,7 +81,7 @@ function genericObject(token: string, card: CardProgress) {
     hexBackgroundColor: "#ba0049",
     textModulesData: [
       { id: "client", header: "Cliente", body: name },
-      { id: "carte", header: "Carte", body: token },
+      { id: "carte", header: "Carte", body: code },
       { id: "progress", header: "Passages", body: progress },
       { id: "reward", header: "Récompense", body: rewardName },
       { id: "value", header: "Valeur", body: available?.value != null ? money(available.value) : "—" },
@@ -92,8 +94,8 @@ function genericObject(token: string, card: CardProgress) {
     ],
     barcode: {
       type: "QR_CODE",
-      value: token,
-      alternateText: token,
+      value: code,
+      alternateText: code,
     },
   };
 }

@@ -14,6 +14,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import { shortCardCode } from "@/lib/loyalty/card-code";
 import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { journalKind, memberInitials, rewardTypeLabel } from "@/components/loyalty/loyalty-helpers";
@@ -415,7 +416,7 @@ export function LoyaltyBoard({
                 if (!preview) return;
                 const match = visitCards.find((card) => card.customerName === preview.customerName);
                 if (match) setFocusId(match.customerId);
-                setPassageToken(preview.token);
+                setPassageToken(shortCardCode(preview.token));
               }}
               onValidated={onRefresh}
             />
@@ -448,7 +449,7 @@ export function LoyaltyBoard({
                   className={field}
                   value={passageToken}
                   onChange={(event) => setPassageToken(event.target.value)}
-                  placeholder="Code sous le QR, ex. E4FB"
+                  placeholder="Code à 4 caractères"
                   autoComplete="off"
                 />
                 {tempCode ? <p className="text-sm font-bold tracking-[0.2em] text-ink">Code {tempCode}</p> : null}

@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { PKPass } from "passkit-generator";
 import { applePassImages } from "@/lib/loyalty/apple-pass-png";
+import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken, type CardProgress } from "@/lib/loyalty/cards";
 import { APPLE_PASS_TYPE_ID, appleChangeMessage, appleWebServiceUrl } from "@/lib/loyalty/apple-passkit";
 import { ensureApplePass } from "@/lib/loyalty/apple-wallet-store";
@@ -83,11 +84,12 @@ export async function createAppleWalletPass(token: string): Promise<Buffer | nul
     label: "RÉCOMPENSE",
     value: fields.available?.value != null ? `${fields.rewardName} · ${money(fields.available.value)}` : fields.rewardName,
   });
+  const code = shortCardCode(normalized);
   pass.setBarcodes({
     format: "PKBarcodeFormatQR",
-    message: normalized,
+    message: code,
     messageEncoding: "iso-8859-1",
-    altText: normalized,
+    altText: code,
   });
 
   return pass.getAsBuffer();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { shortCardCode } from "@/lib/loyalty/card-code";
 
 type Preview = {
   token: string;
@@ -62,6 +63,7 @@ export function LoyaltyScanPage({
       const body = (await res.json()) as Preview & { error?: string };
       if (!res.ok) throw new Error(body.error || "Code introuvable.");
       setPreview(body);
+      setToken(shortCardCode(body.token));
       onPreview?.(body);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Code introuvable.");

@@ -18,12 +18,13 @@ describe("aperçu Google Wallet", () => {
     expect(absoluteWalletUri("http://localhost:3000", ART)).toBe(`https://rappelbeauty.com${ART}`);
   });
 
-  it("met le feuillage dans le logo et dans le fond", () => {
-    const logo = compactLogo("https://rappelbeauty.com", "/logos/institut-royal.png", ART);
+  it("met le logo Rappel Beauty dans le cercle et le feuillage dans le fond", () => {
+    const logo = compactLogo("https://rappelbeauty.com", "/logos/institut-royal.png");
     expect(logo?.sourceUri.uri).toBe("https://rappelbeauty.com/logos/institut-royal.png");
-    const foliage = compactLogo("https://rappelbeauty.com", null, ART);
-    expect(foliage?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-logo.png");
-    expect(foliage?.sourceUri.uri).not.toContain("card-logo.png");
+    const brand = compactLogo("https://rappelbeauty.com", null);
+    expect(brand?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/brand-logo.png");
+    expect(brand?.sourceUri.uri).not.toContain("card-logo.png");
+    expect(brand?.sourceUri.uri).not.toContain("fond-bordeaux-logo.png");
     const hero = cardArtwork("https://rappelbeauty.com", ART);
     expect(hero?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-hero.png");
   });
@@ -49,7 +50,7 @@ describe("aperçu Google Wallet", () => {
       subheader: { defaultValue: { language: "fr-FR", value: "Carte fidélité" } },
       header: { defaultValue: { language: "fr-FR", value: "2 / 10" } },
       hexBackgroundColor: loyaltyCardHex("#9c1020"),
-      logo: compactLogo("https://rappelbeauty.com", null, ART),
+      logo: compactLogo("https://rappelbeauty.com", null),
       heroImage: cardArtwork("https://rappelbeauty.com", ART),
       textModulesData: [
         { id: "institut", header: "Institut", body: "Institut Royal" },
@@ -68,7 +69,7 @@ describe("aperçu Google Wallet", () => {
   });
 
   it("le logo est un carré et le fond une grande image", () => {
-    const logo = readFileSync("public/loyalty/fond-bordeaux-logo.png");
+    const logo = readFileSync("public/loyalty/brand-logo.png");
     expect(logo.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
     expect(logo.readUInt32BE(16)).toBe(660);
     expect(logo.readUInt32BE(20)).toBe(660);

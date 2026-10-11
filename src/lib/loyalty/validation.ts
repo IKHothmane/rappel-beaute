@@ -1,6 +1,7 @@
 import { createHash, randomInt } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
+import { shortCardCode } from "@/lib/loyalty/card-code";
 import { notifyGoogleWallet } from "@/lib/loyalty/google-wallet";
 import { isUniqueViolation } from "@/lib/db/loyalty";
 import {
@@ -48,6 +49,85 @@ type VisitInsert = {
   program: VisitProgram;
   actorName?: string | null;
 };
+
+/** Le code carte devient un service offert, réservé à cette cliente, une seule fois. */
+async function grantPersonalFreeServicePromo(
+  db: Pool | PoolClient,
+  opts: {
+    organizationId: string;
+    customerId: string;
+    publicToken: string;
+    rewardId: string;
+    rewardLabel: string;
+    expiresAt: Date | null;
+  },
+) {
+  const code = shortCardCode(opts.publicToken);
+  if (code.length < 4) return;
+  const description = `loyalty:${opts.rewardId}`;
+  const name = opts.rewardLabel.trim() || "Service offert";
+  const existing = await db.query<{ id: string; customerId: string | null; description: string | null; status: string }>(
+    `SELECT id, "customerId", description, status FROM "Promotion"
+     WHERE "organizationId" = $1 AND upper(code) = $2
+     LIMIT 1`,
+    [opts.organizationId, code],
+  );
+  const row = existing.rows[0];
+  if (row?.customerId && row.customerId !== opts.customerId) return;
+  if (row?.description === description && row.status === "ACTIVE") return;
+  if (row) {
+    await db.query(
+      `UPDATE "Promotion"
+       SET status = 'ACTIVE', type = 'FREE_SERVICE'::"PromotionType", name = $2, "customerId" = $3,
+           "maxUses" = 1, "maxUsesPerCustomer" = 1, "usageCount" = 0,
+           "serviceId" = NULL, "endsAt" = $4, description = $5, "deletedAt" = NULL, "updatedAt" = NOW()
+       WHERE id = $1`,
+      [row.id, name, opts.customerId, opts.expiresAt, description],
+    );
+    return;
+  }
+  await db.query(
+    `INSERT INTO "Promotion" (
+      id, "organizationId", name, code, type, status, "customerId",
+      "maxUses", "maxUsesPerCustomer", "usageCount", "endsAt", description, "updatedAt"
+    ) VALUES ($1,$2,$3,$4,'FREE_SERVICE'::"PromotionType",'ACTIVE'::"PromotionStatus",$5,1,1,0,$6,$7,NOW())`,
+    [newLoyaltyId("promo"), opts.organizationId, name, code, opts.customerId, opts.expiresAt, description],
+  );
+}
+
+export async function syncLoyaltyPromoCodes(organizationId: string) {
+  const { rows } = await pool.query<{
+    id: string;
+    customerId: string;
+    name: string;
+    expiresAt: Date | null;
+    publicToken: string;
+  }>(
+    `SELECT r.id, r."customerId", r.name, r."expiresAt", lc."publicToken"
+     FROM "LoyaltyVisitReward" r
+     JOIN "LoyaltyCard" lc ON lc.id = r."loyaltyCardId"
+     WHERE r."organizationId" = $1 AND r.status = 'AVAILABLE'
+       AND (r."expiresAt" IS NULL OR r."expiresAt" > NOW())
+       AND NOT EXISTS (
+         SELECT 1 FROM "Promotion" p
+         WHERE p."organizationId" = r."organizationId"
+           AND p.description = 'loyalty:' || r.id
+           AND p."deletedAt" IS NULL
+           AND p.status = 'ACTIVE'
+       )`,
+    [organizationId],
+  );
+  for (const row of rows) {
+    await grantPersonalFreeServicePromo(pool, {
+      organizationId,
+      customerId: row.customerId,
+      publicToken: row.publicToken,
+      rewardId: row.id,
+      rewardLabel: row.name,
+      expiresAt: row.expiresAt,
+    });
+  }
+}
 
 async function insertVisitAndMaybeReward(client: PoolClient, input: VisitInsert) {
   const eventId = newLoyaltyId("levt");
@@ -127,6 +207,21 @@ async function insertVisitAndMaybeReward(client: PoolClient, input: VisitInsert)
         },
         client,
       });
+      const tokenRow = await client.query<{ publicToken: string }>(
+        `SELECT "publicToken" FROM "LoyaltyCard" WHERE id = $1`,
+        [input.cardId],
+      );
+      if (tokenRow.rows[0]) {
+        const days = input.program.rewardValidityDays > 0 ? input.program.rewardValidityDays : 365;
+        await grantPersonalFreeServicePromo(client, {
+          organizationId: input.organizationId,
+          customerId: input.customerId,
+          publicToken: tokenRow.rows[0].publicToken,
+          rewardId,
+          rewardLabel: input.program.rewardLabel,
+          expiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+        });
+      }
     }
   }
 
@@ -216,6 +311,12 @@ export async function markVisitRewardUsed(
   );
   const row = updated.rows[0];
   if (!row) throw new Error("REWARD_NOT_AVAILABLE");
+  await pool.query(
+    `UPDATE "Promotion"
+     SET status = 'INACTIVE', "updatedAt" = NOW()
+     WHERE "organizationId" = $1 AND description = $2 AND "deletedAt" IS NULL AND status = 'ACTIVE'`,
+    [organizationId, `loyalty:${row.id}`],
+  );
   await writeAuditLog({
     organizationId,
     actorId: usedById,
@@ -605,6 +706,94 @@ export async function creditVisitWithInstituteCode(opts: {
         visits: saved.visits,
         serviceId: service.rows[0].id,
         creditCodeId: consumed.rows[0].id,
+        customerId: card.rows[0].customerId,
+      },
+      client,
+    });
+    await client.query("COMMIT");
+    finished = true;
+    notifyGoogleWallet(token);
+    const progress = await loadCardProgress(card.rows[0].id, opts.organizationId);
+    if (!progress) throw new Error("CARD_NOT_FOUND");
+    return {
+      ...progress,
+      customerName: `${card.rows[0].firstName} ${card.rows[0].lastName}`.trim(),
+      serviceName: service.rows[0].name,
+    };
+  } catch (error) {
+    if (!finished) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        /* transaction déjà terminée */
+      }
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/** +1 passage depuis l'accueil, avec le code de la carte. Même calcul que les autres visites. */
+export async function creditVisitByCardCode(opts: {
+  organizationId: string;
+  rawToken: string;
+  serviceId: string;
+  actorId: string;
+  actorName?: string | null;
+}): Promise<CardProgress & { customerName: string; serviceName: string }> {
+  const program = await getVisitProgram(opts.organizationId);
+  if (!program.active) throw new Error("PROGRAM_DISABLED");
+  const token = await resolveLoyaltyCardToken(opts.organizationId, opts.rawToken);
+
+  const client = await pool.connect();
+  let finished = false;
+  try {
+    await client.query("BEGIN");
+    const card = await client.query<{ id: string; customerId: string; firstName: string; lastName: string }>(
+      `SELECT lc.id, lc."customerId", c."firstName", c."lastName"
+       FROM "LoyaltyCard" lc
+       JOIN "Customer" c ON c.id = lc."customerId"
+       WHERE lc."publicToken" = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'
+       FOR UPDATE OF lc`,
+      [token, opts.organizationId],
+    );
+    if (!card.rows[0]) throw new Error("CARD_NOT_FOUND");
+
+    const service = await client.query<{ id: string; name: string; price: string }>(
+      `SELECT id, name, price::text AS price FROM "Service"
+       WHERE id = $1 AND "organizationId" = $2 AND active = true`,
+      [opts.serviceId, opts.organizationId],
+    );
+    if (!service.rows[0]) throw new Error("SERVICE_NOT_FOUND");
+    if (program.eligibleServiceIds.length > 0 && !program.eligibleServiceIds.includes(service.rows[0].id)) {
+      throw new Error("SERVICE_NOT_ELIGIBLE");
+    }
+
+    const saved = await insertVisitAndMaybeReward(client, {
+      organizationId: opts.organizationId,
+      cardId: card.rows[0].id,
+      customerId: card.rows[0].customerId,
+      appointmentId: null,
+      serviceId: service.rows[0].id,
+      amount: service.rows[0].price,
+      points: 1,
+      validatedBy: opts.actorId,
+      note: "Passage",
+      program,
+      actorName: opts.actorName,
+    });
+    await writeAuditLog({
+      organizationId: opts.organizationId,
+      actorId: opts.actorId,
+      actorName: opts.actorName,
+      entityType: "LoyaltyEvent",
+      entityId: saved.eventId,
+      action: "LOYALTY_VISIT_ADJUSTED",
+      before: { customerId: card.rows[0].customerId },
+      after: {
+        visits: saved.visits,
+        serviceId: service.rows[0].id,
         customerId: card.rows[0].customerId,
       },
       client,

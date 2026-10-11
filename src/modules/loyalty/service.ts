@@ -55,9 +55,19 @@ export async function getLoyaltyDashboard() {
       customerId: string;
       customerName: string;
       phone: string | null;
+      publicToken?: string;
       visits: number;
       visitsPerReward: number;
       createdAt: string;
+    }[];
+    passages?: {
+      id: string;
+      customerId: string;
+      customerName: string;
+      serviceName: string;
+      points: number;
+      note: string | null;
+      validatedAt: string;
     }[];
   }>(res);
 }

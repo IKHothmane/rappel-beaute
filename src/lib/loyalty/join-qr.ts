@@ -54,6 +54,23 @@ export async function getActiveJoinQr(organizationId: string): Promise<JoinQrVie
   };
 }
 
+/** Un seul QR actif par institut. Ne remplace jamais un QR déjà en place. */
+export async function ensureJoinQr(organizationId: string): Promise<JoinQrView> {
+  const existing = await getActiveJoinQr(organizationId);
+  if (existing) return existing;
+  await pool.query(
+    `INSERT INTO "LoyaltyJoinQr" (id, "organizationId", token, status)
+     SELECT $1, $2, $3, 'ACTIVE'
+     WHERE NOT EXISTS (
+       SELECT 1 FROM "LoyaltyJoinQr" WHERE "organizationId" = $2 AND status = 'ACTIVE'
+     )`,
+    [newLoyaltyId("ljqr"), organizationId, joinToken()],
+  );
+  const created = await getActiveJoinQr(organizationId);
+  if (!created) throw new Error("JOIN_QR_FAILED");
+  return created;
+}
+
 export async function regenerateJoinQr(organizationId: string): Promise<JoinQrView> {
   const client = await pool.connect();
   try {

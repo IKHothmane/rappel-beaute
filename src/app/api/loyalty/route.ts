@@ -16,7 +16,8 @@ import {
   redeemReward,
   updateLoyaltyProgram,
 } from "@/lib/db/loyalty";
-import { listVisitCards } from "@/lib/loyalty/cards";
+import { listPassages, listVisitCards } from "@/lib/loyalty/cards";
+import { syncLoyaltyPromoCodes } from "@/lib/loyalty/validation";
 import { canRedeemLoyalty, canWriteLoyalty } from "@/lib/rbac";
 import {
   validateAdjustment,
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(program);
     }
 
+    await syncLoyaltyPromoCodes(auth.session.organizationId);
     const data = await listLoyaltyLeaderboard(auth.session.organizationId);
     const visitCards = await listVisitCards(auth.session.organizationId);
     return NextResponse.json({ ...data, visitCards });
@@ -163,6 +165,7 @@ export async function POST(request: NextRequest) {
       const program = await updateLoyaltyProgram(
         auth.session.organizationId,
         validated.data,
+      if (auth.session.role !== "OWNER") delete validated.data.cardStyle;
         actor,
       );
       return NextResponse.json(program);

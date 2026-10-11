@@ -72,7 +72,7 @@ function genericObject(token: string, card: CardProgress, origin?: string) {
     card.rewardsAvailable > 0
       ? rewardName
       : `Encore ${card.remaining} passage${card.remaining > 1 ? "s" : ""}`;
-  const logo = compactLogo(origin, card.organizationLogoUrl, card.cardBackgroundUrl);
+  const logo = compactLogo(origin, card.organizationLogoUrl);
   const heroImage = cardArtwork(origin, card.cardBackgroundUrl);
 
   return {

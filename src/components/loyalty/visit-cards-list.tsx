@@ -3,6 +3,7 @@ export type VisitCardRow = {
   customerId: string;
   customerName: string;
   phone: string | null;
+  publicToken?: string;
   visits: number;
   visitsPerReward: number;
   createdAt: string;

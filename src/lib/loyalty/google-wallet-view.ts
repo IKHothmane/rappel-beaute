@@ -32,11 +32,11 @@ function walletImage(uri: string | undefined, label: string): WalletImage | unde
 
 /**
  * Cercle du pass. Logo de l'institut s'il en a un.
- * Sinon le feuillage, recadré en carré.
+ * Sinon le logo Rappel Beauty, issu de /brand/logo.png, en carré 660×660.
  */
-export const WALLET_LOGO_PATH = "/loyalty/fond-bordeaux-logo.png";
+export const WALLET_LOGO_PATH = "/loyalty/brand-logo.png";
 
-/** Grande image du pass. Même feuillage que le logo, format 1032×812. */
+/** Grande image du pass. Le feuillage, format 1032×812. */
 export const WALLET_HERO_PATH = "/loyalty/fond-bordeaux-hero.png";
 
 function usesFoliageArtwork(backgroundUrl: string) {
@@ -48,14 +48,9 @@ function usesFoliageArtwork(backgroundUrl: string) {
   );
 }
 
-export function compactLogo(
-  origin: string | undefined,
-  logoUrl: string | null | undefined,
-  backgroundUrl: string | null | undefined,
-) {
+export function compactLogo(origin: string | undefined, logoUrl: string | null | undefined) {
   const own = walletImage(absoluteWalletUri(origin, logoUrl), "Logo de l'institut");
   if (own) return own;
-  const raw = backgroundUrl?.trim() || "";
   if (usesFoliageArtwork(raw)) {
     return walletImage(absoluteWalletUri(origin, WALLET_LOGO_PATH), "Logo de la carte");
   }

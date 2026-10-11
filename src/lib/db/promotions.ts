@@ -398,4 +398,13 @@ export async function recordPromotionUsage(opts: {
      WHERE p.id = $1`,
     [opts.promotionId],
   );
+  await c.query(
+    `UPDATE "LoyaltyVisitReward" r
+     SET status = 'REDEEMED', "usedAt" = NOW()
+     FROM "Promotion" p
+     WHERE p.id = $1 AND p."organizationId" = $2
+       AND p.description = 'loyalty:' || r.id
+       AND r."organizationId" = $2 AND r."customerId" = $3 AND r.status = 'AVAILABLE'`,
+    [opts.promotionId, opts.organizationId, opts.customerId],
+  );
 }

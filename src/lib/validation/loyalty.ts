@@ -1,3 +1,4 @@
+import { CARD_STYLES } from "@/lib/loyalty/card-styles";
 import type {
   CreatePackageInput,
   CreateRewardInput,
@@ -86,6 +87,11 @@ export function validateUpdateProgram(
     data.eligibleServiceIds = raw.eligibleServiceIds
       .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
       .slice(0, 80);
+  }
+  if (raw.cardStyle !== undefined) {
+    const style = str(raw.cardStyle);
+    if (!CARD_STYLES.some((item) => item.id === style)) return { ok: false, errors: ["cardStyle"] };
+    data.cardStyle = style;
   }
   return { ok: true, data };
 }

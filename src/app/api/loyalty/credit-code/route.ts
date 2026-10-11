@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureWrite } from "@/lib/auth/api-guard";
 import {
+  creditVisitByCardCode,
   creditVisitWithInstituteCode,
   issueLoyaltyCreditCode,
   listCreditServices,

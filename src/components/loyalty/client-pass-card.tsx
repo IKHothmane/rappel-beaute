@@ -11,12 +11,14 @@ export function ClientPassCard({
   appointments,
   sessions,
   qr,
+  backgroundUrl,
 }: {
   organizationName: string;
   firstName: string;
   appointments: Appointment[];
   sessions: Session[];
   qr: string;
+  backgroundUrl?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const next = appointments[0];
@@ -27,7 +29,11 @@ export function ClientPassCard({
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="w-full rounded-3xl p-5 text-left text-white shadow-lg"
-        style={{ background: "linear-gradient(135deg, #221820 0%, #4A2033 48%, #ba0049 100%)" }}
+        style={{
+          background: backgroundUrl
+            ? `linear-gradient(135deg, rgba(18, 8, 12, 0.72), rgba(18, 8, 12, 0.45)), url(${backgroundUrl}) center / cover`
+            : "linear-gradient(135deg, #221820 0%, #4A2033 48%, #ba0049 100%)",
+        }}
       >
         <div className="flex items-start justify-between gap-3">
           <div>

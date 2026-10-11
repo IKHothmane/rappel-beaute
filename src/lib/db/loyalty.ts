@@ -66,10 +66,12 @@ export async function getOrCreateLoyaltyProgram(
     productsEligible: boolean;
     stackRewards: boolean;
     eligibleServiceIds: string[] | null;
+    cardBackgroundUrl: string | null;
   }>(
     `SELECT id, "madPerPoint"::text, "bronzeMin", "silverMin", "goldMin", "vipMin", active,
             "visitsPerReward", "rewardLabel", name, "rewardKind", "rewardValue"::text,
-            "rewardValidityDays", "productsEligible", "stackRewards", "eligibleServiceIds"
+            "rewardValidityDays", "productsEligible", "stackRewards", "eligibleServiceIds",
+            "cardBackgroundUrl"
      FROM "LoyaltyProgram" WHERE "organizationId" = $1`,
     [organizationId],
   );
@@ -92,6 +94,7 @@ export async function getOrCreateLoyaltyProgram(
       productsEligible: r.productsEligible,
       stackRewards: r.stackRewards,
       eligibleServiceIds: r.eligibleServiceIds ?? [],
+      cardBackgroundUrl: r.cardBackgroundUrl,
     };
   }
   const id = newId("lprog");
@@ -103,6 +106,30 @@ export async function getOrCreateLoyaltyProgram(
     [id, organizationId],
   );
   return getOrCreateLoyaltyProgram(organizationId, client);
+}
+
+export async function setLoyaltyCardBackground(
+  organizationId: string,
+  url: string | null,
+  actor: { id: string; name?: string | null },
+) {
+  await getOrCreateLoyaltyProgram(organizationId);
+  await pool.query(
+    `UPDATE "LoyaltyProgram" SET "cardBackgroundUrl" = $2, "updatedAt" = NOW() WHERE "organizationId" = $1`,
+    [organizationId, url],
+  );
+  const after = await getOrCreateLoyaltyProgram(organizationId);
+  await writeAuditLog({
+    organizationId,
+    actorId: actor.id,
+    actorName: actor.name,
+    entityType: "LoyaltyProgram",
+    entityId: after.id,
+    action: "UPDATE",
+    before: null,
+    after: { cardBackgroundUrl: after.cardBackgroundUrl },
+  });
+  return after;
 }
 
 export async function updateLoyaltyProgram(

@@ -14,7 +14,7 @@ const MIME: Record<string, string> = {
   ".svg": "image/svg+xml",
 };
 
-const KEY_RE = /^logos\/[a-zA-Z0-9_-]+\/[0-9]+_[a-zA-Z0-9._-]+$/;
+const KEY_RE = /^(logos|loyalty)\/[a-zA-Z0-9_-]+\/[0-9]+_[a-zA-Z0-9._-]+$/;
 
 type RouteContext = { params: Promise<{ key: string[] }> };
 

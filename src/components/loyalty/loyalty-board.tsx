@@ -310,7 +310,11 @@ export function LoyaltyBoard({
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.85fr)]">
         <article
           className="relative min-w-0 overflow-hidden rounded-3xl p-5 text-white shadow-md sm:p-6"
-          style={{ background: "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)" }}
+          style={{
+            background: program?.cardBackgroundUrl
+              ? `linear-gradient(145deg, rgba(18, 8, 12, 0.72), rgba(18, 8, 12, 0.45)), url(${program.cardBackgroundUrl}) center / cover`
+              : "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)",
+          }}
         >
           <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#E8C56B]/10" />
           <div className="flex items-start justify-between gap-3">

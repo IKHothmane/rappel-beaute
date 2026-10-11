@@ -51,6 +51,7 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
           appointments={card.appointments}
           sessions={card.sessions}
           qr={qr}
+          backgroundUrl={card.cardBackgroundUrl}
         />
 
         <article className="mt-6 rounded-3xl border border-line bg-white p-6 text-center shadow-md">

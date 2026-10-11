@@ -25,6 +25,8 @@ import {
   reactivateOrganizationApi,
   suspendOrganizationApi,
   updateOrganizationApi,
+  uploadOrganizationCardBackground,
+  removeOrganizationCardBackground,
 } from "@/modules/admin/client";
 import { PLAN_LABEL } from "@/types/platform";
 import { limitPhoneDigits } from "@/lib/validation/customer";
@@ -186,6 +188,8 @@ function TenantDrawer({
   const [periodEnd, setPeriodEnd] = useState("");
   const [periodMode, setPeriodMode] = useState<"date" | "extend">("date");
   const [priceInput, setPriceInput] = useState("");
+  const [backgroundBusy, setBackgroundBusy] = useState(false);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
 
   async function reload() {
     const r = await fetchOrganization(orgId);
@@ -200,6 +204,31 @@ function TenantDrawer({
     setPriceInput(
       r.organization.subscription ? String(r.organization.subscription.price) : "",
     );
+  }
+
+  async function saveCardBackground(file: File) {
+    setBackgroundBusy(true);
+    try {
+      const cardBackgroundUrl = await uploadOrganizationCardBackground(orgId, file);
+      setDetail((current) => (current ? { ...current, cardBackgroundUrl } : current));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Image impossible.");
+    } finally {
+      setBackgroundBusy(false);
+      if (backgroundInputRef.current) backgroundInputRef.current.value = "";
+    }
+  }
+
+  async function clearCardBackground() {
+    setBackgroundBusy(true);
+    try {
+      await removeOrganizationCardBackground(orgId);
+      setDetail((current) => (current ? { ...current, cardBackgroundUrl: null } : current));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Retrait impossible.");
+    } finally {
+      setBackgroundBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -523,6 +552,49 @@ function TenantDrawer({
                   </button>
                 </div>
               </details>
+
+              <div className="border-t border-[#F0DDE9] pt-2">
+                <p className="text-xs font-semibold text-ink">Arrière-plan de la carte</p>
+                <p className="mt-0.5 text-[11px] text-ink/45">PNG, JPG ou WEBP · 2 Mo maximum.</p>
+                {detail.cardBackgroundUrl ? (
+                  <div
+                    className="mt-2 h-16 rounded-lg bg-cover bg-center"
+                    style={{ backgroundImage: `url(${detail.cardBackgroundUrl})` }}
+                  />
+                ) : (
+                  <p className="mt-2 text-[11px] text-ink/45">Aucune image pour cette carte.</p>
+                )}
+                <div className="mt-2 flex gap-1.5">
+                  <button
+                    type="button"
+                    disabled={backgroundBusy}
+                    onClick={() => backgroundInputRef.current?.click()}
+                    className="h-9 flex-1 rounded-lg bg-[#FFEFF8] text-[11px] font-bold text-ink disabled:opacity-60"
+                  >
+                    {backgroundBusy ? "…" : detail.cardBackgroundUrl ? "Changer l'image" : "Ajouter une image"}
+                  </button>
+                  {detail.cardBackgroundUrl ? (
+                    <button
+                      type="button"
+                      disabled={backgroundBusy}
+                      onClick={() => void clearCardBackground()}
+                      className="h-9 rounded-lg px-2 text-[11px] font-bold text-ink/55 disabled:opacity-60"
+                    >
+                      Retirer
+                    </button>
+                  ) : null}
+                </div>
+                <input
+                  ref={backgroundInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void saveCardBackground(file);
+                  }}
+                />
+              </div>
 
                 <div className="border-t border-[#F0DDE9] pt-2">
                 <p className="mb-1 text-xs font-semibold text-ink">Changer le statut</p>

@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     return res;
   } catch (error) {
     logger.error("login error", { route: "/api/auth/login", error: String(error) });
-    const msg = error instanceof Error ? error.message : String(error);
+    const msg = error instanceof Error ? `${error.name} ${error.message}` : String(error);
     if (
       msg.includes("ECONNREFUSED") ||
       msg.includes("AggregateError") ||

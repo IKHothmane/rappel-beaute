@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   CreditCard,
+  Gift,
   LayoutDashboard,
   LifeBuoy,
   Megaphone,
@@ -40,6 +41,7 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/dashboard/", label: "Tableau de bord", icon: LayoutDashboard },
       { href: "/organizations/", label: "Instituts", icon: Store },
+      { href: "/loyalty/", label: "Fidélité", icon: Gift },
       { href: "/subscriptions/", label: "Abonnements", icon: CreditCard },
       { href: "/users/", label: "Utilisateurs globaux", icon: Users },
     ],
@@ -72,6 +74,7 @@ const NAV: NavGroup[] = [
 const MOBILE_NAV: NavItem[] = [
   { href: "/dashboard/", label: "Vue Globale", icon: LayoutDashboard },
   { href: "/organizations/", label: "Instituts", icon: Store },
+  { href: "/loyalty/", label: "Fidélité", icon: Gift },
   { href: "/subscriptions/", label: "Abonnements", icon: CreditCard },
   { href: "/support/tickets/", label: "Support", icon: LifeBuoy, badge: "tickets" },
   { href: "/system/health/", label: "Système", icon: Terminal },

@@ -34,6 +34,7 @@ export type LoyaltyProgramConfig = {
   productsEligible: boolean;
   stackRewards: boolean;
   eligibleServiceIds: string[];
+  cardBackgroundUrl?: string | null;
 };
 
 export type LoyaltyAccountSummary = {

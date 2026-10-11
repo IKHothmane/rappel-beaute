@@ -261,11 +261,16 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
   );
   const sub = subRows[0];
 
+  const background = await pool.query<{ cardBackgroundUrl: string | null }>(
+    `SELECT "cardBackgroundUrl" FROM "LoyaltyProgram" WHERE "organizationId" = $1`,
+    [id],
+  );
   const base = mapOrgRow(r);
   return {
     ...base,
     address: r.address ?? null,
     ownerPhone: r.ownerPhone ?? null,
+    cardBackgroundUrl: background.rows[0]?.cardBackgroundUrl ?? null,
     stats: {
       customers: parseInt(stats[0]?.customers ?? "0", 10),
       appointments: parseInt(stats[0]?.appointments ?? "0", 10),

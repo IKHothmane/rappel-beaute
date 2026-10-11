@@ -262,6 +262,29 @@ export async function fetchOrganization(id: string) {
   return adminFetch<{ organization: OrganizationDetail }>(`/api/admin/organizations/${id}/`);
 }
 
+export async function uploadOrganizationCardBackground(id: string, file: File) {
+  const body = new FormData();
+  body.append("organizationId", id);
+  body.append("background", file);
+  const res = await fetch("/api/admin/organizations/card-background/", {
+    method: "POST",
+    credentials: "include",
+    body,
+  });
+  const data = (await res.json()) as { error?: string; cardBackgroundUrl?: string | null };
+  if (!res.ok) throw new Error(data.error || "Image impossible.");
+  return data.cardBackgroundUrl ?? null;
+}
+
+export async function removeOrganizationCardBackground(id: string) {
+  const res = await fetch(`/api/admin/organizations/card-background/?organizationId=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  const data = (await res.json()) as { error?: string };
+  if (!res.ok) throw new Error(data.error || "Retrait impossible.");
+}
+
 export async function createOrganizationApi(input: CreateOrganizationInput) {
   return adminFetch<{
     ok: boolean;

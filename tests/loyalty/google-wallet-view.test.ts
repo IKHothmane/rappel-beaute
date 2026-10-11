@@ -18,13 +18,14 @@ describe("aperçu Google Wallet", () => {
     expect(absoluteWalletUri("http://localhost:3000", ART)).toBe(`https://rappelbeauty.com${ART}`);
   });
 
-  it("met le logo de l'institut dans le cercle, et le feuillage en bandeau", () => {
+  it("met le feuillage dans le logo et dans le fond", () => {
     const logo = compactLogo("https://rappelbeauty.com", "/logos/institut-royal.png", ART);
-    const art = cardArtwork("https://rappelbeauty.com", ART);
     expect(logo?.sourceUri.uri).toBe("https://rappelbeauty.com/logos/institut-royal.png");
-    expect(art?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-hero.png");
-    expect(compactLogo("https://rappelbeauty.com", null, ART)?.sourceUri.uri).toBe(`https://rappelbeauty.com${ART}`);
-    expect(compactLogo("https://rappelbeauty.com", null, ART)?.sourceUri.uri).not.toContain("card-logo.png");
+    const foliage = compactLogo("https://rappelbeauty.com", null, ART);
+    expect(foliage?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-logo.png");
+    expect(foliage?.sourceUri.uri).not.toContain("card-logo.png");
+    const hero = cardArtwork("https://rappelbeauty.com", ART);
+    expect(hero?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-hero.png");
   });
 
   it("aligne le nom et la progression sans toucher au QR", () => {
@@ -43,15 +44,13 @@ describe("aperçu Google Wallet", () => {
     );
 
     const barcode = { type: "QR_CODE", value: "E4FB", alternateText: "E4FB" };
-    const art = cardArtwork("https://rappelbeauty.com", ART);
     const updated = genericObjectUpdate({
       cardTitle: { defaultValue: { language: "fr-FR", value: "Institut Royal" } },
       subheader: { defaultValue: { language: "fr-FR", value: "Carte fidélité" } },
       header: { defaultValue: { language: "fr-FR", value: "2 / 10" } },
       hexBackgroundColor: loyaltyCardHex("#9c1020"),
       logo: compactLogo("https://rappelbeauty.com", null, ART),
-      wideLogo: undefined,
-      heroImage: art,
+      heroImage: cardArtwork("https://rappelbeauty.com", ART),
       textModulesData: [
         { id: "institut", header: "Institut", body: "Institut Royal" },
         { id: "progress", header: "Passages", body: "2 / 10" },
@@ -63,15 +62,18 @@ describe("aperçu Google Wallet", () => {
     expect(updated.cardTitle.defaultValue.value).toBe("Institut Royal");
     expect(updated.header.defaultValue.value).toBe("2 / 10");
     expect(updated.heroImage?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-hero.png");
-    expect(updated.wideLogo).toBeUndefined();
-    expect(updated.logo?.sourceUri.uri).not.toContain("card-logo.png");
+    expect(updated.wideLogo).toBeNull();
+    expect(updated.logo?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-logo.png");
     expect(updated.barcode).toEqual(barcode);
   });
 
-  it("l'illustration ouverte a le grand format Google 1032×812", () => {
-    const png = readFileSync("public/loyalty/fond-bordeaux-hero.png");
-    expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
-    expect(png.readUInt32BE(16)).toBe(1032);
-    expect(png.readUInt32BE(20)).toBe(812);
+  it("le logo est un carré et le fond une grande image", () => {
+    const logo = readFileSync("public/loyalty/fond-bordeaux-logo.png");
+    expect(logo.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+    expect(logo.readUInt32BE(16)).toBe(660);
+    expect(logo.readUInt32BE(20)).toBe(660);
+    const hero = readFileSync("public/loyalty/fond-bordeaux-hero.png");
+    expect(hero.readUInt32BE(16)).toBe(1032);
+    expect(hero.readUInt32BE(20)).toBe(812);
   });
 });

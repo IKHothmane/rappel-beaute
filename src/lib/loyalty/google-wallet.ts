@@ -72,8 +72,8 @@ function genericObject(token: string, card: CardProgress, origin?: string) {
     card.rewardsAvailable > 0
       ? rewardName
       : `Encore ${card.remaining} passage${card.remaining > 1 ? "s" : ""}`;
-  const image = cardArtwork(origin, card.cardBackgroundUrl);
   const logo = compactLogo(origin, card.organizationLogoUrl, card.cardBackgroundUrl);
+  const heroImage = cardArtwork(origin, card.cardBackgroundUrl);
 
   return {
     id: `${issuerId}.${token}`,
@@ -84,7 +84,7 @@ function genericObject(token: string, card: CardProgress, origin?: string) {
     header: fr(header),
     hexBackgroundColor: loyaltyCardHex(card.cardBackgroundColor),
     ...(logo ? { logo } : {}),
-    ...(image ? { heroImage: image } : {}),
+    ...(heroImage ? { heroImage } : {}),
     textModulesData: [
       { id: "institut", header: "Institut", body: card.organizationName },
       { id: "progress", header: "Passages", body: progress },

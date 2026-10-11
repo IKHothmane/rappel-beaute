@@ -31,34 +31,51 @@ function walletImage(uri: string | undefined, label: string): WalletImage | unde
 }
 
 /**
- * Cercle de la liste. Le logo de l'institut s'il existe.
- * Sinon l'illustration de la carte, jamais le sceau générique.
+ * Cercle du pass. Logo de l'institut s'il en a un.
+ * Sinon le feuillage, recadré en carré.
  */
+export const WALLET_LOGO_PATH = "/loyalty/fond-bordeaux-logo.png";
+
+/** Grande image du pass. Même feuillage que le logo, format 1032×812. */
+export const WALLET_HERO_PATH = "/loyalty/fond-bordeaux-hero.png";
+
+function usesFoliageArtwork(backgroundUrl: string) {
+  return (
+    backgroundUrl.endsWith("/fond-bordeaux.png") ||
+    backgroundUrl.endsWith("/fond-bordeaux-hero.png") ||
+    backgroundUrl.endsWith("/fond-bordeaux-logo.png") ||
+    backgroundUrl.endsWith("/institut-royal.png")
+  );
+}
+
 export function compactLogo(
   origin: string | undefined,
   logoUrl: string | null | undefined,
   backgroundUrl: string | null | undefined,
 ) {
-  return (
-    walletImage(absoluteWalletUri(origin, logoUrl), "Logo de l'institut") ??
-    walletImage(absoluteWalletUri(origin, backgroundUrl), "Institut")
-  );
+  const own = walletImage(absoluteWalletUri(origin, logoUrl), "Logo de l'institut");
+  if (own) return own;
+  const raw = backgroundUrl?.trim() || "";
+  if (usesFoliageArtwork(raw)) {
+    return walletImage(absoluteWalletUri(origin, WALLET_LOGO_PATH), "Logo de la carte");
+  }
+  return walletImage(absoluteWalletUri(origin, raw), "Institut");
 }
 
-/** Image large de la carte ouverte. Google l'affiche en 1032×812 sous les textes. */
-export const WALLET_HERO_PATH = "/loyalty/fond-bordeaux-hero.png";
-
+/** Fond visuel du pass : le feuillage en grand, pas une couleur seule. */
 export function cardArtwork(origin: string | undefined, backgroundUrl: string | null | undefined) {
   const raw = backgroundUrl?.trim() || "";
-  const path =
-    raw.endsWith("/fond-bordeaux.png") || raw.endsWith("/institut-royal.png") ? WALLET_HERO_PATH : raw;
-  return walletImage(absoluteWalletUri(origin, path), "Arrière-plan de la carte");
+  if (!raw) return undefined;
+  if (usesFoliageArtwork(raw)) {
+    return walletImage(absoluteWalletUri(origin, WALLET_HERO_PATH), "Fond de la carte");
+  }
+  return walletImage(absoluteWalletUri(origin, raw), "Fond de la carte");
 }
 
 /**
  * Liste : nom puis progression.
  * Carte ouverte : les deux côte à côte, sous le titre.
- * Le fond décoratif complet n'existe pas dans la vignette compacte.
+ * L'image de fond est le hero, sous les textes. Google peint le reste en couleur unie.
  */
 export function genericClassAppearance() {
   return {
@@ -106,8 +123,8 @@ export function genericObjectUpdate(object: {
     header: object.header,
     hexBackgroundColor: loyaltyCardHex(object.hexBackgroundColor),
     ...(object.logo ? { logo: object.logo } : {}),
-    ...(object.wideLogo ? { wideLogo: object.wideLogo } : {}),
-    ...(object.heroImage ? { heroImage: object.heroImage } : {}),
+    heroImage: object.heroImage ?? null,
+    wideLogo: null,
     textModulesData: object.textModulesData,
     barcode: object.barcode,
   };

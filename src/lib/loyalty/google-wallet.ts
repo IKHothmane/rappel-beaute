@@ -93,7 +93,7 @@ function genericObject(token: string, card: CardProgress) {
     barcode: {
       type: "QR_CODE",
       value: token,
-      alternateText: name,
+      alternateText: token,
     },
   };
 }

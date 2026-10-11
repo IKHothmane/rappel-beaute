@@ -7,6 +7,7 @@ import {
   getVisitProgram,
   loadCardProgress,
   newLoyaltyId,
+  resolveLoyaltyCardToken,
   type CardProgress,
   type VisitProgram,
 } from "@/lib/loyalty/cards";
@@ -136,7 +137,7 @@ export async function previewLoyaltyScan(
   organizationId: string,
   rawToken: string,
 ): Promise<ScanPreview> {
-  const token = rawToken.trim().toUpperCase();
+  const token = await resolveLoyaltyCardToken(organizationId, rawToken);
   const card = await pool.query<{
     id: string;
     customerId: string;
@@ -533,7 +534,7 @@ export async function creditVisitWithInstituteCode(opts: {
 }): Promise<CardProgress & { customerName: string; serviceName: string }> {
   const program = await getVisitProgram(opts.organizationId);
   if (!program.active) throw new Error("PROGRAM_DISABLED");
-  const token = opts.rawToken.trim().toUpperCase();
+  const token = await resolveLoyaltyCardToken(opts.organizationId, opts.rawToken);
   const digits = opts.code.replace(/\s/g, "");
   if (!/^\d{6}$/.test(digits)) throw new Error("CODE_INVALID");
 

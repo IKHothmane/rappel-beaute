@@ -87,7 +87,7 @@ export async function createAppleWalletPass(token: string): Promise<Buffer | nul
     format: "PKBarcodeFormatQR",
     message: normalized,
     messageEncoding: "iso-8859-1",
-    altText: fields.name,
+    altText: normalized,
   });
 
   return pass.getAsBuffer();

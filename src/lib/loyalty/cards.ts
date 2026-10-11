@@ -362,6 +362,33 @@ export async function loadCardProgress(
   };
 }
 
+/** Jeton complet, lien, ou code affiché sous le QR (Cliente E4FB). */
+export async function resolveLoyaltyCardToken(organizationId: string, raw: string): Promise<string> {
+  const upper = raw.trim().toUpperCase();
+  const embedded = upper.match(/RBLOY_[A-Z2-9]{8,32}/);
+  if (embedded) {
+    const exact = await pool.query<{ publicToken: string }>(
+      `SELECT "publicToken" FROM "LoyaltyCard"
+       WHERE "publicToken" = $1 AND "organizationId" = $2 AND status = 'ACTIVE'`,
+      [embedded[0], organizationId],
+    );
+    if (!exact.rows[0]) throw new Error("CARD_NOT_FOUND");
+    return exact.rows[0].publicToken;
+  }
+
+  const suffix = upper.replace(/^CLIENTE\s+/, "").replace(/[^A-Z2-9]/g, "");
+  if (suffix.length < 4 || suffix.length > 12) throw new Error("CARD_NOT_FOUND");
+  const matches = await pool.query<{ publicToken: string }>(
+    `SELECT "publicToken" FROM "LoyaltyCard"
+     WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "publicToken" LIKE $2
+     LIMIT 2`,
+    [organizationId, `%${suffix}`],
+  );
+  if (matches.rows.length === 1) return matches.rows[0].publicToken;
+  if (matches.rows.length > 1) throw new Error("CARD_AMBIGUOUS");
+  throw new Error("CARD_NOT_FOUND");
+}
+
 export async function getPublicCardByToken(token: string): Promise<CardProgress | null> {
   const normalized = token.trim().toUpperCase();
   if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(normalized)) return null;

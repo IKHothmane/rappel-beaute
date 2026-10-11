@@ -448,7 +448,7 @@ export function LoyaltyBoard({
                   className={field}
                   value={passageToken}
                   onChange={(event) => setPassageToken(event.target.value)}
-                  placeholder="Code carte RBLOY…"
+                  placeholder="Code sous le QR, ex. E4FB"
                   autoComplete="off"
                 />
                 {tempCode ? <p className="text-sm font-bold tracking-[0.2em] text-ink">Code {tempCode}</p> : null}

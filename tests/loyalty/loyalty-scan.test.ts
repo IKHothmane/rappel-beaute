@@ -54,6 +54,12 @@ describe("Loyalty Scan — Prévisualisation du scan", () => {
     expect(preview.amount).toBe(250);
   });
 
+  it("retrouve la carte avec le code court affiché sous le QR", async () => {
+    const suffix = cardA.publicToken.slice(-4);
+    const preview = await previewLoyaltyScan(orgA, `Cliente ${suffix}`);
+    expect(preview.token).toBe(cardA.publicToken);
+  });
+
   it("scan avec jeton inexistant (QR falsifié)", async () => {
     await expect(previewLoyaltyScan(orgA, "RBLOY_INEXISTANT")).rejects.toThrow("CARD_NOT_FOUND");
   });

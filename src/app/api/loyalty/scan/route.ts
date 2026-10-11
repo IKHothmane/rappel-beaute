@@ -24,6 +24,12 @@ function scanError(error: unknown) {
   if (code === "CARD_NOT_FOUND") {
     return NextResponse.json({ error: "Carte introuvable pour cet institut." }, { status: 404 });
   }
+  if (code === "CARD_AMBIGUOUS") {
+    return NextResponse.json(
+      { error: "Plusieurs cartes correspondent. Saisissez le code complet de la carte." },
+      { status: 409 },
+    );
+  }
   if (code === "NO_COMPLETED_APPOINTMENT") {
     return NextResponse.json(
       { error: "Aucun rendez-vous terminé à valider pour cette cliente." },

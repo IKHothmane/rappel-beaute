@@ -4,6 +4,7 @@ import { createAppleWalletPass } from "@/lib/loyalty/apple-wallet";
 import { createGoogleWalletSaveUrl } from "@/lib/loyalty/google-wallet";
 import { appleWalletConfigured, googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { SITE } from "@/lib/site";
+import { requestCardOrigin } from "@/lib/loyalty/public-origin";
 
 const TOKEN = /^RBLOY_[A-Z2-9]{8,32}$/;
 
@@ -35,8 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
   }
   if (!googleWalletConfigured()) return NextResponse.redirect(fallback);
   try {
-    const requestOrigin = new URL(request.url).origin;
-    const publicOrigin = /localhost|127\.0\.0\.1/.test(requestOrigin) ? SITE.url : requestOrigin;
+    const publicOrigin = requestCardOrigin(request);
     const save = await createGoogleWalletSaveUrl(token, publicOrigin);
     if (save?.startsWith("https://pay.google.com/gp/v/save/")) {
       return NextResponse.redirect(save);

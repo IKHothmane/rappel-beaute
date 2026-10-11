@@ -53,8 +53,8 @@ function expiryLabel(iso: string) {
 }
 
 function walletOrigins(requestOrigin?: string) {
-  const values = [requestOrigin, publicAppOrigin(), SITE.url, "https://www.rappelbeauty.com"].filter(
-    (value): value is string => Boolean(value?.trim()),
+  const values = [requestOrigin, publicAppOrigin(), SITE.url, "https://www.rappelbeauty.com", "https://rappelbeauty.com"].filter(
+    (value): value is string => Boolean(value?.trim()) && !/localhost|127\.0\.0\.1/.test(value ?? ""),
   );
   return [...new Set(values.map((value) => value.replace(/\/$/, "")))];
 }

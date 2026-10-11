@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { shortCardCode } from "@/lib/loyalty/card-code";
+import { loyaltyJoinUrl } from "@/lib/loyalty/public-origin";
 import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { journalKind, memberInitials, rewardTypeLabel } from "@/components/loyalty/loyalty-helpers";
@@ -134,7 +135,7 @@ export function LoyaltyBoard({
           }
           return;
         }
-        const url = `${window.location.origin}/carte/rejoindre/${token}/`;
+        const url = loyaltyJoinUrl(token, window.location.origin);
         const image = await QRCode.toDataURL(url, { margin: 1, width: 280, errorCorrectionLevel: "M" });
         if (!cancelled) {
           setJoinUrl(url);
@@ -163,7 +164,7 @@ export function LoyaltyBoard({
       });
       const data = (await res.json()) as { qr?: { token: string } | null; error?: string };
       if (!res.ok || !data.qr?.token) throw new Error(data.error || "QR indisponible.");
-      const url = `${window.location.origin}/carte/rejoindre/${data.qr.token}/`;
+      const url = loyaltyJoinUrl(data.qr.token, window.location.origin);
       const image = await QRCode.toDataURL(url, { margin: 1, width: 280, errorCorrectionLevel: "M" });
       setJoinUrl(url);
       setJoinImage(image);

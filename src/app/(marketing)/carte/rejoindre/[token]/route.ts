@@ -7,6 +7,7 @@ import { cardTokenForJoinQr, enrollAnonymousFromJoinQr, previewJoinQr } from "@/
 import { appleWalletConfigured, googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { consumeDimensions } from "@/lib/rate-limit";
 import { SITE } from "@/lib/site";
+import { requestCardOrigin } from "@/lib/loyalty/public-origin";
 
 const COOKIE = "rb_join_card";
 
@@ -26,7 +27,7 @@ function remember(response: NextResponse, cardToken: string, secure: boolean) {
 }
 
 async function walletResponse(request: NextRequest, cardToken: string) {
-  const origin = new URL(request.url).origin;
+  const origin = requestCardOrigin(request);
   const fallback = `${origin}/carte/${cardToken}/`;
   if (isApplePhone(request) && appleWalletConfigured()) {
     try {

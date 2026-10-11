@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { useToast } from "@/components/ui/toast";
+import { loyaltyJoinUrl } from "@/lib/loyalty/public-origin";
 
 type JoinQr = {
   token: string;
@@ -13,7 +14,7 @@ type JoinQr = {
 };
 
 function publicJoinUrl(token: string) {
-  return `${window.location.origin}/carte/rejoindre/${token}/`;
+  return loyaltyJoinUrl(token, window.location.origin);
 }
 
 export function InstituteJoinQr({ canWrite }: { canWrite: boolean }) {

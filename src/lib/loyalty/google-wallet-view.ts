@@ -51,10 +51,7 @@ function usesFoliageArtwork(backgroundUrl: string) {
 export function compactLogo(origin: string | undefined, logoUrl: string | null | undefined) {
   const own = walletImage(absoluteWalletUri(origin, logoUrl), "Logo de l'institut");
   if (own) return own;
-  if (usesFoliageArtwork(raw)) {
-    return walletImage(absoluteWalletUri(origin, WALLET_LOGO_PATH), "Logo de la carte");
-  }
-  return walletImage(absoluteWalletUri(origin, raw), "Institut");
+  return walletImage(absoluteWalletUri(origin, WALLET_LOGO_PATH), "Rappel Beauty");
 }
 
 /** Fond visuel du pass : le feuillage en grand, pas une couleur seule. */

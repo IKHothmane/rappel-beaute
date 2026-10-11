@@ -16,7 +16,7 @@ import {
   redeemReward,
   updateLoyaltyProgram,
 } from "@/lib/db/loyalty";
-import { listPassages, listVisitCards } from "@/lib/loyalty/cards";
+import { listVisitCards } from "@/lib/loyalty/cards";
 import { syncLoyaltyPromoCodes } from "@/lib/loyalty/validation";
 import { canRedeemLoyalty, canWriteLoyalty } from "@/lib/rbac";
 import {
@@ -165,7 +165,6 @@ export async function POST(request: NextRequest) {
       const program = await updateLoyaltyProgram(
         auth.session.organizationId,
         validated.data,
-      if (auth.session.role !== "OWNER") delete validated.data.cardStyle;
         actor,
       );
       return NextResponse.json(program);

@@ -112,11 +112,14 @@ export async function setLoyaltyCardBackground(
   organizationId: string,
   url: string | null,
   actor: { id: string; name?: string | null },
+  color: string | null = null,
 ) {
   await getOrCreateLoyaltyProgram(organizationId);
   await pool.query(
-    `UPDATE "LoyaltyProgram" SET "cardBackgroundUrl" = $2, "updatedAt" = NOW() WHERE "organizationId" = $1`,
-    [organizationId, url],
+    `UPDATE "LoyaltyProgram"
+     SET "cardBackgroundUrl" = $2, "cardBackgroundColor" = $3, "updatedAt" = NOW()
+     WHERE "organizationId" = $1`,
+    [organizationId, url, url ? color : null],
   );
   const after = await getOrCreateLoyaltyProgram(organizationId);
   await writeAuditLog({

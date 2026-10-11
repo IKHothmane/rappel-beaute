@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import type { CardProgress } from "@/lib/loyalty/cards";
 import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
+import { loyaltyCardHex } from "@/lib/loyalty/card-color";
 import { publicAppOrigin, SITE } from "@/lib/site";
 import { googleWalletClassId, googleWalletConfigured, googleWalletIssuerId } from "@/lib/loyalty/wallet-config";
 
@@ -58,7 +59,19 @@ function walletOrigins(requestOrigin?: string) {
   return [...new Set(values.map((value) => value.replace(/\/$/, "")))];
 }
 
-function genericObject(token: string, card: CardProgress) {
+function heroImage(card: CardProgress, origin?: string) {
+  const raw = card.cardBackgroundUrl?.trim();
+  if (!raw) return undefined;
+  const base = origin?.replace(/\/$/, "") || "";
+  const uri = raw.startsWith("https://") ? raw : base.startsWith("https://") && raw.startsWith("/") ? `${base}${raw}` : "";
+  if (!uri) return undefined;
+  return {
+    sourceUri: { uri },
+    contentDescription: fr("Arrière-plan de la carte"),
+  };
+}
+
+function genericObject(token: string, card: CardProgress, origin?: string) {
   const issuerId = googleWalletIssuerId();
   const name = `${card.firstName} ${card.lastName}`.trim();
   const code = shortCardCode(token);
@@ -70,6 +83,7 @@ function genericObject(token: string, card: CardProgress) {
     card.rewardsAvailable > 0
       ? rewardName
       : `Encore ${card.remaining} passage${card.remaining > 1 ? "s" : ""}`;
+  const image = heroImage(card, origin);
 
   return {
     id: `${issuerId}.${token}`,
@@ -78,7 +92,8 @@ function genericObject(token: string, card: CardProgress) {
     cardTitle: fr(card.organizationName),
     subheader: fr("Carte fidélité"),
     header: fr(header),
-    hexBackgroundColor: "#ba0049",
+    hexBackgroundColor: loyaltyCardHex(card.cardBackgroundColor),
+    ...(image ? { heroImage: image } : {}),
     textModulesData: [
       { id: "client", header: "Cliente", body: name },
       { id: "carte", header: "Carte", body: code },
@@ -109,7 +124,8 @@ export async function createGoogleWalletSaveUrl(token: string, requestOrigin?: s
   const card = await getPublicCardByToken(normalized);
   if (!card) return null;
 
-  const object = genericObject(normalized, card);
+  const origin = (requestOrigin || publicAppOrigin() || SITE.url).replace(/\/$/, "");
+  const object = genericObject(normalized, card, origin);
   try {
     await upsertGenericObject(account, object);
   } catch (error) {
@@ -202,6 +218,8 @@ async function upsertGenericObject(account: ServiceAccount, object: ReturnType<t
     cardTitle: object.cardTitle,
     subheader: object.subheader,
     header: object.header,
+    hexBackgroundColor: object.hexBackgroundColor,
+    ...(object.heroImage ? { heroImage: object.heroImage } : {}),
     textModulesData: object.textModulesData,
     barcode: object.barcode,
   });
@@ -214,7 +232,7 @@ async function syncGoogleWalletCard(token: string) {
   const normalized = token.trim().toUpperCase();
   const card = await getPublicCardByToken(normalized);
   if (!card) return;
-  await upsertGenericObject(account, genericObject(normalized, card));
+  await upsertGenericObject(account, genericObject(normalized, card, publicAppOrigin()));
   const { deliverWalletMessagesForToken } = await import("@/lib/loyalty/google-wallet-notify");
   await deliverWalletMessagesForToken(normalized);
 }

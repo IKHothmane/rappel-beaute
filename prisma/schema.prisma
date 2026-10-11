@@ -1671,7 +1671,9 @@ model LoyaltyProgram {
   /// Vide = tous les services
   eligibleServiceIds String[] @default([])
   /// Image d'arrière-plan choisie par l'administrateur plateforme
-  cardBackgroundUrl  String?
+  cardBackgroundUrl   String?
+  /// Couleur Google/Apple Wallet déduite de cette image
+  cardBackgroundColor String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

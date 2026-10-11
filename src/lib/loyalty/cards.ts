@@ -26,6 +26,7 @@ export type VisitProgram = {
   eligibleServiceIds: string[];
   rewardValue: number | null;
   cardBackgroundUrl: string | null;
+  cardBackgroundColor: string | null;
 };
 
 export async function getVisitProgram(organizationId: string): Promise<VisitProgram> {
@@ -39,9 +40,10 @@ export async function getVisitProgram(organizationId: string): Promise<VisitProg
     eligibleServiceIds: string[] | null;
     rewardValue: string | null;
     cardBackgroundUrl: string | null;
+    cardBackgroundColor: string | null;
   }>(
     `SELECT "visitsPerReward", "rewardLabel", active, "rewardValidityDays", "stackRewards", "eligibleServiceIds",
-            "rewardValue"::text AS "rewardValue", "cardBackgroundUrl"
+            "rewardValue"::text AS "rewardValue", "cardBackgroundUrl", "cardBackgroundColor"
      FROM "LoyaltyProgram" WHERE "organizationId" = $1`,
     [organizationId],
   );
@@ -55,6 +57,7 @@ export async function getVisitProgram(organizationId: string): Promise<VisitProg
     eligibleServiceIds: row?.eligibleServiceIds ?? [],
     rewardValue: row?.rewardValue != null ? parseFloat(row.rewardValue) : null,
     cardBackgroundUrl: row?.cardBackgroundUrl ?? null,
+    cardBackgroundColor: row?.cardBackgroundColor ?? null,
   };
 }
 
@@ -226,6 +229,7 @@ export type CardProgress = {
   appointments: CardAppointment[];
   sessions: CardSession[];
   cardBackgroundUrl: string | null;
+  cardBackgroundColor: string | null;
 };
 
 export async function loadCardProgress(
@@ -364,6 +368,7 @@ export async function loadCardProgress(
       remaining: Math.max(0, Number(row.total) - Number(row.used)),
     })),
     cardBackgroundUrl: program.cardBackgroundUrl,
+    cardBackgroundColor: program.cardBackgroundColor,
   };
 }
 

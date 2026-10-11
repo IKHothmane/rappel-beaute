@@ -6,6 +6,7 @@ import { getPublicCardByToken, type CardProgress } from "@/lib/loyalty/cards";
 import { APPLE_PASS_TYPE_ID, appleChangeMessage, appleWebServiceUrl } from "@/lib/loyalty/apple-passkit";
 import { ensureApplePass } from "@/lib/loyalty/apple-wallet-store";
 import { appleWalletConfigured } from "@/lib/loyalty/wallet-config";
+import { hexToRgb, loyaltyCardHex } from "@/lib/loyalty/card-color";
 import { publicAppOrigin } from "@/lib/site";
 
 function loadPem(inlineName: string, pathName: string) {
@@ -61,7 +62,7 @@ export async function createAppleWalletPass(token: string): Promise<Buffer | nul
       serialNumber: normalized,
       logoText: card.organizationName,
       foregroundColor: "rgb(255, 255, 255)",
-      backgroundColor: "rgb(186, 0, 73)",
+      backgroundColor: hexToRgb(loyaltyCardHex(card.cardBackgroundColor)),
       labelColor: "rgb(255, 222, 236)",
       ...(webServiceURL && record
         ? { webServiceURL, authenticationToken: record.authenticationToken }

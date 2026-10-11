@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { getOrganizationById } from "@/lib/db/admin-organizations";
 import { setLoyaltyCardBackground } from "@/lib/db/loyalty";
+import { cardColorFromImage } from "@/lib/loyalty/card-color";
 import { getStorageService } from "@/lib/storage";
 
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -27,17 +28,23 @@ export async function POST(request: NextRequest) {
     if (!ALLOWED.has(file.type)) return adminError("Formats acceptés : PNG, JPG ou WEBP.", 400);
     if (file.size > MAX_BYTES) return adminError("L'image ne doit pas dépasser 2 Mo.", 400);
 
+    const bytes = Buffer.from(await file.arrayBuffer());
     const stored = await getStorageService().put({
       category: "loyalty",
       organizationId,
       filename: file.name || "carte-fond.png",
-      data: Buffer.from(await file.arrayBuffer()),
+      data: bytes,
       contentType: file.type,
     });
-    const program = await setLoyaltyCardBackground(organizationId, stored.url, {
-      id: auth.session.id,
-      name: actorName(auth.session),
-    });
+    const program = await setLoyaltyCardBackground(
+      organizationId,
+      stored.url,
+      {
+        id: auth.session.id,
+        name: actorName(auth.session),
+      },
+      cardColorFromImage(bytes, file.type),
+    );
     return adminJson({ cardBackgroundUrl: program.cardBackgroundUrl });
   } catch (error) {
     console.error("[POST admin card-background]", error instanceof Error ? error.message : "upload");

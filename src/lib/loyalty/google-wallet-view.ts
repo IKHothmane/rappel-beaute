@@ -14,36 +14,74 @@ export function walletAssetOrigin(origin?: string) {
   return "https://rappelbeauty.com";
 }
 
-/**
- * Aperçu compact : Google Wallet affiche `logo` dans le cercle.
- * Sans logo, il écrit la première lettre du titre (le « I » gris).
- * `heroImage` et `hexBackgroundColor` ne colorient pas cette vignette.
- */
-export function passLogo(origin?: string): WalletImage {
+export function absoluteWalletUri(origin: string | undefined, value: string | null | undefined) {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  if (raw.startsWith("https://")) return raw;
+  if (!raw.startsWith("/")) return undefined;
+  return `${walletAssetOrigin(origin)}${raw}`;
+}
+
+function walletImage(uri: string | undefined, label: string): WalletImage | undefined {
+  if (!uri) return undefined;
   return {
-    sourceUri: { uri: `${walletAssetOrigin(origin)}/loyalty/card-logo.png` },
-    contentDescription: { defaultValue: { language: "fr-FR", value: "Logo de la carte" } },
+    sourceUri: { uri },
+    contentDescription: { defaultValue: { language: "fr-FR", value: label } },
   };
 }
 
-/** Deux lignes de la liste : nom de l'institut, puis la progression déjà portée par `header`. */
-export function genericListTemplate() {
+/**
+ * Cercle de la liste. Le logo de l'institut s'il existe.
+ * Sinon l'illustration de la carte, jamais le sceau générique.
+ */
+export function compactLogo(
+  origin: string | undefined,
+  logoUrl: string | null | undefined,
+  backgroundUrl: string | null | undefined,
+) {
+  return (
+    walletImage(absoluteWalletUri(origin, logoUrl), "Logo de l'institut") ??
+    walletImage(absoluteWalletUri(origin, backgroundUrl), "Institut")
+  );
+}
+
+/** Bandeau de la carte ouverte. Google ne pose pas cette image en fond de la vignette. */
+export function cardArtwork(origin: string | undefined, backgroundUrl: string | null | undefined) {
+  return walletImage(absoluteWalletUri(origin, backgroundUrl), "Arrière-plan de la carte");
+}
+
+/**
+ * Liste : nom puis progression.
+ * Carte ouverte : les deux côte à côte, sous le titre.
+ * Le fond décoratif complet n'existe pas dans la vignette compacte.
+ */
+export function genericClassAppearance() {
   return {
-    listTemplateOverride: {
-      firstRowOption: {
-        fieldOption: {
-          fields: [{ fieldPath: "object.cardTitle" }],
-        },
+    classTemplateInfo: {
+      cardTemplateOverride: {
+        cardRowTemplateInfos: [
+          {
+            twoItems: {
+              startItem: {
+                firstValue: { fields: [{ fieldPath: "object.textModulesData['institut']" }] },
+              },
+              endItem: {
+                firstValue: { fields: [{ fieldPath: "object.textModulesData['progress']" }] },
+              },
+            },
+          },
+        ],
       },
-      secondRowOption: {
-        fields: [{ fieldPath: "object.header" }],
+      listTemplateOverride: {
+        firstRowOption: {
+          fieldOption: { fields: [{ fieldPath: "object.textModulesData['institut']" }] },
+        },
+        secondRowOption: {
+          fields: [{ fieldPath: "object.textModulesData['progress']" }],
+        },
       },
     },
   };
-}
-
-export function genericClassAppearance() {
-  return { classTemplateInfo: genericListTemplate() };
 }
 
 export function genericObjectUpdate(object: {
@@ -52,7 +90,8 @@ export function genericObjectUpdate(object: {
   header: Localized;
   hexBackgroundColor: string;
   heroImage?: WalletImage;
-  logo: WalletImage;
+  wideLogo?: WalletImage;
+  logo?: WalletImage;
   textModulesData: unknown;
   barcode: unknown;
 }) {
@@ -61,7 +100,8 @@ export function genericObjectUpdate(object: {
     subheader: object.subheader,
     header: object.header,
     hexBackgroundColor: loyaltyCardHex(object.hexBackgroundColor),
-    logo: object.logo,
+    ...(object.logo ? { logo: object.logo } : {}),
+    ...(object.wideLogo ? { wideLogo: object.wideLogo } : {}),
     ...(object.heroImage ? { heroImage: object.heroImage } : {}),
     textModulesData: object.textModulesData,
     barcode: object.barcode,

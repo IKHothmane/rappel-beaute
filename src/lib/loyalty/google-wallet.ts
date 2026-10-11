@@ -5,7 +5,7 @@ import type { CardProgress } from "@/lib/loyalty/cards";
 import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 import { loyaltyCardHex } from "@/lib/loyalty/card-color";
-import { genericClassAppearance, genericObjectUpdate, passLogo } from "@/lib/loyalty/google-wallet-view";
+import { cardArtwork, compactLogo, genericClassAppearance, genericObjectUpdate } from "@/lib/loyalty/google-wallet-view";
 import { publicAppOrigin, SITE } from "@/lib/site";
 import { googleWalletClassId, googleWalletConfigured, googleWalletIssuerId } from "@/lib/loyalty/wallet-config";
 
@@ -60,19 +60,6 @@ function walletOrigins(requestOrigin?: string) {
   return [...new Set(values.map((value) => value.replace(/\/$/, "")))];
 }
 
-function heroImage(card: CardProgress, origin?: string) {
-  const raw = card.cardBackgroundUrl?.trim();
-  if (!raw) return undefined;
-  const preferred = origin && !/localhost|127\.0\.0\.1/.test(origin) ? origin : SITE.url;
-  const base = preferred.replace(/\/$/, "");
-  const uri = raw.startsWith("https://") ? raw : raw.startsWith("/") ? `${base}${raw}` : "";
-  if (!uri.startsWith("https://")) return undefined;
-  return {
-    sourceUri: { uri },
-    contentDescription: fr("Arrière-plan de la carte"),
-  };
-}
-
 function genericObject(token: string, card: CardProgress, origin?: string) {
   const issuerId = googleWalletIssuerId();
   const name = `${card.firstName} ${card.lastName}`.trim();
@@ -85,7 +72,8 @@ function genericObject(token: string, card: CardProgress, origin?: string) {
     card.rewardsAvailable > 0
       ? rewardName
       : `Encore ${card.remaining} passage${card.remaining > 1 ? "s" : ""}`;
-  const image = heroImage(card, origin);
+  const image = cardArtwork(origin, card.cardBackgroundUrl);
+  const logo = compactLogo(origin, card.organizationLogoUrl, card.cardBackgroundUrl);
 
   return {
     id: `${issuerId}.${token}`,
@@ -95,12 +83,12 @@ function genericObject(token: string, card: CardProgress, origin?: string) {
     subheader: fr("Carte fidélité"),
     header: fr(header),
     hexBackgroundColor: loyaltyCardHex(card.cardBackgroundColor),
-    logo: passLogo(origin),
-    ...(image ? { heroImage: image } : {}),
+    ...(logo ? { logo } : {}),
+    ...(image ? { heroImage: image, wideLogo: image } : {}),
     textModulesData: [
-      { id: "client", header: "Cliente", body: name },
-      { id: "carte", header: "Carte", body: code },
+      { id: "institut", header: "Institut", body: card.organizationName },
       { id: "progress", header: "Passages", body: progress },
+      { id: "client", header: "Cliente", body: name },
       { id: "reward", header: "Récompense", body: rewardName },
       { id: "value", header: "Valeur", body: available?.value != null ? money(available.value) : "—" },
       {

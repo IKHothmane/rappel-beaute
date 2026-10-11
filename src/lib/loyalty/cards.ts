@@ -209,6 +209,7 @@ export type CardSession = {
 
 export type CardProgress = {
   organizationName: string;
+  organizationLogoUrl: string | null;
   firstName: string;
   lastName: string;
   visits: number;
@@ -240,10 +241,11 @@ export async function loadCardProgress(
   const db = client ?? pool;
   const card = await db.query<{
     organizationName: string;
+    organizationLogoUrl: string | null;
     firstName: string;
     lastName: string;
   }>(
-    `SELECT o.name AS "organizationName", c."firstName", c."lastName"
+    `SELECT o.name AS "organizationName", o."logoUrl" AS "organizationLogoUrl", c."firstName", c."lastName"
      FROM "LoyaltyCard" lc
      JOIN "Organization" o ON o.id = lc."organizationId"
      JOIN "Customer" c ON c.id = lc."customerId"
@@ -334,6 +336,7 @@ export async function loadCardProgress(
 
   return {
     organizationName: card.rows[0].organizationName,
+    organizationLogoUrl: card.rows[0].organizationLogoUrl,
     firstName: card.rows[0].firstName,
     lastName: card.rows[0].lastName,
     visits,

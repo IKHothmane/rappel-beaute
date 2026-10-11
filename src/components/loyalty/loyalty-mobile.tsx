@@ -33,9 +33,8 @@ import {
   waMeHref,
 } from "@/components/loyalty/loyalty-helpers";
 import { InstituteJoinQr } from "@/components/loyalty/institute-join-qr";
+import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
 import { VisitCardsList, type VisitCardRow } from "@/components/loyalty/visit-cards-list";
-import { VisitAdjustPanel } from "@/components/loyalty/visit-adjust-panel";
-import { LoyaltyPassQr } from "@/components/loyalty/loyalty-pass-qr";
 import { cn } from "@/lib/utils";
 import { formatMad } from "@/modules/finance/service";
 import { formatPoints } from "@/modules/loyalty/service";
@@ -103,7 +102,6 @@ export function LoyaltyMobile(props: Props) {
     ranking,
     rewards,
     birthdays,
-    packages,
     search,
     onSearch,
     tab,
@@ -120,7 +118,6 @@ export function LoyaltyMobile(props: Props) {
     canReactivation,
     onSettings,
     onNewReward,
-    onNewPackage,
     onRedeem,
     onBirthdayBonus,
     birthdayBusy,
@@ -144,8 +141,8 @@ export function LoyaltyMobile(props: Props) {
   return (
     <div className="space-y-3 lg:hidden">
       <InstituteJoinQr canWrite={canWrite} />
+      <LoyaltyScanPage />
       <VisitCardsList cards={visitCards} />
-      <VisitAdjustPanel canWrite={canWrite} />
       <section className="rounded-xl bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
@@ -197,11 +194,6 @@ export function LoyaltyMobile(props: Props) {
           label="CA membres"
           value={kpis ? compactMad(kpis.memberRevenue) : "0"}
           hint={kpis?.memberAvgTicket ? `Panier ${formatMad(kpis.memberAvgTicket)}` : "Ce mois"}
-        />
-        <KpiCard
-          label="Forfaits"
-          value={String(kpis?.activePackages ?? packages.filter((p) => p.status === "ACTIVE").length)}
-          hint="Actifs"
         />
         <KpiCard
           label="Actifs 30 j"
@@ -433,35 +425,6 @@ export function LoyaltyMobile(props: Props) {
         </Link>
       </section>
 
-      {packages.length > 0 ? (
-        <section className="rounded-xl bg-white p-4 shadow-sm">
-          <h3 className="text-[18px] font-bold">Forfaits séances</h3>
-          <div className="mt-2 space-y-2">
-            {packages.slice(0, 4).map((p) => (
-              <div key={p.id} className="rounded-lg bg-[#FFEFF8] p-2 text-[13px]">
-                <p className="font-bold">{p.name}</p>
-                <p className="text-ink/50">
-                  {p.customerName} · {p.sessionUsed}/{p.sessionTotal}
-                </p>
-              </div>
-            ))}
-          </div>
-          {canWrite ? (
-            <button type="button" onClick={onNewPackage} className="mt-2 text-[13px] font-bold text-primary">
-              + Nouveau forfait
-            </button>
-          ) : null}
-        </section>
-      ) : canWrite ? (
-        <button
-          type="button"
-          onClick={onNewPackage}
-          className="flex h-11 w-full items-center justify-center rounded-xl bg-white text-[13px] font-semibold shadow-sm"
-        >
-          + Créer un forfait séances
-        </button>
-      ) : null}
-
       <div className="flex gap-2 pb-4">
         <button
           type="button"
@@ -567,9 +530,6 @@ function FocusCard({
             <ChevronRight size={18} />
           </Link>
         ) : null}
-      </div>
-      <div className="mt-3">
-        <LoyaltyPassQr customerId={member.customerId} />
       </div>
       {next ? (
         <div className="mt-3">

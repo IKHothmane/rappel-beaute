@@ -193,7 +193,7 @@ export function AgendaChrome({
               className="h-8 rounded-md px-3 text-sm font-semibold hover:bg-white"
               onClick={onToday}
             >
-              Aujourd&apos;hui
+              {view === "month" ? "Ce mois" : view === "week" ? "Cette semaine" : "Aujourd'hui"}
             </button>
             <button
               type="button"

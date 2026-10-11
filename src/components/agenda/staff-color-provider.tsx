@@ -2,21 +2,29 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { assignStaffColors, type StaffColor } from "@/components/agenda/staff-colors";
-import { listStaffForAgenda } from "@/modules/staff/service";
+import { listStaff } from "@/modules/staff/service";
 
 const StaffPaletteContext = createContext<Map<string, StaffColor>>(new Map());
 
-/** Même ordre que le planning : une couleur stable par employée, partout dans l'app. */
+/** Une couleur stable par employée, la même dans toute l'app, y compris les archivées. */
 export function StaffColorProvider({ children }: { children: ReactNode }) {
   const [palette, setPalette] = useState<Map<string, StaffColor>>(() => new Map());
 
   useEffect(() => {
     let cancelled = false;
-    listStaffForAgenda()
-      .then((rows) => {
-        if (!cancelled) setPalette(assignStaffColors(rows.map((row) => row.id)));
-      })
-      .catch(() => {});
+    (async () => {
+      const ids: string[] = [];
+      let page = 1;
+      let totalPages = 1;
+      while (page <= totalPages && page <= 20) {
+        const res = await listStaff({ page, limit: 100 });
+        ids.push(...res.data.map((row) => row.id));
+        totalPages = res.pagination.totalPages;
+        if (res.data.length === 0) break;
+        page += 1;
+      }
+      if (!cancelled) setPalette(assignStaffColors(ids));
+    })().catch(() => {});
     return () => {
       cancelled = true;
     };

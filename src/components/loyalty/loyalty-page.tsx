@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Cake,
-  Download,
   Gift,
   MessageCircle,
   Rocket,
@@ -19,8 +18,8 @@ import {
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import { InstituteJoinQr } from "@/components/loyalty/institute-join-qr";
+import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
 import { VisitCardsList, type VisitCardRow } from "@/components/loyalty/visit-cards-list";
-import { VisitAdjustPanel } from "@/components/loyalty/visit-adjust-panel";
 import {
   type LoyaltyFilter,
   BIRTHDAY_BONUS_PTS,
@@ -31,11 +30,9 @@ import {
   exportLoyaltyCsv,
   filterMembers,
   firstNameOf,
-  formatJournalStamp,
   formatPts,
   formatRelativeVisit,
   formatShortDate,
-  journalKind,
   levelRange,
   loyaltyInsight,
   memberInitials,
@@ -47,7 +44,6 @@ import {
   waMeHref,
 } from "@/components/loyalty/loyalty-helpers";
 import { LoyaltyMobile } from "@/components/loyalty/loyalty-mobile";
-import { LoyaltyPassQr } from "@/components/loyalty/loyalty-pass-qr";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -456,14 +452,8 @@ export function LoyaltyPageView() {
         </section>
 
         <InstituteJoinQr canWrite={canWrite} />
+        <LoyaltyScanPage />
         <VisitCardsList cards={visitCards} />
-        <VisitAdjustPanel canWrite={canWrite} />
-
-        {selected ? (
-          <section className="rounded-xl bg-white p-4 shadow-sm">
-            <LoyaltyPassQr customerId={selected.customerId} />
-          </section>
-        ) : null}
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <Kpi
@@ -489,12 +479,6 @@ export function LoyaltyPageView() {
             value={formatMad(kpiSafe.memberRevenue)}
             hint={kpiSafe.memberAvgTicket ? `Panier ${formatMad(kpiSafe.memberAvgTicket)}` : "Ce mois"}
             icon={<Wallet size={18} className="text-[#7B5900]" />}
-          />
-          <Kpi
-            label="Forfaits"
-            value={String(kpiSafe.activePackages)}
-            hint="Séances actives"
-            icon={<Sparkles size={18} className="text-primary" />}
           />
           <Kpi
             label="Actifs 30 j"
@@ -851,93 +835,6 @@ export function LoyaltyPageView() {
             </div>
           </div>
         </section>
-
-        <section className="rounded-xl bg-white p-4 shadow-sm">
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <h4 className="text-[18px] font-bold">Journal des points</h4>
-            <button
-              type="button"
-              onClick={() => exportLoyaltyCsv(filtered)}
-              className="inline-flex items-center gap-1 text-[12px] font-bold text-primary"
-            >
-              <Download size={14} />
-              Exporter le classement (.CSV)
-            </button>
-          </div>
-          {journal.length === 0 ? (
-            <p className="p-6 text-center text-sm text-ink/50">Aucun mouvement pour l’instant.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-[12px]">
-                <thead>
-                  <tr className="bg-[#FFEFF8] text-[11px] font-bold uppercase tracking-wider text-ink/50">
-                    <th className="px-3 py-2">Horodatage</th>
-                    <th className="px-3 py-2">Mouvement</th>
-                    <th className="px-3 py-2">Cliente</th>
-                    <th className="px-3 py-2">Points</th>
-                    <th className="px-3 py-2">Solde</th>
-                    <th className="px-3 py-2">Opérateur</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {journal.map((row) => (
-                    <tr key={row.id} className="border-t border-[#FFEFF8]">
-                      <td className="whitespace-nowrap px-3 py-2 font-mono text-ink/45">
-                        {formatJournalStamp(row.createdAt)}
-                      </td>
-                      <td className="px-3 py-2 font-bold">{journalKind(row)}</td>
-                      <td className="px-3 py-2">{row.customerName}</td>
-                      <td className={cn("px-3 py-2 font-bold", row.points >= 0 ? "text-[#7B5900]" : "text-primary")}>
-                        {row.points > 0 ? "+" : ""}
-                        {row.points} pts
-                      </td>
-                      <td className="px-3 py-2 font-bold">{row.balanceAfter} pts</td>
-                      <td className="px-3 py-2 text-ink/45">{row.operatorName ?? "Système"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <section className="rounded-xl bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h4 className="text-[18px] font-bold">Forfaits séances</h4>
-            {canWrite ? (
-              <button type="button" onClick={() => setPkgOpen(true)} className="text-[13px] font-bold text-primary">
-                + Nouveau forfait
-              </button>
-            ) : null}
-          </div>
-          {packages.length === 0 ? (
-            <p className="text-sm text-ink/50">Aucun forfait.</p>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {packages.slice(0, 6).map((p) => {
-                const pct = p.sessionTotal ? Math.round((p.sessionUsed / p.sessionTotal) * 100) : 0;
-                return (
-                  <div key={p.id} className="rounded-lg bg-[#FFEFF8] p-3 text-[13px]">
-                    <p className="font-bold">{p.name}</p>
-                    {canCustomers ? (
-                      <Link href={`/customers/${p.customerId}/`} className="text-primary">
-                        {p.customerName}
-                      </Link>
-                    ) : (
-                      <p>{p.customerName}</p>
-                    )}
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
-                      <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
-                    <p className="mt-1 text-ink/55">
-                      {p.sessionUsed}/{p.sessionTotal} · {p.status}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
       </div>
 
       <Drawer open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Configurer le programme">
@@ -1060,46 +957,6 @@ export function LoyaltyPageView() {
           </Select>
           <Input type="number" placeholder="Valeur (MAD ou %)" value={rewardValue} onChange={(e) => setRewardValue(e.target.value)} />
           <Button type="button" variant="primary" className="w-full" disabled={submitting || !rewardName} onClick={saveReward}>
-            Créer
-          </Button>
-        </div>
-      </Drawer>
-
-      <Drawer open={pkgOpen} onClose={() => setPkgOpen(false)} title="Nouveau forfait">
-        <div className="space-y-3 text-sm">
-          <Select value={pkgCustomerId} onChange={(e) => setPkgCustomerId(e.target.value)}>
-            <option value="">Cliente…</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={pkgServiceId}
-            onChange={(e) => {
-              setPkgServiceId(e.target.value);
-              const s = services.find((x) => x.id === e.target.value);
-              if (s && !pkgName) setPkgName(`Forfait ${s.name}`);
-            }}
-          >
-            <option value="">Service…</option>
-            {services.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
-          <Input placeholder="Nom du forfait" value={pkgName} onChange={(e) => setPkgName(e.target.value)} />
-          <Input type="number" placeholder="Séances" value={pkgSessions} onChange={(e) => setPkgSessions(e.target.value)} />
-          <Input type="number" placeholder="Prix MAD" value={pkgPrice} onChange={(e) => setPkgPrice(e.target.value)} />
-          <Button
-            type="button"
-            variant="primary"
-            className="w-full"
-            disabled={submitting || !pkgCustomerId || !pkgServiceId}
-            onClick={savePackage}
-          >
             Créer
           </Button>
         </div>
@@ -1296,8 +1153,6 @@ function FocusPanel({
           </Link>
         ) : null}
       </div>
-
-      <LoyaltyPassQr customerId={member.customerId} />
 
       <div className="rounded-xl bg-[#FFEFF8] p-3">
         <div className="flex items-center justify-between text-[12px] font-bold">

@@ -214,12 +214,23 @@ export function AgendaMobile({
     onCreate({ startAt: start.toISOString(), endAt: end.toISOString() });
   }
 
-  const dateLine = date.toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const dateLine = useMemo(() => {
+    const cap = (value: string) => value.replace(/^\p{L}/u, (letter) => letter.toUpperCase());
+    if (view === "week") {
+      const days = getWeekDates(date);
+      const from = days[0].toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      const to = days[6].toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+      return `Semaine du ${from} au ${to}`;
+    }
+    if (view === "3days") {
+      const end = new Date(date);
+      end.setDate(date.getDate() + 2);
+      const from = date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      const to = end.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+      return `Du ${from} au ${to}`;
+    }
+    return cap(date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  }, [view, date]);
 
   const occ = kpis.occupancy ?? 0;
 
@@ -235,7 +246,7 @@ export function AgendaMobile({
                 Direct cabines
               </span>
             </div>
-            <p className="mt-1 flex items-center gap-1 text-[13px] capitalize text-ink/50">
+            <p className="mt-1 flex items-center gap-1 text-[13px] text-ink/50">
               <CalendarDays size={14} className="text-gold" />
               {dateLine}
             </p>

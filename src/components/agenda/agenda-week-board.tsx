@@ -106,7 +106,8 @@ export function AgendaWeekBoard({
                   )}
                 >
                   <span className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
-                    {d.toLocaleDateString("fr-FR", { weekday: "short" })}
+                    {d.toLocaleDateString("fr-FR", { weekday: "short" })}{" "}
+                    {d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "")}
                   </span>
                   <span
                     className={cn(

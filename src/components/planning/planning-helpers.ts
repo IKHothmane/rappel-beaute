@@ -90,7 +90,8 @@ export function formatWeekTitle(dates: Date[]): string {
 }
 
 export function formatDayHead(date: Date): string {
-  return `${DAY_SHORT[date.getDay()]} ${date.getDate()}`;
+  const month = date.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+  return `${DAY_SHORT[date.getDay()]} ${date.getDate()} ${month}`;
 }
 
 export function formatLeaveSpan(startAt: string, endAt: string): string {

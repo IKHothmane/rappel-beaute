@@ -68,6 +68,11 @@ export function AgendaGrid({
 
   return (
     <div className="hidden overflow-hidden rounded-xl bg-white shadow-soft md:block">
+      <div className="border-b border-line px-4 py-3 text-sm font-bold text-ink">
+        {date
+          .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+          .replace(/^\p{L}/u, (letter) => letter.toUpperCase())}
+      </div>
       <div className="overflow-x-auto">
         <div className="min-w-[640px]">
           <div
@@ -269,6 +274,11 @@ export function AgendaMonthGrid({
 }) {
   return (
     <div className="hidden rounded-xl bg-white p-4 shadow-soft md:block">
+      <h2 className="mb-3 text-sm font-bold text-ink">
+        {anchor
+          .toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+          .replace(/^\p{L}/u, (letter) => letter.toUpperCase())}
+      </h2>
       <div className="mb-3 grid grid-cols-7 gap-1 font-mono text-[10px] uppercase text-ink/40">
         {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((d) => (
           <div key={d} className="py-2 text-center">

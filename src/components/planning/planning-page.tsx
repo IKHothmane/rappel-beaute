@@ -20,7 +20,8 @@ import {
   Umbrella,
   Users,
 } from "lucide-react";
-import { assignStaffColors, STAFF_COLOR_LIST, type StaffColor } from "@/components/agenda/staff-colors";
+import { staffColor, type StaffColor } from "@/components/agenda/staff-colors";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
@@ -68,7 +69,6 @@ import {
   formatDayHead,
   formatLeaveSpan,
   formatShiftBadge,
-  formatWeekTitle,
   hourWindow,
   initialForDay,
   isOnDutyToday,
@@ -118,17 +118,18 @@ function ShiftChip({
   color: StaffColor;
   cell: Extract<DayCell, { kind: "work" | "overtime" }>;
 }) {
+  if (cell.kind === "work") {
+    return <span className={cn("mx-auto inline-block h-2.5 w-2.5 rounded-full", color.bar)} />;
+  }
   return (
     <span
       className={cn(
-        "inline-flex rounded-lg border px-2 py-1 text-[11px] font-bold",
+        "inline-flex rounded-lg border border-amber-200 px-2 py-1 text-[11px] font-bold",
         color.soft,
         color.text,
-        cell.kind === "overtime" ? "border-amber-200" : "border-transparent",
       )}
     >
-      {cell.kind === "overtime" ? "HS " : ""}
-      {formatShiftBadge(cell.start, cell.end)}
+      HS {formatShiftBadge(cell.start, cell.end)}
     </span>
   );
 }
@@ -145,6 +146,7 @@ export function PlanningPageView() {
   const [anchor, setAnchor] = useState(() => new Date());
   const [view, setView] = useState<PlanningView>("week");
   const [staffFilter, setStaffFilter] = useState("ALL");
+  const [staffMenuOpen, setStaffMenuOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editDay, setEditDay] = useState(() => new Date().getDay());
   const [savingSchedule, setSavingSchedule] = useState(false);
@@ -181,6 +183,17 @@ export function PlanningPageView() {
 
   const weekDates = useMemo(() => getWeekDates(anchor), [anchor]);
   const monthCells = useMemo(() => getMonthGrid(anchor), [anchor]);
+
+  useEffect(() => {
+    if (!staffMenuOpen) return;
+    function close(event: MouseEvent) {
+      const target = event.target;
+      if (target instanceof Element && target.closest("[data-staff-filter]")) return;
+      setStaffMenuOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [staffMenuOpen]);
 
   const refresh = useCallback(async () => {
     const [plan, staffList, apts, roster, history] = await Promise.all([
@@ -270,7 +283,7 @@ export function PlanningPageView() {
     () => (staffFilter === "ALL" ? calendarStaff : calendarStaff.filter((item) => item.id === staffFilter)),
     [calendarStaff, staffFilter],
   );
-  const staffColors = useMemo(() => assignStaffColors(staff.map((person) => person.id)), [staff]);
+  const staffColors = useStaffPalette();
   const selected = calendarStaff.find((item) => item.id === selectedId) ?? calendarStaff[0] ?? null;
   const activeCount = staff.filter((item) => item.status === "ACTIVE").length;
   const onDutyToday = staff.filter((item) => isOnDutyToday(item)).length;
@@ -295,6 +308,22 @@ export function PlanningPageView() {
     const bestCount = appointmentsInRange(appointments, weekDates[best], weekDates[best]).length;
     return count > bestCount ? index : best;
   }, 0);
+  const today = new Date();
+  const periodTitle =
+    view === "month"
+      ? anchor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }).replace(/^\w/, (letter) => letter.toUpperCase())
+      : view === "day"
+        ? anchor
+            .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+            .replace(/^\w/, (letter) => letter.toUpperCase())
+        : `Semaine du ${weekDates[0].toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} au ${weekDates[6].toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
+  const jumpLabel = view === "month" ? "Ce mois" : view === "day" ? "Aujourd’hui" : "Cette semaine";
+  const onCurrentPeriod =
+    view === "month"
+      ? anchor.getFullYear() === today.getFullYear() && anchor.getMonth() === today.getMonth()
+      : view === "day"
+        ? sameCalendarDay(anchor, today)
+        : isThisWeek(anchor);
   const upcomingLeaves = staff.flatMap((person) =>
     person.leaves
       .filter((leave) => new Date(leave.endAt) >= startOfDay(weekDates[0]))
@@ -548,12 +577,6 @@ export function PlanningPageView() {
     <div className="space-y-6 pb-8">
       <Card className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
         <div>
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-primary/20 bg-primary-light px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-              Gestion des ressources humaines
-            </span>
-            <span className="text-xs text-ink/40">Planning équipe · distinct de l’Agenda clientes</span>
-          </div>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
             Planning & horaires de l’équipe
           </h1>
@@ -613,12 +636,12 @@ export function PlanningPageView() {
             onClick={() => setAnchor(new Date())}
             className={cn(
               "rounded-lg border px-3 py-1.5 text-xs font-extrabold",
-              isThisWeek(anchor)
+              onCurrentPeriod
                 ? "border-primary/20 bg-primary-light text-primary"
                 : "border-line bg-white text-ink",
             )}
           >
-            Cette semaine
+            {jumpLabel}
           </button>
           <button
             type="button"
@@ -627,13 +650,7 @@ export function PlanningPageView() {
           >
             <ChevronRight size={14} />
           </button>
-          <span className="ml-1 text-sm font-black tracking-tight text-ink">
-            {view === "month"
-              ? anchor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }).toUpperCase()
-              : view === "day"
-                ? anchor.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()
-                : formatWeekTitle(weekDates)}
-          </span>
+          <span className="ml-1 text-base font-black tracking-tight text-ink">{periodTitle}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex rounded-xl bg-[#F7EDF1] p-1 text-xs font-bold text-ink/60">
@@ -651,39 +668,88 @@ export function PlanningPageView() {
               </button>
             ))}
           </div>
-          <label className="relative">
-            <span className="sr-only">Filtrer les employées</span>
-            <select
-              value={staffFilter}
-              onChange={(e) => setStaffFilter(e.target.value)}
-              className="appearance-none rounded-xl border border-line bg-[#FBF5F7] py-1.5 pl-3 pr-8 text-xs font-bold text-ink"
+          <div className="relative" data-staff-filter>
+            <button
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded={staffMenuOpen}
+              onClick={() => setStaffMenuOpen((open) => !open)}
+              className="inline-flex items-center gap-2 rounded-xl border border-line bg-[#FBF5F7] py-1.5 pl-3 pr-2 text-xs font-bold text-ink"
             >
-              <option value="ALL">Toutes les employées ({staff.length})</option>
-              {staff.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.displayName}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={12} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink/40" />
-          </label>
+              {staffFilter !== "ALL" ? (
+                <span className={cn("h-2.5 w-2.5 rounded-full", staffColor(staffFilter, staffColors).bar)} />
+              ) : null}
+              {staffFilter === "ALL"
+                ? `Toutes les employées (${staff.length})`
+                : staff.find((person) => person.id === staffFilter)?.displayName}
+              <ChevronDown size={12} className="text-ink/40" />
+            </button>
+            {staffMenuOpen ? (
+              <ul
+                role="listbox"
+                aria-label="Filtrer les employées"
+                className="absolute right-0 z-30 mt-1 min-w-[240px] overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lg"
+              >
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffFilter("ALL");
+                      setStaffMenuOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full px-3 py-2 text-left text-xs font-bold",
+                      staffFilter === "ALL" ? "bg-[#FBF5F7] text-ink" : "text-ink hover:bg-[#FBF5F7]",
+                    )}
+                  >
+                    Toutes les employées ({staff.length})
+                  </button>
+                </li>
+                {staff.map((person) => {
+                  const color = staffColor(person.id, staffColors);
+                  const active = staffFilter === person.id;
+                  return (
+                    <li key={person.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStaffFilter(person.id);
+                          setStaffMenuOpen(false);
+                          selectStaffDay(person.id, weekDates[0]);
+                        }}
+                        className={cn(
+                          "flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-bold",
+                          active ? cn(color.soft, color.text) : cn(color.text, "hover:bg-[#FBF5F7]"),
+                        )}
+                      >
+                        <span className={cn("h-2.5 w-2.5 rounded-full", color.bar)} />
+                        {person.displayName}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
         </div>
       </div>
       <ul className="flex flex-wrap gap-2">
         {visibleStaff.map((person) => {
-          const color = staffColors.get(person.id) ?? STAFF_COLOR_LIST[0];
+          const color = staffColor(person.id, staffColors);
           return (
             <li key={person.id}>
               <button
                 type="button"
                 onClick={() => selectStaffDay(person.id, weekDates[0])}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full border border-line bg-white px-2.5 py-1 text-xs font-bold text-ink",
+                  "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-bold",
+                  selected?.id === person.id
+                    ? cn("border-transparent ring-2", color.soft, color.text, color.ring)
+                    : "border-line bg-white text-ink",
                 )}
               >
                 <span className={cn("h-2.5 w-2.5 rounded-full", color.bar)} />
                 {person.displayName}
-                <span className={cn("font-semibold", color.text)}>{color.name}</span>
               </button>
             </li>
           );
@@ -701,7 +767,10 @@ export function PlanningPageView() {
                     <CalendarDays size={16} className="text-primary" />
                     Synthèse hebdomadaire des shifts
                   </h2>
-                  <p className="text-[11px] text-ink/50">Horaires programmés pour chaque employée</p>
+                  <p className="text-[11px] font-bold text-ink/70">
+                    Semaine du {weekDates[0].toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} au{" "}
+                    {weekDates[6].toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
                 </div>
                 <span
                   className={cn(
@@ -738,14 +807,17 @@ export function PlanningPageView() {
                     {visibleStaff.map((person) => (
                       <tr
                         key={person.id}
-                        className="cursor-pointer transition-colors hover:bg-[#FFF9FB]"
+                        className={cn(
+                          "cursor-pointer transition-colors hover:bg-[#FFF9FB]",
+                          selected?.id === person.id && staffColor(person.id, staffColors).soft,
+                        )}
                         onClick={() => selectStaffDay(person.id, weekDates[0])}
                       >
                         <td className="px-4 py-3">
                           <StaffIdentity
                             person={person}
                             position={positions[person.id]}
-                            color={staffColors.get(person.id) ?? STAFF_COLOR_LIST[0]}
+                            color={staffColor(person.id, staffColors)}
                           />
                         </td>
                         {weekDates.map((date, index) => {
@@ -771,7 +843,7 @@ export function PlanningPageView() {
                               }}
                             >
                               <DayCellBadge
-                                color={staffColors.get(person.id) ?? STAFF_COLOR_LIST[0]}
+                                color={staffColor(person.id, staffColors)}
                                 cell={cell}
                               />
                               {extraHours && cell.kind !== "overtime" ? (
@@ -805,7 +877,8 @@ export function PlanningPageView() {
 
           {view === "month" ? (
             <Card>
-              <h2 className="mb-4 text-sm font-extrabold text-ink">Mois — congés et fermetures</h2>
+              <h2 className="mb-1 text-sm font-extrabold text-ink">{periodTitle}</h2>
+              <p className="mb-4 text-[11px] text-ink/50">Congés, absences et fermetures</p>
               <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-ink/45">
                 {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((d) => (
                   <div key={d} className="py-1">{d}</div>
@@ -860,11 +933,15 @@ export function PlanningPageView() {
                     <Clock3 size={16} className="text-primary" />
                     Grille horaire détaillée
                   </h2>
-                  <p className="text-[11px] text-ink/50">Qui est en salon à chaque heure</p>
+                  <p className="text-[11px] font-bold text-ink/70">
+                    {view === "day"
+                      ? periodTitle
+                      : `Semaine du ${weekDates[0].toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} au ${weekDates[6].toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs">
                   {visibleStaff.map((person) => {
-                    const color = staffColors.get(person.id) ?? STAFF_COLOR_LIST[0];
+                    const color = staffColor(person.id, staffColors);
                     return (
                       <span key={person.id} className="flex items-center gap-1.5">
                         <span className={cn("h-3 w-3 rounded", color.bar)} />
@@ -879,20 +956,44 @@ export function PlanningPageView() {
                   <thead>
                     <tr className="border-b border-line bg-[#FCF7F9] text-[11px] font-extrabold text-ink/70">
                       <th className="w-16 px-3 py-2.5 text-center">Heure</th>
-                      {gridDates.map((date) => (
-                        <th key={date.toISOString()} className="border-l border-line px-3 py-2.5 text-center">
-                          {view === "day" ? "Présentes" : formatDayHead(date)}
-                        </th>
-                      ))}
+                      {gridDates.map((date) => {
+                        const dayLeaves = visibleStaff.flatMap((person) => {
+                          const cell = cellForStaffDay(person, date);
+                          return cell.kind === "leave" ? [{ person, label: cell.label }] : [];
+                        });
+                        return (
+                          <th key={date.toISOString()} className="border-l border-line px-3 py-2.5 text-center">
+                            {view === "day" ? periodTitle : formatDayHead(date)}
+                            {dayLeaves.map(({ person, label }) => (
+                              <span key={person.id} className="mt-1 flex items-center justify-center gap-1 text-[10px] font-extrabold text-rose-600">
+                                <span className={cn("h-2 w-2 rounded-full", staffColor(person.id, staffColors).bar)} />
+                                {label} {person.firstName}
+                              </span>
+                            ))}
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/70">
                     {hourRows.map((hour) => {
-                      const cells = gridDates.map((date) =>
-                        visibleStaff
-                          .map((person) => ({ person, occ: staffAtHour(person, date, hour) }))
-                          .filter((row) => row.occ.present || row.occ.onBreak),
-                      );
+                      const cells = gridDates.map((date) => {
+                        const present = visibleStaff
+                          .map((person) => ({ person, occ: staffAtHour(person, date, hour), leaveLabel: null as string | null }))
+                          .filter((row) => row.occ.present || row.occ.onBreak);
+                        if (hour !== hours.startHour) return present;
+                        for (const person of visibleStaff) {
+                          const cell = cellForStaffDay(person, date);
+                          if (cell.kind !== "leave") continue;
+                          if (present.some((row) => row.person.id === person.id)) continue;
+                          present.unshift({
+                            person,
+                            leaveLabel: cell.label,
+                            occ: { present: true, onBreak: false, startedThisHour: false },
+                          });
+                        }
+                        return present;
+                      });
                       const allBreak = cells.every(
                         (col) => col.length > 0 && col.every((row) => row.occ.onBreak),
                       );
@@ -907,14 +1008,16 @@ export function PlanningPageView() {
                                 <p className="text-center text-[11px] font-bold text-primary">Pause / désinfection</p>
                               ) : col.length ? (
                                 <div className="space-y-1">
-                                  {col.map(({ person, occ }) => {
-                                    const color = staffColors.get(person.id) ?? STAFF_COLOR_LIST[0];
+                                  {col.map(({ person, occ, leaveLabel }) => {
+                                    const color = staffColor(person.id, staffColors);
                                     return (
                                       <div
                                         key={person.id}
                                         className={cn(
                                           "flex items-center justify-between rounded-lg border px-1.5 py-1 text-[11px] font-extrabold",
-                                          occ.replacement
+                                          leaveLabel
+                                            ? "border-rose-200 bg-rose-50 text-rose-700"
+                                            : occ.replacement
                                             ? "border-violet-300 bg-violet-50 text-violet-800"
                                             : occ.overtime
                                             ? "border-amber-300 bg-amber-50 text-amber-900"
@@ -923,8 +1026,13 @@ export function PlanningPageView() {
                                             : cn(color.soft, color.text, "border-transparent"),
                                         )}
                                       >
-                                        <span>
-                                          {occ.onBreak
+                                        <span className="flex items-center gap-1">
+                                          {leaveLabel ? (
+                                            <span className={cn("h-2 w-2 rounded-full", color.bar)} />
+                                          ) : null}
+                                          {leaveLabel
+                                            ? `${leaveLabel} ${person.firstName}`
+                                            : occ.onBreak
                                             ? `Pause ${person.firstName}`
                                             : occ.replacement
                                               ? `Rempl. ${person.firstName}`
@@ -932,7 +1040,7 @@ export function PlanningPageView() {
                                                 ? `HS ${person.firstName}`
                                                 : person.firstName}
                                         </span>
-                                        {!occ.onBreak && occ.startedThisHour ? (
+                                        {!occ.onBreak && occ.startedThisHour && (occ.overtime || occ.replacement) ? (
                                           <span className="rounded bg-white px-1.5 py-0.5 text-[9px] font-bold shadow-sm">
                                             {occ.label}
                                           </span>
@@ -984,7 +1092,7 @@ export function PlanningPageView() {
                   upcomingLeaves.map((leave) => (
                     <div key={leave.id} className="flex items-center justify-between gap-2 py-2.5">
                       <button type="button" onClick={() => void focusHistory(leave.staff.id)} className="flex min-w-0 items-center gap-2 text-left">
-                        <span className={cn("h-2 w-2 shrink-0 rounded-full", (staffColors.get(leave.staff.id) ?? STAFF_COLOR_LIST[0]).bar)} />
+                        <span className={cn("h-2 w-2 shrink-0 rounded-full", staffColor(leave.staff.id, staffColors).bar)} />
                         <span className="font-bold text-ink">{leave.staff.firstName}</span>
                         <span className="truncate text-ink/60">{formatLeaveSpan(leave.startAt, leave.endAt)}</span>
                       </button>
@@ -1096,14 +1204,22 @@ export function PlanningPageView() {
               <Card className="space-y-4">
                 <div className="flex items-center justify-between border-b border-line pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-primary to-[#ff7fa7] text-lg font-bold text-white">
+                    <div
+                      className={cn(
+                        "flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold text-white",
+                        staffColor(selected.id, staffColors).bar,
+                      )}
+                    >
                       {initialForDay(selected)}
                       {selected.lastName?.[0]?.toUpperCase() ?? ""}
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-ink">{selected.displayName}</h3>
                       <p className="text-xs text-ink/50">
-                        Poste : <strong className="text-primary">{positions[selected.id] || "—"}</strong>
+                        Poste :{" "}
+                        <strong className={staffColor(selected.id, staffColors).text}>
+                          {positions[selected.id] || "—"}
+                        </strong>
                       </p>
                     </div>
                   </div>
@@ -1139,7 +1255,13 @@ export function PlanningPageView() {
                         <span className="font-bold text-ink/70">{label}</span>
                         {cell.kind === "work" || cell.kind === "overtime" ? (
                           <span className="flex flex-col items-end gap-1">
-                            <span className="rounded bg-primary-light px-2 py-0.5 text-[11px] font-extrabold text-primary">
+                            <span
+                              className={cn(
+                                "rounded px-2 py-0.5 text-[11px] font-extrabold",
+                                staffColor(selected.id, staffColors).soft,
+                                staffColor(selected.id, staffColors).text,
+                              )}
+                            >
                               {cell.kind === "overtime" ? "HS " : ""}
                               {cell.start} → {cell.end}
                             </span>
@@ -1691,7 +1813,8 @@ function DayCellBadge({ color, cell }: { color: StaffColor; cell: DayCell }) {
   }
   if (cell.kind === "leave") {
     return (
-      <span className="inline-flex rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-600">
+      <span className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-600">
+        <span className={cn("h-2 w-2 rounded-full", color.bar)} />
         {cell.label}
       </span>
     );

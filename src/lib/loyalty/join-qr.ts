@@ -155,3 +155,59 @@ export async function enrollFromJoinQr(input: {
   const card = await issueLoyaltyCard(organizationId, customerId);
   return { cardToken: card.publicToken };
 }
+
+/** Carte anonyme à 0 passage, sans nom ni téléphone saisis par la cliente. */
+export async function enrollAnonymousFromJoinQr(token: string): Promise<{ cardToken: string }> {
+  const preview = await previewJoinQr(token);
+  if (!preview) throw new Error("JOIN_QR_INVALID");
+  if (!preview.active) throw new Error("PROGRAM_DISABLED");
+
+  const qr = await pool.query<{ organizationId: string }>(
+    `SELECT "organizationId" FROM "LoyaltyJoinQr" WHERE token = $1 AND status = 'ACTIVE'`,
+    [token.trim().toUpperCase()],
+  );
+  const organizationId = qr.rows[0]?.organizationId;
+  if (!organizationId) throw new Error("JOIN_QR_INVALID");
+
+  let customerId = "";
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    customerId = `cust_${randomBytes(6).toString("hex")}`;
+    const phone = `WL${randomBytes(4).toString("hex")}`;
+    try {
+      await pool.query(
+        `INSERT INTO "Customer" (
+          id, "organizationId", "firstName", "lastName", phone, status,
+          "marketingWhatsapp", "marketingEmail", "marketingSms", "updatedAt"
+        ) VALUES ($1, $2, 'Cliente', $3, $4, 'NEW', false, false, false, NOW())`,
+        [customerId, organizationId, phone.slice(-4).toUpperCase(), phone],
+      );
+      break;
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      if (code !== "23505" || attempt === 2) throw error;
+      customerId = "";
+    }
+  }
+  if (!customerId) throw new Error("JOIN_QR_FAILED");
+
+  const card = await issueLoyaltyCard(organizationId, customerId);
+  await pool.query(`UPDATE "Customer" SET "lastName" = $1, "updatedAt" = NOW() WHERE id = $2`, [
+    card.publicToken.slice(-4),
+    customerId,
+  ]);
+  return { cardToken: card.publicToken };
+}
+
+export async function cardTokenForJoinQr(joinToken: string, cardToken: string): Promise<string | null> {
+  const normalizedJoin = joinToken.trim().toUpperCase();
+  const normalizedCard = cardToken.trim().toUpperCase();
+  if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(normalizedCard)) return null;
+  const { rows } = await pool.query<{ publicToken: string }>(
+    `SELECT lc."publicToken"
+     FROM "LoyaltyCard" lc
+     JOIN "LoyaltyJoinQr" q ON q."organizationId" = lc."organizationId"
+     WHERE lc."publicToken" = $1 AND q.token = $2 AND q.status = 'ACTIVE' AND lc.status = 'ACTIVE'`,
+    [normalizedCard, normalizedJoin],
+  );
+  return rows[0]?.publicToken ?? null;
+}

@@ -300,15 +300,20 @@ export function AgendaPage() {
   }, [selected, services, staffContexts, appointments, date]);
 
   const rangeLabel = useMemo(() => {
+    const cap = (value: string) => value.replace(/^\p{L}/u, (letter) => letter.toUpperCase());
     if (view === "day") {
-      return date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      return cap(
+        date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+      );
     }
     if (view === "month") {
-      return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+      return cap(date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }));
     }
     const first = visibleDates[0];
     const last = visibleDates[visibleDates.length - 1];
-    return `Du ${first.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} au ${last.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`;
+    const from = first.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+    const to = last.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    return view === "week" ? `Semaine du ${from} au ${to}` : `Du ${from} au ${to}`;
   }, [view, date, visibleDates]);
 
   const todayChip = new Date().toLocaleDateString("fr-FR", {

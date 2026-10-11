@@ -487,8 +487,7 @@ export function StaffPageView() {
                         )}
                       >
                         <td className="px-4 py-3">
-                          <p className="font-semibold text-ink">{s.displayName}</p>
-                          <p className="text-[12px] text-ink/45">{s.position || "—"}</p>
+                          <StaffTableIdentity staff={s} />
                         </td>
                         <td className="px-4 py-3">
                           <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", statusChipClass(s.status))}>
@@ -567,6 +566,27 @@ export function StaffPageView() {
           }}
         />
       </Drawer>
+    </div>
+  );
+}
+
+function StaffTableIdentity({ staff: s }: { staff: StaffListItem }) {
+  const color = staffColor(s.id, useStaffPalette());
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[12px] font-bold",
+          color.soft,
+          color.text,
+        )}
+      >
+        {staffInitials(s.firstName, s.lastName)}
+      </div>
+      <div>
+        <p className="font-semibold text-ink">{s.displayName}</p>
+        <p className="text-[12px] text-ink/45">{s.position || "—"}</p>
+      </div>
     </div>
   );
 }

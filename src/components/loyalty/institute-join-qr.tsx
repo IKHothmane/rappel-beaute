@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { SITE } from "@/lib/site";
 import { useToast } from "@/components/ui/toast";
 
 type JoinQr = {
@@ -14,7 +13,7 @@ type JoinQr = {
 };
 
 function publicJoinUrl(token: string) {
-  return `${SITE.url.replace(/\/$/, "")}/carte/rejoindre/${token}/`;
+  return `${window.location.origin}/carte/rejoindre/${token}/`;
 }
 
 export function InstituteJoinQr({ canWrite }: { canWrite: boolean }) {
@@ -92,7 +91,7 @@ export function InstituteJoinQr({ canWrite }: { canWrite: boolean }) {
       <body style="font-family:sans-serif;text-align:center;padding:32px">
         <img src="${image}" alt="QR" width="280" height="280" />
         <h1 style="font-size:22px;margin:12px 0 4px">${qr.organizationName}</h1>
-        <p>Scannez pour rejoindre notre fidélité</p>
+        <p>Scannez pour ajouter la carte dans Apple Wallet ou Google Wallet</p>
       </body>`);
     popup.document.close();
     popup.focus();
@@ -114,7 +113,7 @@ export function InstituteJoinQr({ canWrite }: { canWrite: boolean }) {
           <p className="text-[11px] font-bold uppercase tracking-wider text-primary">QR de l&apos;institut</p>
           <h3 className="mt-1 text-[18px] font-bold text-ink">{qr?.programName || "Carte de fidélité"}</h3>
           <p className="mt-1 text-[13px] text-ink/55">
-            Scannez pour rejoindre. Ce QR ne donne jamais un passage.
+            Scannez : la carte s&apos;ajoute dans Apple Wallet ou Google Wallet, à 0 passage.
           </p>
           {canWrite ? (
             <div className="mt-3 flex flex-wrap gap-2">

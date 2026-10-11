@@ -7,34 +7,30 @@ export function HomeHero() {
   return (
     <section className="relative flex min-h-[520px] items-center justify-center overflow-hidden bg-[#FFF8FB] text-ink sm:min-h-[640px] lg:min-h-[720px]">
       <div className="absolute inset-0 z-0">
-        <picture className="absolute inset-0 block h-full w-full">
-          <source media="(max-width: 767px)" srcSet="/brand/hero-mobile.avif" type="image/avif" />
-          <source media="(max-width: 767px)" srcSet="/brand/hero-mobile.webp" type="image/webp" />
-          <source srcSet="/brand/hero.avif" type="image/avif" />
-          <source srcSet="/brand/hero.webp" type="image/webp" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            alt=""
-            width={1600}
-            height={640}
-            className="h-full w-full animate-kenburns object-cover object-center"
-            src="/brand/hero.webp"
-            fetchPriority="high"
-          />
-        </picture>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FFF8FB]/85 via-[#FFF8FB]/40 to-transparent" />
+        <video
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/brand/hero.webp"
+          aria-hidden
+        >
+          <source src="/hero.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-[#1A0A12]/45" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 py-14 text-center sm:px-6 sm:py-20 lg:px-8">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-primary sm:mb-3 sm:text-xs sm:tracking-[0.3em]">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/80 sm:mb-3 sm:text-xs sm:tracking-[0.3em]">
           Logiciel SaaS pour instituts de beauté
         </p>
 
-        <h1 className="mb-4 max-w-4xl font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl md:text-6xl">
+        <h1 className="mb-4 max-w-4xl font-display text-3xl font-light leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
           Logiciel de gestion pour institut de beauté au Maroc
         </h1>
 
-        <p className="mb-8 max-w-2xl text-sm leading-relaxed text-ink/70 sm:text-lg">
+        <p className="mb-8 max-w-2xl text-sm leading-relaxed text-white/85 sm:text-lg">
           Rendez-vous, clientes, équipe, caisse, stock et réservation en ligne — tout depuis une seule
           plateforme, conçue pour les instituts de beauté au Maroc.
         </p>
@@ -54,12 +50,12 @@ export function HomeHero() {
           </Link>
         </div>
 
-        <ul className="mt-6 flex flex-col items-center gap-1.5 text-xs text-ink/70 sm:flex-row sm:gap-5 sm:text-sm">
+        <ul className="mt-6 flex flex-col items-center gap-1.5 text-xs text-white/80 sm:flex-row sm:gap-5 sm:text-sm">
           <li>7 jours gratuits</li>
           <li>Sans carte bancaire</li>
           <li>Sans engagement</li>
         </ul>
-        <p className="mt-3 text-xs font-semibold text-ink/80 sm:text-sm">
+        <p className="mt-3 text-xs font-semibold text-white/90 sm:text-sm">
           Conçu pour les instituts de beauté au Maroc
         </p>
       </div>
@@ -71,7 +67,7 @@ export function HomeHero() {
         transition={{ delay: 1.2, duration: 0.6 }}
         aria-hidden
       >
-        <span className="text-[10px] uppercase tracking-[0.2em] text-ink/40">Scroll</span>
+        <span className="text-[10px] uppercase tracking-[0.2em] text-white/70">Scroll</span>
         <span className="h-8 w-px animate-scroll-line bg-gradient-to-b from-gold to-transparent" />
       </motion.div>
     </section>

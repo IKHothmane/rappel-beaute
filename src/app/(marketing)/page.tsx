@@ -151,22 +151,6 @@ export default function HomePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
-      <link
-        rel="preload"
-        as="image"
-        href="/brand/hero-mobile.avif"
-        type="image/avif"
-        media="(max-width: 767px)"
-        fetchPriority="high"
-      />
-      <link
-        rel="preload"
-        as="image"
-        href="/brand/hero.avif"
-        type="image/avif"
-        media="(min-width: 768px)"
-        fetchPriority="high"
-      />
       <HomeHero />
 
       <section className="border-b border-line bg-white py-14 sm:py-20">

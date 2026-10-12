@@ -2,6 +2,13 @@ import { Pool } from "pg";
 import { normalizePhoneForWa } from "@/lib/db/whatsapp";
 import { writeAuditLog } from "@/lib/db/audit";
 import type { WhatsAppTaskItem } from "@/types/whatsapp";
+import { getOrganizationWhatsappFrom } from "@/lib/db/organization";
+import {
+  formatTwilioWhatsAppFrom,
+  sendWhatsAppMessageViaTwilio,
+  TWILIO_FROM_MISSING_MESSAGE,
+  twilioCredentialsPresent,
+} from "@/lib/whatsapp/twilio";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -16,6 +23,11 @@ export type SendWhatsAppApiResult =
  */
 export function isWhatsAppDirectSendEnabled(): boolean {
   return process.env.WHATSAPP_DIRECT_SEND_ENABLED === "true";
+}
+
+/** Twilio (clés présentes) ou l’ancien drapeau Meta. */
+export function isAutomaticWhatsAppEnabled(): boolean {
+  return twilioCredentialsPresent() || isWhatsAppDirectSendEnabled();
 }
 
 export const WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE =
@@ -188,8 +200,15 @@ export async function sendDirectWhatsAppTask(
   taskId: string,
   actor: { id: string; name?: string | null },
 ): Promise<{ task: WhatsAppTaskItem; messageId: string }> {
-  if (!isWhatsAppDirectSendEnabled()) {
+  if (!isAutomaticWhatsAppEnabled()) {
     throw new Error(WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE);
+  }
+
+  const instituteFrom = twilioCredentialsPresent()
+    ? await getOrganizationWhatsappFrom(organizationId)
+    : null;
+  if (twilioCredentialsPresent() && !formatTwilioWhatsAppFrom(instituteFrom)) {
+    throw new Error(TWILIO_FROM_MISSING_MESSAGE);
   }
 
   const { rows } = await pool.query<{
@@ -211,11 +230,16 @@ export async function sendDirectWhatsAppTask(
     throw new Error("Tâche WhatsApp introuvable.");
   }
 
-  // Appel direct à l'API Meta
-  const sendResult = await sendWhatsAppMessageViaMetaApi({
-    toPhone: taskRow.phoneSnapshot,
-    message: taskRow.messageSnapshot,
-  });
+  const sendResult = twilioCredentialsPresent()
+    ? await sendWhatsAppMessageViaTwilio({
+        toPhone: taskRow.phoneSnapshot,
+        message: taskRow.messageSnapshot,
+        fromPhone: instituteFrom || "",
+      })
+    : await sendWhatsAppMessageViaMetaApi({
+        toPhone: taskRow.phoneSnapshot,
+        message: taskRow.messageSnapshot,
+      });
 
   if (!sendResult.ok) {
     // Enregistrement de l'échec dans l'audit log pour traçabilité

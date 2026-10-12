@@ -27,7 +27,7 @@
             paper: '#FFFBF9',
             ink: {
               DEFAULT: '#241A22',
-              muted: '#6B5864',
+              muted: '#6B5864', 
             },
             line: '#F0E3E6',
             institut: '#171018',

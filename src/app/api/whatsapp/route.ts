@@ -13,7 +13,7 @@ import {
   skipWhatsAppTask,
 } from "@/lib/db/whatsapp";
 import {
-  isWhatsAppDirectSendEnabled,
+  isAutomaticWhatsAppEnabled,
   sendDirectWhatsAppTask,
   WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
 } from "@/lib/whatsapp/send";
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (parsed.action === "sendDirect") {
-      if (!isWhatsAppDirectSendEnabled()) {
+      if (!isAutomaticWhatsAppEnabled()) {
         return NextResponse.json(
           {
             error: WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,

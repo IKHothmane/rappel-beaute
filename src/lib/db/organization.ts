@@ -53,3 +53,21 @@ export async function setOrganizationAddress(
     [address, organizationId],
   );
 }
+
+export async function getOrganizationWhatsappFrom(organizationId: string): Promise<string | null> {
+  const { rows } = await pool.query<{ whatsappFrom: string | null }>(
+    `SELECT "whatsappFrom" FROM "Organization" WHERE id = $1`,
+    [organizationId],
+  );
+  return rows[0]?.whatsappFrom ?? null;
+}
+
+export async function setOrganizationWhatsappFrom(
+  organizationId: string,
+  whatsappFrom: string | null,
+): Promise<void> {
+  await pool.query(
+    `UPDATE "Organization" SET "whatsappFrom" = $1, "updatedAt" = NOW() WHERE id = $2`,
+    [whatsappFrom, organizationId],
+  );
+}

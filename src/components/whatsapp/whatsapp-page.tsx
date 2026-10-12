@@ -20,6 +20,7 @@ import {
   listWhatsAppTemplates,
   markWhatsAppSent,
   recordWhatsAppOutcome,
+  sendDirectWhatsApp,
   skipWhatsAppTask,
   updateWhatsAppTemplate,
   WHATSAPP_OUTCOME_LABEL,
@@ -83,6 +84,20 @@ export function WhatsappPageView() {
     setLoading(true);
     refresh().finally(() => setLoading(false));
   }, [refresh]);
+
+  async function handleSend(task: WhatsAppTaskItem) {
+    if (!canSend) return;
+    setSubmitting(true);
+    const result = await sendDirectWhatsApp(task.id);
+    setSubmitting(false);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    toast("Message envoyé.", "success");
+    setPreview(null);
+    refresh();
+  }
 
   async function handleMarkSent(task: WhatsAppTaskItem) {
     if (!canSend) return;
@@ -278,14 +293,14 @@ export function WhatsappPageView() {
                 </button>
                 {canSend && task.status === "PENDING" ? (
                   <>
-                    <a
-                      href={task.waLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
+                    <button
+                      type="button"
+                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                      disabled={submitting}
+                      onClick={() => handleSend(task)}
                     >
-                      Ouvrir WhatsApp
-                    </a>
+                      Envoyer
+                    </button>
                     <button
                       type="button"
                       className="btn-ghost"
@@ -358,14 +373,9 @@ export function WhatsappPageView() {
             {canSend ? (
               <div className="flex flex-col gap-2 sm:flex-row">
                 {preview.status === "PENDING" ? (
-                  <a
-                    href={preview.waLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
-                  >
-                    Ouvrir WhatsApp
-                  </a>
+                  <Button disabled={submitting} onClick={() => handleSend(preview)}>
+                    Envoyer
+                  </Button>
                 ) : null}
                 {preview.status === "PENDING" ? (
                   <Button

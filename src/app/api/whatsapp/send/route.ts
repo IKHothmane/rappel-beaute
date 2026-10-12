@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { requireFeatureWriteLimited, stripOrganizationId } from "@/lib/auth/api-guard";
 import { canSendWhatsapp } from "@/lib/rbac";
 import {
-  isWhatsAppDirectSendEnabled,
+  isAutomaticWhatsAppEnabled,
   sendDirectWhatsAppTask,
   WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
 } from "@/lib/whatsapp/send";
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Accès refusé pour l'envoi WhatsApp." }, { status: 403 });
   }
 
-  if (!isWhatsAppDirectSendEnabled()) {
+  if (!isAutomaticWhatsAppEnabled()) {
     return NextResponse.json(
       {
         error: WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,

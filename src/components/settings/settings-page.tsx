@@ -14,6 +14,7 @@ import {
 import { ROLE_LABEL, useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { InstituteWebsiteField } from "@/components/settings/institute-website-field";
 import { InstituteAddressField } from "@/components/settings/institute-address-field";
+import { InstituteWhatsappField } from "@/components/settings/institute-whatsapp-field";
 import { InstituteLogoField } from "@/components/settings/institute-logo-field";
 import type { AppRole } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -178,6 +179,7 @@ export function SettingsPageView() {
             <div className="grid gap-3 sm:grid-cols-2">
               <InstituteLogoField name={user.orgName} canEdit={user.role === "OWNER"} />
               <InstituteAddressField canEdit={user.role === "OWNER"} />
+              <InstituteWhatsappField canEdit={user.role === "OWNER"} />
               <ReadonlyField label="Enseigne" value={user.orgName || "—"} />
               <ReadonlyField label="Identifiant public" value={user.orgSlug || "—"} />
             </div>

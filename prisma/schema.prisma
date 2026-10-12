@@ -449,6 +449,8 @@ model Organization {
   address   String?
   city      String?
   phone     String?
+  /// Numéro WhatsApp expéditeur de cet institut (Twilio), au format +212…
+  whatsappFrom String?
   email     String?
   website   String?
   ice       String?

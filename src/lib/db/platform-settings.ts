@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { hashPassword, verifyPassword } from "@/lib/auth/crypto";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
-import { isWhatsAppDirectSendEnabled, getMetaWhatsAppConfig } from "@/lib/whatsapp/send";
+import { isAutomaticWhatsAppEnabled, getMetaWhatsAppConfig } from "@/lib/whatsapp/send";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -323,12 +323,12 @@ export function getIntegrationsStatus() {
 
   return {
     whatsapp: {
-      autoSendEnabled: isWhatsAppDirectSendEnabled(),
+      autoSendEnabled: isAutomaticWhatsAppEnabled(),
       webhookConfigured: Boolean(wa.phoneNumberId && verifyToken),
       phoneNumberIdMasked: maskSecret(wa.phoneNumberId),
       verifyTokenMasked: maskSecret(verifyToken),
       hasAccessToken: Boolean(wa.accessToken),
-      mode: isWhatsAppDirectSendEnabled() ? "auto" : "manual",
+      mode: isAutomaticWhatsAppEnabled() ? "auto" : "manual",
     },
     ai: {
       configured: Boolean(aiKey),

@@ -10,10 +10,16 @@ import {
 } from "@/lib/google/calendar";
 
 function agendaError(request: NextRequest, reason: string) {
-  const origin = (process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin).replace(/\/$/, "");
+  const here = request.nextUrl.origin.replace(/\/$/, "");
+  const origin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(here)
+    ? here
+    : (process.env.NEXT_PUBLIC_APP_URL || here).replace(/\/$/, "");
   const url = new URL(`${origin}/agenda/`);
   url.searchParams.set("google", "error");
   url.searchParams.set("reason", reason);
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+    url.searchParams.set("__host", "app");
+  }
   return NextResponse.redirect(url);
 }
 

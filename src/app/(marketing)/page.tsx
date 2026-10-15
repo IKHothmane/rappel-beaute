@@ -384,6 +384,32 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="border-t border-line bg-white py-14 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <h2 className="font-display text-2xl font-light text-ink sm:text-4xl">Écrire à Rappel Beauty</h2>
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/65">
+            Une démo, une question, ou les informations légales du logiciel.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { href: "/demo/", title: "Demander une démo", text: "20 minutes pour voir l'institut à l'écran." },
+              { href: "/contact/", title: "Contact", text: "Une question sur le logiciel, l'essai ou la formule." },
+              { href: "/mentions-legales/", title: "Mentions légales", text: "Éditeur, hébergeur et informations obligatoires." },
+              { href: "/confidentialite/", title: "Confidentialité", text: "Données collectées, cookies et droits loi 09-08." },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block h-full rounded-2xl border border-line bg-paper p-5 transition hover:border-primary/40"
+              >
+                <h3 className="text-base font-semibold text-ink">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink/65">{item.text}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">Prêt à gérer votre institut ?</h2>

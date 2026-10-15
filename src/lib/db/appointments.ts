@@ -104,7 +104,7 @@ function personName(
   return name || fallback;
 }
 
-function promotionDiscount(ticket: number, servicePrice: number, type: string | null, value: string | null) {
+export function promotionDiscount(ticket: number, servicePrice: number, type: string | null, value: string | null) {
   if (!type) return 0;
   const base = servicePrice > 0 ? Math.min(ticket, servicePrice) : ticket;
   const amount = value != null ? Number(value) : 0;

@@ -24,31 +24,50 @@ function agendaRedirect(
   const base = origin.replace(/\/$/, "");
   const url = new URL(`${base}/agenda/`);
   url.searchParams.set("google", google);
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(base)) {
+    url.searchParams.set("__host", "app");
+  }
   if (extra) {
     for (const [key, value] of Object.entries(extra)) url.searchParams.set(key, value);
   }
   return NextResponse.redirect(url);
 }
 
+/** Retour vers le site qui a lancé OAuth. En local, ne pas suivre NEXT_PUBLIC_APP_URL (staging). */
+function returnOrigin(request: NextRequest, callbackUri?: string): string {
+  if (callbackUri) {
+    try {
+      return new URL(callbackUri).origin.replace(/\/$/, "");
+    } catch {
+      /* URI d'état illisible : on retombe sur l'hôte de la requête */
+    }
+  }
+  const here = request.nextUrl.origin.replace(/\/$/, "");
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(here)) return here;
+  return (process.env.NEXT_PUBLIC_APP_URL || here).replace(/\/$/, "");
+}
+
 export async function GET(request: NextRequest) {
-  const origin = (process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin).replace(/\/$/, "");
   const sp = request.nextUrl.searchParams;
   const error = sp.get("error");
   const code = sp.get("code");
   const stateToken = sp.get("state");
 
   if (error) {
-    return agendaRedirect(origin, "error", { reason: error === "access_denied" ? "denied" : "oauth" });
+    return agendaRedirect(returnOrigin(request), "error", {
+      reason: error === "access_denied" ? "denied" : "oauth",
+    });
   }
   if (!code || !stateToken) {
-    return agendaRedirect(origin, "error", { reason: "oauth" });
+    return agendaRedirect(returnOrigin(request), "error", { reason: "oauth" });
   }
 
   const state = verifyGoogleOAuthState(stateToken);
   if (!state) {
-    return agendaRedirect(origin, "error", { reason: "state" });
+    return agendaRedirect(returnOrigin(request), "error", { reason: "state" });
   }
 
+  const origin = returnOrigin(request, state.redirectUri);
   const session = getSessionFromRequest(request);
   if (!session || !isAppSession(session) || session.organizationId !== state.orgId) {
     return agendaRedirect(origin, "error", { reason: "session" });

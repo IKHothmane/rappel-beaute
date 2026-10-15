@@ -227,6 +227,12 @@ export async function middleware(request: NextRequest) {
     return withFrameDeny(NextResponse.redirect(httpsUrl, 308));
   }
 
+  if (path === "/api/integrations/google-calendar/callback") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/integrations/google-calendar/callback/";
+    return withFrameDeny(NextResponse.rewrite(url));
+  }
+
   if (path.startsWith("/api/")) {
     if (path.startsWith("/api/public/assistant/frame")) return NextResponse.next();
     const res = NextResponse.next();

@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import type { PoolClient } from "pg";
+import { promotionDiscount } from "@/lib/db/appointments";
 import { pool } from "@/lib/db/pool";
 import type {
   AppointmentPaymentSummary,
@@ -446,9 +447,18 @@ export async function getAppointmentPaymentSummary(
   organizationId: string,
   appointmentId: string,
 ): Promise<AppointmentPaymentSummary | null> {
-  const apt = await pool.query<{ price: string }>(
-    `SELECT price::text FROM "Appointment"
-     WHERE id = $1 AND "organizationId" = $2`,
+  const apt = await pool.query<{
+    price: string;
+    servicePrice: string | null;
+    promotionType: string | null;
+    promotionValue: string | null;
+  }>(
+    `SELECT a.price::text, s.price::text AS "servicePrice",
+            promo.type::text AS "promotionType", promo.value::text AS "promotionValue"
+     FROM "Appointment" a
+     LEFT JOIN "Service" s ON s.id = a."serviceId"
+     LEFT JOIN "Promotion" promo ON promo.id = a."promotionId" AND promo."deletedAt" IS NULL
+     WHERE a.id = $1 AND a."organizationId" = $2`,
     [appointmentId, organizationId],
   );
   if (!apt.rows[0]) return null;
@@ -470,10 +480,17 @@ export async function getAppointmentPaymentSummary(
     .filter((p) => p.kind === "REFUND" && p.status === "COMPLETED")
     .reduce((s, p) => s + p.amount, 0);
   const netPaid = Math.round((paid - refunded) * 100) / 100;
+  const ticket = parseFloat(apt.rows[0].price) || 0;
+  const promoOff = promotionDiscount(
+    ticket,
+    parseFloat(apt.rows[0].servicePrice ?? "") || 0,
+    apt.rows[0].promotionType,
+    apt.rows[0].promotionValue,
+  );
   const price =
     inv.rows[0] != null
       ? parseFloat(inv.rows[0].total) || 0
-      : parseFloat(apt.rows[0].price) || 0;
+      : Math.max(0, Math.round((ticket - promoOff) * 100) / 100);
   const remaining = Math.max(0, Math.round((price - netPaid) * 100) / 100);
 
   return {
@@ -950,6 +967,9 @@ export async function listBillableAppointments(
     serviceName: string;
     price: number;
     remaining: number;
+    discount: number;
+    promotionCode: string | null;
+    promotionName: string | null;
     status: string;
     startAt: string;
     customerPhone: string | null;
@@ -965,6 +985,20 @@ export async function listBillableAppointments(
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
       c.phone AS "customerPhone",
       COALESCE(s.name, a."serviceNameSnapshot", 'Prestation') AS "serviceName",
+      s.price::text AS "servicePrice",
+      promo.code AS "promotionCode",
+      promo.name AS "promotionName",
+      promo.type::text AS "promotionType",
+      promo.value::text AS "promotionValue",
+      (
+        SELECT i.total::text
+        FROM "Invoice" i
+        WHERE i."appointmentId" = a.id
+          AND i."organizationId" = a."organizationId"
+          AND i.status <> 'VOID'
+        ORDER BY i."createdAt" DESC
+        LIMIT 1
+      ) AS "invoiceTotal",
       COALESCE((
         SELECT SUM(CASE WHEN p.kind = 'REFUND' THEN -p.amount ELSE p.amount END)
         FROM "Payment" p
@@ -973,6 +1007,7 @@ export async function listBillableAppointments(
      FROM "Appointment" a
      JOIN "Customer" c ON c.id = a."customerId"
      LEFT JOIN "Service" s ON s.id = a."serviceId"
+     LEFT JOIN "Promotion" promo ON promo.id = a."promotionId" AND promo."deletedAt" IS NULL
      WHERE a."organizationId" = $1
        AND a.status NOT IN ('CANCELLED', 'NO_SHOW')
        AND (
@@ -991,13 +1026,31 @@ export async function listBillableAppointments(
     .map((r) => {
       const price = parseFloat(r.price) || 0;
       const netPaid = parseFloat(r.netPaid) || 0;
-      const remaining = Math.max(0, Math.round((price - netPaid) * 100) / 100);
+      const invoiceTotal = r.invoiceTotal != null ? parseFloat(r.invoiceTotal) || 0 : null;
+      const computedDiscount = promotionDiscount(
+        price,
+        parseFloat(r.servicePrice ?? "") || 0,
+        (r.promotionType as string) ?? null,
+        (r.promotionValue as string) ?? null,
+      );
+      const due =
+        invoiceTotal != null
+          ? invoiceTotal
+          : Math.max(0, Math.round((price - computedDiscount) * 100) / 100);
+      const discount =
+        invoiceTotal != null
+          ? Math.max(0, Math.round((price - invoiceTotal) * 100) / 100)
+          : computedDiscount;
+      const remaining = Math.max(0, Math.round((due - netPaid) * 100) / 100);
       return {
         id: r.id as string,
         customerName: `${r.customerFirst} ${r.customerLast}`.trim(),
         serviceName: r.serviceName as string,
         price,
         remaining,
+        discount,
+        promotionCode: (r.promotionCode as string) ?? null,
+        promotionName: (r.promotionName as string) ?? null,
         status: r.status as string,
         startAt: new Date(r.startAt as Date).toISOString(),
         customerPhone: (r.customerPhone as string) ?? null,

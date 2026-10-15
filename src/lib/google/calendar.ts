@@ -56,9 +56,10 @@ function clientSecret(): string {
 
 export function googleRedirectUri(origin: string): string {
   const explicit = process.env.GOOGLE_REDIRECT_URI?.trim();
-  if (explicit) return explicit.replace(/\/$/, "");
-  const base = (publicAppOrigin() || origin).replace(/\/$/, "");
-  return `${base}/api/integrations/google-calendar/callback`;
+  const raw =
+    explicit ||
+    `${(publicAppOrigin() || origin).replace(/\/$/, "")}/api/integrations/google-calendar/callback`;
+  return `${raw.replace(/\/$/, "")}/`;
 }
 
 export function signGoogleOAuthState(payload: GoogleOAuthState): string {

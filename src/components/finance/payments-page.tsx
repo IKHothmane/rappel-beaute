@@ -13,6 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { AppointmentPromoNote } from "@/components/finance/appointment-promo-note";
 import {
   PAYMENT_PAGE_SIZE,
   type PaymentPeriod,
@@ -835,6 +836,7 @@ export function PaymentsPageView() {
                   )}
                 </Select>
               </label>
+              <AppointmentPromoNote {...billable.find((b) => b.id === aptId)} />
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-sm">
                   <span className="mb-1.5 block font-medium">Montant service</span>

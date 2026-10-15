@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Tabs } from "@/components/app/AppUi";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { CustomerForm } from "@/components/customers/customer-form";
+import { SendCustomerWhatsAppButton } from "@/components/customers/send-customer-whatsapp-button";
 import { AIMessageComposer } from "@/components/ai/ai-message-composer";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
@@ -82,17 +83,6 @@ const KIND_LABEL: Record<string, string> = {
 
 function mad(n: number) {
   return `${n.toLocaleString("fr-MA", { maximumFractionDigits: 0 })} MAD`;
-}
-
-function waLink(phone: string, firstName: string) {
-  const digits = phone.replace(/\D/g, "");
-  const normalized = digits.startsWith("212")
-    ? digits
-    : digits.startsWith("0")
-      ? `212${digits.slice(1)}`
-      : digits;
-  const text = encodeURIComponent(`Bonjour ${firstName} 👋`);
-  return `https://wa.me/${normalized}?text=${text}`;
 }
 
 export function CustomerDetailView({ customerId }: { customerId: string }) {
@@ -289,14 +279,14 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
         <Link href={`/agenda/?customerId=${customerId}`} className="btn-primary text-xs sm:text-sm">
           Nouveau RDV
         </Link>
-        <a
-          href={waLink(customer.phone, customer.firstName)}
-          target="_blank"
-          rel="noreferrer"
+        <SendCustomerWhatsAppButton
+          customerId={customerId}
+          firstName={customer.firstName}
+          orgName={user.orgName}
           className="btn-ghost text-xs sm:text-sm"
         >
           WhatsApp
-        </a>
+        </SendCustomerWhatsAppButton>
         {canGenerateAi ? (
           <button
             type="button"

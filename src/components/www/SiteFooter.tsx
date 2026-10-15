@@ -8,7 +8,7 @@ const COLS = [
     links: [
       { href: "/fonctionnalites/", label: "Fonctionnalités" },
       { href: "/tarifs/", label: "Tarifs" },
-      { href: "/whatsapp/", label: "WhatsApp manuel" },
+      { href: "/whatsapp/", label: "WhatsApp" },
       { href: "/professionnel/", label: "Essai 7 jours" },
     ],
   },

@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         type,
         appointmentId,
         attributionSource,
+        allowWithoutMarketingOptIn: raw.staffClick === true,
       },
       actor,
     );
@@ -85,8 +86,21 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    if (code === "CUSTOMER_NOT_FOUND") {
+      return NextResponse.json({ error: "Cliente introuvable." }, { status: 404 });
+    }
+    if (code === "CUSTOMER_NO_PHONE") {
+      return NextResponse.json({ error: "Cette cliente n'a pas de numéro." }, { status: 400 });
+    }
+    if (code === "CUSTOMER_NO_MARKETING_OPTIN") {
+      return NextResponse.json(
+        { error: "Cette cliente n'a pas consenti au marketing WhatsApp." },
+        { status: 400 },
+      );
+    }
     console.error("[POST /api/whatsapp/send]", error);
-    const msg = error instanceof Error ? error.message : "Échec d'envoi du message WhatsApp";
+    const msg = code && !code.startsWith("CUSTOMER_") ? code : "Échec d'envoi du message WhatsApp";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }

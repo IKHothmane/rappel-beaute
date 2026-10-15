@@ -16,6 +16,15 @@ describe("origine Cloudflare", () => {
     expect(originAccessAllowed("secret-origine-x", "secret-origine")).toBe(false);
   });
 
+  it("développement : localhost passe sans header", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
+    expect(originAccessAllowed(null, "secret-origine", "localhost:3000")).toBe(true);
+    process.env.NODE_ENV = "production";
+    expect(originAccessAllowed(null, "secret-origine", "localhost:3000")).toBe(false);
+    process.env.NODE_ENV = prev;
+  });
+
   it("header exact → accès", () => {
     expect(originAccessAllowed("secret-origine", "secret-origine")).toBe(true);
   });

@@ -427,7 +427,7 @@ export function CustomersPageView() {
         </div>
       </div>
       <p className="text-center text-[11px] text-ink/35">
-        Les fiches clientes restent dans votre institut. Aucun envoi WhatsApp n’est déclenché sans votre clic.
+        Les fiches clientes restent dans votre institut. Un clic sur WhatsApp envoie le message depuis le numéro de l’institut.
       </p>
       </div>
 

@@ -989,6 +989,7 @@ export async function createAIWhatsAppTask(
     type: WhatsAppTaskType;
     appointmentId?: string | null;
     attributionSource: string;
+    allowWithoutMarketingOptIn?: boolean;
   },
   actor: { id: string; name?: string | null },
 ): Promise<WhatsAppTaskItem> {
@@ -1005,7 +1006,11 @@ export async function createAIWhatsAppTask(
   const customer = custRows[0];
   if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
   if (!customer.phone?.trim()) throw new Error("CUSTOMER_NO_PHONE");
-  if (isMarketingWhatsAppType(input.type) && !customer.marketingWhatsapp) {
+  if (
+    isMarketingWhatsAppType(input.type) &&
+    !customer.marketingWhatsapp &&
+    !input.allowWithoutMarketingOptIn
+  ) {
     throw new Error("CUSTOMER_NO_MARKETING_OPTIN");
   }
 

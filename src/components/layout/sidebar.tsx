@@ -83,7 +83,6 @@ const sections: { title: string | null; items: NavItem[] }[] = [
   {
     title: "Croissance",
     items: [
-      { label: "WhatsApp", href: "/whatsapp/", icon: MessageCircle, key: "whatsapp", badge: "V1" },
       { label: "Post-prestation", href: "/post-visit/", icon: MessageCircle, key: "post-visit" },
       { label: "Fidélité", href: "/loyalty/", icon: Gift, key: "loyalty" },
       { label: "Promotions", href: "/promotions/", icon: Megaphone, key: "promotions" },

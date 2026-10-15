@@ -115,7 +115,7 @@ export const FEATURES = [
     id: "whatsapp",
     title: "WhatsApp",
     href: "/fonctionnalites/#whatsapp",
-    text: "Messages préparés, envoi manuel via wa.me. Aucun bot en V1.",
+    text: "Messages préparés, puis envoyés depuis le numéro WhatsApp de l’institut.",
   },
   {
     id: "avis",
@@ -216,7 +216,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Comment fonctionne WhatsApp avec Rappel Beauty ?",
-    a: "Rappel Beauty propose actuellement un fonctionnement WhatsApp manuel assisté : le logiciel prépare le message et l'utilisateur l'envoie manuellement via WhatsApp.",
+    a: "Le logiciel prépare le message. Depuis la page WhatsApp, un clic sur Envoyer le transmet depuis le numéro WhatsApp de l'institut.",
   },
   {
     q: "Les photos des clientes sont-elles utilisées ?",

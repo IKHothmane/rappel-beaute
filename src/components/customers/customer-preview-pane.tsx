@@ -14,6 +14,7 @@ import {
   Star,
   Wallet,
 } from "lucide-react";
+import { SendCustomerWhatsAppButton } from "@/components/customers/send-customer-whatsapp-button";
 import {
   APPOINTMENT_STATUS_UI,
   averageVisitGapDays,
@@ -22,8 +23,6 @@ import {
   formatRelativeVisit,
   segmentBadge,
   shortCustomerRef,
-  customerWhatsappMessage,
-  whatsappHref,
 } from "@/components/customers/customers-helpers";
 import { formatMad } from "@/modules/analytics/service";
 import {
@@ -199,15 +198,15 @@ export function CustomerPreviewPane({
           <CalendarDays size={14} />
           Nouveau RDV
         </Link>
-        <a
-          href={whatsappHref(person.phone, person.firstName, customerWhatsappMessage(person.firstName, orgName))}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[12px] font-semibold text-white shadow-sm"
+        <SendCustomerWhatsAppButton
+          customerId={person.id}
+          firstName={person.firstName}
+          orgName={orgName}
+          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[12px] font-semibold text-white shadow-sm disabled:opacity-60"
         >
           <MessageCircle size={14} />
           WhatsApp
-        </a>
+        </SendCustomerWhatsAppButton>
         <Link
           href={`/payments/?customerId=${person.id}`}
           className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-[#FCE9F4] px-3 text-[12px] font-semibold text-ink"

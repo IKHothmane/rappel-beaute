@@ -16,7 +16,7 @@ export function HomeHero() {
           poster="/brand/hero.webp"
           aria-hidden
         >
-          <source src="/hero.mp4" type="video/mp4" />
+          <source src="/brand/hero.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-[#1A0A12]/45" />
       </div>

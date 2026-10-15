@@ -373,7 +373,7 @@ export default function HomePage() {
           <p className="mt-6 text-center text-sm text-ink/55">
             WhatsApp est détaillé sur la{" "}
             <Link href="/whatsapp/" className="font-semibold text-primary hover:text-primary-dark">
-              page WhatsApp manuel
+              page WhatsApp
             </Link>
             . Plus de réponses sur la{" "}
             <Link href="/faq/" className="font-semibold text-primary hover:text-primary-dark">

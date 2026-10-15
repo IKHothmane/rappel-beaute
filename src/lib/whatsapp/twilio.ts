@@ -32,6 +32,14 @@ export function formatTwilioWhatsAppFrom(raw: string | null | undefined): string
 export const TWILIO_FROM_MISSING_MESSAGE =
   "Ajoutez le numéro WhatsApp de cet institut dans Paramètres → Institut.";
 
+function twilioErrorMessage(message: string | undefined, status: number) {
+  const text = message || "";
+  if (/compliance profile is not approved|Trust Hub|KYC/i.test(text)) {
+    return "Twilio refuse l'envoi : le profil WhatsApp de l'institut n'est pas encore validé. Terminez la vérification dans Twilio, menu Trust Hub.";
+  }
+  return text || `Twilio a refusé l'envoi (${status}).`;
+}
+
 export async function sendWhatsAppMessageViaTwilio(options: {
   toPhone: string;
   message: string;
@@ -70,7 +78,7 @@ export async function sendWhatsAppMessageViaTwilio(options: {
     );
     const data = (await response.json()) as { sid?: string; message?: string; code?: number };
     if (!response.ok || !data.sid) {
-      return { ok: false, error: data.message || `Twilio a refusé l'envoi (${response.status}).` };
+      return { ok: false, error: twilioErrorMessage(data.message, response.status) };
     }
     return { ok: true, messageId: data.sid };
   } catch (error) {

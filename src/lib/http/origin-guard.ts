@@ -15,6 +15,7 @@ export function originAccessAllowed(
   host?: string | null,
 ): boolean {
   if (!expected) return true;
+  if (localDevHostAllowed(host)) return true;
   if (stagingHostAllowed(host)) return true;
   if (!header) return false;
   return secretsMatch(header, expected);
@@ -28,6 +29,17 @@ function configuredPublicHost(): string {
   } catch {
     return "";
   }
+}
+
+function localDevHostAllowed(host: string | null | undefined): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  const hostname = (host ?? "").split(",")[0]?.trim().split(":")[0]?.toLowerCase() ?? "";
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname.endsWith(".localhost")
+  );
 }
 
 function stagingHostAllowed(host: string | null | undefined): boolean {

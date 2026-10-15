@@ -37,6 +37,20 @@ export async function getWhatsAppDashboard(view: "pending" | "sent" = "pending")
   return { items: body.data ?? body.items ?? [], kpis: body.kpis };
 }
 
+export async function sendCustomerWhatsApp(customerId: string, message: string) {
+  const res = await fetch("/api/whatsapp/send/", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ customerId, message, type: "REACTIVATION", staffClick: true }),
+  });
+  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  if (!res.ok) {
+    return { ok: false as const, error: data.error ?? "Échec d'envoi WhatsApp" };
+  }
+  return { ok: true as const };
+}
+
 export async function sendDirectWhatsApp(taskId: string) {
   const res = await fetch("/api/whatsapp/", {
     method: "POST",

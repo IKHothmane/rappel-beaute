@@ -24,6 +24,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import { SendCustomerWhatsAppButton } from "@/components/customers/send-customer-whatsapp-button";
 import {
   APPOINTMENT_STATUS_UI,
   averageVisitGapDays,
@@ -33,8 +34,6 @@ import {
   formatRelativeVisit,
   segmentBadge,
   shortCustomerRef,
-  customerWhatsappMessage,
-  whatsappHref,
 } from "@/components/customers/customers-helpers";
 import { cn } from "@/lib/utils";
 import { formatMad, formatPct } from "@/modules/analytics/service";
@@ -364,7 +363,7 @@ export function CustomersMobile({
           <ShieldCheck size={12} />
           Les fiches restent dans votre institut
         </span>
-        <span>Aucun WhatsApp n’est envoyé sans votre clic.</span>
+        <span>Un clic sur WhatsApp envoie le message depuis le numéro de l’institut.</span>
       </p>
     </div>
   );
@@ -469,15 +468,15 @@ function CustomerListCard({
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <a
-          href={whatsappHref(c.phone, c.firstName, customerWhatsappMessage(c.firstName, orgName))}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[12px] font-semibold text-white shadow-sm"
+        <SendCustomerWhatsAppButton
+          customerId={c.id}
+          firstName={c.firstName}
+          orgName={orgName}
+          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[12px] font-semibold text-white shadow-sm disabled:opacity-60"
         >
           <MessageCircle size={14} />
           WhatsApp
-        </a>
+        </SendCustomerWhatsAppButton>
         <button
           type="button"
           onClick={onOpen}
@@ -660,15 +659,15 @@ function CustomerFocusMobile({
             <CalendarPlus size={16} />
             Nouveau RDV
           </Link>
-          <a
-            href={whatsappHref(person.phone, person.firstName, customerWhatsappMessage(person.firstName, orgName))}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[12px] font-semibold text-white shadow-sm"
+          <SendCustomerWhatsAppButton
+            customerId={person.id}
+            firstName={person.firstName}
+            orgName={orgName}
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[12px] font-semibold text-white shadow-sm disabled:opacity-60"
           >
             <MessageCircle size={16} />
             WhatsApp
-          </a>
+          </SendCustomerWhatsAppButton>
           <Link
             href={`/payments/?customerId=${person.id}`}
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-ink text-[12px] font-semibold text-white shadow-sm"
@@ -734,15 +733,15 @@ function CustomerFocusMobile({
               </>
             ) : null}
           </p>
-          <a
-            href={whatsappHref(person.phone, person.firstName, customerWhatsappMessage(person.firstName, orgName))}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-white text-[12px] font-semibold text-primary shadow-sm"
+          <SendCustomerWhatsAppButton
+            customerId={person.id}
+            firstName={person.firstName}
+            orgName={orgName}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-white text-[12px] font-semibold text-primary shadow-sm disabled:opacity-60"
           >
             <MessageCircle size={14} />
-            Préparer un message WhatsApp
-          </a>
+            Envoyer sur WhatsApp
+          </SendCustomerWhatsAppButton>
         </div>
       ) : null}
 

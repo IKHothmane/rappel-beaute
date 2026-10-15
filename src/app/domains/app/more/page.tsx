@@ -27,7 +27,6 @@ const GROUPS = [
   {
     title: "Croissance",
     links: [
-      { href: "/whatsapp/", label: "WhatsApp" },
       { href: "/loyalty/", label: "Fidélité" },
       { href: "/promotions/", label: "Promotions" },
       { href: "/reviews/", label: "Avis" },

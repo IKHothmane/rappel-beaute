@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead } from "@/lib/auth/api-guard";
 import { canManageGoogleCalendar } from "@/lib/rbac";
-import { getGoogleCalendarConnection } from "@/lib/db/google-calendar";
+import { getGoogleCalendarConnection, googleConnectionNeedsReconnect } from "@/lib/db/google-calendar";
 import { isGoogleCalendarConfigured } from "@/lib/google/calendar";
 import type { GoogleCalendarStatus } from "@/types/google-calendar";
 
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       orgName: auth.session.orgName,
       connectedAt: conn?.connectedAt.toISOString() ?? null,
       canManage: canManageGoogleCalendar(auth.session.role),
+      needsReconnect: conn ? googleConnectionNeedsReconnect(conn.refreshTokenEnc) : false,
     };
     return NextResponse.json(payload);
   } catch (error) {

@@ -7,28 +7,18 @@ import {
   Clock,
   Crown,
   ExternalLink,
-  Gift,
   Plus,
   Settings,
-  Ticket,
   UserRound,
   Users,
 } from "lucide-react";
-import { shortCardCode } from "@/lib/loyalty/card-code";
+import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
 import { loyaltyJoinUrl } from "@/lib/loyalty/public-origin";
 import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
-import { journalKind, memberInitials, rewardTypeLabel } from "@/components/loyalty/loyalty-helpers";
+import { journalKind, memberInitials } from "@/components/loyalty/loyalty-helpers";
 import { useToast } from "@/components/ui/toast";
-import type {
-  LoyaltyAccountSummary,
-  LoyaltyJournalItem,
-  LoyaltyProgramConfig,
-  LoyaltyRewardItem,
-  LoyaltyRewardType,
-} from "@/types/loyalty";
-
-type ServiceOption = { id: string; name: string };
+import type { LoyaltyJournalItem, LoyaltyProgramConfig } from "@/types/loyalty";
 
 function phoneLabel(phone: string | null | undefined) {
   if (!phone || phone.startsWith("WL")) return "Sans téléphone";
@@ -39,7 +29,6 @@ function activityWhen(iso: string) {
   return new Date(iso).toLocaleString("fr-FR", {
     day: "2-digit",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Africa/Casablanca",
@@ -49,70 +38,40 @@ function activityWhen(iso: string) {
 export function LoyaltyBoard({
   orgName,
   canWrite,
-  canRedeem,
   program,
   visitCards,
-  ranking,
-  rewards,
   journal,
-  services,
   onRefresh,
   onOpenSettings,
-  onCreateReward,
-  onRedeem,
 }: {
   orgName: string;
   canWrite: boolean;
-  canRedeem: boolean;
   program: LoyaltyProgramConfig | null;
   visitCards: VisitCardRow[];
-  ranking: LoyaltyAccountSummary[];
-  rewards: LoyaltyRewardItem[];
   journal: LoyaltyJournalItem[];
-  services: ServiceOption[];
   onRefresh: () => void;
   onOpenSettings: () => void;
-  onCreateReward: (input: {
-    name: string;
-    pointsCost: number;
-    type: LoyaltyRewardType;
-    value?: number;
-  }) => Promise<string | null>;
-  onRedeem: (customerId: string, rewardId: string) => Promise<string | null>;
 }) {
   const { toast } = useToast();
   const [focusId, setFocusId] = useState<string | null>(null);
   const [joinImage, setJoinImage] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string | null>(null);
   const [joinBusy, setJoinBusy] = useState(false);
-  const [serviceId, setServiceId] = useState("");
   const [passageToken, setPassageToken] = useState("");
-  const [tempCode, setTempCode] = useState<string | null>(null);
+  const [customerCode, setCustomerCode] = useState("");
   const [passageBusy, setPassageBusy] = useState(false);
   const [passageNote, setPassageNote] = useState<string | null>(null);
-  const [rewardCustomerId, setRewardCustomerId] = useState("");
-  const [rewardId, setRewardId] = useState("");
-  const [rewardBusy, setRewardBusy] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newType, setNewType] = useState<LoyaltyRewardType>("FREE_SERVICE");
-  const [newCost, setNewCost] = useState("");
-  const [newValue, setNewValue] = useState("");
-  const [creating, setCreating] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
 
   const threshold = program?.visitsPerReward && program.visitsPerReward > 0 ? program.visitsPerReward : null;
   const rewardLabel = program?.rewardLabel?.trim() || "";
   const focused = focusId ? visitCards.find((card) => card.customerId === focusId) ?? null : null;
-  const filled = focused && threshold ? Math.min(threshold, Math.max(0, focused.visits)) : 0;
+  const cycleVisits = focused && threshold ? visitCycle(focused.visits, threshold) : 0;
+  const filled = threshold ? Math.min(threshold, Math.max(0, cycleVisits)) : 0;
   const loyal = useMemo(
     () => [...visitCards].sort((a, b) => b.visits - a.visits || a.customerName.localeCompare(b.customerName, "fr")).slice(0, 5),
     [visitCards],
   );
-  const activeRewards = rewards.filter((reward) => reward.active);
-  const eligible =
-    !serviceId ||
-    !program?.eligibleServiceIds?.length ||
-    program.eligibleServiceIds.includes(serviceId);
 
   useEffect(() => {
     let cancelled = false;
@@ -176,28 +135,8 @@ export function LoyaltyBoard({
     }
   }
 
-  async function issueCode() {
-    setPassageBusy(true);
-    setPassageNote(null);
-    try {
-      const res = await fetch("/api/loyalty/credit-code/", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "issue" }),
-      });
-      const body = (await res.json()) as { code?: string; error?: string };
-      if (!res.ok || !body.code) throw new Error(body.error || "Code temporaire indisponible.");
-      setTempCode(body.code);
-    } catch (error) {
-      toast(error instanceof Error ? error.message : "Code temporaire indisponible.", "error");
-    } finally {
-      setPassageBusy(false);
-    }
-  }
-
   async function addPassage() {
-    if (!passageToken.trim() || !tempCode || !serviceId) return;
+    if (!passageToken.trim()) return;
     setPassageBusy(true);
     setPassageNote(null);
     try {
@@ -206,16 +145,27 @@ export function LoyaltyBoard({
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "redeem",
+          action: "add",
           token: passageToken,
-          code: tempCode,
-          serviceId,
         }),
       });
-      const body = (await res.json()) as { error?: string; customerName?: string; visits?: number; visitsPerReward?: number };
+      const body = (await res.json()) as {
+        error?: string;
+        customerName?: string;
+        visits?: number;
+        visitsPerReward?: number;
+        promoCode?: string | null;
+      };
       if (!res.ok) throw new Error(body.error || "Passage impossible.");
-      setPassageNote(`${body.customerName} · ${body.visits ?? 0} / ${body.visitsPerReward ?? threshold ?? "—"}`);
-      setTempCode(null);
+      if (body.promoCode) {
+        setPassageNote(`${body.customerName} · code ${body.promoCode} : un soin est offert. Compteur à 0.`);
+        toast(`Code ${body.promoCode} : un soin est offert. Compteur à 0.`, "success");
+      } else {
+        const limit = body.visitsPerReward ?? threshold ?? 0;
+        const shown = limit > 0 ? visitCycle(body.visits ?? 0, limit) : (body.visits ?? 0);
+        setPassageNote(`${body.customerName} · ${shown} / ${limit || "—"}`);
+      }
+      setPassageToken("");
       onRefresh();
     } catch (error) {
       toast(error instanceof Error ? error.message : "Passage impossible.", "error");
@@ -271,6 +221,14 @@ export function LoyaltyBoard({
     };
   }, [cameraOn, toast]);
 
+  function selectCustomer(card: VisitCardRow) {
+    setFocusId(card.customerId);
+    const code = (card.cardCode || card.promoCode || (card.publicToken ? shortCardCode(card.publicToken) : "")).trim();
+    if (!code) return;
+    setPassageToken(code);
+    setCustomerCode(code);
+  }
+
   function startCamera() {
     const Detector = (window as unknown as { BarcodeDetector?: unknown }).BarcodeDetector;
     if (!Detector || !navigator.mediaDevices?.getUserMedia) {
@@ -284,15 +242,15 @@ export function LoyaltyBoard({
   const field = "h-11 w-full min-w-0 rounded-xl border border-[#F3D5E2] bg-white px-3 text-sm outline-none focus:border-primary";
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] space-y-4">
+    <div className="mx-auto w-full min-w-0 max-w-[1180px] space-y-4 overflow-x-clip">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <p className="text-[12px] text-ink/45">
             Fidélité <span className="px-1">›</span> <span className="text-ink/70">Carte de fidélité</span>
           </p>
-          <h1 className="mt-1 text-[26px] font-semibold tracking-tight text-ink sm:text-[32px]">Carte de fidélité</h1>
-          <p className="mt-1 max-w-xl text-[13px] text-ink/55 sm:text-sm">
-            Gérez votre programme de fidélité, ajoutez des passages et récompensez vos clientes.
+          <h1 className="mt-1 text-[24px] font-semibold leading-tight tracking-tight text-ink sm:text-[32px]">Carte de fidélité</h1>
+          <p className="mt-1 max-w-xl text-[13px] leading-5 text-ink/55 sm:text-sm">
+            Identifiez une cliente, ajoutez son passage, puis suivez les cartes les plus actives.
           </p>
         </div>
         {joinUrl ? (
@@ -300,7 +258,7 @@ export function LoyaltyBoard({
             href={joinUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-[#F3D5E2] bg-white px-4 text-[13px] font-semibold text-ink"
+            className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full border border-[#F3D5E2] bg-white px-4 text-[13px] font-semibold text-ink sm:h-10 sm:w-auto"
           >
             Voir la page publique
             <ExternalLink size={14} />
@@ -308,80 +266,34 @@ export function LoyaltyBoard({
         ) : null}
       </header>
 
-      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.85fr)]">
-        <article
-          className="relative min-w-0 overflow-hidden rounded-3xl p-5 text-white shadow-md sm:p-6"
-          style={{
-            background: program?.cardBackgroundUrl
-              ? `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${program.cardBackgroundUrl}") center / cover no-repeat`
-              : "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)",
-          }}
-        >
-          <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#E8C56B]/10" />
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <Crown className="text-[#E8C56B]" size={28} />
-              <p className="mt-3 font-display text-[22px] uppercase tracking-[0.18em] text-[#E8C56B] sm:text-[28px]">
-                {orgName}
-              </p>
-              {program?.name && program.name !== orgName ? (
-                <p className="text-[11px] uppercase tracking-[0.22em] text-white/55">{program.name}</p>
-              ) : null}
+      <section className="rounded-2xl border border-[#F3D5E2] bg-white p-3 shadow-sm sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-[15px] font-bold">
+            <Settings size={16} className="text-ink/40" /> Programme
+          </h2>
+          {canWrite ? (
+            <button type="button" onClick={onOpenSettings} className="inline-flex h-9 items-center gap-1 rounded-full bg-[#FFF1F6] px-3 text-[13px] font-semibold text-primary">
+              <Settings size={14} /> Modifier
+            </button>
+          ) : null}
+        </div>
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            { label: "Nom", value: program?.name || "—" },
+            { label: "Passages requis", value: threshold != null ? String(threshold) : "—" },
+            { label: "Récompense", value: rewardLabel || "—" },
+            { label: "Statut", value: program ? (program.active ? "Actif" : "Inactif") : "—" },
+          ].map((item) => (
+            <div key={item.label} className="min-w-0 rounded-xl bg-[#FFF7FA] px-3 py-2">
+              <dt className="text-[11px] text-ink/45">{item.label}</dt>
+              <dd className="truncate text-sm font-semibold text-ink">{item.value}</dd>
             </div>
-            <p className="shrink-0 text-right text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
-              Carte
-              <br />
-              fidélité
-            </p>
-          </div>
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-[13px] text-white/70">Vos passages</p>
-              <p className="mt-1 text-[28px] font-semibold">
-                {focused && threshold ? `${focused.visits} / ${threshold}` : "—"}
-              </p>
-              {focused && threshold ? (
-                <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
-                  {Array.from({ length: Math.min(threshold, 12) }, (_, index) => (
-                    <span
-                      key={index}
-                      className={index < Math.min(filled, 12) ? "h-3.5 w-3.5 rounded-full bg-[#E8C56B]" : "h-3.5 w-3.5 rounded-full border border-white/40"}
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <div className="flex min-w-0 items-end gap-3">
-              <div className="min-w-0 rounded-2xl bg-black/25 px-3 py-2">
-                <p className="text-[11px] text-[#E8C56B]">Prochaine récompense</p>
-                <p className="truncate text-sm font-semibold">{rewardLabel || "—"}</p>
-              </div>
-              <div className="shrink-0 rounded-xl bg-white p-1.5">
-                {joinImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={joinImage} alt="QR fidélité de l'institut" className="h-16 w-16 sm:h-20 sm:w-20" />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center text-center text-[10px] text-ink/50 sm:h-20 sm:w-20">
-                    {joinBusy ? "…" : "Aucun QR"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mt-6 flex items-end justify-between gap-3 border-t border-white/15 pt-4">
-            <div className="min-w-0">
-              <p className="truncate text-lg font-semibold">{focused?.customerName || "Aucune cliente sélectionnée"}</p>
-              <p className="text-sm text-white/70">{focused ? phoneLabel(focused.phone) : "Scannez ou choisissez une carte"}</p>
-            </div>
-            {canWrite ? (
-              <button type="button" disabled={joinBusy} onClick={() => void regenerateJoin()} className="shrink-0 text-[12px] font-semibold text-[#E8C56B]">
-                {joinImage ? "Régénérer le QR" : "Générer le QR"}
-              </button>
-            ) : null}
-          </div>
-        </article>
+          ))}
+        </dl>
+      </section>
 
-        <div className="grid min-w-0 gap-3">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+        <div className="order-1 grid min-w-0 gap-3 lg:order-2">
           <section className="rounded-2xl bg-[#FFF1F6] p-4">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-primary">
@@ -417,6 +329,8 @@ export function LoyaltyBoard({
             </div>
             <LoyaltyScanPage
               embedded
+              code={customerCode}
+              onCodeChange={setCustomerCode}
               onPreview={(preview) => {
                 if (!preview) return;
                 const match = visitCards.find((card) => card.customerName === preview.customerName);
@@ -434,181 +348,169 @@ export function LoyaltyBoard({
               </span>
               <div>
                 <h2 className="text-[15px] font-bold text-ink">Ajouter un passage</h2>
-                <p className="text-[12px] text-ink/55">Un code temporaire à usage unique est exigé.</p>
+                <p className="text-[12px] text-ink/55">
+                  Saisissez le code de la carte. Au {threshold ?? 10}e passage, il devient un code promo et un soin est offert.
+                </p>
               </div>
             </div>
             {canWrite ? (
-              <div className="mt-3 grid gap-2">
-                <select className={field} value={serviceId} onChange={(event) => setServiceId(event.target.value)}>
-                  <option value="">Prestation…</option>
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[12px] font-semibold text-[#1B7F4E]">
-                  {serviceId && eligible ? "Service éligible détecté" : "Choisissez une prestation éligible"}
-                </p>
+              <form
+                className="mt-3 grid gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void addPassage();
+                }}
+              >
                 <input
+                  id="loyalty-passage-code"
                   className={field}
                   value={passageToken}
                   onChange={(event) => setPassageToken(event.target.value)}
-                  placeholder="Code à 4 caractères"
+                  placeholder="Code de la carte"
                   autoComplete="off"
                 />
-                {tempCode ? <p className="text-sm font-bold tracking-[0.2em] text-ink">Code {tempCode}</p> : null}
                 {passageNote ? <p className="text-[12px] font-semibold text-[#1B7F4E]">{passageNote}</p> : null}
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    type="button"
-                    disabled={passageBusy}
-                    onClick={() => void issueCode()}
-                    className="h-10 flex-1 rounded-xl bg-white text-[13px] font-semibold text-[#1B7F4E]"
-                  >
-                    Code temporaire
-                  </button>
-                  <button
-                    type="button"
-                    disabled={passageBusy || !tempCode || !serviceId || !passageToken.trim() || !eligible}
-                    onClick={() => void addPassage()}
-                    className="h-10 flex-1 rounded-xl bg-[#1B7F4E] text-[13px] font-semibold text-white disabled:opacity-50"
-                  >
-                    Ajouter le passage
-                  </button>
-                </div>
-              </div>
+                <button
+                  type="submit"
+                  disabled={passageBusy || !passageToken.trim()}
+                  className="h-11 rounded-xl bg-[#1B7F4E] text-[13px] font-semibold text-white disabled:opacity-50"
+                >
+                  Ajouter le passage
+                </button>
+              </form>
             ) : (
               <p className="mt-3 text-[12px] text-ink/50">Réservé à l&apos;équipe autorisée.</p>
             )}
           </section>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="min-w-0 rounded-2xl bg-[#FFF1F6] p-4">
-          <div className="flex items-start gap-3">
-            <Gift className="shrink-0 text-primary" size={18} />
-            <div>
-              <h2 className="text-[15px] font-bold">Récompenser une cliente</h2>
-              <p className="text-[12px] text-ink/55">Utilisez une récompense du catalogue.</p>
+        <article
+          className="relative order-2 min-w-0 overflow-hidden rounded-3xl p-4 text-white shadow-md sm:p-6 lg:order-1"
+          style={{
+            background: program?.cardBackgroundUrl
+              ? `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${program.cardBackgroundUrl}") center / cover no-repeat`
+              : "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)",
+          }}
+        >
+          <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#E8C56B]/10" />
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <Crown className="text-[#E8C56B]" size={22} />
+              <p className="mt-2 break-words font-display text-[18px] uppercase leading-tight tracking-[0.08em] text-[#E8C56B] sm:mt-3 sm:text-[26px] sm:tracking-[0.14em]">
+                {orgName}
+              </p>
+              {program?.name && program.name !== orgName ? (
+                <p className="mt-1 truncate text-[11px] uppercase tracking-[0.16em] text-white/55">{program.name}</p>
+              ) : null}
+            </div>
+            <p className="shrink-0 text-right text-[10px] font-bold uppercase leading-tight tracking-[0.14em] text-white/70">
+              Carte
+              <br />
+              fidélité
+            </p>
+          </div>
+          <div className="mt-5 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[13px] text-white/70">Vos passages</p>
+              <p className="mt-1 text-[26px] font-semibold leading-none sm:text-[28px]">
+                {focused && threshold ? `${cycleVisits} / ${threshold}` : "—"}
+              </p>
+              {focused && threshold ? (
+                <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
+                  {Array.from({ length: Math.min(threshold, 12) }, (_, index) => (
+                    <span
+                      key={index}
+                      className={index < Math.min(filled, 12) ? "h-2.5 w-2.5 rounded-full bg-[#E8C56B] sm:h-3.5 sm:w-3.5" : "h-2.5 w-2.5 rounded-full border border-white/40 sm:h-3.5 sm:w-3.5"}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-[12px] text-white/60">Choisissez une cliente fidèle pour afficher sa carte.</p>
+              )}
+            </div>
+            <div className="flex min-w-0 items-end gap-3">
+              <div className="min-w-0 flex-1 rounded-2xl bg-black/25 px-3 py-2 sm:flex-none">
+                <p className="text-[11px] text-[#E8C56B]">{focused?.promoCode ? "Code promo" : "Prochaine récompense"}</p>
+                <p className="truncate text-sm font-semibold">
+                  {focused?.promoCode ? `${focused.promoCode} · soin offert` : rewardLabel || "—"}
+                </p>
+              </div>
+              <div className="shrink-0 rounded-xl bg-white p-1.5">
+                {joinImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={joinImage} alt="QR fidélité de l'institut" className="h-16 w-16 sm:h-20 sm:w-20" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center text-center text-[10px] leading-tight text-ink/50 sm:h-20 sm:w-20">
+                    {joinBusy ? "…" : "Aucun QR"}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          {canRedeem ? (
-            <form
-              className="mt-3 flex flex-col gap-2 sm:flex-row"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!rewardCustomerId || !rewardId) return;
-                setRewardBusy(true);
-                void onRedeem(rewardCustomerId, rewardId).then((error) => {
-                  setRewardBusy(false);
-                  if (!error) {
-                    setRewardId("");
-                    onRefresh();
-                  }
-                });
-              }}
-            >
-              <select className={field} value={rewardCustomerId} onChange={(event) => setRewardCustomerId(event.target.value)}>
-                <option value="">Cliente…</option>
-                {ranking.map((member) => (
-                  <option key={member.customerId} value={member.customerId}>
-                    {member.customerName}
-                  </option>
-                ))}
-              </select>
-              <select className={field} value={rewardId} onChange={(event) => setRewardId(event.target.value)}>
-                <option value="">Récompense…</option>
-                {activeRewards.map((reward) => (
-                  <option key={reward.id} value={reward.id}>
-                    {reward.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={rewardBusy || !rewardCustomerId || !rewardId}
-                className="h-11 shrink-0 rounded-xl bg-primary px-4 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                Appliquer
-              </button>
-            </form>
-          ) : (
-            <p className="mt-3 text-[12px] text-ink/50">Consultation seule.</p>
-          )}
-        </section>
-
-        <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <Ticket className="shrink-0 text-primary" size={18} />
-            <div>
-              <h2 className="text-[15px] font-bold">Générer une récompense</h2>
-              <p className="text-[12px] text-ink/55">Elle rejoint le catalogue utilisable au comptoir.</p>
+          <div className="mt-5 flex flex-col gap-3 border-t border-white/15 pt-4 sm:mt-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold sm:text-lg">{focused?.customerName || "Aucune cliente sélectionnée"}</p>
+              <p className="truncate text-sm text-white/70">{focused ? phoneLabel(focused.phone) : "Scannez ou choisissez une carte"}</p>
             </div>
-          </div>
-          {canWrite ? (
-            <form
-              className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setCreating(true);
-                void onCreateReward({
-                  name: newName,
-                  pointsCost: Number(newCost) || 0,
-                  type: newType,
-                  value: newValue.trim() ? Number(newValue) : undefined,
-                }).then((error) => {
-                  setCreating(false);
-                  if (!error) {
-                    setNewName("");
-                    setNewValue("");
-                    onRefresh();
-                  }
-                });
-              }}
-            >
-              <label className="text-[11px] font-semibold text-ink/50">
-                Type de récompense
-                <select className={`${field} mt-1`} value={newType} onChange={(event) => setNewType(event.target.value as LoyaltyRewardType)}>
-                  <option value="FREE_SERVICE">Soin offert</option>
-                  <option value="DISCOUNT_FIXED">Remise MAD</option>
-                  <option value="DISCOUNT_PERCENT">Remise %</option>
-                </select>
-              </label>
-              <label className="text-[11px] font-semibold text-ink/50">
-                Nom
-                <input className={`${field} mt-1`} value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Soin visage offert" />
-              </label>
-              <label className="text-[11px] font-semibold text-ink/50">
-                Points requis
-                <input className={`${field} mt-1`} inputMode="numeric" value={newCost} onChange={(event) => setNewCost(event.target.value)} />
-              </label>
-              <label className="text-[11px] font-semibold text-ink/50">
-                Valeur
-                <input className={`${field} mt-1`} inputMode="numeric" value={newValue} onChange={(event) => setNewValue(event.target.value)} placeholder="MAD ou %" />
-              </label>
-              <button
-                type="submit"
-                disabled={creating || !newName.trim()}
-                className="h-11 rounded-xl bg-primary text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2"
-              >
-                Générer la récompense
+            {canWrite ? (
+              <button type="button" disabled={joinBusy} onClick={() => void regenerateJoin()} className="shrink-0 self-start text-[12px] font-semibold text-[#E8C56B] sm:self-auto">
+                {joinImage ? "Régénérer le QR" : "Générer le QR"}
               </button>
-            </form>
-          ) : (
-            <p className="mt-3 text-[12px] text-ink/50">Réservé à l&apos;équipe autorisée.</p>
-          )}
-        </section>
+            ) : null}
+          </div>
+        </article>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-[15px] font-bold">
-              <Clock size={16} className="text-ink/40" /> Dernières activités
-            </h2>
-          </div>
+          <h2 className="mb-1 flex items-center gap-2 text-[15px] font-bold">
+            <Users size={16} className="text-ink/40" /> Clientes fidèles
+          </h2>
+          <p className="mb-2 text-[12px] text-ink/45">Touchez un nom pour remplir son code.</p>
+          {loyal.length === 0 ? (
+            <p className="text-sm text-ink/45">Aucune carte pour le moment.</p>
+          ) : (
+            <ol className="space-y-1">
+              {loyal.map((card, index) => {
+                const selected = card.customerId === focusId;
+                return (
+                  <li key={card.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectCustomer(card)}
+                      className={`flex w-full min-w-0 items-center gap-2 rounded-xl px-2 py-2 text-left sm:gap-3 ${selected ? "bg-[#FFF1F6]" : "hover:bg-[#FFF7FA]"}`}
+                    >
+                      <span className="w-4 shrink-0 text-sm font-bold text-ink/35">{index + 1}</span>
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F3E4EA] text-[11px] font-bold">
+                        {memberInitials(card.customerName)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{card.customerName}</span>
+                        {card.cardCode ? (
+                          <span className="font-mono text-[12px] font-bold tracking-[0.14em] text-ink/70">{card.cardCode}</span>
+                        ) : null}
+                      </span>
+                      {card.promoCode ? (
+                        <span className="shrink-0 rounded-full bg-[#E8C56B]/40 px-2 py-0.5 text-[11px] font-bold text-[#5D4200]">
+                          {card.promoCode} offert
+                        </span>
+                      ) : (
+                        <span className="shrink-0 rounded-full bg-[#EAF8EF] px-2 py-0.5 text-[11px] font-bold text-[#1B7F4E]">
+                          {visitCycle(card.visits, card.visitsPerReward)}/{card.visitsPerReward}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </section>
+
+        <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
+          <h2 className="mb-3 flex items-center gap-2 text-[15px] font-bold">
+            <Clock size={16} className="text-ink/40" /> Dernières activités
+          </h2>
           {journal.length === 0 ? (
             <p className="text-sm text-ink/45">Aucun mouvement pour l&apos;instant.</p>
           ) : (
@@ -616,130 +518,32 @@ export function LoyaltyBoard({
               {journal.slice(0, 5).map((row) => {
                 const card = visitCards.find((item) => item.customerId === row.customerId);
                 return (
-                  <li key={row.id} className="flex items-center gap-3 py-2.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFF1F6] text-[11px] font-bold text-primary">
-                      {memberInitials(row.customerName)}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{row.customerName}</p>
-                      <p className="truncate text-[12px] text-ink/45">{journalKind(row)}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-[11px] text-ink/40">{activityWhen(row.createdAt)}</p>
-                      <p className="mt-1 inline-flex rounded-full bg-[#EAF8EF] px-2 py-0.5 text-[11px] font-bold text-[#1B7F4E]">
-                        {card ? `${card.visits} / ${card.visitsPerReward}` : `${row.points > 0 ? "+" : ""}${row.points} pts`}
-                      </p>
-                    </div>
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      disabled={!card}
+                      onClick={() => card && selectCustomer(card)}
+                      className="flex w-full min-w-0 items-start gap-3 py-2.5 text-left disabled:cursor-default"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFF1F6] text-[11px] font-bold text-primary">
+                        {memberInitials(row.customerName)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="min-w-0 truncate text-sm font-semibold">{row.customerName}</p>
+                          <span className="shrink-0 rounded-full bg-[#EAF8EF] px-2 py-0.5 text-[11px] font-bold text-[#1B7F4E]">
+                            {card ? `${visitCycle(card.visits, card.visitsPerReward)}/${card.visitsPerReward}` : `${row.points > 0 ? "+" : ""}${row.points} pts`}
+                          </span>
+                        </div>
+                        <p className="truncate text-[12px] text-ink/45">{journalKind(row)}</p>
+                        <p className="text-[11px] text-ink/40">{activityWhen(row.createdAt)}</p>
+                      </div>
+                    </button>
                   </li>
                 );
               })}
             </ul>
           )}
-        </section>
-
-        <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
-          <h2 className="mb-1 flex items-center gap-2 text-[15px] font-bold">
-            <Users size={16} className="text-ink/40" /> Clientes fidèles
-          </h2>
-          <p className="mb-2 text-[12px] text-ink/45">Classement par nombre de passages.</p>
-          {loyal.length === 0 ? (
-            <p className="text-sm text-ink/45">Aucune carte pour le moment.</p>
-          ) : (
-            <ol className="space-y-2">
-              {loyal.map((card, index) => (
-                <li key={card.id}>
-                  <button
-                    type="button"
-                    onClick={() => setFocusId(card.customerId)}
-                    className="flex w-full items-center gap-3 rounded-xl px-1 py-1 text-left hover:bg-[#FFF1F6]"
-                  >
-                    <span className="w-5 text-sm font-bold text-ink/35">{index + 1}</span>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F3E4EA] text-[11px] font-bold">
-                      {memberInitials(card.customerName)}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold">{card.customerName}</span>
-                    <span className="shrink-0 text-[12px] text-ink/55">
-                      {card.visits} / {card.visitsPerReward} passages
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-[15px] font-bold">
-              <Settings size={16} className="text-ink/40" /> Paramètres de fidélité
-            </h2>
-            {canWrite ? (
-              <button type="button" onClick={onOpenSettings} className="inline-flex items-center gap-1 text-[13px] font-semibold text-primary">
-                <Settings size={14} /> Modifier
-              </button>
-            ) : null}
-          </div>
-          <dl className="space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-ink/55">Programme</dt>
-              <dd className="truncate font-semibold">{program?.name || "—"}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-ink/55">Nombre de passages</dt>
-              <dd className="font-semibold">{threshold ?? "—"}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-ink/55">Récompense principale</dt>
-              <dd className="truncate font-semibold">{rewardLabel || "—"}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-ink/55">Statut</dt>
-              <dd className="font-semibold">{program ? (program.active ? "Actif" : "Inactif") : "—"}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
-          <h2 className="mb-3 text-[15px] font-bold">Récompenses en cours</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[320px] text-left text-[12px]">
-              <thead>
-                <tr className="text-ink/40">
-                  <th className="pb-2 font-semibold">Récompense</th>
-                  <th className="pb-2 font-semibold">Type</th>
-                  <th className="pb-2 font-semibold">Utilisations</th>
-                  <th className="pb-2 font-semibold">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rewards.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-3 text-ink/45">
-                      Aucune récompense.
-                    </td>
-                  </tr>
-                ) : (
-                  rewards.slice(0, 6).map((reward) => (
-                    <tr key={reward.id} className="border-t border-[#FFF1F6]">
-                      <td className="max-w-[140px] truncate py-2 font-semibold">{reward.name}</td>
-                      <td className="py-2 text-ink/60">{rewardTypeLabel(reward.type)}</td>
-                      <td className="py-2">
-                        {reward.redemptionCount}
-                        {reward.maxRedemptions != null ? ` / ${reward.maxRedemptions}` : ""}
-                      </td>
-                      <td className="py-2">
-                        <span className={reward.active ? "font-semibold text-[#1B7F4E]" : "text-ink/40"}>
-                          {reward.active ? "Actif" : "Inactif"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
         </section>
       </div>
     </div>

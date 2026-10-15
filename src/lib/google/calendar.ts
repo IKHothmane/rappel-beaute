@@ -35,6 +35,13 @@ export function isGoogleCalendarConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
+export const GOOGLE_RECONNECT_MESSAGE =
+  "La connexion Google n'est plus valide. Reconnectez le calendrier pour y afficher les rendez-vous.";
+
+export function googleReconnectMessage(error: unknown): string | null {
+  return error instanceof Error && error.message === "GOOGLE_RECONNECT" ? GOOGLE_RECONNECT_MESSAGE : null;
+}
+
 function clientId(): string {
   const id = process.env.GOOGLE_CLIENT_ID;
   if (!id) throw new Error("GOOGLE_NOT_CONFIGURED");

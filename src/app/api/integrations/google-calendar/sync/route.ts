@@ -4,6 +4,7 @@ import { requireAppSession } from "@/lib/auth/api-guard";
 import { canManageGoogleCalendar } from "@/lib/rbac";
 import { getGoogleCalendarConnection } from "@/lib/db/google-calendar";
 import { pushUpcomingAppointmentsToGoogle } from "@/lib/integrations/google-calendar-sync";
+import { googleReconnectMessage } from "@/lib/google/calendar";
 
 export async function POST(request: NextRequest) {
   const auth = await requireAppSession(request);
@@ -25,6 +26,10 @@ export async function POST(request: NextRequest) {
       calendarName: conn.calendarName,
     });
   } catch (error) {
+    const reconnect = googleReconnectMessage(error);
+    if (reconnect) {
+      return NextResponse.json({ error: reconnect }, { status: 409 });
+    }
     console.error("[POST /api/integrations/google-calendar/sync]", error);
     return NextResponse.json(
       { error: "Impossible de synchroniser l'agenda vers Google." },

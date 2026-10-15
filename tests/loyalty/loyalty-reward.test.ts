@@ -59,8 +59,8 @@ describe("Loyalty Reward — Attribution automatique des récompenses", () => {
 
     const result = await validateLoyaltyVisit(orgId, card.publicToken, apptId10, "staff_test");
     expect(result.visits).toBe(10);
-    expect(result.cycle).toBe(10);
-    expect(result.remaining).toBe(0);
+    expect(result.cycle).toBe(0);
+    expect(result.remaining).toBe(10);
 
     const progress = await loadCardProgress(card.id, orgId);
     expect(progress?.rewardsAvailable).toBe(1);

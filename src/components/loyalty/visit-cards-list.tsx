@@ -1,3 +1,5 @@
+import { visitCycle } from "@/lib/loyalty/card-code";
+
 export type VisitCardRow = {
   id: string;
   customerId: string;
@@ -7,6 +9,8 @@ export type VisitCardRow = {
   visits: number;
   visitsPerReward: number;
   createdAt: string;
+  cardCode?: string;
+  promoCode?: string | null;
 };
 
 function displayPhone(phone: string | null) {
@@ -32,7 +36,7 @@ export function VisitCardsList({ cards }: { cards: VisitCardRow[] }) {
                 <p className="text-[12px] text-ink/45">{displayPhone(card.phone)}</p>
               </div>
               <p className="shrink-0 font-bold text-primary">
-                {card.visits} / {card.visitsPerReward}
+                {visitCycle(card.visits, card.visitsPerReward)} / {card.visitsPerReward}
               </p>
             </li>
           ))}

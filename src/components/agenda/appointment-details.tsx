@@ -32,6 +32,7 @@ import {
 } from "@/components/agenda/appointment-pay-badge";
 import { cn } from "@/lib/utils";
 import { DEPOSIT_STATE_LABEL } from "@/types/booking-policy";
+import { extraIdsFromNotes, notesWithServices, soinLabelsFromNotes } from "@/components/agenda/service-notes";
 
 type ServiceChoice = { id: string; name: string; price: number; durationMin: number };
 type StaffChoice = { id: string; name: string };
@@ -46,43 +47,11 @@ type AppointmentDetailsProps = {
   onChange: (
     patch: Partial<CreateAppointmentInput>,
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  onApplyPromo: (code: string) => Promise<{ ok: true } | { ok: false; error: string }>;
 };
 
 function durationMin(startAt: string, endAt: string) {
   return Math.max(0, Math.round((new Date(endAt).getTime() - new Date(startAt).getTime()) / 60_000));
-}
-
-function extraIdsFromNotes(notes: string | undefined, services: ServiceChoice[], mainId: string) {
-  const line = notes?.split("\n").find((item) => item.startsWith("extras:"));
-  if (line) {
-    return line
-      .slice("extras:".length)
-      .split(",")
-      .map((id) => id.trim())
-      .filter((id) => id && id !== mainId && services.some((service) => service.id === id));
-  }
-  const soins = notes?.split("\n").find((item) => item.startsWith("Soins:"));
-  if (!soins) return [];
-  const mainName = services.find((service) => service.id === mainId)?.name;
-  return soins
-    .slice("Soins:".length)
-    .split("+")
-    .map((name) => name.trim())
-    .filter((name) => name && name !== mainName)
-    .map((name) => services.find((service) => service.name === name)?.id)
-    .filter((id): id is string => Boolean(id));
-}
-
-function notesWithServices(notes: string | undefined, services: ServiceChoice[], mainId: string, extraIds: string[]) {
-  const kept = (notes ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith("Soins:") && !line.startsWith("extras:"));
-  if (extraIds.length === 0) return kept.join("\n");
-  const labels = [mainId, ...extraIds]
-    .map((id) => services.find((service) => service.id === id)?.name)
-    .filter((name): name is string => Boolean(name));
-  return [`extras:${extraIds.join(",")}`, `Soins: ${labels.join(" + ")}`, ...kept].join("\n");
 }
 
 export function AppointmentDetails({
@@ -93,6 +62,7 @@ export function AppointmentDetails({
   onStatusChange,
   onCancel,
   onChange,
+  onApplyPromo,
 }: AppointmentDetailsProps) {
   const palette = useStaffPalette();
   const user = useCurrentUser();
@@ -124,9 +94,26 @@ export function AppointmentDetails({
     () => extraIdsFromNotes(appointment.notes, services, appointment.serviceId),
     [appointment.notes, appointment.serviceId, services],
   );
+  const extraNames = useMemo(() => {
+    const known = new Set(
+      [appointment.serviceName, ...extraIds.map((id) => services.find((service) => service.id === id)?.name ?? "")]
+        .map((name) => name.replace(/\s+/g, " ").trim().toLowerCase())
+        .filter(Boolean),
+    );
+    return soinLabelsFromNotes(appointment.notes).filter(
+      (name) => !known.has(name.replace(/\s+/g, " ").trim().toLowerCase()),
+    );
+  }, [appointment.notes, appointment.serviceName, extraIds, services]);
   const [staffOpen, setStaffOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoError, setPromoError] = useState("");
+
+  useEffect(() => {
+    setPromoCode("");
+    setPromoError("");
+  }, [appointment.id]);
 
   async function saveServices(serviceId: string, nextExtras: string[]) {
     const extras = nextExtras.filter((id, index) => id !== serviceId && nextExtras.indexOf(id) === index);
@@ -159,6 +146,19 @@ export function AppointmentDetails({
   }
 
   const payDetail = appointmentPayDetail(appointment);
+  const linkedDiscount = appointment.discount ?? 0;
+  const due = appointment.amountDue ?? appointment.price;
+  const invoiceAlreadyDiscounted = due + 0.009 < appointment.price;
+  const reduction = invoiceAlreadyDiscounted ? Math.max(0, appointment.price - due) : linkedDiscount;
+  const hasReduction = Boolean(appointment.promotionId) || reduction > 0.009;
+  const shownTotal = appointment.promotionId && !invoiceAlreadyDiscounted
+    ? Math.max(0, appointment.price - linkedDiscount)
+    : due;
+  const visibleNotes = (appointment.notes ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("Soins:") && !line.startsWith("extras:") && !line.startsWith("Promo:"))
+    .join("\n");
   const phone = customer?.phone?.trim() || "";
   const noShows = customer?.noShowCount ?? 0;
   const vip = customer?.segment === "VIP";
@@ -279,6 +279,11 @@ export function AppointmentDetails({
               </div>
             );
           })}
+          {extraNames.map((name) => (
+            <div key={name} className="rounded-xl border border-line bg-white px-3 py-2 font-semibold text-ink">
+              {name}
+            </div>
+          ))}
           <select
             value=""
             disabled={busy}
@@ -342,10 +347,60 @@ export function AppointmentDetails({
         </div>
         <Row label="Espace" value={appointment.resourceName || "—"} />
         {saveError ? <p className="rounded-xl bg-white px-3 py-2 text-sm text-red-600">{saveError}</p> : null}
+        {hasReduction ? (
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2">
+            <span className="text-ink/55">Réduction</span>
+            <span className="text-right text-sm font-semibold text-[#1B7F4E]">
+              {appointment.promotionCode ? `${appointment.promotionCode} · ` : ""}
+              −{formatMad(reduction)}
+              <span className="mt-0.5 block text-[11px] font-medium text-ink/45">Sur {appointment.serviceName}</span>
+            </span>
+          </div>
+        ) : (
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const code = promoCode.trim();
+              if (!code) return;
+              setBusy(true);
+              setPromoError("");
+              void onApplyPromo(code).then((result) => {
+                setBusy(false);
+                if (!result.ok) setPromoError(result.error);
+                else setPromoCode("");
+              });
+            }}
+          >
+            <label className="text-ink/45" htmlFor="appointment-promo-code">
+              Code promo
+              <span className="mt-0.5 block text-[11px]">Une seule prestation : {appointment.serviceName}</span>
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                id="appointment-promo-code"
+                value={promoCode}
+                disabled={busy}
+                onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
+                placeholder="Ex : E4FB"
+                autoComplete="off"
+                className="h-10 min-w-0 flex-1 rounded-xl border border-line bg-white px-3 text-sm font-semibold uppercase tracking-wide outline-none focus:border-primary"
+              />
+              <button
+                type="submit"
+                disabled={busy || !promoCode.trim()}
+                className="h-10 shrink-0 rounded-xl bg-primary px-4 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Appliquer
+              </button>
+            </div>
+            {promoError ? <p className="text-sm text-red-600">{promoError}</p> : null}
+          </form>
+        )}
         <div className="mt-1 flex items-center justify-between rounded-lg bg-white p-2">
           <span className="font-bold text-ink">Total</span>
           <div className="text-right">
-            <p className="text-2xl font-extrabold text-primary">{formatMad(appointment.price)}</p>
+            <p className="text-2xl font-extrabold text-primary">{formatMad(shownTotal)}</p>
             <p className="text-[11px] text-ink/45">
               Acompte : {formatMad(appointment.deposit ?? 0)}
             </p>
@@ -356,7 +411,7 @@ export function AppointmentDetails({
         </div>
       </div>
 
-      {appointment.notes ? <p className="text-sm text-ink/60">{appointment.notes}</p> : null}
+      {visibleNotes ? <p className="text-sm text-ink/60">{visibleNotes}</p> : null}
 
       <div className="grid grid-cols-2 gap-2">
         {transitions.includes("COMPLETED") ? (

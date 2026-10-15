@@ -76,6 +76,30 @@ export async function updateAppointmentStatus(
   }
 }
 
+export async function applyAppointmentPromo(
+  id: string,
+  promotionCode: string,
+): Promise<{ ok: true; appointment: Appointment } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/appointments/${id}/`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ promotionCode }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { ok: false, error: data.error ?? "Code promo refusé." };
+    }
+    return { ok: true, appointment: data as Appointment };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Erreur réseau",
+    };
+  }
+}
+
 export async function updateAppointment(
   id: string,
   patch: Partial<CreateAppointmentInput & { status: Appointment["status"] }>,

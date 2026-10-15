@@ -281,7 +281,7 @@ export async function previewLoyaltyScan(
     appointmentId: next?.id ?? null,
     serviceName: next?.serviceName ?? null,
     amount: next ? Number(next.amount) : null,
-    visits: progress.visits,
+    visits: progress.cycle,
     visitsPerReward: program.visitsPerReward,
     rewardLabel: program.rewardLabel,
     rewards: progress.rewards.filter((reward) => reward.status === "AVAILABLE"),
@@ -738,13 +738,14 @@ export async function creditVisitWithInstituteCode(opts: {
 export async function creditVisitByCardCode(opts: {
   organizationId: string;
   rawToken: string;
-  serviceId: string;
+  serviceId?: string | null;
   actorId: string;
   actorName?: string | null;
-}): Promise<CardProgress & { customerName: string; serviceName: string }> {
+}): Promise<CardProgress & { customerName: string; serviceName: string; promoCode: string | null }> {
   const program = await getVisitProgram(opts.organizationId);
   if (!program.active) throw new Error("PROGRAM_DISABLED");
   const token = await resolveLoyaltyCardToken(opts.organizationId, opts.rawToken);
+  const serviceId = opts.serviceId?.trim() || null;
 
   const client = await pool.connect();
   let finished = false;
@@ -760,14 +761,18 @@ export async function creditVisitByCardCode(opts: {
     );
     if (!card.rows[0]) throw new Error("CARD_NOT_FOUND");
 
-    const service = await client.query<{ id: string; name: string; price: string }>(
-      `SELECT id, name, price::text AS price FROM "Service"
-       WHERE id = $1 AND "organizationId" = $2 AND active = true`,
-      [opts.serviceId, opts.organizationId],
-    );
-    if (!service.rows[0]) throw new Error("SERVICE_NOT_FOUND");
-    if (program.eligibleServiceIds.length > 0 && !program.eligibleServiceIds.includes(service.rows[0].id)) {
-      throw new Error("SERVICE_NOT_ELIGIBLE");
+    let service: { id: string; name: string; price: string } | null = null;
+    if (serviceId) {
+      const found = await client.query<{ id: string; name: string; price: string }>(
+        `SELECT id, name, price::text AS price FROM "Service"
+         WHERE id = $1 AND "organizationId" = $2 AND active = true`,
+        [serviceId, opts.organizationId],
+      );
+      if (!found.rows[0]) throw new Error("SERVICE_NOT_FOUND");
+      if (program.eligibleServiceIds.length > 0 && !program.eligibleServiceIds.includes(found.rows[0].id)) {
+        throw new Error("SERVICE_NOT_ELIGIBLE");
+      }
+      service = found.rows[0];
     }
 
     const saved = await insertVisitAndMaybeReward(client, {
@@ -775,8 +780,8 @@ export async function creditVisitByCardCode(opts: {
       cardId: card.rows[0].id,
       customerId: card.rows[0].customerId,
       appointmentId: null,
-      serviceId: service.rows[0].id,
-      amount: service.rows[0].price,
+      serviceId: service?.id ?? null,
+      amount: service?.price ?? 0,
       points: 1,
       validatedBy: opts.actorId,
       note: "Passage",
@@ -793,7 +798,7 @@ export async function creditVisitByCardCode(opts: {
       before: { customerId: card.rows[0].customerId },
       after: {
         visits: saved.visits,
-        serviceId: service.rows[0].id,
+        serviceId: service?.id ?? null,
         customerId: card.rows[0].customerId,
       },
       client,
@@ -806,7 +811,8 @@ export async function creditVisitByCardCode(opts: {
     return {
       ...progress,
       customerName: `${card.rows[0].firstName} ${card.rows[0].lastName}`.trim(),
-      serviceName: service.rows[0].name,
+      serviceName: service?.name ?? "Passage",
+      promoCode: saved.rewardId ? shortCardCode(token) : null,
     };
   } catch (error) {
     if (!finished) {

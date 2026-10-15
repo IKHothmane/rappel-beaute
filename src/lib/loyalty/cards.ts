@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { getOrCreateLoyaltyProgram } from "@/lib/db/loyalty";
+import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -149,6 +150,9 @@ export type VisitCardListItem = {
   visits: number;
   visitsPerReward: number;
   createdAt: string;
+  publicToken: string;
+  cardCode: string;
+  promoCode: string | null;
 };
 
 export async function listVisitCards(organizationId: string): Promise<VisitCardListItem[]> {
@@ -167,14 +171,21 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
     firstName: string;
     lastName: string;
     phone: string | null;
+    publicToken: string;
     visits: number;
+    rewardsReady: number;
     createdAt: Date;
   }>(
-    `SELECT lc.id, c.id AS "customerId", c."firstName", c."lastName", c.phone,
+    `SELECT lc.id, c.id AS "customerId", c."firstName", c."lastName", c.phone, lc."publicToken",
             COALESCE((
               SELECT SUM(e.points) FROM "LoyaltyEvent" e
               WHERE e."loyaltyCardId" = lc.id AND e.type = 'VISIT'
             ), 0)::int AS visits,
+            COALESCE((
+              SELECT COUNT(*) FROM "LoyaltyVisitReward" r
+              WHERE r."loyaltyCardId" = lc.id AND r.status = 'AVAILABLE'
+                AND (r."expiresAt" IS NULL OR r."expiresAt" > NOW())
+            ), 0)::int AS "rewardsReady",
             lc."createdAt"
      FROM "LoyaltyCard" lc
      JOIN "Customer" c ON c.id = lc."customerId"
@@ -191,6 +202,9 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
     visits: row.visits,
     visitsPerReward: program.visitsPerReward,
     createdAt: row.createdAt.toISOString(),
+    publicToken: row.publicToken,
+    cardCode: shortCardCode(row.publicToken),
+    promoCode: row.rewardsReady > 0 ? shortCardCode(row.publicToken) : null,
   }));
 }
 
@@ -261,9 +275,8 @@ export async function loadCardProgress(
   );
   const visits = Number(visitsRow.rows[0]?.count ?? 0);
   const threshold = program.visitsPerReward;
-  const mod = visits % threshold;
-  const cycle = visits > 0 && mod === 0 ? threshold : mod;
-  const remaining = threshold - cycle;
+  const cycle = visitCycle(visits, threshold);
+  const remaining = cycle === 0 ? threshold : threshold - cycle;
 
   const history = await db.query<{ at: Date; service: string; amount: string; points: number }>(
     `SELECT e."validatedAt" AS at,

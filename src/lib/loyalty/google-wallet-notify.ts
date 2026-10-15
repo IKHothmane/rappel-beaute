@@ -79,7 +79,7 @@ async function loadCardContext(token: string): Promise<CardContext | null> {
   const row = rows[0];
   if (!row) return null;
   const threshold = row.visitsPerReward;
-  const cycle = row.visits > 0 && row.visits % threshold === 0 ? threshold : row.visits % threshold;
+  const cycle = row.visits % threshold;
   const remaining = cycle === 0 ? threshold : threshold - cycle;
   return {
     cardId: row.cardId,

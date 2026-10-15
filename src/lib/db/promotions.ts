@@ -275,8 +275,9 @@ export async function computePromotionDiscount(opts: {
   } else if (opts.promotionCode) {
     const { rows } = await pool.query(
       `SELECT * FROM "Promotion"
-       WHERE "organizationId" = $1 AND upper(code) = upper($2) AND "deletedAt" IS NULL`,
-      [opts.organizationId, opts.promotionCode],
+       WHERE "organizationId" = $1 AND upper(code) = upper($2) AND "deletedAt" IS NULL
+       ORDER BY CASE WHEN status = 'ACTIVE' THEN 0 ELSE 1 END, "updatedAt" DESC`,
+      [opts.organizationId, opts.promotionCode.trim()],
     );
     promo = (rows[0] as Record<string, unknown>) ?? null;
   }
@@ -291,9 +292,6 @@ export async function computePromotionDiscount(opts: {
   }
   if (promo.category && opts.serviceCategory && String(promo.category) !== opts.serviceCategory) {
     throw new Error("PROMO_CATEGORY_MISMATCH");
-  }
-  if (promo.customerId && String(promo.customerId) !== opts.customerId) {
-    throw new Error("PROMO_CUSTOMER_MISMATCH");
   }
   const minAmount = promo.minAmount != null ? parseFloat(String(promo.minAmount)) : 0;
   if (opts.amount < minAmount) throw new Error("PROMO_MIN_AMOUNT");

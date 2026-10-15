@@ -63,6 +63,22 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(issued);
     }
+    if (body.action === "add") {
+      const result = await creditVisitByCardCode({
+        organizationId: auth.session.organizationId,
+        rawToken: String(body.token ?? ""),
+        actorId: auth.session.id,
+        actorName: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
+      });
+      return NextResponse.json({
+        ok: true,
+        customerName: result.customerName,
+        cycle: result.cycle,
+        visitsPerReward: result.visitsPerReward,
+        visits: result.visits,
+        promoCode: result.promoCode,
+      });
+    }
     if (body.action === "redeem") {
       const result = await creditVisitWithInstituteCode({
         organizationId: auth.session.organizationId,

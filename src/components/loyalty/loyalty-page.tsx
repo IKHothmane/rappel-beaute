@@ -356,33 +356,11 @@ export function LoyaltyPageView() {
       <LoyaltyBoard
         orgName={user.orgName}
         canWrite={canWrite}
-        canRedeem={canRedeem}
         program={program}
         visitCards={visitCards}
-        ranking={ranking}
-        rewards={rewards}
         journal={journal}
-        services={services}
         onRefresh={() => void refresh()}
         onOpenSettings={() => setSettingsOpen(true)}
-        onCreateReward={async (input) => {
-          const result = await createReward(input);
-          if (!result.ok) {
-            toast(result.error, "error");
-            return result.error;
-          }
-          toast("Récompense créée.", "success");
-          return null;
-        }}
-        onRedeem={async (customerId, rewardId) => {
-          const result = await redeemReward({ customerId, rewardId });
-          if (!result.ok) {
-            toast(result.error, "error");
-            return result.error;
-          }
-          toast("Récompense utilisée.", "success");
-          return null;
-        }}
       />
 
       <Drawer open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Configurer le programme">

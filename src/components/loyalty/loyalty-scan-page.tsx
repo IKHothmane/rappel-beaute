@@ -27,14 +27,23 @@ function extractToken(value: string) {
 
 export function LoyaltyScanPage({
   embedded = false,
+  code,
+  onCodeChange,
   onPreview,
   onValidated,
 }: {
   embedded?: boolean;
+  code?: string;
+  onCodeChange?: (value: string) => void;
   onPreview?: (preview: Preview | null) => void;
   onValidated?: () => void;
 }) {
-  const [token, setToken] = useState("");
+  const [localToken, setLocalToken] = useState("");
+  const token = onCodeChange ? (code ?? "") : localToken;
+  function setToken(value: string) {
+    if (onCodeChange) onCodeChange(value);
+    else setLocalToken(value);
+  }
   const [preview, setPreview] = useState<Preview | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +134,7 @@ export function LoyaltyScanPage({
         <button
           type="submit"
           disabled={busy || !token.trim()}
-          className="h-11 shrink-0 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50"
+          className="h-11 w-full shrink-0 rounded-xl bg-primary px-5 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
         >
           {embedded ? "Valider" : "Lire le code"}
         </button>
@@ -143,14 +152,14 @@ export function LoyaltyScanPage({
           ) : (
             <p className="mt-1 text-ink/70">Aucun rendez-vous terminé à valider.</p>
           )}
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
               onClick={() => {
                 setPreview(null);
                 onPreview?.(null);
               }}
-              className="rounded-full border border-line px-4 py-2 text-sm font-semibold"
+              className="h-10 rounded-full border border-line px-4 text-sm font-semibold"
             >
               Effacer
             </button>
@@ -159,7 +168,7 @@ export function LoyaltyScanPage({
                 type="button"
                 disabled={busy}
                 onClick={() => void validate()}
-                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="h-10 rounded-full bg-primary px-4 text-sm font-semibold text-white disabled:opacity-50"
               >
                 Valider le passage
               </button>

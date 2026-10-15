@@ -28,6 +28,7 @@ import {
   AGENDA_OPEN_HOUR,
 } from "@/modules/appointments/constants";
 import {
+  applyAppointmentPromo,
   createAppointment,
   listAppointments,
   updateAppointment,
@@ -345,13 +346,29 @@ export function AgendaPage() {
   }
 
   async function handleCreate(data: CreateAppointmentInput) {
+    const code = data.promotionCode?.trim();
+    const { promotionCode: _code, ...payload } = data;
     setSubmitting(true);
-    const result = await createAppointment(data);
-    setSubmitting(false);
+    const result = await createAppointment(payload);
     if (!result.ok) {
+      setSubmitting(false);
       toast(result.error, "error");
       return;
     }
+    if (code) {
+      const promo = await applyAppointmentPromo(result.appointment.id, code);
+      setSubmitting(false);
+      await refresh();
+      setDrawer(null);
+      setCreateSeed(undefined);
+      if (!promo.ok) {
+        toast(`Rendez-vous créé. ${promo.error}`, "error");
+        return;
+      }
+      toast("Rendez-vous créé. Code promo appliqué sur une prestation.", "success");
+      return;
+    }
+    setSubmitting(false);
     await refresh();
     setDrawer(null);
     setCreateSeed(undefined);
@@ -360,16 +377,40 @@ export function AgendaPage() {
 
   async function handleUpdate(data: CreateAppointmentInput) {
     if (!selectedId) return;
+    const code = data.promotionCode?.trim();
+    const { promotionCode: _code, ...payload } = data;
     setSubmitting(true);
-    const result = await updateAppointment(selectedId, data);
-    setSubmitting(false);
+    const result = await updateAppointment(selectedId, payload);
     if (!result.ok) {
+      setSubmitting(false);
       toast(result.error, "error");
       return;
     }
+    if (code && !selected?.promotionId) {
+      const promo = await applyAppointmentPromo(selectedId, code);
+      setSubmitting(false);
+      await refresh();
+      setDrawer(isXl ? null : "detail");
+      if (!promo.ok) {
+        toast(`Rendez-vous mis à jour. ${promo.error}`, "error");
+        return;
+      }
+      toast("Rendez-vous mis à jour. Code promo appliqué sur une prestation.", "success");
+      return;
+    }
+    setSubmitting(false);
     await refresh();
     setDrawer(isXl ? null : "detail");
     toast("Rendez-vous mis à jour.", "success");
+  }
+
+  async function applyPromo(code: string): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (!selectedId) return { ok: false, error: "Rendez-vous introuvable." };
+    const result = await applyAppointmentPromo(selectedId, code);
+    if (!result.ok) return result;
+    await refresh();
+    toast("Code promo appliqué.", "success");
+    return { ok: true };
   }
 
   async function patchSelected(
@@ -586,6 +627,7 @@ export function AgendaPage() {
                       onStatusChange={handleStatus}
                       onCancel={() => setConfirmCancel(true)}
                       onChange={patchSelected}
+                      onApplyPromo={applyPromo}
                     />
                   ) : (
                     <div className="flex flex-col gap-3 text-sm text-ink/55">
@@ -681,6 +723,7 @@ export function AgendaPage() {
       >
         {selected ? (
           <AppointmentForm
+            key={selected.id}
             appointments={appointments}
             services={services}
             formOptions={formOptions}
@@ -697,6 +740,8 @@ export function AgendaPage() {
               price: selected.price,
               deposit: selected.deposit,
               notes: selected.notes,
+              promotionId: selected.promotionId,
+              promotionCode: selected.promotionCode ?? undefined,
             }}
             submitting={submitting}
             onSubmit={handleUpdate}
@@ -726,6 +771,7 @@ export function AgendaPage() {
             onStatusChange={handleStatus}
             onCancel={() => setConfirmCancel(true)}
             onChange={patchSelected}
+            onApplyPromo={applyPromo}
           />
         ) : null}
       </Drawer>

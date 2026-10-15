@@ -7,6 +7,7 @@ export type GoogleCalendarStatus = {
   orgName: string | null;
   connectedAt: string | null;
   canManage: boolean;
+  needsReconnect: boolean;
 };
 
 export type GoogleCalendarOption = {

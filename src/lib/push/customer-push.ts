@@ -256,10 +256,7 @@ async function enqueueDue(organizationId: string, customerId: string | null) {
      SELECT gen_random_uuid()::text, e."organizationId", e."customerId", 'LOYALTY_PROGRESS',
             'visit:' || e.id, 'Carte fidélité',
             'Votre carte avance : ' ||
-              CASE
-                WHEN mod(v.visits, GREATEST(COALESCE(lp."visitsPerReward", 10), 1)) = 0 THEN GREATEST(COALESCE(lp."visitsPerReward", 10), 1)
-                ELSE mod(v.visits, GREATEST(COALESCE(lp."visitsPerReward", 10), 1))
-              END
+              mod(v.visits, GREATEST(COALESCE(lp."visitsPerReward", 10), 1))
               || '/' || GREATEST(COALESCE(lp."visitsPerReward", 10), 1) || ' passages.',
             '/carte/' || lc."publicToken" || '/',
             'PENDING', e."validatedAt", NOW()

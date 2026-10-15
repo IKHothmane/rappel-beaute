@@ -66,13 +66,68 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     const body = stripOrganizationId(
       (await request.json()) as Partial<
-        CreateAppointmentInput & { status: AppointmentStatus; organizationId?: string }
+        CreateAppointmentInput & { status: AppointmentStatus; organizationId?: string; promotionCode?: string }
       >,
     );
 
     const existing = await getAppointmentById(id, auth.session.organizationId);
     if (!existing) {
       return NextResponse.json({ error: "Rendez-vous introuvable." }, { status: 404 });
+    }
+
+    if (typeof body.promotionCode === "string") {
+      const code = body.promotionCode.trim();
+      if (!code) {
+        return NextResponse.json({ error: "Entrez un code promo." }, { status: 400 });
+      }
+      if (existing.promotionId || (existing.discount ?? 0) > 0) {
+        return NextResponse.json({ error: "Une réduction est déjà appliquée." }, { status: 409 });
+      }
+      const { computePromotionDiscount } = await import("@/lib/db/promotions");
+      const { pool } = await import("@/lib/db/pool");
+      try {
+        const service = await pool.query<{ price: string }>(
+          `SELECT price::text AS price FROM "Service" WHERE id = $1 AND "organizationId" = $2`,
+          [existing.serviceId, auth.session.organizationId],
+        );
+        const servicePrice = Number(service.rows[0]?.price ?? 0);
+        const oneService = servicePrice > 0 ? Math.min(existing.price, servicePrice) : existing.price;
+        const computed = await computePromotionDiscount({
+          organizationId: auth.session.organizationId,
+          promotionCode: code,
+          serviceId: existing.serviceId,
+          customerId: existing.customerId,
+          amount: oneService,
+          at: new Date(existing.startAt),
+        });
+        if (!computed) {
+          return NextResponse.json({ error: "Code promo introuvable." }, { status: 400 });
+        }
+        const appointment = await updateAppointmentRow(id, auth.session.organizationId, {
+          promotionId: computed.promotionId,
+        });
+        if (!appointment) {
+          return NextResponse.json({ error: "Rendez-vous introuvable." }, { status: 404 });
+        }
+        return NextResponse.json(appointment);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        const known: Record<string, string> = {
+          PROMO_INACTIVE: "Ce code n'est plus actif.",
+          PROMO_NOT_STARTED: "Ce code n'est pas encore valable.",
+          PROMO_EXPIRED: "Ce code a expiré.",
+          PROMO_SERVICE_MISMATCH: "Ce code ne s'applique pas à cette prestation.",
+          PROMO_MIN_AMOUNT: "Le montant du rendez-vous est trop bas pour ce code.",
+          PROMO_MAX_USES: "Ce code a déjà été utilisé.",
+          PROMO_MAX_PER_CUSTOMER: "Cette cliente a déjà utilisé ce code.",
+          PROMO_WEEKDAY: "Ce code n'est pas valable aujourd'hui.",
+          PROMO_TIME: "Ce code n'est pas valable à cette heure.",
+        };
+        if (known[message]) {
+          return NextResponse.json({ error: known[message] }, { status: 400 });
+        }
+        throw error;
+      }
     }
 
     const bookingChanged = Boolean(

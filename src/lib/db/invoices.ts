@@ -431,13 +431,14 @@ export async function issueInvoiceFromAppointment(
     promotionId: string | null;
     serviceName: string;
     serviceCategory: string | null;
+    servicePrice: string | null;
     customerFirst: string;
     customerLast: string;
     customerPhone: string;
   }>(
     `SELECT
       a.id, a."customerId", a."serviceId", a.price::text, a.status::text, a."promotionId",
-      s.name AS "serviceName", s.category AS "serviceCategory",
+      s.name AS "serviceName", s.category AS "serviceCategory", s.price::text AS "servicePrice",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast", c.phone AS "customerPhone"
      FROM "Appointment" a
      JOIN "Service" s ON s.id = a."serviceId"
@@ -459,6 +460,8 @@ export async function issueInvoiceFromAppointment(
   if (!org.rows[0]) throw new Error("ORG_NOT_FOUND");
 
   const unitPrice = parseFloat(apt.rows[0].price) || 0;
+  const catalogPrice = parseFloat(apt.rows[0].servicePrice ?? "") || 0;
+  const oneService = catalogPrice > 0 ? Math.min(unitPrice, catalogPrice) : unitPrice;
 
   // Remise : toujours recalculée serveur si promo liée
   let discount = 0;
@@ -480,7 +483,7 @@ export async function issueInvoiceFromAppointment(
       serviceId: apt.rows[0].serviceId,
       serviceCategory: apt.rows[0].serviceCategory,
       customerId: apt.rows[0].customerId,
-      amount: unitPrice,
+      amount: oneService,
     });
     if (computed) {
       discount = computed.discountAmount;

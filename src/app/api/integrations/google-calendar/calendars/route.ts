@@ -6,7 +6,7 @@ import {
   getValidGoogleAccessToken,
   updateGoogleCalendarSelection,
 } from "@/lib/db/google-calendar";
-import { listGoogleCalendars } from "@/lib/google/calendar";
+import { listGoogleCalendars, googleReconnectMessage } from "@/lib/google/calendar";
 import type { GoogleCalendarOption } from "@/types/google-calendar";
 
 export async function GET(request: NextRequest) {
@@ -24,6 +24,10 @@ export async function GET(request: NextRequest) {
     const calendars: GoogleCalendarOption[] = await listGoogleCalendars(tokens.accessToken);
     return NextResponse.json({ calendars });
   } catch (error) {
+    const reconnect = googleReconnectMessage(error);
+    if (reconnect) {
+      return NextResponse.json({ error: reconnect }, { status: 409 });
+    }
     console.error("[GET /api/integrations/google-calendar/calendars]", error);
     return NextResponse.json(
       { error: "Impossible de lister les calendriers Google." },
@@ -84,6 +88,10 @@ export async function PATCH(request: NextRequest) {
       failed,
     });
   } catch (error) {
+    const reconnect = googleReconnectMessage(error);
+    if (reconnect) {
+      return NextResponse.json({ error: reconnect }, { status: 409 });
+    }
     console.error("[PATCH /api/integrations/google-calendar/calendars]", error);
     return NextResponse.json(
       { error: "Impossible d'enregistrer le calendrier." },

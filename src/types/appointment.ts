@@ -33,6 +33,11 @@ export interface Appointment {
   endAt: string;
 
   price: number;
+  promotionId?: string | null;
+  promotionCode?: string | null;
+  promotionName?: string | null;
+  /** Remise déjà liée au rendez-vous. 0 si aucune. */
+  discount?: number;
   /** Montant à encaisser (facture si elle existe, sinon le prix du RDV). */
   amountDue?: number;
   /** Somme nette déjà encaissée (paiements moins remboursements). */
@@ -58,6 +63,8 @@ export interface CreateAppointmentInput {
   deposit?: number;
   notes?: string;
   source?: AppointmentSource;
+  /** Appliqué après création ou mise à jour, sur la prestation principale. */
+  promotionCode?: string;
 }
 
 export interface AvailabilityCheckInput {

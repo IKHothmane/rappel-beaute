@@ -46,9 +46,15 @@ export async function upsertGoogleCalendarConnection(input: {
   tokens: GoogleTokenSet;
   existingRefreshEnc?: string | null;
 }): Promise<GoogleCalendarConnectionRow> {
-  const refreshPlain =
-    input.tokens.refreshToken ??
-    (input.existingRefreshEnc ? decryptSecret(input.existingRefreshEnc) : null);
+  let existingRefresh: string | null = null;
+  if (!input.tokens.refreshToken && input.existingRefreshEnc) {
+    try {
+      existingRefresh = decryptSecret(input.existingRefreshEnc);
+    } catch {
+      existingRefresh = null;
+    }
+  }
+  const refreshPlain = input.tokens.refreshToken ?? existingRefresh;
   if (!refreshPlain) {
     throw new Error("GOOGLE_REFRESH_MISSING");
   }
@@ -138,6 +144,15 @@ export async function deleteGoogleCalendarConnection(organizationId: string): Pr
   return refresh;
 }
 
+export function googleConnectionNeedsReconnect(refreshTokenEnc: string): boolean {
+  try {
+    decryptSecret(refreshTokenEnc);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 export async function getValidGoogleAccessToken(
   organizationId: string,
 ): Promise<{ accessToken: string; calendarId: string } | null> {
@@ -160,7 +175,12 @@ export async function getValidGoogleAccessToken(
     }
   }
 
-  const refreshToken = decryptSecret(conn.refreshTokenEnc);
+  let refreshToken: string;
+  try {
+    refreshToken = decryptSecret(conn.refreshTokenEnc);
+  } catch {
+    throw new Error("GOOGLE_RECONNECT");
+  }
   const tokens = await refreshGoogleAccessToken(refreshToken);
   await pool.query(
     `UPDATE "GoogleCalendarConnection"

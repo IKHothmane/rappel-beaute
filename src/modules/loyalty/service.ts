@@ -59,6 +59,8 @@ export async function getLoyaltyDashboard() {
       visits: number;
       visitsPerReward: number;
       createdAt: string;
+      cardCode?: string;
+      promoCode?: string | null;
     }[];
     passages?: {
       id: string;

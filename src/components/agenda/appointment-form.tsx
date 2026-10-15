@@ -19,6 +19,7 @@ import type { ResourceAgendaContext } from "@/types/resource";
 import { RESOURCE_TYPE_LABEL } from "@/types/resource";
 import type { CustomerListItem } from "@/types/customer";
 import type { Appointment, CreateAppointmentInput } from "@/types/appointment";
+import { extraIdsFromNotes, notesWithServices, soinLabelsFromNotes } from "@/components/agenda/service-notes";
 
 function todayIsoLocal(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
@@ -30,7 +31,7 @@ type AppointmentFormProps = {
   formOptions: ServiceFormOptions | null;
   staffContexts: StaffAgendaContext[];
   resourceContexts: ResourceAgendaContext[];
-  initial?: Partial<CreateAppointmentInput & { id?: string }>;
+  initial?: Partial<CreateAppointmentInput & { id?: string; promotionId?: string | null }>;
   submitting?: boolean;
   onSubmit: (data: CreateAppointmentInput) => void;
   onCancel: () => void;
@@ -57,7 +58,22 @@ export function AppointmentForm({
   const searchRef = useRef<HTMLDivElement>(null);
 
   const [serviceId, setServiceId] = useState(initial?.serviceId ?? "");
-  const [extraIds, setExtraIds] = useState<string[]>([]);
+  const [extraIds, setExtraIds] = useState<string[]>(() =>
+    extraIdsFromNotes(initial?.notes, services, initial?.serviceId ?? ""),
+  );
+  const [keptLabels, setKeptLabels] = useState<string[]>(() => {
+    const known = new Set(
+      [
+        services.find((item) => item.id === (initial?.serviceId ?? ""))?.name ?? "",
+        ...extraIdsFromNotes(initial?.notes, services, initial?.serviceId ?? "").map(
+          (id) => services.find((item) => item.id === id)?.name ?? "",
+        ),
+      ].map((name) => name.replace(/\s+/g, " ").trim().toLowerCase()),
+    );
+    return soinLabelsFromNotes(initial?.notes).filter(
+      (name) => !known.has(name.replace(/\s+/g, " ").trim().toLowerCase()),
+    );
+  });
   const [staffId, setStaffId] = useState(initial?.staffId ?? "");
   const [resourceId, setResourceId] = useState(initial?.resourceId ?? "");
   const [date, setDate] = useState(() => {
@@ -73,6 +89,7 @@ export function AppointmentForm({
   });
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [promoCode, setPromoCode] = useState("");
+  const promoLocked = Boolean(initial?.promotionId);
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -265,7 +282,7 @@ export function AppointmentForm({
     const [y, mo, d] = date.split("-").map(Number);
     const start = new Date(y, mo - 1, d, h, min, 0);
     const end = new Date(start.getTime() + totalDuration * 60_000);
-    const extraLabel = extraServices.map((s) => s.name).join(" + ");
+    const extras = extraIds.filter((id, index) => id && id !== serviceId && extraIds.indexOf(id) === index);
 
     onSubmit({
       customerId: resolvedCustomer.id,
@@ -275,12 +292,8 @@ export function AppointmentForm({
       startAt: start.toISOString(),
       endAt: end.toISOString(),
       price: Number(price),
-      notes: [
-        extraLabel ? `Soins: ${service?.name ?? ""} + ${extraLabel}` : undefined,
-        promoCode.trim() ? `Promo: ${promoCode.trim()}` : undefined,
-      ]
-        .filter(Boolean)
-        .join("\n") || undefined,
+      notes: notesWithServices(initial?.notes, services, serviceId, extras, keptLabels),
+      promotionCode: promoLocked ? undefined : promoCode.trim() || undefined,
     });
     setCreating(false);
   }
@@ -383,12 +396,23 @@ export function AppointmentForm({
         )}
       </FieldGroup>
 
-      <FieldGroup>
-        <Label>Service</Label>
+      <FieldGroup className="sm:col-span-2">
+        <div className="flex items-center justify-between">
+          <Label>Services</Label>
+          <button
+            type="button"
+            className="text-[12px] font-semibold text-primary"
+            onClick={() => setExtraIds((prev) => [...prev, ""])}
+          >
+            Ajouter un autre soin
+          </button>
+        </div>
         <Select
           value={serviceId}
           onChange={(e) => {
-            setServiceId(e.target.value);
+            const next = e.target.value;
+            setServiceId(next);
+            setExtraIds((prev) => prev.filter((id) => id !== next));
             setTime("");
           }}
           required
@@ -400,6 +424,43 @@ export function AppointmentForm({
             </option>
           ))}
         </Select>
+        {extraIds.map((id, idx) => (
+          <div key={`${id}-${idx}`} className="mt-2 flex gap-2">
+            <Select
+              value={id}
+              onChange={(e) => {
+                const copy = [...extraIds];
+                copy[idx] = e.target.value;
+                setExtraIds(copy);
+                setTime("");
+              }}
+            >
+              <option value="">Choisir un soin</option>
+              {services
+                .filter((s) => s.id !== serviceId)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} · {s.durationMin} min · {s.price} MAD
+                  </option>
+                ))}
+            </Select>
+            <Button type="button" variant="ghost" onClick={() => setExtraIds((prev) => prev.filter((_, i) => i !== idx))}>
+              Retirer
+            </Button>
+          </div>
+        ))}
+        {keptLabels.map((name) => (
+          <div key={name} className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-line bg-white px-3 py-2">
+            <span className="text-sm font-semibold text-ink">{name}</span>
+            <Button type="button" variant="ghost" onClick={() => setKeptLabels((prev) => prev.filter((item) => item !== name))}>
+              Retirer
+            </Button>
+          </div>
+        ))}
+        <p className="mt-1 text-xs text-ink/45">
+          {1 + extraServices.length + keptLabels.length} prestation{1 + extraServices.length + keptLabels.length > 1 ? "s" : ""}
+          {service ? ` · le code promo ne s’applique qu’à ${service.name}` : ""}
+        </p>
       </FieldGroup>
 
       <FieldGroup>
@@ -494,43 +555,6 @@ export function AppointmentForm({
         />
       </FieldGroup>
 
-      <FieldGroup className="sm:col-span-2">
-        <div className="flex items-center justify-between">
-          <Label>Autres soins</Label>
-          <button
-            type="button"
-            className="text-[12px] font-semibold text-primary"
-            onClick={() => setExtraIds((prev) => [...prev, ""])}
-          >
-            Ajouter un autre soin
-          </button>
-        </div>
-        {extraIds.map((id, idx) => (
-          <div key={`${id}-${idx}`} className="mt-2 flex gap-2">
-            <Select
-              value={id}
-              onChange={(e) => {
-                const copy = [...extraIds];
-                copy[idx] = e.target.value;
-                setExtraIds(copy);
-              }}
-            >
-              <option value="">Choisir un soin</option>
-              {services
-                .filter((s) => s.id !== serviceId)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} · {s.durationMin} min · {s.price} MAD
-                  </option>
-                ))}
-            </Select>
-            <Button type="button" variant="ghost" onClick={() => setExtraIds((prev) => prev.filter((_, i) => i !== idx))}>
-              Retirer
-            </Button>
-          </div>
-        ))}
-      </FieldGroup>
-
       <FieldGroup>
         <Label>Prix (MAD)</Label>
         <Input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} required />
@@ -541,7 +565,26 @@ export function AppointmentForm({
 
       <FieldGroup>
         <Label>Code promo</Label>
-        <Input value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="CODE" />
+        {promoLocked ? (
+          <p className="rounded-xl border border-line bg-[#FBF4F6] px-3 py-2 text-sm font-semibold text-ink">
+            {initial?.promotionCode || "Déjà appliqué"}
+            <span className="mt-0.5 block text-[11px] font-medium text-ink/45">
+              Sur {service?.name ?? "la prestation principale"}
+            </span>
+          </p>
+        ) : (
+          <>
+            <Input
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              placeholder="Ex : E4FB"
+              autoComplete="off"
+            />
+            <p className="mt-1 text-xs text-ink/45">
+              Réduction sur une seule prestation : {service?.name ?? "la prestation principale"}.
+            </p>
+          </>
+        )}
       </FieldGroup>
 
       <FieldGroup className="sm:col-span-2">

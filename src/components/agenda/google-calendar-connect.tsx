@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CalendarCheck } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Modal } from "@/components/ui/modal";
@@ -55,9 +55,20 @@ export function GoogleCalendarConnect({
     }
   }, []);
 
+  const warned = useRef(false);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (compact || !status?.needsReconnect || warned.current) return;
+    warned.current = true;
+    toast(
+      "Les rendez-vous ne s'affichent plus dans Google. Reconnectez le calendrier.",
+      "error",
+    );
+  }, [compact, status?.needsReconnect, toast]);
 
   useEffect(() => {
     if (!autoOpenOnReturn) return;
@@ -96,7 +107,7 @@ export function GoogleCalendarConnect({
 
   async function openPanel() {
     const next = await refresh();
-    if (!next?.connected) {
+    if (!next?.connected || next.needsReconnect) {
       connect();
       return;
     }
@@ -157,12 +168,14 @@ export function GoogleCalendarConnect({
     }
   }
 
-  const connected = Boolean(status?.connected);
+  const connected = Boolean(status?.connected) && !status?.needsReconnect;
   const canManage = Boolean(status?.canManage);
   const orgName = status?.orgName?.trim() || "cet institut";
-  const label = connected
-    ? status?.calendarName || status?.email || "Google connecté"
-    : "Calendrier de l'institut";
+  const label = status?.needsReconnect
+    ? "Reconnecter Google"
+    : connected
+      ? status?.calendarName || status?.email || "Google connecté"
+      : "Calendrier de l'institut";
 
   return (
     <>
@@ -171,9 +184,11 @@ export function GoogleCalendarConnect({
         onClick={() => (canManage ? void openPanel() : undefined)}
         disabled={!status || !canManage}
         title={
-          connected
-            ? `Calendrier Google de ${orgName}${status?.email ? ` · ${status.email}` : ""}`
-            : `Lier le calendrier Google de ${orgName}`
+          status?.needsReconnect
+            ? "Reconnecter Google Calendar pour afficher les rendez-vous"
+            : connected
+              ? `Calendrier Google de ${orgName}${status?.email ? ` · ${status.email}` : ""}`
+              : `Lier le calendrier Google de ${orgName}`
         }
         className={cn(
           compact
@@ -186,10 +201,10 @@ export function GoogleCalendarConnect({
           className={cn(
             "rounded-full",
             compact ? "sr-only" : "inline-flex h-2 w-2 shrink-0",
-            connected ? "bg-emerald-500" : "bg-ink/25",
+            connected ? "bg-emerald-500" : status?.needsReconnect ? "bg-amber-500" : "bg-ink/25",
           )}
         />
-        <CalendarCheck size={compact ? 18 : 16} className={connected ? "text-emerald-600" : "text-ink/55"} />
+        <CalendarCheck size={compact ? 18 : 16} className={connected ? "text-emerald-600" : status?.needsReconnect ? "text-amber-600" : "text-ink/55"} />
         {compact ? <span className="sr-only">{label}</span> : <span className="truncate">{label}</span>}
       </button>
 

@@ -18,6 +18,7 @@ export type AppointmentRow = {
   customerLastName: string | null;
   serviceId: string | null;
   serviceName: string | null;
+  servicePrice: string | null;
   staffId: string | null;
   staffFirstName: string | null;
   staffLastName: string | null;
@@ -26,6 +27,11 @@ export type AppointmentRow = {
   startAt: Date;
   endAt: Date;
   price: string;
+  promotionId: string | null;
+  promotionCode: string | null;
+  promotionName: string | null;
+  promotionType: string | null;
+  promotionValue: string | null;
   amountDue: string | null;
   netPaid: string | null;
   deposit: string | null;
@@ -44,6 +50,7 @@ const SELECT = `
     c."lastName" AS "customerLastName",
     a."serviceId",
     COALESCE(s.name, a."serviceNameSnapshot") AS "serviceName",
+    s.price::text AS "servicePrice",
     a."staffId",
     st."firstName" AS "staffFirstName",
     st."lastName" AS "staffLastName",
@@ -52,6 +59,11 @@ const SELECT = `
     a."startAt",
     a."endAt",
     a.price::text,
+    a."promotionId",
+    promo.code AS "promotionCode",
+    promo.name AS "promotionName",
+    promo.type::text AS "promotionType",
+    promo.value::text AS "promotionValue",
     COALESCE((
       SELECT i.total::text
       FROM "Invoice" i
@@ -80,6 +92,7 @@ const SELECT = `
   LEFT JOIN "Service" s ON s.id = a."serviceId"
   LEFT JOIN "Staff" st ON st.id = a."staffId"
   LEFT JOIN "Resource" r ON r.id = a."resourceId"
+  LEFT JOIN "Promotion" promo ON promo.id = a."promotionId" AND promo."deletedAt" IS NULL
 `;
 
 function personName(
@@ -91,7 +104,20 @@ function personName(
   return name || fallback;
 }
 
+function promotionDiscount(ticket: number, servicePrice: number, type: string | null, value: string | null) {
+  if (!type) return 0;
+  const base = servicePrice > 0 ? Math.min(ticket, servicePrice) : ticket;
+  const amount = value != null ? Number(value) : 0;
+  if (type === "FREE_SERVICE") return base;
+  if (type === "PERCENTAGE") return Math.round(base * (amount / 100) * 100) / 100;
+  if (type === "FIXED_AMOUNT" || type === "HAPPY_HOUR" || type === "PACKAGE") return Math.min(base, Math.max(0, amount));
+  return 0;
+}
+
 export function rowToDto(row: AppointmentRow): Appointment {
+  const price = Number(row.price);
+  const servicePrice = Number(row.servicePrice ?? 0);
+  const discount = promotionDiscount(price, servicePrice, row.promotionType, row.promotionValue);
   return {
     id: row.id,
     organizationId: row.organizationId,
@@ -107,7 +133,11 @@ export function rowToDto(row: AppointmentRow): Appointment {
     resourceName: row.resourceName ?? undefined,
     startAt: row.startAt.toISOString(),
     endAt: row.endAt.toISOString(),
-    price: Number(row.price),
+    price,
+    promotionId: row.promotionId,
+    promotionCode: row.promotionCode,
+    promotionName: row.promotionName,
+    discount,
     amountDue: Number(row.amountDue ?? row.price),
     netPaid: Number(row.netPaid ?? 0),
     paymentState: paymentState(Number(row.amountDue ?? row.price), Number(row.netPaid ?? 0)),
@@ -312,7 +342,7 @@ export async function getAppointmentById(
 export async function updateAppointmentRow(
   id: string,
   organizationId: string,
-  patch: Partial<CreateAppointmentInput & { status: Appointment["status"] }>,
+  patch: Partial<CreateAppointmentInput & { status: Appointment["status"]; promotionId: string | null }>,
   opts?: {
     actor?: { id: string; name?: string | null };
     cancelledByInstitute?: boolean;
@@ -339,6 +369,7 @@ export async function updateAppointmentRow(
   if (patch.startAt) set("startAt", new Date(patch.startAt));
   if (patch.endAt) set("endAt", new Date(patch.endAt));
   if (patch.price !== undefined) set("price", patch.price);
+  if ("promotionId" in patch) set("promotionId", patch.promotionId ?? null);
   if (patch.deposit !== undefined) set("deposit", patch.deposit ?? null);
   if (patch.notes !== undefined) set("notes", patch.notes ?? null);
   if (patch.status) set("status", patch.status);

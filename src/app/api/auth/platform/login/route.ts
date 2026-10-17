@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { authenticatePlatformUser } from "@/lib/db/platform-users";
 import { createSessionCookie, clearSessionCookie, getSessionFromRequest } from "@/lib/auth/session";
+import { SESSION_MAX_AGE_SEC } from "@/lib/auth/types";
+import { COOKIE_HOST } from "@/lib/domain";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
   try {
-    let body: { email?: string; password?: string };
+    let body: { email?: string; password?: string; remember?: boolean };
     try {
       body = (await request.json()) as { email?: string; password?: string };
     } catch {
@@ -32,6 +34,8 @@ export async function POST(request: NextRequest) {
 
     const email = body.email?.trim();
     const password = body.password;
+    const remember = body.remember !== false;
+    const sessionMaxAge = remember ? SESSION_MAX_AGE_SEC : null;
 
     if (!email || !password) {
       return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
@@ -73,7 +77,12 @@ export async function POST(request: NextRequest) {
         accountType: session.accountType,
       },
     });
-    res.cookies.set(createSessionCookie(session));
+    res.cookies.set(createSessionCookie(session, sessionMaxAge));
+    res.cookies.set(COOKIE_HOST, "admin", {
+      path: "/",
+      sameSite: "lax",
+      ...(sessionMaxAge == null ? {} : { maxAge: sessionMaxAge }),
+    });
     return res;
   } catch (error) {
     logger.error("platform login error", {

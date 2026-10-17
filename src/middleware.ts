@@ -74,12 +74,13 @@ function resolveDomain(
   const path = request.nextUrl.pathname;
   if (path === "/book" || path.startsWith("/book/")) return "app";
 
-  // 4) Session ou cookie sur localhost / apex (ex. /dashboard/ après login)
+  // 4) Espace institut sur le domaine public. Le cookie admin ne doit pas
+  //    envoyer le SaaS vers /login/?__host=admin. L'admin reste explicite
+  //    (?__host=admin ou sous-domaine admin.*).
   if (!isMarketingPath(path)) {
     if (session?.scope === "platform") return "admin";
     if (session?.scope === "app") return "app";
-    const fromCookie = parseDomainParam(request.cookies.get(COOKIE_HOST)?.value);
-    if (fromCookie === "app" || fromCookie === "admin") return fromCookie;
+    return "app";
   }
 
   return fromHost;
@@ -279,6 +280,12 @@ export async function middleware(request: NextRequest) {
     // comparer le chemin logique sinon /domains/app/login/ n'est pas « public »
     // → redirect /login/ → rewrite → boucle ERR_TOO_MANY_REDIRECTS.
     const logicalPath = stripDomainPrefix(path, "app");
+    if (
+      (logicalPath === "/login" || logicalPath === "/login/") &&
+      !isAppOrAdminHostname(hostname)
+    ) {
+      return publicRedirect(request, "/connexion/", "www", hostname);
+    }
     const isPublic =
       isPublicPath(domain, logicalPath) ||
       logicalPath === "/book" ||

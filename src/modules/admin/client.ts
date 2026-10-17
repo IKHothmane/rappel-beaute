@@ -343,12 +343,12 @@ export async function resetOwnerAccessApi(id: string) {
   );
 }
 
-export async function platformLogin(email: string, password: string) {
+export async function platformLogin(email: string, password: string, remember = true) {
   const res = await fetch("/api/auth/platform/login/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, remember }),
   });
   if (!res.ok) throw new Error("Identifiants invalides.");
   return res.json();

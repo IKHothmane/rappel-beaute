@@ -18,13 +18,14 @@ export function AppLoginForm() {
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") ?? "");
     const password = String(form.get("password") ?? "");
+    const remember = form.get("remember") === "on";
 
     try {
       const res = await fetch("/api/auth/login/", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember }),
       });
 
       if (!res.ok) {
@@ -81,7 +82,7 @@ export function AppLoginForm() {
         />
       </label>
       <label className="mt-4 flex items-center gap-2 text-sm text-ink/70">
-        <input type="checkbox" name="remember" /> Se souvenir de moi
+        <input type="checkbox" name="remember" defaultChecked /> Se souvenir de moi pendant 30 jours
       </label>
       <button type="submit" disabled={loading} className="btn-primary mt-6 w-full">
         {loading ? "Connexion…" : "Se connecter"}

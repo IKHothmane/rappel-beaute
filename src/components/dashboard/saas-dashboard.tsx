@@ -276,7 +276,7 @@ export function SaasDashboard() {
   const maxStaffRev = Math.max(1, ...staffRows.map((s) => s.revenue));
   const heat = appointmentsAnalytics?.heatmap ?? [];
   const heatMax = Math.max(1, ...heat.map((h) => h.count));
-  const heatHours = [9, 11, 14, 16];
+  const heatHours = Array.from({ length: 16 }, (_, i) => i + 8);
   const heatDays = [
     { dow: 1, label: "Lun" },
     { dow: 2, label: "Mar" },

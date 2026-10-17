@@ -95,24 +95,6 @@ export function CashRegisterMobile({
   return (
     <div className="space-y-4 pb-8 lg:hidden">
       <section className="rounded-xl bg-white p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between gap-2 rounded-full bg-[#FFEFF8] px-3 py-1.5">
-          <span className="flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-ink">
-            <span
-              className={cn(
-                "h-2.5 w-2.5 shrink-0 rounded-full",
-                isOpen ? "animate-pulse bg-emerald-600" : "bg-ink/30",
-              )}
-            />
-            <span className="truncate">
-              {isOpen
-                ? `Ouverte ${formatCashTime(session?.openedAt)} · ${session?.openedByName ?? "—"}`
-                : "Caisse fermée"}
-            </span>
-          </span>
-          <span className="shrink-0 rounded-full bg-[#F0DDE9] px-2 py-0.5 text-[11px] font-semibold text-ink/60">
-            Fond {formatMad(session?.openingFloat ?? (Number(float) || 0))}
-          </span>
-        </div>
         <div>
           <h1 className="text-[22px] font-semibold leading-tight text-ink">Caisse & mouvements</h1>
           <p className="mt-0.5 text-[13px] text-ink/55">

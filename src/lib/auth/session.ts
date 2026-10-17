@@ -12,8 +12,8 @@ import {
   toPublicSession,
 } from "@/lib/auth/types";
 
-function buildToken(user: SessionUser): string {
-  return signJwt(user, getSessionSecret(), SESSION_MAX_AGE_SEC);
+function buildToken(user: SessionUser, maxAgeSec: number): string {
+  return signJwt(user, getSessionSecret(), maxAgeSec);
 }
 
 export function parseSessionToken(token: string): SessionUser | null {
@@ -42,7 +42,7 @@ function cookieSecure(): boolean {
   return process.env.NODE_ENV === "production";
 }
 
-export function sessionCookieOptions(token: string) {
+export function sessionCookieOptions(token: string, maxAgeSec: number | null = SESSION_MAX_AGE_SEC) {
   return {
     name: SESSION_COOKIE,
     value: token,
@@ -50,13 +50,14 @@ export function sessionCookieOptions(token: string) {
     sameSite: "lax" as const,
     secure: cookieSecure(),
     path: "/",
-    maxAge: SESSION_MAX_AGE_SEC,
+    ...(maxAgeSec == null ? {} : { maxAge: maxAgeSec }),
   };
 }
 
-export function createSessionCookie(user: SessionUser) {
-  const token = buildToken(user);
-  return sessionCookieOptions(token);
+/** maxAgeSec null = cookie de session navigateur (perdu à la fermeture). */
+export function createSessionCookie(user: SessionUser, maxAgeSec: number | null = SESSION_MAX_AGE_SEC) {
+  const token = buildToken(user, maxAgeSec ?? SESSION_MAX_AGE_SEC);
+  return sessionCookieOptions(token, maxAgeSec);
 }
 
 export function clearSessionCookie() {

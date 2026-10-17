@@ -5,7 +5,7 @@ import { authenticatePlatformUser } from "@/lib/db/platform-users";
 import { writeAuditLog } from "@/lib/db/audit";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { createSessionCookie } from "@/lib/auth/session";
-import { isAppSession, isPlatformSession } from "@/lib/auth/types";
+import { isAppSession, isPlatformSession, SESSION_MAX_AGE_SEC } from "@/lib/auth/types";
 import { stripOrganizationId } from "@/lib/auth/api-guard";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
@@ -17,10 +17,17 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = stripOrganizationId(
-      (await request.json()) as { email?: string; password?: string; organizationId?: string },
+      (await request.json()) as {
+        email?: string;
+        password?: string;
+        organizationId?: string;
+        remember?: boolean;
+      },
     );
     const email = body.email?.trim();
     const password = body.password;
+    const remember = body.remember !== false;
+    const sessionMaxAge = remember ? SESSION_MAX_AGE_SEC : null;
 
     if (!email || !password) {
       return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
@@ -66,8 +73,12 @@ export async function POST(request: NextRequest) {
           scope: session.scope,
         },
       });
-      res.cookies.set(createSessionCookie(session));
-      res.cookies.set(COOKIE_HOST, "admin", { path: "/", sameSite: "lax" });
+      res.cookies.set(createSessionCookie(session, sessionMaxAge));
+      res.cookies.set(COOKIE_HOST, "admin", {
+        path: "/",
+        sameSite: "lax",
+        ...(sessionMaxAge == null ? {} : { maxAge: sessionMaxAge }),
+      });
       return res;
     }
 
@@ -102,8 +113,12 @@ export async function POST(request: NextRequest) {
       mustChangePassword: session.mustChangePassword,
     });
 
-    res.cookies.set(createSessionCookie(session));
-    res.cookies.set(COOKIE_HOST, "app", { path: "/", sameSite: "lax" });
+    res.cookies.set(createSessionCookie(session, sessionMaxAge));
+    res.cookies.set(COOKIE_HOST, "app", {
+      path: "/",
+      sameSite: "lax",
+      ...(sessionMaxAge == null ? {} : { maxAge: sessionMaxAge }),
+    });
     return res;
   } catch (error) {
     logger.error("login error", { route: "/api/auth/login", error: String(error) });

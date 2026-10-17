@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { clearSessionCookie, getSessionFromRequest } from "@/lib/auth/session";
-import { isAppSession, toPublicSession } from "@/lib/auth/types";
+import { clearSessionCookie, createSessionCookie, getSessionFromRequest } from "@/lib/auth/session";
+import { isAppSession, SESSION_MAX_AGE_SEC, toPublicSession } from "@/lib/auth/types";
+import { COOKIE_HOST } from "@/lib/domain";
 import { getUserSessionState } from "@/lib/db/users";
 import { getOrganizationLogoUrl } from "@/lib/db/organization";
 import type { NextRequest } from "next/server";
@@ -27,15 +28,28 @@ export async function GET(request: NextRequest) {
       return res;
     }
 
-    return NextResponse.json({
-      user: toPublicSession({
-        ...session,
-        orgLogoUrl: await getOrganizationLogoUrl(session.organizationId),
-        mustChangePassword: state.mustChangePassword,
-        sessionVersion: state.sessionVersion,
-      }),
+    const refreshed = {
+      ...session,
+      orgLogoUrl: await getOrganizationLogoUrl(session.organizationId),
+      mustChangePassword: state.mustChangePassword,
+      sessionVersion: state.sessionVersion,
+    };
+    const res = NextResponse.json({ user: toPublicSession(refreshed) });
+    res.cookies.set(createSessionCookie(refreshed));
+    res.cookies.set(COOKIE_HOST, "app", {
+      path: "/",
+      sameSite: "lax",
+      maxAge: SESSION_MAX_AGE_SEC,
     });
+    return res;
   }
 
-  return NextResponse.json({ user: toPublicSession(session) });
+  const res = NextResponse.json({ user: toPublicSession(session) });
+  res.cookies.set(createSessionCookie(session));
+  res.cookies.set(COOKIE_HOST, "admin", {
+    path: "/",
+    sameSite: "lax",
+    maxAge: SESSION_MAX_AGE_SEC,
+  });
+  return res;
 }

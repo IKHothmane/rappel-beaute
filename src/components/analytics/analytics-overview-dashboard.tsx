@@ -103,9 +103,9 @@ function Heatmap({
 }: {
   data: { weekday: number; hour: number; count: number }[];
 }) {
-  const hours = Array.from({ length: 11 }, (_, i) => i + 9); // 9–19
-  const days = [1, 2, 3, 4, 5, 6]; // Lun–Sam
-  const labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+  const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8–23
+  const days = [1, 2, 3, 4, 5, 6, 0]; // Lun–Dim
+  const labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
   const max = Math.max(1, ...data.map((d) => d.count));
 
   function cell(dow: number, hour: number) {

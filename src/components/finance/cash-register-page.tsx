@@ -355,32 +355,15 @@ export function CashRegisterPageView() {
 
       <div className="hidden space-y-6 lg:block">
         <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F0DDE9] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-ink">
-                <span className={cn("h-2 w-2 rounded-full", isOpen ? "animate-pulse bg-emerald-600" : "bg-ink/30")} />
-                {isOpen
-                  ? `Caisse ouverte ${formatCashTime(session?.openedAt)}`
-                  : "Caisse fermée"}
-              </span>
-              <span className="rounded-full bg-[#FFDEA4]/50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#5D4200]">
-                {ROLE_LABEL[user.role]}
-                {session?.openedByName ? ` · ${session.openedByName}` : ""}
-              </span>
-              <span className="rounded-full bg-[#FFEFF8] px-2.5 py-1 text-[11px] font-semibold text-ink/55">
-                Fond {formatMad(session?.openingFloat ?? (Number(float) || 0))}
-              </span>
-            </div>
-            <div>
-              <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink">
-                <Wallet size={26} className="text-primary" />
-                Caisse & mouvements
-              </h1>
-              <p className="mt-1 max-w-3xl text-[15px] text-ink/50">
-                {user.orgName || "Votre institut"} — encaissements, sorties tiroir et clôture. Seules les
-                espèces alimentent le solde physique.
-              </p>
-            </div>
+          <div>
+            <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink">
+              <Wallet size={26} className="text-primary" />
+              Caisse & mouvements
+            </h1>
+            <p className="mt-1 max-w-3xl text-[15px] text-ink/50">
+              {user.orgName || "Votre institut"} — encaissements, sorties tiroir et clôture. Seules les
+              espèces alimentent le solde physique.
+            </p>
           </div>
           {canWrite && isOpen ? (
             <div className="flex flex-wrap items-center gap-2">

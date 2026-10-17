@@ -729,8 +729,8 @@ export async function getAppointmentAnalytics(
     params,
   );
 
-  const byHour = Array.from({ length: 14 }, (_, i) => {
-    const hour = i + 8; // 8h–21h
+  const byHour = Array.from({ length: 16 }, (_, i) => {
+    const hour = i + 8; // 8h–23h
     const row = hourRows.find((r) => parseInt(r.hour, 10) === hour);
     return {
       hour,

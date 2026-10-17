@@ -1,5 +1,5 @@
 import { parseSessionTokenEdge } from "@/lib/auth/session-edge";
-import { SESSION_COOKIE } from "@/lib/auth/types";
+import { SESSION_COOKIE, SESSION_MAX_AGE_SEC } from "@/lib/auth/types";
 import {
   COOKIE_HOST,
   HEADER_DOMAIN,
@@ -250,6 +250,26 @@ export async function middleware(request: NextRequest) {
 
   const queryHost = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
   const session = await getSession(request);
+
+  const isLoginPath =
+    path === "/connexion" ||
+    path === "/connexion/" ||
+    path === "/login" ||
+    path === "/login/";
+  if (isLoginPath && session?.scope === "app") {
+    const mustChange =
+      "mustChangePassword" in session && Boolean(session.mustChangePassword);
+    return publicRedirect(
+      request,
+      mustChange ? `${CHANGE_PASSWORD_PATH}/` : "/dashboard/",
+      "app",
+      hostname,
+    );
+  }
+  if (isLoginPath && session?.scope === "platform") {
+    return publicRedirect(request, "/dashboard/", "admin", hostname);
+  }
+
   const domain = resolveDomain(request, session);
   const headers = new Headers(request.headers);
   headers.set(HEADER_DOMAIN, domain);
@@ -323,7 +343,11 @@ export async function middleware(request: NextRequest) {
     // Déjà sous /domains/admin (ré-entrée middleware après rewrite) → next, pas rewrite
     if (path.startsWith("/domains/admin")) {
       const res = withFrameDeny(NextResponse.next({ request: { headers } }));
-      res.cookies.set(COOKIE_HOST, "admin", { path: "/", sameSite: "lax" });
+      res.cookies.set(COOKIE_HOST, "admin", {
+        path: "/",
+        sameSite: "lax",
+        maxAge: SESSION_MAX_AGE_SEC,
+      });
       return res;
     }
 
@@ -331,7 +355,11 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = adminInternalPath(path);
     const res = withFrameDeny(NextResponse.rewrite(url, { request: { headers } }));
-    res.cookies.set(COOKIE_HOST, "admin", { path: "/", sameSite: "lax" });
+    res.cookies.set(COOKIE_HOST, "admin", {
+      path: "/",
+      sameSite: "lax",
+      maxAge: SESSION_MAX_AGE_SEC,
+    });
     return res;
   }
 
@@ -358,7 +386,11 @@ export async function middleware(request: NextRequest) {
   if (path.startsWith("/domains/app")) {
     const res = withFrameDeny(NextResponse.next({ request: { headers } }));
     if (queryHost) {
-      res.cookies.set(COOKIE_HOST, queryHost, { path: "/", sameSite: "lax" });
+      res.cookies.set(COOKIE_HOST, queryHost, {
+        path: "/",
+        sameSite: "lax",
+        maxAge: SESSION_MAX_AGE_SEC,
+      });
     }
     return res;
   }
@@ -372,7 +404,11 @@ export async function middleware(request: NextRequest) {
   }
 
   const res = withFrameDeny(NextResponse.rewrite(url, { request: { headers } }));
-  res.cookies.set(COOKIE_HOST, domain, { path: "/", sameSite: "lax" });
+  res.cookies.set(COOKIE_HOST, domain, {
+    path: "/",
+    sameSite: "lax",
+    maxAge: SESSION_MAX_AGE_SEC,
+  });
   return res;
 }
 

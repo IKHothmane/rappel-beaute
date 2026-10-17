@@ -11,6 +11,7 @@ function LoginFormFields() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
 
   useEffect(() => {
     const fromEmail = searchParams.get("email")?.trim() ?? "";
@@ -40,7 +41,7 @@ function LoginFormFields() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember }),
       });
 
       if (res.ok) {
@@ -211,9 +212,11 @@ function LoginFormFields() {
 
           <div className="flex items-center pt-1">
             <input
+              checked={remember}
               className="h-4 w-4 cursor-pointer rounded border-line text-primary focus:ring-primary/30"
               id="remember-me"
               name="remember-me"
+              onChange={(e) => setRemember(e.target.checked)}
               type="checkbox"
             />
             <label

@@ -181,7 +181,16 @@ export function buildHealthScore(opts: {
     { key: "team", label: "Équipe", score: team, tone: "text-on-surface", bar: "bg-primary-container" },
     { key: "customers", label: "Clientes", score: clientes, tone: "text-on-surface", bar: "bg-primary-container" },
     { key: "cabins", label: "Cabines", score: cabines, tone: "text-on-surface", bar: "bg-secondary" },
-    { key: "stock", label: "Stocks", score: null, tone: "text-on-surface", bar: "bg-secondary" },
+    {
+      key: "stock",
+      label: "Stocks",
+      score:
+        opts.inventory == null
+          ? null
+          : clampScore(100 - opts.inventory.outOfStockCount * 12 - opts.inventory.lowStockCount * 6),
+      tone: "text-on-surface",
+      bar: "bg-secondary",
+    },
     { key: "marketing", label: "Marketing", score: marketing, tone: "text-on-surface", bar: "bg-outline" },
   ];
 
@@ -213,14 +222,7 @@ export type RetentionStep = {
 };
 
 export function retentionFunnel(customers: CustomerAnalytics | null): RetentionStep[] {
-  if (!customers || customers.kpis.total <= 0) {
-    return [
-      { step: 1, title: "1ère Visite Découverte", subtitle: "Fichier clientes", percent: 0 },
-      { step: 2, title: "Clientes actives", subtitle: "Fenêtre 90 j", percent: 0 },
-      { step: 3, title: "Rétention", subtitle: "Revenues", percent: 0 },
-      { step: 4, title: "VIP", subtitle: "Segment premium", percent: 0, vip: true },
-    ];
-  }
+  if (!customers || customers.kpis.total <= 0) return [];
   const total = customers.kpis.total;
   const activePct = Math.round((customers.kpis.active / total) * 100);
   const retPct =
@@ -388,6 +390,50 @@ export function buildPnlExpress(
 
 export function marketingAttributed(rows: MarketingAnalyticsRow[]): number {
   return rows.reduce((s, r) => s + r.associatedRevenue, 0);
+}
+
+export type WeekdayAffluence = {
+  weekday: number;
+  label: string;
+  count: number;
+  rate: number | null;
+  heightPct: number;
+};
+
+export function weekdayAffluence(data: AppointmentAnalytics | null): WeekdayAffluence[] {
+  if (!data?.occupationByWeekday.length) return [];
+  const counts = new Map<number, number>();
+  for (const cell of data.heatmap ?? []) {
+    counts.set(cell.weekday, (counts.get(cell.weekday) ?? 0) + cell.count);
+  }
+  const rows = data.occupationByWeekday.map((d) => ({
+    weekday: d.weekday,
+    label: d.label,
+    count: counts.get(d.weekday) ?? 0,
+    rate: d.rate,
+  }));
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  return rows.map((r) => ({
+    ...r,
+    heightPct: r.count > 0 ? Math.max(12, Math.round((r.count / max) * 100)) : 0,
+  }));
+}
+
+export const AFFLUENCE_HOURS = Array.from({ length: 16 }, (_, i) => i + 8);
+
+export function hourlyAffluence(
+  data: AppointmentAnalytics | null,
+): { hour: number; count: number; heightPct: number }[] {
+  const counts = new Map<number, number>();
+  for (const cell of data?.heatmap ?? []) {
+    counts.set(cell.hour, (counts.get(cell.hour) ?? 0) + cell.count);
+  }
+  const rows = AFFLUENCE_HOURS.map((hour) => ({ hour, count: counts.get(hour) ?? 0 }));
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  return rows.map((r) => ({
+    ...r,
+    heightPct: r.count > 0 ? Math.max(15, Math.round((r.count / max) * 100)) : 0,
+  }));
 }
 
 export function peakWeekday(data: AppointmentAnalytics | null): string | null {

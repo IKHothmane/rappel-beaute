@@ -25,7 +25,9 @@ import {
   deltaClass,
   initials,
   serviceMarginPct,
+  hourlyAffluence,
   statusCount,
+  weekdayAffluence,
   type AnalyticsViewModel,
 } from "@/components/analytics/analytics-helpers";
 import { cn } from "@/lib/utils";
@@ -495,6 +497,8 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
             </div>
             {vm.loading ? (
               <p className="text-sm text-on-surface-variant">Chargement du funnel…</p>
+            ) : vm.funnel.length === 0 ? (
+              <p className="text-sm text-on-surface-variant">Pas encore de clientes au fichier.</p>
             ) : (
               <div className="flex flex-1 flex-col gap-3">
                 {vm.funnel.map((step) => (
@@ -698,31 +702,39 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
           </div>
           {vm.loading ? (
             <p className="text-sm text-on-surface-variant">Chargement…</p>
-          ) : !vm.appointments?.occupationByWeekday.length ? (
-            <p className="text-sm text-on-surface-variant">Pas de données d&apos;occupation.</p>
+          ) : !weekdayAffluence(vm.appointments).some((d) => d.count > 0) ? (
+            <p className="text-sm text-on-surface-variant">Pas de rendez-vous sur la période.</p>
           ) : (
-            <div className="flex h-36 items-end justify-between gap-1.5">
-              {vm.appointments.occupationByWeekday.map((d) => {
-                const h = d.rate != null ? Math.max(8, d.rate) : 8;
-                return (
+            <>
+              <div className="flex h-36 items-end justify-between gap-1.5">
+                {weekdayAffluence(vm.appointments).map((d) => (
                   <div key={d.weekday} className="flex flex-1 flex-col items-center gap-1">
-                    <span className="text-[10px] font-semibold text-on-surface-variant">
-                      {d.rate != null ? `${Math.round(d.rate)}%` : "—"}
+                    <span className="text-[10px] font-semibold text-on-surface">
+                      {d.count}
                     </span>
                     <div
                       className={cn(
-                        "w-full max-w-[28px] rounded-t-md",
-                        d.level === "high" && "bg-primary-container",
-                        d.level === "medium" && "bg-secondary",
-                        d.level === "low" && "bg-surface-container-high",
+                        "w-full max-w-[28px] rounded-t-md bg-primary-container",
+                        d.count === 0 && "bg-transparent",
                       )}
-                      style={{ height: `${h}%` }}
+                      style={{ height: `${d.heightPct}%` }}
                     />
                     <span className="text-[11px] font-bold text-on-surface">{d.label.slice(0, 3)}</span>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+              <div className="mt-3 flex h-8 items-end gap-0.5">
+                {hourlyAffluence(vm.appointments).map((h) => (
+                  <div key={h.hour} className="flex h-full flex-1 items-end" title={`${h.hour}h · ${h.count} RDV`}>
+                    <div
+                      className="w-full rounded-t-sm bg-secondary"
+                      style={{ height: `${h.heightPct}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="mt-1 text-[10px] text-on-surface-variant">Rendez-vous de 08 h à 23 h</p>
+            </>
           )}
           <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
             <div className="rounded-lg bg-surface-container-low p-2.5">

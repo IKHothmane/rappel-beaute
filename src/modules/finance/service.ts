@@ -108,6 +108,9 @@ export async function listBillableAppointments(appointmentId?: string): Promise<
     serviceName: string;
     price: number;
     remaining: number;
+    discount: number;
+    promotionCode: string | null;
+    promotionName: string | null;
     status: string;
     startAt: string;
     customerPhone?: string | null;

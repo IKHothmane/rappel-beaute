@@ -875,7 +875,11 @@ export function CashRegisterPageView() {
                   ))}
                 </Select>
               </label>
-              <AppointmentPromoNote {...billable.find((b) => b.id === aptId)} />
+              <AppointmentPromoNote
+                promotionCode={billable.find((b) => b.id === aptId)?.promotionCode}
+                promotionName={billable.find((b) => b.id === aptId)?.promotionName}
+                discount={billable.find((b) => b.id === aptId)?.discount}
+              />
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-sm">
                   <span className="mb-1.5 block font-medium">Montant service</span>

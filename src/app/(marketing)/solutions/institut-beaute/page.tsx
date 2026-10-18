@@ -1,19 +1,18 @@
-import type { Metadata } from "next";
+import { marketingPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { ShowcaseStrip } from "@/components/www/ProductShot";
 import { SeoCloser } from "@/components/www/SeoCloser";
 import { formatPrice, PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Logiciel de gestion pour institut de beauté au Maroc",
+export const metadata = marketingPageMetadata({
+  title: "Logiciel de gestion pour institut de beauté au Maroc · Rappel Beauty",
   description:
     "Découvrez comment Rappel Beauty aide les instituts de beauté au Maroc à gérer leurs rendez-vous, clientes, équipe, services, stock, caisse, fidélité et réservation en ligne.",
-  alternates: {
-    canonical: "/solutions/institut-beaute/",
-  },
-};
+  canonical: "/solutions/institut-beaute/",
+});
 
 const CENTRAL = [
   "Rendez-vous",
@@ -115,6 +114,8 @@ export default function InstitutBeautePage() {
           </Reveal>
         </div>
       </section>
+
+      <ShowcaseStrip />
 
       <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
         <Reveal>

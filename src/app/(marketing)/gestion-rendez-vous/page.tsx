@@ -1,18 +1,17 @@
-import type { Metadata } from "next";
+import { marketingPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { ProductShot } from "@/components/www/ProductShot";
 import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Logiciel de rendez-vous pour institut de beauté",
+export const metadata = marketingPageMetadata({
+  title: "Logiciel de rendez-vous pour institut de beauté · Rappel Beauty",
   description:
     "Gérez les rendez-vous de votre institut de beauté avec un agenda clair, les disponibilités de votre équipe, la liste d'attente et un planning adapté à votre activité.",
-  alternates: {
-    canonical: "/gestion-rendez-vous/",
-  },
-};
+  canonical: "/gestion-rendez-vous/",
+});
 
 const SECTIONS = [
   {
@@ -98,6 +97,8 @@ export default function GestionRdvPage() {
           </Reveal>
         </div>
       </section>
+
+      <ProductShot src="/marketing/screen-agenda.png" alt="Agenda Rappel Beauty sur ordinateur" width={612} height={408} />
 
       <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
         {SECTIONS.map((section, index) => (

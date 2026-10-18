@@ -1,18 +1,17 @@
-import type { Metadata } from "next";
+import { marketingPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { ProductShot } from "@/components/www/ProductShot";
 import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Logiciel de fidélité pour institut de beauté",
+export const metadata = marketingPageMetadata({
+  title: "Logiciel de fidélité pour institut de beauté · Rappel Beauty",
   description:
     "Fidélisez les clientes de votre institut de beauté avec Rappel Beauty : programme de fidélité, suivi des avantages, historique et intégration avec les rendez-vous et les ventes.",
-  alternates: {
-    canonical: "/fidelite/",
-  },
-};
+  canonical: "/fidelite/",
+});
 
 const SECTIONS = [
   {
@@ -98,6 +97,8 @@ export default function FidelitePage() {
           </Reveal>
         </div>
       </section>
+
+      <ProductShot src="/marketing/screen-fidelite.png" alt="Carte de fidélité Rappel Beauty" width={1536} height={1024} />
 
       <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
         {SECTIONS.map((section, index) => (

@@ -1,18 +1,17 @@
-import type { Metadata } from "next";
+import { marketingPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { ProductShot } from "@/components/www/ProductShot";
 import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Logiciel de gestion des clientes pour institut de beauté",
+export const metadata = marketingPageMetadata({
+  title: "Logiciel de gestion des clientes pour institut de beauté · Rappel Beauty",
   description:
     "Centralisez les informations et l’historique de vos clientes dans Rappel Beauty : fiches clientes, rendez-vous, prestations, fidélité et suivi de la relation client.",
-  alternates: {
-    canonical: "/gestion-clientes/",
-  },
-};
+  canonical: "/gestion-clientes/",
+});
 
 const SECTIONS = [
   {
@@ -98,6 +97,8 @@ export default function GestionClientesPage() {
           </Reveal>
         </div>
       </section>
+
+      <ProductShot src="/marketing/screen-clientes.png" alt="Gestion des clientes Rappel Beauty sur ordinateur" width={1536} height={1024} />
 
       <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
         {SECTIONS.map((section, index) => (

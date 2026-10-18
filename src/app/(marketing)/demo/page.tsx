@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
 import { LeadForm } from "@/components/www/LeadForm";
 import { PageHero } from "@/components/www/PageHero";
+import { marketingPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Demander une démo",
+export const metadata = marketingPageMetadata({
+  title: "Demander une démo · Rappel Beauty",
   description: "Demandez une démonstration Rappel Beauté pour votre institut.",
-  alternates: { canonical: "/demo/" },
-};
+  canonical: "/demo/",
+});
 
 export default function DemoPage() {
   return (

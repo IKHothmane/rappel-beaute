@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Script from "next/script";
 import { ensurePreviewWidget } from "@/lib/db/assistant-session";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Aperçu du widget",
+  robots: { index: false, follow: false },
+};
 
 export default async function AssistantPreviewPage() {
   await ensurePreviewWidget();

@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
 import { PageHero } from "@/components/www/PageHero";
+import { marketingPageMetadata } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Mentions légales",
+export const metadata = marketingPageMetadata({
+  title: "Mentions légales · Rappel Beauty",
   description: "Mentions légales Rappel Beauté : éditeur, ICE, RC, hébergeur.",
-  alternates: { canonical: "/mentions-legales/" },
-};
+  canonical: "/mentions-legales/",
+});
 
 export default function MentionsLegalesPage() {
   return (

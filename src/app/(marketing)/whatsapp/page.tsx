@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
 import { PageHero } from "@/components/www/PageHero";
+import { marketingPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "WhatsApp pour instituts de beauté",
+export const metadata = marketingPageMetadata({
+  title: "WhatsApp pour instituts de beauté · Rappel Beauty",
   description:
     "Rappels et confirmations WhatsApp envoyés depuis le numéro de l'institut.",
-  alternates: { canonical: "/whatsapp/" },
-};
+  canonical: "/whatsapp/",
+});
 
 export default function WhatsappPage() {
   return (

@@ -1,16 +1,16 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactForm } from "@/components/www/ContactForm";
+import { marketingPageMetadata } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Contact",
+export const metadata = marketingPageMetadata({
+  title: "Contact Rappel Beauty · Logiciel pour institut de beauté",
   description:
     "Contactez Rappel Beauty pour une question sur le logiciel de gestion des instituts de beauté au Maroc.",
-  alternates: { canonical: "/contact/" },
-};
+  canonical: "/contact/",
+});
 
 
 export default function ContactPage() {

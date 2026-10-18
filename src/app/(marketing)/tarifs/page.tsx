@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { JsonLd } from "@/components/www/JsonLd";
 import { Reveal } from "@/components/www/Reveal";
 import { SeoCloser } from "@/components/www/SeoCloser";
 import { marketingPageMetadata } from "@/lib/seo";
@@ -7,7 +7,7 @@ import { formatPrice, PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = marketingPageMetadata({
+export const metadata = marketingPageMetadata({
   title: "Tarifs Rappel Beauty – Logiciel institut de beauté au Maroc",
   description: `Rappel Beauty à ${PUBLIC_OFFER.monthlyPrice} DH/mois ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH/an. ${PUBLIC_OFFER.trialDays} jours gratuits, sans carte bancaire et sans engagement. Gérez votre institut de beauté simplement.`,
   canonical: "/tarifs/",
@@ -95,6 +95,17 @@ export default function TarifsPage() {
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: FAQS.map((faq) => ({
+            "@type": "Question",
+            name: faq.question,
+            acceptedAnswer: { "@type": "Answer", text: faq.answer },
+          })),
+        }}
+      />
       <section className="border-b border-line bg-paper py-14 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <Reveal className="text-center">
@@ -176,6 +187,38 @@ export default function TarifsPage() {
               Voir toutes les fonctionnalités
             </Link>
           </p>
+          <ul className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-ink/70">
+            <li>
+              <Link href="/gestion-rendez-vous/" className="hover:text-primary">
+                Agenda
+              </Link>
+            </li>
+            <li>
+              <Link href="/gestion-clientes/" className="hover:text-primary">
+                Clientes
+              </Link>
+            </li>
+            <li>
+              <Link href="/gestion-stock/" className="hover:text-primary">
+                Stock
+              </Link>
+            </li>
+            <li>
+              <Link href="/caisse/" className="hover:text-primary">
+                Caisse
+              </Link>
+            </li>
+            <li>
+              <Link href="/fidelite/" className="hover:text-primary">
+                Fidélité
+              </Link>
+            </li>
+            <li>
+              <Link href="/reservation-en-ligne/" className="hover:text-primary">
+                Réservation en ligne
+              </Link>
+            </li>
+          </ul>
         </div>
       </section>
 

@@ -7,6 +7,7 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "Ressources",
   description: "FAQ, guides et pages métier Rappel Beauté pour instituts de beauté.",
+  robots: { index: false, follow: true },
 };
 
 const LINKS = [

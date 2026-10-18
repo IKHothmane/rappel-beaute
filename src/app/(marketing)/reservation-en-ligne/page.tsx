@@ -1,18 +1,17 @@
-import type { Metadata } from "next";
+import { marketingPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
+import { ProductShot } from "@/components/www/ProductShot";
 import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Réservation en ligne pour institut de beauté",
+export const metadata = marketingPageMetadata({
+  title: "Réservation en ligne pour institut de beauté · Rappel Beauty",
   description:
     "Permettez à vos clientes de réserver en ligne auprès de votre institut : page publique, services, tarifs, disponibilités, rendez-vous et vitrine produits avec retrait à l'institut.",
-  alternates: {
-    canonical: "/reservation-en-ligne/",
-  },
-};
+  canonical: "/reservation-en-ligne/",
+});
 
 const SECTIONS = [
   {
@@ -98,6 +97,8 @@ export default function ReservationEnLignePage() {
           </Reveal>
         </div>
       </section>
+
+      <ProductShot src="/marketing/reservation-en-ligne.png" alt="Réservation en ligne pour un institut de beauté" width={1536} height={1024} />
 
       <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
         {SECTIONS.map((section, index) => (

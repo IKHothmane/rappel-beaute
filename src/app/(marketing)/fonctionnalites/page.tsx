@@ -1,18 +1,18 @@
-import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { marketingPageMetadata } from "@/lib/seo";
 import { Reveal } from "@/components/www/Reveal";
+import { ShowcaseStrip } from "@/components/www/ProductShot";
 import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Fonctionnalités du logiciel pour institut de beauté",
+export const metadata = marketingPageMetadata({
+  title: "Fonctionnalités du logiciel pour institut de beauté · Rappel Beauty",
   description:
     "Découvrez les fonctionnalités de Rappel Beauty pour gérer votre institut de beauté au Maroc : rendez-vous, clientes, équipe, services, stock, caisse, fidélité et réservation en ligne.",
-  alternates: {
-    canonical: "/fonctionnalites/",
-  },
-};
+  canonical: "/fonctionnalites/",
+});
 
 const NAV = [
   { id: "rdv", label: "Rendez-vous" },
@@ -90,6 +90,8 @@ export default function FonctionnalitesPage() {
           </Reveal>
         </div>
       </section>
+
+      <ShowcaseStrip />
 
       <nav
         aria-label="Sommaire des fonctionnalités"
@@ -210,6 +212,24 @@ export default function FonctionnalitesPage() {
             <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
               Décrivez vos prestations, vos cabines et vos tarifs, puis reliez-les aux
               disponibilités réelles de l&apos;institut.
+            </p>
+            <div className="mt-6 overflow-hidden rounded-2xl border border-pink-100 bg-white">
+              <Image
+                src="/marketing/screen-services.png"
+                alt="Services et prestations Rappel Beauty sur ordinateur"
+                width={1536}
+                height={1024}
+                sizes="(max-width: 768px) 100vw, 720px"
+                className="h-auto w-full object-contain"
+              />
+            </div>
+            <p className="mt-4">
+              <Link
+                href="/tarifs/"
+                className="text-sm font-semibold text-primary hover:text-primary-dark"
+              >
+                Voir les tarifs
+              </Link>
             </p>
             <Items
               items={[

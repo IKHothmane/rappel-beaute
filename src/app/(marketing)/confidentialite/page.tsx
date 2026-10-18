@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
 import { PageHero } from "@/components/www/PageHero";
+import { marketingPageMetadata } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-export const metadata: Metadata = {
-  title: "Politique de confidentialité",
+export const metadata = marketingPageMetadata({
+  title: "Politique de confidentialité · Rappel Beauty",
   description:
     "Traitement des données personnelles Rappel Beauté — loi 09-08, CNDP. Aucune photo cliente en V1.",
-  alternates: { canonical: "/confidentialite/" },
-};
+  canonical: "/confidentialite/",
+});
 
 export default function ConfidentialitePage() {
   return (

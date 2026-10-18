@@ -1,14 +1,16 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Headset, Heart, MapPin, ShieldCheck, Sparkles, Star } from "lucide-react";
+import { HomeFeatureCards } from "@/components/www/HomeFeatureCards";
 import { HomeHero } from "@/components/www/HomeHero";
-import { Reveal, RevealItem, RevealStagger } from "@/components/www/Reveal";
+import { HomeProductSections } from "@/components/www/HomeProductSections";
+import { HomeReveal as Reveal } from "@/components/www/HomeReveal";
+import { PricingSection } from "@/components/www/PricingSection";
 import { marketingPageMetadata } from "@/lib/seo";
-import { formatPrice, PUBLIC_OFFER, SITE } from "@/lib/site";
+import { formatPrice, PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
-
-const YEAR_AT_MONTHLY = PUBLIC_OFFER.monthlyPrice * 12;
-const YEARLY_SAVINGS = PUBLIC_OFFER.annualSavings;
 
 export const metadata: Metadata = marketingPageMetadata({
   title: "Rappel Beauty – Logiciel de gestion pour institut de beauté au Maroc",
@@ -16,126 +18,70 @@ export const metadata: Metadata = marketingPageMetadata({
   canonical: "/",
 });
 
-const BENEFITS = [
+const EXTRA_FEATURES = [
   {
-    title: "Ne ratez plus aucun rendez-vous",
-    text: "Organisez le planning et les disponibilités de votre équipe.",
+    title: "Fidélité",
+    text: "Cartes de fidélité, passages et récompenses pour encourager les clientes à revenir.",
+    src: "/marketing/screen-fidelite.png",
+    alt: "Carte de fidélité Rappel Beauty",
+    href: "/fidelite/",
+    width: 1536,
+    height: 1024,
   },
   {
-    title: "Gérez vos clientes facilement",
-    text: "Historique, rendez-vous, fidélité et informations clientes au même endroit.",
+    title: "Services & prestations",
+    text: "Organisez le catalogue des soins, leurs durées et leurs tarifs en MAD.",
+    src: "/marketing/screen-services.png",
+    alt: "Services et prestations Rappel Beauty sur ordinateur",
+    href: "/fonctionnalites/#services",
+    width: 1536,
+    height: 1024,
   },
   {
-    title: "Gardez le contrôle de votre caisse",
-    text: "Suivez les encaissements, dépenses, paiements et factures.",
+    title: "Stock & produits",
+    text: "Suivez les quantités, les mouvements et les alertes de stock bas.",
+    src: "/marketing/screen-stock.png",
+    alt: "Stock et produits Rappel Beauty sur ordinateur",
+    href: "/gestion-stock/",
+    width: 1536,
+    height: 1024,
   },
-  {
-    title: "Ne perdez plus de temps avec le stock",
-    text: "Suivez vos produits, achats, fournisseurs et niveaux de stock.",
-  },
-  {
-    title: "Recevez des réservations en ligne",
-    text: "Votre institut possède sa propre page de réservation.",
-  },
-  {
-    title: "Pilotez votre activité",
-    text: "Analysez le chiffre d'affaires, les rendez-vous et l'activité de l'équipe.",
-  },
-];
-
-const AUDIENCE = [
-  "Instituts de beauté",
-  "Centres d'esthétique",
-  "Instituts de soins visage",
-  "Instituts de soins corps",
-  "Ongleries",
-  "Instituts avec plusieurs cabines",
-  "Instituts avec plusieurs employées",
-];
-
-const INCLUDED = [
-  "Rendez-vous",
-  "Clientes",
-  "Employées",
-  "Stock",
-  "Caisse",
-  "Réservation en ligne",
-  "Fidélité",
-  "Marketing",
-];
-
-const TRUST = [
-  { title: "Pensé pour le marché marocain", text: "Interface en français, prix en dirhams, usage institut." },
-  {
-    title: "Prix en MAD",
-    text: `${PUBLIC_OFFER.monthlyPrice} DH par mois, ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH par an.`,
-  },
-  { title: "Ordinateur et téléphone", text: "Application web, dans le navigateur, sans installation." },
-  { title: "Accès réservé", text: "Connexion HTTPS. Chaque institut ne voit que ses données." },
-  { title: "Réservation en ligne", text: "Une page publique reliée au même agenda." },
-  { title: "Assistance", text: `Écrivez à ${SITE.email}.` },
-];
-
-const STEPS = [
-  {
-    n: "1",
-    title: "Créez votre institut",
-    text: "Configurez vos services, employées et horaires.",
-  },
-  {
-    n: "2",
-    title: "Organisez votre activité",
-    text: "Gérez vos rendez-vous, clientes, caisse et stock.",
-  },
-  {
-    n: "3",
-    title: "Recevez des réservations",
-    text: "Publiez votre page et laissez vos clientes réserver en ligne.",
-  },
-];
+] as const;
 
 const FAQ = [
   {
     q: "Puis-je essayer Rappel Beauty gratuitement ?",
-    a: "Oui, pendant 7 jours, sans carte bancaire. L'essai ne devient pas un abonnement tant que vous ne choisissez pas la formule.",
+    a: `Oui, pendant ${PUBLIC_OFFER.trialDays} jours, sans carte bancaire. L'essai ne devient pas un abonnement tant que vous ne choisissez pas une formule.`,
   },
   {
-    q: "Puis-je arrêter mon abonnement ?",
-    a: "Oui. La formule est sans engagement : aucune durée minimale n'est imposée.",
+    q: "Y a-t-il un engagement ?",
+    a: "Non. Aucune durée minimale n'est imposée.",
   },
   {
-    q: "Est-ce que Rappel Beauty fonctionne sur téléphone ?",
-    a: "Oui, dans le navigateur du téléphone comme sur ordinateur. Ce n'est pas une application à télécharger sur un store.",
+    q: "Combien coûte Rappel Beauty ?",
+    a: `${PUBLIC_OFFER.monthlyPrice} DH par mois, ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH par an. La formule annuelle économise ${formatPrice(PUBLIC_OFFER.annualSavings)} DH par rapport à douze mensualités.`,
   },
   {
-    q: "Mes données sont-elles sécurisées ?",
-    a: "La connexion est chiffrée en HTTPS. Les comptes d'un institut n'accèdent pas aux données d'un autre. Les photos de clientes ne sont pas collectées.",
+    q: "Est-ce que le logiciel fonctionne sur téléphone ?",
+    a: "Oui, Rappel Beauty s'utilise dans le navigateur. Rien à installer depuis un store.",
   },
   {
-    q: "Où sont hébergées mes données ?",
-    a: "L'application en ligne est hébergée chez Railway et servie en HTTPS. L'éditeur est précisé dans les mentions légales.",
+    q: "WhatsApp envoie-t-il les messages automatiquement ?",
+    a: "Non. Rappel Beauty prépare les confirmations, rappels ou relances. Une personne de l'institut envoie elle-même le message depuis WhatsApp.",
   },
   {
-    q: "Puis-je importer mes clientes ?",
-    a: "Les fiches se créent dans Rappel Beauty. Un import de fichier n'est pas disponible pour le moment. Vous pouvez exporter la liste des clientes.",
+    q: "Un autre institut peut-il voir mes données ?",
+    a: "Non. La connexion est en HTTPS, et chaque institut ne voit que son espace.",
   },
   {
-    q: "Puis-je avoir plusieurs employées et plusieurs cabines ?",
-    a: "Oui. Un institut peut organiser plusieurs employées et plusieurs cabines dans le même planning.",
+    q: "La réservation en ligne est-elle incluse ?",
+    a: "Oui. L'institut publie sa page : services, durées et créneaux issus du planning. Le rendez-vous arrive dans le même agenda.",
   },
   {
-    q: "Puis-je gérer plusieurs instituts ?",
-    a: "Chaque formule correspond à un institut. Plusieurs employées et cabines se gèrent dans cet institut.",
+    q: "Puis-je changer de formule plus tard ?",
+    a: "Vous choisissez le mois ou l'année à l'inscription. La formule reste sans engagement.",
   },
-  {
-    q: "Est-ce que WhatsApp est automatisé ?",
-    a: "Non. Rappel Beauty prépare le message (confirmation, rappel, annulation, avis). Vous l'envoyez vous-même depuis WhatsApp. Il n'y a pas de bot.",
-  },
-  {
-    q: "Les clientes paient-elles Rappel Beauty ?",
-    a: "Non. Les clientes paient leurs prestations directement à l'institut.",
-  },
-];
+] as const;
 
 const faqJsonLd = {
   "@context": "https://schema.org",
@@ -147,282 +93,228 @@ const faqJsonLd = {
   })),
 };
 
+function TrialButton({ light = false }: { light?: boolean }) {
+  return (
+    <Link
+      href="/professionnel/"
+      className={
+        light
+          ? "rb-button inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink shadow-sm"
+          : "rb-button inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-pink-900/15 hover:bg-primary-dark"
+      }
+    >
+      Essayer gratuitement {PUBLIC_OFFER.trialDays} jours <span aria-hidden="true">→</span>
+    </Link>
+  );
+}
+
 export default function HomePage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+
       <HomeHero />
 
-      <section className="border-b border-line bg-white py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="mx-auto max-w-2xl text-center">
-            <h2 className="font-display text-2xl font-light text-ink sm:text-4xl">
-              Tout ce dont votre institut a besoin
-            </h2>
-          </Reveal>
-          <RevealStagger className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.05}>
-            {BENEFITS.map((item) => (
-              <RevealItem key={item.title}>
-                <article className="h-full rounded-2xl border border-line bg-paper p-5">
-                  <h3 className="text-base font-semibold text-ink">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-ink/65">{item.text}</p>
-                </article>
-              </RevealItem>
-            ))}
-          </RevealStagger>
-        </div>
+      <section className="border-b border-pink-100 bg-[#fff8fb]">
+        <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-x-4 gap-y-5 px-4 py-6 sm:grid-cols-3 sm:px-6 lg:grid-cols-6 lg:gap-x-3 lg:px-8">
+          {[
+            { icon: Sparkles, label: "Gestion centralisée" },
+            { icon: Star, label: "Pensé pour les instituts" },
+            { icon: MapPin, label: "Adapté au Maroc" },
+            { icon: Heart, label: "Fidélité cliente" },
+            { icon: Headset, label: "Support en français" },
+            { icon: ShieldCheck, label: "Espace sécurisé" },
+          ].map(({ icon: Icon, label }) => (
+            <li key={label} className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-[0_8px_20px_-12px_rgba(186,0,73,0.8)] ring-1 ring-pink-100">
+                <Icon size={16} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <span className="text-[13px] font-medium leading-4 text-ink/80">{label}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <section className="bg-white py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="max-w-2xl">
-            <h2 className="font-display text-2xl font-light text-ink sm:text-4xl">
-              Votre institut peut être réservé en ligne 24h/24
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/65 sm:text-base">
-              Vos clientes consultent vos services, voient les disponibilités et demandent leur rendez-vous
-              directement depuis votre page.
-            </p>
-            <Link
-              href="/reservation-en-ligne/"
-              className="mt-6 inline-flex items-center justify-center rounded-full border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
-            >
-              Découvrir la réservation en ligne
-            </Link>
-          </Reveal>
-        </div>
-      </section>
+      <HomeFeatureCards />
 
-      <section className="bg-paper py-14 sm:py-20">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <HomeProductSections />
+
+      <section id="croissance" className="scroll-mt-24 bg-[#fff8fb] py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal>
-            <h2 className="font-display text-2xl font-light text-ink sm:text-4xl">
-              Découvrez l&apos;interface Rappel Beauty
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/65">
-              Rendez-vous, clientes, équipe, stock, caisse et réservation en ligne se retrouvent dans la
-              même application.
-            </p>
-            <Link
-              href="/fonctionnalites/"
-              className="mt-6 inline-flex text-sm font-semibold text-primary hover:text-primary-dark"
-            >
-              Voir comment ça fonctionne
-            </Link>
-          </Reveal>
-          <figure>
-            <div
-              className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm"
-              aria-hidden
-            >
-              <div className="flex items-center justify-between border-b border-line px-4 py-3">
-                <p className="text-sm font-semibold text-ink">Rappel Beauty</p>
-                <p className="text-xs text-ink/45">Aujourd&apos;hui</p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                  Les outils du quotidien
+                </p>
+                <h2 className="mt-3 font-display text-3xl font-light text-ink sm:text-4xl">
+                  Les détails qui font gagner du temps.
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-ink/65 sm:text-base">
+                  Fidélité, prestations et stock, sans disperser les informations de l&apos;institut.
+                </p>
               </div>
-              <div className="px-4 pt-4">
-                <p className="text-sm text-ink/70">Bonjour</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3 p-4">
-                <div className="rounded-xl bg-primary-light/50 p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
-                    RDV aujourd&apos;hui
-                  </p>
-                  <p className="mt-2 font-display text-2xl text-ink">18</p>
-                </div>
-                <div className="rounded-xl bg-primary-light/50 p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
-                    CA aujourd&apos;hui
-                  </p>
-                  <p className="mt-2 font-display text-2xl text-ink">4 850 DH</p>
-                </div>
-                {[
-                  ["Agenda", "Planning du jour"],
-                  ["Clientes", "Fiches et historique"],
-                  ["Stock", "Produits et alertes"],
-                  ["Caisse", "Encaissements"],
-                ].map(([title, text]) => (
-                  <div key={title} className="rounded-xl border border-line p-3">
-                    <p className="text-sm font-semibold text-ink">{title}</p>
-                    <p className="mt-1 text-xs text-ink/55">{text}</p>
-                  </div>
-                ))}
-              </div>
+              <TrialButton />
             </div>
-            <figcaption className="mt-3 text-center text-xs text-ink/50">
-              Illustration de l&apos;interface Rappel Beauty.
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <section className="border-y border-line bg-white py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="text-center">
-            <h2 className="font-display text-2xl font-light text-ink sm:text-4xl">Commencez en 3 étapes</h2>
           </Reveal>
-          <ol className="mt-10 grid gap-6 md:grid-cols-3">
-            {STEPS.map((step) => (
-              <li key={step.n} className="rounded-2xl border border-line bg-paper p-6">
-                <p className="text-sm font-semibold text-primary">Étape {step.n}</p>
-                <h3 className="mt-2 text-lg font-semibold text-ink">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink/65">{step.text}</p>
-              </li>
-            ))}
-          </ol>
-          <p className="mt-8 text-center">
-            <Link
-              href="/professionnel/"
-              className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-dark"
-            >
-              Commencer gratuitement
-            </Link>
-          </p>
-        </div>
-      </section>
 
-      <section className="bg-paper py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-2xl font-light text-ink sm:text-4xl">
-            Réservation en ligne pour vos clientes
-          </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/65">
-            La page publique affiche vos services et les créneaux du planning. La cliente réserve auprès
-            de votre institut, et le rendez-vous arrive dans le même agenda. Elle paie à l&apos;institut.
-          </p>
-          <p className="mt-4">
-            <Link href="/reservation-en-ligne/" className="text-sm font-semibold text-primary hover:text-primary-dark">
-              Découvrir la réservation en ligne
-            </Link>
-          </p>
-        </div>
-      </section>
-
-      <section className="border-y border-line bg-white py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-2xl font-light text-ink sm:text-4xl">
-            Conçu pour les instituts de beauté marocains
-          </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/65">
-            Rappel Beauty s&apos;adresse aux instituts qui travaillent au Maroc, avec une équipe, des cabines
-            et une caisse en dirhams.
-          </p>
-          <ul className="mt-8 flex flex-wrap gap-2">
-            {AUDIENCE.map((item) => (
-              <li key={item} className="rounded-full border border-line bg-paper px-4 py-2 text-sm text-ink">
-                {item}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {TRUST.map((item) => (
-              <article key={item.title} className="rounded-2xl border border-line p-5">
-                <h3 className="text-base font-semibold text-ink">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink/65">{item.text}</p>
-              </article>
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {EXTRA_FEATURES.map((item, index) => (
+              <Reveal key={item.title} delay={index * 100}>
+                <Link
+                  href={item.href}
+                  className="rb-feature-card group block h-full overflow-hidden rounded-2xl border border-line bg-white"
+                >
+                  {"src" in item ? (
+                    <div className="overflow-hidden bg-[#fff8fb]">
+                      <Image
+                        src={item.src}
+                        alt={item.alt}
+                        width={item.width}
+                        height={item.height}
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="h-auto w-full object-contain transition duration-700 group-hover:scale-[1.02]"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="p-5">
+                    <h3 className="font-display text-2xl text-ink">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-ink/65">{item.text}</p>
+                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                      En savoir plus <span aria-hidden="true">→</span>
+                    </span>
+                  </div>
+                </Link>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-paper py-14 sm:py-20">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
-            Une formule
-          </p>
-          <p className="mt-3 font-display text-4xl text-ink">{PUBLIC_OFFER.monthlyPrice} DH / mois</p>
-          <p className="mt-2 text-sm font-semibold text-ink/70">
-            ou {formatPrice(PUBLIC_OFFER.annualPrice)} DH / an
-          </p>
-          <p className="mt-4 text-sm font-semibold text-primary">
-            Économisez {YEARLY_SAVINGS.toLocaleString("fr-FR")} DH avec la formule annuelle
-          </p>
-          <p className="mt-1 text-xs text-ink/55">
-            {PUBLIC_OFFER.monthlyPrice} DH × 12 = {formatPrice(YEAR_AT_MONTHLY)} DH, contre{" "}
-            {formatPrice(PUBLIC_OFFER.annualPrice)} DH par an.
-          </p>
-          <ul className="mx-auto mt-8 grid max-w-lg gap-2 text-left text-sm text-ink sm:grid-cols-2">
-            {INCLUDED.map((item) => (
-              <li key={item} className="rounded-lg border border-line bg-white px-3 py-2">
-                {item}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-6 text-sm text-ink/60">7 jours gratuits · Sans carte bancaire · Sans engagement</p>
-          <Link
-            href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-dark"
-          >
-            Essai gratuit 7 jours
-          </Link>
-        </div>
-      </section>
-
-      <section className="border-t border-line bg-primary-light/20 py-14 sm:py-20">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h2 className="text-center font-display text-2xl font-light text-ink sm:text-3xl">
-            Questions fréquentes
-          </h2>
-          <div className="mt-8 space-y-3">
-            {FAQ.map((item) => (
-              <details key={item.q} className="rounded-xl border border-line bg-paper p-4 sm:p-5">
-                <summary className="cursor-pointer text-sm font-medium text-ink sm:text-base">{item.q}</summary>
-                <p className="mt-3 text-sm leading-relaxed text-ink/65">{item.a}</p>
-              </details>
-            ))}
-          </div>
-          <p className="mt-6 text-center text-sm text-ink/55">
-            WhatsApp est détaillé sur la{" "}
-            <Link href="/whatsapp/" className="font-semibold text-primary hover:text-primary-dark">
-              page WhatsApp
-            </Link>
-            . Plus de réponses sur la{" "}
-            <Link href="/faq/" className="font-semibold text-primary hover:text-primary-dark">
-              page FAQ
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
-
-      <section className="border-t border-line bg-white py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-2xl font-light text-ink sm:text-4xl">Écrire à Rappel Beauty</h2>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/65">
-            Une démo, une question, ou les informations légales du logiciel.
-          </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { href: "/demo/", title: "Demander une démo", text: "20 minutes pour voir l'institut à l'écran." },
-              { href: "/contact/", title: "Contact", text: "Une question sur le logiciel, l'essai ou la formule." },
-              { href: "/mentions-legales/", title: "Mentions légales", text: "Éditeur, hébergeur et informations obligatoires." },
-              { href: "/confidentialite/", title: "Confidentialité", text: "Données collectées, cookies et droits loi 09-08." },
-            ].map((item) => (
+      <section className="relative isolate overflow-hidden border-y border-line bg-white py-14 sm:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
+          <Reveal>
+            <div className="min-w-0 max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                Réservation en ligne
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-light leading-tight text-ink sm:text-4xl">
+                Attirez plus de clientes grâce à la{" "}
+                <span className="text-primary">réservation en ligne.</span>
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-ink/65 sm:text-base">
+                Offrez à vos clientes la possibilité de découvrir vos prestations et de réserver
+                leur rendez-vous facilement, depuis leur téléphone, à tout moment.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-ink/75">
+                {[
+                  "Une page de réservation personnalisée à l'image de votre institut",
+                  "Vos prestations, tarifs et durées clairement présentés",
+                  "Les disponibilités accessibles en ligne",
+                  "Un contact WhatsApp pour faciliter les échanges",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <span className="mt-0.5 text-primary" aria-hidden="true">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
               <Link
-                key={item.href}
-                href={item.href}
-                className="block h-full rounded-2xl border border-line bg-paper p-5 transition hover:border-primary/40"
+                href="/book/institut-royal/booking/"
+                className="rb-button mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-dark"
               >
-                <h3 className="text-base font-semibold text-ink">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink/65">{item.text}</p>
+                Voir un exemple de réservation
+                <span aria-hidden="true">→</span>
               </Link>
-            ))}
-          </div>
+              <p className="mt-4 text-xs leading-5 text-ink/50">
+                Vos clientes réservent en ligne et règlent directement auprès de votre institut.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <figure className="rb-visual relative min-w-0">
+              <div className="pointer-events-none absolute inset-8 rounded-full bg-pink-200/40 blur-3xl" />
+              <Image
+                src="/marketing/reservation-en-ligne.png"
+                alt="Réservation en ligne pour un institut de beauté"
+                width={1536}
+                height={1024}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="relative h-auto w-full object-contain"
+              />
+            </figure>
+          </Reveal>
         </div>
       </section>
 
-      <section className="bg-institut py-14 text-center text-white sm:py-20">
-        <div className="mx-auto max-w-2xl px-4">
-          <h2 className="font-display text-2xl font-light sm:text-4xl">Prêt à gérer votre institut ?</h2>
-          <p className="mt-4 text-sm text-white/75 sm:text-base">
-            7 jours pour essayer, sans carte bancaire et sans engagement.
-          </p>
-          <Link
-            href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
-          >
-            Commencer gratuitement
-          </Link>
+      <PricingSection />
+
+      <section className="bg-[#fff8fb] py-14 sm:py-20">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
+          <Reveal>
+            <div className="text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                Besoin de précisions ?
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-light text-ink sm:text-4xl">
+                Questions fréquentes
+              </h2>
+            </div>
+          </Reveal>
+          <div className="mt-8 grid gap-3 md:grid-cols-2">
+            {FAQ.map((item, index) => (
+              <Reveal key={item.q} delay={(index % 2) * 70}>
+                <details className="rb-faq group h-full rounded-xl border border-line bg-white px-4 py-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink">
+                    {item.q}
+                    <span className="rb-faq-icon flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fce7ef] text-primary">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-sm leading-6 text-ink/65">{item.a}</p>
+                </details>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal>
+            <p className="mt-6 text-center text-sm text-ink/60">
+              <Link href="/faq/" className="font-semibold text-primary hover:text-primary-dark">Toutes les questions</Link>
+              {" · "}
+              <Link href="/demo/" className="font-semibold text-primary hover:text-primary-dark">Démo</Link>
+              {" · "}
+              <Link href="/contact/" className="font-semibold text-primary hover:text-primary-dark">Contact</Link>
+              {" · "}
+              <Link href="/mentions-legales/" className="font-semibold text-primary hover:text-primary-dark">Mentions légales</Link>
+              {" · "}
+              <Link href="/confidentialite/" className="font-semibold text-primary hover:text-primary-dark">Confidentialité</Link>
+            </p>
+          </Reveal>
         </div>
+      </section>
+
+      <section className="rb-final-cta relative isolate overflow-hidden bg-institut py-14 text-center text-white sm:py-20">
+        <div className="pointer-events-none absolute -left-20 -top-28 -z-10 h-72 w-72 rounded-full border border-white/15" />
+        <div className="pointer-events-none absolute -bottom-44 -right-20 -z-10 h-96 w-96 rounded-full border border-white/15" />
+        <Reveal>
+          <div className="mx-auto max-w-3xl px-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/65">
+              Rappel Beauty
+            </p>
+            <h2 className="mt-3 font-display text-3xl font-light sm:text-5xl">
+              Prête à simplifier la gestion de votre institut ?
+            </h2>
+            <p className="mt-4 text-sm text-white/75 sm:text-base">
+              {PUBLIC_OFFER.trialDays} jours gratuits, sans carte bancaire et sans engagement.
+            </p>
+            <div className="mt-7">
+              <TrialButton light />
+            </div>
+          </div>
+        </Reveal>
       </section>
     </>
   );

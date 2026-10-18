@@ -1,0 +1,30 @@
+RAPPEL BEAUTY — CAPTURES RÉELLES POUR LE SITE
+================================================
+
+Ces fichiers proviennent des captures originales de l'application, pas des recadrages
+de la maquette de la page d'accueil. Ils sont exportés en WebP haute qualité (92)
+à leur résolution d'origine pour préserver la lisibilité.
+
+À copier dans : public/marketing/
+
+Fichiers :
+- dashboard.webp : tableau de bord / Hero
+- agenda.webp : agenda
+- clientes.webp : gestion des clientes
+- caisse.webp : caisse et mouvements
+- fidelite.webp : carte de fidélité
+- services.webp : services et prestations
+- stock.webp : stock et produits
+
+Exemple Next.js :
+<Image
+  src="/marketing/agenda.webp"
+  alt="Agenda de l'institut Rappel Beauty"
+  width={1307}
+  height={2048}
+  className="h-auto w-full object-contain"
+  sizes="(max-width: 768px) 100vw, 50vw"
+/>
+
+Important : utiliser object-contain pour ne pas couper les écrans.
+Ne pas imposer une hauteur fixe avec object-cover, car cela recadre l'interface.

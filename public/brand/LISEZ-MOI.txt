@@ -1,0 +1,2 @@
+Images extraites de la capture de référence fournie par l'utilisateur.
+Attention : ce sont des recadrages de la maquette de page entière (684 px de large), pas les fichiers originaux haute résolution. Pour une qualité optimale, remplacer les captures d'interface par les screenshots originaux de l'application.

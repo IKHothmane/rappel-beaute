@@ -96,39 +96,52 @@ export default function TarifsPage() {
   return (
     <>
       <section className="border-b border-line bg-paper py-14 sm:py-20">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <Reveal>
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <Reveal className="text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
               Une formule pour les instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
               Tarifs Rappel Beauty
             </h1>
-            <p className="mt-5 font-display text-4xl text-ink">{price} DH / mois</p>
-            <p className="mt-2 text-lg font-semibold text-ink sm:text-xl">ou {yearly} DH / an</p>
-            <p className="mt-2 text-sm text-ink/70 sm:text-base">
-              Économisez {savings} DH par rapport au paiement mensuel
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-ink/70 sm:text-base">
+              {PUBLIC_OFFER.trialDays} jours gratuits, sans carte bancaire et sans engagement. Les prix
+              ci-dessous sont ceux de l&apos;offre publique.
             </p>
-            <ul className="mt-6 flex flex-col items-center gap-2 text-sm text-ink/70 sm:flex-row sm:justify-center sm:gap-6">
-              <li>7 jours gratuits</li>
-              <li>Sans engagement</li>
-              <li>Sans carte bancaire</li>
-            </ul>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          </Reveal>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            <article className="flex h-full flex-col rounded-2xl border border-line bg-white p-6 text-left sm:p-8">
+              <h2 className="font-display text-2xl font-light text-ink">Mensuel</h2>
+              <p className="mt-4 font-display text-4xl text-ink">{price} DH</p>
+              <p className="mt-1 text-sm text-ink/60">par mois</p>
+              <p className="mt-4 flex-1 text-sm leading-relaxed text-ink/70">
+                La même formule, réglée chaque mois. Douze mois reviennent à {formatPrice(price * 12)} DH.
+              </p>
               <Link
                 href="/professionnel/"
-                className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+                className="mt-6 inline-flex items-center justify-center rounded-full border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
               >
-                Essayer gratuitement 7 jours
+                S&apos;inscrire
               </Link>
+            </article>
+            <article className="flex h-full flex-col rounded-2xl border border-primary/30 bg-white p-6 text-left shadow-sm sm:p-8">
+              <h2 className="font-display text-2xl font-light text-ink">Annuel</h2>
+              <p className="mt-4 font-display text-4xl text-ink">{yearly} DH</p>
+              <p className="mt-1 text-sm text-ink/60">par an</p>
+              <p className="mt-4 text-sm font-semibold text-primary">
+                {savings} DH d&apos;économie par rapport à 12 mensualités
+              </p>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-ink/70">
+                {price} DH × 12 = {formatPrice(price * 12)} DH, contre {yearly} DH pour l&apos;année.
+              </p>
               <Link
-                href="/fonctionnalites/"
-                className="inline-flex items-center justify-center rounded-full border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
+                href="/professionnel/"
+                className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
               >
-                Voir toutes les fonctionnalités
+                S&apos;inscrire
               </Link>
-            </div>
-          </Reveal>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -136,7 +149,7 @@ export default function TarifsPage() {
         <div className="mx-auto max-w-5xl">
           <Reveal>
             <h2 className="text-center font-display text-2xl font-light text-ink sm:text-3xl">
-              Tout est inclus
+              Ce qui est inclus
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-ink/70 sm:text-base">
               Une seule formule donne accès aux fonctions de gestion de l&apos;institut. Pas de

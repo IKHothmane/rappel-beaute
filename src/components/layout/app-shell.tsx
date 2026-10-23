@@ -38,6 +38,8 @@ export function AppShell({ children }: AppShellProps) {
     path.startsWith("/activate") ||
     path.startsWith("/book");
 
+  const fullBleed = path.startsWith("/salon-3d");
+
   useEffect(() => {
     if (loading || bare) return;
     if (user && isAppSession(user) && user.mustChangePassword) {
@@ -90,8 +92,15 @@ export function AppShell({ children }: AppShellProps) {
       >
         <Header onMenuOpen={() => setSidebarOpen(true)} />
 
-        <main className="min-h-[calc(100vh-64px)] px-4 pb-28 pt-5 sm:min-h-[calc(100vh-72px)] sm:px-6 lg:px-8 lg:pb-8">
-          <div className="mx-auto max-w-[1600px]">
+        <main
+          className={cn(
+            "min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-72px)]",
+            fullBleed
+              ? "px-0 pb-20 pt-0 lg:pb-0"
+              : "px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-8",
+          )}
+        >
+          <div className={cn(fullBleed ? "w-full" : "mx-auto max-w-[1600px]")}>
             <StaffColorProvider>
               <PlanFeatureRouteGuard>{children}</PlanFeatureRouteGuard>
             </StaffColorProvider>

@@ -158,6 +158,7 @@ export const ROLE_NAV: Record<AppRole, string[]> = {
   STAFF: [
     "dashboard",
     "agenda",
+    "salon-3d",
     "customers",
     "staff",
     "resources",
@@ -218,6 +219,7 @@ export const ROLE_NAV: Record<AppRole, string[]> = {
 const NAV_FEATURE: Record<string, AppFeature | null> = {
   agenda: "agenda",
   planning: "agenda",
+  "salon-3d": "resources",
   customers: "customers",
   services: "services",
   staff: "staff",

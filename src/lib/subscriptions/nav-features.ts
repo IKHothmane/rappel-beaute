@@ -5,6 +5,7 @@ export const NAV_PLAN_FEATURE: Record<string, PlanFeatureKey | null> = {
   dashboard: null,
   agenda: "agenda",
   planning: "agenda",
+  "salon-3d": "staff",
   customers: "customers",
   services: "services",
   staff: "staff",
@@ -47,6 +48,7 @@ export function pathnameToNavKey(pathname: string): string | null {
   const map: Record<string, string> = {
     agenda: "agenda",
     planning: "agenda",
+    "salon-3d": "salon-3d",
     customers: "customers",
     services: "services",
     staff: "staff",

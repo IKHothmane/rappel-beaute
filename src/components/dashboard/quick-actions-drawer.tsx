@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  Box,
   CalendarPlus,
   CircleUserRound,
   Megaphone,
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 const ACTIONS = [
   { href: "/agenda/", label: "+ Rendez-vous", icon: CalendarPlus },
+  { href: "/salon-3d/", label: "Voir le plan 3D", icon: Box },
   { href: "/customers/", label: "+ Nouvelle cliente", icon: CircleUserRound },
   { href: "/cash-register/", label: "+ Encaissement", icon: Wallet },
   { href: "/expenses/", label: "+ Dépense caisse", icon: Receipt },

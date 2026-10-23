@@ -22,6 +22,47 @@ function newId(prefix: string) {
 
 const STAFF_NAME_SQL = `TRIM(CONCAT(st."firstName", ' ', NULLIF(st."lastName", '')))`;
 
+/**
+ * Aligne Staff.status sur les congés APPROUVÉS en cours :
+ * - congé terminé / annulé → ACTIVE
+ * - congé en cours → ON_LEAVE
+ */
+export async function syncStaffLeaveStatuses(organizationId: string): Promise<void> {
+  await pool.query(
+    `UPDATE "Staff" st
+     SET status = 'ACTIVE', "updatedAt" = NOW()
+     WHERE st."organizationId" = $1
+       AND st.status = 'ON_LEAVE'
+       AND st."deletedAt" IS NULL
+       AND NOT EXISTS (
+         SELECT 1
+         FROM "StaffLeave" l
+         WHERE l."staffId" = st.id
+           AND l.status = 'APPROVED'
+           AND l."startAt" <= NOW()
+           AND l."endAt" >= NOW()
+       )`,
+    [organizationId],
+  );
+
+  await pool.query(
+    `UPDATE "Staff" st
+     SET status = 'ON_LEAVE', "updatedAt" = NOW()
+     WHERE st."organizationId" = $1
+       AND st.status = 'ACTIVE'
+       AND st."deletedAt" IS NULL
+       AND EXISTS (
+         SELECT 1
+         FROM "StaffLeave" l
+         WHERE l."staffId" = st.id
+           AND l.status = 'APPROVED'
+           AND l."startAt" <= NOW()
+           AND l."endAt" >= NOW()
+       )`,
+    [organizationId],
+  );
+}
+
 type StaffStatsRow = {
   id: string;
   firstName: string;
@@ -95,6 +136,8 @@ export async function listStaff(
   },
 ): Promise<{ items: StaffListItem[] | StaffAgendaContext[]; total: number }> {
   const { page, limit, search, status, serviceId, agenda } = opts;
+  // Remet ACTIVE les employées dont le congé est terminé (évite les faux « En congé »)
+  await syncStaffLeaveStatuses(organizationId);
   const conditions = [`st."organizationId" = $1`, `st."deletedAt" IS NULL`];
   const params: unknown[] = [organizationId];
   let pi = 2;
@@ -645,6 +688,8 @@ export async function createStaffLeave(
     ],
   );
 
+  await syncStaffLeaveStatuses(organizationId);
+
   const leaves = await loadLeaves(staffId, organizationId);
   const created = leaves.find((l) => l.id === id);
   if (!created) throw new Error("Leave introuvable.");
@@ -704,6 +749,8 @@ export async function updateStaffLeave(
     params,
   );
   if (!rowCount) throw new Error("NOT_FOUND");
+
+  await syncStaffLeaveStatuses(organizationId);
 
   const leaves = await loadLeaves(staffId, organizationId);
   const updated = leaves.find((l) => l.id === leaveId);

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bell,
+  Box,
   Boxes,
   CalendarDays,
   ChartColumn,
@@ -49,6 +50,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     items: [
       { label: "Tableau de bord", href: "/dashboard/", icon: LayoutDashboard, key: "dashboard" },
       { label: "Agenda", href: "/agenda/", icon: CalendarDays, key: "agenda" },
+      { label: "Plan 3D", href: "/salon-3d/", icon: Box, key: "salon-3d" },
       { label: "Planning Équipe", href: "/planning/", icon: ClipboardList, key: "planning" },
       { label: "Assistant IA", href: "/ai/", icon: Sparkles, key: "ai" },
       { label: "Clientes", href: "/customers/", icon: Users, key: "customers" },

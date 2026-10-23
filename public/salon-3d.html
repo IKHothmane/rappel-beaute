@@ -1,0 +1,2719 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan 3D · Rappel Beauty</title>
+
+  <!-- Tailwind CSS pour les composants UI du CRM -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Three.js et OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #ffffff;
+      color: #241A22;
+      overflow: hidden;
+    }
+
+    /* Scrollbars personnalisées */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F3F4F6;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D1D5DB;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #E31C5F;
+    }
+
+    /* Canvas 3D */
+    #three-canvas {
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    /* Badge glowing animation */
+    .glow-badge-green {
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+    }
+    .glow-badge-red {
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    }
+    .glow-badge-amber {
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Modal blur effect */
+    .backdrop-blur-custom {
+      backdrop-filter: blur(8px);
+    }
+  </style>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf4ff',
+              100: '#fae8ff',
+              500: '#C49292',
+              600: '#B07A7A',
+              700: '#9B1040',
+              gold: '#C9A84C',
+              goldHover: '#B8923F',
+              darkBg: '#F8F3F5',
+              cardBg: '#FFFFFF',
+              borderBg: '#E8E0E4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row overflow-hidden select-none">
+
+  <!-- ========================================== -->
+  <!-- PANNEAU LATÉRAL CRM (GAUCHE)              -->
+  <!-- ========================================== -->
+  <aside class="w-full md:w-[450px] lg:w-[480px] h-2/5 md:h-full bg-brand-cardBg border-r border-brand-borderBg flex flex-col z-20 shadow-sm relative">
+    
+    <!-- En-tête CRM -->
+    <div class="p-4 border-b border-brand-borderBg flex items-center justify-between bg-brand-darkBg/50">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-brand-gold flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-brand-500/20">
+          ✨
+        </div>
+        <div>
+          <h1 id="org-title" class="font-bold text-lg text-gray-900 tracking-wide">Rappel Beauty 3D</h1>
+          <p id="org-subtitle" class="text-xs text-gray-400">Connexion aux données de l’institut…</p>
+        </div>
+      </div>
+      <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 3D En ligne
+      </span>
+    </div>
+
+    <!-- Navigation onglets -->
+    <div class="flex border-b border-brand-borderBg bg-brand-darkBg/30 p-1 gap-1">
+      <button onclick="switchTab('chairs')" id="tab-chairs" class="flex-1 py-2 px-3 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 bg-brand-500 text-white shadow-md">
+        <i data-lucide="armchair" class="w-4 h-4"></i> Cabines
+      </button>
+      <button onclick="switchTab('staff')" id="tab-staff" class="flex-1 py-2 px-3 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-[#F5EAF0] transition-all flex items-center justify-center gap-1.5">
+        <i data-lucide="users" class="w-4 h-4"></i> Équipe
+      </button>
+      <button onclick="switchTab('waiting')" id="tab-waiting" class="flex-1 py-2 px-3 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-[#F5EAF0] transition-all flex items-center justify-center gap-1.5">
+        <i data-lucide="clock" class="w-4 h-4"></i> Attente
+      </button>
+      <button onclick="switchTab('stock')" id="tab-stock" class="flex-1 py-2 px-3 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-[#F5EAF0] transition-all flex items-center justify-center gap-1.5">
+        <i data-lucide="package" class="w-4 h-4"></i> Stock
+      </button>
+      <button onclick="switchTab('stats')" id="tab-stats" class="flex-1 py-2 px-3 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-[#F5EAF0] transition-all flex items-center justify-center gap-1.5">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Bilan
+      </button>
+    </div>
+
+    <!-- Contenu dynamique des onglets -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+      
+      <!-- ONGLET 1: CHAISES DE SOINS -->
+      <div id="content-chairs" class="space-y-3">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Cabines / Postes</h3>
+          <span id="chairs-count-badge" class="px-2 py-0.5 text-xs bg-brand-500/20 text-brand-500 rounded-full font-bold">0</span>
+        </div>
+        <div class="flex justify-end mb-2">
+          <button onclick="openBookingModal()" class="px-3 py-1.5 text-xs bg-brand-gold hover:bg-brand-goldHover text-black font-semibold rounded-lg transition-all flex items-center gap-1 shadow-md">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nouveau RDV
+          </button>
+        </div>
+
+        <!-- Liste des chaises -->
+        <div id="chairs-list" class="space-y-3">
+          <!-- Injecté par JS -->
+        </div>
+      </div>
+
+      <!-- ONGLET 2: ÉQUIPE / EMPLOYÉES -->
+      <div id="content-staff" class="space-y-3 hidden">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Équipe en direct</h3>
+          <span id="staff-available-badge" class="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-600 rounded-full font-bold">0 dispo</span>
+        </div>
+        <div id="staff-list" class="space-y-2.5">
+          <!-- Injecté par JS -->
+        </div>
+      </div>
+
+      <!-- ONGLET 3: SALLE D'ATTENTE -->
+      <div id="content-waiting" class="space-y-3 hidden">
+        <div class="flex justify-between items-center mb-2 gap-2">
+          <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Salle d'attente</h3>
+          <button onclick="addWaitingRoom()" class="px-2.5 py-1 text-xs bg-brand-gold hover:bg-brand-goldHover text-black font-semibold rounded-lg transition-all flex items-center gap-1 shrink-0">
+            <i data-lucide="plus" class="w-3 h-3"></i> Ajouter
+          </button>
+        </div>
+        <div id="waiting-rooms-list" class="space-y-2 mb-3"></div>
+        <div class="flex justify-between items-center mb-2">
+          <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Clientes présentes</h4>
+          <span id="waiting-count-badge" class="px-2 py-0.5 text-xs bg-brand-500/20 text-brand-500 rounded-full font-bold">0 Présente</span>
+        </div>
+        <div id="waiting-list" class="space-y-2.5">
+          <!-- Injecté par JS -->
+        </div>
+      </div>
+
+      <!-- ONGLET 4: STOCK & PRODUITS -->
+      <div id="content-stock" class="space-y-3 hidden">
+        <div class="flex justify-between items-center mb-2 gap-2">
+          <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Produits en stock</h3>
+          <span id="stock-count-badge" class="px-2 py-0.5 text-xs bg-emerald-500/15 text-emerald-600 rounded-full font-bold">0</span>
+        </div>
+        <div class="flex justify-end mb-2">
+          <button onclick="restockAll()" class="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all flex items-center gap-1">
+            <i data-lucide="external-link" class="w-3 h-3"></i> Ouvrir Stock
+          </button>
+        </div>
+        
+        <div class="p-3 bg-brand-darkBg/60 rounded-xl border border-brand-borderBg">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-gray-400">Niveau de Stock Global</span>
+            <span id="stock-global-percent" class="text-xs font-bold text-emerald-400">—</span>
+          </div>
+          <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+            <div id="stock-global-bar" class="bg-gradient-to-r from-brand-500 to-emerald-400 h-full w-0 transition-all duration-500"></div>
+          </div>
+          <p id="stock-alert-hint" class="text-[10px] text-gray-400 mt-1.5"></p>
+        </div>
+
+        <div id="stock-list" class="space-y-2.5">
+          <!-- Injecté par JS -->
+        </div>
+      </div>
+
+      <!-- ONGLET 5: BILING & STATISTIQUES -->
+      <div id="content-stats" class="space-y-3 hidden">
+        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-2">Performances du Jour</h3>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 bg-brand-darkBg/60 rounded-xl border border-brand-borderBg">
+            <p class="text-xs text-gray-400">Chiffre d'Affaires</p>
+            <p id="stat-revenue" class="text-xl font-bold text-brand-gold mt-1">—</p>
+            <span class="text-[10px] text-gray-400">Aujourd’hui</span>
+          </div>
+          <div class="p-3 bg-brand-darkBg/60 rounded-xl border border-brand-borderBg">
+            <p class="text-xs text-gray-400">Taux d'Occupation</p>
+            <p id="stat-occupation" class="text-xl font-bold text-brand-500 mt-1">—</p>
+            <span id="stat-occupation-hint" class="text-[10px] text-gray-400">Chaises actives</span>
+          </div>
+          <div class="p-3 bg-brand-darkBg/60 rounded-xl border border-brand-borderBg">
+            <p class="text-xs text-gray-400">Soins Réalisés</p>
+            <p id="stat-care" class="text-xl font-bold text-gray-900 mt-1">—</p>
+            <span class="text-[10px] text-gray-400">Terminés aujourd’hui</span>
+          </div>
+          <div class="p-3 bg-brand-darkBg/60 rounded-xl border border-brand-borderBg">
+            <p class="text-xs text-gray-400">Stock OK</p>
+            <p id="stat-stock" class="text-xl font-bold text-emerald-400 mt-1">—</p>
+            <span class="text-[10px] text-gray-400">Produits sans alerte</span>
+          </div>
+        </div>
+
+        <div class="p-3 bg-brand-darkBg/60 rounded-xl border border-brand-borderBg mt-3">
+          <p class="text-xs font-semibold text-gray-700 mb-2">Source des données</p>
+          <p id="stat-source" class="text-xs text-gray-500">Agenda, ressources, équipe et stock de votre institut.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Barre inférieure d'informations sélectionnées -->
+    <div id="selection-bar" class="p-3 bg-brand-darkBg border-t border-brand-borderBg text-xs flex justify-between items-center text-gray-400">
+      <span class="flex items-center gap-1.5">
+        <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5 text-brand-gold"></i>
+        <span id="selected-info">Cliquez pour afficher le titre</span>
+      </span>
+      <button onclick="resetCamera()" class="hover:text-gray-900 transition-colors text-[11px] underline">Réinitialiser la vue</button>
+    </div>
+  </aside>
+
+  <!-- ========================================== -->
+  <!-- VUE 3D THREE.JS (DROITE)                  -->
+  <!-- ========================================== -->
+  <main class="flex-1 h-3/5 md:h-full relative bg-white">
+    
+    <!-- Superposition d'instructions & Contrôles sur la vue 3D -->
+    <div class="absolute top-3 right-3 z-10 flex flex-wrap justify-end gap-1.5 max-w-[min(100%,28rem)]">
+      <button onclick="setCameraView('top')" class="px-2.5 py-1.5 text-[11px] bg-white/90 backdrop-blur-custom text-gray-700 border border-brand-borderBg hover:border-brand-gold rounded-lg transition-all shadow-md flex items-center gap-1">
+        <i data-lucide="compass" class="w-3.5 h-3.5 text-brand-gold"></i> Haut
+      </button>
+      <button onclick="setCameraView('reception')" class="px-2.5 py-1.5 text-[11px] bg-white/90 backdrop-blur-custom text-gray-700 border border-brand-borderBg hover:border-brand-gold rounded-lg transition-all shadow-md flex items-center gap-1">
+        <i data-lucide="store" class="w-3.5 h-3.5 text-brand-500"></i> Accueil
+      </button>
+      <button onclick="setCameraView('chairs')" class="px-2.5 py-1.5 text-[11px] bg-white/90 backdrop-blur-custom text-gray-700 border border-brand-borderBg hover:border-brand-gold rounded-lg transition-all shadow-md flex items-center gap-1">
+        <i data-lucide="armchair" class="w-3.5 h-3.5 text-emerald-400"></i> Cabines
+      </button>
+      <button onclick="setCameraView('waiting')" class="px-2.5 py-1.5 text-[11px] bg-white/90 backdrop-blur-custom text-gray-700 border border-brand-borderBg hover:border-brand-gold rounded-lg transition-all shadow-md flex items-center gap-1">
+        <i data-lucide="sofa" class="w-3.5 h-3.5 text-brand-500"></i> Attente
+      </button>
+      <button onclick="setCameraView('stock')" class="px-2.5 py-1.5 text-[11px] bg-white/90 backdrop-blur-custom text-gray-700 border border-brand-borderBg hover:border-brand-gold rounded-lg transition-all shadow-md flex items-center gap-1">
+        <i data-lucide="boxes" class="w-3.5 h-3.5 text-amber-400"></i> Stock
+      </button>
+      <button onclick="setCameraView('street')" class="px-2.5 py-1.5 text-[11px] bg-white/90 backdrop-blur-custom text-gray-700 border border-brand-borderBg hover:border-brand-gold rounded-lg transition-all shadow-md flex items-center gap-1">
+        <i data-lucide="map" class="w-3.5 h-3.5 text-sky-500"></i> Rue
+      </button>
+    </div>
+
+    <!-- Légende de navigation interactive -->
+    <div class="absolute bottom-4 right-4 z-10 bg-brand-cardBg/80 backdrop-blur-custom p-3 rounded-xl border border-brand-borderBg text-[11px] text-gray-700 space-y-1 shadow-lg hidden sm:block">
+      <p class="font-semibold text-brand-gold flex items-center gap-1"><i data-lucide="info" class="w-3 h-3"></i> Navigation 3D</p>
+      <p>• Clic gauche + glisser : Rotation 3D</p>
+      <p>• Clic droit + glisser : Déplacement</p>
+      <p>• Molette : Zoom sur l'institut</p>
+      <p>• Clic sur un objet/chaise : Sélection CRM</p>
+    </div>
+
+    <!-- Canvas ThreeJS -->
+    <div id="three-container" class="w-full h-full"></div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: NOUVELLE RÉSERVATION               -->
+  <!-- ========================================== -->
+  <div id="booking-modal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-custom flex items-center justify-center hidden">
+    <div class="bg-brand-cardBg border border-brand-borderBg rounded-2xl w-full max-w-md p-6 shadow-sm space-y-4">
+      <div class="flex justify-between items-center border-b border-brand-borderBg pb-3">
+        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+          <i data-lucide="calendar-plus" class="w-5 h-5 text-brand-gold"></i> Réserver une Chaise de Soin
+        </h3>
+        <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-900"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-gray-400 mb-1">Chaise de Soin</label>
+          <select id="modal-chair-select" class="w-full bg-brand-darkBg border border-brand-borderBg rounded-lg p-2.5 text-gray-900 focus:border-brand-500 outline-none">
+            <!-- Rempli en JS -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-gray-400 mb-1">Nom de la Cliente</label>
+          <input type="text" id="modal-client-name" placeholder="Ex: Élise Moreau" class="w-full bg-brand-darkBg border border-brand-borderBg rounded-lg p-2.5 text-gray-900 focus:border-brand-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-gray-400 mb-1">Type de Soin</label>
+          <select id="modal-treatment-type" class="w-full bg-brand-darkBg border border-brand-borderBg rounded-lg p-2.5 text-gray-900 focus:border-brand-500 outline-none">
+            <option value="Soin du Visage Gold">Soin du Visage Gold</option>
+            <option value="Massage Relaxant & Huiles">Massage Relaxant & Huiles</option>
+            <option value="Manucure & Spa Mains">Manucure & Spa Mains</option>
+            <option value="Épilation & Soin Douceur">Épilation & Soin Douceur</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-gray-400 mb-1">Praticienne / Employée</label>
+          <select id="modal-staff-select" class="w-full bg-brand-darkBg border border-brand-borderBg rounded-lg p-2.5 text-gray-900 focus:border-brand-500 outline-none">
+            <!-- Rempli en JS -->
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeBookingModal()" class="flex-1 py-2 bg-brand-borderBg hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all text-xs">Annuler</button>
+        <button onclick="submitBooking()" class="flex-1 py-2 bg-gradient-to-r from-brand-500 to-brand-gold text-white font-semibold rounded-lg transition-all shadow-md text-xs">Confirmer le RDV</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- SCRIPT LOGIQUE CRM & THREE.JS 3D           -->
+  <!-- ========================================== -->
+  <script>
+    // ----------------------------------------------------
+    // 1. ÉTAT DES DONNÉES CRM
+    // ----------------------------------------------------
+    let chairsData = [];
+    let staffData = [];
+    let waitingData = [];
+    let waitingRoomsData = [];
+    let stockData = [];
+    let organizationName = 'Institut';
+    let selectedObjectId = null;
+    let apiReady = false;
+    let pollTimer = null;
+    let personActors = [];
+    let stockProductActors = [];
+    let stockZoneBadge = null;
+    let waitingZoneBadgeMesh = null;
+    let stockRoomCenter = null;
+    let lastSnapshotHash = '';
+    let threeStarted = false;
+    let raycasterBound = false;
+
+    function formatStockQty(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return '0';
+      if (Math.abs(n - Math.round(n)) < 0.001) return String(Math.round(n));
+      return n.toFixed(1).replace(/\.0$/, '');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function computeSnapshotHash(data) {
+      try {
+        return JSON.stringify({
+          organizationName: data.organizationName || '',
+          chairs: data.chairs || [],
+          staff: (data.staff || []).map(function (s) {
+            return { id: s.id, status: s.status, name: s.name, location: s.location };
+          }),
+          waiting: data.waiting || [],
+          waitingRooms: data.waitingRooms || [],
+          stock: data.stock || [],
+          stockPercent: data.stockPercent,
+          stats: data.stats || null,
+        });
+      } catch (e) {
+        return String(Date.now());
+      }
+    }
+
+    function applySalonSnapshot(data) {
+      const hash = computeSnapshotHash(data);
+      const sceneNeedsRebuild = hash !== lastSnapshotHash;
+      lastSnapshotHash = hash;
+
+      chairsData = (data.chairs || []).map(function (chair, index) {
+        return {
+          id: chair.id || String(index + 1),
+          name: chair.name || ('Poste ' + (index + 1)),
+          status: chair.status === 'occupied' ? 'occupied' : 'free',
+          client: chair.client || null,
+          treatment: chair.treatment || null,
+          staff: chair.staff || null,
+          staffId: chair.staffId || null,
+          time: chair.time || null,
+          price: chair.price || null,
+          appointmentId: chair.appointmentId || null,
+        };
+      });
+      staffData = (data.staff || []).map(function (member) {
+        return {
+          id: member.id,
+          name: member.name || member.firstName || 'Employée',
+          firstName: member.firstName || (member.name || 'Employée').split(' ')[0],
+          role: member.role || 'Équipe',
+          status: member.status || 'available',
+          location: member.location || 'Disponible',
+          color: member.color || '#C9A84C',
+        };
+      });
+      waitingData = data.waiting || [];
+      waitingRoomsData = data.waitingRooms || [];
+      stockData = (data.stock || []).map(function (item) {
+        return {
+          id: item.id,
+          name: item.name || 'Produit',
+          qty: Number(item.qty) || 0,
+          min: Number(item.min) || 0,
+          status: item.status === 'out' ? 'out' : (item.status === 'low' ? 'low' : 'ok'),
+          unit: item.unit || '',
+          category: item.category || '',
+          categoryLabel: item.categoryLabel || item.category || 'Produit',
+          sku: item.sku || null,
+          brand: item.brand || null,
+        };
+      });
+
+      organizationName = (data.organizationName || 'Institut').trim() || 'Institut';
+      const title = document.getElementById('org-title');
+      const subtitle = document.getElementById('org-subtitle');
+      if (title) title.textContent = organizationName + ' · 3D';
+      if (subtitle) {
+        const when = data.refreshedAt ? new Date(data.refreshedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+        subtitle.textContent = when ? ('Données live · maj ' + when) : 'Données live de l’institut';
+      }
+
+      const revenue = document.getElementById('stat-revenue');
+      const occupation = document.getElementById('stat-occupation');
+      const occupationHint = document.getElementById('stat-occupation-hint');
+      const care = document.getElementById('stat-care');
+      const stockStat = document.getElementById('stat-stock');
+      if (revenue && data.stats) {
+        revenue.textContent = (data.stats.revenueToday || 0).toLocaleString('fr-MA') + ' DH';
+      }
+      if (occupation && data.stats) occupation.textContent = (data.stats.occupationPercent || 0) + '%';
+      if (occupationHint) {
+        const busy = chairsData.filter(function (c) { return c.status === 'occupied'; }).length;
+        occupationHint.textContent = busy + ' / ' + chairsData.length + ' postes';
+      }
+      if (care && data.stats) care.textContent = String(data.stats.careDone || 0);
+      if (stockStat) stockStat.textContent = (data.stockPercent != null ? data.stockPercent : 0) + '%';
+
+      if (typeof data.stockPercent === 'number') {
+        const pctEl = document.getElementById('stock-global-percent');
+        const barEl = document.getElementById('stock-global-bar');
+        if (pctEl) pctEl.innerText = data.stockPercent + '%';
+        if (barEl) barEl.style.width = data.stockPercent + '%';
+      }
+
+      apiReady = true;
+      renderCRM();
+      // Évite de reconstruire la 3D toutes les 30s si rien n'a changé (reset des positions)
+      if (sceneNeedsRebuild && typeof scene !== 'undefined' && scene) {
+        rebuild3DScene();
+      }
+    }
+
+    async function loadSalonFromApi(silent) {
+      try {
+        const res = await fetch('/api/salon-3d/', { credentials: 'include', cache: 'no-store' });
+        if (!res.ok) {
+          const body = await res.json().catch(function () { return {}; });
+          throw new Error(body.error || ('Erreur ' + res.status));
+        }
+        const data = await res.json();
+        applySalonSnapshot(data);
+      } catch (error) {
+        const subtitle = document.getElementById('org-subtitle');
+        if (subtitle && !silent) {
+          subtitle.textContent = error instanceof Error ? error.message : 'API indisponible';
+        }
+        if (!apiReady && !silent) {
+          chairsData = [];
+          staffData = [];
+          waitingData = [];
+          waitingRoomsData = [];
+          stockData = [];
+          renderCRM();
+        }
+      }
+    }
+
+    function hideAllTitles() {
+      personActors.forEach(function (actor) {
+        if (actor.group && actor.group.userData && actor.group.userData.nameLabel) {
+          actor.group.userData.nameLabel.visible = false;
+        }
+        if (actor.group && actor.group.userData && actor.group.userData.statusBadge) {
+          actor.group.userData.statusBadge.visible = false;
+        }
+      });
+      chair3DGroups.forEach(function (c) {
+        if (c.group && c.group.userData) {
+          if (c.group.userData.nameBadge) c.group.userData.nameBadge.visible = false;
+          if (c.group.userData.statusBadge) c.group.userData.statusBadge.visible = false;
+        }
+      });
+      stockProductActors.forEach(function (actor) {
+        if (actor.mesh && actor.mesh.userData && actor.mesh.userData.productLabel) {
+          actor.mesh.userData.productLabel.visible = false;
+          actor.mesh.userData.productLabel.scale.set(1.55, 0.52, 1);
+        }
+      });
+      if (stockZoneBadge) stockZoneBadge.visible = false;
+      if (waitingZoneBadgeMesh) waitingZoneBadgeMesh.visible = false;
+    }
+
+    function hideAllPersonNames() {
+      hideAllTitles();
+    }
+
+    function showPersonName(group) {
+      hideAllTitles();
+      if (!group || !group.userData) return;
+      if (group.userData.nameLabel) group.userData.nameLabel.visible = true;
+      if (group.userData.statusBadge) group.userData.statusBadge.visible = true;
+    }
+
+    async function addWaitingRoom() {
+      const defaultName = 'Salle d\'attente';
+      const name = window.prompt('Nom de la salle d\'attente', defaultName);
+      if (name === null) return;
+      const capacityRaw = window.prompt('Nombre de places assises', '4');
+      if (capacityRaw === null) return;
+      const capacity = Math.max(1, Math.min(20, parseInt(capacityRaw, 10) || 4));
+      try {
+        const res = await fetch('/api/resources/', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: (name || defaultName).trim() || defaultName,
+            type: 'SALLE',
+            capacity: capacity,
+            active: true,
+            notes: 'Salle d\'attente',
+          }),
+        });
+        const body = await res.json().catch(function () { return {}; });
+        if (!res.ok) {
+          throw new Error(body.error || ('Erreur ' + res.status));
+        }
+        await loadSalonFromApi(true);
+        switchTab('waiting');
+        setCameraView('waiting');
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : 'Impossible d\'ajouter la salle d\'attente.');
+      }
+    }
+
+    // ----------------------------------------------------
+    // 2. RENDU DYNAMIQUE DE L'INTERFACE CRM
+    // ----------------------------------------------------
+    function renderCRM() {
+      // 1. Rendu Chaises
+      const chairsContainer = document.getElementById('chairs-list');
+      const chairsBadge = document.getElementById('chairs-count-badge');
+      if (chairsBadge) {
+        const busy = chairsData.filter(function (c) { return c.status === 'occupied'; }).length;
+        chairsBadge.innerText = busy + ' / ' + chairsData.length;
+      }
+      if (!chairsData.length) {
+        chairsContainer.innerHTML = '<p class="text-xs text-gray-500 p-3 rounded-xl border border-brand-borderBg bg-white">Aucune cabine / poste. Ajoutez des ressources (Cabine, Fauteuil…) dans Ressources — elles apparaîtront ici automatiquement.</p>';
+      } else {
+      chairsContainer.innerHTML = chairsData.map(chair => `
+        <div onclick="selectChairFromCRM('${String(chair.id).replace(/'/g, "\\'")}')" class="p-3 bg-brand-darkBg/80 rounded-xl border ${selectedObjectId === 'chair_' + chair.id ? 'border-brand-gold shadow-lg shadow-brand-gold/10' : 'border-brand-borderBg'} hover:border-brand-500/50 transition-all cursor-pointer">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-semibold text-gray-900 text-xs">${chair.name}</span>
+              <p class="text-[11px] text-gray-400 mt-0.5">${chair.status === 'occupied' ? `Soin: <span class="text-gray-700">${chair.treatment || ''}</span>` : 'Disponible'}</p>
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${chair.status === 'occupied' ? 'bg-red-500/20 text-red-400 border border-red-500/30 glow-badge-red' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 glow-badge-green'}">
+              ${chair.status === 'occupied' ? 'Occupée' : 'Libre'}
+            </span>
+          </div>
+
+          ${chair.status === 'occupied' ? `
+            <div class="mt-2.5 pt-2 border-t border-brand-borderBg/50 flex justify-between items-center text-[11px]">
+              <span class="text-gray-700 font-medium">${chair.client || ''}</span>
+              <span class="text-brand-gold">${chair.staff || ''}</span>
+            </div>
+            <div class="mt-2 flex gap-1">
+              <button onclick="event.stopPropagation(); releaseChair('${String(chair.id).replace(/'/g, "\\'")}')" class="w-full py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded text-[10px] font-semibold transition-colors">
+                Actualiser
+              </button>
+            </div>
+          ` : `
+            <div class="mt-2">
+              <a href="/agenda/" target="_top" onclick="event.stopPropagation()" class="block w-full py-1 text-center bg-brand-500/20 hover:bg-brand-500/30 text-brand-500 rounded text-[10px] font-semibold transition-colors">
+                Ouvrir l’agenda
+              </a>
+            </div>
+          `}
+        </div>
+      `).join('');
+      }
+
+      // 2. Rendu Personnel
+      const staffContainer = document.getElementById('staff-list');
+      const availableCount = staffData.filter(function (m) { return m.status === 'available' || m.status === 'reception'; }).length;
+      const staffAvailBadge = document.getElementById('staff-available-badge');
+      if (staffAvailBadge) staffAvailBadge.innerText = availableCount + ' dispo / ' + staffData.length;
+      if (!staffData.length) {
+        staffContainer.innerHTML = '<p class="text-xs text-gray-500 p-3 rounded-xl border border-brand-borderBg bg-white">Aucune employée. Ajoutez l’équipe dans Employées.</p>';
+      } else {
+        function staffStatusLabel(status) {
+          if (status === 'busy') return 'En Soin';
+          if (status === 'reception') return 'À l\'Accueil';
+          if (status === 'stock') return 'En Réserve';
+          if (status === 'away') return 'En congé';
+          return 'Disponible';
+        }
+      staffContainer.innerHTML = staffData.map(member => `
+          <div onclick="focusStaffMember('${String(member.id).replace(/'/g, "\\'")}')" class="p-3 bg-brand-darkBg/80 rounded-xl border border-brand-borderBg hover:border-brand-500/50 transition-all cursor-pointer flex justify-between items-center ${member.status === 'away' ? 'opacity-75' : ''}">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-xs shadow" style="background-color: ${member.color}">
+                ${(member.name || '?').charAt(0)}
+            </div>
+            <div>
+                <p class="font-semibold text-gray-900 text-xs">${member.name}</p>
+              <p class="text-[10px] text-gray-400">${member.role}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-[11px] font-medium text-brand-gold">${member.location}</span>
+              <p class="text-[10px] ${member.status === 'available' || member.status === 'reception' ? 'text-emerald-500 font-semibold' : member.status === 'away' ? 'text-amber-500 font-semibold' : 'text-gray-400'}">${staffStatusLabel(member.status)}</p>
+          </div>
+        </div>
+      `).join('');
+      }
+
+      // 3. Rendu Salle d'attente
+      const roomsContainer = document.getElementById('waiting-rooms-list');
+      if (roomsContainer) {
+        if (!waitingRoomsData.length) {
+          roomsContainer.innerHTML = '<p class="text-xs text-gray-500 p-3 rounded-xl border border-dashed border-brand-borderBg bg-white">Aucune salle d\'attente. Cliquez sur <strong>Ajouter</strong> pour en créer une (ex. 4 places).</p>';
+        } else {
+          roomsContainer.innerHTML = waitingRoomsData.map(function (room) {
+            return `
+              <div onclick="setCameraView('waiting')" class="p-3 bg-brand-darkBg/80 rounded-xl border border-brand-borderBg cursor-pointer hover:border-brand-500/50 transition-all flex justify-between items-center">
+                <div>
+                  <p class="font-semibold text-gray-900 text-xs">${room.name}</p>
+                  <p class="text-[10px] text-gray-400">Zone d\'accueil clientes</p>
+                </div>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-brand-500/15 text-brand-500">${room.capacity} place${room.capacity > 1 ? 's' : ''}</span>
+              </div>`;
+          }).join('');
+        }
+      }
+      const waitingContainer = document.getElementById('waiting-list');
+      document.getElementById('waiting-count-badge').innerText = `${waitingData.length} Présente${waitingData.length > 1 ? 's' : ''}`;
+      if (!waitingData.length) {
+        waitingContainer.innerHTML = '<p class="text-xs text-gray-500 p-3 rounded-xl border border-brand-borderBg bg-white">Aucune cliente en attente pour le moment.</p>';
+      } else {
+      waitingContainer.innerHTML = waitingData.map(client => `
+        <div class="p-3 bg-brand-darkBg/80 rounded-xl border border-brand-borderBg flex justify-between items-center">
+          <div>
+              <p class="font-semibold text-gray-900 text-xs">${client.name}</p>
+            <p class="text-[10px] text-brand-gold">${client.treatment}</p>
+            <p class="text-[10px] text-gray-400 mt-0.5">Arrivée à ${client.arrivalTime} • RDV ${client.apptTime}</p>
+          </div>
+          <button onclick="installWaitingClient('${client.id}')" class="px-2.5 py-1 text-[10px] bg-brand-gold/20 hover:bg-brand-gold/30 text-brand-gold rounded-lg font-semibold transition-colors">
+            Installer
+          </button>
+        </div>
+      `).join('');
+      }
+
+      // 4. Rendu Stock — produits détaillés
+      const stockContainer = document.getElementById('stock-list');
+      const stockCountBadge = document.getElementById('stock-count-badge');
+      const stockAlertHint = document.getElementById('stock-alert-hint');
+      const outCount = stockData.filter(function (s) { return s.status === 'out'; }).length;
+      const lowCount = stockData.filter(function (s) { return s.status === 'low'; }).length;
+      if (stockCountBadge) stockCountBadge.innerText = String(stockData.length);
+      if (stockAlertHint) {
+        if (outCount || lowCount) {
+          stockAlertHint.innerText = (outCount ? outCount + ' rupture' + (outCount > 1 ? 's' : '') : '') +
+            (outCount && lowCount ? ' · ' : '') +
+            (lowCount ? lowCount + ' bas' : '');
+          stockAlertHint.className = 'text-[10px] text-amber-600 mt-1.5 font-medium';
+        } else {
+          stockAlertHint.innerText = stockData.length ? 'Tous les produits sont au niveau correct.' : '';
+          stockAlertHint.className = 'text-[10px] text-emerald-600 mt-1.5';
+        }
+      }
+      if (!stockData.length) {
+        stockContainer.innerHTML = '<p class="text-xs text-gray-500 p-3 rounded-xl border border-brand-borderBg bg-white">Aucun produit actif. Ajoutez des produits dans Stock.</p>';
+      } else {
+        stockContainer.innerHTML = stockData.map(function (item) {
+          const fill = item.min > 0
+            ? Math.max(4, Math.min(100, Math.round((item.qty / Math.max(item.min * 2, item.qty, 1)) * 100)))
+            : (item.qty > 0 ? 70 : 0);
+          const barColor = item.status === 'out' ? 'bg-red-400' : (item.status === 'low' ? 'bg-amber-400' : 'bg-emerald-400');
+          const statusLabel = item.status === 'out' ? 'Rupture' : (item.status === 'low' ? 'Bas' : 'OK');
+          const statusClass = item.status === 'out'
+            ? 'bg-red-500/15 text-red-500 border-red-500/25'
+            : (item.status === 'low'
+              ? 'bg-amber-500/15 text-amber-600 border-amber-500/25'
+              : 'bg-emerald-500/15 text-emerald-600 border-emerald-500/25');
+          const qtyText = formatStockQty(item.qty) + (item.unit ? ' ' + item.unit : '');
+          const safeId = String(item.id).replace(/'/g, "\\'");
+          return `
+          <div onclick="focusStockProduct('${safeId}')" class="p-3 bg-brand-darkBg/80 rounded-xl border border-brand-borderBg hover:border-brand-500/50 transition-all cursor-pointer space-y-2">
+            <div class="flex justify-between items-start gap-2">
+              <div class="min-w-0">
+                <p class="font-semibold text-gray-900 text-xs truncate">${escapeHtml(item.name)}</p>
+                <p class="text-[10px] text-gray-400 mt-0.5">${escapeHtml(item.categoryLabel || '')}${item.brand ? ' · ' + escapeHtml(item.brand) : ''}</p>
+          </div>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${statusClass}">${statusLabel}</span>
+          </div>
+            <div class="flex justify-between items-center text-[11px]">
+              <span class="font-bold ${item.status === 'out' ? 'text-red-500' : item.status === 'low' ? 'text-amber-500' : 'text-emerald-500'}">${qtyText}</span>
+              <span class="text-gray-400">min ${formatStockQty(item.min)}${item.unit ? ' ' + item.unit : ''}</span>
+        </div>
+            <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+              <div class="${barColor} h-full transition-all" style="width:${fill}%"></div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      // Re-initialiser les icônes Lucide
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Gestion des onglets CRM
+    function switchTab(tabName) {
+      const tabs = ['chairs', 'staff', 'waiting', 'stock', 'stats'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const content = document.getElementById(`content-${t}`);
+        if (t === tabName) {
+          btn.className = "flex-1 py-2 px-3 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 bg-brand-500 text-white shadow-md";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "flex-1 py-2 px-3 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-900 hover:bg-[#F5EAF0] transition-all flex items-center justify-center gap-1.5";
+          content.classList.add('hidden');
+        }
+      });
+    }
+
+    // ----------------------------------------------------
+    // 3. SCÈNE 3D COMPLETE DE L'INSTITUT (THREE.JS)
+    // ----------------------------------------------------
+    let scene, camera, renderer, controls;
+    let interactive3DObjects = []; // Stocke les objets cliquables
+    let chair3DGroups = [];
+    let chair3DBadges = [];
+    let animatedPeople = [];
+    // personActors déclaré avec les données CRM (noms visibles au clic)
+    const HAIR_COLORS = [0x2c1b14, 0x4a2c1a, 0x6b3a2a, 0x1a1a1a, 0x8b5a2b, 0x3d2314];
+    const CLIENT_DRESSES = [0xc98b8b, 0xb07a9a, 0x8f6a8f, 0x6b8cae, 0xd4a06a, 0xa67b8a];
+    // Tuniques un peu plus contrastées pour rester visibles sur le parquet
+    const STAFF_TUNICS = [0xf2f6fb, 0xe8eef6, 0xf7fafc, 0xefe6ea];
+
+    function addSalonLights() {
+      // Lumière naturelle : ciel + soleil doux (pas de teinte artificielle chaude)
+      const hemi = new THREE.HemisphereLight(0xe8f2ff, 0xe8e4dc, 0.62);
+      scene.add(hemi);
+
+      const ambientLight = new THREE.AmbientLight(0xf5f7fa, 0.38);
+      scene.add(ambientLight);
+
+      const sun = new THREE.DirectionalLight(0xfffaf2, 0.92);
+      sun.position.set(12, 26, 10);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 2048;
+      sun.shadow.mapSize.height = 2048;
+      sun.shadow.camera.near = 1;
+      sun.shadow.camera.far = 60;
+      sun.shadow.camera.left = -18;
+      sun.shadow.camera.right = 18;
+      sun.shadow.camera.top = 18;
+      sun.shadow.camera.bottom = -18;
+      sun.shadow.bias = -0.0002;
+      sun.shadow.radius = 2;
+      scene.add(sun);
+
+      // Remplissage doux côté opposé (rebond de jour)
+      const fill = new THREE.DirectionalLight(0xdde7f2, 0.22);
+      fill.position.set(-10, 10, -8);
+      scene.add(fill);
+    }
+
+    function init3D() {
+      const container = document.getElementById('three-container');
+      if (!container) return;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf7f9fc);
+      scene.fog = null;
+
+      camera = new THREE.PerspectiveCamera(32, Math.max(container.clientWidth, 1) / Math.max(container.clientHeight, 1), 0.1, 1000);
+      camera.position.set(18, 16, 18);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setClearColor(0xf7f9fc, 1);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.maxPolarAngle = Math.PI / 2.15;
+      controls.minDistance = 8;
+      controls.maxDistance = 55;
+      controls.target.set(0, 0.4, 0);
+      controls.update();
+
+      addSalonLights();
+      buildSalonArchitecture();
+      setupRaycaster();
+      animate3D();
+    }
+
+    const MAT = {
+      wood: () => new THREE.MeshStandardMaterial({ color: 0xb8895a, roughness: 0.7, metalness: 0.02 }),
+      woodDark: () => new THREE.MeshStandardMaterial({ color: 0x9a7045, roughness: 0.65, metalness: 0.02 }),
+      woodPlank: () => new THREE.MeshStandardMaterial({ color: 0xa67b4b, roughness: 0.72, metalness: 0.02 }),
+      marble: () => new THREE.MeshStandardMaterial({ color: 0xece7e0, roughness: 0.3, metalness: 0.08 }),
+      wall: () => new THREE.MeshStandardMaterial({ color: 0xf3f0ec, roughness: 0.75 }),
+      rose: () => new THREE.MeshStandardMaterial({ color: 0xc98b8b, roughness: 0.85 }),
+      roseDeep: () => new THREE.MeshStandardMaterial({ color: 0xb56f6f, roughness: 0.8 }),
+      cream: () => new THREE.MeshStandardMaterial({ color: 0xf0e6d8, roughness: 0.5 }),
+      chair: () => new THREE.MeshStandardMaterial({ color: 0xd4a0a0, roughness: 0.55 }),
+      gold: () => new THREE.MeshStandardMaterial({ color: 0xc9a84c, metalness: 0.85, roughness: 0.25 }),
+      green: () => new THREE.MeshStandardMaterial({ color: 0x3f6b47, roughness: 0.7 }),
+      black: () => new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4 }),
+      whiteCoat: () => new THREE.MeshStandardMaterial({ color: 0xeef2f7, roughness: 0.45 }),
+      pants: () => new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.55 }),
+      hair: () => new THREE.MeshStandardMaterial({ color: 0x4a3428, roughness: 0.7 }),
+      skin: () => new THREE.MeshStandardMaterial({ color: 0xd9a888, roughness: 0.7 }),
+      clientWear: () => new THREE.MeshStandardMaterial({ color: 0x8f6a8f, roughness: 0.55 }),
+      product: () => new THREE.MeshStandardMaterial({ color: 0xf8f8f8, roughness: 0.35 }),
+      productDark: () => new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.4 }),
+      rug: () => new THREE.MeshStandardMaterial({ color: 0xd9c8b0, roughness: 0.95 }),
+    };
+
+    function addPlant(x, z, scale) {
+      scale = scale || 1;
+      const g = new THREE.Group();
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.22 * scale, 0.18 * scale, 0.35 * scale, 12), MAT.cream());
+      pot.position.y = 0.18 * scale;
+      pot.castShadow = true;
+      g.add(pot);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.04 * scale, 0.05 * scale, 0.5 * scale, 8), MAT.woodDark());
+      trunk.position.y = 0.55 * scale;
+      g.add(trunk);
+      for (let i = 0; i < 5; i++) {
+        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.28 * scale, 10, 10), MAT.green());
+        const a = (i / 5) * Math.PI * 2;
+        leaf.position.set(Math.cos(a) * 0.22 * scale, 0.95 * scale + (i % 2) * 0.1, Math.sin(a) * 0.22 * scale);
+        leaf.scale.set(1, 0.55, 1);
+        g.add(leaf);
+      }
+      g.position.set(x, 0, z);
+      scene.add(g);
+      return g;
+    }
+
+    function addWallInstituteName(text, x, y, z, opts) {
+      opts = opts || {};
+      const label = String(text || 'Institut').replace(/\s+/g, ' ').trim();
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 1024, 256);
+      ctx.fillStyle = '#C9A84C';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      let fontSize = 120;
+      ctx.font = 'bold ' + fontSize + 'px "Plus Jakarta Sans", Arial, sans-serif';
+      while (ctx.measureText(label).width > 960 && fontSize > 48) {
+        fontSize -= 6;
+        ctx.font = 'bold ' + fontSize + 'px "Plus Jakarta Sans", Arial, sans-serif';
+      }
+      ctx.fillText(label, 512, 128);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.needsUpdate = true;
+      const width = opts.width != null ? opts.width : Math.min(5.5, Math.max(2.8, label.length * 0.28));
+      const height = opts.height != null ? opts.height : width * 0.28;
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
+      mesh.position.set(x, y, z);
+      if (opts.rotationY != null) mesh.rotation.y = opts.rotationY;
+      scene.add(mesh);
+      return mesh;
+    }
+
+    function addOvalMirror(x, y, z) {
+      const g = new THREE.Group();
+      const frame = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 12, 32), MAT.gold());
+      frame.position.set(0, 0, 0.02);
+      g.add(frame);
+      const glass = new THREE.Mesh(
+        new THREE.CircleGeometry(0.5, 32),
+        new THREE.MeshStandardMaterial({ color: 0xe8eef5, metalness: 0.6, roughness: 0.1 })
+      );
+      g.add(glass);
+      g.position.set(x, y, z);
+      scene.add(g);
+      return g;
+    }
+
+    function addRoundChair(x, z, colorMat) {
+      const g = new THREE.Group();
+      const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.28, 24), colorMat);
+      seat.position.y = 0.35;
+      seat.castShadow = true;
+      g.add(seat);
+      const back = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.1, 10, 24, Math.PI), colorMat);
+      back.position.set(0, 0.65, -0.15);
+      back.rotation.x = Math.PI / 2;
+      back.rotation.z = Math.PI;
+      g.add(back);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.2, 12), MAT.gold());
+      base.position.y = 0.12;
+      g.add(base);
+      g.position.set(x, 0, z);
+      scene.add(g);
+      return g;
+    }
+
+    function layoutCabinPositions(count, halfD) {
+      count = Math.max(0, Math.min(count, 24));
+      if (!count) return [];
+      // Une seule rangée alignée contre le mur du fond (-Z)
+      var spacingX = count >= 10 ? 1.55 : (count >= 7 ? 1.85 : (count >= 5 ? 2.1 : 2.35));
+      var wallZ = -(halfD != null ? halfD : 6.5);
+      var posZ = wallZ + 2.05;
+      var width = (count - 1) * spacingX;
+      var startX = -width / 2;
+      var positions = [];
+      for (var i = 0; i < count; i++) {
+        positions.push({ x: startX + i * spacingX, z: posZ });
+      }
+      return positions;
+    }
+
+    function layoutWaitingSeats(count) {
+      count = Math.max(2, Math.min(Math.max(count, 2), 12));
+      var cols = count <= 4 ? 2 : 4;
+      var spacingX = 2.4;
+      var spacingZ = 1.7;
+      var seats = [];
+      for (var i = 0; i < count; i++) {
+        var row = Math.floor(i / cols);
+        var col = i % cols;
+        var rowCount = Math.min(cols, count - row * cols);
+        var width = (rowCount - 1) * spacingX;
+        seats.push([-width / 2 + col * spacingX - 0.2, 4.5 - row * spacingZ]);
+      }
+      return seats;
+    }
+
+    function makeStaffWalkPath(seed) {
+      // Chemins uniquement dans le salon — jamais dans la chambre stock (x > ~4.5)
+      var routes = [
+        [[-3.2, 2.6], [0.4, 2.4], [3.0, 1.4], [2.2, -0.2], [-1.5, 0.3], [-3.2, 2.6]],
+        [[2.8, 3.0], [-1.0, 2.8], [-3.4, 1.2], [0.2, -0.6], [3.2, 0.4], [2.8, 3.0]],
+        [[3.6, 1.8], [2.0, 0.2], [3.8, -1.2], [1.5, -0.8], [3.6, 1.8]],
+        [[-5.8, 1.5], [-4.2, 2.8], [-2.4, 1.6], [-3.8, 0.2], [-5.8, 1.5]],
+        [[-1.8, -1.2], [1.2, -1.0], [2.6, 0.6], [0.0, 1.4], [-2.2, 0.4], [-1.8, -1.2]],
+        [[3.4, 2.2], [1.0, 3.2], [-2.0, 2.0], [0.5, 0.2], [3.0, 0.8], [3.4, 2.2]],
+        [[-6.8, 3.2], [-5.0, 2.0], [-6.2, 0.8], [-7.4, 2.0], [-6.8, 3.2]],
+        [[0.8, 2.8], [2.4, 4.0], [-0.4, 4.6], [-1.8, 3.2], [0.8, 2.8]],
+      ];
+      return routes[seed % routes.length];
+    }
+
+    function makeStockRoomWalkPath() {
+      const c = stockRoomCenter || { x: 7.2, z: 0.4, doorX: 5.1 };
+      const doorX = c.doorX;
+      const sz = c.z;
+      const insideX = Math.min(c.x + 0.35, doorX + 2.2);
+      // Entrée / sortie uniquement par la porte
+      return [
+        [doorX - 1.4, sz],
+        [doorX + 0.25, sz],
+        [insideX, sz - 1.0],
+        [insideX, sz + 1.0],
+        [doorX + 0.25, sz],
+        [doorX - 1.4, sz],
+      ];
+    }
+
+    function isInsideStockRoom(x, z) {
+      if (!stockRoomCenter) return false;
+      const c = stockRoomCenter;
+      return (
+        x >= c.doorX - 0.15 &&
+        x <= c.maxX &&
+        z >= c.minZ &&
+        z <= c.maxZ
+      );
+    }
+
+    function makeReceptionPacePath() {
+      // Accueil côté entrée / rue (+Z)
+      return [[-6.5, 5.0], [-5.6, 4.2], [-6.8, 3.6], [-7.2, 4.6], [-6.5, 5.0]];
+    }
+
+    function makeLoungeWalkPath(seed) {
+      var paths = [
+        [[-1.6, 4.2], [1.0, 4.2], [1.2, 2.8], [-1.4, 2.8], [-1.6, 4.2]],
+        [[1.0, 2.9], [-1.5, 3.0], [-0.2, 4.6], [1.4, 4.0], [1.0, 2.9]],
+      ];
+      return paths[seed % paths.length];
+    }
+
+    function layoutStaffStandSlots(count) {
+      var slots = [
+        [-6.5, 5.0],
+        [-3.8, 2.6],
+        [0.2, 2.8],
+        [3.0, 2.4],
+        [-2.0, 0.4],
+        [2.2, 0.2],
+        [4.5, 3.0],
+        [-5.5, 1.8],
+        [5.2, 2.0],
+        [-1.0, 3.4],
+        [1.5, 3.5],
+        [6.0, 1.2],
+      ];
+      while (slots.length < count) {
+        var n = slots.length;
+        var angle = n * 0.85;
+        var r = 3.2 + (n % 4) * 0.55;
+        slots.push([Math.cos(angle) * r, Math.sin(angle) * r + 1.2]);
+      }
+      return slots;
+    }
+
+    function categoryProductColor(category, isAlert) {
+      if (isAlert) return 0xb56f6f;
+      const map = {
+        PROFESSIONNEL: 0x6b8cae,
+        VENTE: 0xc9a84c,
+        CONSOMMABLE: 0xc98b8b,
+        MATERIEL: 0x7a8a7a,
+        ACCESSOIRE: 0x8f6a8f,
+        JETABLE: 0x9aa3ad,
+      };
+      return map[category] || 0xf0e6d8;
+    }
+
+    function createProductLabelSprite(name, qtyLabel, categoryLabel, status) {
+      var canvas = document.createElement('canvas');
+      canvas.width = 384;
+      canvas.height = 128;
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 384, 128);
+      var bg = status === 'out'
+        ? 'rgba(160,60,60,0.96)'
+        : (status === 'low' ? 'rgba(170,120,40,0.96)' : 'rgba(55,100,80,0.96)');
+      ctx.fillStyle = bg;
+      if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(8, 8, 368, 112, 16);
+        ctx.fill();
+      } else {
+        ctx.fillRect(8, 8, 368, 112);
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 26px Arial, sans-serif';
+      var title = (name || 'Produit').replace(/\s+/g, ' ').trim();
+      while (ctx.measureText(title).width > 340 && title.length > 3) {
+        title = title.slice(0, -2) + '…';
+      }
+      ctx.fillText(title, 192, 42);
+      ctx.font = 'bold 22px Arial, sans-serif';
+      ctx.fillText(qtyLabel || '', 192, 72);
+      ctx.font = '16px Arial, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(categoryLabel || '', 192, 98);
+      var tex = new THREE.CanvasTexture(canvas);
+      tex.needsUpdate = true;
+      var sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      }));
+      sprite.scale.set(1.55, 0.52, 1);
+      sprite.renderOrder = 22;
+      return sprite;
+    }
+
+    function createProductMesh(product) {
+      const group = new THREE.Group();
+      const isAlert = product.status === 'out' || product.status === 'low';
+      const color = categoryProductColor(product.category, isAlert);
+      const mat = new THREE.MeshStandardMaterial({
+        color: color,
+        roughness: 0.4,
+        metalness: product.category === 'MATERIEL' ? 0.35 : 0.08,
+      });
+      const capMat = new THREE.MeshStandardMaterial({ color: isAlert ? 0x5a3030 : 0x2a2a2a, roughness: 0.5 });
+      const qty = Math.max(0, Number(product.qty) || 0);
+      const units = qty <= 0 ? 0 : Math.min(4, Math.max(1, Math.ceil(qty / Math.max(1, (product.min || 10) * 0.5))));
+
+      for (let u = 0; u < Math.max(1, units); u++) {
+        const ox = (u - (units - 1) / 2) * 0.14;
+        let body;
+        if (product.category === 'JETABLE' || product.unit === 'Boîte' || product.unit === 'Pack') {
+          body = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.12), mat);
+          body.position.set(ox, 0.1, 0);
+        } else if (product.unit === 'ml' || product.unit === 'L' || product.category === 'PROFESSIONNEL') {
+          body = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.22, 10), mat);
+          body.position.set(ox, 0.12, 0);
+          const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.05, 8), capMat);
+          cap.position.set(ox, 0.25, 0);
+          group.add(cap);
+        } else {
+          body = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.2, 10), mat);
+          body.position.set(ox, 0.11, 0);
+          const pump = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.04), capMat);
+          pump.position.set(ox, 0.23, 0);
+          group.add(pump);
+        }
+        body.castShadow = true;
+        group.add(body);
+      }
+
+      if (units === 0) {
+        const empty = new THREE.Mesh(
+          new THREE.BoxGeometry(0.28, 0.03, 0.22),
+          new THREE.MeshStandardMaterial({ color: 0xc49292, roughness: 0.7 }),
+        );
+        empty.position.y = 0.02;
+        group.add(empty);
+      }
+
+      const qtyLabel = formatStockQty(product.qty) + (product.unit ? ' ' + product.unit : '');
+      const label = createProductLabelSprite(
+        product.name,
+        qtyLabel,
+        product.categoryLabel || '',
+        product.status,
+      );
+      label.position.set(0, 0.48, 0.05);
+      label.visible = false;
+      group.add(label);
+      group.userData.productId = product.id;
+      group.userData.productLabel = label;
+      return group;
+    }
+
+    function addShopFacadeLabel(text, x, y, z, colorHex, rotationY) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 512, 128);
+      ctx.fillStyle = '#' + new THREE.Color(colorHex || 0xc9a84c).getHexString();
+      ctx.font = 'bold 52px "Plus Jakarta Sans", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      let label = String(text || '').trim();
+      while (ctx.measureText(label).width > 480 && label.length > 3) {
+        label = label.slice(0, -2) + '…';
+      }
+      ctx.fillText(label, 256, 64);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.6, 0.65),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.FrontSide, depthWrite: false }),
+      );
+      mesh.position.set(x, y, z);
+      if (rotationY != null) mesh.rotation.y = rotationY;
+      scene.add(mesh);
+      return mesh;
+    }
+
+    function addNeighborShop(opts) {
+      const x = opts.x;
+      const z = opts.z;
+      const w = opts.w || 4.2;
+      const d = opts.d || 3.4;
+      const h = opts.h || 3.4;
+      const facadeColor = opts.facadeColor || 0xf0e8e0;
+      const accent = opts.accent || 0xc49292;
+      const name = opts.name || 'Boutique';
+      // +1 = façade vers +Z (rue), -1 = vers -Z
+      const face = opts.faceDir != null ? opts.faceDir : 1;
+      const group = new THREE.Group();
+
+      const facadeMat = new THREE.MeshStandardMaterial({ color: facadeColor, roughness: 0.82 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), facadeMat);
+      body.position.set(0, h / 2, 0);
+      body.castShadow = true;
+      body.receiveShadow = true;
+      group.add(body);
+
+      const glass = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.7, h * 0.45, 0.06),
+        new THREE.MeshStandardMaterial({
+          color: 0xd8e8f5,
+          transparent: true,
+          opacity: 0.45,
+          roughness: 0.1,
+          metalness: 0.2,
+        }),
+      );
+      glass.position.set(0, h * 0.42, face * (d / 2 + 0.04));
+      group.add(glass);
+
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(w * 0.74, h * 0.5, 0.05), MAT.gold());
+      frame.position.set(0, h * 0.42, face * (d / 2 + 0.01));
+      group.add(frame);
+
+      const awning = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.85, 0.08, 0.7),
+        new THREE.MeshStandardMaterial({ color: accent, roughness: 0.7 }),
+      );
+      awning.position.set(0, h * 0.72, face * (d / 2 + 0.35));
+      group.add(awning);
+
+      const door = new THREE.Mesh(
+        new THREE.BoxGeometry(0.85, 1.9, 0.08),
+        new THREE.MeshStandardMaterial({ color: 0x5a4638, roughness: 0.6 }),
+      );
+      door.position.set(-w * 0.28, 0.95, face * (d / 2 + 0.05));
+      group.add(door);
+
+      group.position.set(x, 0, z);
+      scene.add(group);
+      // Enseigne face à la rue (+Z) : plane par défaut déjà orienté vers +Z
+      const labelRot = face > 0 ? 0 : Math.PI;
+      addShopFacadeLabel(name, x, h * 0.88, z + face * (d / 2 + 0.14), accent, labelRot);
+      return group;
+    }
+
+    function buildStreetAndShops(halfW, halfD) {
+      // Rue + entrée de l'institut du même côté (+Z)
+      const facadeZ = halfD;
+      const sidewalkDepth = 2.4;
+      const streetDepth = 7.5;
+      const sidewalkZ = facadeZ + sidewalkDepth / 2 + 0.15;
+      const streetZ = facadeZ + sidewalkDepth + streetDepth / 2 + 0.2;
+      const blockW = Math.max(halfW * 2 + 16, 34);
+      const wallName = organizationName || 'Institut';
+
+      // ——— Façade vitrée côté rue (intérieur visible) ———
+      const facadeH = 3.2;
+      const doorW = 2.4;
+      const doorH = 2.55;
+      const facadeW = halfW * 2;
+      const glassMat = new THREE.MeshStandardMaterial({
+        color: 0xeef6fc,
+        transparent: true,
+        opacity: 0.16,
+        roughness: 0.05,
+        metalness: 0.12,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const frameMat = MAT.gold();
+      const fz = facadeZ + 0.02;
+
+      // Cadre creux (pas de panneau plein qui masque l'intérieur)
+      const frameT = 0.12;
+      [
+        { w: facadeW + 0.16, h: frameT, x: 0, y: facadeH - frameT / 2 },
+        { w: facadeW + 0.16, h: frameT, x: 0, y: frameT / 2 },
+        { w: frameT, h: facadeH - frameT * 2, x: -facadeW / 2 - 0.02, y: facadeH / 2 },
+        { w: frameT, h: facadeH - frameT * 2, x: facadeW / 2 + 0.02, y: facadeH / 2 },
+      ].forEach(function (p) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, 0.1), frameMat);
+        bar.position.set(p.x, p.y, fz - 0.02);
+        scene.add(bar);
+      });
+
+      // Grande baie vitrée continue — intérieur visible depuis la rue
+      const mainGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(facadeW - 0.08, facadeH - 0.2, 0.04),
+        glassMat,
+      );
+      mainGlass.position.set(0, facadeH / 2, fz);
+      scene.add(mainGlass);
+
+      // Montants autour de la porte (fins)
+      [-doorW / 2 - 0.04, doorW / 2 + 0.04].forEach(function (mx) {
+        const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.08, facadeH - 0.24, 0.1), frameMat);
+        mullion.position.set(mx, facadeH / 2, fz);
+        scene.add(mullion);
+      });
+      const transom = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.12, 0.08, 0.1), frameMat);
+      transom.position.set(0, doorH + 0.04, fz);
+      scene.add(transom);
+
+      // Portes vitrées (légèrement devant)
+      const doorL = new THREE.Mesh(new THREE.BoxGeometry(doorW / 2 - 0.06, doorH - 0.1, 0.05), glassMat);
+      doorL.position.set(-doorW / 4, doorH / 2, fz + 0.04);
+      scene.add(doorL);
+      const doorR = doorL.clone();
+      doorR.position.x = doorW / 4;
+      scene.add(doorR);
+      // Contour porte fin (pas un bloc plein)
+      [
+        { w: doorW + 0.1, h: 0.06, x: 0, y: doorH - 0.02 },
+        { w: doorW + 0.1, h: 0.06, x: 0, y: 0.08 },
+        { w: 0.06, h: doorH - 0.1, x: -doorW / 2, y: doorH / 2 },
+        { w: 0.06, h: doorH - 0.1, x: doorW / 2, y: doorH / 2 },
+        { w: 0.05, h: doorH - 0.15, x: 0, y: doorH / 2 },
+      ].forEach(function (p) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, 0.08), frameMat);
+        bar.position.set(p.x, p.y, fz + 0.02);
+        scene.add(bar);
+      });
+      [-0.1, 0.1].forEach(function (hx) {
+        const handle = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.03, 0.03, 0.35, 8),
+          new THREE.MeshStandardMaterial({ color: 0xc9a84c, metalness: 0.7, roughness: 0.3 }),
+        );
+        handle.rotation.z = Math.PI / 2;
+        handle.position.set(hx, 1.1, fz + 0.1);
+        scene.add(handle);
+      });
+
+      // Auvent d'entrée + nom institut lisible depuis la rue
+      const entryAwning = new THREE.Mesh(
+        new THREE.BoxGeometry(Math.min(halfW * 1.4, 8), 0.1, 1.1),
+        new THREE.MeshStandardMaterial({ color: 0xc49292, roughness: 0.65 }),
+      );
+      entryAwning.position.set(0, 2.85, facadeZ + 0.55);
+      scene.add(entryAwning);
+      addWallInstituteName(wallName, 0, 3.2, facadeZ + 0.18, {
+        width: Math.min(7.5, Math.max(3.8, wallName.length * 0.34)),
+        height: 0.9,
+        rotationY: 0,
+      });
+      addShopFacadeLabel(wallName, 0, 2.45, facadeZ + 0.16, 0xc9a84c, 0);
+
+      // Trottoir devant l'entrée
+      const sidewalk = new THREE.Mesh(
+        new THREE.BoxGeometry(blockW, 0.1, sidewalkDepth),
+        new THREE.MeshStandardMaterial({ color: 0xd8d2c8, roughness: 0.95 }),
+      );
+      sidewalk.position.set(0, -0.02, sidewalkZ);
+      sidewalk.receiveShadow = true;
+      scene.add(sidewalk);
+
+      const curb = new THREE.Mesh(
+        new THREE.BoxGeometry(blockW, 0.16, 0.22),
+        new THREE.MeshStandardMaterial({ color: 0xb8b0a4, roughness: 0.9 }),
+      );
+      curb.position.set(0, 0.02, facadeZ + sidewalkDepth + 0.2);
+      scene.add(curb);
+
+      const asphalt = new THREE.Mesh(
+        new THREE.BoxGeometry(blockW, 0.08, streetDepth),
+        new THREE.MeshStandardMaterial({ color: 0x4a4a4e, roughness: 0.92 }),
+      );
+      asphalt.position.set(0, -0.06, streetZ);
+      asphalt.receiveShadow = true;
+      scene.add(asphalt);
+
+      for (let i = -4; i <= 4; i++) {
+        const dash = new THREE.Mesh(
+          new THREE.BoxGeometry(1.4, 0.02, 0.14),
+          new THREE.MeshStandardMaterial({ color: 0xf0e8a0, roughness: 0.7 }),
+        );
+        dash.position.set(i * 3.2, -0.01, streetZ);
+        scene.add(dash);
+      }
+
+      const farSidewalk = new THREE.Mesh(
+        new THREE.BoxGeometry(blockW, 0.1, 1.8),
+        new THREE.MeshStandardMaterial({ color: 0xd8d2c8, roughness: 0.95 }),
+      );
+      farSidewalk.position.set(0, -0.02, streetZ + streetDepth / 2 + 1.0);
+      scene.add(farSidewalk);
+
+      // Magasins mitoyens — façade + enseigne vers la rue
+      const shopDepth = 3.2;
+      const shopZ = facadeZ - shopDepth / 2 + 0.15;
+      addNeighborShop({
+        x: -halfW - 3.4,
+        z: shopZ,
+        w: 4.4,
+        d: shopDepth,
+        name: 'Parfumerie',
+        facadeColor: 0xf4ebe6,
+        accent: 0xb07a7a,
+        faceDir: 1,
+      });
+      addNeighborShop({
+        x: -halfW - 8.0,
+        z: shopZ,
+        w: 4.0,
+        d: 3.0,
+        name: 'Café Lina',
+        facadeColor: 0xece4d8,
+        accent: 0x6b8cae,
+        faceDir: 1,
+      });
+      addNeighborShop({
+        x: halfW + 3.4,
+        z: shopZ,
+        w: 4.4,
+        d: shopDepth,
+        name: 'Mode & Style',
+        facadeColor: 0xf0ebe8,
+        accent: 0x8f6a8f,
+        faceDir: 1,
+      });
+      addNeighborShop({
+        x: halfW + 8.0,
+        z: shopZ,
+        w: 4.0,
+        d: 3.0,
+        name: 'Bijouterie',
+        facadeColor: 0xf5f0e8,
+        accent: 0xc9a84c,
+        faceDir: 1,
+      });
+
+      // Lampadaires
+      [-halfW - 1, halfW + 1, 0].forEach(function (lx) {
+        const pole = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.06, 0.08, 3.2, 8),
+          new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: 0.5, metalness: 0.4 }),
+        );
+        pole.position.set(lx, 1.6, sidewalkZ + 0.5);
+        scene.add(pole);
+        const lamp = new THREE.Mesh(
+          new THREE.SphereGeometry(0.22, 12, 12),
+          new THREE.MeshStandardMaterial({ color: 0xfff2d0, emissive: 0xffe8b0, emissiveIntensity: 0.35, roughness: 0.4 }),
+        );
+        lamp.position.set(lx, 3.25, sidewalkZ + 0.5);
+        scene.add(lamp);
+      });
+
+      [-5.5, 5.5].forEach(function (bx) {
+        const bench = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 0.45), MAT.woodDark());
+        bench.position.set(bx, 0.45, sidewalkZ - 0.35);
+        scene.add(bench);
+        const legL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.4, 0.4), MAT.black());
+        legL.position.set(bx - 0.55, 0.2, sidewalkZ - 0.35);
+        scene.add(legL);
+        const legR = legL.clone();
+        legR.position.x = bx + 0.55;
+        scene.add(legR);
+      });
+
+      addPlant(-halfW - 5.5, sidewalkZ - 0.3, 1.3);
+      addPlant(halfW + 5.5, sidewalkZ - 0.3, 1.3);
+      addPlant(0, streetZ + streetDepth / 2 + 0.6, 1.1);
+
+      const carBody = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.55, 1.05),
+        new THREE.MeshStandardMaterial({ color: 0x6b8cae, roughness: 0.45, metalness: 0.25 }),
+      );
+      carBody.position.set(-3.5, 0.45, streetZ - 1.0);
+      scene.add(carBody);
+      const carCabin = new THREE.Mesh(
+        new THREE.BoxGeometry(1.1, 0.4, 0.95),
+        new THREE.MeshStandardMaterial({ color: 0xc5d6e8, transparent: true, opacity: 0.7, roughness: 0.2 }),
+      );
+      carCabin.position.set(-3.3, 0.9, streetZ - 1.0);
+      scene.add(carCabin);
+      [[-4.3, -0.4], [-2.7, -0.4], [-4.3, 0.4], [-2.7, 0.4]].forEach(function (p) {
+        const wheel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.22, 0.22, 0.16, 12),
+          new THREE.MeshStandardMaterial({ color: 0x222226, roughness: 0.8 }),
+        );
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(p[0], 0.22, streetZ - 1.0 + p[1]);
+        scene.add(wheel);
+      });
+    }
+
+    function buildSalonArchitecture() {
+      var cabinCount = chairsData.length;
+      var floorW = Math.max(18, 10 + Math.min(cabinCount, 12) * 0.7);
+      var floorD = Math.max(13, 11 + Math.ceil(cabinCount / 4) * 1.2);
+      var halfW = floorW / 2;
+      var halfD = floorD / 2;
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(floorW, 0.12, floorD), MAT.wood());
+      floor.position.set(0, -0.06, 0);
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Lames de parquet pour bien lire le sol
+      var plankCount = Math.ceil(floorW / 1.05);
+      for (let i = -plankCount; i <= plankCount; i++) {
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, floorD - 0.4), MAT.woodPlank());
+        plank.position.set(i * 1.05, 0.01, 0);
+        scene.add(plank);
+      }
+
+      const rim = new THREE.Mesh(new THREE.BoxGeometry(floorW + 0.15, 0.08, floorD + 0.15), MAT.woodDark());
+      rim.position.set(0, -0.12, 0);
+      scene.add(rim);
+
+      const wallMat = MAT.wall();
+      const woodMat = MAT.woodDark();
+      const marbleMat = MAT.marble();
+
+      const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorW, 3.2, 0.18), wallMat);
+      backWall.position.set(0, 1.6, -halfD + 0.1);
+      backWall.receiveShadow = true;
+      scene.add(backWall);
+
+      var windowCount = Math.max(3, Math.min(6, Math.floor(floorW / 3)));
+      var windowSpan = (windowCount - 1) * 3;
+      for (let i = 0; i < windowCount; i++) {
+        var wx = -windowSpan / 2 + i * 3;
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.4, 0.08), MAT.black());
+        frame.position.set(wx, 1.5, -halfD + 0.22);
+        scene.add(frame);
+        const glass = new THREE.Mesh(
+          new THREE.BoxGeometry(2.15, 2.15, 0.04),
+          new THREE.MeshStandardMaterial({ color: 0xdce7f0, transparent: true, opacity: 0.55, roughness: 0.05, metalness: 0.2 })
+        );
+        glass.position.set(wx, 1.5, -halfD + 0.28);
+        scene.add(glass);
+      }
+
+      const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.18, 3.2, floorD), wallMat);
+      leftWall.position.set(-halfW + 0.05, 1.6, 0);
+      scene.add(leftWall);
+      const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.18, 3.2, floorD), wallMat);
+      rightWall.position.set(halfW - 0.05, 1.6, 0);
+      scene.add(rightWall);
+
+      const marbleWall = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.8, 0.2), marbleMat);
+      marbleWall.position.set(-6.6, 1.4, -halfD + 0.5);
+      scene.add(marbleWall);
+
+      // Nom de l'institut sur les murs (plus de texte générique « L'INSTITUT »)
+      const wallName = organizationName || 'Institut';
+      addWallInstituteName(wallName, -6.6, 2.05, -halfD + 0.65, { width: 3.4 });
+      addWallInstituteName(wallName, 0.2, 2.55, -halfD + 0.22, { width: Math.min(7, Math.max(3.5, wallName.length * 0.32)) });
+      addWallInstituteName(wallName, -halfW + 0.14, 2.15, -1.2, {
+        width: Math.min(5, Math.max(2.8, wallName.length * 0.26)),
+        rotationY: Math.PI / 2,
+      });
+      addWallInstituteName(wallName, halfW - 0.14, 2.15, -1.2, {
+        width: Math.min(5, Math.max(2.8, wallName.length * 0.26)),
+        rotationY: -Math.PI / 2,
+      });
+
+      for (let i = 0; i < 8; i++) {
+        const slat = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.6, 0.08), woodMat);
+        slat.position.set(-8.5 + i * 0.18, 1.3, -halfD + 0.55);
+        scene.add(slat);
+      }
+      for (let i = 0; i < 6; i++) {
+        const slat = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.6, 0.08), woodMat);
+        slat.position.set(-4.7 + i * 0.18, 1.3, -halfD + 0.55);
+        scene.add(slat);
+      }
+
+      // Accueil juste derrière l'entrée (côté rue +Z)
+      const deskTop = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.12, 1.1), woodMat);
+      deskTop.position.set(-6.5, 1.05, 4.2);
+      deskTop.castShadow = true;
+      scene.add(deskTop);
+      const deskBody = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.95, 0.95), marbleMat);
+      deskBody.position.set(-6.5, 0.5, 4.2);
+      deskBody.castShadow = true;
+      scene.add(deskBody);
+      const deskWing = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.95, 2.0), marbleMat);
+      deskWing.position.set(-5.2, 0.5, 3.4);
+      deskWing.castShadow = true;
+      scene.add(deskWing);
+      registerInteractiveObject(deskBody, "Accueil & Réception", "reception");
+
+      const placedStaffIds = {};
+
+      const rug = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.04, 3.6), MAT.rug());
+      rug.position.set(-0.2, 0.02, 3.6);
+      scene.add(rug);
+      registerInteractiveObject(rug, "Salle d'attente", "waiting");
+
+      const waitingCapacity = waitingRoomsData.reduce(function (sum, room) {
+        return sum + (room.capacity || 0);
+      }, 0);
+      const loungeSeatCount = Math.max(
+        waitingCapacity || 4,
+        waitingData.length,
+        waitingRoomsData.length ? 2 : 4,
+      );
+      const lounge = layoutWaitingSeats(loungeSeatCount);
+      lounge.forEach(function (pos, i) {
+        const c = addRoundChair(pos[0], pos[1], i % 2 === 0 ? MAT.rose() : MAT.roseDeep());
+        if (i === 0) registerInteractiveObject(c.children[0], "Salle d'attente", "waiting");
+      });
+
+      const waitingRoomTitle = waitingRoomsData.length
+        ? waitingRoomsData.map(function (r) { return r.name; }).join(' · ')
+        : "Salle d'attente";
+      const waitingZoneBadge = create3DBadgeMesh(waitingRoomTitle, 0xc9a84c);
+      waitingZoneBadge.position.set(-0.2, 2.1, 3.6);
+      waitingZoneBadge.visible = false;
+      scene.add(waitingZoneBadge);
+      waitingZoneBadgeMesh = waitingZoneBadge;
+
+      // Clientes en attente : une sur deux marche dans le lounge, les autres s'agitent assises
+      waitingData.forEach(function (client, i) {
+        const exactName = client.name || 'Cliente';
+        if (i % 2 === 1) {
+          const path = makeLoungeWalkPath(i);
+          const walker = createWomanAvatar({
+            role: 'client',
+            pose: 'walk',
+            name: exactName,
+            hairColor: HAIR_COLORS[(i + 2) % HAIR_COLORS.length],
+            outfitColor: CLIENT_DRESSES[i % CLIENT_DRESSES.length],
+          });
+          walker.position.set(path[0][0], 0, path[0][1]);
+          scene.add(walker);
+          registerAnimatedPerson(walker, {
+            mode: 'walk',
+            path: path,
+            speed: 0.016 + (i % 3) * 0.004,
+            baseY: 0,
+          });
+          registerPersonInteractive(walker, 'person_wait_' + client.id, exactName);
+          return;
+        }
+        const seat = lounge[i] || lounge[i % lounge.length];
+        const woman = createWomanAvatar({
+          role: 'client',
+          pose: 'sit',
+          name: exactName,
+          hairColor: HAIR_COLORS[(i + 2) % HAIR_COLORS.length],
+          outfitColor: CLIENT_DRESSES[i % CLIENT_DRESSES.length],
+        });
+        woman.position.set(seat[0], 0.28, seat[1]);
+        scene.add(woman);
+        registerAnimatedPerson(woman, { mode: 'sit', baseY: 0.28 });
+        registerPersonInteractive(woman, 'person_wait_' + client.id, exactName);
+      });
+
+      const table1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.08, 24), MAT.cream());
+      table1.position.set(-0.3, 0.35, 3.6);
+      scene.add(table1);
+      const tableLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.3, 10), MAT.gold());
+      tableLeg.position.set(-0.3, 0.16, 3.6);
+      scene.add(tableLeg);
+      const table2 = table1.clone();
+      table2.position.set(0.7, 0.35, 3.2);
+      scene.add(table2);
+
+      // Miroirs + coiffeuse contre le mur du fond (cabines alignées)
+      const cabinWallZ = -halfD;
+      addOvalMirror(-2.4, 1.7, cabinWallZ + 0.35);
+      addOvalMirror(0.2, 1.7, cabinWallZ + 0.35);
+      addOvalMirror(2.8, 1.7, cabinWallZ + 0.35);
+
+      const vanity = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.12, 0.55), woodMat);
+      vanity.position.set(0.2, 0.85, cabinWallZ + 1.0);
+      scene.add(vanity);
+
+      const cabinPositions = layoutCabinPositions(chairsData.length, halfD);
+      chairsData.forEach(function (chair, idx) {
+        const chairGroup = new THREE.Group();
+        const pos = cabinPositions[idx] || { x: 0, z: 1.6 };
+        const posX = pos.x;
+        const posZ = pos.z;
+        const scale = chairsData.length > 12 ? 0.88 : 1;
+
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35 * scale, 0.42 * scale, 0.12, 16), MAT.gold());
+        base.position.set(posX, 0.06, posZ);
+        chairGroup.add(base);
+
+        const seatMat = MAT.chair();
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(1.05 * scale, 0.22, 1.65 * scale), seatMat);
+        seat.position.set(posX, 0.58, posZ);
+        seat.castShadow = true;
+        chairGroup.add(seat);
+
+        const back = new THREE.Mesh(new THREE.BoxGeometry(1.05 * scale, 0.95 * scale, 0.16), MAT.roseDeep());
+        back.position.set(posX, 1.05, posZ - 0.7 * scale);
+        back.rotation.x = -0.35;
+        back.castShadow = true;
+        chairGroup.add(back);
+
+        const legrest = new THREE.Mesh(new THREE.BoxGeometry(0.95 * scale, 0.14, 0.75 * scale), seatMat);
+        legrest.position.set(posX, 0.45, posZ + 0.9 * scale);
+        legrest.rotation.x = 0.25;
+        chairGroup.add(legrest);
+
+        const cart = new THREE.Mesh(new THREE.BoxGeometry(0.5 * scale, 0.7 * scale, 0.4 * scale), MAT.woodDark());
+        cart.position.set(posX + 0.9 * scale, 0.35, posZ - 0.2);
+        cart.castShadow = true;
+        chairGroup.add(cart);
+
+        if (chair.status === 'occupied') {
+          const clientOnChair = createWomanAvatar({
+            role: 'client',
+            pose: 'lie',
+            name: chair.client || 'Cliente',
+            hairColor: HAIR_COLORS[(idx + 1) % HAIR_COLORS.length],
+            outfitColor: CLIENT_DRESSES[(idx + 2) % CLIENT_DRESSES.length],
+          });
+          clientOnChair.position.set(posX, 0.78, posZ);
+          clientOnChair.scale.set(scale, scale, scale);
+          chairGroup.add(clientOnChair);
+          registerAnimatedPerson(clientOnChair, { mode: 'lie', baseY: 0.78 });
+          registerPersonInteractive(clientOnChair, 'person_client_' + chair.id, chair.client || 'Cliente');
+
+          if (chair.staff || chair.staffId) {
+            const staffAtChair = createWomanAvatar({
+              role: 'staff',
+              pose: 'work',
+              name: chair.staff || 'Employée',
+              hairColor: HAIR_COLORS[(idx + 3) % HAIR_COLORS.length],
+              outfitColor: STAFF_TUNICS[idx % STAFF_TUNICS.length],
+            });
+            staffAtChair.position.set(posX - 0.9 * scale, 0, posZ + 0.15);
+            staffAtChair.scale.set(scale, scale, scale);
+          chairGroup.add(staffAtChair);
+            registerAnimatedPerson(staffAtChair, { mode: 'work', baseY: 0 });
+            registerPersonInteractive(
+              staffAtChair,
+              'person_staff_' + (chair.staffId || idx),
+              chair.staff || 'Employée',
+            );
+            if (chair.staffId) placedStaffIds[chair.staffId] = true;
+          }
+        } else {
+          const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.55 * scale, 0.12, 0.35 * scale), MAT.roseDeep());
+          pillow.position.set(posX, 0.75, posZ - 0.35 * scale);
+          chairGroup.add(pillow);
+        }
+
+        // Nom de cabine : visible uniquement au clic
+        const nameBadge = create3DBadgeMesh(chair.name || ('Cabine ' + (idx + 1)), 0xc9a84c);
+        nameBadge.position.set(posX, 2.55, posZ);
+        nameBadge.scale.set(0.7, 0.7, 0.7);
+        nameBadge.visible = false;
+        chairGroup.add(nameBadge);
+        chairGroup.userData.nameBadge = nameBadge;
+
+        const badgeMesh = create3DBadgeMesh(
+          chair.status === 'occupied' ? 'Occupée' : 'Libre',
+          chair.status === 'occupied' ? 0xc49292 : 0x6f9e78
+        );
+        badgeMesh.position.set(posX, 2.15, posZ);
+        badgeMesh.visible = false;
+        chairGroup.add(badgeMesh);
+        chairGroup.userData.statusBadge = badgeMesh;
+        chair3DBadges.push({ id: chair.id, mesh: badgeMesh });
+
+        scene.add(chairGroup);
+        chair3DGroups.push({ id: chair.id, group: chairGroup });
+        registerInteractiveObject(seat, chair.name || ('Cabine ' + (idx + 1)), 'chair_' + chair.id);
+      });
+
+      const manicure = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.7), MAT.cream());
+      manicure.position.set(-6.2, 0.75, 2.8);
+      scene.add(manicure);
+      const mLeg1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.08), MAT.gold());
+      mLeg1.position.set(-6.8, 0.35, 2.55);
+      scene.add(mLeg1);
+      const mLeg2 = mLeg1.clone();
+      mLeg2.position.set(-5.6, 0.35, 3.05);
+      scene.add(mLeg2);
+      addRoundChair(-6.8, 3.5, MAT.rose());
+      addRoundChair(-5.5, 2.2, MAT.roseDeep());
+
+      // Chambre de stock / réserve — murs vitrés
+      const stockRoom = new THREE.Group();
+      const roomW = 4.2; // profondeur (axe X local)
+      const roomD = 5.0; // largeur (axe Z local)
+      const roomH = 3.0;
+      const wallT = 0.06;
+      const frameT = 0.07;
+
+      const glassMat = new THREE.MeshStandardMaterial({
+        color: 0xdceaf5,
+        transparent: true,
+        opacity: 0.28,
+        roughness: 0.08,
+        metalness: 0.15,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      const frameMat = MAT.gold();
+
+      function addGlassWall(w, h, d, x, y, z) {
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), glassMat);
+        glass.position.set(x, y, z);
+        stockRoom.add(glass);
+        // Cadre fin doré autour de la vitre
+        const isVerticalPlane = w < d; // mur dans le plan Z
+        if (isVerticalPlane) {
+          const top = new THREE.Mesh(new THREE.BoxGeometry(frameT, frameT, d), frameMat);
+          top.position.set(x, y + h / 2, z);
+          stockRoom.add(top);
+          const bot = top.clone();
+          bot.position.y = y - h / 2;
+          stockRoom.add(bot);
+          const left = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, frameT), frameMat);
+          left.position.set(x, y, z - d / 2);
+          stockRoom.add(left);
+          const right = left.clone();
+          right.position.z = z + d / 2;
+          stockRoom.add(right);
+        } else {
+          const top = new THREE.Mesh(new THREE.BoxGeometry(w, frameT, frameT), frameMat);
+          top.position.set(x, y + h / 2, z);
+          stockRoom.add(top);
+          const bot = top.clone();
+          bot.position.y = y - h / 2;
+          stockRoom.add(bot);
+          const left = new THREE.Mesh(new THREE.BoxGeometry(frameT, h, frameT), frameMat);
+          left.position.set(x - w / 2, y, z);
+          stockRoom.add(left);
+          const right = left.clone();
+          right.position.x = x + w / 2;
+          stockRoom.add(right);
+        }
+        return glass;
+      }
+
+      const roomFloor = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.08, roomD), MAT.woodDark());
+      roomFloor.position.set(0, 0.02, 0);
+      roomFloor.receiveShadow = true;
+      stockRoom.add(roomFloor);
+
+      const roomBack = addGlassWall(wallT, roomH, roomD, roomW / 2 - wallT / 2, roomH / 2, 0);
+      addGlassWall(roomW, roomH, wallT, 0, roomH / 2, -roomD / 2 + wallT / 2);
+      addGlassWall(roomW, roomH, wallT, 0, roomH / 2, roomD / 2 - wallT / 2);
+
+      // Façade vitrée avec porte ouverte vers le salon
+      const doorW = 1.55;
+      const doorH = 2.35;
+      const frontSide = (roomD - doorW) / 2;
+      addGlassWall(wallT, roomH, frontSide, -roomW / 2 + wallT / 2, roomH / 2, -roomD / 2 + frontSide / 2);
+      addGlassWall(wallT, roomH, frontSide, -roomW / 2 + wallT / 2, roomH / 2, roomD / 2 - frontSide / 2);
+      addGlassWall(wallT, roomH - doorH, doorW, -roomW / 2 + wallT / 2, doorH + (roomH - doorH) / 2, 0);
+
+      const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.08, doorH, doorW + 0.12), MAT.gold());
+      doorFrame.position.set(-roomW / 2 + 0.02, doorH / 2, 0);
+      stockRoom.add(doorFrame);
+
+      // Pas de plafond — chambre ouverte vers le haut
+
+      // Étagères intérieures contre le mur du fond
+      const products = stockData.slice(0, 18);
+      const cols = products.length <= 6 ? 2 : 3;
+      const rows = Math.max(2, Math.ceil(Math.max(products.length, 1) / cols));
+      const cellW = 0.85;
+      const cellH = 0.68;
+      const shelfW = cols * cellW + 0.3;
+      const shelfUnit = new THREE.Mesh(new THREE.BoxGeometry(0.55, rows * cellH + 0.4, shelfW), woodMat);
+      shelfUnit.position.set(roomW / 2 - 0.55, (rows * cellH + 0.4) / 2, 0);
+      shelfUnit.castShadow = true;
+      stockRoom.add(shelfUnit);
+
+      for (let r = 0; r < rows; r++) {
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.05, shelfW - 0.1), MAT.cream());
+        plank.position.set(roomW / 2 - 0.72, 0.32 + r * cellH, 0);
+        plank.castShadow = true;
+        stockRoom.add(plank);
+      }
+
+      stockProductActors = [];
+      products.forEach(function (product, i) {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        const localZ = -((cols - 1) * cellW) / 2 + col * cellW;
+        const localY = 0.38 + row * cellH;
+        const productMesh = createProductMesh(product);
+        productMesh.position.set(roomW / 2 - 0.85, localY, localZ);
+        productMesh.rotation.y = -Math.PI / 2;
+        stockRoom.add(productMesh);
+
+        const hit = new THREE.Mesh(
+          new THREE.BoxGeometry(0.45, 0.55, cellW - 0.12),
+          new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+        );
+        hit.position.set(roomW / 2 - 0.85, localY + 0.12, localZ);
+        hit.userData = {
+          codeId: 'product_' + product.id,
+          name: product.name + ' · ' + formatStockQty(product.qty) + (product.unit ? ' ' + product.unit : ''),
+          productId: product.id,
+        };
+        stockRoom.add(hit);
+        interactive3DObjects.push(hit);
+        stockProductActors.push({ id: product.id, mesh: productMesh, hit: hit });
+      });
+
+      if (!products.length) {
+        const emptyLabel = createProductLabelSprite('Aucun produit', 'Ajoutez dans Stock', '', 'low');
+        emptyLabel.position.set(0, 1.4, 0);
+        emptyLabel.visible = false;
+        stockRoom.add(emptyLabel);
+        stockZoneBadge = emptyLabel;
+      }
+
+      const stockBadge = create3DBadgeMesh('Chambre stock', 0xc9a84c);
+      stockBadge.position.set(-roomW / 2 - 0.05, 2.7, 0);
+      stockBadge.rotation.y = Math.PI / 2;
+      stockBadge.visible = false;
+      stockRoom.add(stockBadge);
+      stockZoneBadge = stockBadge;
+
+      // Petite table / carton dans la chambre
+      const crate = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.55), MAT.wood());
+      crate.position.set(-0.6, 0.28, 1.6);
+      crate.castShadow = true;
+      stockRoom.add(crate);
+
+      // Position monde : à droite du salon, porte ouverte vers le centre
+      const roomX = Math.max(halfW - roomW / 2 - 0.15, 5.8);
+      stockRoom.position.set(roomX, 0, 0.4);
+      scene.add(stockRoom);
+      registerInteractiveObject(roomBack, 'Chambre de stock', 'stock');
+      registerInteractiveObject(doorFrame, 'Chambre de stock', 'stock');
+      stockRoomCenter = {
+        x: roomX,
+        z: 0.4,
+        doorX: roomX - roomW / 2,
+        minX: roomX - roomW / 2,
+        maxX: roomX + roomW / 2,
+        minZ: 0.4 - roomD / 2,
+        maxZ: 0.4 + roomD / 2,
+      };
+
+      // Toute l'équipe : en mouvement (marche / pas à l'accueil), sauf déjà placées en soin
+      let walkIndex = 0;
+      let receptionTaken = false;
+      const hasReceptionRole = staffData.some(function (s) { return s.status === 'reception'; });
+      const firstOnDutyIndex = staffData.findIndex(function (s) { return s.status !== 'away'; });
+
+      staffData.forEach(function (member, i) {
+        if (placedStaffIds[member.id]) return;
+
+        const exactName = member.name || member.firstName || 'Employée';
+        const isAvailable = member.status === 'available';
+        const isAway = member.status === 'away';
+
+        function attachHiddenStatusBadge(person, text, color) {
+          const badge = create3DBadgeMesh(text, color);
+          badge.scale.set(0.6, 0.6, 0.6);
+          badge.position.set(0, 2.25, 0);
+          badge.visible = false;
+          person.add(badge);
+          person.userData.statusBadge = badge;
+        }
+
+        function spawnWalker(path, speed, badgeText, badgeColor, hairOff, tunicColor, opts) {
+          opts = opts || {};
+          const walker = createWomanAvatar({
+            role: 'staff',
+            pose: 'walk',
+            name: exactName,
+            hairColor: HAIR_COLORS[(i + hairOff) % HAIR_COLORS.length],
+            outfitColor: tunicColor,
+          });
+          walker.position.set(path[0][0], 0, path[0][1]);
+          scene.add(walker);
+          registerAnimatedPerson(walker, {
+            mode: 'walk',
+            path: path,
+            speed: speed,
+            baseY: 0,
+            allowStockRoom: !!opts.allowStockRoom,
+            startAtPathZero: !!opts.startAtPathZero,
+          });
+          if (badgeText) attachHiddenStatusBadge(walker, badgeText, badgeColor);
+          registerPersonInteractive(walker, 'person_staff_' + member.id, exactName);
+          placedStaffIds[member.id] = true;
+          walkIndex += 1;
+        }
+
+        if (isAway) {
+          spawnWalker(
+            makeStaffWalkPath(walkIndex + 3),
+            0.012 + (walkIndex % 3) * 0.003,
+            'En congé',
+            0xc9a06a,
+            4,
+            0xd8d0cc,
+          );
+          return;
+        }
+
+        if (!receptionTaken && (member.status === 'reception' || (!hasReceptionRole && i === firstOnDutyIndex))) {
+          spawnWalker(makeReceptionPacePath(), 0.014, 'Accueil', 0xc9a84c, 0, STAFF_TUNICS[i % STAFF_TUNICS.length]);
+          receptionTaken = true;
+          return;
+        }
+
+        if (member.status === 'stock') {
+          spawnWalker(
+            makeStockRoomWalkPath(),
+            0.016,
+            'Réserve',
+            0xc9a84c,
+            2,
+            STAFF_TUNICS[i % STAFF_TUNICS.length],
+            { allowStockRoom: true, startAtPathZero: true },
+          );
+          return;
+        }
+
+        // Disponibles et autres : circulent dans le salon
+        spawnWalker(
+          makeStaffWalkPath(walkIndex),
+          0.018 + (walkIndex % 4) * 0.004,
+          isAvailable ? 'Disponible' : null,
+          0x6f9e78,
+          1,
+          STAFF_TUNICS[i % STAFF_TUNICS.length],
+        );
+      });
+
+      addPlant(-8.2, 4.5, 1.1);
+      addPlant(-3.8, 5.2, 0.9);
+      addPlant(3.8, 5.1, 1.0);
+      addPlant(5.5, 4.2, 1.15);
+      addPlant(-8.3, 2.5, 0.85);
+
+      // Rue + magasins mitoyens devant l'entrée (+Z)
+      buildStreetAndShops(halfW, halfD);
+    }
+
+    function registerAnimatedPerson(group, opts) {
+      const pathLen = Math.max(1, (opts.path || []).length);
+      animatedPeople.push({
+        group: group,
+        mode: opts.mode || 'idle',
+        path: opts.path || null,
+        pathIndex: opts.startAtPathZero ? 0 : Math.floor(Math.random() * pathLen),
+        speed: opts.speed || 0.016,
+        phase: Math.random() * Math.PI * 2,
+        baseY: opts.baseY != null ? opts.baseY : 0,
+        leftLeg: group.userData.leftLeg || null,
+        rightLeg: group.userData.rightLeg || null,
+        leftArm: group.userData.leftArm || null,
+        rightArm: group.userData.rightArm || null,
+        homeX: group.position.x,
+        homeZ: group.position.z,
+        allowStockRoom: !!opts.allowStockRoom,
+      });
+    }
+
+    function createNameSprite(label, role) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 96;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 512, 96);
+      ctx.fillStyle = role === 'staff' ? 'rgba(180,140,40,0.95)' : 'rgba(180,100,110,0.95)';
+      if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(12, 16, 488, 64, 18);
+        ctx.fill();
+      } else {
+        ctx.fillRect(12, 16, 488, 64);
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      let text = (label || (role === 'staff' ? 'Employée' : 'Cliente')).replace(/\s+/g, ' ').trim();
+      while (ctx.measureText(text).width > 450 && text.length > 3) {
+        text = text.slice(0, -2) + '…';
+      }
+      ctx.fillText(text, 256, 48);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.needsUpdate = true;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: tex,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      }));
+      sprite.scale.set(2.4, 0.48, 1);
+      sprite.renderOrder = 20;
+      return sprite;
+    }
+
+    /** Silhouette féminine : employée (blouse) ou cliente (robe). */
+    function createWomanAvatar(opts) {
+      opts = opts || {};
+      const role = opts.role === 'staff' ? 'staff' : 'client';
+      const pose = opts.pose || 'stand';
+      const name = opts.name || (role === 'staff' ? 'Employée' : 'Cliente');
+      const hairColor = opts.hairColor || HAIR_COLORS[0];
+      const outfitColor = opts.outfitColor || (role === 'staff' ? 0xf4f7fb : 0xc98b8b);
+
+      const group = new THREE.Group();
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xe2b09a, roughness: 0.65 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.75 });
+      const outfitMat = new THREE.MeshStandardMaterial({ color: outfitColor, roughness: 0.5 });
+      const skirtMat = new THREE.MeshStandardMaterial({
+        color: role === 'staff' ? 0x3d4450 : outfitColor,
+        roughness: 0.55,
+      });
+      const shoeMat = new THREE.MeshStandardMaterial({ color: 0x2a2220, roughness: 0.4 });
+
+      // Tête + visage
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 18), skinMat);
+      head.castShadow = true;
+      const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 14), hairMat);
+      hairTop.scale.set(1.05, 0.85, 1.05);
+      hairTop.castShadow = true;
+      const hairBun = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), hairMat);
+      const hairSideL = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), hairMat);
+      hairSideL.scale.set(0.7, 1.4, 0.8);
+      const hairSideR = hairSideL.clone();
+
+      // Corps féminin : buste + jupe/robe
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.22, 0.48, 14), outfitMat);
+      torso.castShadow = true;
+      const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 0.35, 14), skirtMat);
+      waist.castShadow = true;
+
+      const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.42, 8), outfitMat);
+      const rightArm = leftArm.clone();
+      leftArm.castShadow = true;
+      rightArm.castShadow = true;
+
+      const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.055, 0.42, 8), skinMat);
+      const rightLeg = leftLeg.clone();
+      leftLeg.castShadow = true;
+      rightLeg.castShadow = true;
+      const leftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.18), shoeMat);
+      const rightShoe = leftShoe.clone();
+
+      const label = createNameSprite(name, role);
+      label.visible = false;
+
+      if (pose === 'lie') {
+        head.position.set(0, 0.2, -0.75);
+        hairTop.position.set(0, 0.28, -0.75);
+        hairBun.position.set(0, 0.36, -0.85);
+        hairSideL.position.set(-0.16, 0.18, -0.72);
+        hairSideR.position.set(0.16, 0.18, -0.72);
+        torso.rotation.x = Math.PI / 2;
+        torso.position.set(0, 0.14, -0.2);
+        waist.rotation.x = Math.PI / 2;
+        waist.position.set(0, 0.14, 0.28);
+        leftArm.rotation.z = 0.4;
+        rightArm.rotation.z = -0.4;
+        leftArm.rotation.x = Math.PI / 2;
+        rightArm.rotation.x = Math.PI / 2;
+        leftArm.position.set(-0.28, 0.18, -0.15);
+        rightArm.position.set(0.28, 0.18, -0.15);
+        leftLeg.rotation.x = Math.PI / 2;
+        rightLeg.rotation.x = Math.PI / 2;
+        leftLeg.position.set(-0.08, 0.12, 0.7);
+        rightLeg.position.set(0.08, 0.12, 0.7);
+        leftShoe.position.set(-0.08, 0.08, 0.95);
+        rightShoe.position.set(0.08, 0.08, 0.95);
+        label.position.set(0, 0.75, 0);
+      } else if (pose === 'sit') {
+        head.position.set(0, 1.15, 0.05);
+        hairTop.position.set(0, 1.28, 0.02);
+        hairBun.position.set(0, 1.38, -0.05);
+        hairSideL.position.set(-0.18, 1.12, 0.02);
+        hairSideR.position.set(0.18, 1.12, 0.02);
+        torso.position.set(0, 0.82, 0);
+        waist.position.set(0, 0.52, 0.05);
+        waist.scale.set(1.05, 0.85, 1.1);
+        leftArm.position.set(-0.28, 0.85, 0.05);
+        rightArm.position.set(0.28, 0.85, 0.05);
+        leftArm.rotation.z = 0.25;
+        rightArm.rotation.z = -0.25;
+        leftLeg.rotation.x = Math.PI / 2.2;
+        rightLeg.rotation.x = Math.PI / 2.2;
+        leftLeg.position.set(-0.1, 0.28, 0.28);
+        rightLeg.position.set(0.1, 0.28, 0.28);
+        leftShoe.position.set(-0.1, 0.12, 0.5);
+        rightShoe.position.set(0.1, 0.12, 0.5);
+        label.position.set(0, 1.55, 0);
+      } else {
+        head.position.set(0, 1.58, 0);
+        hairTop.position.set(0, 1.72, -0.02);
+        hairBun.position.set(0.02, 1.84, -0.08);
+        hairSideL.position.set(-0.18, 1.52, 0);
+        hairSideR.position.set(0.18, 1.52, 0);
+        torso.position.set(0, 1.18, 0);
+        waist.position.set(0, 0.78, 0);
+        leftArm.position.set(-0.3, 1.15, 0);
+        rightArm.position.set(0.3, 1.15, 0);
+        leftArm.rotation.z = 0.18;
+        rightArm.rotation.z = -0.18;
+        leftLeg.position.set(-0.1, 0.35, 0);
+        rightLeg.position.set(0.1, 0.35, 0);
+        leftShoe.position.set(-0.1, 0.06, 0.04);
+        rightShoe.position.set(0.1, 0.06, 0.04);
+        label.position.set(0, 2.2, 0);
+        if (pose === 'work') {
+          rightArm.rotation.x = -0.9;
+          rightArm.rotation.z = -0.35;
+          leftArm.rotation.x = -0.35;
+        }
+      }
+      // Toujours un peu au-dessus de la tête
+      if (pose === 'sit') label.position.set(0, 1.65, 0);
+      if (pose === 'lie') label.position.set(0, 0.9, 0);
+
+      group.add(head);
+      group.add(hairTop);
+      group.add(hairBun);
+      group.add(hairSideL);
+      group.add(hairSideR);
+      group.add(torso);
+      group.add(waist);
+      group.add(leftArm);
+      group.add(rightArm);
+      group.add(leftLeg);
+      group.add(rightLeg);
+      group.add(leftShoe);
+      group.add(rightShoe);
+      group.add(label);
+
+      group.userData.leftLeg = leftLeg;
+      group.userData.rightLeg = rightLeg;
+      group.userData.leftArm = leftArm;
+      group.userData.rightArm = rightArm;
+      group.userData.role = role;
+      group.userData.name = name;
+      group.userData.displayName = name;
+      group.userData.nameLabel = label;
+      group.scale.set(1.12, 1.12, 1.12);
+      return group;
+    }
+
+    function registerPersonInteractive(group, codeId, displayName) {
+      const hit = new THREE.Mesh(
+        new THREE.BoxGeometry(0.55, 1.7, 0.55),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+      );
+      hit.position.y = 0.85;
+      hit.userData = {
+        codeId: codeId,
+        name: displayName || (group.userData && group.userData.displayName) || 'Personne',
+        personGroup: group,
+      };
+      group.add(hit);
+      interactive3DObjects.push(hit);
+      personActors.push({ group: group, codeId: codeId });
+    }
+
+    // Compat : anciens appels éventuels
+    function createHumanAvatar(colorHex, name, isLying, isStaff) {
+      return createWomanAvatar({
+        role: isStaff ? 'staff' : 'client',
+        pose: isLying ? 'lie' : 'stand',
+        name: name,
+        outfitColor: colorHex,
+      });
+    }
+
+    function create3DBadgeMesh(text, colorHex) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 80;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#' + new THREE.Color(colorHex).getHexString();
+      if (typeof ctx.roundRect === 'function') {
+      ctx.beginPath();
+      ctx.roundRect(10, 10, 236, 60, 20);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+      ctx.stroke();
+      } else {
+        ctx.fillRect(10, 10, 236, 60);
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      let label = String(text || '');
+      while (ctx.measureText(label).width > 210 && label.length > 3) {
+        label = label.slice(0, -2) + '…';
+      }
+      ctx.fillText(label, 128, 40);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(1.6, 0.5, 1);
+      sprite.renderOrder = 25;
+      return sprite;
+    }
+
+    // Enregistrement des objets cliquables dans la scène
+    function registerInteractiveObject(mesh, displayName, codeId) {
+      mesh.userData = { name: displayName, codeId: codeId };
+      interactive3DObjects.push(mesh);
+    }
+
+    // ----------------------------------------------------
+    // 4. RAYCASTER & INTERACTION THREE.JS <-> CRM
+    // ----------------------------------------------------
+    function setupRaycaster() {
+      if (raycasterBound || !renderer) return;
+      raycasterBound = true;
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      // Clic uniquement sur le canvas (évite le bug mobile où le panneau prend toute la largeur)
+      renderer.domElement.addEventListener('click', function (event) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(interactive3DObjects, true);
+
+        if (intersects.length > 0) {
+          let obj = intersects[0].object;
+          while (obj && !obj.userData.codeId && obj.parent) {
+            obj = obj.parent;
+          }
+
+          if (obj && obj.userData.codeId) {
+            handle3DSelection(obj.userData.codeId, obj.userData.name, obj.userData.personGroup || null);
+          }
+        } else {
+          hideAllTitles();
+          selectedObjectId = null;
+          document.getElementById('selected-info').innerText = "Cliquez pour afficher le titre";
+        }
+      });
+    }
+
+    // Action lors du clic sur un objet 3D
+    function handle3DSelection(codeId, name, personGroup) {
+      selectedObjectId = codeId;
+      document.getElementById('selected-info').innerHTML =
+        `Sélectionné : <strong class="text-gray-900">${escapeHtml(name)}</strong>`;
+
+      hideAllTitles();
+
+      if (codeId.startsWith('person_')) {
+        showPersonName(personGroup);
+        if (codeId.indexOf('staff') !== -1) switchTab('staff');
+        else if (codeId.indexOf('wait') !== -1) switchTab('waiting');
+        else switchTab('chairs');
+        renderCRM();
+        return;
+      }
+
+      if (codeId.startsWith('chair_')) {
+        const chairId = codeId.replace('chair_', '');
+        switchTab('chairs');
+        renderCRM();
+        const chairGroup = chair3DGroups.find(c => String(c.id) === String(chairId));
+        if (chairGroup) {
+          if (chairGroup.group.userData.nameBadge) chairGroup.group.userData.nameBadge.visible = true;
+          if (chairGroup.group.userData.statusBadge) chairGroup.group.userData.statusBadge.visible = true;
+          const seat = chairGroup.group.children.find(function (ch) { return ch.geometry && ch.geometry.type === 'BoxGeometry'; });
+          const wx = seat ? seat.position.x : 0;
+          const wz = seat ? seat.position.z : 1.5;
+          focusCameraOn(wx, 1, wz + 3);
+        }
+      } else if (codeId === 'reception') {
+        switchTab('staff');
+        focusCameraOn(-6.5, 2, -1);
+      } else if (codeId === 'waiting') {
+        switchTab('waiting');
+        if (waitingZoneBadgeMesh) waitingZoneBadgeMesh.visible = true;
+        setCameraView('waiting');
+      } else if (codeId === 'stock') {
+        switchTab('stock');
+        if (stockZoneBadge) stockZoneBadge.visible = true;
+        setCameraView('stock');
+      } else if (codeId.startsWith('product_')) {
+        const productId = codeId.replace('product_', '');
+        focusStockProduct(productId);
+      }
+    }
+
+    function focusStockProduct(productId) {
+      const product = stockData.find(function (p) { return String(p.id) === String(productId); });
+      if (!product) {
+        window.top.location.href = '/stock/';
+        return;
+      }
+      selectedObjectId = 'product_' + product.id;
+      hideAllTitles();
+      switchTab('stock');
+      renderCRM();
+      const qtyText = formatStockQty(product.qty) + (product.unit ? ' ' + product.unit : '');
+      const statusLabel = product.status === 'out' ? 'Rupture' : (product.status === 'low' ? 'Stock bas' : 'OK');
+      document.getElementById('selected-info').innerHTML =
+        `Produit : <strong class="text-gray-900">${escapeHtml(product.name)}</strong> · ${qtyText} · ${statusLabel}`;
+      setCameraView('stock');
+      const actor = stockProductActors.find(function (a) { return String(a.id) === String(productId); });
+      if (actor && actor.mesh && actor.mesh.userData.productLabel) {
+        const label = actor.mesh.userData.productLabel;
+        label.visible = true;
+        label.scale.set(1.85, 0.62, 1);
+      }
+    }
+
+    // Sélection depuis le CRM vers la 3D
+    function selectChairFromCRM(chairId) {
+      const chair = chairsData.find(c => String(c.id) === String(chairId));
+      handle3DSelection(`chair_${chairId}`, chair ? chair.name : `Poste ${chairId}`);
+    }
+
+    function focusStaffMember(staffId) {
+      const member = staffData.find(s => s.id === staffId);
+      if (!member) return;
+
+      document.getElementById('selected-info').innerHTML =
+        `Employée : <strong class="text-gray-900">${escapeHtml(member.name)}</strong> (${escapeHtml(member.location)})`;
+      const actor = personActors.find(function (a) { return a.codeId === ('person_staff_' + staffId); });
+      if (actor) showPersonName(actor.group);
+
+      if (member.status === 'reception') setCameraView('reception');
+      else if (member.status === 'stock') setCameraView('stock');
+      else if (member.status === 'away') setCameraView('waiting');
+      else setCameraView('chairs');
+    }
+
+    // Animation de la caméra vers une cible
+    function focusCameraOn(x, y, z) {
+      gsapLikeCameraMove(x, y + 3, z + 6, x, y, z);
+    }
+
+    function gsapLikeCameraMove(targetCamX, targetCamY, targetCamZ, lookX, lookY, lookZ) {
+      const startCam = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+      const startTarget = { x: controls.target.x, y: controls.target.y, z: controls.target.z };
+
+      let progress = 0;
+      function animateCam() {
+        progress += 0.04;
+        if (progress <= 1) {
+          camera.position.x = startCam.x + (targetCamX - startCam.x) * progress;
+          camera.position.y = startCam.y + (targetCamY - startCam.y) * progress;
+          camera.position.z = startCam.z + (targetCamZ - startCam.z) * progress;
+
+          controls.target.x = startTarget.x + (lookX - startTarget.x) * progress;
+          controls.target.y = startTarget.y + (lookY - startTarget.y) * progress;
+          controls.target.z = startTarget.z + (lookZ - startTarget.z) * progress;
+
+          controls.update();
+          requestAnimationFrame(animateCam);
+        }
+      }
+      animateCam();
+    }
+
+    // Vues de caméra prédéfinies
+    function setCameraView(viewType) {
+      if (viewType === 'top') gsapLikeCameraMove(0.1, 24, 0.1, 0, 0, 0);
+      else if (viewType === 'reception') gsapLikeCameraMove(-8, 8, 8, -6.5, 0.8, 4);
+      else if (viewType === 'chairs') gsapLikeCameraMove(2, 9, 2, 0.5, 0.5, -4.5);
+      else if (viewType === 'stock') {
+        const c = stockRoomCenter || { x: 7.2, z: 0.4, doorX: 5.1 };
+        gsapLikeCameraMove(c.doorX - 3.2, 5.2, c.z + 0.2, c.x + 0.4, 1.35, c.z);
+      } else if (viewType === 'street') {
+        // Vue rue : regarder à travers la vitrine vers l'intérieur
+        gsapLikeCameraMove(0, 5.5, 16, 0, 1.4, 2);
+      }
+      else if (viewType === 'waiting') gsapLikeCameraMove(0, 8, 10, -0.2, 0.5, 3.6);
+    }
+
+    function resetCamera() {
+      gsapLikeCameraMove(18, 16, 18, 0, 0.4, 0);
+      selectedObjectId = null;
+      hideAllTitles();
+      document.getElementById('selected-info').innerText = "Cliquez pour afficher le titre";
+      renderCRM();
+    }
+
+    // Boucle d'animation ThreeJS
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+
+      const time = Date.now() * 0.002;
+      chair3DBadges.forEach(function (b, index) {
+        b.mesh.position.y = 2.35 + Math.sin(time + index) * 0.08;
+      });
+
+      animatedPeople.forEach(function (person) {
+        const g = person.group;
+        if (!g) return;
+        const t = time + person.phase;
+
+        if (person.mode === 'walk' && person.path && person.path.length > 1) {
+          const target = person.path[person.pathIndex % person.path.length];
+          const dx = target[0] - g.position.x;
+          const dz = target[1] - g.position.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          if (dist < 0.1) {
+            person.pathIndex = (person.pathIndex + 1) % person.path.length;
+          } else {
+            g.position.x += (dx / dist) * person.speed;
+            g.position.z += (dz / dist) * person.speed;
+            // Garde les personnages dans le salon
+            g.position.x = Math.max(-8.2, Math.min(8.2, g.position.x));
+            g.position.z = Math.max(-5.8, Math.min(5.2, g.position.z));
+            // Empêche de rester bloqué dans la chambre stock (sauf rôle réserve)
+            if (!person.allowStockRoom && isInsideStockRoom(g.position.x, g.position.z) && stockRoomCenter) {
+              g.position.x = stockRoomCenter.doorX - 0.7;
+              g.position.z = stockRoomCenter.z;
+              person.pathIndex = 0;
+            }
+            g.rotation.y = Math.atan2(dx, dz);
+          }
+          // Marche bien visible : rebond + jambes/bras
+          g.position.y = person.baseY + Math.abs(Math.sin(t * 8)) * 0.05;
+          if (person.leftLeg && person.rightLeg) {
+            person.leftLeg.rotation.x = Math.sin(t * 8) * 0.7;
+            person.rightLeg.rotation.x = Math.sin(t * 8 + Math.PI) * 0.7;
+          }
+          if (person.leftArm && person.rightArm) {
+            person.leftArm.rotation.x = Math.sin(t * 8 + Math.PI) * 0.55;
+            person.rightArm.rotation.x = Math.sin(t * 8) * 0.55;
+            person.leftArm.rotation.z = 0.15 + Math.sin(t * 3) * 0.05;
+            person.rightArm.rotation.z = -0.15 - Math.sin(t * 3) * 0.05;
+          }
+        } else if (person.mode === 'work') {
+          g.position.y = person.baseY + Math.sin(t * 3) * 0.02;
+          g.position.x = (person.homeX != null ? person.homeX : g.position.x) + Math.sin(t * 1.2) * 0.04;
+          g.rotation.y = Math.sin(t * 0.9) * 0.18;
+          if (person.rightArm) {
+            person.rightArm.rotation.x = -0.9 + Math.sin(t * 5) * 0.45;
+            person.rightArm.rotation.z = -0.35 + Math.sin(t * 3) * 0.12;
+          }
+          if (person.leftArm) {
+            person.leftArm.rotation.x = -0.25 + Math.sin(t * 2.5) * 0.15;
+          }
+        } else if (person.mode === 'idle') {
+          g.position.y = person.baseY + Math.sin(t * 2.4) * 0.03;
+          g.position.x = (person.homeX != null ? person.homeX : g.position.x) + Math.sin(t * 0.8) * 0.06;
+          g.position.z = (person.homeZ != null ? person.homeZ : g.position.z) + Math.cos(t * 0.7) * 0.05;
+          g.rotation.y = Math.sin(t * 0.9) * 0.35;
+          if (person.leftArm && person.rightArm) {
+            person.leftArm.rotation.x = Math.sin(t * 2) * 0.2;
+            person.rightArm.rotation.x = Math.sin(t * 2 + 1) * 0.2;
+          }
+          if (person.leftLeg && person.rightLeg) {
+            person.leftLeg.rotation.x = Math.sin(t * 1.5) * 0.08;
+            person.rightLeg.rotation.x = Math.sin(t * 1.5 + Math.PI) * 0.08;
+          }
+        } else if (person.mode === 'sit') {
+          g.position.y = person.baseY + Math.sin(t * 2) * 0.02;
+          g.rotation.y = Math.sin(t * 0.7) * 0.25;
+          if (person.leftArm && person.rightArm) {
+            person.leftArm.rotation.x = -0.1 + Math.sin(t * 1.8) * 0.2;
+            person.rightArm.rotation.x = -0.1 + Math.sin(t * 1.8 + 1.2) * 0.22;
+          }
+        } else if (person.mode === 'lie') {
+          g.position.y = person.baseY + Math.sin(t * 1.8) * 0.015;
+          g.rotation.z = Math.sin(t * 0.6) * 0.03;
+        }
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // ----------------------------------------------------
+    // 5. FONCTIONS D'ACTIONS CRM (MODAL & ÉTATS)
+    // ----------------------------------------------------
+    function openBookingModal() {
+      window.top.location.href = '/agenda/';
+    }
+
+    function closeBookingModal() {
+      document.getElementById('booking-modal').classList.add('hidden');
+    }
+
+    function submitBooking() {
+      window.top.location.href = '/agenda/';
+    }
+
+    function releaseChair() {
+      loadSalonFromApi(true);
+    }
+
+    function installWaitingClient() {
+      window.top.location.href = '/agenda/';
+    }
+
+    function adjustStock() {
+      window.top.location.href = '/stock/';
+    }
+
+    function restockAll() {
+      window.top.location.href = '/stock/';
+    }
+
+    function updateStockBar() {
+      const totalItems = stockData.length;
+      if (!totalItems) {
+        const pct = document.getElementById('stock-global-percent');
+        const bar = document.getElementById('stock-global-bar');
+        if (pct) pct.innerText = '—';
+        if (bar) bar.style.width = '0%';
+        return;
+      }
+      const okItems = stockData.filter(function (s) { return s.status === 'ok'; }).length;
+      const percent = Math.round((okItems / totalItems) * 100);
+      const pctEl = document.getElementById('stock-global-percent');
+      const barEl = document.getElementById('stock-global-bar');
+      if (pctEl) pctEl.innerText = percent + '%';
+      if (barEl) barEl.style.width = percent + '%';
+    }
+
+    function disposeObject3D(obj) {
+      obj.traverse(function (child) {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(function (mat) {
+            if (!mat) return;
+            if (mat.map) mat.map.dispose();
+            mat.dispose();
+          });
+        }
+      });
+    }
+
+    function rebuild3DScene() {
+      if (!scene) return;
+      while (scene.children.length > 0) {
+        const child = scene.children[0];
+        scene.remove(child);
+        disposeObject3D(child);
+      }
+      interactive3DObjects = [];
+      chair3DGroups = [];
+      chair3DBadges = [];
+      animatedPeople = [];
+      personActors = [];
+      stockProductActors = [];
+      stockZoneBadge = null;
+      waitingZoneBadgeMesh = null;
+      stockRoomCenter = null;
+
+      scene.background = new THREE.Color(0xf7f9fc);
+      scene.fog = null;
+      addSalonLights();
+      buildSalonArchitecture();
+    }
+
+    // REDIMENSIONNEMENT DU CANVAS
+    window.addEventListener('resize', () => {
+      const container = document.getElementById('three-container');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // ----------------------------------------------------
+    // INITIALISATION GÉNÉRALE AU CHARGEMENT
+    // ----------------------------------------------------
+    window.onload = async function() {
+      if (threeStarted) return;
+      threeStarted = true;
+      await loadSalonFromApi(false);
+      init3D();
+      if (window.lucide) lucide.createIcons();
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(function () { loadSalonFromApi(true); }, 30000);
+    };
+  </script>
+</body>
+</html>

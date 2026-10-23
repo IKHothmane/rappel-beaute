@@ -11,6 +11,7 @@ const GROUPS = [
       { href: "/services/", label: "Services" },
       { href: "/staff/", label: "Employées" },
       { href: "/planning/", label: "Planning Équipe" },
+      { href: "/salon-3d/", label: "Plan 3D" },
       { href: "/resources/", label: "Ressources" },
     ],
   },

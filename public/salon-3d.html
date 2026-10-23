@@ -364,6 +364,8 @@
     let stockZoneBadge = null;
     let waitingZoneBadgeMesh = null;
     let stockRoomCenter = null;
+    let salonBounds = { minX: -12, maxX: 12, minZ: -9, maxZ: 9 };
+    let waitingCenter = { x: 6, z: 6 };
     let lastSnapshotHash = '';
     let threeStarted = false;
     let raycasterBound = false;
@@ -796,25 +798,30 @@
       const ambientLight = new THREE.AmbientLight(0xf5f7fa, 0.38);
       scene.add(ambientLight);
 
-      const sun = new THREE.DirectionalLight(0xfffaf2, 0.92);
-      sun.position.set(12, 26, 10);
+      const sun = new THREE.DirectionalLight(0xfffaf2, 0.95);
+      sun.position.set(14, 28, 12);
       sun.castShadow = true;
       sun.shadow.mapSize.width = 2048;
       sun.shadow.mapSize.height = 2048;
       sun.shadow.camera.near = 1;
-      sun.shadow.camera.far = 60;
-      sun.shadow.camera.left = -18;
-      sun.shadow.camera.right = 18;
-      sun.shadow.camera.top = 18;
-      sun.shadow.camera.bottom = -18;
+      sun.shadow.camera.far = 80;
+      sun.shadow.camera.left = -28;
+      sun.shadow.camera.right = 28;
+      sun.shadow.camera.top = 28;
+      sun.shadow.camera.bottom = -28;
       sun.shadow.bias = -0.0002;
-      sun.shadow.radius = 2;
+      sun.shadow.radius = 2.5;
       scene.add(sun);
 
       // Remplissage doux côté opposé (rebond de jour)
-      const fill = new THREE.DirectionalLight(0xdde7f2, 0.22);
-      fill.position.set(-10, 10, -8);
+      const fill = new THREE.DirectionalLight(0xdde7f2, 0.28);
+      fill.position.set(-12, 12, -10);
       scene.add(fill);
+
+      // Halo chaud près de l'accueil
+      const warm = new THREE.PointLight(0xffe8cc, 0.35, 14, 2);
+      warm.position.set(-8, 2.4, 6);
+      scene.add(warm);
     }
 
     function init3D() {
@@ -826,7 +833,7 @@
       scene.fog = null;
 
       camera = new THREE.PerspectiveCamera(32, Math.max(container.clientWidth, 1) / Math.max(container.clientHeight, 1), 0.1, 1000);
-      camera.position.set(18, 16, 18);
+      camera.position.set(24, 20, 24);
 
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
       renderer.setSize(container.clientWidth, container.clientHeight);
@@ -842,7 +849,7 @@
       controls.dampingFactor = 0.06;
       controls.maxPolarAngle = Math.PI / 2.15;
       controls.minDistance = 8;
-      controls.maxDistance = 55;
+      controls.maxDistance = 70;
       controls.target.set(0, 0.4, 0);
       controls.update();
 
@@ -853,18 +860,24 @@
     }
 
     const MAT = {
-      wood: () => new THREE.MeshStandardMaterial({ color: 0xb8895a, roughness: 0.7, metalness: 0.02 }),
-      woodDark: () => new THREE.MeshStandardMaterial({ color: 0x9a7045, roughness: 0.65, metalness: 0.02 }),
-      woodPlank: () => new THREE.MeshStandardMaterial({ color: 0xa67b4b, roughness: 0.72, metalness: 0.02 }),
-      marble: () => new THREE.MeshStandardMaterial({ color: 0xece7e0, roughness: 0.3, metalness: 0.08 }),
-      wall: () => new THREE.MeshStandardMaterial({ color: 0xf3f0ec, roughness: 0.75 }),
-      rose: () => new THREE.MeshStandardMaterial({ color: 0xc98b8b, roughness: 0.85 }),
-      roseDeep: () => new THREE.MeshStandardMaterial({ color: 0xb56f6f, roughness: 0.8 }),
-      cream: () => new THREE.MeshStandardMaterial({ color: 0xf0e6d8, roughness: 0.5 }),
-      chair: () => new THREE.MeshStandardMaterial({ color: 0xd4a0a0, roughness: 0.55 }),
-      gold: () => new THREE.MeshStandardMaterial({ color: 0xc9a84c, metalness: 0.85, roughness: 0.25 }),
-      green: () => new THREE.MeshStandardMaterial({ color: 0x3f6b47, roughness: 0.7 }),
+      wood: () => new THREE.MeshStandardMaterial({ color: 0xb8895a, roughness: 0.62, metalness: 0.04 }),
+      woodDark: () => new THREE.MeshStandardMaterial({ color: 0x8a6238, roughness: 0.58, metalness: 0.05 }),
+      woodPlank: () => new THREE.MeshStandardMaterial({ color: 0xa67b4b, roughness: 0.68, metalness: 0.03 }),
+      marble: () => new THREE.MeshStandardMaterial({ color: 0xf2ece4, roughness: 0.22, metalness: 0.12 }),
+      wall: () => new THREE.MeshStandardMaterial({ color: 0xf6f2ed, roughness: 0.82 }),
+      rose: () => new THREE.MeshStandardMaterial({ color: 0xc98b8b, roughness: 0.78 }),
+      roseDeep: () => new THREE.MeshStandardMaterial({ color: 0xb56f6f, roughness: 0.74 }),
+      cream: () => new THREE.MeshStandardMaterial({ color: 0xf3ebe0, roughness: 0.48 }),
+      chair: () => new THREE.MeshStandardMaterial({ color: 0xd4a0a0, roughness: 0.72 }),
+      velvet: () => new THREE.MeshStandardMaterial({ color: 0xb86b7a, roughness: 0.9, metalness: 0 }),
+      gold: () => new THREE.MeshStandardMaterial({ color: 0xc9a84c, metalness: 0.88, roughness: 0.22 }),
+      brass: () => new THREE.MeshStandardMaterial({ color: 0xb8954a, metalness: 0.9, roughness: 0.28 }),
+      green: () => new THREE.MeshStandardMaterial({ color: 0x3f6b47, roughness: 0.65 }),
+      leaf: () => new THREE.MeshStandardMaterial({ color: 0x4f8a55, roughness: 0.55 }),
+      leafDark: () => new THREE.MeshStandardMaterial({ color: 0x2f5a36, roughness: 0.6 }),
       black: () => new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4 }),
+      glass: () => new THREE.MeshStandardMaterial({ color: 0xdceaf5, transparent: true, opacity: 0.35, roughness: 0.08, metalness: 0.2 }),
+      ceramic: () => new THREE.MeshStandardMaterial({ color: 0xe8ddd0, roughness: 0.35, metalness: 0.05 }),
       whiteCoat: () => new THREE.MeshStandardMaterial({ color: 0xeef2f7, roughness: 0.45 }),
       pants: () => new THREE.MeshStandardMaterial({ color: 0x3d4450, roughness: 0.55 }),
       hair: () => new THREE.MeshStandardMaterial({ color: 0x4a3428, roughness: 0.7 }),
@@ -872,29 +885,302 @@
       clientWear: () => new THREE.MeshStandardMaterial({ color: 0x8f6a8f, roughness: 0.55 }),
       product: () => new THREE.MeshStandardMaterial({ color: 0xf8f8f8, roughness: 0.35 }),
       productDark: () => new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.4 }),
-      rug: () => new THREE.MeshStandardMaterial({ color: 0xd9c8b0, roughness: 0.95 }),
+      rug: () => new THREE.MeshStandardMaterial({ color: 0xd4b89a, roughness: 0.95 }),
+      curtain: () => new THREE.MeshStandardMaterial({ color: 0xe8cfd6, roughness: 0.88, side: THREE.DoubleSide }),
     };
 
     function addPlant(x, z, scale) {
       scale = scale || 1;
       const g = new THREE.Group();
-      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.22 * scale, 0.18 * scale, 0.35 * scale, 12), MAT.cream());
-      pot.position.y = 0.18 * scale;
+      const pot = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24 * scale, 0.2 * scale, 0.38 * scale, 16),
+        MAT.ceramic(),
+      );
+      pot.position.y = 0.19 * scale;
       pot.castShadow = true;
       g.add(pot);
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.04 * scale, 0.05 * scale, 0.5 * scale, 8), MAT.woodDark());
-      trunk.position.y = 0.55 * scale;
+      const rim = new THREE.Mesh(
+        new THREE.TorusGeometry(0.24 * scale, 0.025 * scale, 8, 20),
+        MAT.cream(),
+      );
+      rim.rotation.x = Math.PI / 2;
+      rim.position.y = 0.38 * scale;
+      g.add(rim);
+      const soil = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2 * scale, 0.2 * scale, 0.04 * scale, 12),
+        MAT.woodDark(),
+      );
+      soil.position.y = 0.34 * scale;
+      g.add(soil);
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035 * scale, 0.05 * scale, 0.55 * scale, 8),
+        MAT.woodDark(),
+      );
+      trunk.position.y = 0.6 * scale;
       g.add(trunk);
-      for (let i = 0; i < 5; i++) {
-        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.28 * scale, 10, 10), MAT.green());
-        const a = (i / 5) * Math.PI * 2;
-        leaf.position.set(Math.cos(a) * 0.22 * scale, 0.95 * scale + (i % 2) * 0.1, Math.sin(a) * 0.22 * scale);
-        leaf.scale.set(1, 0.55, 1);
+      for (let i = 0; i < 7; i++) {
+        const leaf = new THREE.Mesh(
+          new THREE.SphereGeometry(0.26 * scale, 10, 10),
+          i % 2 === 0 ? MAT.leaf() : MAT.leafDark(),
+        );
+        const a = (i / 7) * Math.PI * 2;
+        const r = 0.18 * scale + (i % 3) * 0.04 * scale;
+        leaf.position.set(
+          Math.cos(a) * r,
+          0.95 * scale + (i % 3) * 0.12 * scale,
+          Math.sin(a) * r,
+        );
+        leaf.scale.set(1.1, 0.45 + (i % 2) * 0.15, 0.85);
         g.add(leaf);
       }
       g.position.set(x, 0, z);
       scene.add(g);
       return g;
+    }
+
+    function addFlowerVase(x, z, scale) {
+      scale = scale || 1;
+      const g = new THREE.Group();
+      const vase = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.1 * scale, 0.14 * scale, 0.32 * scale, 12),
+        MAT.ceramic(),
+      );
+      vase.position.y = 0.16 * scale;
+      vase.castShadow = true;
+      g.add(vase);
+      const colors = [0xc98b8b, 0xe8c56b, 0xd4a0b8, 0xf0e6d8];
+      for (let i = 0; i < 5; i++) {
+        const bloom = new THREE.Mesh(
+          new THREE.SphereGeometry(0.07 * scale, 10, 10),
+          new THREE.MeshStandardMaterial({ color: colors[i % colors.length], roughness: 0.7 }),
+        );
+        const a = (i / 5) * Math.PI * 2;
+        bloom.position.set(Math.cos(a) * 0.1 * scale, 0.42 * scale + (i % 2) * 0.05, Math.sin(a) * 0.1 * scale);
+        g.add(bloom);
+      }
+      const foliage = new THREE.Mesh(new THREE.SphereGeometry(0.16 * scale, 10, 10), MAT.leaf());
+      foliage.position.y = 0.4 * scale;
+      foliage.scale.set(1, 0.55, 1);
+      g.add(foliage);
+      g.position.set(x, 0, z);
+      scene.add(g);
+      return g;
+    }
+
+    function addWallSconce(x, y, z, rotY, withLight) {
+      const g = new THREE.Group();
+      const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.04, 16), MAT.brass());
+      plate.rotation.x = Math.PI / 2;
+      g.add(plate);
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 8), MAT.brass());
+      arm.rotation.z = Math.PI / 2;
+      arm.position.x = 0.12;
+      g.add(arm);
+      const shade = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.16, 0.18, 16, 1, true),
+        new THREE.MeshStandardMaterial({
+          color: 0xf7efe6,
+          roughness: 0.55,
+          emissive: 0xffe8c8,
+          emissiveIntensity: 0.18,
+          side: THREE.DoubleSide,
+        }),
+      );
+      shade.position.set(0.24, 0, 0);
+      g.add(shade);
+      if (withLight) {
+        const bulb = new THREE.PointLight(0xfff2dd, 0.3, 4.2, 2);
+        bulb.position.set(0.24, -0.02, 0);
+        g.add(bulb);
+      }
+      g.position.set(x, y, z);
+      if (rotY != null) g.rotation.y = rotY;
+      scene.add(g);
+      return g;
+    }
+
+    function addPendantLight(x, z, withLight) {
+      const g = new THREE.Group();
+      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.9, 6), MAT.black());
+      cord.position.y = 2.75;
+      g.add(cord);
+      const shade = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.28, 0.38, 0.32, 20, 1, true),
+        new THREE.MeshStandardMaterial({
+          color: 0xf4ebe2,
+          roughness: 0.5,
+          emissive: 0xffe6c4,
+          emissiveIntensity: 0.15,
+          side: THREE.DoubleSide,
+        }),
+      );
+      shade.position.y = 2.2;
+      g.add(shade);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.02, 8, 24), MAT.brass());
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 2.04;
+      g.add(ring);
+      if (withLight !== false) {
+        const light = new THREE.PointLight(0xfff4e5, 0.45, 7.5, 2);
+        light.position.y = 2.15;
+        g.add(light);
+      }
+      g.position.set(x, 0, z);
+      scene.add(g);
+      return g;
+    }
+
+    function addWallArt(x, y, z, rotY, w, h, color) {
+      const g = new THREE.Group();
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, h + 0.08, 0.04), MAT.brass());
+      g.add(frame);
+      const canvas = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, 0.02),
+        new THREE.MeshStandardMaterial({ color: color || 0xe8d5c8, roughness: 0.7 }),
+      );
+      canvas.position.z = 0.02;
+      g.add(canvas);
+      const accent = new THREE.Mesh(
+        new THREE.PlaneGeometry(w * 0.55, h * 0.35),
+        new THREE.MeshStandardMaterial({ color: 0xc9a84c, roughness: 0.55 }),
+      );
+      accent.position.set(0, 0, 0.04);
+      g.add(accent);
+      g.position.set(x, y, z);
+      if (rotY != null) g.rotation.y = rotY;
+      scene.add(g);
+      return g;
+    }
+
+    function addFloorLamp(x, z, withLight) {
+      const g = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.06, 16), MAT.brass());
+      base.position.y = 0.03;
+      g.add(base);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 1.55, 8), MAT.brass());
+      pole.position.y = 0.8;
+      g.add(pole);
+      const shade = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.22, 0.32, 0.35, 16, 1, true),
+        new THREE.MeshStandardMaterial({
+          color: 0xf0e4d6,
+          roughness: 0.6,
+          emissive: 0xffe8c8,
+          emissiveIntensity: 0.12,
+          side: THREE.DoubleSide,
+        }),
+      );
+      shade.position.y = 1.7;
+      g.add(shade);
+      if (withLight) {
+        const light = new THREE.PointLight(0xfff0dd, 0.35, 5, 2);
+        light.position.y = 1.65;
+        g.add(light);
+      }
+      g.position.set(x, 0, z);
+      scene.add(g);
+      return g;
+    }
+
+    function addReceptionProps(deskX, deskZ) {
+      const screen = new THREE.Mesh(
+        new THREE.BoxGeometry(0.55, 0.38, 0.04),
+        new THREE.MeshStandardMaterial({ color: 0x1a1f28, roughness: 0.35, metalness: 0.4 }),
+      );
+      screen.position.set(deskX - 0.55, 1.35, deskZ - 0.15);
+      screen.rotation.x = -0.15;
+      scene.add(screen);
+      const stand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.1), MAT.black());
+      stand.position.set(deskX - 0.55, 1.12, deskZ - 0.1);
+      scene.add(stand);
+      const keyboard = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.03, 0.16), MAT.black());
+      keyboard.position.set(deskX - 0.55, 1.13, deskZ + 0.2);
+      scene.add(keyboard);
+      const phone = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.22), MAT.brass());
+      phone.position.set(deskX + 0.85, 1.14, deskZ + 0.15);
+      scene.add(phone);
+      addFlowerVase(deskX + 0.2, deskZ + 0.05, 0.85);
+    }
+
+    function addSalonDecor(halfW, halfD, deskX, deskZ, waitingX, waitingZ) {
+      // Luminaires suspendus (lumière réelle sur 2 seulement)
+      addPendantLight(waitingX - 1.2, waitingZ, true);
+      addPendantLight(waitingX + 1.0, waitingZ - 0.6, false);
+      addPendantLight(0.2, -1.2, true);
+      addPendantLight(deskX + 0.4, deskZ - 0.8, false);
+
+      // Appliques murales
+      addWallSconce(-halfW + 0.2, 1.9, deskZ - 1.5, Math.PI / 2, true);
+      addWallSconce(-halfW + 0.2, 1.9, 0.5, Math.PI / 2, false);
+      addWallSconce(halfW - 0.2, 1.9, waitingZ, -Math.PI / 2, false);
+      addWallSconce(-3.2, 1.95, -halfD + 0.25, 0, false);
+      addWallSconce(3.4, 1.95, -halfD + 0.25, 0, true);
+
+      // Tableaux / cadres
+      addWallArt(-halfW + 0.16, 1.7, -2.4, Math.PI / 2, 1.1, 0.8, 0xe9d8cc);
+      addWallArt(-halfW + 0.16, 1.7, 1.6, Math.PI / 2, 0.9, 1.15, 0xdcc4b4);
+      addWallArt(halfW - 0.16, 1.75, waitingZ - 1.2, -Math.PI / 2, 1.2, 0.85, 0xe6d2c2);
+      addWallArt(1.8, 1.85, -halfD + 0.2, 0, 1.4, 0.95, 0xf0e0d4);
+
+      // Lampadaires
+      addFloorLamp(deskX - 2.2, deskZ - 1.2, true);
+      addFloorLamp(waitingX - 2.2, waitingZ - 1.4, false);
+
+      // Rideaux légers près des fenêtres
+      for (let i = 0; i < 3; i++) {
+        const curtain = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.85, 2.4),
+          MAT.curtain(),
+        );
+        curtain.position.set(-4.5 + i * 4.5, 1.35, -halfD + 0.32);
+        scene.add(curtain);
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.0, 8), MAT.brass());
+        rod.rotation.z = Math.PI / 2;
+        rod.position.set(-4.5 + i * 4.5, 2.55, -halfD + 0.3);
+        scene.add(rod);
+      }
+
+      // Console / présentoir produits près de l'accueil
+      const consoleTop = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.5), MAT.marble());
+      consoleTop.position.set(deskX + 3.2, 0.95, deskZ - 1.4);
+      consoleTop.castShadow = true;
+      scene.add(consoleTop);
+      const consoleLegL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.9, 0.4), MAT.woodDark());
+      consoleLegL.position.set(deskX + 2.5, 0.45, deskZ - 1.4);
+      scene.add(consoleLegL);
+      const consoleLegR = consoleLegL.clone();
+      consoleLegR.position.x = deskX + 3.9;
+      scene.add(consoleLegR);
+      for (let i = 0; i < 4; i++) {
+        const bottle = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.05, 0.06, 0.22 + (i % 2) * 0.08, 10),
+          i % 2 === 0 ? MAT.product() : MAT.productDark(),
+        );
+        bottle.position.set(deskX + 2.7 + i * 0.28, 1.15, deskZ - 1.4);
+        bottle.castShadow = true;
+        scene.add(bottle);
+      }
+
+      // Coussins / poufs salon d'attente (coin droit)
+      const ottoman = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.42, 0.45, 0.38, 20),
+        MAT.velvet(),
+      );
+      ottoman.position.set(waitingX + 1.6, 0.19, waitingZ + 0.2);
+      ottoman.castShadow = true;
+      scene.add(ottoman);
+
+      // Plateau / magazines sur table basse
+      const tray = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.03, 0.3), MAT.brass());
+      tray.position.set(waitingX - 0.2, 0.42, waitingZ);
+      scene.add(tray);
+      const mag = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.02, 0.2), MAT.rose());
+      mag.position.set(waitingX - 0.15, 0.45, waitingZ + 0.02);
+      scene.add(mag);
+
+      addReceptionProps(deskX, deskZ);
+      addFlowerVase(waitingX - 1.0, waitingZ - 0.4, 0.75);
+      addFlowerVase(waitingX + 1.4, waitingZ - 0.9, 0.9);
     }
 
     function addWallInstituteName(text, x, y, z, opts) {
@@ -934,13 +1220,25 @@
 
     function addOvalMirror(x, y, z) {
       const g = new THREE.Group();
-      const frame = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 12, 32), MAT.gold());
+      const back = new THREE.Mesh(
+        new THREE.CircleGeometry(0.58, 36),
+        MAT.brass(),
+      );
+      back.position.z = -0.01;
+      g.add(back);
+      const frame = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.045, 14, 40), MAT.brass());
       frame.position.set(0, 0, 0.02);
       g.add(frame);
       const glass = new THREE.Mesh(
-        new THREE.CircleGeometry(0.5, 32),
-        new THREE.MeshStandardMaterial({ color: 0xe8eef5, metalness: 0.6, roughness: 0.1 })
+        new THREE.CircleGeometry(0.52, 36),
+        new THREE.MeshStandardMaterial({
+          color: 0xdce8f2,
+          metalness: 0.85,
+          roughness: 0.08,
+          envMapIntensity: 1,
+        }),
       );
+      glass.position.z = 0.03;
       g.add(glass);
       g.position.set(x, y, z);
       scene.add(g);
@@ -982,43 +1280,43 @@
       return positions;
     }
 
-    function layoutWaitingSeats(count) {
+    function layoutWaitingSeats(count, baseX, baseZ) {
       count = Math.max(2, Math.min(Math.max(count, 2), 12));
-      var cols = count <= 4 ? 2 : 4;
-      var spacingX = 2.4;
-      var spacingZ = 1.7;
+      var cols = count <= 4 ? 2 : 3;
+      var spacingX = 1.9;
+      var spacingZ = 1.55;
+      var x0 = baseX != null ? baseX : 6;
+      var z0 = baseZ != null ? baseZ : 6;
       var seats = [];
       for (var i = 0; i < count; i++) {
         var row = Math.floor(i / cols);
         var col = i % cols;
         var rowCount = Math.min(cols, count - row * cols);
         var width = (rowCount - 1) * spacingX;
-        seats.push([-width / 2 + col * spacingX - 0.2, 4.5 - row * spacingZ]);
+        seats.push([x0 - width / 2 + col * spacingX, z0 - row * spacingZ]);
       }
       return seats;
     }
 
     function makeStaffWalkPath(seed) {
-      // Chemins uniquement dans le salon — jamais dans la chambre stock (x > ~4.5)
+      // Circuits calmes et réguliers au centre du salon (évite stock et salle d'attente)
       var routes = [
-        [[-3.2, 2.6], [0.4, 2.4], [3.0, 1.4], [2.2, -0.2], [-1.5, 0.3], [-3.2, 2.6]],
-        [[2.8, 3.0], [-1.0, 2.8], [-3.4, 1.2], [0.2, -0.6], [3.2, 0.4], [2.8, 3.0]],
-        [[3.6, 1.8], [2.0, 0.2], [3.8, -1.2], [1.5, -0.8], [3.6, 1.8]],
-        [[-5.8, 1.5], [-4.2, 2.8], [-2.4, 1.6], [-3.8, 0.2], [-5.8, 1.5]],
-        [[-1.8, -1.2], [1.2, -1.0], [2.6, 0.6], [0.0, 1.4], [-2.2, 0.4], [-1.8, -1.2]],
-        [[3.4, 2.2], [1.0, 3.2], [-2.0, 2.0], [0.5, 0.2], [3.0, 0.8], [3.4, 2.2]],
-        [[-6.8, 3.2], [-5.0, 2.0], [-6.2, 0.8], [-7.4, 2.0], [-6.8, 3.2]],
-        [[0.8, 2.8], [2.4, 4.0], [-0.4, 4.6], [-1.8, 3.2], [0.8, 2.8]],
+        [[-4.0, 1.5], [0.0, 1.5], [3.5, 1.5], [3.5, -1.5], [0.0, -1.5], [-4.0, -1.5], [-4.0, 1.5]],
+        [[-3.0, 0.0], [1.0, 0.0], [3.0, 0.0], [3.0, -2.5], [-1.0, -2.5], [-3.0, -2.5], [-3.0, 0.0]],
+        [[-5.0, 2.0], [-1.5, 2.0], [2.0, 2.0], [2.0, -0.5], [-1.5, -0.5], [-5.0, -0.5], [-5.0, 2.0]],
+        [[-2.5, 2.5], [1.5, 2.5], [1.5, -1.0], [-2.5, -1.0], [-2.5, 2.5]],
+        [[-4.5, -0.8], [-0.5, -0.8], [2.5, -0.8], [2.5, 1.8], [-0.5, 1.8], [-4.5, 1.8], [-4.5, -0.8]],
+        [[-3.5, 1.0], [0.5, 1.0], [0.5, -2.0], [-3.5, -2.0], [-3.5, 1.0]],
       ];
       return routes[seed % routes.length];
     }
 
     function makeStockRoomWalkPath() {
-      const c = stockRoomCenter || { x: 7.2, z: 0.4, doorX: 5.1 };
+      const c = stockRoomCenter || { x: 10.5, z: -6.2, doorX: 8.4 };
       const doorX = c.doorX;
       const sz = c.z;
       const insideX = Math.min(c.x + 0.35, doorX + 2.2);
-      // Entrée / sortie uniquement par la porte
+      // Entrée / sortie uniquement par la porte (coin arrière droit)
       return [
         [doorX - 1.4, sz],
         [doorX + 0.25, sz],
@@ -1046,33 +1344,36 @@
     }
 
     function makeLoungeWalkPath(seed) {
+      var x = waitingCenter.x;
+      var z = waitingCenter.z;
       var paths = [
-        [[-1.6, 4.2], [1.0, 4.2], [1.2, 2.8], [-1.4, 2.8], [-1.6, 4.2]],
-        [[1.0, 2.9], [-1.5, 3.0], [-0.2, 4.6], [1.4, 4.0], [1.0, 2.9]],
+        [[x - 1.4, z + 0.8], [x + 1.2, z + 0.8], [x + 1.2, z - 0.9], [x - 1.4, z - 0.9], [x - 1.4, z + 0.8]],
+        [[x - 0.8, z + 0.4], [x + 1.0, z + 0.4], [x + 1.0, z - 1.1], [x - 0.8, z - 1.1], [x - 0.8, z + 0.4]],
       ];
       return paths[seed % paths.length];
     }
 
     function layoutStaffStandSlots(count) {
+      // Emplacements calmes hors salle d'attente (coin avant droit) et hors réserve
       var slots = [
         [-6.5, 5.0],
         [-3.8, 2.6],
         [0.2, 2.8],
-        [3.0, 2.4],
+        [2.4, 1.6],
         [-2.0, 0.4],
-        [2.2, 0.2],
-        [4.5, 3.0],
+        [1.2, 0.2],
         [-5.5, 1.8],
-        [5.2, 2.0],
         [-1.0, 3.4],
-        [1.5, 3.5],
-        [6.0, 1.2],
+        [1.5, 3.0],
+        [-4.0, -0.5],
+        [0.0, -1.2],
+        [-2.8, 4.0],
       ];
       while (slots.length < count) {
         var n = slots.length;
         var angle = n * 0.85;
-        var r = 3.2 + (n % 4) * 0.55;
-        slots.push([Math.cos(angle) * r, Math.sin(angle) * r + 1.2]);
+        var r = 2.4 + (n % 4) * 0.4;
+        slots.push([Math.cos(angle) * r - 1.5, Math.sin(angle) * r + 0.5]);
       }
       return slots;
     }
@@ -1521,10 +1822,17 @@
 
     function buildSalonArchitecture() {
       var cabinCount = chairsData.length;
-      var floorW = Math.max(18, 10 + Math.min(cabinCount, 12) * 0.7);
-      var floorD = Math.max(13, 11 + Math.ceil(cabinCount / 4) * 1.2);
+      // Salon agrandi : plus large et plus profond pour dégager l'espace
+      var floorW = Math.max(26, 16 + Math.min(cabinCount, 12) * 0.85);
+      var floorD = Math.max(20, 16 + Math.ceil(cabinCount / 4) * 1.4);
       var halfW = floorW / 2;
       var halfD = floorD / 2;
+      salonBounds = {
+        minX: -halfW + 0.9,
+        maxX: halfW - 0.9,
+        minZ: -halfD + 0.9,
+        maxZ: halfD - 0.9,
+      };
       const floor = new THREE.Mesh(new THREE.BoxGeometry(floorW, 0.12, floorD), MAT.wood());
       floor.position.set(0, -0.06, 0);
       floor.receiveShadow = true;
@@ -1574,12 +1882,12 @@
       scene.add(rightWall);
 
       const marbleWall = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.8, 0.2), marbleMat);
-      marbleWall.position.set(-6.6, 1.4, -halfD + 0.5);
+      marbleWall.position.set(-halfW + 2.8, 1.4, -halfD + 0.5);
       scene.add(marbleWall);
 
       // Nom de l'institut sur les murs (plus de texte générique « L'INSTITUT »)
       const wallName = organizationName || 'Institut';
-      addWallInstituteName(wallName, -6.6, 2.05, -halfD + 0.65, { width: 3.4 });
+      addWallInstituteName(wallName, -halfW + 2.8, 2.05, -halfD + 0.65, { width: 3.4 });
       addWallInstituteName(wallName, 0.2, 2.55, -halfD + 0.22, { width: Math.min(7, Math.max(3.5, wallName.length * 0.32)) });
       addWallInstituteName(wallName, -halfW + 0.14, 2.15, -1.2, {
         width: Math.min(5, Math.max(2.8, wallName.length * 0.26)),
@@ -1592,35 +1900,68 @@
 
       for (let i = 0; i < 8; i++) {
         const slat = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.6, 0.08), woodMat);
-        slat.position.set(-8.5 + i * 0.18, 1.3, -halfD + 0.55);
+        slat.position.set(-halfW + 0.9 + i * 0.18, 1.3, -halfD + 0.55);
         scene.add(slat);
       }
       for (let i = 0; i < 6; i++) {
         const slat = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.6, 0.08), woodMat);
-        slat.position.set(-4.7 + i * 0.18, 1.3, -halfD + 0.55);
+        slat.position.set(-halfW + 4.7 + i * 0.18, 1.3, -halfD + 0.55);
         scene.add(slat);
       }
 
       // Accueil juste derrière l'entrée (côté rue +Z)
+      const deskX = -halfW + 5.2;
+      const deskZ = halfD - 2.6;
       const deskTop = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.12, 1.1), woodMat);
-      deskTop.position.set(-6.5, 1.05, 4.2);
+      deskTop.position.set(deskX, 1.05, deskZ);
       deskTop.castShadow = true;
       scene.add(deskTop);
       const deskBody = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.95, 0.95), marbleMat);
-      deskBody.position.set(-6.5, 0.5, 4.2);
+      deskBody.position.set(deskX, 0.5, deskZ);
       deskBody.castShadow = true;
       scene.add(deskBody);
       const deskWing = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.95, 2.0), marbleMat);
-      deskWing.position.set(-5.2, 0.5, 3.4);
+      deskWing.position.set(deskX + 1.3, 0.5, deskZ - 0.8);
       deskWing.castShadow = true;
       scene.add(deskWing);
       registerInteractiveObject(deskBody, "Accueil & Réception", "reception");
 
+      // Fille d'accueil décorative : toujours au comptoir, fixe, indépendante de l'équipe
+      const receptionHostess = createWomanAvatar({
+        role: 'staff',
+        pose: 'stand',
+        name: 'Accueil',
+        hairColor: HAIR_COLORS[0],
+        outfitColor: STAFF_TUNICS[0],
+      });
+      receptionHostess.position.set(deskX, 0, deskZ + 0.85);
+      receptionHostess.rotation.y = Math.atan2(0.2 - deskX, (deskZ - 1.4) - (deskZ + 0.85));
+      scene.add(receptionHostess);
+      registerAnimatedPerson(receptionHostess, { mode: 'fixed', baseY: 0 });
+      const receptionBadge = create3DBadgeMesh('Accueil', 0xc9a84c);
+      receptionBadge.scale.set(0.6, 0.6, 0.6);
+      receptionBadge.position.set(0, 2.25, 0);
+      receptionBadge.visible = false;
+      receptionHostess.add(receptionBadge);
+      receptionHostess.userData.statusBadge = receptionBadge;
+      registerPersonInteractive(receptionHostess, 'person_reception', 'Accueil');
+
       const placedStaffIds = {};
 
+      // Salle d'attente : coin avant droit (près de l'entrée)
+      const waitingX = halfW - 4.4;
+      const waitingZ = halfD - 3.8;
+      waitingCenter = { x: waitingX, z: waitingZ };
       const rug = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.04, 3.6), MAT.rug());
-      rug.position.set(-0.2, 0.02, 3.6);
+      rug.position.set(waitingX, 0.02, waitingZ);
+      rug.receiveShadow = true;
       scene.add(rug);
+      const rugBorder = new THREE.Mesh(
+        new THREE.BoxGeometry(5.35, 0.035, 3.75),
+        new THREE.MeshStandardMaterial({ color: 0xc9a84c, roughness: 0.7, metalness: 0.15 }),
+      );
+      rugBorder.position.set(waitingX, 0.015, waitingZ);
+      scene.add(rugBorder);
       registerInteractiveObject(rug, "Salle d'attente", "waiting");
 
       const waitingCapacity = waitingRoomsData.reduce(function (sum, room) {
@@ -1631,7 +1972,7 @@
         waitingData.length,
         waitingRoomsData.length ? 2 : 4,
       );
-      const lounge = layoutWaitingSeats(loungeSeatCount);
+      const lounge = layoutWaitingSeats(loungeSeatCount, waitingX, waitingZ + 0.7);
       lounge.forEach(function (pos, i) {
         const c = addRoundChair(pos[0], pos[1], i % 2 === 0 ? MAT.rose() : MAT.roseDeep());
         if (i === 0) registerInteractiveObject(c.children[0], "Salle d'attente", "waiting");
@@ -1641,16 +1982,16 @@
         ? waitingRoomsData.map(function (r) { return r.name; }).join(' · ')
         : "Salle d'attente";
       const waitingZoneBadge = create3DBadgeMesh(waitingRoomTitle, 0xc9a84c);
-      waitingZoneBadge.position.set(-0.2, 2.1, 3.6);
+      waitingZoneBadge.position.set(waitingX, 2.1, waitingZ);
       waitingZoneBadge.visible = false;
       scene.add(waitingZoneBadge);
       waitingZoneBadgeMesh = waitingZoneBadge;
 
-      // Clientes en attente : une sur deux marche dans le lounge, les autres s'agitent assises
+      // Clientes en attente : presque toutes assises ; une seule marche lentement dans le coin
       waitingData.forEach(function (client, i) {
         const exactName = client.name || 'Cliente';
-        if (i % 2 === 1) {
-          const path = makeLoungeWalkPath(i);
+        if (i === 1 && waitingData.length > 2) {
+          const path = makeLoungeWalkPath(0);
           const walker = createWomanAvatar({
             role: 'client',
             pose: 'walk',
@@ -1663,8 +2004,10 @@
           registerAnimatedPerson(walker, {
             mode: 'walk',
             path: path,
-            speed: 0.016 + (i % 3) * 0.004,
+            speed: 0.006,
             baseY: 0,
+            startAtPathZero: true,
+            phase: i * 0.7,
           });
           registerPersonInteractive(walker, 'person_wait_' + client.id, exactName);
           return;
@@ -1679,29 +2022,39 @@
         });
         woman.position.set(seat[0], 0.28, seat[1]);
         scene.add(woman);
-        registerAnimatedPerson(woman, { mode: 'sit', baseY: 0.28 });
+        registerAnimatedPerson(woman, { mode: 'sit', baseY: 0.28, phase: i * 0.5 });
         registerPersonInteractive(woman, 'person_wait_' + client.id, exactName);
       });
 
-      const table1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.08, 24), MAT.cream());
-      table1.position.set(-0.3, 0.35, 3.6);
+      const table1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 28), MAT.marble());
+      table1.position.set(waitingX - 0.3, 0.38, waitingZ);
+      table1.castShadow = true;
       scene.add(table1);
-      const tableLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.3, 10), MAT.gold());
-      tableLeg.position.set(-0.3, 0.16, 3.6);
+      const tableLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.34, 12), MAT.brass());
+      tableLeg.position.set(waitingX - 0.3, 0.17, waitingZ);
       scene.add(tableLeg);
-      const table2 = table1.clone();
-      table2.position.set(0.7, 0.35, 3.2);
+      const table2 = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.06, 24), MAT.marble());
+      table2.position.set(waitingX + 1.0, 0.38, waitingZ - 0.5);
+      table2.castShadow = true;
       scene.add(table2);
+      const table2Leg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.07, 0.34, 12), MAT.brass());
+      table2Leg.position.set(waitingX + 1.0, 0.17, waitingZ - 0.5);
+      scene.add(table2Leg);
 
       // Miroirs + coiffeuse contre le mur du fond (cabines alignées)
       const cabinWallZ = -halfD;
-      addOvalMirror(-2.4, 1.7, cabinWallZ + 0.35);
-      addOvalMirror(0.2, 1.7, cabinWallZ + 0.35);
-      addOvalMirror(2.8, 1.7, cabinWallZ + 0.35);
+      addOvalMirror(-3.2, 1.75, cabinWallZ + 0.35);
+      addOvalMirror(-0.4, 1.75, cabinWallZ + 0.35);
+      addOvalMirror(2.4, 1.75, cabinWallZ + 0.35);
+      addOvalMirror(5.0, 1.75, cabinWallZ + 0.35);
 
-      const vanity = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.12, 0.55), woodMat);
-      vanity.position.set(0.2, 0.85, cabinWallZ + 1.0);
+      const vanity = new THREE.Mesh(new THREE.BoxGeometry(9.5, 0.1, 0.55), woodMat);
+      vanity.position.set(0.8, 0.88, cabinWallZ + 1.0);
+      vanity.castShadow = true;
       scene.add(vanity);
+      const vanityFront = new THREE.Mesh(new THREE.BoxGeometry(9.5, 0.7, 0.08), MAT.marble());
+      vanityFront.position.set(0.8, 0.45, cabinWallZ + 0.78);
+      scene.add(vanityFront);
 
       const cabinPositions = layoutCabinPositions(chairsData.length, halfD);
       chairsData.forEach(function (chair, idx) {
@@ -1800,21 +2153,21 @@
       });
 
       const manicure = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.7), MAT.cream());
-      manicure.position.set(-6.2, 0.75, 2.8);
+      manicure.position.set(deskX + 0.3, 0.75, deskZ - 1.6);
       scene.add(manicure);
       const mLeg1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.08), MAT.gold());
-      mLeg1.position.set(-6.8, 0.35, 2.55);
+      mLeg1.position.set(deskX - 0.3, 0.35, deskZ - 1.85);
       scene.add(mLeg1);
       const mLeg2 = mLeg1.clone();
-      mLeg2.position.set(-5.6, 0.35, 3.05);
+      mLeg2.position.set(deskX + 0.9, 0.35, deskZ - 1.35);
       scene.add(mLeg2);
-      addRoundChair(-6.8, 3.5, MAT.rose());
-      addRoundChair(-5.5, 2.2, MAT.roseDeep());
+      addRoundChair(deskX - 0.3, deskZ - 0.9, MAT.rose());
+      addRoundChair(deskX + 1.0, deskZ - 2.2, MAT.roseDeep());
 
-      // Chambre de stock / réserve — murs vitrés
+      // Chambre de stock / réserve — coin arrière droit
       const stockRoom = new THREE.Group();
-      const roomW = 4.2; // profondeur (axe X local)
-      const roomD = 5.0; // largeur (axe Z local)
+      const roomW = 4.4; // profondeur (axe X local)
+      const roomD = 4.6; // largeur (axe Z local)
       const roomH = 3.0;
       const wallT = 0.06;
       const frameT = 0.07;
@@ -1955,33 +2308,31 @@
       crate.castShadow = true;
       stockRoom.add(crate);
 
-      // Position monde : à droite du salon, porte ouverte vers le centre
-      const roomX = Math.max(halfW - roomW / 2 - 0.15, 5.8);
-      stockRoom.position.set(roomX, 0, 0.4);
+      // Position monde : coin arrière droit (fond + mur droit), porte vers le centre du salon
+      const roomX = halfW - roomW / 2 - 0.2;
+      const roomZ = -halfD + roomD / 2 + 0.25;
+      stockRoom.position.set(roomX, 0, roomZ);
       scene.add(stockRoom);
       registerInteractiveObject(roomBack, 'Chambre de stock', 'stock');
       registerInteractiveObject(doorFrame, 'Chambre de stock', 'stock');
       stockRoomCenter = {
         x: roomX,
-        z: 0.4,
+        z: roomZ,
         doorX: roomX - roomW / 2,
         minX: roomX - roomW / 2,
         maxX: roomX + roomW / 2,
-        minZ: 0.4 - roomD / 2,
-        maxZ: 0.4 + roomD / 2,
+        minZ: roomZ - roomD / 2,
+        maxZ: roomZ + roomD / 2,
       };
 
-      // Toute l'équipe : en mouvement (marche / pas à l'accueil), sauf déjà placées en soin
+      // Équipe en mouvement (sauf déjà placées en soin). L'accueil 3D est une figure fixe, hors équipe.
       let walkIndex = 0;
-      let receptionTaken = false;
-      const hasReceptionRole = staffData.some(function (s) { return s.status === 'reception'; });
-      const firstOnDutyIndex = staffData.findIndex(function (s) { return s.status !== 'away'; });
 
       staffData.forEach(function (member, i) {
         if (placedStaffIds[member.id]) return;
 
         const exactName = member.name || member.firstName || 'Employée';
-        const isAvailable = member.status === 'available';
+        const isAvailable = member.status === 'available' || member.status === 'reception';
         const isAway = member.status === 'away';
 
         function attachHiddenStatusBadge(person, text, color) {
@@ -2010,7 +2361,8 @@
             speed: speed,
             baseY: 0,
             allowStockRoom: !!opts.allowStockRoom,
-            startAtPathZero: !!opts.startAtPathZero,
+            startAtPathZero: true,
+            phase: walkIndex * 0.85,
           });
           if (badgeText) attachHiddenStatusBadge(walker, badgeText, badgeColor);
           registerPersonInteractive(walker, 'person_staff_' + member.id, exactName);
@@ -2018,67 +2370,96 @@
           walkIndex += 1;
         }
 
+        function spawnIdle(slot, badgeText, badgeColor, hairOff, tunicColor) {
+          const person = createWomanAvatar({
+            role: 'staff',
+            pose: 'stand',
+            name: exactName,
+            hairColor: HAIR_COLORS[(i + hairOff) % HAIR_COLORS.length],
+            outfitColor: tunicColor,
+          });
+          person.position.set(slot[0], 0, slot[1]);
+          person.rotation.y = Math.atan2(0 - slot[0], 2.5 - slot[1]);
+          scene.add(person);
+          registerAnimatedPerson(person, { mode: 'idle', baseY: 0, phase: i * 0.6 });
+          if (badgeText) attachHiddenStatusBadge(person, badgeText, badgeColor);
+          registerPersonInteractive(person, 'person_staff_' + member.id, exactName);
+          placedStaffIds[member.id] = true;
+        }
+
         if (isAway) {
-          spawnWalker(
-            makeStaffWalkPath(walkIndex + 3),
-            0.012 + (walkIndex % 3) * 0.003,
+          // En congé : reste calme près de l'attente, sans circuler
+          const awaySlots = layoutStaffStandSlots(8);
+          spawnIdle(
+            awaySlots[(walkIndex + 2) % awaySlots.length],
             'En congé',
             0xc9a06a,
             4,
             0xd8d0cc,
           );
-          return;
-        }
-
-        if (!receptionTaken && (member.status === 'reception' || (!hasReceptionRole && i === firstOnDutyIndex))) {
-          spawnWalker(makeReceptionPacePath(), 0.014, 'Accueil', 0xc9a84c, 0, STAFF_TUNICS[i % STAFF_TUNICS.length]);
-          receptionTaken = true;
+          walkIndex += 1;
           return;
         }
 
         if (member.status === 'stock') {
           spawnWalker(
             makeStockRoomWalkPath(),
-            0.016,
+            0.007,
             'Réserve',
             0xc9a84c,
             2,
             STAFF_TUNICS[i % STAFF_TUNICS.length],
-            { allowStockRoom: true, startAtPathZero: true },
+            { allowStockRoom: true },
           );
           return;
         }
 
-        // Disponibles et autres : circulent dans le salon
-        spawnWalker(
-          makeStaffWalkPath(walkIndex),
-          0.018 + (walkIndex % 4) * 0.004,
-          isAvailable ? 'Disponible' : null,
-          0x6f9e78,
-          1,
-          STAFF_TUNICS[i % STAFF_TUNICS.length],
-        );
+        // Une employée sur deux circule lentement ; les autres restent en place
+        if (walkIndex % 2 === 0) {
+          spawnWalker(
+            makeStaffWalkPath(walkIndex),
+            0.0055 + (walkIndex % 3) * 0.001,
+            isAvailable ? 'Disponible' : null,
+            0x6f9e78,
+            1,
+            STAFF_TUNICS[i % STAFF_TUNICS.length],
+          );
+        } else {
+          const standSlots = layoutStaffStandSlots(12);
+          spawnIdle(
+            standSlots[walkIndex % standSlots.length],
+            isAvailable ? 'Disponible' : null,
+            0x6f9e78,
+            1,
+            STAFF_TUNICS[i % STAFF_TUNICS.length],
+          );
+          walkIndex += 1;
+        }
       });
 
-      addPlant(-8.2, 4.5, 1.1);
-      addPlant(-3.8, 5.2, 0.9);
-      addPlant(3.8, 5.1, 1.0);
-      addPlant(5.5, 4.2, 1.15);
-      addPlant(-8.3, 2.5, 0.85);
+      addPlant(deskX - 1.6, deskZ - 0.4, 1.15);
+      addPlant(waitingX - 2.0, waitingZ + 1.1, 1.0);
+      addPlant(waitingX + 1.8, waitingZ + 0.9, 1.05);
+      addPlant(waitingX - 0.4, waitingZ - 1.5, 1.2);
+      addPlant(-halfW + 1.4, -1.2, 0.95);
+      addPlant(stockRoomCenter.doorX - 1.8, stockRoomCenter.z + 1.6, 1.05);
+      addPlant(0.5, -halfD + 3.2, 0.9);
+      addPlant(halfW - 3.2, -2.0, 1.1);
+
+      addSalonDecor(halfW, halfD, deskX, deskZ, waitingX, waitingZ);
 
       // Rue + magasins mitoyens devant l'entrée (+Z)
       buildStreetAndShops(halfW, halfD);
     }
 
     function registerAnimatedPerson(group, opts) {
-      const pathLen = Math.max(1, (opts.path || []).length);
       animatedPeople.push({
         group: group,
         mode: opts.mode || 'idle',
         path: opts.path || null,
-        pathIndex: opts.startAtPathZero ? 0 : Math.floor(Math.random() * pathLen),
-        speed: opts.speed || 0.016,
-        phase: Math.random() * Math.PI * 2,
+        pathIndex: 0,
+        speed: opts.speed != null ? opts.speed : 0.006,
+        phase: opts.phase != null ? opts.phase : 0,
         baseY: opts.baseY != null ? opts.baseY : 0,
         leftLeg: group.userData.leftLeg || null,
         rightLeg: group.userData.rightLeg || null,
@@ -2388,9 +2769,16 @@
 
       if (codeId.startsWith('person_')) {
         showPersonName(personGroup);
-        if (codeId.indexOf('staff') !== -1) switchTab('staff');
-        else if (codeId.indexOf('wait') !== -1) switchTab('waiting');
-        else switchTab('chairs');
+        if (codeId === 'person_reception') {
+          switchTab('staff');
+          setCameraView('reception');
+        } else if (codeId.indexOf('staff') !== -1) {
+          switchTab('staff');
+        } else if (codeId.indexOf('wait') !== -1) {
+          switchTab('waiting');
+        } else {
+          switchTab('chairs');
+        }
         renderCRM();
         return;
       }
@@ -2410,7 +2798,7 @@
         }
       } else if (codeId === 'reception') {
         switchTab('staff');
-        focusCameraOn(-6.5, 2, -1);
+        setCameraView('reception');
       } else if (codeId === 'waiting') {
         switchTab('waiting');
         if (waitingZoneBadgeMesh) waitingZoneBadgeMesh.visible = true;
@@ -2499,21 +2887,28 @@
 
     // Vues de caméra prédéfinies
     function setCameraView(viewType) {
-      if (viewType === 'top') gsapLikeCameraMove(0.1, 24, 0.1, 0, 0, 0);
-      else if (viewType === 'reception') gsapLikeCameraMove(-8, 8, 8, -6.5, 0.8, 4);
-      else if (viewType === 'chairs') gsapLikeCameraMove(2, 9, 2, 0.5, 0.5, -4.5);
+      if (viewType === 'top') gsapLikeCameraMove(0.1, 32, 0.1, 0, 0, 0);
+      else if (viewType === 'reception') {
+        const rx = salonBounds.minX + 4.4;
+        const rz = salonBounds.maxZ - 2.2;
+        gsapLikeCameraMove(rx - 2, 9, rz + 4, rx, 0.8, rz - 0.6);
+      } else if (viewType === 'chairs') gsapLikeCameraMove(2, 11, 3, 0.5, 0.5, salonBounds.minZ + 3.2);
       else if (viewType === 'stock') {
-        const c = stockRoomCenter || { x: 7.2, z: 0.4, doorX: 5.1 };
-        gsapLikeCameraMove(c.doorX - 3.2, 5.2, c.z + 0.2, c.x + 0.4, 1.35, c.z);
+        const c = stockRoomCenter || { x: 10.5, z: -6.2, doorX: 8.4 };
+        gsapLikeCameraMove(c.doorX - 4.2, 6.2, c.z + 1.2, c.x + 0.2, 1.35, c.z);
       } else if (viewType === 'street') {
         // Vue rue : regarder à travers la vitrine vers l'intérieur
-        gsapLikeCameraMove(0, 5.5, 16, 0, 1.4, 2);
+        gsapLikeCameraMove(0, 6.5, salonBounds.maxZ + 8, 0, 1.4, salonBounds.maxZ - 4);
       }
-      else if (viewType === 'waiting') gsapLikeCameraMove(0, 8, 10, -0.2, 0.5, 3.6);
+      else if (viewType === 'waiting') {
+        const wx = waitingCenter ? waitingCenter.x : salonBounds.maxX - 4.4;
+        const wz = waitingCenter ? waitingCenter.z : salonBounds.maxZ - 3.8;
+        gsapLikeCameraMove(wx - 3.5, 8.5, wz + 5.5, wx, 0.5, wz);
+      }
     }
 
     function resetCamera() {
-      gsapLikeCameraMove(18, 16, 18, 0, 0.4, 0);
+      gsapLikeCameraMove(24, 20, 24, 0, 0.4, 0);
       selectedObjectId = null;
       hideAllTitles();
       document.getElementById('selected-info').innerText = "Cliquez pour afficher le titre";
@@ -2544,9 +2939,9 @@
           } else {
             g.position.x += (dx / dist) * person.speed;
             g.position.z += (dz / dist) * person.speed;
-            // Garde les personnages dans le salon
-            g.position.x = Math.max(-8.2, Math.min(8.2, g.position.x));
-            g.position.z = Math.max(-5.8, Math.min(5.2, g.position.z));
+            // Garde les personnages dans le salon agrandi
+            g.position.x = Math.max(salonBounds.minX, Math.min(salonBounds.maxX, g.position.x));
+            g.position.z = Math.max(salonBounds.minZ, Math.min(salonBounds.maxZ, g.position.z));
             // Empêche de rester bloqué dans la chambre stock (sauf rôle réserve)
             if (!person.allowStockRoom && isInsideStockRoom(g.position.x, g.position.z) && stockRoomCenter) {
               g.position.x = stockRoomCenter.doorX - 0.7;
@@ -2555,52 +2950,65 @@
             }
             g.rotation.y = Math.atan2(dx, dz);
           }
-          // Marche bien visible : rebond + jambes/bras
-          g.position.y = person.baseY + Math.abs(Math.sin(t * 8)) * 0.05;
+          // Marche calme : pas lents, peu de rebond
+          g.position.y = person.baseY + Math.abs(Math.sin(t * 3.2)) * 0.02;
           if (person.leftLeg && person.rightLeg) {
-            person.leftLeg.rotation.x = Math.sin(t * 8) * 0.7;
-            person.rightLeg.rotation.x = Math.sin(t * 8 + Math.PI) * 0.7;
+            person.leftLeg.rotation.x = Math.sin(t * 3.2) * 0.35;
+            person.rightLeg.rotation.x = Math.sin(t * 3.2 + Math.PI) * 0.35;
           }
           if (person.leftArm && person.rightArm) {
-            person.leftArm.rotation.x = Math.sin(t * 8 + Math.PI) * 0.55;
-            person.rightArm.rotation.x = Math.sin(t * 8) * 0.55;
-            person.leftArm.rotation.z = 0.15 + Math.sin(t * 3) * 0.05;
-            person.rightArm.rotation.z = -0.15 - Math.sin(t * 3) * 0.05;
+            person.leftArm.rotation.x = Math.sin(t * 3.2 + Math.PI) * 0.28;
+            person.rightArm.rotation.x = Math.sin(t * 3.2) * 0.28;
+            person.leftArm.rotation.z = 0.12;
+            person.rightArm.rotation.z = -0.12;
           }
         } else if (person.mode === 'work') {
-          g.position.y = person.baseY + Math.sin(t * 3) * 0.02;
-          g.position.x = (person.homeX != null ? person.homeX : g.position.x) + Math.sin(t * 1.2) * 0.04;
-          g.rotation.y = Math.sin(t * 0.9) * 0.18;
+          g.position.y = person.baseY + Math.sin(t * 1.4) * 0.01;
+          g.position.x = person.homeX != null ? person.homeX : g.position.x;
+          g.rotation.y = Math.sin(t * 0.4) * 0.06;
           if (person.rightArm) {
-            person.rightArm.rotation.x = -0.9 + Math.sin(t * 5) * 0.45;
-            person.rightArm.rotation.z = -0.35 + Math.sin(t * 3) * 0.12;
+            person.rightArm.rotation.x = -0.9 + Math.sin(t * 2.2) * 0.2;
+            person.rightArm.rotation.z = -0.35 + Math.sin(t * 1.4) * 0.06;
           }
           if (person.leftArm) {
-            person.leftArm.rotation.x = -0.25 + Math.sin(t * 2.5) * 0.15;
+            person.leftArm.rotation.x = -0.25 + Math.sin(t * 1.2) * 0.08;
           }
-        } else if (person.mode === 'idle') {
-          g.position.y = person.baseY + Math.sin(t * 2.4) * 0.03;
-          g.position.x = (person.homeX != null ? person.homeX : g.position.x) + Math.sin(t * 0.8) * 0.06;
-          g.position.z = (person.homeZ != null ? person.homeZ : g.position.z) + Math.cos(t * 0.7) * 0.05;
-          g.rotation.y = Math.sin(t * 0.9) * 0.35;
+        } else if (person.mode === 'fixed') {
+          // Accueil : reste exactement à sa place, sans déplacement ni animation
+          g.position.x = person.homeX != null ? person.homeX : g.position.x;
+          g.position.y = person.baseY;
+          g.position.z = person.homeZ != null ? person.homeZ : g.position.z;
           if (person.leftArm && person.rightArm) {
-            person.leftArm.rotation.x = Math.sin(t * 2) * 0.2;
-            person.rightArm.rotation.x = Math.sin(t * 2 + 1) * 0.2;
+            person.leftArm.rotation.x = 0;
+            person.rightArm.rotation.x = 0;
           }
           if (person.leftLeg && person.rightLeg) {
-            person.leftLeg.rotation.x = Math.sin(t * 1.5) * 0.08;
-            person.rightLeg.rotation.x = Math.sin(t * 1.5 + Math.PI) * 0.08;
+            person.leftLeg.rotation.x = 0;
+            person.rightLeg.rotation.x = 0;
+          }
+        } else if (person.mode === 'idle') {
+          g.position.y = person.baseY + Math.sin(t * 1.1) * 0.012;
+          g.position.x = person.homeX != null ? person.homeX : g.position.x;
+          g.position.z = person.homeZ != null ? person.homeZ : g.position.z;
+          g.rotation.y = Math.sin(t * 0.35) * 0.08;
+          if (person.leftArm && person.rightArm) {
+            person.leftArm.rotation.x = Math.sin(t * 0.9) * 0.06;
+            person.rightArm.rotation.x = Math.sin(t * 0.9 + 0.8) * 0.06;
+          }
+          if (person.leftLeg && person.rightLeg) {
+            person.leftLeg.rotation.x = 0;
+            person.rightLeg.rotation.x = 0;
           }
         } else if (person.mode === 'sit') {
-          g.position.y = person.baseY + Math.sin(t * 2) * 0.02;
-          g.rotation.y = Math.sin(t * 0.7) * 0.25;
+          g.position.y = person.baseY + Math.sin(t * 0.9) * 0.008;
+          g.rotation.y = Math.sin(t * 0.25) * 0.06;
           if (person.leftArm && person.rightArm) {
-            person.leftArm.rotation.x = -0.1 + Math.sin(t * 1.8) * 0.2;
-            person.rightArm.rotation.x = -0.1 + Math.sin(t * 1.8 + 1.2) * 0.22;
+            person.leftArm.rotation.x = -0.1 + Math.sin(t * 0.7) * 0.06;
+            person.rightArm.rotation.x = -0.1 + Math.sin(t * 0.7 + 0.9) * 0.06;
           }
         } else if (person.mode === 'lie') {
-          g.position.y = person.baseY + Math.sin(t * 1.8) * 0.015;
-          g.rotation.z = Math.sin(t * 0.6) * 0.03;
+          g.position.y = person.baseY + Math.sin(t * 0.8) * 0.006;
+          g.rotation.z = Math.sin(t * 0.3) * 0.01;
         }
       });
 

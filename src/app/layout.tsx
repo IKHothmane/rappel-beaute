@@ -64,6 +64,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
 
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+
   openGraph: {
     type: "website",
     locale: "fr_MA",

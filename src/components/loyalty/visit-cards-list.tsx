@@ -9,6 +9,7 @@ export type VisitCardRow = {
   visits: number;
   visitsPerReward: number;
   createdAt: string;
+  lastActivityAt?: string;
   cardCode?: string;
   promoCode?: string | null;
 };

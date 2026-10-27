@@ -62,16 +62,65 @@ export function LoyaltyBoard({
   const [passageBusy, setPassageBusy] = useState(false);
   const [passageNote, setPassageNote] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  /** Ordre de scan de la session (plus récent en premier) */
+  const [scannedIds, setScannedIds] = useState<string[]>([]);
 
   const threshold = program?.visitsPerReward && program.visitsPerReward > 0 ? program.visitsPerReward : null;
   const rewardLabel = program?.rewardLabel?.trim() || "";
   const focused = focusId ? visitCards.find((card) => card.customerId === focusId) ?? null : null;
   const cycleVisits = focused && threshold ? visitCycle(focused.visits, threshold) : 0;
   const filled = threshold ? Math.min(threshold, Math.max(0, cycleVisits)) : 0;
-  const loyal = useMemo(
-    () => [...visitCards].sort((a, b) => b.visits - a.visits || a.customerName.localeCompare(b.customerName, "fr")).slice(0, 5),
-    [visitCards],
-  );
+
+  function rememberScan(customerId: string) {
+    setFocusId(customerId);
+    setScannedIds((prev) => [customerId, ...prev.filter((id) => id !== customerId)]);
+  }
+
+  // Chaque cliente scannée apparaît dans la liste (session + activité récente)
+  const scannedList = useMemo(() => {
+    const byId = new Map(visitCards.map((card) => [card.customerId, card]));
+    const activity = (card: VisitCardRow) =>
+      new Date(card.lastActivityAt || card.createdAt).getTime();
+    const fromScans = scannedIds
+      .map((id) => byId.get(id))
+      .filter((card): card is VisitCardRow => Boolean(card));
+    const rest = visitCards
+      .filter((card) => !scannedIds.includes(card.customerId))
+      .sort(
+        (a, b) =>
+          activity(b) - activity(a) || a.customerName.localeCompare(b.customerName, "fr"),
+      );
+    return [...fromScans, ...rest];
+  }, [visitCards, scannedIds]);
+
+  // Rafraîchir pour voir les clientes qui viennent de scanner le QR d'adhésion
+  useEffect(() => {
+    const timer = setInterval(() => onRefresh(), 12000);
+    return () => clearInterval(timer);
+  }, [onRefresh]);
+
+  // Nouvelles cartes (adhésion via QR) → marquées scannées et en tête
+  useEffect(() => {
+    const recentMs = 3 * 60 * 1000;
+    const now = Date.now();
+    const freshIds = visitCards
+      .filter((card) => {
+        const at = new Date(card.lastActivityAt || card.createdAt).getTime();
+        return now - at < recentMs;
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.lastActivityAt || b.createdAt).getTime() -
+          new Date(a.lastActivityAt || a.createdAt).getTime(),
+      )
+      .map((card) => card.customerId);
+    if (!freshIds.length) return;
+    setScannedIds((prev) => {
+      const merged = [...freshIds, ...prev.filter((id) => !freshIds.includes(id))];
+      if (merged.length === prev.length && merged.every((id, i) => id === prev[i])) return prev;
+      return merged;
+    });
+  }, [visitCards]);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,6 +206,8 @@ export function LoyaltyBoard({
         promoCode?: string | null;
       };
       if (!res.ok) throw new Error(body.error || "Passage impossible.");
+      const matched = visitCards.find((card) => card.customerName === body.customerName);
+      if (matched) rememberScan(matched.customerId);
       if (body.promoCode) {
         setPassageNote(`${body.customerName} · code ${body.promoCode} : un soin est offert. Compteur à 0.`);
         toast(`Code ${body.promoCode} : un soin est offert. Compteur à 0.`, "success");
@@ -222,7 +273,7 @@ export function LoyaltyBoard({
   }, [cameraOn, toast]);
 
   function selectCustomer(card: VisitCardRow) {
-    setFocusId(card.customerId);
+    rememberScan(card.customerId);
     const code = (card.cardCode || card.promoCode || (card.publicToken ? shortCardCode(card.publicToken) : "")).trim();
     if (!code) return;
     setPassageToken(code);
@@ -333,11 +384,19 @@ export function LoyaltyBoard({
               onCodeChange={setCustomerCode}
               onPreview={(preview) => {
                 if (!preview) return;
-                const match = visitCards.find((card) => card.customerName === preview.customerName);
-                if (match) setFocusId(match.customerId);
+                const match =
+                  visitCards.find((card) => card.customerName === preview.customerName) ||
+                  visitCards.find(
+                    (card) =>
+                      card.publicToken?.toUpperCase() === preview.token.toUpperCase() ||
+                      card.cardCode === shortCardCode(preview.token),
+                  );
+                if (match) rememberScan(match.customerId);
                 setPassageToken(shortCardCode(preview.token));
               }}
-              onValidated={onRefresh}
+              onValidated={() => {
+                onRefresh();
+              }}
             />
           </section>
 
@@ -463,16 +522,24 @@ export function LoyaltyBoard({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
-          <h2 className="mb-1 flex items-center gap-2 text-[15px] font-bold">
-            <Users size={16} className="text-ink/40" /> Clientes fidèles
-          </h2>
-          <p className="mb-2 text-[12px] text-ink/45">Touchez un nom pour remplir son code.</p>
-          {loyal.length === 0 ? (
-            <p className="text-sm text-ink/45">Aucune carte pour le moment.</p>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-[15px] font-bold">
+              <Users size={16} className="text-ink/40" /> Clientes scannées
+            </h2>
+            <span className="rounded-full bg-[#FFF1F6] px-2.5 py-0.5 text-[11px] font-bold text-primary">
+              {scannedList.length}
+            </span>
+          </div>
+          <p className="mb-2 text-[12px] text-ink/45">
+            Chaque cliente scannée apparaît ici. Touchez un nom pour remplir son code.
+          </p>
+          {scannedList.length === 0 ? (
+            <p className="text-sm text-ink/45">Aucune cliente scannée pour le moment.</p>
           ) : (
-            <ol className="space-y-1">
-              {loyal.map((card, index) => {
+            <ol className="max-h-[28rem] space-y-1 overflow-y-auto pr-1">
+              {scannedList.map((card, index) => {
                 const selected = card.customerId === focusId;
+                const justScanned = scannedIds.includes(card.customerId);
                 return (
                   <li key={card.id}>
                     <button
@@ -480,12 +547,19 @@ export function LoyaltyBoard({
                       onClick={() => selectCustomer(card)}
                       className={`flex w-full min-w-0 items-center gap-2 rounded-xl px-2 py-2 text-left sm:gap-3 ${selected ? "bg-[#FFF1F6]" : "hover:bg-[#FFF7FA]"}`}
                     >
-                      <span className="w-4 shrink-0 text-sm font-bold text-ink/35">{index + 1}</span>
+                      <span className="w-5 shrink-0 text-sm font-bold text-ink/35">{index + 1}</span>
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F3E4EA] text-[11px] font-bold">
                         {memberInitials(card.customerName)}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold">{card.customerName}</span>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="block truncate text-sm font-semibold">{card.customerName}</span>
+                          {justScanned ? (
+                            <span className="shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                              Scan
+                            </span>
+                          ) : null}
+                        </span>
                         {card.cardCode ? (
                           <span className="font-mono text-[12px] font-bold tracking-[0.14em] text-ink/70">{card.cardCode}</span>
                         ) : null}

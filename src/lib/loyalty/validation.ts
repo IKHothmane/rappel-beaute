@@ -150,6 +150,8 @@ async function insertVisitAndMaybeReward(client: PoolClient, input: VisitInsert)
         input.validatedBy,
       ],
     );
+    // Remonte la carte en tête de « Clientes fidèles »
+    await client.query(`UPDATE "LoyaltyCard" SET "updatedAt" = NOW() WHERE id = $1`, [input.cardId]);
   } catch (error) {
     if (isUniqueViolation(error)) throw new Error("ALREADY_VALIDATED");
     throw error;

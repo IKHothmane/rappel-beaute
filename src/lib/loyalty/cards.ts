@@ -89,6 +89,7 @@ export async function issueLoyaltyCard(
     [organizationId, customerId],
   );
   if (existing.rows[0]) {
+    await pool.query(`UPDATE "LoyaltyCard" SET "updatedAt" = NOW() WHERE id = $1`, [existing.rows[0].id]);
     return {
       id: existing.rows[0].id,
       publicToken: existing.rows[0].publicToken,
@@ -150,6 +151,8 @@ export type VisitCardListItem = {
   visits: number;
   visitsPerReward: number;
   createdAt: string;
+  /** Dernier scan / passage / création — pour tri « Clientes fidèles ». */
+  lastActivityAt: string;
   publicToken: string;
   cardCode: string;
   promoCode: string | null;
@@ -175,6 +178,7 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
     visits: number;
     rewardsReady: number;
     createdAt: Date;
+    lastActivityAt: Date;
   }>(
     `SELECT lc.id, c.id AS "customerId", c."firstName", c."lastName", c.phone, lc."publicToken",
             COALESCE((
@@ -186,12 +190,20 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
               WHERE r."loyaltyCardId" = lc.id AND r.status = 'AVAILABLE'
                 AND (r."expiresAt" IS NULL OR r."expiresAt" > NOW())
             ), 0)::int AS "rewardsReady",
-            lc."createdAt"
+            lc."createdAt",
+            GREATEST(
+              lc."createdAt",
+              lc."updatedAt",
+              COALESCE((
+                SELECT MAX(e."validatedAt") FROM "LoyaltyEvent" e
+                WHERE e."loyaltyCardId" = lc.id
+              ), lc."createdAt")
+            ) AS "lastActivityAt"
      FROM "LoyaltyCard" lc
      JOIN "Customer" c ON c.id = lc."customerId"
      WHERE lc."organizationId" = $1 AND lc.status = 'ACTIVE' AND c."deletedAt" IS NULL
-     ORDER BY lc."createdAt" DESC
-     LIMIT 50`,
+     ORDER BY "lastActivityAt" DESC, lc."createdAt" DESC
+     LIMIT 200`,
     [organizationId],
   );
   return rows.map((row) => ({
@@ -202,6 +214,7 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
     visits: row.visits,
     visitsPerReward: program.visitsPerReward,
     createdAt: row.createdAt.toISOString(),
+    lastActivityAt: row.lastActivityAt.toISOString(),
     publicToken: row.publicToken,
     cardCode: shortCardCode(row.publicToken),
     promoCode: row.rewardsReady > 0 ? shortCardCode(row.publicToken) : null,

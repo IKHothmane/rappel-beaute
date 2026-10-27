@@ -219,12 +219,14 @@ export async function cardTokenForJoinQr(joinToken: string, cardToken: string): 
   const normalizedJoin = joinToken.trim().toUpperCase();
   const normalizedCard = cardToken.trim().toUpperCase();
   if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(normalizedCard)) return null;
-  const { rows } = await pool.query<{ publicToken: string }>(
-    `SELECT lc."publicToken"
+  const { rows } = await pool.query<{ id: string; publicToken: string }>(
+    `SELECT lc.id, lc."publicToken"
      FROM "LoyaltyCard" lc
      JOIN "LoyaltyJoinQr" q ON q."organizationId" = lc."organizationId"
      WHERE lc."publicToken" = $1 AND q.token = $2 AND q.status = 'ACTIVE' AND lc.status = 'ACTIVE'`,
     [normalizedCard, normalizedJoin],
   );
-  return rows[0]?.publicToken ?? null;
+  if (!rows[0]) return null;
+  await pool.query(`UPDATE "LoyaltyCard" SET "updatedAt" = NOW() WHERE id = $1`, [rows[0].id]);
+  return rows[0].publicToken;
 }

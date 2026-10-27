@@ -15,7 +15,7 @@
   <!-- ========================================== -->
   <!-- PANNEAU LATÉRAL CRM (GAUCHE)              -->
   <!-- ========================================== -->
-  <aside class="w-full md:w-[450px] lg:w-[480px] h-2/5 md:h-full bg-brand-cardBg border-r border-brand-borderBg flex flex-col z-20 shadow-sm relative">
+  <aside class="bg-brand-cardBg border-r border-brand-borderBg flex flex-col z-20 shadow-sm relative">
     
     <!-- En-tête CRM -->
     <div class="p-4 border-b border-brand-borderBg flex items-center justify-between bg-brand-darkBg/50">
@@ -168,7 +168,7 @@
   <!-- ========================================== -->
   <!-- VUE 3D THREE.JS (DROITE)                  -->
   <!-- ========================================== -->
-  <main class="flex-1 h-3/5 md:h-full relative bg-white">
+  <main class="relative bg-white">
     
     <!-- Superposition d'instructions & Contrôles sur la vue 3D -->
     <div class="absolute top-3 right-3 z-10 flex flex-wrap justify-end gap-1.5 max-w-[min(100%,28rem)]">
@@ -3019,14 +3019,18 @@
       buildSalonArchitecture();
     }
 
-    // REDIMENSIONNEMENT DU CANVAS
-    window.addEventListener('resize', () => {
+    function resize3DCanvas() {
       const container = document.getElementById('three-container');
       if (!container || !renderer || !camera) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
+      const w = Math.max(container.clientWidth, 1);
+      const h = Math.max(container.clientHeight, 1);
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    });
+      renderer.setSize(w, h, true);
+    }
+
+    // REDIMENSIONNEMENT DU CANVAS
+    window.addEventListener('resize', resize3DCanvas);
 
     // ----------------------------------------------------
     // INITIALISATION GÉNÉRALE AU CHARGEMENT
@@ -3036,6 +3040,12 @@
       threeStarted = true;
       await loadSalonFromApi(false);
       init3D();
+      // Relancer après layout (évite canvas largeur 0 si le panneau CRM a pris toute la place)
+      requestAnimationFrame(function () {
+        resize3DCanvas();
+        requestAnimationFrame(resize3DCanvas);
+      });
+      setTimeout(resize3DCanvas, 100);
       if (window.lucide) lucide.createIcons();
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(function () { loadSalonFromApi(true); }, 30000);

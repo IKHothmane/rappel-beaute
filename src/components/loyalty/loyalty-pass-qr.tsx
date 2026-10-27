@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { SITE } from "@/lib/site";
+import { loyaltyCardWalletUrl } from "@/lib/loyalty/public-origin";
 
 export function LoyaltyPassQr({ customerId }: { customerId: string }) {
   const [qr, setQr] = useState<string | null>(null);
@@ -24,7 +24,7 @@ export function LoyaltyPassQr({ customerId }: { customerId: string }) {
         const body = (await res.json()) as { publicToken?: string; cardUrl?: string; error?: string };
         const token = body.publicToken || body.cardUrl?.match(/RBLOY_[A-Z2-9]+/i)?.[0];
         if (!res.ok || !token) throw new Error(body.error || "Carte indisponible.");
-        const scanUrl = `${SITE.url}/carte/${token.toUpperCase()}/google/`;
+        const scanUrl = loyaltyCardWalletUrl(token);
         const image = await QRCode.toDataURL(scanUrl, {
           margin: 1,
           width: 280,

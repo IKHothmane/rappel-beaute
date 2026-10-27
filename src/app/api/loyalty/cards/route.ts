@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureWriteLimited, stripOrganizationId } from "@/lib/auth/api-guard";
 import { issueLoyaltyCard } from "@/lib/loyalty/cards";
-import { SITE } from "@/lib/site";
+import { loyaltyCardUrl } from "@/lib/loyalty/public-origin";
 
 export async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "loyalty");
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const card = await issueLoyaltyCard(auth.session.organizationId, customerId);
     return NextResponse.json({
       ...card,
-      cardUrl: `${SITE.url}/carte/${card.publicToken}/`,
+      cardUrl: loyaltyCardUrl(card.publicToken),
     });
   } catch (error) {
     if (error instanceof Error && error.message === "CUSTOMER_NOT_FOUND") {

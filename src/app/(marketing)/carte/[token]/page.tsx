@@ -5,7 +5,6 @@ import { CustomerPushPanel } from "@/components/loyalty/customer-push-panel";
 import { LoyaltyStampCard } from "@/components/loyalty/loyalty-stamp-card";
 import { WalletInstall } from "@/components/loyalty/wallet-install";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
-import { SITE } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +30,9 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
   if (!card) notFound();
 
   const token = params.token.trim().toUpperCase();
-  // This QR carries the public card URL. Staff scanners can extract the RBLOY token from it.
-  const cardUrl = `${SITE.url.replace(/\/$/, "")}/carte/${token}/google/`;
-  const qr = await QRCode.toDataURL(cardUrl, {
+  // QR personnel : jeton seul (RBLOY_…) pour le scan institut — jamais d'URL localhost.
+  // Le parcours Wallet reste sur /carte/[token]/google/ via le bouton d'installation.
+  const qr = await QRCode.toDataURL(token, {
     margin: 1,
     width: 280,
     errorCorrectionLevel: "M",

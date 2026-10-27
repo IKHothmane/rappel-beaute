@@ -3,8 +3,7 @@ import type { NextRequest } from "next/server";
 import { createAppleWalletPass } from "@/lib/loyalty/apple-wallet";
 import { createGoogleWalletSaveUrl } from "@/lib/loyalty/google-wallet";
 import { appleWalletConfigured, googleWalletConfigured } from "@/lib/loyalty/wallet-config";
-import { SITE } from "@/lib/site";
-import { requestCardOrigin } from "@/lib/loyalty/public-origin";
+import { loyaltyCardUrl, requestCardOrigin } from "@/lib/loyalty/public-origin";
 
 const TOKEN = /^RBLOY_[A-Z2-9]{8,32}$/;
 
@@ -15,7 +14,7 @@ function isApplePhone(request: NextRequest) {
 /** Scan du QR : iPhone reçoit le .pkpass, les autres téléphones ouvrent Google Wallet. */
 export async function GET(request: NextRequest, { params }: { params: { token: string } }) {
   const token = params.token.trim().toUpperCase();
-  const fallback = `${SITE.url}/carte/${token}/`;
+  const fallback = loyaltyCardUrl(token);
   if (!TOKEN.test(token)) return NextResponse.redirect(fallback);
   if (isApplePhone(request) && appleWalletConfigured()) {
     try {
@@ -32,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     } catch (error) {
       console.error("[GET /carte/google] apple", error instanceof Error ? error.message : "signature");
     }
-    return NextResponse.redirect(`${SITE.url}/carte/${token}/`);
+    return NextResponse.redirect(fallback);
   }
   if (!googleWalletConfigured()) return NextResponse.redirect(fallback);
   try {

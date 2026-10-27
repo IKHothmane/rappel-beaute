@@ -9,6 +9,7 @@ export function PublicReviewForm({
   firstName,
   serviceName,
   alreadySubmitted,
+  embedded = false,
 }: {
   slug: string;
   token: string;
@@ -16,6 +17,8 @@ export function PublicReviewForm({
   firstName: string;
   serviceName: string;
   alreadySubmitted: boolean;
+  /** Sur la carte fidélité : sans carte/ombre externe. */
+  embedded?: boolean;
 }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
@@ -45,14 +48,27 @@ export function PublicReviewForm({
 
   if (done) {
     return (
-      <p className="mt-8 rounded-3xl bg-white p-6 text-center text-sm text-ink/70 shadow-md">
+      <p
+        className={
+          embedded
+            ? "mt-4 rounded-xl bg-[#FBF4F6] px-4 py-3 text-center text-sm text-[#806B77]"
+            : "mt-8 rounded-3xl bg-white p-6 text-center text-sm text-ink/70 shadow-md"
+        }
+      >
         Merci {firstName}. Votre avis est enregistré et sera lu par {organizationName}.
       </p>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-3xl bg-white p-6 shadow-md">
+    <form
+      onSubmit={onSubmit}
+      className={
+        embedded
+          ? "mt-4 space-y-4"
+          : "mt-8 space-y-4 rounded-3xl bg-white p-6 shadow-md"
+      }
+    >
       <p className="text-sm text-ink/60">{serviceName}</p>
       <div className="flex justify-center gap-2">
         {[1, 2, 3, 4, 5].map((star) => (

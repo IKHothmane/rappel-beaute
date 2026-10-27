@@ -19,6 +19,7 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import { AnalyticsCharts } from "@/components/analytics/analytics-charts";
 import {
   ANALYTICS_PRESETS,
   deltaClass,
@@ -329,48 +330,28 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
         />
       </section>
 
-      {/* Weekly + PnL */}
+      <AnalyticsCharts
+        loading={vm.loading}
+        periodLabel={vm.periodLabel}
+        revenue={vm.revenue}
+        appointments={vm.appointments}
+        customers={vm.customers}
+        services={vm.services}
+        staff={vm.staff}
+        compact
+      />
+
+      {/* PnL */}
       <section className="space-y-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-on-surface">CA Hebdomadaire &amp; PnL</h2>
+            <h2 className="text-base font-bold text-on-surface">PnL Express</h2>
             <p className="text-xs text-on-surface-variant">
               {ov ? `Total ${formatMad(ov.revenue.value)}` : presetLabel}
             </p>
           </div>
           <Sparkles className="h-5 w-5 text-primary" />
         </div>
-        {vm.loading ? (
-          <p className="text-sm text-on-surface-variant">Chargement…</p>
-        ) : vm.weekly.length === 0 ? (
-          <p className="text-sm text-on-surface-variant">Pas de points hebdomadaires.</p>
-        ) : (
-          <div className="flex h-28 items-end justify-between gap-1 rounded-lg bg-surface-container-low px-2 pb-1 pt-4">
-            {vm.weekly.map((b, i) => {
-              const isLast = i === vm.weekly.length - 1;
-              return (
-                <div key={b.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                  <span
-                    className={cn(
-                      "text-[9px] font-semibold",
-                      isLast ? "font-bold text-primary" : "text-on-surface-variant",
-                    )}
-                  >
-                    {b.value >= 1000 ? `${Math.round(b.value / 1000)}k` : b.value}
-                  </span>
-                  <div
-                    className={cn(
-                      "w-5 rounded-t-sm",
-                      isLast ? "bg-primary-container shadow-sm" : "bg-surface-container-high",
-                    )}
-                    style={{ height: `${Math.round((b.heightPct / 100) * 72)}px` }}
-                  />
-                  <span className="text-[10px] font-bold">{b.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
         <div className="space-y-1.5 text-sm">
           <Row label="CA encaissé" value={formatMad(vm.pnl.net)} strong />
           <Row label="Charges" value={`− ${formatMad(vm.pnl.expenses)}`} />

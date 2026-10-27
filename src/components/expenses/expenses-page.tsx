@@ -618,8 +618,8 @@ export function ExpensesPageView() {
             ) : null}
 
             <p className="rounded-xl bg-[#FFEFF8] p-3 text-[12px] leading-relaxed text-ink/55">
-              Une dépense enregistrée n’est pas effacée. L’annulation passe l’écriture en VOID et recrédite
-              la caisse si le règlement était en espèces.
+              Une dépense enregistrée n’est pas effacée. L’annulation passe l’écriture en VOID.
+              Les dépenses n’impactent pas le solde de caisse.
             </p>
           </aside>
         </div>
@@ -650,7 +650,7 @@ export function ExpensesPageView() {
         {voidTarget ? (
           <div className="space-y-4 text-sm">
             <p className="text-ink/60">
-              Passage en VOID — pas de suppression. Si espèces, la caisse ouverte sera créditée.
+              Passage en VOID — pas de suppression. La caisse n’est pas modifiée.
             </p>
             <p>
               {expenseShortId(voidTarget.id)} · {formatMad(voidTarget.amount)} ·{" "}
@@ -773,7 +773,7 @@ function ExpenseInspect({
       </dl>
       {expense.paymentMethod === "CASH" && expense.status === "RECORDED" ? (
         <p className="rounded-lg bg-emerald-50 p-2 text-[12px] text-emerald-800">
-          Sortie de caisse liée (session ouverte requise à la saisie).
+          Suivi comptable — sans impact sur la caisse.
         </p>
       ) : null}
       {expense.category === "PRODUCT_PURCHASE" ? (

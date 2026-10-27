@@ -20,6 +20,7 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import { AnalyticsCharts } from "@/components/analytics/analytics-charts";
 import {
   ANALYTICS_PRESETS,
   deltaClass,
@@ -372,65 +373,19 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
         />
       </section>
 
-      {/* Weekly + PnL | Funnel */}
+      <AnalyticsCharts
+        loading={vm.loading}
+        periodLabel={vm.periodLabel}
+        revenue={vm.revenue}
+        appointments={vm.appointments}
+        customers={vm.customers}
+        services={vm.services}
+        staff={vm.staff}
+      />
+
+      {/* PnL | Funnel */}
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="flex flex-col gap-6 xl:col-span-7">
-          <div className="rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <h3 className="text-[22px] font-bold text-on-surface">Évolution Hebdomadaire du CA</h3>
-                <p className="text-[13px] text-on-surface-variant">
-                  Progression par tranche de 7 jours
-                  {ov ? ` · total ${formatMad(ov.revenue.value)}` : ""}
-                </p>
-              </div>
-              <span className="rounded-full bg-secondary-fixed px-3 py-1 text-[11px] font-bold text-on-secondary-fixed">
-                {presetLabel}
-              </span>
-            </div>
-            {vm.loading ? (
-              <p className="text-sm text-on-surface-variant">Chargement du CA hebdomadaire…</p>
-            ) : vm.weekly.length === 0 ? (
-              <p className="text-sm text-on-surface-variant">Pas de points de CA sur cette période.</p>
-            ) : (
-              <div className="flex h-56 items-end justify-between gap-3 border-b border-surface-container pb-4 pt-6">
-                {vm.weekly.map((b, i) => {
-                  const isLast = i === vm.weekly.length - 1;
-                  return (
-                    <div key={b.key} className="group flex flex-1 flex-col items-center gap-2">
-                      <span
-                        className={cn(
-                          "text-[11px] font-bold",
-                          isLast ? "text-primary" : "text-on-surface-variant",
-                        )}
-                      >
-                        {formatMad(b.value)}
-                      </span>
-                      <div
-                        className={cn(
-                          "relative w-full max-w-[48px] rounded-t-lg",
-                          isLast ? "bg-secondary-fixed" : "bg-surface-container-high",
-                        )}
-                        style={{ height: `${b.heightPct}%` }}
-                      >
-                        <div
-                          className={cn(
-                            "absolute inset-x-0 bottom-0 rounded-t-lg",
-                            isLast ? "bg-primary-container" : "bg-primary/80",
-                          )}
-                          style={{ height: isLast ? "100%" : "90%" }}
-                        />
-                      </div>
-                      <span className={cn("text-sm font-bold", isLast && "text-primary-container")}>
-                        {b.label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
           <div className="rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div>

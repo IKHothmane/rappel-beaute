@@ -101,6 +101,19 @@ export async function listPayments(params?: {
   return data.data;
 }
 
+export async function getPaymentById(
+  paymentId: string,
+): Promise<{ ok: true; payment: PaymentItem } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/payments/${encodeURIComponent(paymentId)}/`, fetchOpts);
+    const data = await parseJson<PaymentItem & { error?: string }>(res);
+    if (!res.ok) return { ok: false, error: data.error ?? "Paiement introuvable." };
+    return { ok: true, payment: data };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
+  }
+}
+
 export async function listBillableAppointments(appointmentId?: string): Promise<
   {
     id: string;
@@ -113,6 +126,7 @@ export async function listBillableAppointments(appointmentId?: string): Promise<
     promotionName: string | null;
     status: string;
     startAt: string;
+    createdAt: string;
     customerPhone?: string | null;
   }[]
 > {

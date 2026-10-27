@@ -1,0 +1,468 @@
+.rb-ticket-demo {
+  --rb-pink: #c2185b;
+  --rb-pink-2: #e65a91;
+  --rb-blush: #fff1f5;
+  --rb-gold: #c9a76a;
+  --rb-ink: #34212b;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 30px);
+  color: var(--rb-ink);
+  font-family: var(--font-sans, "DM Sans", system-ui, sans-serif);
+  border: 1px solid #f2dce4;
+  border-radius: 26px;
+  background: linear-gradient(145deg, #fffdfd 0%, #fff5f7 54%, #fffaf1 100%);
+  box-shadow: 0 24px 70px rgba(119, 42, 72, 0.12);
+  overflow: hidden;
+}
+.rb-ticket-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rb-brand-mark {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: white;
+  font: 700 30px var(--font-display, Georgia, serif);
+  background: linear-gradient(135deg, var(--rb-pink), #ee9bb8);
+  box-shadow: 0 8px 18px #c2185b2b;
+}
+.rb-eyebrow {
+  margin: 0 0 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.19em;
+  color: var(--rb-pink);
+}
+.rb-ticket-header h2 {
+  margin: 0;
+  font: 700 clamp(21px, 3vw, 27px) var(--font-display, Georgia, serif);
+}
+.rb-subtitle {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: #8e7781;
+}
+.rb-close-action {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: #f6eaee;
+  color: #8e7781;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rb-ticket-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+.rb-ticket-demo.rb-ticket-minimal {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 8px 4px 4px;
+  overflow: visible;
+}
+.rb-ticket-minimal .rb-printer-stage {
+  margin: 8px 0 20px;
+  min-height: 460px;
+  border-radius: 0;
+  padding: 40px 0 24px;
+  background: transparent;
+  overflow: visible;
+  transform: scale(1.2);
+  transform-origin: center bottom;
+}
+.rb-ticket-minimal .rb-print-status {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.rb-printer-stage {
+  position: relative;
+  min-height: 390px;
+  margin: 24px 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  border-radius: 22px;
+  padding: 18px 12px 22px;
+  background: radial-gradient(ellipse at 50% 83%, #f8dbe5 0%, #fff5f7 44%, #fffafa 76%);
+  isolation: isolate;
+}
+.rb-printer-glow {
+  position: absolute;
+  width: 70%;
+  height: 38px;
+  bottom: 72px;
+  border-radius: 50%;
+  background: #d98ba8;
+  opacity: 0.19;
+  filter: blur(24px);
+  z-index: -1;
+}
+.rb-printer {
+  position: relative;
+  z-index: 2;
+  width: min(82%, 330px);
+  height: 140px;
+  border-radius: 22px 22px 28px 28px;
+  background: linear-gradient(160deg, #fff 0%, #f8f3f2 58%, #e6d9d8 100%);
+  border: 1px solid #e5d1d4;
+  box-shadow: 0 18px 25px #8c51632b, inset 0 2px 3px #fff;
+}
+.rb-printer-top {
+  height: 31px;
+  border-radius: 21px 21px 4px 4px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #fff, #f9e7ed);
+  border-bottom: 1px solid #e9d6dc;
+}
+.rb-printer-brand {
+  color: #a64d70;
+  font: 700 11px var(--font-display, Georgia, serif);
+}
+.rb-printer-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #55b887;
+  box-shadow: 0 0 0 4px #55b88720;
+}
+.rb-printer-slot {
+  position: relative;
+  z-index: 5;
+  height: 13px;
+  margin: 0 13px;
+  border-radius: 2px 2px 8px 8px;
+  background: #4b3b43;
+  box-shadow: inset 0 3px 5px #0008;
+}
+.rb-printer-slot span {
+  display: block;
+  width: 72%;
+  height: 2px;
+  margin: auto;
+  background: #d9b878;
+  opacity: 0.8;
+}
+.rb-printer-front {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 16px 19px;
+}
+.rb-printer-logo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(135deg, #c2185b, #e99ab4);
+  font: 700 22px var(--font-display, Georgia, serif);
+}
+.rb-printer-model {
+  color: #a17b86;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.rb-printer-button {
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d8c5c7;
+  border-radius: 50%;
+  background: #fff;
+}
+.rb-printer-button span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rb-gold);
+}
+.rb-printer-foot {
+  position: absolute;
+  bottom: -5px;
+  width: 48px;
+  height: 7px;
+  background: #d9cbcc;
+  border-radius: 0 0 5px 5px;
+}
+.rb-left-foot {
+  left: 24px;
+}
+.rb-right-foot {
+  right: 24px;
+}
+.rb-ticket-paper {
+  position: absolute;
+  z-index: 1;
+  bottom: 145px;
+  left: 50%;
+  width: min(62%, 240px);
+  height: 0;
+  overflow: hidden;
+  transform: translateX(-50%);
+  border: 1px solid #eadde0;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  background: repeating-linear-gradient(0deg, #fff 0, #fff 20px, #fffdfd 21px, #fffdfd 22px);
+  box-shadow: 0 -4px 12px #6b35400a;
+}
+/* Animation d’éjection (keyframes = fiable, contrairement à transition height au mount) */
+.rb-printer-stage.is-printing .rb-ticket-paper {
+  animation: rb-eject 2.2s cubic-bezier(0.2, 0.7, 0.25, 1) forwards;
+}
+.rb-printer-stage.is-printed .rb-ticket-paper {
+  height: 245px;
+  animation: none;
+}
+@keyframes rb-eject {
+  0% {
+    height: 0;
+  }
+  100% {
+    height: 245px;
+  }
+}
+.rb-paper-content {
+  padding: 12px 13px 10px;
+  font-size: 8px;
+  color: #4d3b43;
+}
+.rb-paper-brand {
+  text-align: center;
+  font: 700 16px var(--font-display, Georgia, serif);
+  color: var(--rb-pink);
+}
+.rb-paper-small {
+  text-align: center;
+  color: #917b83;
+  font-size: 7px;
+  margin: 3px 0 7px;
+}
+.rb-paper-rule {
+  border-top: 1px dashed #d6c0c7;
+  margin: 7px 0;
+}
+.rb-paper-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 4px 0;
+}
+.rb-paper-row span {
+  color: #8c737d;
+}
+.rb-paper-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 7px 0;
+}
+.rb-paper-line strong,
+.rb-paper-line small {
+  display: block;
+}
+.rb-paper-line small {
+  color: #947e86;
+  margin-top: 2px;
+}
+.rb-paper-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--rb-pink);
+}
+.rb-paper-thanks {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 9px;
+  color: #b37b8e;
+  font-weight: 700;
+}
+.rb-print-status {
+  position: absolute;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #9a7885;
+  font-weight: 600;
+}
+.rb-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #cdb9c1;
+}
+.rb-status-dot.active {
+  background: #e5a13d;
+  animation: rb-pulse 0.8s infinite alternate;
+}
+.rb-status-dot.done {
+  background: #31a875;
+}
+.rb-printer-stage.is-printing .rb-printer-led {
+  background: #e5a13d;
+  box-shadow: 0 0 0 4px #e5a13d25;
+  animation: rb-pulse 0.8s infinite alternate;
+}
+.rb-printer-stage.is-printing .rb-printer-slot span {
+  animation: rb-feed 0.28s linear infinite;
+}
+.rb-ticket-summary {
+  display: grid;
+  grid-template-columns: 1fr 0.55fr 1fr;
+  gap: 10px;
+  padding: 15px;
+  border: 1px solid #f1dfe5;
+  border-radius: 16px;
+  background: #fff;
+}
+.rb-ticket-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.rb-summary-label {
+  color: #9d8790;
+  font-size: 10px;
+}
+.rb-ticket-summary strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.rb-summary-total {
+  text-align: right;
+}
+.rb-summary-total strong {
+  color: var(--rb-pink);
+  font-size: 16px;
+}
+.rb-primary-action,
+.rb-secondary-action {
+  min-height: 45px;
+  border: 0;
+  border-radius: 13px;
+  padding: 0 17px;
+  font: 700 13px var(--font-sans, system-ui, sans-serif);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+.rb-primary-action {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  color: #fff;
+  background: linear-gradient(100deg, #bf1457, #e04f88);
+  box-shadow: 0 8px 18px #c2185b29;
+}
+.rb-primary-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 22px #c2185b36;
+}
+.rb-primary-action:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.rb-ticket-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 14px;
+}
+.rb-ticket-actions .rb-primary-action {
+  margin-top: 0;
+}
+.rb-secondary-action {
+  color: #a82158;
+  border: 1px solid #edc7d5;
+  background: #fff7fa;
+}
+.rb-text-action {
+  grid-column: 1 / -1;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  color: #9d7d89;
+  cursor: pointer;
+  font-size: 11px;
+}
+.rb-demo-note {
+  margin: 12px 2px 0;
+  color: #a18b94;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.rb-print-hint {
+  margin: 14px 0 0;
+  text-align: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+@keyframes rb-pulse {
+  from {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+@keyframes rb-feed {
+  0% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(2px);
+  }
+}
+@media (max-width: 520px) {
+  .rb-printer-stage {
+    min-height: 365px;
+  }
+  .rb-ticket-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rb-summary-total {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+  .rb-ticket-actions {
+    grid-template-columns: 1fr;
+  }
+  .rb-ticket-actions .rb-text-action {
+    grid-column: auto;
+  }
+}
+/* L'impression réelle passe par printBeautyTicket (fenêtre 80 mm).
+   On désactive l'impression de la page app pour éviter les feuilles A4 vides. */
+@media print {
+  body {
+    visibility: hidden !important;
+  }
+}

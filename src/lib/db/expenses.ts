@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { Pool, type PoolClient } from "pg";
+import { Pool } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
 import type {
   CreateExpenseInput,
@@ -279,71 +279,17 @@ export async function getExpenseById(
   };
 }
 
-async function getOpenCashSessionId(
-  organizationId: string,
-  client: PoolClient,
-): Promise<string | null> {
-  const { rows } = await client.query<{ id: string }>(
-    `SELECT id FROM "CashRegisterSession"
-     WHERE "organizationId" = $1 AND status = 'OPEN'
-     LIMIT 1`,
-    [organizationId],
-  );
-  return rows[0]?.id ?? null;
-}
-
-async function postCashExpense(
-  client: PoolClient,
-  opts: {
-    organizationId: string;
-    sessionId: string;
-    expenseId: string;
-    amount: number;
-    userId: string | null;
-    reason: string;
-    idempotencyKey: string;
-    type?: "EXPENSE" | "CASH_IN";
-  },
-) {
-  const signed =
-    opts.type === "CASH_IN" ? Math.abs(opts.amount) : -Math.abs(opts.amount);
-  await client.query(
-    `INSERT INTO "CashRegisterTransaction" (
-      id, "organizationId", "sessionId", type, amount, method, reason, "userId", "idempotencyKey"
-    ) VALUES (
-      $1,$2,$3,$4::"CashTxnType",$5,'CASH'::"PaymentMethod",$6,$7,$8
-    )
-    ON CONFLICT ("organizationId", "idempotencyKey") DO NOTHING`,
-    [
-      newId("ctx"),
-      opts.organizationId,
-      opts.sessionId,
-      opts.type ?? "EXPENSE",
-      signed,
-      opts.reason,
-      opts.userId,
-      opts.idempotencyKey,
-    ],
-  );
-}
-
 export async function createExpense(
   organizationId: string,
   input: CreateExpenseInput,
   actor: { id: string; name?: string | null },
 ): Promise<ExpenseDetail> {
-  const needsCash = input.paymentMethod === "CASH";
+  // Les dépenses sont comptables uniquement : elles n'écrivent plus dans la caisse.
   const client = await pool.connect();
   const id = newId("exp");
 
   try {
     await client.query("BEGIN");
-
-    let sessionId: string | null = null;
-    if (needsCash) {
-      sessionId = await getOpenCashSessionId(organizationId, client);
-      if (!sessionId) throw new Error("NO_OPEN_SESSION");
-    }
 
     await client.query(
       `INSERT INTO "Expense" (
@@ -366,18 +312,6 @@ export async function createExpense(
         actor.id,
       ],
     );
-
-    if (needsCash && sessionId) {
-      await postCashExpense(client, {
-        organizationId,
-        sessionId,
-        expenseId: id,
-        amount: input.amount,
-        userId: actor.id,
-        reason: input.description ?? `Dépense ${input.category}`,
-        idempotencyKey: `expense:${id}`,
-      });
-    }
 
     await writeAuditLog({
       organizationId,
@@ -466,45 +400,6 @@ export async function updateExpense(
       ],
     );
 
-    // Ajustement caisse si méthode/montant espèces change
-    const wasCash = existing.paymentMethod === "CASH";
-    const isCash = next.paymentMethod === "CASH";
-    const amountChanged = existing.amount !== next.amount;
-    const methodChanged = existing.paymentMethod !== next.paymentMethod;
-
-    if (wasCash || isCash) {
-      const sessionId = await getOpenCashSessionId(organizationId, client);
-      if ((isCash || wasCash) && !sessionId && (amountChanged || methodChanged)) {
-        throw new Error("NO_OPEN_SESSION");
-      }
-      if (sessionId) {
-        if (wasCash && (!isCash || amountChanged || methodChanged)) {
-          // Remettre l'ancien montant en caisse
-          await postCashExpense(client, {
-            organizationId,
-            sessionId,
-            expenseId,
-            amount: existing.amount,
-            userId: actor.id,
-            reason: `Correction / annulation effet caisse ${expenseId}`,
-            idempotencyKey: `expense:rev:${expenseId}:${existing.amount}:${Date.now()}`,
-            type: "CASH_IN",
-          });
-        }
-        if (isCash && (amountChanged || methodChanged || !wasCash)) {
-          await postCashExpense(client, {
-            organizationId,
-            sessionId,
-            expenseId,
-            amount: next.amount,
-            userId: actor.id,
-            reason: next.description ?? `Dépense ${next.category}`,
-            idempotencyKey: `expense:upd:${expenseId}:${next.amount}:${Date.now()}`,
-          });
-        }
-      }
-    }
-
     await writeAuditLog({
       organizationId,
       actorId: actor.id,
@@ -556,21 +451,6 @@ export async function voidExpense(
        WHERE id = $1 AND "organizationId" = $2`,
       [expenseId, organizationId],
     );
-
-    if (existing.paymentMethod === "CASH") {
-      const sessionId = await getOpenCashSessionId(organizationId, client);
-      if (!sessionId) throw new Error("NO_OPEN_SESSION");
-      await postCashExpense(client, {
-        organizationId,
-        sessionId,
-        expenseId,
-        amount: existing.amount,
-        userId: actor.id,
-        reason: reason ?? `Annulation dépense ${expenseId}`,
-        idempotencyKey: `expense:void:${expenseId}`,
-        type: "CASH_IN",
-      });
-    }
 
     await writeAuditLog({
       organizationId,

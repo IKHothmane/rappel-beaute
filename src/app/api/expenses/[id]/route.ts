@@ -68,7 +68,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       const map: Record<string, [string, number]> = {
         NOT_FOUND: ["Dépense introuvable.", 404],
         VOIDED: ["Dépense déjà annulée.", 400],
-        NO_OPEN_SESSION: ["Ouvrez la caisse pour ajuster une dépense espèces.", 400],
       };
       const hit = map[error.message];
       if (hit) return NextResponse.json({ error: hit[0] }, { status: hit[1] });

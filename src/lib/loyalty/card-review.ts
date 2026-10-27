@@ -1,0 +1,153 @@
+import { randomBytes } from "crypto";
+import { pool } from "@/lib/db/pool";
+import { getOrCreateReviewSettings } from "@/lib/db/reviews";
+import {
+  newPublicReviewToken,
+  reviewTokenExpiry,
+} from "@/lib/reviews/public-review";
+
+export type LoyaltyCardReviewInvite = {
+  slug: string;
+  token: string;
+  organizationName: string;
+  firstName: string;
+  serviceName: string;
+  alreadySubmitted: boolean;
+};
+
+function newId(prefix: string) {
+  return `${prefix}_${randomBytes(8).toString("hex")}`;
+}
+
+/**
+ * Invite d’avis pour une cliente qui ouvre / scanne sa carte fidélité.
+ * Réutilise ReviewRequest existante, sinon en crée une (sans WhatsApp) pour le dernier RDV terminé.
+ */
+export async function getLoyaltyCardReviewInvite(
+  cardToken: string,
+): Promise<LoyaltyCardReviewInvite | null> {
+  const normalized = cardToken.trim().toUpperCase();
+  if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(normalized)) return null;
+
+  const card = await pool.query<{
+    customerId: string;
+    organizationId: string;
+    slug: string;
+    organizationName: string;
+    firstName: string;
+  }>(
+    `SELECT lc."customerId", lc."organizationId", o.slug, o.name AS "organizationName", c."firstName"
+     FROM "LoyaltyCard" lc
+     JOIN "Organization" o ON o.id = lc."organizationId" AND o.status = 'ACTIVE'
+     JOIN "Customer" c ON c.id = lc."customerId" AND c."deletedAt" IS NULL
+     WHERE lc."publicToken" = $1 AND lc.status = 'ACTIVE'`,
+    [normalized],
+  );
+  const row = card.rows[0];
+  if (!row) return null;
+
+  const settings = await getOrCreateReviewSettings(row.organizationId);
+  if (!settings.enabled) return null;
+
+  const existing = await pool.query<{
+    publicToken: string;
+    serviceName: string;
+    hasReview: boolean;
+  }>(
+    `SELECT rr."publicToken",
+            COALESCE(a."serviceNameSnapshot", s.name, 'Prestation') AS "serviceName",
+            EXISTS(SELECT 1 FROM "Review" r WHERE r."appointmentId" = rr."appointmentId") AS "hasReview"
+     FROM "ReviewRequest" rr
+     JOIN "Appointment" a ON a.id = rr."appointmentId" AND a.status = 'COMPLETED'
+     LEFT JOIN "Service" s ON s.id = a."serviceId"
+     WHERE rr."organizationId" = $1
+       AND rr."customerId" = $2
+       AND rr.status IN ('PENDING', 'SENT')
+       AND rr."tokenExpiresAt" > NOW()
+     ORDER BY rr."scheduledFor" DESC
+     LIMIT 1`,
+    [row.organizationId, row.customerId],
+  );
+
+  if (existing.rows[0]) {
+    const invite = existing.rows[0];
+    if (invite.hasReview) return null;
+    return {
+      slug: row.slug,
+      token: invite.publicToken,
+      organizationName: row.organizationName,
+      firstName: row.firstName,
+      serviceName: invite.serviceName,
+      alreadySubmitted: false,
+    };
+  }
+
+  const apt = await pool.query<{
+    id: string;
+    serviceName: string;
+  }>(
+    `SELECT a.id,
+            COALESCE(a."serviceNameSnapshot", s.name, 'Prestation') AS "serviceName"
+     FROM "Appointment" a
+     LEFT JOIN "Service" s ON s.id = a."serviceId"
+     WHERE a."organizationId" = $1
+       AND a."customerId" = $2
+       AND a.status = 'COMPLETED'
+       AND a."endAt" <= NOW()
+       AND a."endAt" >= NOW() - INTERVAL '45 days'
+       AND NOT EXISTS (SELECT 1 FROM "Review" r WHERE r."appointmentId" = a.id)
+       AND NOT EXISTS (SELECT 1 FROM "ReviewRequest" rr WHERE rr."appointmentId" = a.id)
+     ORDER BY a."endAt" DESC
+     LIMIT 1`,
+    [row.organizationId, row.customerId],
+  );
+  const appointment = apt.rows[0];
+  if (!appointment) return null;
+
+  const publicToken = newPublicReviewToken();
+  const tokenExpiresAt = reviewTokenExpiry();
+  const requestId = newId("rev");
+
+  const inserted = await pool.query<{ publicToken: string }>(
+    `INSERT INTO "ReviewRequest" (
+       id, "organizationId", "customerId", "appointmentId", "whatsappTaskId",
+       status, "scheduledFor", "publicToken", "tokenExpiresAt", "updatedAt"
+     ) VALUES (
+       $1,$2,$3,$4,NULL,'PENDING'::"ReviewRequestStatus",NOW(),$5,$6,NOW()
+     )
+     ON CONFLICT ("appointmentId") DO NOTHING
+     RETURNING "publicToken"`,
+    [
+      requestId,
+      row.organizationId,
+      row.customerId,
+      appointment.id,
+      publicToken,
+      tokenExpiresAt,
+    ],
+  );
+
+  let token = inserted.rows[0]?.publicToken ?? null;
+  if (!token) {
+    const fallback = await pool.query<{ publicToken: string; hasReview: boolean }>(
+      `SELECT rr."publicToken",
+              EXISTS(SELECT 1 FROM "Review" r WHERE r."appointmentId" = rr."appointmentId") AS "hasReview"
+       FROM "ReviewRequest" rr
+       WHERE rr."appointmentId" = $1
+         AND rr.status IN ('PENDING', 'SENT')
+         AND rr."tokenExpiresAt" > NOW()`,
+      [appointment.id],
+    );
+    if (!fallback.rows[0] || fallback.rows[0].hasReview) return null;
+    token = fallback.rows[0].publicToken;
+  }
+
+  return {
+    slug: row.slug,
+    token,
+    organizationName: row.organizationName,
+    firstName: row.firstName,
+    serviceName: appointment.serviceName,
+    alreadySubmitted: false,
+  };
+}

@@ -112,7 +112,7 @@ export function ExpenseForm({
         </Select>
         {paymentMethod === "CASH" ? (
           <span className="mt-1 block text-xs text-ink/45">
-            Créera une sortie de caisse physique (caisse ouverte requise).
+            Suivi comptable uniquement — n’impacte pas le solde de caisse.
           </span>
         ) : null}
       </label>

@@ -51,6 +51,8 @@ type Props = {
   onPay: () => void;
   onOut: () => void;
   onClose: () => void;
+  onTicket?: (paymentId: string | null) => void;
+  ticketLoadingId?: string | null;
 };
 
 export function CashRegisterMobile({
@@ -80,6 +82,8 @@ export function CashRegisterMobile({
   onPay,
   onOut,
   onClose,
+  onTicket,
+  ticketLoadingId = null,
 }: Props) {
   const mix = paymentMix(session);
   const refunds = sumAbsTypes(txns, ["REFUND_OUT"]);
@@ -378,7 +382,10 @@ export function CashRegisterMobile({
               Aucun mouvement.
             </p>
           ) : (
-            filtered.map((t) => (
+            filtered.map((t) => {
+              const canTicket =
+                Boolean(t.paymentId) && t.type === "SALE" && Boolean(onTicket);
+              return (
               <div key={t.id} className="flex items-center justify-between gap-2 rounded-xl bg-white p-3 shadow-sm">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -397,6 +404,16 @@ export function CashRegisterMobile({
                     <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", txnTypeChip(t.type))}>
                       {t.userName ?? "—"}
                     </span>
+                    {canTicket ? (
+                      <button
+                        type="button"
+                        className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary disabled:opacity-50"
+                        disabled={ticketLoadingId === t.paymentId}
+                        onClick={() => onTicket?.(t.paymentId)}
+                      >
+                        {ticketLoadingId === t.paymentId ? "…" : "Ticket"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
                 <p
@@ -409,7 +426,8 @@ export function CashRegisterMobile({
                   {formatMad(t.amount)}
                 </p>
               </div>
-            ))
+              );
+            })
           )}
         </section>
       )}

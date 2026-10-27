@@ -13,16 +13,18 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { useCurrentUser } from "@/components/auth/session-provider";
+import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
 import { cn } from "@/lib/utils";
 
 const ACTIONS = [
-  { href: "/agenda/", label: "+ Rendez-vous", icon: CalendarPlus },
-  { href: "/salon-3d/", label: "Voir le plan 3D", icon: Box },
-  { href: "/customers/", label: "+ Nouvelle cliente", icon: CircleUserRound },
-  { href: "/cash-register/", label: "+ Encaissement", icon: Wallet },
-  { href: "/expenses/", label: "+ Dépense caisse", icon: Receipt },
-  { href: "/inventory/", label: "+ Produit / Stock", icon: PackagePlus },
-  { href: "/whatsapp/", label: "Campagne WhatsApp", icon: Megaphone },
+  { href: "/agenda/", label: "+ Rendez-vous", icon: CalendarPlus, key: "agenda" },
+  { href: "/salon-3d/", label: "Voir le plan 3D", icon: Box, key: "salon-3d" },
+  { href: "/customers/", label: "+ Nouvelle cliente", icon: CircleUserRound, key: "customers" },
+  { href: "/cash-register/", label: "+ Encaissement", icon: Wallet, key: "cash-register" },
+  { href: "/expenses/", label: "+ Dépense", icon: Receipt, key: "expenses" },
+  { href: "/inventory/", label: "+ Produit / Stock", icon: PackagePlus, key: "inventory" },
+  { href: "/whatsapp/", label: "Campagne WhatsApp", icon: Megaphone, key: "whatsapp" },
 ] as const;
 
 export function QuickActionsDrawer({
@@ -32,6 +34,11 @@ export function QuickActionsDrawer({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const user = useCurrentUser();
+  const actions = ACTIONS.filter(
+    (action) => action.key !== "salon-3d" || isSalon3dEnabledForOrg(user.orgSlug),
+  );
+
   return (
     <aside
       className={cn(
@@ -58,7 +65,7 @@ export function QuickActionsDrawer({
         </button>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-1.5">
-        {ACTIONS.map((action) => (
+        {actions.map((action) => (
           <Link
             key={action.href}
             href={action.href}

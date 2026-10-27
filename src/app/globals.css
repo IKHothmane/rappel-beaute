@@ -18,9 +18,22 @@ html {
   zoom: 0.8;
 }
 
-.app-sidebar {
+.app-sidebar,
+.admin-sidebar {
   height: calc(100dvh / 0.8);
   max-height: calc(100dvh / 0.8);
+}
+
+/* Compense html { zoom: 0.8 } — sinon l’iframe Plan 3D a une hauteur nulle / tronquée en prod */
+.salon-3d-embed {
+  height: calc(100dvh / 0.8 - 4.5rem);
+  min-height: 420px;
+}
+
+@media (min-width: 1024px) {
+  .salon-3d-embed {
+    height: calc(100dvh / 0.8 - 5rem);
+  }
 }
 
 body {

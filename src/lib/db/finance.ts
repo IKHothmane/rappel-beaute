@@ -539,7 +539,14 @@ export async function listPayments(
       inv."customerNameSnapshot" AS "invoiceCustomerName",
       inv."customerPhoneSnapshot" AS "invoiceCustomerPhone",
       COALESCE(
+        NULLIF((
+          SELECT trim(both FROM substr(line, 7))
+          FROM unnest(string_to_array(COALESCE(a.notes, ''), E'\n')) AS line
+          WHERE line LIKE 'Soins:%'
+          LIMIT 1
+        ), ''),
         s.name,
+        a."serviceNameSnapshot",
         (
           SELECT string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder")
           FROM "InvoiceItem" ii
@@ -579,7 +586,14 @@ export async function getPaymentById(
       inv."customerNameSnapshot" AS "invoiceCustomerName",
       inv."customerPhoneSnapshot" AS "invoiceCustomerPhone",
       COALESCE(
+        NULLIF((
+          SELECT trim(both FROM substr(line, 7))
+          FROM unnest(string_to_array(COALESCE(a.notes, ''), E'\n')) AS line
+          WHERE line LIKE 'Soins:%'
+          LIMIT 1
+        ), ''),
         s.name,
+        a."serviceNameSnapshot",
         (
           SELECT string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder")
           FROM "InvoiceItem" ii
@@ -972,6 +986,7 @@ export async function listBillableAppointments(
     promotionName: string | null;
     status: string;
     startAt: string;
+    createdAt: string;
     customerPhone: string | null;
   }[]
 > {
@@ -981,10 +996,20 @@ export async function listBillableAppointments(
 
   const { rows } = await pool.query(
     `SELECT
-      a.id, a.status::text, a.price::text, a."startAt",
+      a.id, a.status::text, a.price::text, a."startAt", a."createdAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
       c.phone AS "customerPhone",
-      COALESCE(s.name, a."serviceNameSnapshot", 'Prestation') AS "serviceName",
+      COALESCE(
+        NULLIF((
+          SELECT trim(both FROM substr(line, 7))
+          FROM unnest(string_to_array(COALESCE(a.notes, ''), E'\n')) AS line
+          WHERE line LIKE 'Soins:%'
+          LIMIT 1
+        ), ''),
+        s.name,
+        a."serviceNameSnapshot",
+        'Prestation'
+      ) AS "serviceName",
       s.price::text AS "servicePrice",
       promo.code AS "promotionCode",
       promo.name AS "promotionName",
@@ -1053,6 +1078,7 @@ export async function listBillableAppointments(
         promotionName: (r.promotionName as string) ?? null,
         status: r.status as string,
         startAt: new Date(r.startAt as Date).toISOString(),
+        createdAt: new Date(r.createdAt as Date).toISOString(),
         customerPhone: (r.customerPhone as string) ?? null,
       };
     })

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppPageHeader } from "@/components/app/AppUi";
+import { getSession } from "@/lib/auth/session";
+import { isAppSession } from "@/lib/auth/types";
+import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
 
 export const metadata: Metadata = { title: "Menu" };
 
@@ -50,7 +53,17 @@ const GROUPS = [
   },
 ];
 
-export default function MorePage() {
+export default async function MorePage() {
+  const session = await getSession();
+  const orgSlug = session && isAppSession(session) ? session.orgSlug : null;
+  const salon3dOk = isSalon3dEnabledForOrg(orgSlug);
+  const groups = GROUPS.map((g) => ({
+    ...g,
+    links: g.links.filter(
+      (l) => l.href !== "/salon-3d/" || salon3dOk,
+    ),
+  })).filter((g) => g.links.length > 0);
+
   return (
     <>
       <AppPageHeader
@@ -58,7 +71,7 @@ export default function MorePage() {
         description="Tous les modules — raccourcis mobile & tablette."
       />
       <div className="space-y-4">
-        {GROUPS.map((g) => (
+        {groups.map((g) => (
           <section key={g.title}>
             <p className="mb-2 px-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink/40">
               {g.title}

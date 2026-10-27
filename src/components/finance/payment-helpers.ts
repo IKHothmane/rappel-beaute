@@ -94,8 +94,10 @@ export function billableToDuePayment(b: {
   price: number;
   remaining: number;
   startAt: string;
+  createdAt?: string;
   customerPhone?: string | null;
 }): PaymentItem {
+  const createdAt = b.createdAt ?? b.startAt;
   return {
     id: unpaidDueId(b.id),
     appointmentId: b.id,
@@ -113,13 +115,40 @@ export function billableToDuePayment(b: {
     userId: null,
     userName: null,
     paidAt: b.startAt,
-    createdAt: b.startAt,
+    createdAt,
   };
+}
+
+/** Plus récent en premier (dernier enregistré / créé en haut). */
+export function sortPaymentsNewestFirst(rows: PaymentItem[]): PaymentItem[] {
+  return [...rows].sort((a, b) => {
+    const tb = new Date(b.createdAt || b.paidAt).getTime();
+    const ta = new Date(a.createdAt || a.paidAt).getTime();
+    if (tb !== ta) return tb - ta;
+    return new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime();
+  });
 }
 
 export function paymentShortId(id: string) {
   if (id.startsWith("due:")) return "DÛ";
   return id.slice(-6).toUpperCase();
+}
+
+/** Découpe « Soin A + Soin B » en libellés individuels. */
+export function paymentServiceLabels(serviceName: string | null | undefined): string[] {
+  if (!serviceName?.trim()) return [];
+  if (serviceName.includes("+")) {
+    return serviceName
+      .split("+")
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return [serviceName.trim()];
+}
+
+export function formatPaymentServices(serviceName: string | null | undefined): string {
+  const labels = paymentServiceLabels(serviceName);
+  return labels.length > 0 ? labels.join(" · ") : "—";
 }
 
 export function paymentInitials(name: string | null) {

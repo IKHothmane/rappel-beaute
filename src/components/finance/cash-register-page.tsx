@@ -29,7 +29,9 @@ import {
   sumAbsTypes,
   txnTypeChip,
 } from "@/components/finance/cash-helpers";
+import { formatPaymentServices } from "@/components/finance/payment-helpers";
 import { CashRegisterMobile } from "@/components/finance/cash-register-mobile";
+import { PaymentTicketModal } from "@/components/finance/payment-ticket";
 import {
   ProductSalePanel,
   type ProductAddonCart,
@@ -52,13 +54,14 @@ import {
   createPayments,
   formatMad,
   getCashRegister,
+  getPaymentById,
   listBillableAppointments,
   newIdempotencyKey,
   openCashRegister,
   PAYMENT_METHOD_LABEL,
 } from "@/modules/finance/service";
 import { listPurchases } from "@/modules/procurement/service";
-import type { CashRegisterState, PaymentMethod } from "@/types/finance";
+import type { CashRegisterState, PaymentItem, PaymentMethod } from "@/types/finance";
 import { PAYMENT_METHODS } from "@/types/finance";
 import type { PurchaseListItem } from "@/types/procurement";
 
@@ -83,11 +86,10 @@ export function CashRegisterPageView() {
   const [outKind, setOutKind] = useState<"out" | "bank">("out");
 
   const [billable, setBillable] = useState<Billable[]>([]);
-  const [payMode, setPayMode] = useState<"service" | "products" | "float">("service");
+  const [payMode, setPayMode] = useState<"service" | "products">("service");
   const [aptId, setAptId] = useState("");
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState<PaymentMethod>("CASH");
-  const [inReason, setInReason] = useState("Alimentation de caisse");
   const [addonCart, setAddonCart] = useState<ProductAddonCart>({
     lines: [],
     total: 0,
@@ -102,8 +104,25 @@ export function CashRegisterPageView() {
   const [purchaseId, setPurchaseId] = useState("");
   const [counted, setCounted] = useState("");
   const [closeReason, setCloseReason] = useState("");
+  const [ticketPayment, setTicketPayment] = useState<PaymentItem | null>(null);
+  const [ticketLoadingId, setTicketLoadingId] = useState<string | null>(null);
 
   const payKeyRef = useRef(newIdempotencyKey());
+
+  async function openTicket(paymentId: string | null) {
+    if (!paymentId) {
+      toast("Aucun paiement lié à ce mouvement.", "error");
+      return;
+    }
+    setTicketLoadingId(paymentId);
+    const result = await getPaymentById(paymentId);
+    setTicketLoadingId(null);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    setTicketPayment(result.payment);
+  }
 
   const refresh = useCallback(async () => {
     try {
@@ -157,7 +176,6 @@ export function CashRegisterPageView() {
       setPayMode("service");
       const found = list.find((item) => item.id === chosen);
       setPayAmount(found ? String(found.remaining) : "");
-      setInReason("Alimentation de caisse");
       setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
       setAddonReset((n) => n + 1);
       payKeyRef.current = newIdempotencyKey();
@@ -179,26 +197,6 @@ export function CashRegisterPageView() {
     const amount = Number(payAmount);
     if (!amount || amount <= 0) {
       toast("Indiquez un montant.", "error");
-      return;
-    }
-
-    if (payMode === "float") {
-      setSubmitting(true);
-      const result = await createCashTxn({
-        type: "CASH_IN",
-        amount,
-        reason: inReason.trim() || "Alimentation de caisse",
-        idempotencyKey: newIdempotencyKey("in"),
-      });
-      setSubmitting(false);
-      if (!result.ok) {
-        toast(result.error, "error");
-        return;
-      }
-      toast("Caisse alimentée.", "success");
-      setPayOpen(false);
-      setPayAmount("");
-      refresh();
       return;
     }
 
@@ -351,7 +349,18 @@ export function CashRegisterPageView() {
         onPay={() => void openPayDrawer()}
         onOut={() => openOut("out")}
         onClose={handleClose}
+        onTicket={(paymentId) => void openTicket(paymentId)}
+        ticketLoadingId={ticketLoadingId}
       />
+
+      {ticketPayment ? (
+        <PaymentTicketModal
+          payment={ticketPayment}
+          orgName={user.orgName}
+          remaining={null}
+          onClose={() => setTicketPayment(null)}
+        />
+      ) : null}
 
       <div className="hidden space-y-6 lg:block">
         <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -583,11 +592,14 @@ export function CashRegisterPageView() {
                         <th className="px-3 py-2.5">Mode</th>
                         <th className="px-3 py-2.5">Opérateur</th>
                         <th className="px-3 py-2.5 text-right">Montant</th>
-                        <th className="rounded-r-lg px-3 py-2.5 text-center">Statut</th>
+                        <th className="px-3 py-2.5 text-center">Statut</th>
+                        <th className="rounded-r-lg px-3 py-2.5 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((t) => (
+                      {filtered.map((t) => {
+                        const canTicket = Boolean(t.paymentId) && t.type === "SALE";
+                        return (
                         <tr key={t.id} className="border-t border-transparent hover:bg-[#FFEFF8]/60">
                           <td className="whitespace-nowrap px-3 py-3 font-semibold">
                             {formatCashDateTime(t.createdAt)}
@@ -619,8 +631,23 @@ export function CashRegisterPageView() {
                               {CASH_TXN_LABEL[t.type]}
                             </span>
                           </td>
+                          <td className="px-3 py-3 text-right">
+                            {canTicket ? (
+                              <button
+                                type="button"
+                                className="text-[12px] font-semibold text-primary hover:underline disabled:opacity-50"
+                                disabled={ticketLoadingId === t.paymentId}
+                                onClick={() => void openTicket(t.paymentId)}
+                              >
+                                {ticketLoadingId === t.paymentId ? "…" : "Ticket"}
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-ink/30">—</span>
+                            )}
+                          </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                   {filtered.length === 0 ? (
@@ -817,21 +844,17 @@ export function CashRegisterPageView() {
 
       <Drawer open={payOpen} onClose={() => setPayOpen(false)} title="Encaisser">
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#FFEFF8] p-1">
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#FFEFF8] p-1">
             {(
               [
                 ["service", "Service"],
                 ["products", "Produits"],
-                ["float", "Alimenter"],
               ] as const
             ).map(([id, label]) => (
               <button
                 key={id}
                 type="button"
-                onClick={() => {
-                  setPayMode(id);
-                  if (id === "float") setAptId("");
-                }}
+                onClick={() => setPayMode(id)}
                 className={cn(
                   "rounded-lg py-2 text-[12px] font-semibold",
                   payMode === id ? "bg-white text-ink shadow-sm" : "text-ink/55",
@@ -870,7 +893,8 @@ export function CashRegisterPageView() {
                   <option value="">Choisir un RDV…</option>
                   {billable.map((b) => (
                     <option key={b.id} value={b.id}>
-                      {b.customerName} · {b.serviceName} · reste {formatMad(b.remaining)}
+                      {b.customerName} · {formatPaymentServices(b.serviceName)} · reste{" "}
+                      {formatMad(b.remaining)}
                     </option>
                   ))}
                 </Select>
@@ -941,42 +965,6 @@ export function CashRegisterPageView() {
             </>
           ) : null}
 
-          {payMode === "float" ? (
-            <>
-              <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/55">
-                Le montant entre en espèces dans le tiroir (alimentation, sans vente).
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm">
-                  <span className="mb-1.5 block font-medium">Montant</span>
-                  <Input
-                    type="number"
-                    min={0.01}
-                    step={0.01}
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="mb-1.5 block font-medium">Motif</span>
-                  <Input
-                    value={inReason}
-                    onChange={(e) => setInReason(e.target.value)}
-                    placeholder="Alimentation de caisse"
-                  />
-                </label>
-              </div>
-              <Button
-                type="button"
-                variant="primary"
-                className="w-full"
-                disabled={submitting || !payAmount || Number(payAmount) <= 0}
-                onClick={() => void handlePay()}
-              >
-                {submitting ? "Enregistrement…" : "Alimenter la caisse"}
-              </Button>
-            </>
-          ) : null}
         </div>
       </Drawer>
 

@@ -86,12 +86,16 @@ export function ProductSalePanel({
   const [promoCode, setPromoCode] = useState("");
   const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showAllProducts, setShowAllProducts] = useState(false);
+  const [showAllPromos, setShowAllPromos] = useState(false);
 
   useEffect(() => {
     setCart([]);
     setSearch("");
     setPromoCode("");
     setSelectedPromoId(null);
+    setShowAllProducts(false);
+    setShowAllPromos(false);
   }, [resetToken]);
 
   useEffect(() => {
@@ -272,6 +276,10 @@ export function ProductSalePanel({
     onSold?.(result.sale);
   }
 
+  const searching = search.trim().length > 0;
+  const productsCollapsed = embedded && !showAllProducts && !searching;
+  const promosCollapsed = embedded && !showAllPromos && !searching;
+
   return (
     <div className={cn("space-y-4", embedded && "rounded-xl border border-dashed border-primary/25 bg-white p-3")}>
       {embedded ? (
@@ -295,106 +303,173 @@ export function ProductSalePanel({
         </div>
       </label>
 
-      <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl bg-[#FFEFF8] p-2">
-        <p className="px-1 pb-1 text-[11px] font-bold uppercase tracking-wider text-ink/45">
-          Produits ({catalog.length})
-        </p>
-        {loading ? (
-          <p className="p-3 text-center text-[12px] text-ink/45">Chargement…</p>
-        ) : catalog.length === 0 ? (
-          <p className="p-3 text-center text-[12px] text-ink/45">Aucun produit trouvé.</p>
-        ) : (
-          catalog.map((product) => {
-            const state = productStockState(product);
-            const noPrice = !(product.salePrice > 0);
-            return (
+      {productsCollapsed ? (
+        <button
+          type="button"
+          disabled={disabled || loading || catalog.length === 0}
+          onClick={() => setShowAllProducts(true)}
+          className="flex h-10 w-full items-center justify-center rounded-xl bg-[#FFEFF8] text-[13px] font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-40"
+        >
+          {loading ? "Chargement…" : `Afficher tous (${catalog.length})`}
+        </button>
+      ) : (
+        <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl bg-[#FFEFF8] p-2">
+          <div className="flex items-center justify-between gap-2 px-1 pb-1">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+              Produits ({catalog.length})
+            </p>
+            {embedded && !searching ? (
               <button
-                key={product.id}
                 type="button"
-                disabled={disabled || state === "out" || noPrice}
-                onClick={() => addProduct(product)}
-                className="flex w-full items-center justify-between gap-2 rounded-lg bg-white px-2.5 py-2 text-left text-[13px] transition hover:bg-primary/5 disabled:opacity-40"
+                onClick={() => setShowAllProducts(false)}
+                className="text-[12px] font-semibold text-ink/50 hover:text-primary"
               >
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1.5 font-semibold">
-                    <ShoppingBag size={13} className="shrink-0 text-primary" />
-                    <span className="truncate">{product.name}</span>
-                  </span>
-                  <span className="mt-0.5 block text-[11px] text-ink/45">
-                    Stock {product.stock}
-                    {state === "low" ? " · bas" : ""}
-                    {state === "out" ? " · rupture" : ""}
-                    {noPrice ? " · sans prix" : ""}
-                  </span>
-                </span>
-                <span className="shrink-0 font-bold">
-                  {noPrice ? "—" : formatMad(product.salePrice)}
-                </span>
+                Réduire
               </button>
-            );
-          })
-        )}
-      </div>
-
-      <div className="max-h-36 space-y-1 overflow-y-auto rounded-xl border border-dashed border-primary/25 bg-white p-2">
-        <p className="flex items-center gap-1 px-1 pb-1 text-[11px] font-bold uppercase tracking-wider text-ink/45">
-          <Tag size={12} className="text-primary" />
-          Codes promo
-        </p>
-        {loading ? (
-          <p className="p-2 text-center text-[12px] text-ink/45">Chargement…</p>
-        ) : filteredPromos.length === 0 ? (
-          <p className="p-2 text-center text-[12px] text-ink/45">Aucun code promo actif.</p>
-        ) : (
-          filteredPromos.map((promo) => {
-            const active = selectedPromoId === promo.id;
-            return (
-              <button
-                key={promo.id}
-                type="button"
-                disabled={disabled}
-                onClick={() => applyPromo(promo)}
-                className={cn(
-                  "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition",
-                  active ? "bg-primary text-white" : "bg-[#FFEFF8] hover:bg-primary/10",
-                )}
-              >
-                <span className="min-w-0">
-                  <span className="block font-mono text-[12px] font-bold tracking-wide">
-                    {promo.code}
+            ) : null}
+          </div>
+          {loading ? (
+            <p className="p-3 text-center text-[12px] text-ink/45">Chargement…</p>
+          ) : catalog.length === 0 ? (
+            <p className="p-3 text-center text-[12px] text-ink/45">Aucun produit trouvé.</p>
+          ) : (
+            catalog.map((product) => {
+              const state = productStockState(product);
+              const noPrice = !(product.salePrice > 0);
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  disabled={disabled || state === "out" || noPrice}
+                  onClick={() => addProduct(product)}
+                  className="flex w-full items-center justify-between gap-2 rounded-lg bg-white px-2.5 py-2 text-left text-[13px] transition hover:bg-primary/5 disabled:opacity-40"
+                >
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <ShoppingBag size={13} className="shrink-0 text-primary" />
+                      <span className="truncate">{product.name}</span>
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-ink/45">
+                      Stock {product.stock}
+                      {state === "low" ? " · bas" : ""}
+                      {state === "out" ? " · rupture" : ""}
+                      {noPrice ? " · sans prix" : ""}
+                    </span>
                   </span>
-                  <span className={cn("mt-0.5 block truncate text-[11px]", active ? "text-white/80" : "text-ink/50")}>
-                    {promo.name} · {promoHint(promo)}
+                  <span className="shrink-0 font-bold">
+                    {noPrice ? "—" : formatMad(product.salePrice)}
                   </span>
-                </span>
-                <span className={cn("shrink-0 text-[11px] font-semibold", active ? "text-white" : "text-primary")}>
-                  {active ? "Appliqué" : "Appliquer"}
-                </span>
-              </button>
-            );
-          })
-        )}
-        <div className="flex gap-2 pt-1">
-          <Input
-            value={promoCode}
-            onChange={(e) => {
-              setPromoCode(e.target.value);
-              if (!e.target.value.trim()) setSelectedPromoId(null);
-            }}
-            placeholder="Saisir un code"
-            disabled={disabled}
-            className="font-mono uppercase"
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={disabled || !promoCode.trim()}
-            onClick={applyTypedCode}
-          >
-            OK
-          </Button>
+                </button>
+              );
+            })
+          )}
         </div>
-      </div>
+      )}
+
+      {promosCollapsed ? (
+        <div className="space-y-2">
+          <button
+            type="button"
+            disabled={disabled || loading || filteredPromos.length === 0}
+            onClick={() => setShowAllPromos(true)}
+            className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/25 bg-white text-[13px] font-semibold text-primary transition hover:bg-primary/5 disabled:opacity-40"
+          >
+            <Tag size={14} />
+            {loading ? "Chargement…" : `Afficher tous les codes promo (${filteredPromos.length})`}
+          </button>
+          <div className="flex gap-2">
+            <Input
+              value={promoCode}
+              onChange={(e) => {
+                setPromoCode(e.target.value);
+                if (!e.target.value.trim()) setSelectedPromoId(null);
+              }}
+              placeholder="Saisir un code"
+              disabled={disabled}
+              className="font-mono uppercase"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={disabled || !promoCode.trim()}
+              onClick={applyTypedCode}
+            >
+              OK
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="max-h-36 space-y-1 overflow-y-auto rounded-xl border border-dashed border-primary/25 bg-white p-2">
+          <div className="flex items-center justify-between gap-2 px-1 pb-1">
+            <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-ink/45">
+              <Tag size={12} className="text-primary" />
+              Codes promo
+            </p>
+            {embedded && !searching ? (
+              <button
+                type="button"
+                onClick={() => setShowAllPromos(false)}
+                className="text-[12px] font-semibold text-ink/50 hover:text-primary"
+              >
+                Réduire
+              </button>
+            ) : null}
+          </div>
+          {loading ? (
+            <p className="p-2 text-center text-[12px] text-ink/45">Chargement…</p>
+          ) : filteredPromos.length === 0 ? (
+            <p className="p-2 text-center text-[12px] text-ink/45">Aucun code promo actif.</p>
+          ) : (
+            filteredPromos.map((promo) => {
+              const active = selectedPromoId === promo.id;
+              return (
+                <button
+                  key={promo.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => applyPromo(promo)}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition",
+                    active ? "bg-primary text-white" : "bg-[#FFEFF8] hover:bg-primary/10",
+                  )}
+                >
+                  <span className="min-w-0">
+                    <span className="block font-mono text-[12px] font-bold tracking-wide">
+                      {promo.code}
+                    </span>
+                    <span className={cn("mt-0.5 block truncate text-[11px]", active ? "text-white/80" : "text-ink/50")}>
+                      {promo.name} · {promoHint(promo)}
+                    </span>
+                  </span>
+                  <span className={cn("shrink-0 text-[11px] font-semibold", active ? "text-white" : "text-primary")}>
+                    {active ? "Appliqué" : "Appliquer"}
+                  </span>
+                </button>
+              );
+            })
+          )}
+          <div className="flex gap-2 pt-1">
+            <Input
+              value={promoCode}
+              onChange={(e) => {
+                setPromoCode(e.target.value);
+                if (!e.target.value.trim()) setSelectedPromoId(null);
+              }}
+              placeholder="Saisir un code"
+              disabled={disabled}
+              className="font-mono uppercase"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={disabled || !promoCode.trim()}
+              onClick={applyTypedCode}
+            >
+              OK
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div>
         <p className="mb-1.5 text-[12px] font-bold uppercase tracking-wider text-ink/45">Panier</p>

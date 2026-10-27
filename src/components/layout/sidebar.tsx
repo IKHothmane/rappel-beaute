@@ -35,6 +35,7 @@ import {
 } from "@/components/auth/session-provider";
 import { usePlanFeatures } from "@/components/subscriptions/plan-features-provider";
 import { OrgLogo } from "@/components/app/org-logo";
+import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -127,10 +128,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const role = user.role;
   const { isNavEnabled, loading: planLoading } = usePlanFeatures();
 
+  const salon3dOk = isSalon3dEnabledForOrg(user.orgSlug);
   const filtered = sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => canAccessNav(role, item.key)),
+      items: section.items.filter((item) => {
+        if (item.key === "salon-3d" && !salon3dOk) return false;
+        return canAccessNav(role, item.key);
+      }),
     }))
     .filter((section) => section.items.length > 0);
 

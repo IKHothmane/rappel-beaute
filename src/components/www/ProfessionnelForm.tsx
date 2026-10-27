@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { APP_LOGIN_HREF, CITIES } from "@/lib/site";
 import { PHONE_MAX_DIGITS, limitPhoneDigits } from "@/lib/validation/customer";
+import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
 
 export function ProfessionnelForm() {
   const [sent, setSent] = useState(false);
@@ -11,6 +12,7 @@ export function ProfessionnelForm() {
   const [noWebsite, setNoWebsite] = useState(false);
   const [website, setWebsite] = useState("");
   const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -106,6 +108,8 @@ export function ProfessionnelForm() {
             placeholder="ex. Kenza Berrada"
             required
             type="text"
+            maxLength={L.name}
+            autoComplete="name"
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
@@ -116,6 +120,8 @@ export function ProfessionnelForm() {
             placeholder="ex. Maison de Beauté L'Écrin"
             required
             type="text"
+            maxLength={L.institut}
+            autoComplete="organization"
           />
         </label>
       </div>
@@ -159,6 +165,8 @@ export function ProfessionnelForm() {
           placeholder="contact@institut.ma"
           required
           type="email"
+          maxLength={L.email}
+          autoComplete="email"
         />
       </label>
 
@@ -187,10 +195,10 @@ export function ProfessionnelForm() {
           type="text"
           inputMode="url"
           autoComplete="url"
-          maxLength={200}
+          maxLength={L.website}
           value={website}
           disabled={noWebsite}
-          onChange={(e) => setWebsite(e.target.value)}
+          onChange={(e) => setWebsite(e.target.value.slice(0, L.website))}
         />
       </div>
 
@@ -201,7 +209,13 @@ export function ProfessionnelForm() {
           name="message"
           placeholder="Nombre de cabines, prestations phares (soins visage, hammam, onglerie), logiciel actuellement utilisé..."
           rows={3}
+          maxLength={L.message}
+          value={message}
+          onChange={(e) => setMessage(e.target.value.slice(0, L.message))}
         />
+        <span className="text-right text-[11px] text-ink/40">
+          {message.length}/{L.message}
+        </span>
       </label>
 
       {error ? (

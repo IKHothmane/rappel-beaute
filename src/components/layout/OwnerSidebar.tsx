@@ -35,6 +35,7 @@ import {
 } from "@/components/auth/session-provider";
 import { usePlanFeatures } from "@/components/subscriptions/plan-features-provider";
 import { OrgLogo } from "@/components/app/org-logo";
+import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -130,6 +131,15 @@ export default function OwnerSidebar({
   const user = useCurrentUser();
   const { logout } = useSession();
   const { isNavEnabled, loading: planLoading } = usePlanFeatures();
+  const salon3dOk = isSalon3dEnabledForOrg(user.orgSlug);
+  const visibleSections = sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => item.key !== "salon-3d" || salon3dOk,
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <>
@@ -189,7 +199,7 @@ export default function OwnerSidebar({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">
-          {sections.map((section, index) => (
+          {visibleSections.map((section, index) => (
             <div key={index} className="mb-6">
               {section.title && !collapsed ? (
                 <div className="mb-2 px-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink/35">

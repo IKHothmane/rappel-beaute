@@ -56,12 +56,6 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && error.message === "NO_OPEN_SESSION") {
-      return NextResponse.json(
-        { error: "Ouvrez la caisse avant une dépense en espèces." },
-        { status: 400 },
-      );
-    }
     console.error("[POST /api/expenses]", error);
     return NextResponse.json({ error: "Impossible de créer la dépense." }, { status: 500 });
   }

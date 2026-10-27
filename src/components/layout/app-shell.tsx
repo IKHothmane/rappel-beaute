@@ -10,6 +10,7 @@ import { Sidebar } from "./sidebar";
 import OwnerSidebar from "./OwnerSidebar";
 import { PlanFeatureRouteGuard } from "@/components/subscriptions/PlanFeatureRouteGuard";
 import { StaffColorProvider } from "@/components/agenda/staff-color-provider";
+import { NotificationPopupHost } from "@/components/notifications/notification-popup-host";
 import { cn } from "@/lib/utils";
 
 type AppShellProps = {
@@ -109,6 +110,7 @@ export function AppShell({ children }: AppShellProps) {
       </div>
 
       <MobileNav />
+      <NotificationPopupHost />
     </div>
   );
 }

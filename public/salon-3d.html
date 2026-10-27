@@ -3029,8 +3029,16 @@
       renderer.setSize(w, h, true);
     }
 
-    // REDIMENSIONNEMENT DU CANVAS
+    // REDIMENSIONNEMENT DU CANVAS (fenêtre + iframe parent / flex layout)
     window.addEventListener('resize', resize3DCanvas);
+    if (typeof ResizeObserver !== 'undefined') {
+      try {
+        const ro = new ResizeObserver(function () { resize3DCanvas(); });
+        const containerEl = document.getElementById('three-container');
+        if (containerEl) ro.observe(containerEl);
+        if (document.body) ro.observe(document.body);
+      } catch (e) { /* ignore */ }
+    }
 
     // ----------------------------------------------------
     // INITIALISATION GÉNÉRALE AU CHARGEMENT
@@ -3040,12 +3048,14 @@
       threeStarted = true;
       await loadSalonFromApi(false);
       init3D();
-      // Relancer après layout (évite canvas largeur 0 si le panneau CRM a pris toute la place)
+      // Relancer après layout (évite canvas 0×0 dans une iframe encore en train de s’agrandir)
       requestAnimationFrame(function () {
         resize3DCanvas();
         requestAnimationFrame(resize3DCanvas);
       });
       setTimeout(resize3DCanvas, 100);
+      setTimeout(resize3DCanvas, 400);
+      setTimeout(resize3DCanvas, 1000);
       if (window.lucide) lucide.createIcons();
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(function () { loadSalonFromApi(true); }, 30000);

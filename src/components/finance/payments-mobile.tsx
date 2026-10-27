@@ -16,6 +16,7 @@ import {
   type PaymentPeriod,
   type PaymentTab,
   formatPaymentDateTime,
+  formatPaymentServices,
   isUnpaidDue,
   paymentOrigin,
   paymentShortId,
@@ -156,7 +157,7 @@ export function PaymentsMobile({
           <dl className="space-y-2 rounded-xl bg-[#FFEFF8] p-3 text-[13px]">
             <Row label="Cliente" value={selected.customerName ?? "—"} />
             {selected.customerPhone ? <Row label="Téléphone" value={selected.customerPhone} /> : null}
-            <Row label="Prestation" value={selected.serviceName ?? "—"} />
+            <Row label="Prestation" value={formatPaymentServices(selected.serviceName)} />
             {!isUnpaidDue(selected) ? (
               <Row label="Méthode" value={PAYMENT_METHOD_LABEL[selected.method]} />
             ) : null}
@@ -212,15 +213,6 @@ export function PaymentsMobile({
               >
                 WhatsApp
               </a>
-            ) : null}
-            {canRefund(selected) ? (
-              <button
-                type="button"
-                onClick={() => onRefund(selected)}
-                className="col-span-2 flex h-10 items-center justify-center rounded-lg bg-[#FFDAD6] text-[13px] font-semibold text-[#93000A]"
-              >
-                Rembourser
-              </button>
             ) : null}
           </div>
         </section>
@@ -401,7 +393,9 @@ export function PaymentsMobile({
                     <div className="min-w-0">
                       <p className="truncate text-[14px] font-bold">{p.customerName ?? "—"}</p>
                       <p className="truncate text-[13px] text-ink/50">
-                        {p.serviceName ?? origin.label}
+                        {p.serviceName
+                          ? formatPaymentServices(p.serviceName)
+                          : origin.label}
                       </p>
                       <p className="mt-1 text-[11px] text-ink/45">
                         {paymentShortId(p.id)} · {formatPaymentDateTime(p.paidAt)}

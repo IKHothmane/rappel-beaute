@@ -21,6 +21,7 @@ import {
   billableToDuePayment,
   filterPayments,
   formatPaymentDateTime,
+  formatPaymentServices,
   isUnpaidDue,
   paymentInsight,
   paymentInitials,
@@ -31,6 +32,7 @@ import {
   paymentStatusChip,
   periodLabel,
   signedPaymentAmount,
+  sortPaymentsNewestFirst,
   staffOptions,
   matchesPaymentTab,
   waMeLink,
@@ -127,10 +129,7 @@ export function PaymentsPageView() {
       ]);
       setBillable(unpaid);
       const dueRows = unpaid.map(billableToDuePayment);
-      const merged = [...dueRows, ...payments].sort(
-        (a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime(),
-      );
-      setRows(merged);
+      setRows(sortPaymentsNewestFirst([...dueRows, ...payments]));
     } catch {
       toast("Impossible de charger les paiements.", "error");
     }
@@ -607,7 +606,9 @@ export function PaymentsPageView() {
                               </div>
                             </td>
                             <td className="px-3 py-3">
-                              <div className="font-semibold">{p.serviceName ?? "—"}</div>
+                              <div className="font-semibold leading-snug">
+                                {formatPaymentServices(p.serviceName)}
+                              </div>
                               <div className="text-[11px] text-ink/45">{origin.label}</div>
                             </td>
                             <td className="px-3 py-3">
@@ -662,15 +663,6 @@ export function PaymentsPageView() {
                                     onClick={() => setTicketPayment(p)}
                                   >
                                     Ticket
-                                  </button>
-                                ) : null}
-                                {canRefundRow(p) ? (
-                                  <button
-                                    type="button"
-                                    className="text-[12px] font-semibold text-[#BA1A1A] hover:underline"
-                                    onClick={() => openRefund(p)}
-                                  >
-                                    Rembourser
                                   </button>
                                 ) : null}
                               </div>
@@ -833,7 +825,8 @@ export function PaymentsPageView() {
                   ) : (
                     billable.map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.customerName} · {b.serviceName} · reste {formatMad(b.remaining)}
+                        {b.customerName} · {formatPaymentServices(b.serviceName)} · reste{" "}
+                        {formatMad(b.remaining)}
                       </option>
                     ))
                   )}
@@ -1058,7 +1051,7 @@ function PaymentInspect({
           }
         />
         {payment.customerPhone ? <InspectRow label="Téléphone" value={payment.customerPhone} /> : null}
-        <InspectRow label="Prestation" value={payment.serviceName ?? "—"} />
+        <InspectRow label="Prestation" value={formatPaymentServices(payment.serviceName)} />
         <InspectRow label="Origine" value={origin.label} />
         <InspectRow label="Date RDV" value={formatPaymentDateTime(payment.paidAt)} />
         {!due ? <InspectRow label="Opérateur" value={payment.userName ?? "—"} /> : null}
@@ -1126,15 +1119,6 @@ function PaymentInspect({
           </a>
         ) : null}
       </div>
-      {canRefund ? (
-        <button
-          type="button"
-          onClick={onRefund}
-          className="flex h-10 w-full items-center justify-center rounded-lg bg-[#FFDAD6] text-[13px] font-semibold text-[#93000A]"
-        >
-          Effectuer un remboursement
-        </button>
-      ) : null}
       <div className="flex flex-wrap gap-2 text-[12px]">
         {canCash ? (
           <Link href="/cash-register/" className="font-semibold text-primary hover:underline">

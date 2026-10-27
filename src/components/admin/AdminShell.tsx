@@ -82,8 +82,6 @@ const MOBILE_NAV: NavItem[] = [
 
 const SIDEBAR_W = 288;
 const SIDEBAR_W_COLLAPSED = 76;
-const ACCOUNT_FOOTER_H = 108;
-const ACCOUNT_FOOTER_H_COLLAPSED = 72;
 const SIDEBAR_COLLAPSE_KEY = "rb-admin-sidebar-collapsed";
 
 function normalizePath(pathname: string) {
@@ -134,7 +132,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [openTickets, setOpenTickets] = useState(0);
   const href = adminHref;
   const sidebarW = collapsed ? SIDEBAR_W_COLLAPSED : SIDEBAR_W;
-  const footerH = collapsed ? ACCOUNT_FOOTER_H_COLLAPSED : ACCOUNT_FOOTER_H;
 
   useEffect(() => {
     try {
@@ -250,10 +247,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen">
         {/* Sidebar desktop */}
         <aside
-          className={cn(
-            "fixed left-0 top-0 z-40 hidden flex-col border-r border-line bg-white shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-[width] duration-200 ease-out lg:flex",
-          )}
-          style={{ width: sidebarW, height: `calc(100dvh - ${footerH}px)` }}
+          className="admin-sidebar fixed left-0 top-0 z-40 hidden flex-col border-r border-line bg-white shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-[width] duration-200 ease-out lg:flex"
+          style={{ width: sidebarW }}
         >
           <div
             className={cn(
@@ -330,69 +325,65 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </div>
             ))}
           </nav>
-        </aside>
 
-        {/* Footer compte desktop */}
-        <div
-          className="fixed bottom-0 left-0 z-50 hidden border-r border-t border-line bg-white transition-[width] duration-200 ease-out lg:block"
-          style={{ width: sidebarW, height: footerH }}
-        >
-          {collapsed ? (
-            <div className="flex h-full flex-col items-center justify-center gap-1 p-2">
-              <Link
-                href={href("/settings/#sec-security")}
-                title={displayName || "Mon profil"}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFEFF8] text-[#7B5900] hover:bg-[#F6E3EF]"
-              >
-                <Shield className="h-4 w-4" />
-              </Link>
-              <button
-                type="button"
-                title="Déconnexion"
-                className="text-[10px] font-bold text-ink/45 hover:text-ink"
-                onClick={logout}
-              >
-                Exit
-              </button>
-            </div>
-          ) : (
-            <div className="p-3">
-              <div className="rounded-xl bg-[#FFEFF8] p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <Shield className="h-4 w-4 shrink-0 text-[#7B5900]" />
-                    <span className="truncate text-[11px] font-bold text-ink">
-                      {displayName || "Super Admin"}
+          <div className="shrink-0 border-t border-line bg-white">
+            {collapsed ? (
+              <div className="flex flex-col items-center justify-center gap-1 p-2">
+                <Link
+                  href={href("/settings/#sec-security")}
+                  title={displayName || "Mon profil"}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFEFF8] text-[#7B5900] hover:bg-[#F6E3EF]"
+                >
+                  <Shield className="h-4 w-4" />
+                </Link>
+                <button
+                  type="button"
+                  title="Déconnexion"
+                  className="text-[10px] font-bold text-ink/45 hover:text-ink"
+                  onClick={logout}
+                >
+                  Exit
+                </button>
+              </div>
+            ) : (
+              <div className="p-3">
+                <div className="rounded-xl bg-[#FFEFF8] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <Shield className="h-4 w-4 shrink-0 text-[#7B5900]" />
+                      <span className="truncate text-[11px] font-bold text-ink">
+                        {displayName || "Super Admin"}
+                      </span>
+                    </div>
+                    <span className="rounded bg-[#F0DDE9] px-1.5 py-0.5 text-[10px] font-bold text-ink/55">
+                      v1.4 SaaS
                     </span>
                   </div>
-                  <span className="rounded bg-[#F0DDE9] px-1.5 py-0.5 text-[10px] font-bold text-ink/55">
-                    v1.4 SaaS
-                  </span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                  <Link
-                    href={href("/settings/#sec-security")}
-                    className="text-xs font-semibold text-primary hover:underline"
-                  >
-                    Mon profil
-                  </Link>
-                  <button
-                    type="button"
-                    className="text-xs text-ink/50 hover:text-ink"
-                    onClick={logout}
-                  >
-                    Déconnexion
-                  </button>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                    <Link
+                      href={href("/settings/#sec-security")}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      Mon profil
+                    </Link>
+                    <button
+                      type="button"
+                      className="text-xs text-ink/50 hover:text-ink"
+                      onClick={logout}
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </aside>
 
         {/* Drawer mobile */}
         <aside
           className={cn(
-            "fixed left-0 top-0 z-50 flex h-dvh w-[288px] flex-col bg-white shadow-xl transition-transform lg:hidden",
+            "admin-sidebar fixed left-0 top-0 z-50 flex w-[288px] flex-col bg-white shadow-xl transition-transform lg:hidden",
             open ? "translate-x-0" : "-translate-x-full",
           )}
         >

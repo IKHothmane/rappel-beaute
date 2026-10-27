@@ -153,7 +153,7 @@ export function ExpenseDetailView({ expenseId }: { expenseId: string }) {
         </p>
         {expense.paymentMethod === "CASH" && expense.status === "RECORDED" ? (
           <p className="text-xs text-ink/45">
-            Liée à une sortie de caisse physique (CashRegisterTransaction EXPENSE).
+            Dépense en espèces — suivi comptable, sans impact sur la caisse.
           </p>
         ) : null}
         {expense.category === "PRODUCT_PURCHASE" ? (
@@ -178,7 +178,7 @@ export function ExpenseDetailView({ expenseId }: { expenseId: string }) {
       <Drawer open={voidOpen} onClose={() => setVoidOpen(false)} title="Archiver la dépense">
         <div className="space-y-4 text-sm">
           <p className="text-ink/60">
-            Passage en VOID — pas de suppression. Si espèces, la caisse sera créditée.
+            Passage en VOID — pas de suppression. La caisse n’est pas modifiée.
           </p>
           <label className="block">
             <span className="mb-1.5 block font-medium">Motif</span>

@@ -15,6 +15,7 @@ import { setOrganizationLogoUrl } from "@/lib/db/organization";
 import { getStorageService } from "@/lib/storage";
 import { absoluteAppLoginUrl, CITIES } from "@/lib/site";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
+import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
@@ -23,6 +24,9 @@ const CITIES_SET = new Set<string>(CITIES);
 
 function normalizeWebsite(raw: string): string | null | NextResponse {
   if (!raw) return null;
+  if (raw.length > L.website) {
+    return validationError(`Le site web ne doit pas dépasser ${L.website} caractères.`);
+  }
   const withProto = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
   try {
     const url = new URL(withProto);
@@ -32,7 +36,11 @@ function normalizeWebsite(raw: string): string | null | NextResponse {
     if (url.hostname.length < 3 || !url.hostname.includes(".")) {
       return validationError("Site web invalide.");
     }
-    return url.toString();
+    const normalized = url.toString();
+    if (normalized.length > L.website) {
+      return validationError(`Le site web ne doit pas dépasser ${L.website} caractères.`);
+    }
+    return normalized;
   } catch {
     return validationError("Site web invalide.");
   }
@@ -88,24 +96,27 @@ export async function POST(request: NextRequest) {
   const website = noWebsite ? null : normalizeWebsite(str(form, "website"));
   if (website instanceof NextResponse) return website;
 
-  if (personName.length < 2 || personName.length > 80) {
-    return validationError("Indiquez votre prénom et nom.");
+  if (personName.length < 2 || personName.length > L.name) {
+    return validationError(`Indiquez votre prénom et nom (2 à ${L.name} caractères).`);
   }
-  if (institut.length < 2 || institut.length > 80) {
-    return validationError("Indiquez le nom de l'institut.");
+  if (institut.length < 2 || institut.length > L.institut) {
+    return validationError(`Indiquez le nom de l'institut (2 à ${L.institut} caractères).`);
   }
-  if (!EMAIL_RE.test(email) || email.length > 120) {
+  if (!EMAIL_RE.test(email) || email.length > L.email) {
     return validationError("Adresse e-mail invalide.");
   }
   const phoneDigits = localPhoneDigits(phone);
   if (phoneDigits.length < 8 || phoneDigits.length > PHONE_MAX_DIGITS) {
     return validationError("Le numéro WhatsApp doit comporter entre 8 et 10 chiffres.");
   }
-  if (!CITIES_SET.has(city)) {
+  if (!CITIES_SET.has(city) || city.length > L.city) {
     return validationError("Sélectionnez une ville.");
   }
-  if (address.length > 200) {
-    return validationError("L'adresse est trop longue.");
+  if (address.length > L.address) {
+    return validationError(`L'adresse ne doit pas dépasser ${L.address} caractères.`);
+  }
+  if (message.length > L.message) {
+    return validationError(`Les précisions ne doivent pas dépasser ${L.message} caractères.`);
   }
 
   const logo = form.get("logo");

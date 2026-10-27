@@ -6,7 +6,8 @@ import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 import { loyaltyCardHex } from "@/lib/loyalty/card-color";
 import { cardArtwork, compactLogo, genericClassAppearance, genericObjectUpdate } from "@/lib/loyalty/google-wallet-view";
-import { publicAppOrigin, SITE } from "@/lib/site";
+import { cardSiteOrigin } from "@/lib/loyalty/public-origin";
+import { SITE } from "@/lib/site";
 import { googleWalletClassId, googleWalletConfigured, googleWalletIssuerId } from "@/lib/loyalty/wallet-config";
 
 type ServiceAccount = { client_email: string; private_key: string };
@@ -54,7 +55,7 @@ function expiryLabel(iso: string) {
 }
 
 function walletOrigins(requestOrigin?: string) {
-  const values = [requestOrigin, publicAppOrigin(), SITE.url, "https://www.rappelbeauty.com", "https://rappelbeauty.com"].filter(
+  const values = [cardSiteOrigin(requestOrigin), SITE.url, "https://www.rappelbeauty.com", "https://rappelbeauty.com"].filter(
     (value): value is string => Boolean(value?.trim()) && !/localhost|127\.0\.0\.1/.test(value ?? ""),
   );
   return [...new Set(values.map((value) => value.replace(/\/$/, "")))];
@@ -115,7 +116,7 @@ export async function createGoogleWalletSaveUrl(token: string, requestOrigin?: s
   const card = await getPublicCardByToken(normalized);
   if (!card) return null;
 
-  const origin = (requestOrigin || publicAppOrigin() || SITE.url).replace(/\/$/, "");
+  const origin = cardSiteOrigin(requestOrigin);
   const object = genericObject(normalized, card, origin);
   try {
     await upsertGenericObject(account, object);
@@ -223,7 +224,7 @@ async function syncGoogleWalletCard(token: string) {
   const normalized = token.trim().toUpperCase();
   const card = await getPublicCardByToken(normalized);
   if (!card) return;
-  await upsertGenericObject(account, genericObject(normalized, card, publicAppOrigin()));
+  await upsertGenericObject(account, genericObject(normalized, card, cardSiteOrigin()));
   const { deliverWalletMessagesForToken } = await import("@/lib/loyalty/google-wallet-notify");
   await deliverWalletMessagesForToken(normalized);
 }

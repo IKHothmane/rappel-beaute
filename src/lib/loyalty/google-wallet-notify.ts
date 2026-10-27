@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { pool } from "@/lib/db/pool";
 import { logger } from "@/lib/logger";
-import { publicAppOrigin } from "@/lib/site";
+import { cardSiteOrigin } from "@/lib/loyalty/public-origin";
 import { googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { addGoogleWalletTextMessage, googleWalletClassReviewStatus } from "@/lib/loyalty/google-wallet";
 import {
@@ -145,7 +145,7 @@ async function candidatesFor(card: CardContext): Promise<Candidate[]> {
   const review = reviews.rows[0];
   if (review) {
     const link = reviewLinkForInstitute({
-      origin: publicAppOrigin(),
+      origin: cardSiteOrigin(),
       cardSlug: card.slug,
       requestSlug: review.slug,
       token: review.publicToken,

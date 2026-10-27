@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http/client-ip";
 import { cardTokenForJoinQr, enrollAnonymousFromJoinQr, previewJoinQr } from "@/lib/loyalty/join-qr";
+import { cardSiteOrigin } from "@/lib/loyalty/public-origin";
 import { consumeDimensions } from "@/lib/rate-limit";
+import { SITE } from "@/lib/site";
 
 const COOKIE = "rb_join_card";
 
@@ -15,6 +17,11 @@ function remember(response: NextResponse, cardToken: string, secure: boolean) {
     maxAge: 60 * 60 * 24 * 365,
   });
   return response;
+}
+
+/** Jamais request.url : derrière le proxy ça peut devenir localhost. */
+function publicCardUrl(cardToken: string) {
+  return `${cardSiteOrigin(SITE.url)}/carte/${cardToken}/`;
 }
 
 /**
@@ -64,6 +71,6 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     }
   }
 
-  const response = NextResponse.redirect(new URL(`/carte/${cardToken}/`, request.url));
-  return remember(response, cardToken, request.url.startsWith("https:"));
+  const response = NextResponse.redirect(publicCardUrl(cardToken));
+  return remember(response, cardToken, true);
 }

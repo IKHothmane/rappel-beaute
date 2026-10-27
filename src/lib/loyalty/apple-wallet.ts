@@ -7,7 +7,7 @@ import { APPLE_PASS_TYPE_ID, appleChangeMessage, appleWebServiceUrl } from "@/li
 import { ensureApplePass } from "@/lib/loyalty/apple-wallet-store";
 import { appleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { hexToRgb, loyaltyCardHex } from "@/lib/loyalty/card-color";
-import { publicAppOrigin } from "@/lib/site";
+import { cardSiteOrigin } from "@/lib/loyalty/public-origin";
 
 function loadPem(inlineName: string, pathName: string) {
   const inline = process.env[inlineName]?.trim();
@@ -45,7 +45,8 @@ export async function createAppleWalletPass(token: string): Promise<Buffer | nul
 
   const fields = passFields(normalized, card);
   const record = await ensureApplePass(normalized).catch(() => null);
-  const webServiceURL = record ? appleWebServiceUrl(publicAppOrigin()) : null;
+  // webServiceURL https public (jamais localhost) pour les mises à jour Wallet
+  const webServiceURL = record ? appleWebServiceUrl(cardSiteOrigin()) : null;
   const pass = new PKPass(
     applePassImages(),
     {

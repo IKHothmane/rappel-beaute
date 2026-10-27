@@ -21,10 +21,12 @@ export function publicAppOrigin(): string {
     process.env.APP_BASE_URL ||
     ""
   ).replace(/\/$/, "");
-  if (configured) return configured;
-  if (appEnvironment() === "staging") return "";
+  const isLoopback = /localhost|127\.0\.0\.1/i.test(configured);
+  // En prod, ne jamais exposer localhost (QR / Wallet / e-mails).
+  if (configured && !isLoopback) return configured;
+  if (appEnvironment() === "staging") return configured && !isLoopback ? configured : "";
   if (process.env.NODE_ENV === "production") return SITE.appUrl;
-  return "http://localhost:3000";
+  return configured || "http://localhost:3000";
 }
 
 /** Staging Railway garde NODE_ENV=production. L'environnement métier vient d'APP_ENV ou de l'URL. */

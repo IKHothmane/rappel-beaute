@@ -16,8 +16,19 @@ const securityHeaders = [
         },
         {
           key: "Content-Security-Policy",
-          value:
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: https://cloudflareinsights.com; frame-src https://www.openstreetmap.org https://www.googletagmanager.com; base-uri 'self'; form-action 'self'",
+          value: [
+            "default-src 'self'",
+            // Plan 3D : scripts locaux + CDN UI (Tailwind/Lucide) ; analytics Cloudflare/GA
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.tailwindcss.com https://unpkg.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com",
+            "img-src 'self' data: blob: https:",
+            "font-src 'self' data: https://fonts.gstatic.com",
+            "connect-src 'self' https: https://cloudflareinsights.com",
+            // iframe Plan 3D (/salon-3d.html) + cartes / GTM
+            "frame-src 'self' https://www.openstreetmap.org https://www.googletagmanager.com",
+            "base-uri 'self'",
+            "form-action 'self'",
+          ].join("; "),
         },
       ]
     : []),

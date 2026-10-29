@@ -235,6 +235,7 @@ export function PaymentsPageView() {
             promotionName: null,
             status: "CONFIRMED",
             startAt: selected.paidAt,
+            createdAt: selected.createdAt || selected.paidAt,
           },
           ...list,
         ];

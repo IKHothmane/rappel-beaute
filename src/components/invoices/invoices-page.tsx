@@ -254,6 +254,7 @@ export function InvoicesPageView() {
             promotionName: null,
             status: inv.status,
             startAt: invoiceWhen(inv),
+            createdAt: invoiceWhen(inv),
           },
           ...list,
         ];

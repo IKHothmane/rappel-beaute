@@ -26,6 +26,7 @@ type Props = {
   onReceived: () => void;
   onToast: (msg: string, kind?: "success" | "error" | "info") => void;
   onOpenFull?: () => void;
+  onEdit?: () => void;
 };
 
 export function PurchaseFocusPanel({
@@ -36,6 +37,7 @@ export function PurchaseFocusPanel({
   onReceived,
   onToast,
   onOpenFull,
+  onEdit,
 }: Props) {
   const idempotencyRef = useRef(newIdempotencyKey());
   const [loading, setLoading] = useState(true);
@@ -229,6 +231,16 @@ export function PurchaseFocusPanel({
         >
           <CheckCircle2 className="h-4 w-4" />
           {submitting ? "Réception…" : "Valider la réception"}
+        </button>
+      ) : null}
+
+      {canWrite && p.status === "DRAFT" && onEdit ? (
+        <button
+          type="button"
+          onClick={onEdit}
+          className="flex h-11 w-full items-center justify-center rounded-lg bg-primary text-[14px] font-semibold text-white shadow-sm"
+        >
+          Modifier le brouillon
         </button>
       ) : null}
 

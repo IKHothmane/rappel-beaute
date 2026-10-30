@@ -190,12 +190,12 @@ export async function listPublishedReviews(slug: string) {
     organizationName: string;
   }>(
     `SELECT r.id, r.rating, r.comment, r."createdAt", c."firstName" AS "firstName",
-            COALESCE(a."serviceNameSnapshot", s.name, 'Prestation') AS "serviceName",
+            COALESCE(a."serviceNameSnapshot", s.name, CASE WHEN a.id IS NULL THEN 'Carte fidélité' ELSE 'Prestation' END) AS "serviceName",
             o.name AS "organizationName"
      FROM "Review" r
      JOIN "Organization" o ON o.id = r."organizationId" AND o.slug = $1 AND o.status = 'ACTIVE'
      JOIN "Customer" c ON c.id = r."customerId"
-     JOIN "Appointment" a ON a.id = r."appointmentId"
+     LEFT JOIN "Appointment" a ON a.id = r."appointmentId"
      LEFT JOIN "Service" s ON s.id = a."serviceId"
      WHERE r.status = 'PUBLISHED'
      ORDER BY r."createdAt" DESC
@@ -243,11 +243,11 @@ export async function listInstituteReviews(organizationId: string) {
   }>(
     `SELECT r.id, r.rating, r.comment, r.status::text AS status, r."createdAt",
             c."firstName", c."lastName",
-            COALESCE(a."serviceNameSnapshot", s.name, 'Prestation') AS "serviceName",
+            COALESCE(a."serviceNameSnapshot", s.name, CASE WHEN a.id IS NULL THEN 'Carte fidélité' ELSE 'Prestation' END) AS "serviceName",
             r."reportReason"
      FROM "Review" r
      JOIN "Customer" c ON c.id = r."customerId"
-     JOIN "Appointment" a ON a.id = r."appointmentId"
+     LEFT JOIN "Appointment" a ON a.id = r."appointmentId"
      LEFT JOIN "Service" s ON s.id = a."serviceId"
      WHERE r."organizationId" = $1
      ORDER BY r."createdAt" DESC

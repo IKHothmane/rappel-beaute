@@ -54,12 +54,43 @@ function clientSecret(): string {
   return secret;
 }
 
+/**
+ * URI OAuth Google — doit être identique (slash final inclus) à celle
+ * enregistrée dans Google Cloud Console → Identifiants OAuth.
+ * En prod, on ignore une GOOGLE_REDIRECT_URI pointant vers localhost.
+ */
 export function googleRedirectUri(origin: string): string {
   const explicit = process.env.GOOGLE_REDIRECT_URI?.trim();
-  const raw =
-    explicit ||
-    `${(publicAppOrigin() || origin).replace(/\/$/, "")}/api/integrations/google-calendar/callback`;
-  return `${raw.replace(/\/$/, "")}/`;
+  const isLoopback = (url: string) => /localhost|127\.0\.0\.1/i.test(url);
+  const prodLike =
+    process.env.NODE_ENV === "production" || process.env.APP_ENV === "production";
+
+  let base = "";
+  if (explicit && !(prodLike && isLoopback(explicit))) {
+    base = explicit.replace(/\/$/, "");
+  } else {
+    base = (publicAppOrigin() || origin).replace(/\/$/, "");
+  }
+
+  // Si l’origine requête est le domaine marketing (rappelbeauty.com),
+  // forcer l’hôte app pour rester aligné avec la console Google.
+  try {
+    const host = new URL(base.startsWith("http") ? base : `https://${base}`).hostname;
+    if (
+      host === "rappelbeauty.com" ||
+      host === "www.rappelbeauty.com"
+    ) {
+      base = SITE.appUrl.replace(/\/$/, "");
+    }
+  } catch {
+    /* ignore */
+  }
+
+  const path = "/api/integrations/google-calendar/callback";
+  const withPath = base.includes("/api/integrations/google-calendar/callback")
+    ? base.replace(/\/$/, "")
+    : `${base}${path}`;
+  return `${withPath}/`;
 }
 
 export function signGoogleOAuthState(payload: GoogleOAuthState): string {

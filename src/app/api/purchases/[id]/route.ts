@@ -77,6 +77,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       const map: Record<string, [string, number]> = {
         NOT_FOUND: ["Commande introuvable.", 404],
         ITEMS_LOCKED: ["Les lignes ne sont modifiables qu'en brouillon.", 400],
+        SUPPLIER_NOT_FOUND: ["Fournisseur introuvable.", 404],
         LOCKED: ["Commande verrouillée.", 400],
         CANNOT_CANCEL: ["Impossible d'annuler une commande déjà partiellement reçue.", 400],
         NOT_RECEIVABLE: ["Cette commande ne peut pas être réceptionnée.", 400],

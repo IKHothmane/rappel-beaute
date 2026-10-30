@@ -79,8 +79,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     title: "Ventes & Finance",
     items: [
       { label: "Caisse", href: "/cash-register/", icon: WalletCards, key: "cash-register" },
-      { label: "Paiements", href: "/payments/", icon: CircleDollarSign, key: "payments" },
-      { label: "Dépenses", href: "/expenses/", icon: CircleDollarSign, key: "expenses" },
+      { label: "Paiements & dépenses", href: "/payments/", icon: CircleDollarSign, key: "payments" },
     ],
   },
   {
@@ -113,6 +112,9 @@ function isActive(pathname: string, href: string) {
   if (href === "/dashboard/") {
     return path === "/" || path.startsWith("/dashboard");
   }
+  if (href === "/payments/") {
+    return path.startsWith("/payments") || path.startsWith("/expenses");
+  }
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
 
@@ -134,6 +136,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       ...section,
       items: section.items.filter((item) => {
         if (item.key === "salon-3d" && !salon3dOk) return false;
+        if (item.key === "payments") {
+          return canAccessNav(role, "payments") || canAccessNav(role, "expenses");
+        }
         return canAccessNav(role, item.key);
       }),
     }))
@@ -189,7 +194,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(pathname, item.href);
-                  const planLocked = !planLoading && !isNavEnabled(item.key);
+                  const planLocked =
+                    item.key === "payments"
+                      ? !planLoading && !isNavEnabled("payments") && !isNavEnabled("expenses")
+                      : !planLoading && !isNavEnabled(item.key);
                   return (
                     <Link
                       key={item.href}

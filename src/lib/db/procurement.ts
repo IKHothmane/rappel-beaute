@@ -685,19 +685,79 @@ export async function getPurchaseById(
   };
 }
 
-async function insertPurchaseItems(
+function purchaseProductSku(name: string) {
+  const slug = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "")
+    .slice(0, 8)
+    .toUpperCase();
+  return `${slug || "PRD"}-${randomBytes(3).toString("hex").toUpperCase()}`;
+}
+
+/** Produit du catalogue, ou création dans la même transaction si seul le nom est fourni. */
+async function ensurePurchaseProduct(
   client: PoolClient,
-  purchaseId: string,
   organizationId: string,
-  items: CreatePurchaseInput["items"],
-) {
-  for (const item of items) {
+  item: CreatePurchaseInput["items"][number],
+  supplierName: string | null,
+): Promise<{ id: string; unit: ProductUnit }> {
+  if (item.productId) {
     const product = await client.query<{ id: string; unit: ProductUnit }>(
       `SELECT id, unit FROM "Product"
        WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
       [item.productId, organizationId],
     );
     if (!product.rows[0]) throw new Error("PRODUCT_NOT_FOUND");
+    return product.rows[0];
+  }
+
+  const name = item.productName?.trim();
+  if (!name) throw new Error("PRODUCT_NOT_FOUND");
+
+  const existing = await client.query<{ id: string; unit: ProductUnit }>(
+    `SELECT id, unit FROM "Product"
+     WHERE "organizationId" = $1 AND "deletedAt" IS NULL AND lower(btrim(name)) = lower($2)
+     ORDER BY "createdAt" ASC
+     LIMIT 1`,
+    [organizationId, name],
+  );
+  if (existing.rows[0]) return existing.rows[0];
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const id = newId("prd");
+    await client.query("SAVEPOINT purchase_product");
+    try {
+      await client.query(
+        `INSERT INTO "Product" (
+          id, "organizationId", name, sku, category, unit,
+          "purchasePrice", stock, "minStock", "supplierName",
+          consumable, sellable, active, "updatedAt"
+        ) VALUES (
+          $1,$2,$3,$4,'CONSOMMABLE'::"ProductCategory",'UNIT'::"ProductUnit",
+          $5,0,0,$6,true,true,true,NOW()
+        )`,
+        [id, organizationId, name, purchaseProductSku(name), item.unitPrice, supplierName],
+      );
+      await client.query("RELEASE SAVEPOINT purchase_product");
+      return { id, unit: "UNIT" };
+    } catch (error) {
+      await client.query("ROLLBACK TO SAVEPOINT purchase_product");
+      if (!isUniqueViolation(error) || attempt === 2) throw error;
+    }
+  }
+  throw new Error("PRODUCT_NOT_FOUND");
+}
+
+async function insertPurchaseItems(
+  client: PoolClient,
+  purchaseId: string,
+  organizationId: string,
+  items: CreatePurchaseInput["items"],
+  supplierName: string | null,
+) {
+  for (const item of items) {
+    const product = await ensurePurchaseProduct(client, organizationId, item, supplierName);
     await client.query(
       `INSERT INTO "PurchaseItem" (
         id, "purchaseId", "productId", "quantityOrdered", "quantityReceived", "unitPrice", unit
@@ -705,10 +765,10 @@ async function insertPurchaseItems(
       [
         newId("pui"),
         purchaseId,
-        item.productId,
+        product.id,
         item.quantityOrdered,
         item.unitPrice,
-        product.rows[0].unit,
+        product.unit,
       ],
     );
   }
@@ -723,13 +783,15 @@ export async function createPurchase(
   try {
     await client.query("BEGIN");
 
+    let supplierName: string | null = null;
     if (input.supplierId) {
-      const supplier = await client.query(
-        `SELECT id FROM "Supplier"
+      const supplier = await client.query<{ name: string }>(
+        `SELECT name FROM "Supplier"
          WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL AND active = true`,
         [input.supplierId, organizationId],
       );
       if (!supplier.rows[0]) throw new Error("SUPPLIER_NOT_FOUND");
+      supplierName = supplier.rows[0].name;
     }
 
     const number = await nextPurchaseNumber(organizationId, client);
@@ -753,7 +815,7 @@ export async function createPurchase(
       ],
     );
 
-    await insertPurchaseItems(client, id, organizationId, input.items);
+    await insertPurchaseItems(client, id, organizationId, input.items, supplierName);
     await client.query("COMMIT");
 
     const detail = await getPurchaseById(organizationId, id);
@@ -775,7 +837,7 @@ export async function updatePurchase(
   const existing = await getPurchaseById(organizationId, purchaseId);
   if (!existing) throw new Error("NOT_FOUND");
 
-  if (existing.status !== "DRAFT" && input.items) {
+  if (existing.status !== "DRAFT" && (input.items || input.supplierId !== undefined)) {
     throw new Error("ITEMS_LOCKED");
   }
   if (existing.status === "CANCELLED" || existing.status === "RECEIVED") {
@@ -799,9 +861,34 @@ export async function updatePurchase(
       );
     }
 
+    let supplierNameForItems = existing.supplierId ? existing.supplierName : null;
+    if (input.supplierId !== undefined) {
+      if (input.supplierId) {
+        const supplier = await client.query<{ name: string }>(
+          `SELECT name FROM "Supplier"
+           WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL AND active = true`,
+          [input.supplierId, organizationId],
+        );
+        if (!supplier.rows[0]) throw new Error("SUPPLIER_NOT_FOUND");
+        supplierNameForItems = supplier.rows[0].name;
+      } else {
+        supplierNameForItems = null;
+      }
+      await client.query(
+        `UPDATE "Purchase" SET "supplierId" = $1, "updatedAt" = NOW() WHERE id = $2`,
+        [input.supplierId, purchaseId],
+      );
+    }
+
     if (input.items) {
       await client.query(`DELETE FROM "PurchaseItem" WHERE "purchaseId" = $1`, [purchaseId]);
-      await insertPurchaseItems(client, purchaseId, organizationId, input.items);
+      await insertPurchaseItems(
+        client,
+        purchaseId,
+        organizationId,
+        input.items,
+        supplierNameForItems,
+      );
     }
 
     if (input.status === "ORDERED" && existing.status === "DRAFT") {

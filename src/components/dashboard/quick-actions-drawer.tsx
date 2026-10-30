@@ -22,7 +22,7 @@ const ACTIONS = [
   { href: "/salon-3d/", label: "Voir le plan 3D", icon: Box, key: "salon-3d" },
   { href: "/customers/", label: "+ Nouvelle cliente", icon: CircleUserRound, key: "customers" },
   { href: "/cash-register/", label: "+ Encaissement", icon: Wallet, key: "cash-register" },
-  { href: "/expenses/", label: "+ Dépense", icon: Receipt, key: "expenses" },
+  { href: "/payments/?vue=depenses", label: "+ Dépense", icon: Receipt, key: "expenses" },
   { href: "/inventory/", label: "+ Produit / Stock", icon: PackagePlus, key: "inventory" },
   { href: "/whatsapp/", label: "Campagne WhatsApp", icon: Megaphone, key: "whatsapp" },
 ] as const;

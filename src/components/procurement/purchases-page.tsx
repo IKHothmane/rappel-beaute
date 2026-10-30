@@ -72,6 +72,7 @@ export function PurchasesPageView() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [supplierOpen, setSupplierOpen] = useState(false);
@@ -202,7 +203,10 @@ export function PurchasesPageView() {
     submit: boolean;
     items: PurchaseItemInput[];
   }) {
-    if (payload.items.some((l) => !l.productId || l.quantityOrdered <= 0)) {
+    if (
+      payload.items.length === 0 ||
+      payload.items.some((l) => (!l.productId && !l.productName?.trim()) || l.quantityOrdered <= 0)
+    ) {
       toast("Ajoutez au moins une ligne produit valide.", "error");
       return;
     }
@@ -235,9 +239,20 @@ export function PurchasesPageView() {
       toast(result.error, "error");
       return;
     }
+    const createdProduct = payload.items.some((line) => !line.productId && line.productName?.trim());
     setDrawerOpen(false);
     setSupplierOpen(false);
     setPickedSupplier(null);
+    toast(
+      createdProduct
+        ? "Commande enregistrée. Le nouveau produit est dans le catalogue."
+        : "Commande enregistrée.",
+      "success",
+    );
+    void refresh();
+    void listProducts({ active: true, limit: 100 })
+      .then((products) => setCatalog(products.data))
+      .catch(() => undefined);
   }
 
   return (
@@ -268,7 +283,15 @@ export function PurchasesPageView() {
         onCreate={() => setDrawerOpen(true)}
         onReceived={() => void refresh()}
         onToast={toast}
-        onOpenFull={() => setDetailOpen(true)}
+        onOpenFull={() => {
+          setEditingPurchaseId(null);
+          setDetailOpen(true);
+        }}
+        onEdit={() => {
+          if (!selected) return;
+          setEditingPurchaseId(selected.id);
+          setDetailOpen(true);
+        }}
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
@@ -482,7 +505,20 @@ export function PurchasesPageView() {
                           </td>
                           <td className="px-4 py-3.5">
                             <div className="flex items-center justify-center gap-1">
-                              {canWrite && canReceiveStatus(p.status) ? (
+                              {canWrite && p.status === "DRAFT" ? (
+                                <button
+                                  type="button"
+                                  className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedId(p.id);
+                                    setEditingPurchaseId(p.id);
+                                    setDetailOpen(true);
+                                  }}
+                                >
+                                  Modifier
+                                </button>
+                              ) : canWrite && canReceiveStatus(p.status) ? (
                                 <button
                                   type="button"
                                   className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white"
@@ -500,6 +536,7 @@ export function PurchasesPageView() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedId(p.id);
+                                    setEditingPurchaseId(null);
                                     setDetailOpen(true);
                                   }}
                                 >
@@ -555,7 +592,14 @@ export function PurchasesPageView() {
                 financeHidden={financeHidden}
                 onReceived={() => void refresh()}
                 onToast={toast}
-                onOpenFull={() => setDetailOpen(true)}
+                onOpenFull={() => {
+                  setEditingPurchaseId(null);
+                  setDetailOpen(true);
+                }}
+                onEdit={() => {
+                  setEditingPurchaseId(selected.id);
+                  setDetailOpen(true);
+                }}
               />
             ) : (
               <div className="rounded-xl bg-white p-8 text-center text-sm text-ink/40 shadow-sm">
@@ -568,15 +612,19 @@ export function PurchasesPageView() {
 
       <Drawer
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        title={selected ? selected.number : "Fiche commande"}
+        onClose={() => {
+          setDetailOpen(false);
+          setEditingPurchaseId(null);
+        }}
+        title={editingPurchaseId && selected?.id === editingPurchaseId ? "Modifier le brouillon" : selected ? selected.number : "Fiche commande"}
         className="max-w-xl"
       >
         {selected ? (
           <PurchaseDetailView
-            key={selected.id}
+            key={`${selected.id}-${editingPurchaseId === selected.id ? "edit" : "read"}`}
             purchaseId={selected.id}
             embedded
+            startInEdit={editingPurchaseId === selected.id}
             onChanged={() => void refresh()}
           />
         ) : null}

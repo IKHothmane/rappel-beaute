@@ -87,7 +87,10 @@ export type LinkProductSupplierInput = {
 };
 
 export type PurchaseItemInput = {
-  productId: string;
+  /** Produit déjà au catalogue. */
+  productId?: string;
+  /** Nom saisi à la commande : créé dans le catalogue s'il n'existe pas. */
+  productName?: string;
   quantityOrdered: number;
   unitPrice: number;
 };
@@ -165,7 +168,8 @@ export type CreatePurchaseInput = {
 };
 
 export type UpdatePurchaseInput = {
-  notes?: string;
+  notes?: string | null;
+  supplierId?: string | null;
   items?: PurchaseItemInput[];
   status?: Extract<PurchaseStatus, "DRAFT" | "ORDERED" | "CANCELLED">;
 };

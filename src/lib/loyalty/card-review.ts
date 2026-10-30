@@ -3,8 +3,10 @@ import { pool } from "@/lib/db/pool";
 import { getOrCreateReviewSettings } from "@/lib/db/reviews";
 import {
   newPublicReviewToken,
+  normalizeReviewComment,
   reviewTokenExpiry,
 } from "@/lib/reviews/public-review";
+import { limitPhoneDigits } from "@/lib/validation/customer";
 
 export type LoyaltyCardReviewInvite = {
   slug: string;
@@ -150,4 +152,138 @@ export async function getLoyaltyCardReviewInvite(
     serviceName: appointment.serviceName,
     alreadySubmitted: false,
   };
+}
+
+export async function submitLoyaltyCardFeedback(input: {
+  cardToken: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  rating: number;
+  comment: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const token = input.cardToken.trim().toUpperCase();
+  if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(token)) {
+    return { ok: false, error: "Carte introuvable." };
+  }
+
+  const firstName = input.firstName.replace(/\s+/g, " ").trim();
+  const lastName = input.lastName.replace(/\s+/g, " ").trim();
+  if (firstName.length < 1 || firstName.length > 80 || lastName.length < 1 || lastName.length > 80) {
+    return { ok: false, error: "Indiquez le prénom et le nom." };
+  }
+
+  const phoneDigits = limitPhoneDigits(input.phone);
+  if (input.phone.trim() && phoneDigits.length < 8) {
+    return { ok: false, error: "Le téléphone doit contenir au moins 8 chiffres." };
+  }
+
+  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
+    return { ok: false, error: "Choisissez une note de 1 à 5." };
+  }
+  const comment = normalizeReviewComment(input.comment);
+  if (comment.length < 8 || comment.length > 800) {
+    return { ok: false, error: "Le commentaire doit contenir entre 8 et 800 caractères." };
+  }
+
+  const card = await pool.query<{ customerId: string; organizationId: string }>(
+    `SELECT lc."customerId", lc."organizationId"
+     FROM "LoyaltyCard" lc
+     JOIN "Organization" o ON o.id = lc."organizationId" AND o.status = 'ACTIVE'
+     JOIN "Customer" c ON c.id = lc."customerId" AND c."deletedAt" IS NULL
+     WHERE lc."publicToken" = $1 AND lc.status = 'ACTIVE'`,
+    [token],
+  );
+  const row = card.rows[0];
+  if (!row) return { ok: false, error: "Carte introuvable." };
+
+  try {
+    await pool.query(
+      `UPDATE "Customer"
+       SET "firstName" = $2,
+           "lastName" = $3,
+           phone = CASE WHEN $4::text IS NULL THEN phone ELSE $4 END,
+           "updatedAt" = NOW()
+       WHERE id = $1 AND "organizationId" = $5 AND "deletedAt" IS NULL`,
+      [row.customerId, firstName, lastName, phoneDigits || null, row.organizationId],
+    );
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error ? String((error as { code: string }).code) : "";
+    if (code === "23505") {
+      return { ok: false, error: "Ce téléphone est déjà utilisé par une autre cliente." };
+    }
+    throw error;
+  }
+
+  const appointment = await pool.query<{ id: string }>(
+    `SELECT a.id
+     FROM "Appointment" a
+     WHERE a."organizationId" = $1
+       AND a."customerId" = $2
+       AND a.status = 'COMPLETED'
+       AND NOT EXISTS (SELECT 1 FROM "Review" r WHERE r."appointmentId" = a.id)
+     ORDER BY a."endAt" DESC
+     LIMIT 1`,
+    [row.organizationId, row.customerId],
+  );
+
+  if (appointment.rows[0]) {
+    try {
+      await pool.query(
+        `INSERT INTO "Review" (
+           id, "organizationId", "customerId", "appointmentId", "reviewRequestId",
+           rating, comment, status, "updatedAt"
+         ) VALUES ($1,$2,$3,$4,NULL,$5,$6,'PENDING',NOW())`,
+        [
+          `prev_${randomBytes(8).toString("hex")}`,
+          row.organizationId,
+          row.customerId,
+          appointment.rows[0].id,
+          input.rating,
+          comment,
+        ],
+      );
+    } catch (error) {
+      const code = typeof error === "object" && error && "code" in error ? String((error as { code: string }).code) : "";
+      if (code === "23505") {
+        return { ok: false, error: "Un avis existe déjà pour ce rendez-vous." };
+      }
+      throw error;
+    }
+    return { ok: true };
+  }
+
+  const existing = await pool.query<{ id: string; status: string }>(
+    `SELECT id, status::text AS status
+     FROM "Review"
+     WHERE "organizationId" = $1 AND "customerId" = $2 AND "appointmentId" IS NULL
+     ORDER BY "createdAt" DESC
+     LIMIT 1`,
+    [row.organizationId, row.customerId],
+  );
+  if (existing.rows[0]?.status === "PENDING") {
+    await pool.query(
+      `UPDATE "Review" SET rating = $2, comment = $3, "updatedAt" = NOW() WHERE id = $1`,
+      [existing.rows[0].id, input.rating, comment],
+    );
+    return { ok: true };
+  }
+  if (existing.rows[0]) {
+    return { ok: false, error: "Un avis a déjà été enregistré pour cette carte." };
+  }
+
+  await pool.query(
+    `INSERT INTO "Review" (
+       id, "organizationId", "customerId", "appointmentId", "reviewRequestId",
+       rating, comment, status, "updatedAt"
+     ) VALUES ($1,$2,$3,NULL,NULL,$4,$5,'PENDING',NOW())`,
+    [
+      `prev_${randomBytes(8).toString("hex")}`,
+      row.organizationId,
+      row.customerId,
+      input.rating,
+      comment,
+    ],
+  );
+  return { ok: true };
 }

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import {
   Camera,
   Clock,
-  Crown,
   ExternalLink,
   Plus,
   Settings,
@@ -14,15 +13,24 @@ import {
 } from "lucide-react";
 import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
 import { loyaltyJoinUrl } from "@/lib/loyalty/public-origin";
-import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
+import { LoyaltyScanPage, type LoyaltyScanPreview } from "@/components/loyalty/loyalty-scan-page";
+import { LoyaltyStampCard } from "@/components/loyalty/loyalty-stamp-card";
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { journalKind, memberInitials } from "@/components/loyalty/loyalty-helpers";
 import { useToast } from "@/components/ui/toast";
 import type { LoyaltyJournalItem, LoyaltyProgramConfig } from "@/types/loyalty";
 
-function phoneLabel(phone: string | null | undefined) {
-  if (!phone || phone.startsWith("WL")) return "Sans téléphone";
-  return phone;
+async function createQrDetector() {
+  const Native = (
+    window as unknown as {
+      BarcodeDetector?: new (opts: { formats: string[] }) => {
+        detect: (source: HTMLVideoElement) => Promise<{ rawValue?: string }[]>;
+      };
+    }
+  ).BarcodeDetector;
+  if (Native) return new Native({ formats: ["qr_code"] });
+  const mod = await import("barcode-detector/ponyfill");
+  return new mod.BarcodeDetector({ formats: ["qr_code"] });
 }
 
 function activityWhen(iso: string) {
@@ -62,14 +70,21 @@ export function LoyaltyBoard({
   const [passageBusy, setPassageBusy] = useState(false);
   const [passageNote, setPassageNote] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [scanNonce, setScanNonce] = useState(0);
+  const [stamp, setStamp] = useState<{ card: LoyaltyScanPreview["card"]; qr: string } | null>(null);
+  const stampReq = useRef(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const onScanRef = useRef<(value: string) => void>(() => {});
   /** Ordre de scan de la session (plus récent en premier) */
   const [scannedIds, setScannedIds] = useState<string[]>([]);
+  onScanRef.current = (value: string) => {
+    setCustomerCode(value);
+    setScanNonce((current) => current + 1);
+    setCameraOn(false);
+  };
 
   const threshold = program?.visitsPerReward && program.visitsPerReward > 0 ? program.visitsPerReward : null;
   const rewardLabel = program?.rewardLabel?.trim() || "";
-  const focused = focusId ? visitCards.find((card) => card.customerId === focusId) ?? null : null;
-  const cycleVisits = focused && threshold ? visitCycle(focused.visits, threshold) : 0;
-  const filled = threshold ? Math.min(threshold, Math.max(0, cycleVisits)) : 0;
 
   function rememberScan(customerId: string) {
     setFocusId(customerId);
@@ -227,45 +242,39 @@ export function LoyaltyBoard({
 
   useEffect(() => {
     if (!cameraOn) return;
-    const Detector = (window as unknown as {
-      BarcodeDetector?: new (opts: { formats: string[] }) => {
-        detect: (source: HTMLVideoElement) => Promise<{ rawValue?: string }[]>;
-      };
-    }).BarcodeDetector;
-    const video = document.getElementById("loyalty-camera") as HTMLVideoElement | null;
-    if (!Detector || !video || !navigator.mediaDevices?.getUserMedia) return;
+    const video = videoRef.current;
+    if (!video || !navigator.mediaDevices?.getUserMedia) return;
     let stopped = false;
     let stream: MediaStream | null = null;
-    void navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment" } })
-      .then(async (next) => {
-        stream = next;
-        video.srcObject = next;
+    void (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (stopped) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        video.srcObject = stream;
         await video.play();
-        const detector = new Detector({ formats: ["qr_code"] });
+        const detector = await createQrDetector();
         const tick = async () => {
           if (stopped) return;
           const codes = await detector.detect(video).catch(() => []);
           const value = codes[0]?.rawValue;
           if (value) {
-            const input = document.getElementById("loyalty-card-code") as HTMLInputElement | null;
-            if (input) {
-              const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-              setter?.call(input, value);
-              input.dispatchEvent(new Event("input", { bubbles: true }));
-            }
             stopped = true;
-            setCameraOn(false);
+            onScanRef.current(value);
             return;
           }
-          requestAnimationFrame(() => void tick());
+          window.requestAnimationFrame(() => void tick());
         };
         void tick();
-      })
-      .catch(() => {
-        setCameraOn(false);
-        toast("Caméra indisponible. Saisissez le code de la carte.", "error");
-      });
+      } catch {
+        if (!stopped) {
+          setCameraOn(false);
+          toast("Caméra indisponible. Saisissez le code de la carte.", "error");
+        }
+      }
+    })();
     return () => {
       stopped = true;
       stream?.getTracks().forEach((track) => track.stop());
@@ -278,13 +287,32 @@ export function LoyaltyBoard({
     if (!code) return;
     setPassageToken(code);
     setCustomerCode(code);
+    setScanNonce((current) => current + 1);
+  }
+
+  async function showClientCard(preview: LoyaltyScanPreview | null) {
+    if (!preview?.card) {
+      stampReq.current += 1;
+      setStamp(null);
+      return;
+    }
+    const request = ++stampReq.current;
+    const qr = await QRCode.toDataURL(preview.token, {
+      margin: 1,
+      width: 280,
+      errorCorrectionLevel: "M",
+    });
+    if (request !== stampReq.current) return;
+    setStamp({ card: preview.card, qr });
+    rememberScan(preview.customerId);
+    setPassageToken(shortCardCode(preview.token));
+    onRefresh();
   }
 
   function startCamera() {
-    const Detector = (window as unknown as { BarcodeDetector?: unknown }).BarcodeDetector;
-    if (!Detector || !navigator.mediaDevices?.getUserMedia) {
+    if (!navigator.mediaDevices?.getUserMedia) {
       document.getElementById("loyalty-card-code")?.focus();
-      toast("Saisissez le code affiché sur la carte.", "info");
+      toast("Caméra indisponible. Saisissez le code de la carte.", "error");
       return;
     }
     setCameraOn(true);
@@ -343,6 +371,31 @@ export function LoyaltyBoard({
         </dl>
       </section>
 
+      <section className="flex items-center gap-3 rounded-2xl border border-[#F3D5E2] bg-white p-3 shadow-sm">
+        {joinImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={joinImage} alt="QR d'adhésion de l'institut" className="h-14 w-14 rounded-lg bg-white" />
+        ) : (
+          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-[#FFF7FA] text-[10px] text-ink/40">
+            {joinBusy ? "…" : "QR"}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-ink">QR d&apos;adhésion</p>
+          <p className="text-[12px] text-ink/55">Pour une nouvelle cliente, distinct du QR personnel.</p>
+        </div>
+        {canWrite ? (
+          <button
+            type="button"
+            disabled={joinBusy}
+            onClick={() => void regenerateJoin()}
+            className="h-9 shrink-0 rounded-full bg-[#FFF1F6] px-3 text-[13px] font-semibold text-primary disabled:opacity-50"
+          >
+            {joinImage ? "Régénérer" : "Générer"}
+          </button>
+        ) : null}
+      </section>
+
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
         <div className="order-1 grid min-w-0 gap-3 lg:order-2">
           <section className="rounded-2xl bg-[#FFF1F6] p-4">
@@ -364,7 +417,14 @@ export function LoyaltyBoard({
               Scanner le QR code
             </button>
             {cameraOn ? (
-              <video id="loyalty-camera" className="mt-3 aspect-video w-full rounded-xl bg-black object-cover" muted playsInline />
+              <video
+                id="loyalty-camera"
+                ref={videoRef}
+                className="mt-3 aspect-video w-full rounded-xl bg-black object-cover"
+                muted
+                playsInline
+                autoPlay
+              />
             ) : null}
           </section>
 
@@ -381,18 +441,11 @@ export function LoyaltyBoard({
             <LoyaltyScanPage
               embedded
               code={customerCode}
+              scanNonce={scanNonce}
+              organizationName={orgName}
               onCodeChange={setCustomerCode}
               onPreview={(preview) => {
-                if (!preview) return;
-                const match =
-                  visitCards.find((card) => card.customerName === preview.customerName) ||
-                  visitCards.find(
-                    (card) =>
-                      card.publicToken?.toUpperCase() === preview.token.toUpperCase() ||
-                      card.cardCode === shortCardCode(preview.token),
-                  );
-                if (match) rememberScan(match.customerId);
-                setPassageToken(shortCardCode(preview.token));
+                void showClientCard(preview);
               }}
               onValidated={() => {
                 onRefresh();
@@ -443,81 +496,36 @@ export function LoyaltyBoard({
           </section>
         </div>
 
-        <article
-          className="relative order-2 min-w-0 overflow-hidden rounded-3xl p-4 text-white shadow-md sm:p-6 lg:order-1"
-          style={{
-            background: program?.cardBackgroundUrl
-              ? `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${program.cardBackgroundUrl}") center / cover no-repeat`
-              : "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)",
-          }}
-        >
-          <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#E8C56B]/10" />
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <Crown className="text-[#E8C56B]" size={22} />
-              <p className="mt-2 break-words font-display text-[18px] uppercase leading-tight tracking-[0.08em] text-[#E8C56B] sm:mt-3 sm:text-[26px] sm:tracking-[0.14em]">
-                {orgName}
+        <div className="order-2 min-w-0 lg:order-1">
+          <div className="mx-auto w-full max-w-md">
+          {stamp ? (
+            <LoyaltyStampCard
+              organizationName={stamp.card.organizationName}
+              firstName={stamp.card.firstName}
+              lastName={stamp.card.lastName}
+              visits={stamp.card.visits}
+              cycle={stamp.card.cycle}
+              visitsPerReward={stamp.card.visitsPerReward}
+              remaining={stamp.card.remaining}
+              rewardLabel={stamp.card.rewardLabel}
+              rewardsAvailable={stamp.card.rewardsAvailable}
+              rewards={stamp.card.rewards}
+              qr={stamp.qr}
+              backgroundUrl={stamp.card.cardBackgroundUrl}
+              appointments={stamp.card.appointments}
+              sessions={stamp.card.sessions}
+            />
+          ) : (
+            <section className="rounded-3xl border border-[#F0DDE7] bg-white p-6 text-center shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9A5273]">Carte cliente</p>
+              <h2 className="mt-2 text-lg font-extrabold text-[#43293A]">Scannez une carte</h2>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-[#806B77]">
+                La carte affichée ici est la même que celle de la cliente : tampons, récompense et QR personnel.
               </p>
-              {program?.name && program.name !== orgName ? (
-                <p className="mt-1 truncate text-[11px] uppercase tracking-[0.16em] text-white/55">{program.name}</p>
-              ) : null}
-            </div>
-            <p className="shrink-0 text-right text-[10px] font-bold uppercase leading-tight tracking-[0.14em] text-white/70">
-              Carte
-              <br />
-              fidélité
-            </p>
+            </section>
+          )}
           </div>
-          <div className="mt-5 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-[13px] text-white/70">Vos passages</p>
-              <p className="mt-1 text-[26px] font-semibold leading-none sm:text-[28px]">
-                {focused && threshold ? `${cycleVisits} / ${threshold}` : "—"}
-              </p>
-              {focused && threshold ? (
-                <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
-                  {Array.from({ length: Math.min(threshold, 12) }, (_, index) => (
-                    <span
-                      key={index}
-                      className={index < Math.min(filled, 12) ? "h-2.5 w-2.5 rounded-full bg-[#E8C56B] sm:h-3.5 sm:w-3.5" : "h-2.5 w-2.5 rounded-full border border-white/40 sm:h-3.5 sm:w-3.5"}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-2 text-[12px] text-white/60">Choisissez une cliente fidèle pour afficher sa carte.</p>
-              )}
-            </div>
-            <div className="flex min-w-0 items-end gap-3">
-              <div className="min-w-0 flex-1 rounded-2xl bg-black/25 px-3 py-2 sm:flex-none">
-                <p className="text-[11px] text-[#E8C56B]">{focused?.promoCode ? "Code promo" : "Prochaine récompense"}</p>
-                <p className="truncate text-sm font-semibold">
-                  {focused?.promoCode ? `${focused.promoCode} · soin offert` : rewardLabel || "—"}
-                </p>
-              </div>
-              <div className="shrink-0 rounded-xl bg-white p-1.5">
-                {joinImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={joinImage} alt="QR fidélité de l'institut" className="h-16 w-16 sm:h-20 sm:w-20" />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center text-center text-[10px] leading-tight text-ink/50 sm:h-20 sm:w-20">
-                    {joinBusy ? "…" : "Aucun QR"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mt-5 flex flex-col gap-3 border-t border-white/15 pt-4 sm:mt-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <p className="truncate text-base font-semibold sm:text-lg">{focused?.customerName || "Aucune cliente sélectionnée"}</p>
-              <p className="truncate text-sm text-white/70">{focused ? phoneLabel(focused.phone) : "Scannez ou choisissez une carte"}</p>
-            </div>
-            {canWrite ? (
-              <button type="button" disabled={joinBusy} onClick={() => void regenerateJoin()} className="shrink-0 self-start text-[12px] font-semibold text-[#E8C56B] sm:self-auto">
-                {joinImage ? "Régénérer le QR" : "Générer le QR"}
-              </button>
-            ) : null}
-          </div>
-        </article>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

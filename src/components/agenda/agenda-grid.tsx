@@ -1,17 +1,19 @@
 "use client";
 
-import {
-  AGENDA_CLOSE_HOUR,
-  AGENDA_OPEN_HOUR,
-  AGENDA_SLOT_HEIGHT_PX,
-  AGENDA_SLOT_MINUTES,
-} from "@/modules/appointments/constants";
+import { useMemo } from "react";
+import { AGENDA_CLOSE_HOUR, AGENDA_OPEN_HOUR } from "@/modules/appointments/constants";
 import type { Appointment } from "@/types/appointment";
 import type { StaffAgendaContext } from "@/types/staff";
 import { LEAVE_TYPE_LABEL } from "@/types/staff";
 import { AppointmentCard } from "@/components/agenda/appointment-card";
-import { staffColor } from "@/components/agenda/staff-colors";
+import { agendaAppointmentSurface, staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
+import {
+  agendaBlockPosition,
+  agendaYToSlot,
+  buildAgendaLayout,
+  type AgendaTimeLayout,
+} from "@/components/agenda/agenda-time-scale";
 import { cn } from "@/lib/utils";
 
 type StaffCol = { id: string; name: string };
@@ -33,14 +35,8 @@ type AgendaGridProps = {
   onEmptySlotClick?: (columnId: string, hour: number, minute: number) => void;
 };
 
-function slotTop(date: Date) {
-  const minutes = (date.getHours() - AGENDA_OPEN_HOUR) * 60 + date.getMinutes();
-  return (minutes / AGENDA_SLOT_MINUTES) * AGENDA_SLOT_HEIGHT_PX;
-}
-
-function slotHeight(start: Date, end: Date) {
-  const mins = (end.getTime() - start.getTime()) / 60_000;
-  return Math.max((mins / AGENDA_SLOT_MINUTES) * AGENDA_SLOT_HEIGHT_PX - 4, 40);
+function blockStyle(layout: AgendaTimeLayout, start: Date, end: Date) {
+  return agendaBlockPosition(layout, start, end, 40);
 }
 
 export function AgendaGrid({
@@ -54,17 +50,17 @@ export function AgendaGrid({
   onEmptySlotClick,
 }: AgendaGridProps) {
   const palette = useStaffPalette();
-  const slots = Array.from(
-    { length: ((AGENDA_CLOSE_HOUR - AGENDA_OPEN_HOUR) * 60) / AGENDA_SLOT_MINUTES },
-    (_, i) => {
-      const totalMin = AGENDA_OPEN_HOUR * 60 + i * AGENDA_SLOT_MINUTES;
-      const h = Math.floor(totalMin / 60);
-      const m = totalMin % 60;
-      return { h, m, label: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` };
-    },
+  const layout = useMemo(
+    () =>
+      buildAgendaLayout(
+        appointments.map((appointment) => ({
+          start: new Date(appointment.startAt),
+          end: new Date(appointment.endAt),
+        })),
+      ),
+    [appointments],
   );
-
-  const totalHeight = slots.length * AGENDA_SLOT_HEIGHT_PX;
+  const { rows, totalHeight } = layout;
 
   return (
     <div className="hidden overflow-hidden rounded-xl bg-white shadow-soft md:block">
@@ -102,15 +98,29 @@ export function AgendaGrid({
           >
             {/* Time labels + grid lines */}
             <div className="relative border-r border-line">
-              {slots.map((slot, i) => (
-                <div
-                  key={slot.label}
-                  className="absolute left-0 right-0 border-t border-line/70 px-2 font-mono text-[10px] text-ink/40"
-                  style={{ top: i * AGENDA_SLOT_HEIGHT_PX, height: AGENDA_SLOT_HEIGHT_PX }}
-                >
-                  <span className="relative -top-2 bg-white px-1">{slot.label}</span>
-                </div>
-              ))}
+              {rows.map((row) =>
+                row.kind === "gap" ? (
+                  <div
+                    key={`gap-${row.startIndex}`}
+                    className="absolute left-0 right-0 flex items-center justify-center border-y border-dashed border-line bg-[#FBF4F6] px-0.5"
+                    style={{ top: row.top, height: row.height }}
+                  >
+                    <span className="text-center font-mono text-[9px] leading-tight text-ink/45">
+                      {row.start.label}
+                      <br />
+                      {row.endLabel}
+                    </span>
+                  </div>
+                ) : (
+                  <div
+                    key={row.slot.label}
+                    className="absolute left-0 right-0 border-t border-line/70 px-2 font-mono text-[10px] text-ink/40"
+                    style={{ top: row.top, height: row.height }}
+                  >
+                    <span className="relative -top-2 bg-white px-1">{row.slot.label}</span>
+                  </div>
+                ),
+              )}
             </div>
 
             {staff.map((col) => {
@@ -132,21 +142,39 @@ export function AgendaGrid({
                     const aptId = e.dataTransfer.getData("appointmentId");
                     const rect = e.currentTarget.getBoundingClientRect();
                     const y = e.clientY - rect.top;
-                    const slotIdx = Math.floor(y / AGENDA_SLOT_HEIGHT_PX);
-                    const slot = slots[slotIdx];
-                    if (slot && aptId) onSlotDrop?.(col.id, slot.h, slot.m, aptId);
+                    const slot = agendaYToSlot(layout, y);
+                    if (aptId) onSlotDrop?.(col.id, slot.h, slot.m, aptId);
                   }}
                 >
-                  {slots.map((slot, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      aria-label={`Créneau ${slot.label} ${col.name}`}
-                      className="absolute left-0 right-0 border-t border-line/50 hover:bg-primary/[0.04]"
-                      style={{ top: i * AGENDA_SLOT_HEIGHT_PX, height: AGENDA_SLOT_HEIGHT_PX }}
-                      onClick={() => onEmptySlotClick?.(col.id, slot.h, slot.m)}
-                    />
-                  ))}
+                  {rows.map((row) =>
+                    row.kind === "gap" ? (
+                      <button
+                        key={`gap-${row.startIndex}`}
+                        type="button"
+                        aria-label={`Heures libres ${row.label} ${col.name}`}
+                        title={`Libre ${row.label}`}
+                        className="absolute left-0 right-0 border-y border-dashed border-line/70 bg-[#FBF4F6]/90 hover:bg-primary/[0.05]"
+                        style={{ top: row.top, height: row.height }}
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const slot = agendaYToSlot(layout, row.top + (e.clientY - rect.top));
+                          onEmptySlotClick?.(col.id, slot.h, slot.m);
+                        }}
+                      />
+                    ) : (
+                      <button
+                        key={row.slot.label}
+                        type="button"
+                        aria-label={`Créneau ${row.slot.label} ${col.name}`}
+                        className={cn(
+                          "absolute left-0 right-0 border-t border-line/50 hover:bg-primary/[0.04]",
+                          row.empty && "bg-[#FBF4F6]/35",
+                        )}
+                        style={{ top: row.top, height: row.height }}
+                        onClick={() => onEmptySlotClick?.(col.id, row.slot.h, row.slot.m)}
+                      />
+                    ),
+                  )}
 
                   {/* Congés / absences approuvés (Staff réel) */}
                   {columnMode === "staff"
@@ -174,10 +202,7 @@ export function AgendaGrid({
                             <div
                               key={leave.id}
                               className="absolute inset-x-1 z-[2] rounded-lg border border-dashed border-amber-300 bg-amber-50/80 px-2 py-1 text-[10px] font-medium text-amber-800"
-                              style={{
-                                top: slotTop(clipStart) + 2,
-                                height: slotHeight(clipStart, clipEnd),
-                              }}
+                              style={blockStyle(layout, clipStart, clipEnd)}
                             >
                               {LEAVE_TYPE_LABEL[leave.type] ?? "Absence"}
                             </div>
@@ -192,10 +217,7 @@ export function AgendaGrid({
                       <div
                         key={apt.id}
                         className="absolute inset-x-1 z-10"
-                        style={{
-                          top: slotTop(start) + 2,
-                          height: slotHeight(start, end),
-                        }}
+                        style={blockStyle(layout, start, end)}
                       >
                         <AppointmentCard
                           appointment={apt}
@@ -272,6 +294,7 @@ export function AgendaMonthGrid({
   appointments: Appointment[];
   onSelectDay: (d: Date) => void;
 }) {
+  const palette = useStaffPalette();
   return (
     <div className="hidden rounded-xl bg-white p-4 shadow-soft md:block">
       <h2 className="mb-3 text-sm font-bold text-ink">
@@ -289,30 +312,51 @@ export function AgendaMonthGrid({
       <div className="grid grid-cols-7 gap-1">
         {dates.map((d) => {
           const inMonth = d.getMonth() === anchor.getMonth();
-          const count = appointments.filter((a) => {
+          const dayAppts = appointments.filter((a) => {
             const s = new Date(a.startAt);
             return (
               s.getFullYear() === d.getFullYear() &&
               s.getMonth() === d.getMonth() &&
               s.getDate() === d.getDate()
             );
-          }).length;
+          });
+          const count = dayAppts.length;
           return (
             <button
               key={d.toISOString()}
               type="button"
               onClick={() => onSelectDay(d)}
               className={cn(
-                "min-h-[72px] rounded-lg border p-2 text-left transition hover:border-primary/40",
+                "min-h-[88px] rounded-lg border p-2 text-left transition hover:border-primary/40",
                 inMonth ? "border-line bg-white" : "border-transparent bg-[#FBF4F6]/50 text-ink/35",
               )}
             >
               <span className="font-mono text-sm font-semibold">{d.getDate()}</span>
-              {count > 0 ? (
-                <span className="mt-1 block rounded-full bg-primary-light px-1.5 py-0.5 text-center text-[10px] font-semibold text-primary">
-                  {count}
-                </span>
-              ) : null}
+              <span className="mt-1 flex flex-col gap-0.5">
+                {dayAppts.slice(0, 3).map((apt) => {
+                  const muted = apt.status === "CANCELLED" || apt.status === "NO_SHOW";
+                  const surface = agendaAppointmentSurface(staffColor(apt.staffId, palette), muted);
+                  const time = new Date(apt.startAt).toLocaleTimeString("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                  return (
+                    <span
+                      key={apt.id}
+                      className={cn(
+                        "truncate rounded px-1 py-0.5 text-[10px] font-semibold text-ink",
+                        surface.fill,
+                        muted && "line-through",
+                      )}
+                    >
+                      {time} {apt.customerName.trim() || "Cliente"}
+                    </span>
+                  );
+                })}
+                {count > 3 ? (
+                  <span className="text-[10px] font-semibold text-ink/45">+{count - 3}</span>
+                ) : null}
+              </span>
             </button>
           );
         })}

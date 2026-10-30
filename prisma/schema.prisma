@@ -2418,8 +2418,8 @@ model Review {
   id               String             @id @default(cuid())
   organizationId   String
   customerId       String
-  appointmentId    String             @unique
-  reviewRequestId  String             @unique
+  appointmentId    String?            @unique
+  reviewRequestId  String?            @unique
   rating           Int
   comment          String
   status           PublicReviewStatus @default(PENDING)
@@ -2433,8 +2433,8 @@ model Review {
 
   organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  appointment   Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  reviewRequest ReviewRequest @relation(fields: [reviewRequestId], references: [id], onDelete: Cascade)
+  appointment   Appointment?   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  reviewRequest ReviewRequest? @relation(fields: [reviewRequestId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, status])
   @@index([organizationId, createdAt])

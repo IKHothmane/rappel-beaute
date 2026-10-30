@@ -6,7 +6,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=()",
+    value: "camera=(self), microphone=(), geolocation=(), payment=()",
   },
   ...(isProd
     ? [
@@ -94,6 +94,7 @@ const nextConfig = {
     ];
   },
   webpack: (config) => {
+    config.experiments = { ...config.experiments, asyncWebAssembly: true };
     const ignored = [
       "**/node_modules/**",
       "**/waiting-list/**",

@@ -40,6 +40,7 @@
   "dependencies": {
     "@prisma/client": "^7.10.0",
     "agent-base": "^7.1.4",
+    "barcode-detector": "^3.2.3",
     "bullmq": "^5.81.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

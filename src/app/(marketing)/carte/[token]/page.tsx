@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
-import { CustomerPushPanel } from "@/components/loyalty/customer-push-panel";
+import { LoyaltyCardFeedback } from "@/components/loyalty/loyalty-card-feedback";
 import { LoyaltyStampCard } from "@/components/loyalty/loyalty-stamp-card";
-import { WalletInstall } from "@/components/loyalty/wallet-install";
-import { PublicReviewForm } from "@/components/reviews/public-review-form";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
-import { getLoyaltyCardReviewInvite } from "@/lib/loyalty/card-review";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +29,6 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
   if (!card) notFound();
 
   const token = params.token.trim().toUpperCase();
-  const reviewInvite = await getLoyaltyCardReviewInvite(token);
   // QR personnel : jeton seul (RBLOY_…) pour le scan institut — jamais d'URL localhost.
   // Le parcours Wallet reste sur /carte/[token]/google/ via le bouton d'installation.
   const qr = await QRCode.toDataURL(token, {
@@ -61,37 +57,13 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
           sessions={card.sessions}
         />
 
-        {reviewInvite ? (
-          <section className="rounded-2xl border border-[#F0DDE7] bg-white p-4 sm:p-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9A5273]">
-              Votre avis
-            </p>
-            <h2 className="mt-1 text-lg font-extrabold text-[#43293A]">
-              Comment s’est passé votre passage ?
-            </h2>
-            <p className="mt-1 text-sm text-[#806B77]">
-              Merci {reviewInvite.firstName} — votre retour aide {reviewInvite.organizationName}.
-            </p>
-            <PublicReviewForm
-              slug={reviewInvite.slug}
-              token={reviewInvite.token}
-              organizationName={reviewInvite.organizationName}
-              firstName={reviewInvite.firstName}
-              serviceName={reviewInvite.serviceName}
-              alreadySubmitted={reviewInvite.alreadySubmitted}
-              embedded
-            />
-          </section>
-        ) : null}
-
-        <section className="rounded-2xl border border-[#F0DDE7] bg-white p-4 sm:p-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9A5273]">Garder ma carte</p>
-          <h2 className="mt-1 text-lg font-extrabold text-[#43293A]">Ajouter à mon téléphone</h2>
-          <p className="mt-1 text-sm text-[#806B77]">Retrouvez votre carte dans votre portefeuille mobile. Votre progression se mettra à jour avec les passages validés par l’institut.</p>
-          <WalletInstall token={token} />
-        </section>
-
-        <CustomerPushPanel token={token} />
+        <LoyaltyCardFeedback
+          token={token}
+          organizationName={card.organizationName}
+          firstName={card.firstName}
+          lastName={card.lastName}
+          phone={card.phone}
+        />
 
         <section>
           <h2 className="px-1 text-xl font-extrabold text-[#43293A]">Historique des passages</h2>

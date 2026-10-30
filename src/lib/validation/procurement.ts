@@ -106,11 +106,18 @@ function parseItems(raw: unknown): CreatePurchaseInput["items"] | null {
     if (!row || typeof row !== "object") return null;
     const r = row as Record<string, unknown>;
     const productId = str(r.productId);
+    const productName = str(r.productName);
     const quantityOrdered = num(r.quantityOrdered);
     const unitPrice = num(r.unitPrice);
-    if (!productId || quantityOrdered === undefined || quantityOrdered <= 0) return null;
+    if ((!productId && !productName) || quantityOrdered === undefined || quantityOrdered <= 0) return null;
+    if (productName && productName.length > 120) return null;
     if (unitPrice === undefined || unitPrice < 0) return null;
-    items.push({ productId, quantityOrdered, unitPrice });
+    items.push({
+      productId,
+      productName: productId ? undefined : productName,
+      quantityOrdered: Math.round(quantityOrdered),
+      unitPrice: Math.round(unitPrice),
+    });
   }
   return items;
 }
@@ -138,7 +145,8 @@ export function validateUpdatePurchase(
   raw: Record<string, unknown>,
 ): { ok: true; data: UpdatePurchaseInput } | { ok: false; errors: string[] } {
   const data: UpdatePurchaseInput = {};
-  if (raw.notes !== undefined) data.notes = str(raw.notes);
+  if ("notes" in raw) data.notes = str(raw.notes) ?? null;
+  if ("supplierId" in raw) data.supplierId = str(raw.supplierId) ?? null;
   if (raw.items !== undefined) {
     const items = parseItems(raw.items);
     if (!items) return { ok: false, errors: ["items"] };

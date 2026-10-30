@@ -26,7 +26,11 @@ export type ScanReward = {
 
 export type ScanPreview = {
   token: string;
+  customerId: string;
   customerName: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
   appointmentId: string | null;
   serviceName: string | null;
   amount: number | null;
@@ -34,6 +38,21 @@ export type ScanPreview = {
   visitsPerReward: number;
   rewardLabel: string;
   rewards: ScanReward[];
+  card: {
+    organizationName: string;
+    firstName: string;
+    lastName: string;
+    visits: number;
+    cycle: number;
+    visitsPerReward: number;
+    remaining: number;
+    rewardLabel: string;
+    rewardsAvailable: number;
+    rewards: ScanReward[];
+    appointments: { at: string; service: string; staff: string }[];
+    sessions: { name: string; used: number; total: number; remaining: number }[];
+    cardBackgroundUrl: string | null;
+  };
 };
 
 type VisitInsert = {
@@ -240,8 +259,9 @@ export async function previewLoyaltyScan(
     customerId: string;
     firstName: string;
     lastName: string;
+    phone: string | null;
   }>(
-    `SELECT lc.id, lc."customerId", c."firstName", c."lastName"
+    `SELECT lc.id, lc."customerId", c."firstName", c."lastName", c.phone
      FROM "LoyaltyCard" lc
      JOIN "Customer" c ON c.id = lc."customerId"
      WHERE lc."publicToken" = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'`,
@@ -279,7 +299,11 @@ export async function previewLoyaltyScan(
 
   return {
     token,
+    customerId: card.rows[0].customerId,
     customerName: `${card.rows[0].firstName} ${card.rows[0].lastName}`.trim(),
+    firstName: card.rows[0].firstName,
+    lastName: card.rows[0].lastName,
+    phone: card.rows[0].phone,
     appointmentId: next?.id ?? null,
     serviceName: next?.serviceName ?? null,
     amount: next ? Number(next.amount) : null,
@@ -287,6 +311,21 @@ export async function previewLoyaltyScan(
     visitsPerReward: program.visitsPerReward,
     rewardLabel: program.rewardLabel,
     rewards: progress.rewards.filter((reward) => reward.status === "AVAILABLE"),
+    card: {
+      organizationName: progress.organizationName,
+      firstName: progress.firstName,
+      lastName: progress.lastName,
+      visits: progress.visits,
+      cycle: progress.cycle,
+      visitsPerReward: progress.visitsPerReward,
+      remaining: progress.remaining,
+      rewardLabel: progress.rewardLabel,
+      rewardsAvailable: progress.rewardsAvailable,
+      rewards: progress.rewards,
+      appointments: progress.appointments,
+      sessions: progress.sessions,
+      cardBackgroundUrl: progress.cardBackgroundUrl,
+    },
   };
 }
 

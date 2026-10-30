@@ -4,21 +4,26 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { canReceiveStatus, formatPurchaseDate, purchaseStatusChip } from "@/components/procurement/purchase-helpers";
+import { PurchaseForm } from "@/components/procurement/purchase-form";
+import { SupplierForm } from "@/components/procurement/supplier-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { canWriteStock } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
-import { formatQty } from "@/modules/inventory/service";
+import { formatQty, listProducts } from "@/modules/inventory/service";
 import {
+  createSupplier,
   formatMad,
   getPurchase,
+  listSuppliers,
   newIdempotencyKey,
   PURCHASE_STATUS_LABEL,
   receivePurchase,
   updatePurchase,
 } from "@/modules/procurement/service";
-import type { PurchaseDetail } from "@/types/procurement";
+import type { ProductListItem } from "@/types/inventory";
+import type { CreateSupplierInput, PurchaseDetail, PurchaseItemInput, SupplierListItem } from "@/types/procurement";
 
 type RecvDraft = Record<string, { quantity: string; lotNumber: string; expiresAt: string }>;
 
@@ -26,10 +31,12 @@ export function PurchaseDetailView({
   purchaseId,
   embedded,
   onChanged,
+  startInEdit,
 }: {
   purchaseId: string;
   embedded?: boolean;
   onChanged?: () => void;
+  startInEdit?: boolean;
 }) {
   const { toast } = useToast();
   const user = useCurrentUser();
@@ -40,6 +47,12 @@ export function PurchaseDetailView({
   const [purchase, setPurchase] = useState<PurchaseDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [recv, setRecv] = useState<RecvDraft>({});
+  const [editing, setEditing] = useState(Boolean(startInEdit));
+  const [catalog, setCatalog] = useState<ProductListItem[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierListItem[]>([]);
+  const [supplierOpen, setSupplierOpen] = useState(false);
+  const [supplierPrefill, setSupplierPrefill] = useState("");
+  const [pickedSupplier, setPickedSupplier] = useState<{ id: string; name: string; token: number } | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -65,6 +78,25 @@ export function PurchaseDetailView({
     refresh().finally(() => setLoading(false));
   }, [refresh]);
 
+  useEffect(() => {
+    if (startInEdit) setEditing(true);
+  }, [startInEdit]);
+
+  useEffect(() => {
+    if (!editing) return;
+    let cancelled = false;
+    Promise.all([listSuppliers({ active: true, limit: 100 }), listProducts({ active: true, limit: 100 })])
+      .then(([supplierRes, productRes]) => {
+        if (cancelled) return;
+        setSuppliers(supplierRes.data);
+        setCatalog(productRes.data);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [editing]);
+
   if (loading) {
     return <div className="rounded-xl bg-white p-8 text-center text-sm text-ink/50 shadow-sm">Chargement…</div>;
   }
@@ -81,6 +113,91 @@ export function PurchaseDetailView({
   const canReceive = canWrite && canReceiveStatus(purchase.status);
   const canOrder = canWrite && purchase.status === "DRAFT";
   const canCancel = canWrite && (purchase.status === "DRAFT" || purchase.status === "ORDERED");
+
+  async function handleSave(payload: {
+    supplierId?: string;
+    supplierName?: string;
+    notes?: string;
+    submit: boolean;
+    items: PurchaseItemInput[];
+  }) {
+    if (
+      payload.items.length === 0 ||
+      payload.items.some((line) => (!line.productId && !line.productName?.trim()) || line.quantityOrdered <= 0)
+    ) {
+      toast("Ajoutez au moins une ligne produit valide.", "error");
+      return;
+    }
+    setSubmitting(true);
+    let nextSupplierId = payload.supplierId;
+    const typedName = payload.supplierName?.trim() ?? "";
+    if (!nextSupplierId && typedName) {
+      const existing = suppliers.find((row) => row.name.trim().toLowerCase() === typedName.toLowerCase());
+      if (existing) {
+        nextSupplierId = existing.id;
+      } else {
+        const created = await createSupplier({ name: typedName, active: true });
+        if (!created.ok) {
+          setSubmitting(false);
+          toast(created.error, "error");
+          return;
+        }
+        setSuppliers((current) => [...current, created.supplier]);
+        setPickedSupplier({ id: created.supplier.id, name: created.supplier.name, token: Date.now() });
+        nextSupplierId = created.supplier.id;
+      }
+    }
+    const result = await updatePurchase(purchaseId, {
+      supplierId: nextSupplierId ?? null,
+      notes: payload.notes ?? "",
+      items: payload.items,
+      status: payload.submit ? "ORDERED" : undefined,
+    });
+    setSubmitting(false);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    const createdProduct = payload.items.some((line) => !line.productId && line.productName?.trim());
+    toast(
+      payload.submit
+        ? "Commande envoyée."
+        : createdProduct
+          ? "Brouillon mis à jour. Le nouveau produit est dans le catalogue."
+          : "Brouillon mis à jour.",
+      "success",
+    );
+    setEditing(false);
+    setSupplierOpen(false);
+    onChanged?.();
+    refresh();
+  }
+
+  async function handleCreateSupplier(data: CreateSupplierInput) {
+    const name = data.name.trim();
+    if (!name) {
+      toast("Le nom du fournisseur est obligatoire.", "error");
+      return;
+    }
+    const existing = suppliers.find((row) => row.name.trim().toLowerCase() === name.toLowerCase());
+    if (existing) {
+      setPickedSupplier({ id: existing.id, name: existing.name, token: Date.now() });
+      setSupplierOpen(false);
+      toast("Ce fournisseur est déjà dans la liste.", "info");
+      return;
+    }
+    setSubmitting(true);
+    const result = await createSupplier({ ...data, name, active: data.active ?? true });
+    setSubmitting(false);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    setSuppliers((current) => [...current, result.supplier]);
+    setPickedSupplier({ id: result.supplier.id, name: result.supplier.name, token: Date.now() });
+    setSupplierOpen(false);
+    toast("Fournisseur ajouté.", "success");
+  }
 
   async function handleOrder() {
     setSubmitting(true);
@@ -169,12 +286,17 @@ export function PurchaseDetailView({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {canOrder ? (
-            <Button type="button" variant="primary" disabled={submitting} onClick={handleOrder}>
+          {canOrder && !editing ? (
+            <Button type="button" variant="primary" disabled={submitting} onClick={() => setEditing(true)}>
+              Modifier
+            </Button>
+          ) : null}
+          {canOrder && !editing ? (
+            <Button type="button" variant="ghost" disabled={submitting} onClick={handleOrder}>
               Envoyer la commande
             </Button>
           ) : null}
-          {canCancel ? (
+          {canCancel && !editing ? (
             <Button type="button" variant="ghost" disabled={submitting} onClick={handleCancel}>
               Annuler
             </Button>
@@ -182,6 +304,53 @@ export function PurchaseDetailView({
         </div>
       </div>
 
+      {editing && purchase.status === "DRAFT" ? (
+        <div className="rounded-xl bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold text-ink">
+            {supplierOpen ? "Nouveau fournisseur" : "Modifier le brouillon"}
+          </h2>
+          <div className={supplierOpen ? "hidden" : undefined}>
+            <PurchaseForm
+              key={`${purchase.id}-${purchase.updatedAt}`}
+              suppliers={suppliers}
+              catalog={catalog}
+              submitting={submitting}
+              initial={{
+                supplierId: purchase.supplierId,
+                supplierName: purchase.supplierName,
+                notes: purchase.notes,
+                items: purchase.items.map((item) => ({
+                  productId: item.productId,
+                  productName: item.productName,
+                  quantityOrdered: item.quantityOrdered,
+                  unitPrice: item.unitPrice,
+                })),
+              }}
+              pickedSupplier={pickedSupplier}
+              onAddSupplier={(name) => {
+                setSupplierPrefill(name);
+                setSupplierOpen(true);
+              }}
+              onSubmit={(payload) => void handleSave(payload)}
+              onCancel={() => {
+                setSupplierOpen(false);
+                setEditing(false);
+              }}
+            />
+          </div>
+          {supplierOpen ? (
+            <SupplierForm
+              key={supplierPrefill}
+              initial={{ name: supplierPrefill }}
+              submitting={submitting}
+              onSubmit={(data) => void handleCreateSupplier(data)}
+              onCancel={() => setSupplierOpen(false)}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {editing ? null : (
       <div className="overflow-hidden rounded-xl bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
@@ -214,8 +383,9 @@ export function PurchaseDetailView({
           </table>
         </div>
       </div>
+      )}
 
-      {canReceive ? (
+      {canReceive && !editing ? (
         <div className="space-y-4 rounded-xl bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">Réception</h2>
           <p className="text-sm text-ink/55">

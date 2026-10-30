@@ -28,7 +28,7 @@ import { getAvailableSlots, getWeekDates } from "@/modules/appointments/availabi
 import { formatMad } from "@/modules/analytics/service";
 import { getCustomer } from "@/modules/customers/service";
 import { listWaitingList } from "@/modules/waiting-list/service";
-import { staffColor } from "@/components/agenda/staff-colors";
+import { agendaAppointmentSurface, staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { AppointmentPayBadge } from "@/components/agenda/appointment-pay-badge";
 import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
@@ -507,6 +507,9 @@ function MobileAptRow({
 }) {
   const user = useCurrentUser();
   const palette = useStaffPalette();
+  const color = staffColor(apt.staffId, palette);
+  const muted = apt.status === "CANCELLED" || apt.status === "NO_SHOW";
+  const surface = agendaAppointmentSurface(color, muted);
   const tone = statusTone(apt);
   const phone = customer?.phone?.trim() || "";
   const noShows = customer?.noShowCount ?? 0;
@@ -538,14 +541,17 @@ function MobileAptRow({
       </div>
       <div
         className={cn(
-          "flex flex-1 flex-col gap-2 rounded-xl bg-white p-3 shadow-sm",
+          "relative flex flex-1 flex-col gap-2 overflow-hidden rounded-xl border p-3 pl-4 shadow-sm",
+          surface.fill,
+          surface.border,
           expanded && "ring-2 ring-primary/20 shadow-md",
         )}
       >
+        <span className={cn("absolute inset-y-0 left-0 w-1.5", surface.bar)} />
         <button type="button" className="flex items-start justify-between gap-2 text-left" onClick={onToggle}>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[18px] font-bold leading-6 text-ink">
+              <span className={cn("text-[18px] font-bold leading-6 text-ink", muted && "line-through")}>
                 {apt.customerName.trim() || "Cliente"}
               </span>
               {vip ? (

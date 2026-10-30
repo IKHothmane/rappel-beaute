@@ -7,7 +7,7 @@ import {
   APPOINTMENT_STATUS_STYLE,
 } from "@/modules/appointments/constants";
 import { cn } from "@/lib/utils";
-import { staffColor } from "@/components/agenda/staff-colors";
+import { agendaAppointmentSurface, staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 
 type AppointmentCardProps = {
@@ -29,6 +29,8 @@ export function AppointmentCard({
 }: AppointmentCardProps) {
   const palette = useStaffPalette();
   const color = staffColor(appointment.staffId, palette);
+  const muted = appointment.status === "CANCELLED" || appointment.status === "NO_SHOW";
+  const surface = agendaAppointmentSurface(color, muted);
   const s = APPOINTMENT_STATUS_STYLE[appointment.status];
   const start = new Date(appointment.startAt);
   const end = new Date(appointment.endAt);
@@ -48,17 +50,18 @@ export function AppointmentCard({
       }}
       style={style}
       className={cn(
-        "group w-full rounded-xl border p-2.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
-        s.bg,
-        s.border,
+        "group relative w-full overflow-hidden rounded-xl border p-2.5 pl-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+        surface.fill,
+        surface.border,
         draggable && "cursor-grab active:cursor-grabbing",
         className,
       )}
     >
+      <span className={cn("absolute inset-y-0 left-0 w-1.5", surface.bar)} />
       {!compact ? (
         <p className="font-mono text-[10px] font-semibold text-ink/45">{timeLabel}</p>
       ) : null}
-      <p className={cn("mt-0.5 truncate text-sm font-semibold", s.text)}>
+      <p className={cn("mt-0.5 truncate text-sm font-semibold text-ink", muted && "line-through")}>
         {appointment.serviceName}
       </p>
       <p className="truncate text-xs text-ink/60">{appointment.customerName}</p>

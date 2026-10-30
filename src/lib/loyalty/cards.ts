@@ -239,6 +239,7 @@ export type CardProgress = {
   organizationLogoUrl: string | null;
   firstName: string;
   lastName: string;
+  phone: string | null;
   visits: number;
   visitsPerReward: number;
   cycle: number;
@@ -271,8 +272,9 @@ export async function loadCardProgress(
     organizationLogoUrl: string | null;
     firstName: string;
     lastName: string;
+    phone: string | null;
   }>(
-    `SELECT o.name AS "organizationName", o."logoUrl" AS "organizationLogoUrl", c."firstName", c."lastName"
+    `SELECT o.name AS "organizationName", o."logoUrl" AS "organizationLogoUrl", c."firstName", c."lastName", c.phone
      FROM "LoyaltyCard" lc
      JOIN "Organization" o ON o.id = lc."organizationId"
      JOIN "Customer" c ON c.id = lc."customerId"
@@ -365,6 +367,7 @@ export async function loadCardProgress(
     organizationLogoUrl: card.rows[0].organizationLogoUrl,
     firstName: card.rows[0].firstName,
     lastName: card.rows[0].lastName,
+    phone: card.rows[0].phone,
     visits,
     visitsPerReward: threshold,
     cycle,

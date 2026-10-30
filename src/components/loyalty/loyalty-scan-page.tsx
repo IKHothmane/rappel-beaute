@@ -1,18 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { shortCardCode } from "@/lib/loyalty/card-code";
+import { LoyaltyCardFeedback } from "@/components/loyalty/loyalty-card-feedback";
 
-type Preview = {
+export type LoyaltyScanPreview = {
   token: string;
+  customerId: string;
   customerName: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
   appointmentId: string | null;
   serviceName: string | null;
   amount: number | null;
   visits: number;
   visitsPerReward: number;
   rewardLabel: string;
+  card: {
+    organizationName: string;
+    firstName: string;
+    lastName: string;
+    visits: number;
+    cycle: number;
+    visitsPerReward: number;
+    remaining: number;
+    rewardLabel: string;
+    rewardsAvailable: number;
+    rewards: {
+      id: string;
+      name: string;
+      status: string;
+      earnedAt: string;
+      expiresAt: string | null;
+      value: number | null;
+    }[];
+    appointments: { at: string; service: string; staff: string }[];
+    sessions: { name: string; used: number; total: number; remaining: number }[];
+    cardBackgroundUrl: string | null;
+  };
 };
+
+type Preview = LoyaltyScanPreview;
 
 function money(amount: number) {
   return `${amount.toLocaleString("fr-FR")} DH`;
@@ -28,12 +57,17 @@ function extractToken(value: string) {
 export function LoyaltyScanPage({
   embedded = false,
   code,
+  scanNonce = 0,
+  organizationName = "",
   onCodeChange,
   onPreview,
   onValidated,
 }: {
   embedded?: boolean;
   code?: string;
+  /** Incrémenté par le scan caméra pour lancer la recherche avec le code lu. */
+  scanNonce?: number;
+  organizationName?: string;
   onCodeChange?: (value: string) => void;
   onPreview?: (preview: Preview | null) => void;
   onValidated?: () => void;
@@ -49,11 +83,18 @@ export function LoyaltyScanPage({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function scan() {
+  useEffect(() => {
+    if (!scanNonce) return;
+    void scan();
+    // Le nonce et le code arrivent dans le même rendu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanNonce]);
+
+  async function scan(options?: { keepDone?: boolean }) {
     const next = extractToken(token);
     setBusy(true);
     setError(null);
-    setDone(null);
+    if (!options?.keepDone) setDone(null);
     setPreview(null);
     if (!next) {
       setError("Entrez le code scanné de la cliente.");
@@ -100,13 +141,11 @@ export function LoyaltyScanPage({
         customerName?: string;
       };
       if (!res.ok) throw new Error(body.error || "Validation impossible.");
-      setDone(
-        `Passage validé. ${body.customerName} · ${body.serviceName} · ${money(body.amount ?? 0)}. Total : ${body.visits} passages.`,
-      );
-      setPreview(null);
-      onPreview?.(null);
+      const message = `Passage validé. ${body.customerName} · ${body.serviceName} · ${money(body.amount ?? 0)}. Total : ${body.visits} passages.`;
+      setDone(message);
       onValidated?.();
-      setToken("");
+      await scan({ keepDone: true });
+      setDone(message);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Validation impossible.");
     } finally {
@@ -142,6 +181,9 @@ export function LoyaltyScanPage({
       {preview ? (
         <div className="mt-3 rounded-xl border border-line p-3 text-sm">
           <p className="font-semibold text-ink">{preview.customerName}</p>
+          {preview.phone && !preview.phone.startsWith("WL") ? (
+            <p className="mt-1 text-ink/70">{preview.phone}</p>
+          ) : null}
           <p className="mt-1 text-ink/70">
             {preview.visits} passages · {preview.rewardLabel} à {preview.visitsPerReward}
           </p>
@@ -174,6 +216,18 @@ export function LoyaltyScanPage({
               </button>
             ) : null}
           </div>
+          <LoyaltyCardFeedback
+            key={preview.token}
+            token={preview.token}
+            organizationName={organizationName}
+            firstName={preview.firstName}
+            lastName={preview.lastName}
+            phone={preview.phone}
+            onSaved={() => {
+              onValidated?.();
+              void scan({ keepDone: true });
+            }}
+          />
         </div>
       ) : null}
       {done ? <p className="mt-3 text-sm font-semibold text-ink">{done}</p> : null}

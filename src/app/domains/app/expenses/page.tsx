@@ -1,11 +1,6 @@
-import type { Metadata } from "next";
-import { ExpensesPageView } from "@/components/expenses/expenses-page";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Dépenses" };
-
-/** Page registre des dépenses (contrôle budgétaire). */
+/** Ancienne adresse : la page unique est /payments/. */
 export default function ExpensesPage() {
-  return <ExpensesPageView />;
+  redirect("/payments/?vue=depenses");
 }
-
-

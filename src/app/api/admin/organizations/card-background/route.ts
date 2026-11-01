@@ -29,16 +29,23 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_BYTES) return adminError("L'image ne doit pas dépasser 2 Mo.", 400);
 
     const bytes = Buffer.from(await file.arrayBuffer());
-    const stored = await getStorageService().put({
-      category: "loyalty",
-      organizationId,
-      filename: file.name || "carte-fond.png",
-      data: bytes,
-      contentType: file.type,
-    });
+    // Sans stockage objet (S3/R2), un fichier local n'existerait pas sur le serveur de production :
+    // l'image est alors conservée directement en base (data URI, 2 Mo max).
+    const hasObjectStorage = Boolean(process.env.S3_BUCKET && process.env.S3_ENDPOINT);
+    const imageUrl = hasObjectStorage
+      ? (
+          await getStorageService().put({
+            category: "loyalty",
+            organizationId,
+            filename: file.name || "carte-fond.png",
+            data: bytes,
+            contentType: file.type,
+          })
+        ).url
+      : `data:${file.type};base64,${bytes.toString("base64")}`;
     const program = await setLoyaltyCardBackground(
       organizationId,
-      stored.url,
+      imageUrl,
       {
         id: auth.session.id,
         name: actorName(auth.session),

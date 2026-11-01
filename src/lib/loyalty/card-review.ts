@@ -6,6 +6,7 @@ import {
   normalizeReviewComment,
   reviewTokenExpiry,
 } from "@/lib/reviews/public-review";
+import { shortCardCode } from "@/lib/loyalty/card-code";
 import { limitPhoneDigits } from "@/lib/validation/customer";
 
 export type LoyaltyCardReviewInvite = {
@@ -154,6 +155,58 @@ export async function getLoyaltyCardReviewInvite(
   };
 }
 
+type CardRow = { customerId: string; organizationId: string };
+
+/** Met à jour nom/prénom/téléphone. Un téléphone déjà pris n'empêche pas l'enregistrement. */
+async function updateCardCustomer(row: CardRow, firstName: string, lastName: string, phoneDigits: string) {
+  const run = (phone: string | null) =>
+    pool.query(
+      `UPDATE "Customer"
+       SET "firstName" = $2,
+           "lastName" = $3,
+           phone = CASE WHEN $4::text IS NULL THEN phone ELSE $4 END,
+           "updatedAt" = NOW()
+       WHERE id = $1 AND "organizationId" = $5 AND "deletedAt" IS NULL`,
+      [row.customerId, firstName, lastName, phone, row.organizationId],
+    );
+  try {
+    await run(phoneDigits || null);
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error ? String((error as { code: string }).code) : "";
+    if (code !== "23505") throw error;
+    await run(null);
+  }
+}
+
+export async function saveLoyaltyCardProfile(input: {
+  cardToken: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+}): Promise<{ ok: true; code: string } | { ok: false; error: string }> {
+  const token = input.cardToken.trim().toUpperCase();
+  if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(token)) return { ok: false, error: "Carte introuvable." };
+  const firstName = input.firstName.replace(/\s+/g, " ").trim();
+  const lastName = input.lastName.replace(/\s+/g, " ").trim();
+  if (firstName.length < 1 || firstName.length > 80 || lastName.length < 1 || lastName.length > 80) {
+    return { ok: false, error: "Indiquez le prénom et le nom." };
+  }
+  const phoneDigits = limitPhoneDigits(input.phone);
+  if (phoneDigits.length < 8) return { ok: false, error: "Le téléphone doit contenir 8 à 10 chiffres." };
+  const card = await pool.query<CardRow>(
+    `SELECT lc."customerId", lc."organizationId"
+     FROM "LoyaltyCard" lc
+     JOIN "Organization" o ON o.id = lc."organizationId" AND o.status = 'ACTIVE'
+     JOIN "Customer" c ON c.id = lc."customerId" AND c."deletedAt" IS NULL
+     WHERE lc."publicToken" = $1 AND lc.status = 'ACTIVE'`,
+    [token],
+  );
+  const row = card.rows[0];
+  if (!row) return { ok: false, error: "Carte introuvable." };
+  await updateCardCustomer(row, firstName, lastName, phoneDigits);
+  return { ok: true, code: shortCardCode(token) };
+}
+
 export async function submitLoyaltyCardFeedback(input: {
   cardToken: string;
   firstName: string;
@@ -182,8 +235,8 @@ export async function submitLoyaltyCardFeedback(input: {
     return { ok: false, error: "Choisissez une note de 1 à 5." };
   }
   const comment = normalizeReviewComment(input.comment);
-  if (comment.length < 8 || comment.length > 800) {
-    return { ok: false, error: "Le commentaire doit contenir entre 8 et 800 caractères." };
+  if (comment.length > 800) {
+    return { ok: false, error: "Le commentaire ne doit pas dépasser 800 caractères." };
   }
 
   const card = await pool.query<{ customerId: string; organizationId: string }>(
@@ -197,23 +250,7 @@ export async function submitLoyaltyCardFeedback(input: {
   const row = card.rows[0];
   if (!row) return { ok: false, error: "Carte introuvable." };
 
-  try {
-    await pool.query(
-      `UPDATE "Customer"
-       SET "firstName" = $2,
-           "lastName" = $3,
-           phone = CASE WHEN $4::text IS NULL THEN phone ELSE $4 END,
-           "updatedAt" = NOW()
-       WHERE id = $1 AND "organizationId" = $5 AND "deletedAt" IS NULL`,
-      [row.customerId, firstName, lastName, phoneDigits || null, row.organizationId],
-    );
-  } catch (error) {
-    const code = typeof error === "object" && error && "code" in error ? String((error as { code: string }).code) : "";
-    if (code === "23505") {
-      return { ok: false, error: "Ce téléphone est déjà utilisé par une autre cliente." };
-    }
-    throw error;
-  }
+  await updateCardCustomer(row, firstName, lastName, phoneDigits);
 
   const appointment = await pool.query<{ id: string }>(
     `SELECT a.id

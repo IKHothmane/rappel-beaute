@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import {
   Camera,
-  Clock,
-  Crown,
   ExternalLink,
   Plus,
   Settings,
@@ -16,7 +15,9 @@ import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
 import { loyaltyJoinUrl } from "@/lib/loyalty/public-origin";
 import { LoyaltyScanPage, type LoyaltyScanPreview } from "@/components/loyalty/loyalty-scan-page";
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
-import { journalKind, memberInitials } from "@/components/loyalty/loyalty-helpers";
+import { memberInitials } from "@/components/loyalty/loyalty-helpers";
+import { LoyaltyBrandCard } from "@/components/loyalty/loyalty-brand-card";
+import { ResponsiveTable } from "@/components/app/ResponsiveTable";
 import { useToast } from "@/components/ui/toast";
 import type { LoyaltyJournalItem, LoyaltyProgramConfig } from "@/types/loyalty";
 
@@ -53,7 +54,6 @@ export function LoyaltyBoard({
   canWrite,
   program,
   visitCards,
-  journal,
   onRefresh,
   onOpenSettings,
 }: {
@@ -61,11 +61,12 @@ export function LoyaltyBoard({
   canWrite: boolean;
   program: LoyaltyProgramConfig | null;
   visitCards: VisitCardRow[];
-  journal: LoyaltyJournalItem[];
+  journal?: LoyaltyJournalItem[];
   onRefresh: () => void;
   onOpenSettings: () => void;
 }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [focusId, setFocusId] = useState<string | null>(null);
   const [joinImage, setJoinImage] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string | null>(null);
@@ -465,183 +466,114 @@ export function LoyaltyBoard({
           </section>
         </div>
 
-        <article
-          className="relative order-2 min-w-0 overflow-hidden rounded-3xl p-4 text-white shadow-md sm:p-6 lg:order-1"
-          style={{
-            background: program?.cardBackgroundUrl
-              ? `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${program.cardBackgroundUrl}") center / cover no-repeat`
-              : "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)",
-          }}
-        >
-          <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#E8C56B]/10" />
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <Crown className="text-[#E8C56B]" size={22} />
-              <p className="mt-2 break-words font-display text-[18px] uppercase leading-tight tracking-[0.08em] text-[#E8C56B] sm:mt-3 sm:text-[26px] sm:tracking-[0.14em]">
-                {orgName}
-              </p>
-              {program?.name && program.name !== orgName ? (
-                <p className="mt-1 truncate text-[11px] uppercase tracking-[0.16em] text-white/55">{program.name}</p>
-              ) : null}
-            </div>
-            <p className="shrink-0 text-right text-[10px] font-bold uppercase leading-tight tracking-[0.14em] text-white/70">
-              Carte
-              <br />
-              fidélité
-            </p>
-          </div>
-          <div className="mt-5 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-[13px] text-white/70">Vos passages</p>
-              <p className="mt-1 text-[26px] font-semibold leading-none sm:text-[28px]">
-                {focused && threshold ? `${cycleVisits} / ${threshold}` : "—"}
-              </p>
-              {focused && threshold ? (
-                <div className="mt-2 flex max-w-full flex-wrap gap-1.5">
-                  {Array.from({ length: Math.min(threshold, 12) }, (_, index) => (
-                    <span
-                      key={index}
-                      className={index < Math.min(filled, 12) ? "h-2.5 w-2.5 rounded-full bg-[#E8C56B] sm:h-3.5 sm:w-3.5" : "h-2.5 w-2.5 rounded-full border border-white/40 sm:h-3.5 sm:w-3.5"}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-2 text-[12px] text-white/60">Choisissez une cliente fidèle pour afficher sa carte.</p>
-              )}
-            </div>
-            <div className="flex min-w-0 items-end gap-3">
-              <div className="min-w-0 flex-1 rounded-2xl bg-black/25 px-3 py-2 sm:flex-none">
-                <p className="text-[11px] text-[#E8C56B]">{focused?.promoCode ? "Code promo" : "Prochaine récompense"}</p>
-                <p className="truncate text-sm font-semibold">
-                  {focused?.promoCode ? `${focused.promoCode} · soin offert` : rewardLabel || "—"}
-                </p>
-              </div>
-              <div className="shrink-0 rounded-xl bg-white p-1.5">
-                {joinImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={joinImage} alt="QR fidélité de l'institut" className="h-16 w-16 sm:h-20 sm:w-20" />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center text-center text-[10px] leading-tight text-ink/50 sm:h-20 sm:w-20">
-                    {joinBusy ? "…" : "Aucun QR"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mt-5 flex flex-col gap-3 border-t border-white/15 pt-4 sm:mt-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <p className="truncate text-base font-semibold sm:text-lg">{focused?.customerName || "Aucune cliente sélectionnée"}</p>
-              <p className="truncate text-sm text-white/70">{focused ? phoneLabel(focused.phone) : "Scannez ou choisissez une carte"}</p>
-            </div>
-            {canWrite ? (
-              <button type="button" disabled={joinBusy} onClick={() => void regenerateJoin()} className="shrink-0 self-start text-[12px] font-semibold text-[#E8C56B] sm:self-auto">
-                {joinImage ? "Régénérer le QR" : "Générer le QR"}
-              </button>
-            ) : null}
-          </div>
-        </article>
+        <div className="order-2 min-w-0 lg:order-1">
+          <LoyaltyBrandCard
+            organizationName={orgName}
+            programName={program?.name}
+            backgroundUrl={program?.cardBackgroundUrl}
+            cycleVisits={focused && threshold ? cycleVisits : null}
+            threshold={threshold}
+            highlightLabel={focused?.promoCode ? "Code promo" : "Prochaine récompense"}
+            highlightValue={focused?.promoCode ? `${focused.promoCode} · soin offert` : rewardLabel}
+            qrSrc={joinImage}
+            qrAlt="QR fidélité de l'institut"
+            qrEmpty={joinBusy ? "…" : "Aucun QR"}
+            footerTitle={focused?.customerName || "Aucune cliente sélectionnée"}
+            footerSubtitle={focused ? phoneLabel(focused.phone) : "Scannez ou choisissez une carte"}
+            action={
+              canWrite ? (
+                <button type="button" disabled={joinBusy} onClick={() => void regenerateJoin()} className="shrink-0 self-start text-[12px] font-semibold text-[#E8C56B] sm:self-auto">
+                  {joinImage ? "Régénérer le QR" : "Générer le QR"}
+                </button>
+              ) : null
+            }
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-[15px] font-bold">
-              <Users size={16} className="text-ink/40" /> Clientes scannées
-            </h2>
-            <span className="rounded-full bg-[#FFF1F6] px-2.5 py-0.5 text-[11px] font-bold text-primary">
-              {scannedList.length}
-            </span>
-          </div>
-          <p className="mb-2 text-[12px] text-ink/45">
-            Chaque cliente scannée apparaît ici. Touchez un nom pour remplir son code.
-          </p>
-          {scannedList.length === 0 ? (
-            <p className="text-sm text-ink/45">Aucune cliente scannée pour le moment.</p>
-          ) : (
-            <ol className="max-h-[28rem] space-y-1 overflow-y-auto pr-1">
-              {scannedList.map((card, index) => {
-                const selected = card.customerId === focusId;
-                const justScanned = scannedIds.includes(card.customerId);
-                return (
-                  <li key={card.id}>
-                    <button
-                      type="button"
-                      onClick={() => selectCustomer(card)}
-                      className={`flex w-full min-w-0 items-center gap-2 rounded-xl px-2 py-2 text-left sm:gap-3 ${selected ? "bg-[#FFF1F6]" : "hover:bg-[#FFF7FA]"}`}
-                    >
-                      <span className="w-5 shrink-0 text-sm font-bold text-ink/35">{index + 1}</span>
+      <section className="min-w-0">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-[15px] font-bold">
+            <Users size={16} className="text-ink/40" /> Clientes fidélité
+          </h2>
+          <span className="rounded-full bg-[#FFF1F6] px-2.5 py-0.5 text-[11px] font-bold text-primary">
+            {scannedList.length}
+          </span>
+        </div>
+        {scannedList.length === 0 ? (
+          <p className="surface p-4 text-sm text-ink/45">Aucune cliente pour le moment.</p>
+        ) : (
+          <ResponsiveTable
+            headers={["Cliente", "Téléphone", "Code", "Passages", "Dernière activité", ""]}
+            cards={scannedList.map((card) => (
+              <button
+                key={card.id}
+                type="button"
+                onClick={() => router.push(`/customers/${card.customerId}/`)}
+                className="surface flex items-start gap-3 p-4 text-left transition hover:border-primary/30"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3E4EA] text-[11px] font-bold">
+                  {memberInitials(card.customerName)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-ink">{card.customerName}</span>
+                  <span className="block truncate text-xs text-ink/50">{phoneLabel(card.phone)}</span>
+                </span>
+                <span className="shrink-0 text-right text-xs font-bold text-[#1B7F4E]">
+                  {card.promoCode ? `${card.promoCode} offert` : `${visitCycle(card.visits, card.visitsPerReward)}/${card.visitsPerReward}`}
+                </span>
+              </button>
+            ))}
+          >
+            {scannedList.map((card) => {
+              const justScanned = scannedIds.includes(card.customerId);
+              return (
+                <tr
+                  key={card.id}
+                  onClick={() => router.push(`/customers/${card.customerId}/`)}
+                  className={`cursor-pointer transition-colors hover:bg-[#FFF7FA] ${card.customerId === focusId ? "bg-[#FFF1F6]" : ""}`}
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F3E4EA] text-[11px] font-bold">
                         {memberInitials(card.customerName)}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <span className="block truncate text-sm font-semibold">{card.customerName}</span>
-                          {justScanned ? (
-                            <span className="shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                              Scan
-                            </span>
-                          ) : null}
-                        </span>
-                        {card.cardCode ? (
-                          <span className="font-mono text-[12px] font-bold tracking-[0.14em] text-ink/70">{card.cardCode}</span>
-                        ) : null}
+                      <span className="truncate font-medium text-ink">{card.customerName}</span>
+                      {justScanned ? (
+                        <span className="shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">Scan</span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-ink/70">{phoneLabel(card.phone)}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] font-bold tracking-[0.14em] text-ink/70">{card.cardCode || "—"}</td>
+                  <td className="px-4 py-3">
+                    {card.promoCode ? (
+                      <span className="rounded-full bg-[#E8C56B]/40 px-2 py-0.5 text-[11px] font-bold text-[#5D4200]">{card.promoCode} offert</span>
+                    ) : (
+                      <span className="rounded-full bg-[#EAF8EF] px-2 py-0.5 text-[11px] font-bold text-[#1B7F4E]">
+                        {visitCycle(card.visits, card.visitsPerReward)}/{card.visitsPerReward}
                       </span>
-                      {card.promoCode ? (
-                        <span className="shrink-0 rounded-full bg-[#E8C56B]/40 px-2 py-0.5 text-[11px] font-bold text-[#5D4200]">
-                          {card.promoCode} offert
-                        </span>
-                      ) : (
-                        <span className="shrink-0 rounded-full bg-[#EAF8EF] px-2 py-0.5 text-[11px] font-bold text-[#1B7F4E]">
-                          {visitCycle(card.visits, card.visitsPerReward)}/{card.visitsPerReward}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </section>
-
-        <section className="min-w-0 rounded-2xl border border-[#F3D5E2] bg-white p-4 shadow-sm">
-          <h2 className="mb-3 flex items-center gap-2 text-[15px] font-bold">
-            <Clock size={16} className="text-ink/40" /> Dernières activités
-          </h2>
-          {journal.length === 0 ? (
-            <p className="text-sm text-ink/45">Aucun mouvement pour l&apos;instant.</p>
-          ) : (
-            <ul className="divide-y divide-[#FFF1F6]">
-              {journal.slice(0, 5).map((row) => {
-                const card = visitCards.find((item) => item.customerId === row.customerId);
-                return (
-                  <li key={row.id}>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-ink/55">{activityWhen(card.lastActivityAt || card.createdAt)}</td>
+                  <td className="px-4 py-3 text-right">
                     <button
                       type="button"
-                      disabled={!card}
-                      onClick={() => card && selectCustomer(card)}
-                      className="flex w-full min-w-0 items-start gap-3 py-2.5 text-left disabled:cursor-default"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        selectCustomer(card);
+                      }}
+                      className="rounded-full bg-[#FFF1F6] px-3 py-1 text-[12px] font-semibold text-primary"
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFF1F6] text-[11px] font-bold text-primary">
-                        {memberInitials(row.customerName)}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="min-w-0 truncate text-sm font-semibold">{row.customerName}</p>
-                          <span className="shrink-0 rounded-full bg-[#EAF8EF] px-2 py-0.5 text-[11px] font-bold text-[#1B7F4E]">
-                            {card ? `${visitCycle(card.visits, card.visitsPerReward)}/${card.visitsPerReward}` : `${row.points > 0 ? "+" : ""}${row.points} pts`}
-                          </span>
-                        </div>
-                        <p className="truncate text-[12px] text-ink/45">{journalKind(row)}</p>
-                        <p className="text-[11px] text-ink/40">{activityWhen(row.createdAt)}</p>
-                      </div>
+                      Afficher la carte
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-      </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </ResponsiveTable>
+        )}
+      </section>
     </div>
   );
 }

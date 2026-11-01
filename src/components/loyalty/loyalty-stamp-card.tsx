@@ -1,5 +1,5 @@
-import type { CSSProperties } from "react";
-import { CalendarDays, Check, Gift, Sparkles } from "lucide-react";
+import { CalendarDays, Check, Gift } from "lucide-react";
+import { LoyaltyBrandCard } from "@/components/loyalty/loyalty-brand-card";
 
 type Appointment = { at: string; service: string; staff: string };
 type Session = { name: string; used: number; total: number; remaining: number };
@@ -25,6 +25,9 @@ type Props = {
   rewards: Reward[];
   qr: string;
   backgroundUrl?: string | null;
+  programName?: string | null;
+  phone?: string | null;
+  code?: string | null;
   appointments: Appointment[];
   sessions: Session[];
 };
@@ -57,6 +60,9 @@ export function LoyaltyStampCard({
   rewards,
   qr,
   backgroundUrl,
+  programName,
+  phone,
+  code,
   appointments,
   sessions,
 }: Props) {
@@ -65,52 +71,25 @@ export function LoyaltyStampCard({
   const percentage = Math.round((progress / threshold) * 100);
   const name = `${firstName} ${lastName}`.trim();
   const availableRewards = rewards.filter((reward) => reward.status === "AVAILABLE");
-  const heroStyle: CSSProperties = backgroundUrl
-    ? {
-        backgroundImage: `linear-gradient(135deg, rgba(42, 18, 31, .86), rgba(135, 30, 75, .76)), url("${backgroundUrl}")`,
-        backgroundPosition: "center",
-        backgroundSize: "cover",
-      }
-    : { background: "linear-gradient(135deg, #301A28 0%, #5D2340 55%, #B8326B 100%)" };
 
   return (
     <div className="space-y-4">
+      <LoyaltyBrandCard
+        organizationName={organizationName}
+        programName={programName}
+        backgroundUrl={backgroundUrl}
+        cycleVisits={rewardsAvailable > 0 ? threshold : progress}
+        threshold={threshold}
+        highlightLabel="Prochaine récompense"
+        highlightValue={rewardsAvailable > 0 ? `${rewardLabel} · disponible` : rewardLabel}
+        qrSrc={qr}
+        qrAlt="QR code personnel de la carte de fidélité"
+        code={code}
+        footerTitle={name || firstName}
+        footerSubtitle={phone && !phone.startsWith("WL") ? phone : "Carte personnelle"}
+      />
+
       <section className="overflow-hidden rounded-3xl border border-[#F0DDE7] bg-white shadow-sm">
-        <div className="p-4 sm:p-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#9A5273]">Ma fidélité</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#43293A] sm:text-3xl">
-            {organizationName}
-          </h1>
-          <p className="mt-1 text-sm text-[#806B77]">Votre fidélité mérite une récompense.</p>
-        </div>
-
-        <div className="mx-4 mb-4 rounded-2xl p-5 text-white shadow-md sm:mx-5 sm:mb-5" style={heroStyle}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">Carte de fidélité</p>
-              <p className="mt-2 truncate text-xl font-extrabold">{name || firstName}</p>
-              <p className="mt-1 text-sm text-white/70">{organizationName}</p>
-            </div>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10">
-              <Sparkles size={20} aria-hidden="true" />
-            </span>
-          </div>
-          <div className="mt-5 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-3xl font-black tabular-nums">{progress}/{visitsPerReward}</p>
-              <p className="mt-1 text-xs text-white/75">Passages pour votre récompense</p>
-            </div>
-            <p className="text-right text-xs font-semibold text-[#FFE1EC]">
-              {rewardsAvailable > 0
-                ? "Récompense disponible"
-                : `${Math.max(0, remaining)} passage${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""}`}
-            </p>
-          </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-label="Progression fidélité" aria-valuemin={0} aria-valuemax={visitsPerReward} aria-valuenow={progress}>
-            <div className="h-full rounded-full bg-[#FFC5DA] transition-all" style={{ width: `${percentage}%` }} />
-          </div>
-        </div>
-
         <div className="px-4 pb-4 sm:px-5 sm:pb-5">
           <div className="grid grid-cols-5 gap-2 sm:gap-3" aria-label={`${progress} passages validés sur ${visitsPerReward}`}>
             {Array.from({ length: threshold }, (_, index) => {

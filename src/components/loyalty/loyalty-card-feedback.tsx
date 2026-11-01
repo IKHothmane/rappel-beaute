@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from "react";
 import { Star } from "lucide-react";
-import { limitPhoneDigits } from "@/lib/validation/customer";
 
 export function LoyaltyCardFeedback({
   token,
@@ -19,10 +18,6 @@ export function LoyaltyCardFeedback({
   phone: string | null;
   onSaved?: () => void;
 }) {
-  const knownPhone = phone && !phone.startsWith("WL") ? limitPhoneDigits(phone) : "";
-  const [givenName, setGivenName] = useState(firstName);
-  const [familyName, setFamilyName] = useState(lastName);
-  const [mobile, setMobile] = useState(knownPhone);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,9 +34,9 @@ export function LoyaltyCardFeedback({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
-          firstName: givenName,
-          lastName: familyName,
-          phone: mobile,
+          firstName,
+          lastName,
+          phone: phone && !phone.startsWith("WL") ? phone : "",
           rating,
           comment,
         }),
@@ -61,7 +56,7 @@ export function LoyaltyCardFeedback({
     return (
       <section className="rounded-2xl border border-[#F0DDE7] bg-white p-4 sm:p-5">
         <p className="text-center text-sm text-[#806B77]">
-          Merci {givenName}. Votre avis est enregistré et sera lu par {organizationName}.
+          Merci {firstName}. Votre avis est enregistré et sera lu par {organizationName}.
         </p>
       </section>
     );
@@ -70,44 +65,11 @@ export function LoyaltyCardFeedback({
   return (
     <section className="rounded-2xl border border-[#F0DDE7] bg-white p-4 sm:p-5">
       <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9A5273]">Votre avis</p>
-      <h2 className="mt-1 text-lg font-extrabold text-[#43293A]">Votre passage et vos coordonnées</h2>
+      <h2 className="mt-1 text-lg font-extrabold text-[#43293A]">Votre avis compte</h2>
       <p className="mt-1 text-sm text-[#806B77]">
-        Indiquez votre nom et votre téléphone, puis laissez un avis pour {organizationName}.
+        Laissez un avis pour {organizationName}. Le commentaire est facultatif.
       </p>
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
-        <label className="block text-sm font-semibold text-[#43293A]">
-          Prénom
-          <input
-            value={givenName}
-            onChange={(event) => setGivenName(event.target.value)}
-            required
-            maxLength={80}
-            autoComplete="given-name"
-            className="mt-1 h-11 w-full rounded-xl border border-[#F0DDE7] px-3 text-sm font-normal outline-none focus:border-[#A83E70]"
-          />
-        </label>
-        <label className="block text-sm font-semibold text-[#43293A]">
-          Nom
-          <input
-            value={familyName}
-            onChange={(event) => setFamilyName(event.target.value)}
-            required
-            maxLength={80}
-            autoComplete="family-name"
-            className="mt-1 h-11 w-full rounded-xl border border-[#F0DDE7] px-3 text-sm font-normal outline-none focus:border-[#A83E70]"
-          />
-        </label>
-        <label className="block text-sm font-semibold text-[#43293A]">
-          Téléphone
-          <input
-            value={mobile}
-            onChange={(event) => setMobile(limitPhoneDigits(event.target.value))}
-            inputMode="numeric"
-            autoComplete="tel"
-            placeholder="06…"
-            className="mt-1 h-11 w-full rounded-xl border border-[#F0DDE7] px-3 text-sm font-normal outline-none focus:border-[#A83E70]"
-          />
-        </label>
         <div>
           <p className="text-sm font-semibold text-[#43293A]">Votre note</p>
           <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Note">
@@ -131,12 +93,10 @@ export function LoyaltyCardFeedback({
           </div>
         </div>
         <label className="block text-sm font-semibold text-[#43293A]">
-          Commentaire
+          Commentaire (facultatif)
           <textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
-            required
-            minLength={8}
             maxLength={800}
             rows={4}
             placeholder="Comment s’est passé votre passage ?"

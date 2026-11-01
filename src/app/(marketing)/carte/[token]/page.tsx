@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
+import { LoyaltyCardProfile } from "@/components/loyalty/loyalty-card-profile";
 import { LoyaltyCardFeedback } from "@/components/loyalty/loyalty-card-feedback";
 import { LoyaltyStampCard } from "@/components/loyalty/loyalty-stamp-card";
+import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +13,6 @@ export const metadata: Metadata = {
   title: "Ma carte de fidélité",
   robots: { index: false, follow: false },
 };
-
-function money(amount: number) {
-  return `${amount.toLocaleString("fr-FR")} DH`;
-}
 
 function day(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", {
@@ -37,6 +35,8 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
     errorCorrectionLevel: "M",
   });
 
+  const anonymous = !card.phone || card.phone.startsWith("WL");
+
   return (
     <main className="min-h-screen bg-[#F8F3F5] py-6 sm:py-10">
       <div className="mx-auto max-w-md space-y-4 px-4">
@@ -53,17 +53,23 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
           rewards={card.rewards}
           qr={qr}
           backgroundUrl={card.cardBackgroundUrl}
+          phone={card.phone}
+          code={shortCardCode(token)}
           appointments={card.appointments}
           sessions={card.sessions}
         />
 
-        <LoyaltyCardFeedback
-          token={token}
-          organizationName={card.organizationName}
-          firstName={card.firstName}
-          lastName={card.lastName}
-          phone={card.phone}
-        />
+        {anonymous ? (
+          <LoyaltyCardProfile token={token} organizationName={card.organizationName} />
+        ) : (
+          <LoyaltyCardFeedback
+            token={token}
+            organizationName={card.organizationName}
+            firstName={card.firstName}
+            lastName={card.lastName}
+            phone={card.phone}
+          />
+        )}
 
         <section>
           <h2 className="px-1 text-xl font-extrabold text-[#43293A]">Historique des passages</h2>
@@ -78,7 +84,6 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
                   <div className="min-w-0">
                     <p className="text-xs text-[#806B77]">{day(item.at)}</p>
                     <p className="mt-1 truncate font-semibold text-[#43293A]">{item.service}</p>
-                    <p className="text-xs text-[#806B77]">{money(item.amount)}</p>
                   </div>
                   <span className="shrink-0 rounded-full bg-[#FCE9F4] px-3 py-1 text-xs font-bold text-[#A83E70]">
                     {item.points > 0 ? `+${item.points}` : item.points} passage

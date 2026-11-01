@@ -42,10 +42,6 @@ export type LoyaltyScanPreview = {
 
 type Preview = LoyaltyScanPreview;
 
-function money(amount: number) {
-  return `${amount.toLocaleString("fr-FR")} DH`;
-}
-
 function extractToken(value: string) {
   const upper = value.toUpperCase();
   const card = upper.match(/RBLOY_[A-Z2-9]+/);
@@ -140,7 +136,7 @@ export function LoyaltyScanPage({
         customerName?: string;
       };
       if (!res.ok) throw new Error(body.error || "Validation impossible.");
-      const message = `Passage validé. ${body.customerName} · ${body.serviceName} · ${money(body.amount ?? 0)}. Total : ${body.visits} passages.`;
+      const message = `Passage validé. ${body.customerName} · ${body.serviceName}. Total : ${body.visits} passages.`;
       setDone(message);
       onValidated?.();
       await scan({ keepDone: true });
@@ -188,7 +184,7 @@ export function LoyaltyScanPage({
           </p>
           {preview.appointmentId ? (
             <p className="mt-1 text-ink/70">
-              {preview.serviceName} · {money(preview.amount ?? 0)}
+              {preview.serviceName}
             </p>
           ) : (
             <p className="mt-1 text-ink/70">Aucun rendez-vous terminé à valider.</p>

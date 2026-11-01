@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Star } from "lucide-react";
 import { limitPhoneDigits } from "@/lib/validation/customer";
 
 export function LoyaltyCardFeedback({
@@ -108,17 +109,23 @@ export function LoyaltyCardFeedback({
           />
         </label>
         <div>
-          <p className="text-sm font-semibold text-[#43293A]">Note</p>
-          <div className="mt-2 flex gap-2">
+          <p className="text-sm font-semibold text-[#43293A]">Votre note</p>
+          <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Note">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
                 type="button"
+                role="radio"
+                aria-checked={rating === star}
                 onClick={() => setRating(star)}
-                className={`h-11 w-11 rounded-full text-sm font-bold ${rating >= star ? "bg-[#A83E70] text-white" : "bg-[#FCE9F4] text-[#43293A]"}`}
+                className="flex h-11 w-11 items-center justify-center rounded-full"
                 aria-label={`${star} étoile${star > 1 ? "s" : ""}`}
               >
-                {star}
+                <Star
+                  size={32}
+                  strokeWidth={1.5}
+                  className={rating >= star ? "fill-[#E8B23A] text-[#E8B23A]" : "fill-transparent text-[#D9BFCB]"}
+                />
               </button>
             ))}
           </div>

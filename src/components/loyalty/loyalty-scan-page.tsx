@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { shortCardCode } from "@/lib/loyalty/card-code";
-import { LoyaltyCardFeedback } from "@/components/loyalty/loyalty-card-feedback";
 
 export type LoyaltyScanPreview = {
   token: string;
@@ -216,18 +215,6 @@ export function LoyaltyScanPage({
               </button>
             ) : null}
           </div>
-          <LoyaltyCardFeedback
-            key={preview.token}
-            token={preview.token}
-            organizationName={organizationName}
-            firstName={preview.firstName}
-            lastName={preview.lastName}
-            phone={preview.phone}
-            onSaved={() => {
-              onValidated?.();
-              void scan({ keepDone: true });
-            }}
-          />
         </div>
       ) : null}
       {done ? <p className="mt-3 text-sm font-semibold text-ink">{done}</p> : null}

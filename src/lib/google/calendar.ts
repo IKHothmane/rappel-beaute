@@ -72,15 +72,14 @@ export function googleRedirectUri(origin: string): string {
     base = (publicAppOrigin() || origin).replace(/\/$/, "");
   }
 
-  // Si l’origine requête est le domaine marketing (rappelbeauty.com),
-  // forcer l’hôte app pour rester aligné avec la console Google.
+  // Domaine de production unique : rappelbeauty.com (app., www. → racine).
   try {
     const host = new URL(base.startsWith("http") ? base : `https://${base}`).hostname;
     if (
-      host === "rappelbeauty.com" ||
+      host === "app.rappelbeauty.com" ||
       host === "www.rappelbeauty.com"
     ) {
-      base = SITE.appUrl.replace(/\/$/, "");
+      base = SITE.url.replace(/\/$/, "");
     }
   } catch {
     /* ignore */

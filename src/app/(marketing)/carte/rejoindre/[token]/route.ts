@@ -7,6 +7,23 @@ import { consumeDimensions } from "@/lib/rate-limit";
 
 const COOKIE = "rb_join_card";
 
+/** Page intermédiaire : envoie les cartes mémorisées par le navigateur, sinon demande une nouvelle carte. */
+const RESOLVE_PAGE = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Ma carte de fidélité</title>
+<noscript><meta http-equiv="refresh" content="0;url=?n=1"></noscript></head>
+<body style="font-family:sans-serif;text-align:center;padding:48px;color:#43293A">
+<p>Chargement de votre carte…</p>
+<script>
+(function () {
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem("rb_cards") || "[]"); } catch (e) {}
+  if (!Array.isArray(list)) list = [];
+  list = list.filter(function (t) { return typeof t === "string" && /^RBLOY_[A-Z2-9]{8,32}$/.test(t); }).slice(0, 5);
+  location.replace(list.length ? "?c=" + encodeURIComponent(list.join(",")) : "?n=1");
+})();
+</script></body></html>`;
+
 function remember(response: NextResponse, cardToken: string, secure: boolean) {
   response.cookies.set(COOKIE, cardToken, {
     httpOnly: true,
@@ -37,6 +54,22 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
   const saved = request.cookies.get(COOKIE)?.value ?? "";
   let cardToken = saved ? await cardTokenForJoinQr(joinToken, saved) : null;
 
+  // Cookie absent : on regarde si le navigateur a gardé une carte de cet institut (localStorage).
+  const url = request.nextUrl;
+  if (!cardToken) {
+    const candidates = (url.searchParams.get("c") ?? "").split(",").slice(0, 5);
+    for (const candidate of candidates) {
+      if (!candidate.trim()) continue;
+      cardToken = await cardTokenForJoinQr(joinToken, candidate);
+      if (cardToken) break;
+    }
+  }
+  if (!cardToken && !url.searchParams.has("c") && !url.searchParams.has("n")) {
+    return new NextResponse(RESOLVE_PAGE, {
+      headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+    });
+  }
+
   if (!cardToken) {
     const ip = clientIp(request);
     const limited = await consumeDimensions([
@@ -66,5 +99,8 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
   }
 
   const response = NextResponse.redirect(loyaltyCardUrl(cardToken));
-  return remember(response, cardToken, true);
+  // Un cookie « secure » n'est jamais enregistré en http (dev local, tunnel http) :
+  // chaque re-scan créait alors une nouvelle carte à 0 passage.
+  const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  return remember(response, cardToken, proto === "https");
 }

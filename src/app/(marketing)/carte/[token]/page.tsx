@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
+import { RememberCard } from "@/components/loyalty/remember-card";
 import { LoyaltyCardProfile } from "@/components/loyalty/loyalty-card-profile";
 import { LoyaltyCardFeedback } from "@/components/loyalty/loyalty-card-feedback";
 import { LoyaltyStampCard } from "@/components/loyalty/loyalty-stamp-card";
@@ -40,6 +41,7 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
   return (
     <main className="min-h-screen bg-[#F8F3F5] py-6 sm:py-10">
       <div className="mx-auto max-w-md space-y-4 px-4">
+        <RememberCard token={token} />
         <LoyaltyStampCard
           organizationName={card.organizationName}
           firstName={card.firstName}

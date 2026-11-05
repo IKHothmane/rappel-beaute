@@ -276,8 +276,6 @@ export function AppointmentForm({
       setFormError(resolvedCustomer.error);
       return;
     }
-    const resolvedStaff = staffId || undefined;
-
     const [h, min] = time.split(":").map(Number);
     const [y, mo, d] = date.split("-").map(Number);
     const start = new Date(y, mo - 1, d, h, min, 0);
@@ -287,7 +285,7 @@ export function AppointmentForm({
     onSubmit({
       customerId: resolvedCustomer.id,
       serviceId,
-      staffId: resolvedStaff,
+      staffId: staffId || undefined,
       resourceId: resourceId || undefined,
       startAt: start.toISOString(),
       endAt: end.toISOString(),

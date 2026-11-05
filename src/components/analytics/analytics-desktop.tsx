@@ -744,7 +744,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
             loading={vm.loading}
           />
           <ModuleCard
-            href={vm.canStock ? "/stock/" : "/reports/"}
+            href={vm.canStock ? "/stock/" : "/analytics/"}
             icon={<Package className="h-5 w-5" />}
             iconTone="bg-surface-container-high text-secondary"
             badge={stockAlerts > 0 ? `${stockAlerts} alerte${stockAlerts > 1 ? "s" : ""}` : "OK"}
@@ -802,7 +802,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
             loading={vm.loading}
           />
           <ModuleCard
-            href="/reports/"
+            href="/promotions/"
             icon={<Wallet className="h-5 w-5" />}
             iconTone="bg-primary-fixed text-on-primary-fixed"
             badge={`${vm.marketing.length} campagne${vm.marketing.length > 1 ? "s" : ""}`}

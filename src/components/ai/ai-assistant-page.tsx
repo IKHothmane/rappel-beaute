@@ -507,7 +507,7 @@ export function AiAssistantPage() {
                   <p className="mt-3 text-xs text-ink/45">Aucune tension liste d’attente / repos détectée pour ce samedi.</p>
                 )}
                 <Link
-                  href="/planning/"
+                  href="/staff/?tab=planning"
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-xs font-extrabold text-white hover:bg-primary-dark"
                 >
                   Ouvrir le planning

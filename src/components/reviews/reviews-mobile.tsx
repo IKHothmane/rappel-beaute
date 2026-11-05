@@ -223,6 +223,9 @@ export function ReviewsMobile(props: ReviewsMobileProps) {
                     </span>
                     <div>
                       <p className="text-[15px] font-bold">{item.customerName}</p>
+                      <p className="text-[12px] text-ink/70">
+                        {item.phoneSnapshot || "Pas de téléphone"}
+                      </p>
                       <p className="text-[12px] text-ink/50">
                         {item.serviceName}
                         {item.staffName ? ` · ${item.staffName}` : ""}
@@ -298,6 +301,7 @@ function FocusMobile({
           <p className="text-[18px] font-bold">{selected.customerName}</p>
           <Stars n={stars} />
         </div>
+        <p className="text-[13px] text-ink/70">{selected.phoneSnapshot || "Pas de téléphone"}</p>
         <p className="text-[13px] text-ink/55">
           {selected.serviceName}
           {selected.staffName ? ` · ${selected.staffName}` : ""}

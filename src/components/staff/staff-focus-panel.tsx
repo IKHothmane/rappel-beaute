@@ -144,7 +144,7 @@ export function StaffFocusPanel({
 
       <div className="grid grid-cols-3 gap-2">
         <Link
-          href="/planning/"
+          href="/staff/?tab=planning"
           className="flex flex-col items-center gap-1 rounded-lg bg-[#FCE9F4] px-2 py-2 text-center text-ink"
         >
           <CalendarDays size={16} className="text-primary" />
@@ -260,7 +260,7 @@ export function StaffFocusPanel({
         </div>
         <p className="text-[12px] leading-relaxed text-ink">{insight}</p>
         <Link
-          href="/planning/"
+          href="/staff/?tab=planning"
           className="mt-1 inline-flex items-center gap-1.5 self-start rounded-lg bg-white px-3 py-1.5 text-[11px] font-semibold text-ink shadow-sm"
         >
           <CalendarDays size={14} className="text-[#7B5900]" />

@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
-import { ProductsPageView } from "@/components/inventory/products-page";
+import { Suspense } from "react";
+import { ProductsStockPage } from "@/components/inventory/products-stock-page";
 
-export const metadata: Metadata = { title: "Produits" };
+export const metadata: Metadata = {
+  title: "Produits & Stock",
+};
 
 export default function ProductsPage() {
-  return <ProductsPageView />;
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-ink/50">Chargement…</div>}>
+      <ProductsStockPage />
+    </Suspense>
+  );
 }

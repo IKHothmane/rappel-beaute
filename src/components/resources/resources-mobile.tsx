@@ -153,7 +153,7 @@ export function ResourcesMobile({
             </button>
           ) : (
             <Link
-              href="/planning/"
+              href="/staff/?tab=planning"
               className="inline-flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#F0DDE9] text-[13px] font-semibold text-ink"
             >
               Planning
@@ -408,7 +408,7 @@ function ResourceCard({
           Voir la fiche
         </button>
         <Link
-          href="/planning/"
+          href="/staff/?tab=planning"
           className="inline-flex h-9 items-center justify-center rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
         >
           Planning

@@ -5,13 +5,19 @@ import {
   AGENDA_SLOT_MINUTES,
 } from "@/modules/appointments/constants";
 
-/** Créneau vide court (moins de 2 h) : lisible, mais bien plus bas qu’un créneau occupé. */
-export const AGENDA_EMPTY_SLOT_HEIGHT_PX = 22;
+/** Créneau vide court (moins de 2 h) : lisible, mais un peu plus bas qu’un créneau occupé. */
+export const AGENDA_EMPTY_SLOT_HEIGHT_PX = 40;
 
 /** 4 créneaux de 30 min = 2 h vides d’affilée → un seul bandeau, plus de long trou. */
 export const AGENDA_LONG_GAP_MIN_SLOTS = 4;
 
-export const AGENDA_LONG_GAP_HEIGHT_PX = 40;
+export const AGENDA_LONG_GAP_HEIGHT_PX = 56;
+
+export type AgendaLayoutOptions = {
+  slotHeight?: number;
+  emptyHeight?: number;
+  gapHeight?: number;
+};
 
 export type AgendaTimeSlot = {
   h: number;
@@ -101,11 +107,18 @@ export function occupyAgendaSlots(slots: AgendaTimeSlot[], intervals: AgendaTime
   return slots.map((slot) => intervals.some((interval) => overlapsClockSlot(slot, interval)));
 }
 
-export function layoutAgendaTime(occupied: boolean[]): AgendaTimeLayout {
+export function layoutAgendaTime(
+  occupied: boolean[],
+  options: AgendaLayoutOptions = {},
+): AgendaTimeLayout {
   const slots = buildAgendaSlots();
   if (occupied.length !== slots.length) {
     throw new Error("Le masque des créneaux ne correspond pas à la journée d’agenda.");
   }
+
+  const slotHeight = options.slotHeight ?? AGENDA_SLOT_HEIGHT_PX;
+  const emptyHeight = options.emptyHeight ?? AGENDA_EMPTY_SLOT_HEIGHT_PX;
+  const gapHeight = options.gapHeight ?? AGENDA_LONG_GAP_HEIGHT_PX;
 
   const tops = new Array<number>(slots.length);
   const heights = new Array<number>(slots.length);
@@ -115,7 +128,7 @@ export function layoutAgendaTime(occupied: boolean[]): AgendaTimeLayout {
   const pushGap = (from: number, to: number) => {
     const count = to - from;
     const top = cursor;
-    const height = AGENDA_LONG_GAP_HEIGHT_PX;
+    const height = gapHeight;
     for (let i = from; i < to; i++) {
       const startFrac = (i - from) / count;
       const endFrac = (i - from + 1) / count;
@@ -138,7 +151,7 @@ export function layoutAgendaTime(occupied: boolean[]): AgendaTimeLayout {
   };
 
   const pushSlots = (from: number, to: number, empty: boolean) => {
-    const height = empty ? AGENDA_EMPTY_SLOT_HEIGHT_PX : AGENDA_SLOT_HEIGHT_PX;
+    const height = empty ? emptyHeight : slotHeight;
     for (let i = from; i < to; i++) {
       tops[i] = cursor;
       heights[i] = height;
@@ -170,9 +183,12 @@ export function layoutAgendaTime(occupied: boolean[]): AgendaTimeLayout {
   return { slots, rows, tops, heights, totalHeight: cursor };
 }
 
-export function buildAgendaLayout(intervals: AgendaTimeInterval[]) {
+export function buildAgendaLayout(
+  intervals: AgendaTimeInterval[],
+  options: AgendaLayoutOptions = {},
+) {
   const slots = buildAgendaSlots();
-  return layoutAgendaTime(occupyAgendaSlots(slots, intervals));
+  return layoutAgendaTime(occupyAgendaSlots(slots, intervals), options);
 }
 
 function minutesFromAgendaOpen(date: Date) {

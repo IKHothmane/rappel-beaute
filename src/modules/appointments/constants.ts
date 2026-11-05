@@ -63,7 +63,10 @@ export const AGENDA_OPEN_HOUR = 8;
 /** Minuit : les créneaux vont de 8 h à 00 h (dernier départ 23 h 30). */
 export const AGENDA_CLOSE_HOUR = 24;
 export const AGENDA_SLOT_MINUTES = 30;
-export const AGENDA_SLOT_HEIGHT_PX = 52;
+/** Hauteur d’un créneau de 30 min occupé (cartes lisibles type mockup). */
+export const AGENDA_SLOT_HEIGHT_PX = 72;
+/** Vue Semaine / 3 jours : créneaux encore plus hauts. */
+export const AGENDA_WEEK_SLOT_HEIGHT_PX = 84;
 
 export const STATUS_TRANSITIONS: Partial<
   Record<AppointmentStatus, AppointmentStatus[]>

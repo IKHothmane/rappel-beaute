@@ -593,7 +593,7 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
           loading={vm.loading}
         />
         <OpRow
-          href={vm.canStock ? "/stock/" : "/reports/"}
+          href={vm.canStock ? "/stock/" : "/analytics/"}
           icon={<Package className="h-4 w-4" />}
           iconTone="bg-surface-container-high text-secondary"
           title="Stock & Alertes"
@@ -633,7 +633,7 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
           }
         />
         <OpRow
-          href="/reports/"
+          href="/promotions/"
           icon={<Wallet className="h-4 w-4" />}
           iconTone="bg-primary-fixed text-on-primary-fixed"
           title="Marketing Attribué"

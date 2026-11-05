@@ -8,7 +8,6 @@ import {
   Box,
   Boxes,
   CalendarDays,
-  ChartColumn,
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
@@ -52,7 +51,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
       { label: "Tableau de bord", href: "/dashboard/", icon: LayoutDashboard, key: "dashboard" },
       { label: "Agenda", href: "/agenda/", icon: CalendarDays, key: "agenda" },
       { label: "Plan 3D", href: "/salon-3d/", icon: Box, key: "salon-3d" },
-      { label: "Planning Équipe", href: "/planning/", icon: ClipboardList, key: "planning" },
+      { label: "Équipe & Planning", href: "/staff/", icon: Users, key: "staff" },
       { label: "Assistant IA", href: "/ai/", icon: Sparkles, key: "ai" },
       { label: "Clientes", href: "/customers/", icon: Users, key: "customers" },
     ],
@@ -61,15 +60,13 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     title: "Gestion",
     items: [
       { label: "Services", href: "/services/", icon: Sparkles, key: "services" },
-      { label: "Employées", href: "/staff/", icon: Users, key: "staff" },
       { label: "Ressources", href: "/resources/", icon: Boxes, key: "resources" },
     ],
   },
   {
     title: "Approvisionnement",
     items: [
-      { label: "Produits", href: "/products/", icon: Package, key: "products" },
-      { label: "Stock", href: "/stock/", icon: Boxes, key: "stock" },
+      { label: "Produits & Stock", href: "/products/", icon: Package, key: "products" },
       { label: "Fournisseurs", href: "/suppliers/", icon: ShoppingCart, key: "suppliers" },
       { label: "Achats", href: "/purchases/", icon: ClipboardList, key: "purchases" },
     ],
@@ -93,7 +90,6 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     title: "Pilotage",
     items: [
       { label: "Analytics", href: "/analytics/", icon: BarChart3, key: "analytics" },
-      { label: "Rapports", href: "/reports/", icon: ChartColumn, key: "reports" },
       { label: "Notifications", href: "/notifications/", icon: Bell, key: "notifications" },
       { label: "Aide & Support", href: "/support/", icon: MessageCircle, key: "support" },
       { label: "Paramètres", href: "/settings/", icon: Settings, key: "settings" },
@@ -112,6 +108,12 @@ function isActive(pathname: string, href: string) {
   }
   if (href === "/payments/") {
     return path.startsWith("/payments") || path.startsWith("/expenses");
+  }
+  if (href === "/products/") {
+    return path.startsWith("/products") || path.startsWith("/stock") || path.startsWith("/inventory");
+  }
+  if (href === "/staff/" || href.startsWith("/staff/?")) {
+    return path.startsWith("/staff") || path.startsWith("/planning");
   }
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
@@ -218,10 +220,12 @@ export default function OwnerSidebar({
                   const planLocked =
                     item.key === "payments"
                       ? !planLoading && !isNavEnabled("payments") && !isNavEnabled("expenses")
-                      : !planLoading && !isNavEnabled(item.key);
+                      : item.key === "staff"
+                        ? !planLoading && !isNavEnabled("staff") && !isNavEnabled("planning")
+                        : !planLoading && !isNavEnabled(item.key);
                   return (
                     <Link
-                      key={item.href}
+                      key={item.key}
                       href={item.href}
                       onClick={onClose}
                       title={collapsed ? item.label : undefined}

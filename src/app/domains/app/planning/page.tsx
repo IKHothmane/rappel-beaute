@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { PlanningPageView } from "@/components/planning/planning-page";
-
-export const metadata: Metadata = { title: "Planning & horaires" };
+import { redirect } from "next/navigation";
 
 export default function PlanningPage() {
-  return <PlanningPageView />;
+  redirect("/staff/?tab=planning");
 }

@@ -12,7 +12,6 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
-  Sparkles,
   Truck,
   Wallet,
 } from "lucide-react";
@@ -27,7 +26,7 @@ import {
   stockFillPercent,
   usageLabel,
 } from "@/components/inventory/product-helpers";
-import { indexLatestMovement, movementQtyLabel, movementTone, stockInsight } from "@/components/inventory/stock-helpers";
+import { indexLatestMovement, movementQtyLabel, movementTone } from "@/components/inventory/stock-helpers";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -45,7 +44,6 @@ import {
   listProducts,
   MOVEMENT_TYPE_LABEL,
 } from "@/modules/inventory/service";
-import { listPurchases } from "@/modules/procurement/service";
 import type {
   InventoryMovementItem,
   MovementType,
@@ -56,7 +54,13 @@ import type {
 } from "@/types/inventory";
 import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_LABEL } from "@/types/inventory";
 
-export function InventoryPageView() {
+type InventoryPageViewProps = {
+  initialTab?: StockTab;
+};
+
+export function InventoryPageView({
+  initialTab = "niveaux",
+}: InventoryPageViewProps) {
   const { toast } = useToast();
   const user = useCurrentUser();
   const canWrite = canWriteStock(user.role);
@@ -64,7 +68,7 @@ export function InventoryPageView() {
   const showPurchases = canAccessNav(user.role, "purchases");
 
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<StockTab>("niveaux");
+  const [tab, setTab] = useState<StockTab>(initialTab);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<ProductCategory | "">("");
@@ -74,7 +78,6 @@ export function InventoryPageView() {
   const [kpis, setKpis] = useState<StockKpis | null>(null);
   const [movements, setMovements] = useState<InventoryMovementItem[]>([]);
   const [movementTotal, setMovementTotal] = useState(0);
-  const [openOrders, setOpenOrders] = useState(0);
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
@@ -118,15 +121,10 @@ export function InventoryPageView() {
       const init: Record<string, string> = {};
       for (const p of prods.data) init[p.id] = formatQtyInput(p.stock);
       setCounts(init);
-      if (showPurchases) {
-        listPurchases({ limit: 1 })
-          .then((r) => setOpenOrders(r.kpis.awaitingReceiptCount + r.kpis.orderedCount))
-          .catch(() => setOpenOrders(0));
-      }
     } catch {
       toast("Impossible de charger le stock.", "error");
     }
-  }, [toast, showPurchases]);
+  }, [toast]);
 
   useEffect(() => {
     setLoading(true);
@@ -135,7 +133,6 @@ export function InventoryPageView() {
 
   const selected = products.find((p) => p.id === selectedId) ?? products[0] ?? null;
   const latestByProduct = useMemo(() => indexLatestMovement(movements), [movements]);
-  const insight = useMemo(() => stockInsight(movements), [movements]);
   const sellableCount = products.filter((p) => p.sellable).length;
   const cabineCount = products.filter((p) => p.consumable && !p.sellable).length;
   const optimalCount = products.filter((p) => p.active && p.alert === "OK").length;
@@ -260,10 +257,8 @@ export function InventoryPageView() {
         catalogCount={products.length}
         kpis={kpis}
         optimalCount={optimalCount}
-        openOrders={openOrders}
         canWrite={canWrite}
         financeHidden={financeHidden}
-        insight={insight}
         searchInput={searchInput}
         onSearchChange={setSearchInput}
         searchRef={searchRef}
@@ -291,7 +286,6 @@ export function InventoryPageView() {
           setTab("inventaire");
           setInvOpen(true);
         }}
-        showPurchases={showPurchases}
       />
 
       {canWrite ? (
@@ -442,37 +436,6 @@ export function InventoryPageView() {
             icon={<History size={16} />}
             onClick={() => setTab("mouvements")}
           />
-        </section>
-
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-white via-[#FFF3F6] to-[#FFF9EE] p-6 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white">
-                <Sparkles size={22} />
-              </span>
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-primary">Journal des mouvements</p>
-                <h2 className="mt-0.5 text-[17px] font-bold text-ink">Décompte cabine et caisse sur les mouvements réels</h2>
-                <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-ink/60">{insight}</p>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col gap-2">
-              <Link
-                href="/products/"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#221820] px-4 text-[13px] font-bold text-white"
-              >
-                Catalogue produits
-              </Link>
-              {showPurchases && openOrders > 0 ? (
-                <Link
-                  href="/purchases/"
-                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-white px-4 text-[12px] font-bold text-ink shadow-sm"
-                >
-                  {openOrders > 1 ? `${openOrders} commandes en attente` : `${openOrders} commande en attente`}
-                </Link>
-              ) : null}
-            </div>
-          </div>
         </section>
 
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

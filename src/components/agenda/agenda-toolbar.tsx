@@ -139,7 +139,7 @@ export function AgendaChrome({
             Nouveau rendez-vous
           </button>
           <Link
-            href="/planning/"
+            href="/staff/?tab=planning"
             className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FBF4F6] text-ink/45 hover:text-ink"
             aria-label="Planning & fermetures"
           >

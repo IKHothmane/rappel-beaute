@@ -8,7 +8,6 @@ import {
   Box,
   Boxes,
   CalendarDays,
-  ChartColumn,
   ChevronDown,
   CircleDollarSign,
   ClipboardList,
@@ -53,7 +52,7 @@ const sections: { title: string | null; items: NavItem[] }[] = [
       { label: "Tableau de bord", href: "/dashboard/", icon: LayoutDashboard, key: "dashboard" },
       { label: "Agenda", href: "/agenda/", icon: CalendarDays, key: "agenda" },
       { label: "Plan 3D", href: "/salon-3d/", icon: Box, key: "salon-3d" },
-      { label: "Planning Équipe", href: "/planning/", icon: ClipboardList, key: "planning" },
+      { label: "Équipe & Planning", href: "/staff/", icon: Users, key: "staff" },
       { label: "Assistant IA", href: "/ai/", icon: Sparkles, key: "ai" },
       { label: "Clientes", href: "/customers/", icon: Users, key: "customers" },
     ],
@@ -62,15 +61,13 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     title: "Gestion",
     items: [
       { label: "Services", href: "/services/", icon: Sparkles, key: "services" },
-      { label: "Employées", href: "/staff/", icon: Users, key: "staff" },
       { label: "Ressources", href: "/resources/", icon: Boxes, key: "resources" },
     ],
   },
   {
     title: "Approvisionnement",
     items: [
-      { label: "Produits", href: "/products/", icon: Package, key: "products" },
-      { label: "Stock", href: "/stock/", icon: Boxes, key: "stock" },
+      { label: "Produits & Stock", href: "/products/", icon: Package, key: "products" },
       { label: "Fournisseurs", href: "/suppliers/", icon: ShoppingCart, key: "suppliers" },
       { label: "Achats", href: "/purchases/", icon: ClipboardList, key: "purchases" },
     ],
@@ -95,7 +92,6 @@ const sections: { title: string | null; items: NavItem[] }[] = [
     title: "Pilotage",
     items: [
       { label: "Analytics", href: "/analytics/", icon: BarChart3, key: "analytics" },
-      { label: "Rapports", href: "/reports/", icon: ChartColumn, key: "reports" },
       { label: "Notifications", href: "/notifications/", icon: Bell, key: "notifications" },
       { label: "Aide & Support", href: "/support/", icon: MessageCircle, key: "support" },
       { label: "Paramètres", href: "/settings/", icon: Settings, key: "settings" },
@@ -114,6 +110,12 @@ function isActive(pathname: string, href: string) {
   }
   if (href === "/payments/") {
     return path.startsWith("/payments") || path.startsWith("/expenses");
+  }
+  if (href === "/products/") {
+    return path.startsWith("/products") || path.startsWith("/stock") || path.startsWith("/inventory");
+  }
+  if (href === "/staff/" || href.startsWith("/staff/?")) {
+    return path.startsWith("/staff") || path.startsWith("/planning");
   }
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
@@ -138,6 +140,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         if (item.key === "salon-3d" && !salon3dOk) return false;
         if (item.key === "payments") {
           return canAccessNav(role, "payments") || canAccessNav(role, "expenses");
+        }
+        if (item.key === "staff") {
+          return canAccessNav(role, "staff") || canAccessNav(role, "planning");
         }
         return canAccessNav(role, item.key);
       }),
@@ -197,11 +202,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   const planLocked =
                     item.key === "payments"
                       ? !planLoading && !isNavEnabled("payments") && !isNavEnabled("expenses")
-                      : !planLoading && !isNavEnabled(item.key);
+                      : item.key === "staff"
+                        ? !planLoading && !isNavEnabled("staff") && !isNavEnabled("planning")
+                        : !planLoading && !isNavEnabled(item.key);
+                  const href =
+                    item.key === "staff" &&
+                    !canAccessNav(role, "staff") &&
+                    canAccessNav(role, "planning")
+                      ? "/staff/?tab=planning"
+                      : item.href;
                   return (
                     <Link
-                      key={item.href}
-                      href={item.href}
+                      key={item.key}
+                      href={href}
                       onClick={onClose}
                       className={cn(
                         "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",

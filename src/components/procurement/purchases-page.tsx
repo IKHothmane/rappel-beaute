@@ -283,10 +283,6 @@ export function PurchasesPageView() {
         onCreate={() => setDrawerOpen(true)}
         onReceived={() => void refresh()}
         onToast={toast}
-        onOpenFull={() => {
-          setEditingPurchaseId(null);
-          setDetailOpen(true);
-        }}
         onEdit={() => {
           if (!selected) return;
           setEditingPurchaseId(selected.id);
@@ -456,7 +452,6 @@ export function PurchasesPageView() {
                         <th className="px-4 py-3">Lignes</th>
                         <th className="px-4 py-3 text-right">Total</th>
                         <th className="px-4 py-3 text-center">Statut</th>
-                        <th className="px-4 py-3 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -502,48 +497,6 @@ export function PurchasesPageView() {
                             <span className={cn("inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold", purchaseStatusChip(p.status))}>
                               {PURCHASE_STATUS_LABEL[p.status]}
                             </span>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-center justify-center gap-1">
-                              {canWrite && p.status === "DRAFT" ? (
-                                <button
-                                  type="button"
-                                  className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedId(p.id);
-                                    setEditingPurchaseId(p.id);
-                                    setDetailOpen(true);
-                                  }}
-                                >
-                                  Modifier
-                                </button>
-                              ) : canWrite && canReceiveStatus(p.status) ? (
-                                <button
-                                  type="button"
-                                  className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedId(p.id);
-                                  }}
-                                >
-                                  Réceptionner
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="rounded-md bg-[#F6E3EF] px-2.5 py-1 text-[11px] font-semibold text-ink"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedId(p.id);
-                                    setEditingPurchaseId(null);
-                                    setDetailOpen(true);
-                                  }}
-                                >
-                                  Détail
-                                </button>
-                              )}
-                            </div>
                           </td>
                         </tr>
                       ))}
@@ -592,10 +545,6 @@ export function PurchasesPageView() {
                 financeHidden={financeHidden}
                 onReceived={() => void refresh()}
                 onToast={toast}
-                onOpenFull={() => {
-                  setEditingPurchaseId(null);
-                  setDetailOpen(true);
-                }}
                 onEdit={() => {
                   setEditingPurchaseId(selected.id);
                   setDetailOpen(true);

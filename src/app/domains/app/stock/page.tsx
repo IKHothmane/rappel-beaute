@@ -1,9 +1,5 @@
-import type { Metadata } from "next";
-import { InventoryPageView } from "@/components/inventory/inventory-page";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Stock" };
-
-/** Alias /stock — même moteur que /inventory */
 export default function StockPage() {
-  return <InventoryPageView />;
+  redirect("/products/?tab=stock");
 }

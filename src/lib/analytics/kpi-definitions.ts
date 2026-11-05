@@ -1,6 +1,6 @@
 /**
  * Définitions officielles des KPI Analytics V1.
- * Source de vérité partagée avec /dashboard, /analytics et /reports (étape 36).
+ * Source de vérité partagée avec /dashboard et /analytics (étape 36).
  */
 import { AT_RISK_DAYS, VIP_MIN_REVENUE, VIP_MIN_VISITS } from "@/types/customer";
 

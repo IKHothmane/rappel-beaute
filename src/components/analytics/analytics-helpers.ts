@@ -349,8 +349,8 @@ export function buildAnalyticsInsight(opts: {
     performance,
     alert,
     monitors,
-    cta: "Consulter les rapports",
-    ctaHref: "/reports/",
+    cta: "Voir les analytics",
+    ctaHref: "/analytics/",
     secondaryCta: null,
     secondaryHref: null,
   };

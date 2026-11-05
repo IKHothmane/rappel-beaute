@@ -70,7 +70,7 @@ export function LoyaltyBrandCard({
         </p>
       </div>
       <div className="mt-5 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[13px] text-white/70">Vos passages</p>
           <p className="mt-1 text-[26px] font-semibold leading-none sm:text-[28px]">
             {shown ? `${cycleVisits} / ${threshold}` : "—"}
@@ -91,27 +91,25 @@ export function LoyaltyBrandCard({
           ) : (
             <p className="mt-2 text-[12px] text-white/60">{emptyHint}</p>
           )}
-        </div>
-        <div className="flex min-w-0 items-end gap-3">
-          <div className="min-w-0 flex-1 rounded-2xl bg-black/25 px-3 py-2 sm:flex-none">
+          <div className="mt-3 min-w-0 rounded-2xl bg-black/25 px-3 py-2">
             <p className="text-[11px] text-[#E8C56B]">{highlightLabel}</p>
             <p className="truncate text-sm font-semibold">{highlightValue || "—"}</p>
           </div>
-          <div className="shrink-0 text-center">
-            <div className="rounded-xl bg-white p-1.5">
-              {qrSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrSrc} alt={qrAlt} className="h-16 w-16 sm:h-20 sm:w-20" />
-              ) : (
-                <div className="flex h-16 w-16 items-center justify-center text-center text-[10px] leading-tight text-ink/50 sm:h-20 sm:w-20">
-                  {qrEmpty}
-                </div>
-              )}
-            </div>
-            {code ? (
-              <p className="mt-1 font-mono text-[12px] font-bold tracking-[0.18em] text-[#E8C56B]">{code}</p>
-            ) : null}
+        </div>
+        <div className="mx-auto shrink-0 text-center sm:mx-0">
+          <div className="rounded-2xl bg-white p-2 shadow-md">
+            {qrSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qrSrc} alt={qrAlt} className="h-28 w-28 sm:h-32 sm:w-32" />
+            ) : (
+              <div className="flex h-28 w-28 items-center justify-center text-center text-[11px] leading-tight text-ink/50 sm:h-32 sm:w-32">
+                {qrEmpty}
+              </div>
+            )}
           </div>
+          {code ? (
+            <p className="mt-2 font-mono text-[12px] font-bold tracking-[0.18em] text-[#E8C56B]">{code}</p>
+          ) : null}
         </div>
       </div>
       <div className="mt-5 flex flex-col gap-3 border-t border-white/15 pt-4 sm:mt-6 sm:flex-row sm:items-end sm:justify-between">

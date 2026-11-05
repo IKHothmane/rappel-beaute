@@ -110,8 +110,8 @@ export function CommissionsReportView() {
       />
 
       <p className="mb-4 text-sm">
-        <Link href="/reports/" className="text-primary">
-          ← Rapports
+        <Link href="/commissions/" className="text-primary">
+          ← Commissions
         </Link>
       </p>
 

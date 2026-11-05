@@ -34,7 +34,11 @@ export function AppointmentCard({
   const s = APPOINTMENT_STATUS_STYLE[appointment.status];
   const start = new Date(appointment.startAt);
   const end = new Date(appointment.endAt);
-  const timeLabel = `${start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} — ${end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+  const durationMin = (end.getTime() - start.getTime()) / 60_000;
+  const short = compact || durationMin <= 30;
+  const timeLabel = short
+    ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    : `${start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} — ${end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
 
   return (
     <div
@@ -50,7 +54,15 @@ export function AppointmentCard({
       }}
       style={style}
       className={cn(
-        "group relative w-full overflow-hidden rounded-xl border p-2.5 pl-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+        "group relative flex h-full w-full flex-col",
+        "overflow-hidden rounded-xl border",
+        "p-2.5 pl-3.5 text-left",
+        "shadow-[0_3px_12px_rgba(60,20,40,0.07)]",
+        "transition-all duration-200",
+        "hover:z-30 hover:shadow-lg",
+        "focus-visible:outline-none",
+        "focus-visible:ring-2 focus-visible:ring-[#B83E72]",
+        "motion-reduce:transition-none",
         surface.fill,
         surface.border,
         draggable && "cursor-grab active:cursor-grabbing",
@@ -58,29 +70,29 @@ export function AppointmentCard({
       )}
     >
       <span className={cn("absolute inset-y-0 left-0 w-1.5", surface.bar)} />
-      {!compact ? (
-        <p className="font-mono text-[10px] font-semibold text-ink/45">{timeLabel}</p>
-      ) : null}
-      <p className={cn("mt-0.5 truncate text-sm font-semibold text-ink", muted && "line-through")}>
-        {appointment.serviceName}
+      <p className={cn("truncate text-sm font-semibold text-ink", muted && "line-through")}>
+        {appointment.customerName.trim() || "Cliente"}
       </p>
-      <p className="truncate text-xs text-ink/60">{appointment.customerName}</p>
-      {!compact ? (
-        <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] text-ink/45">
-          <span className={cn("h-2 w-2 shrink-0 rounded-full", color.bar)} />
-          <span className="truncate">
-            {appointment.staffName}
-            {appointment.resourceName ? ` · ${appointment.resourceName}` : ""}
-          </span>
-        </p>
+      <p className="font-mono text-[10px] font-semibold text-ink/45">{timeLabel}</p>
+      <p className="truncate text-xs text-ink/60">{appointment.serviceName}</p>
+      {!short ? (
+        <>
+          <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] text-ink/45">
+            <span className={cn("h-2 w-2 shrink-0 rounded-full", color.bar)} />
+            <span className="truncate">
+              {appointment.staffName}
+              {appointment.resourceName ? ` · ${appointment.resourceName}` : ""}
+            </span>
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
+            <span className={cn("text-[10px] font-semibold", s.text)}>
+              {APPOINTMENT_STATUS_LABEL[appointment.status]}
+            </span>
+            <AppointmentPayBadge appointment={appointment} />
+          </div>
+        </>
       ) : null}
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
-        <span className={cn("text-[10px] font-semibold", s.text)}>
-          {APPOINTMENT_STATUS_LABEL[appointment.status]}
-        </span>
-        <AppointmentPayBadge appointment={appointment} />
-      </div>
     </div>
   );
 }

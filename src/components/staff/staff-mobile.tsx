@@ -147,7 +147,7 @@ export function StaffMobile({
             </button>
           ) : null}
           <Link
-            href="/planning/"
+            href="/staff/?tab=planning"
             className="inline-flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#F0DDE9] text-[13px] font-semibold text-ink"
           >
             <Timer size={18} className="text-[#7B5900]" />
@@ -451,7 +451,7 @@ function StaffListCard({
       ) : null}
 
       <Link
-        href="/planning/"
+        href="/staff/?tab=planning"
         className="inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
       >
         <CalendarDays size={14} />

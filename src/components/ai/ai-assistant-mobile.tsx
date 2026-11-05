@@ -368,7 +368,7 @@ export function AiAssistantMobile(props: AiAssistantMobileProps) {
                   )}
                 </div>
                 <Link
-                  href="/planning/"
+                  href="/staff/?tab=planning"
                   className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-institut py-2.5 text-[14px] font-bold text-white"
                 >
                   Ouvrir le planning

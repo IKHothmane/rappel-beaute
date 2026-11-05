@@ -14,6 +14,7 @@ import {
   buildAgendaLayout,
   type AgendaTimeLayout,
 } from "@/components/agenda/agenda-time-scale";
+import { layoutOverlappingEvents } from "@/components/agenda/agenda-overlap-layout";
 import { cn } from "@/lib/utils";
 
 type StaffCol = { id: string; name: string };
@@ -36,7 +37,7 @@ type AgendaGridProps = {
 };
 
 function blockStyle(layout: AgendaTimeLayout, start: Date, end: Date) {
-  return agendaBlockPosition(layout, start, end, 40);
+  return agendaBlockPosition(layout, start, end, 56);
 }
 
 export function AgendaGrid({
@@ -63,17 +64,16 @@ export function AgendaGrid({
   const { rows, totalHeight } = layout;
 
   return (
-    <div className="hidden overflow-hidden rounded-xl bg-white shadow-soft md:block">
+    <div className="hidden w-full min-w-0 overflow-hidden rounded-xl bg-white shadow-soft md:block">
       <div className="border-b border-line px-4 py-3 text-sm font-bold text-ink">
         {date
           .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
           .replace(/^\p{L}/u, (letter) => letter.toUpperCase())}
       </div>
-      <div className="overflow-x-auto">
-        <div className="min-w-[640px]">
+      <div className="w-full min-w-0">
           <div
             className="grid border-b border-line bg-[#FBF4F6]"
-            style={{ gridTemplateColumns: `72px repeat(${staff.length}, minmax(140px, 1fr))` }}
+            style={{ gridTemplateColumns: `56px repeat(${staff.length}, minmax(0, 1fr))` }}
           >
             <div className="px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-ink/40">
               Heure
@@ -92,7 +92,7 @@ export function AgendaGrid({
           <div
             className="relative grid"
             style={{
-              gridTemplateColumns: `72px repeat(${staff.length}, minmax(140px, 1fr))`,
+              gridTemplateColumns: `56px repeat(${staff.length}, minmax(0, 1fr))`,
               height: totalHeight,
             }}
           >
@@ -210,14 +210,20 @@ export function AgendaGrid({
                         })
                     : null}
 
-                  {colAppts.map((apt) => {
+                  {layoutOverlappingEvents(colAppts).map(({ event: apt, left, width }) => {
                     const start = new Date(apt.startAt);
                     const end = new Date(apt.endAt);
                     return (
                       <div
                         key={apt.id}
-                        className="absolute inset-x-1 z-10"
-                        style={blockStyle(layout, start, end)}
+                        className="absolute z-10 px-[2px]"
+                        style={{
+                          ...blockStyle(layout, start, end),
+                          left: `${left}%`,
+                          width: `${width}%`,
+                          right: "auto",
+                          minWidth: 0,
+                        }}
                       >
                         <AppointmentCard
                           appointment={apt}
@@ -233,7 +239,6 @@ export function AgendaGrid({
               );
             })}
           </div>
-        </div>
       </div>
     </div>
   );

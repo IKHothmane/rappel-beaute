@@ -113,17 +113,17 @@ export function PromotionsMobile({
         >
           ← Offres
         </button>
-        <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
+        <section className="space-y-3 rounded-[26px] border border-[#F0E7EB] bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#981C52]">
               Inspection
             </span>
-            <span className="font-mono text-[11px] text-ink/40">{promoShortId(selected.id)}</span>
+            <span className="font-mono text-[11px] text-[#765E6B]">{promoShortId(selected.id)}</span>
           </div>
-          <div className="flex items-center justify-between rounded-xl bg-[#FFEFF8] p-3">
+          <div className="flex items-center justify-between rounded-2xl border border-[#F1E8EC] bg-[#FFF7FB] p-3">
             <div>
-              <p className="text-[18px] font-bold">{selected.code ?? selected.name}</p>
-              <p className="text-[13px] text-ink/55">
+              <p className="text-[18px] font-bold text-[#30202C]">{selected.code ?? selected.name}</p>
+              <p className="text-[13px] text-[#765E6B]">
                 {selected.name} · {discountLabel(selected)}
               </p>
             </div>
@@ -131,7 +131,7 @@ export function PromotionsMobile({
               <button
                 type="button"
                 onClick={() => onCopy(selected.code!, "Code copié")}
-                className="inline-flex h-8 items-center gap-1 rounded-lg bg-white px-2.5 text-[12px] font-semibold text-primary shadow-sm"
+                className="inline-flex h-8 items-center gap-1 rounded-xl bg-white px-2.5 text-[12px] font-semibold text-[#981C52] shadow-sm"
               >
                 <Copy size={14} />
                 Copier
@@ -201,7 +201,7 @@ export function PromotionsMobile({
             <button
               type="button"
               onClick={() => onToggleStatus(selected)}
-              className="h-11 w-full rounded-lg bg-[#F6E3EF] text-[13px] font-semibold"
+              className="h-11 w-full rounded-xl bg-[#981C52] text-[13px] font-semibold text-white transition hover:bg-[#78133E]"
             >
               {selected.status === "ACTIVE" ? "Désactiver" : "Activer"}
             </button>
@@ -213,42 +213,58 @@ export function PromotionsMobile({
 
   return (
     <div className="w-full space-y-4 pb-8 lg:hidden">
-      <section className="space-y-2">
-        <h1 className="text-[28px] font-bold leading-9 tracking-tight">Promotions & offres</h1>
-        <p className="text-[13px] text-ink/55">Campagnes, codes et plafonds — liés au POS réel.</p>
-        {canWrite ? (
-          <button
-            type="button"
-            onClick={onAdd}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[14px] font-bold text-white shadow-sm"
-          >
-            <Plus size={18} />
-            Nouvelle promotion
-          </button>
-        ) : null}
+      <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#54112F] via-[#831D4A] to-[#B83E72] px-5 py-7 text-white shadow-lg">
+        <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full border-[32px] border-white/5" />
+        <div className="relative space-y-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold">
+            <BadgePercent size={13} />
+            Marketing & fidélisation
+          </div>
+          <h1 className="text-[28px] font-bold leading-9 tracking-tight">Promotions & offres</h1>
+          <p className="text-[13px] leading-relaxed text-pink-100">
+            Créez des offres et suivez vos campagnes commerciales.
+          </p>
+          <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
+            <Gift size={22} className="text-pink-100" />
+            <div>
+              <p className="text-2xl font-extrabold">{kpis?.activeCount ?? "—"}</p>
+              <p className="text-[11px] text-pink-100">Promotions actives</p>
+            </div>
+          </div>
+          {canWrite ? (
+            <div className="grid gap-2 pt-1">
+              <button
+                type="button"
+                onClick={onAdd}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-[14px] font-bold text-[#831D4A] shadow-md"
+              >
+                <Plus size={17} />
+                Nouvelle promotion
+              </button>
+              <button
+                type="button"
+                onClick={onDeploy}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 text-[14px] font-semibold text-white"
+              >
+                <Zap size={16} />
+                Préparer une offre
+              </button>
+            </div>
+          ) : null}
+        </div>
       </section>
 
-      <section className="relative overflow-hidden rounded-xl bg-[#382D36] p-4 text-[#FEECF7] shadow-sm">
+      <section className="relative overflow-hidden rounded-[24px] border border-[#EAD5DF] bg-gradient-to-r from-[#FFF4F8] via-white to-[#FFF8FB] p-4 text-[#382633] shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
+          <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#831D4A]">
             <Bot size={14} />
             Copilote
           </span>
-          <Sparkles size={14} className="text-[#F0BF5C]" />
+          <Sparkles size={14} className="text-[#B83E72]" />
         </div>
-        <p className="mt-2 text-[13px] leading-snug">{insight.headline}</p>
-        <p className="mt-2 text-[12px] text-[#FEECF7]/80">{insight.recommendation}</p>
-        <p className="mt-1.5 rounded bg-white/5 px-2 py-1.5 text-[11px]">{insight.conflict}</p>
-        {canWrite ? (
-          <button
-            type="button"
-            onClick={onDeploy}
-            className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-[14px] font-semibold text-white"
-          >
-            <Zap size={16} />
-            Préparer une offre
-          </button>
-        ) : null}
+        <p className="mt-2 text-[13px] leading-snug text-[#382633]">{insight.headline}</p>
+        <p className="mt-2 text-[12px] text-[#765E6B]">{insight.recommendation}</p>
+        <p className="mt-1.5 rounded-lg bg-white/80 px-2 py-1.5 text-[11px] text-[#765E6B]">{insight.conflict}</p>
       </section>
 
       <section>
@@ -296,15 +312,15 @@ export function PromotionsMobile({
       </section>
 
       <section className="space-y-2.5">
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="flex gap-1.5 overflow-x-auto rounded-2xl border border-[#F1E8EC] bg-white p-2 shadow-sm">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => onTab(t.id)}
               className={cn(
-                "shrink-0 rounded-full px-3.5 py-1.5 text-[14px] font-semibold",
-                tab === t.id ? "bg-primary text-white" : "bg-[#F6E3EF] text-ink",
+                "shrink-0 rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-all duration-200",
+                tab === t.id ? "bg-[#981C52] text-white shadow-sm" : "text-[#765E6B] hover:bg-[#FAF0F5]",
               )}
             >
               {t.label}
@@ -313,21 +329,25 @@ export function PromotionsMobile({
           ))}
         </div>
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Promotion, code, soin…"
-            className="h-11 w-full rounded-xl bg-white pl-10 pr-4 text-[13px] shadow-sm outline-none"
+            className="h-11 w-full rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] pl-10 pr-4 text-[13px] outline-none transition focus:border-[#C95483] focus:ring-2 focus:ring-pink-100"
           />
         </div>
       </section>
 
       <section className="space-y-3">
         {loading ? (
-          <p className="rounded-xl bg-white p-6 text-center text-[13px] text-ink/45">Chargement…</p>
+          <p className="rounded-[22px] border border-[#F1E8EC] bg-white p-6 text-center text-[13px] text-[#765E6B]">
+            Chargement…
+          </p>
         ) : rows.length === 0 ? (
-          <p className="rounded-xl bg-white p-6 text-center text-[13px] text-ink/45">Aucune promotion.</p>
+          <p className="rounded-[22px] border border-[#F1E8EC] bg-white p-6 text-center text-[13px] text-[#765E6B]">
+            Aucune promotion.
+          </p>
         ) : (
           rows.map((p) => {
             const st = statusChip(p);
@@ -341,7 +361,7 @@ export function PromotionsMobile({
                   onSelect(p.id);
                   setView("focus");
                 }}
-                className="flex w-full flex-col gap-2.5 rounded-xl bg-white p-3.5 text-left shadow-sm"
+                className="flex w-full flex-col gap-2.5 rounded-[22px] border border-[#F1E8EC] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#E7B9CD] hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -405,13 +425,13 @@ function KpiMini({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-3 shadow-sm">
+    <div className="flex flex-col justify-between rounded-[22px] border border-[#F1E8EC] bg-white p-3.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#E7B9CD] hover:shadow-md">
       <div className="flex items-center justify-between gap-1">
-        <span className="truncate text-[11px] font-bold uppercase tracking-wider text-ink/45">{label}</span>
-        {icon}
+        <span className="truncate text-[11px] font-bold uppercase tracking-wider text-[#765E6B]">{label}</span>
+        <span className="text-[#981C52]">{icon}</span>
       </div>
-      <p className="mt-2 text-[22px] font-bold leading-7">{value}</p>
-      <p className="mt-0.5 text-[11px] text-ink/45">{hint}</p>
+      <p className="mt-2 text-[22px] font-bold leading-7 text-[#30202C]">{value}</p>
+      <p className="mt-0.5 text-[11px] text-[#765E6B]">{hint}</p>
     </div>
   );
 }

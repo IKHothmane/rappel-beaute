@@ -38,6 +38,14 @@ export function PlanFeatureRouteGuard({ children }: { children: ReactNode }) {
     return <FeatureLockedPanel feature="cashRegister" navKey="payments" />;
   }
 
+  const teamPage = path.startsWith("/staff") || path.startsWith("/planning");
+  if (teamPage) {
+    if (loading || isNavEnabled("staff") || isNavEnabled("planning")) {
+      return <>{children}</>;
+    }
+    return <FeatureLockedPanel feature="staff" navKey="staff" />;
+  }
+
   const required = navKey ? NAV_PLAN_FEATURE[navKey] : null;
 
   if (loading || !required || isNavEnabled(navKey!)) {

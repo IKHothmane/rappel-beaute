@@ -71,30 +71,12 @@ export async function ensureJoinQr(organizationId: string): Promise<JoinQrView> 
   return created;
 }
 
+/**
+ * QR d'institut stable : un seul code par organisation, jamais remplacé.
+ * Si un QR actif existe déjà, on le renvoie tel quel.
+ */
 export async function regenerateJoinQr(organizationId: string): Promise<JoinQrView> {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await client.query(
-      `UPDATE "LoyaltyJoinQr" SET status = 'REVOKED', "revokedAt" = NOW()
-       WHERE "organizationId" = $1 AND status = 'ACTIVE'`,
-      [organizationId],
-    );
-    const token = joinToken();
-    await client.query(
-      `INSERT INTO "LoyaltyJoinQr" (id, "organizationId", token, status) VALUES ($1, $2, $3, 'ACTIVE')`,
-      [newLoyaltyId("ljqr"), organizationId, token],
-    );
-    await client.query("COMMIT");
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
-  const created = await getActiveJoinQr(organizationId);
-  if (!created) throw new Error("JOIN_QR_FAILED");
-  return created;
+  return ensureJoinQr(organizationId);
 }
 
 export async function revokeJoinQr(organizationId: string): Promise<void> {

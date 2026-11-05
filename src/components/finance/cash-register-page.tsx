@@ -1,18 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import {
-  AlertTriangle,
-  Banknote,
-  CreditCard,
-  Download,
-  Lock,
-  Plus,
-  Search,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Download, Search } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import { AppointmentPromoNote } from "@/components/finance/appointment-promo-note";
 import {
@@ -22,14 +12,13 @@ import {
   exportCashCsv,
   filterCashTxns,
   formatCashDateTime,
-  formatCashTime,
   opsCount,
   paymentMix,
-  saleCount,
   sumAbsTypes,
   txnTypeChip,
 } from "@/components/finance/cash-helpers";
 import { formatPaymentServices } from "@/components/finance/payment-helpers";
+import { CashRegisterHero } from "@/components/finance/cash-register-hero";
 import { CashRegisterMobile } from "@/components/finance/cash-register-mobile";
 import { PaymentTicketModal } from "@/components/finance/payment-ticket";
 import {
@@ -76,7 +65,7 @@ export function CashRegisterPageView() {
 
   const [loading, setLoading] = useState(true);
   const [state, setState] = useState<CashRegisterState | null>(null);
-  const [float, setFloat] = useState("1000");
+  const [float, setFloat] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [tab, setTab] = useState<CashTab>("overview");
   const [search, setSearch] = useState("");
@@ -146,10 +135,7 @@ export function CashRegisterPageView() {
   const mix = paymentMix(session);
   const refunds = sumAbsTypes(txns, ["REFUND_OUT"]);
   const ops = opsCount(txns);
-  const sales = saleCount(txns);
   const theoretical = session?.theoreticalBalance ?? 0;
-  const countedN = counted === "" ? null : Number(counted);
-  const gap = countedN == null || Number.isNaN(countedN) ? null : countedN - theoretical;
   const drawer = isOpen
     ? theoretical
     : (session?.closingCounted ?? session?.theoreticalBalance ?? 0);
@@ -362,49 +348,58 @@ export function CashRegisterPageView() {
         />
       ) : null}
 
-      <div className="hidden space-y-6 lg:block">
-        <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink">
-              <Wallet size={26} className="text-primary" />
-              Caisse & mouvements
-            </h1>
-            <p className="mt-1 max-w-3xl text-[15px] text-ink/50">
-              {user.orgName || "Votre institut"} — encaissements, sorties tiroir et clôture. Seules les
-              espèces alimentent le solde physique.
-            </p>
-          </div>
-          {canWrite && isOpen ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => void openPayDrawer()}
-                className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-primary px-4 text-[14px] font-semibold text-white shadow-md"
-              >
-                <Plus size={18} />
-                Nouvel encaissement
-              </button>
-              <button
-                type="button"
-                onClick={() => openOut("out")}
-                className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-[#F0DDE9] px-3.5 text-[14px] font-semibold text-ink"
-              >
-                <Banknote size={18} className="text-[#7B5900]" />
-                Sortie
-              </button>
-            </div>
-          ) : null}
-        </section>
+      <div className="hidden min-w-0 space-y-6 lg:block">
+        <CashRegisterHero
+          isOpen={Boolean(isOpen)}
+          balance={drawer}
+          openedAt={session?.openedAt}
+          canWrite={canWrite}
+          float={float}
+          onFloatChange={setFloat}
+          submitting={submitting}
+          lastClosedLabel={
+            session?.status === "CLOSED" && session.closedAt
+              ? formatCashDateTime(session.closedAt)
+              : null
+          }
+          lastCloseHint={
+            session?.status === "CLOSED" && session.difference != null
+              ? session.difference === 0
+                ? "écart nul"
+                : `écart ${formatMad(session.difference)}`
+              : null
+          }
+          openingFloat={session?.openingFloat ?? 0}
+          cashIn={session?.cashIn ?? 0}
+          cashOut={session?.cashOut ?? 0}
+          theoretical={theoretical}
+          refunds={refunds}
+          movements={ops}
+          counted={counted}
+          onCountedChange={setCounted}
+          closeReason={closeReason}
+          onCloseReasonChange={setCloseReason}
+          onPayment={() => void openPayDrawer()}
+          onWithdrawal={() => void openOut("out")}
+          onRefund={() => {
+            setTab("refunds");
+            if (showPayments) {
+              toast("Les remboursements liés aux tickets se gèrent aussi dans Paiements.", "info");
+            }
+          }}
+          onClose={handleClose}
+          onOpen={handleOpen}
+        />
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <nav className="flex flex-wrap gap-1.5 rounded-2xl border border-[#F1E8EC] bg-white p-2 shadow-sm">
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
               className={cn(
-                "whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold",
-                tab === t.id ? "bg-[#F0DDE9] text-ink shadow-sm" : "bg-[#FFEFF8] text-ink/60 hover:bg-[#FCE9F4]",
+                "whitespace-nowrap rounded-xl px-4 py-2.5 text-[13px] font-semibold transition",
+                tab === t.id ? "bg-[#981C52] text-white shadow-sm" : "text-[#765E6B] hover:bg-[#FAF0F5]",
               )}
             >
               {t.label}
@@ -413,113 +408,19 @@ export function CashRegisterPageView() {
           {showExpenses ? (
             <Link
               href="/expenses/"
-              className="whitespace-nowrap rounded-lg bg-[#FFEFF8] px-4 py-2 text-[14px] font-semibold text-ink/60 hover:bg-[#FCE9F4]"
+              className="whitespace-nowrap rounded-xl px-4 py-2.5 text-[13px] font-semibold text-[#765E6B] hover:bg-[#FAF0F5]"
             >
               Dépenses
             </Link>
           ) : null}
-        </div>
+        </nav>
 
-        {tab !== "history" ? (
-          <div className="grid grid-cols-2 gap-4 xl:grid-cols-6">
-            <KpiCard
-              label="Espèces au tiroir"
-              value={formatMad(drawer)}
-              hint={
-                session?.status === "CLOSED" && session.difference != null && session.difference !== 0
-                  ? `Écart ${formatMad(session.difference)}`
-                  : isOpen
-                    ? "Solde théorique"
-                    : "Dernier comptage"
-              }
-              alert={session?.status === "CLOSED" && (session.difference ?? 0) !== 0}
-              icon={<Banknote size={18} />}
-            />
-            <KpiCard
-              label="Encaissements espèces"
-              value={formatMad(session?.cashIn ?? 0)}
-              hint="Session ouverte"
-              icon={<CreditCard size={18} />}
-            />
-            <KpiCard
-              label="Sorties caisse"
-              value={formatMad(session?.cashOut ?? 0)}
-              hint="Espèces décaissées"
-              icon={<Wallet size={18} />}
-            />
-            <KpiCard
-              label="Remboursements"
-              value={formatMad(refunds)}
-              hint="Mouvements REFUND"
-              icon={<AlertTriangle size={18} />}
-            />
-            <KpiCard
-              label="Paiements du jour"
-              value={formatMad(session?.paymentsToday.total ?? 0)}
-              hint="Toutes méthodes"
-              accent
-              icon={<Wallet size={18} />}
-            />
-            <KpiCard
-              label="Mouvements"
-              value={`${ops}`}
-              hint={`${sales} encaissement${sales > 1 ? "s" : ""}`}
-              icon={<Wallet size={18} />}
-            />
-          </div>
-        ) : null}
-
-        <div className="relative overflow-hidden rounded-xl bg-ink p-6 text-[#FEECF7] shadow-xl">
-          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-3xl space-y-1">
-              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-[#FFDEA4]">
-                <Sparkles size={16} />
-                Lecture de caisse
-              </div>
-              <p className="text-[18px] font-semibold leading-7">{insight}</p>
-            </div>
-            {canWrite && isOpen ? (
-              <button
-                type="button"
-                onClick={() => document.getElementById("cash-close")?.scrollIntoView({ behavior: "smooth" })}
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#FFDEA4] px-4 text-[14px] font-bold text-[#261900]"
-              >
-                Rapprochement
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-          <div className="space-y-4 lg:col-span-8">
-            {!isOpen && canWrite ? (
-              <div className="max-w-lg space-y-4 rounded-xl bg-white p-6 shadow-sm">
-                <h2 className="text-[18px] font-semibold">Ouvrir la caisse</h2>
-                {session?.status === "CLOSED" ? (
-                  <p className="text-[13px] text-ink/55">
-                    Dernière caisse fermée le {formatCashTime(session.closedAt)}
-                    {session.closedAt ? ` (${new Date(session.closedAt).toLocaleDateString("fr-MA")})` : ""}
-                    {session.difference != null ? ` · écart ${formatMad(session.difference)}` : ""}.
-                  </p>
-                ) : (
-                  <p className="text-[13px] text-ink/55">Aucune caisse ouverte.</p>
-                )}
-                <label className="block text-[13px]">
-                  <span className="mb-1.5 block font-medium">Fond de caisse</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={float}
-                    onChange={(e) => setFloat(e.target.value)}
-                  />
-                </label>
-                <Button type="button" variant="primary" disabled={submitting} onClick={handleOpen}>
-                  {submitting ? "Ouverture…" : "Ouvrir la caisse"}
-                </Button>
-              </div>
-            ) : !isOpen && !canWrite ? (
-              <p className="rounded-xl bg-white p-6 text-[13px] text-ink/50 shadow-sm">Lecture seule. Aucune caisse ouverte.</p>
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
+          <div className="min-w-0 space-y-4 xl:col-span-8">
+            {!isOpen && !canWrite ? (
+              <p className="rounded-2xl bg-white p-6 text-[13px] text-ink/50 shadow-sm">
+                Lecture seule. Aucune caisse ouverte.
+              </p>
             ) : null}
 
             {tab === "history" ? (
@@ -556,119 +457,104 @@ export function CashRegisterPageView() {
                 )}
               </div>
             ) : (
-              <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+              <div className="space-y-5 rounded-[24px] border border-[#F1E8EC] bg-white p-6 shadow-[0_8px_30px_rgba(60,20,40,0.06)] sm:p-7">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-[22px] font-semibold">Journal des flux</h2>
+                    <h2 className="text-xl font-bold text-ink">Journal des opérations</h2>
                     <p className="text-[13px] text-ink/50">Mouvements de la session courante.</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-ink/35" />
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Ticket, motif…"
-                        className="h-9 w-56 rounded-lg bg-[#FFEFF8] pl-8 pr-3 text-[13px] outline-none"
+                        className="h-10 w-56 rounded-xl bg-[#FAF0F5] pl-9 pr-3 text-[13px] outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
                     <button
                       type="button"
                       title="Exporter CSV"
                       onClick={() => exportCashCsv(filtered)}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FFEFF8] text-ink hover:bg-[#FCE9F4]"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FAF0F5] text-ink hover:bg-[#FCE9F4]"
                     >
                       <Download size={16} />
                     </button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-left text-[13px]">
-                    <thead>
-                      <tr className="bg-[#FFEFF8] text-[11px] font-bold uppercase tracking-wider text-ink/50">
-                        <th className="rounded-l-lg px-3 py-2.5">Date et heure</th>
-                        <th className="px-3 py-2.5">Type / motif</th>
-                        <th className="px-3 py-2.5">Mode</th>
-                        <th className="px-3 py-2.5">Opérateur</th>
-                        <th className="px-3 py-2.5 text-right">Montant</th>
-                        <th className="px-3 py-2.5 text-center">Statut</th>
-                        <th className="rounded-r-lg px-3 py-2.5 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((t) => {
-                        const canTicket = Boolean(t.paymentId) && t.type === "SALE";
-                        return (
-                        <tr key={t.id} className="border-t border-transparent hover:bg-[#FFEFF8]/60">
-                          <td className="whitespace-nowrap px-3 py-3 font-semibold">
-                            {formatCashDateTime(t.createdAt)}
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="font-semibold">{CASH_TXN_LABEL[t.type]}</div>
-                            <div className="text-[12px] text-ink/50">{t.reason || "—"}</div>
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3">
-                            {t.method ? PAYMENT_METHOD_LABEL[t.method] : "—"}
-                          </td>
-                          <td className="px-3 py-3 text-ink/55">{t.userName ?? "—"}</td>
-                          <td
-                            className={cn(
-                              "whitespace-nowrap px-3 py-3 text-right font-semibold",
-                              t.amount < 0 ? "text-[#BA1A1A]" : "text-primary",
-                            )}
-                          >
-                            {t.amount > 0 ? "+" : ""}
-                            {formatMad(t.amount)}
-                          </td>
-                          <td className="px-3 py-3 text-center">
-                            <span
+                <div className="space-y-2">
+                  {filtered.length === 0 ? (
+                    <p className="rounded-2xl bg-[#FAF0F5] p-8 text-center text-[13px] text-ink/50">
+                      Aucun mouvement.
+                    </p>
+                  ) : (
+                    filtered.map((t) => {
+                      const canTicket = Boolean(t.paymentId) && t.type === "SALE";
+                      return (
+                        <div
+                          key={t.id}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F1E8EC] bg-[#FFFBFD] px-4 py-3.5 transition hover:border-[#E8C9D6]"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="truncate text-[15px] font-bold text-ink">{CASH_TXN_LABEL[t.type]}</p>
+                              <span
+                                className={cn(
+                                  "inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold",
+                                  txnTypeChip(t.type),
+                                )}
+                              >
+                                {t.method ? PAYMENT_METHOD_LABEL[t.method] : "Espèces"}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 text-[12px] text-ink/50">
+                              {formatCashDateTime(t.createdAt)}
+                              {t.userName ? ` · ${t.userName}` : ""}
+                              {t.reason ? ` · ${t.reason}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <p
                               className={cn(
-                                "inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium",
-                                txnTypeChip(t.type),
+                                "text-[16px] font-extrabold tabular-nums",
+                                t.amount < 0 ? "text-[#BA1A1A]" : "text-[#981C52]",
                               )}
                             >
-                              {CASH_TXN_LABEL[t.type]}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3 text-right">
+                              {t.amount > 0 ? "+" : ""}
+                              {formatMad(t.amount)}
+                            </p>
                             {canTicket ? (
                               <button
                                 type="button"
-                                className="text-[12px] font-semibold text-primary hover:underline disabled:opacity-50"
+                                className="rounded-lg bg-[#FCE9F4] px-2.5 py-1.5 text-[12px] font-semibold text-ink hover:bg-[#F0DDE9] disabled:opacity-50"
                                 disabled={ticketLoadingId === t.paymentId}
                                 onClick={() => void openTicket(t.paymentId)}
                               >
                                 {ticketLoadingId === t.paymentId ? "…" : "Ticket"}
                               </button>
-                            ) : (
-                              <span className="text-[11px] text-ink/30">—</span>
-                            )}
-                          </td>
-                        </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  {filtered.length === 0 ? (
-                    <p className="p-6 text-center text-[13px] text-ink/50">Aucun mouvement.</p>
-                  ) : null}
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
                 {session ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#FFEFF8] p-4 text-[13px]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#FAF0F5] p-4 text-[13px]">
                     <span className="text-ink/55">
-                      {filtered.length} ligne{filtered.length > 1 ? "s" : ""} affichée
-                      {filtered.length > 1 ? "s" : ""}
+                      {filtered.length} opération{filtered.length > 1 ? "s" : ""}
                     </span>
-                    <div className="flex flex-wrap gap-2 text-[14px] font-semibold">
-                      <span className="rounded bg-white px-3 py-1">
+                    <div className="flex flex-wrap gap-2 text-[13px] font-semibold">
+                      <span className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
                         Carte : {formatMad(session.paymentsToday.card)}
                       </span>
-                      <span className="rounded bg-white px-3 py-1">
+                      <span className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
                         Espèces : {formatMad(session.paymentsToday.cash)}
                       </span>
-                      <span className="rounded bg-white px-3 py-1">
+                      <span className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
                         Virement : {formatMad(session.paymentsToday.transfer)}
                       </span>
                     </div>
@@ -676,106 +562,9 @@ export function CashRegisterPageView() {
                 ) : null}
               </div>
             )}
-
-            <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
-              <h3 className="text-[18px] font-semibold">Permissions caisse</h3>
-              <p className="text-[13px] text-ink/50">
-                Vous êtes <strong>{ROLE_LABEL[user.role]}</strong>
-                {canWrite
-                  ? " : ouverture, encaissement, sorties et clôture."
-                  : " : consultation du journal."}
-              </p>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <RoleCard
-                  title="Propriétaire / responsable"
-                  items={["Ouvrir et clôturer", "Sorties tiroir", "Encaisser les tickets"]}
-                />
-                <RoleCard
-                  title="Caisse"
-                  items={["Encaisser", "Consulter le tiroir", "Sorties justifiées"]}
-                />
-                <RoleCard
-                  title="Comptable"
-                  items={["Lecture des sessions", "Paiements du jour", "Sans clôture"]}
-                  muted
-                />
-              </div>
-            </div>
           </div>
 
-          <div className="space-y-4 lg:col-span-4">
-            {isOpen ? (
-              <div id="cash-close" className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
-                <h3 className="text-[18px] font-semibold">Rapprochement espèces</h3>
-                <p className="text-[13px] text-ink/50">Contrôle du tiroir — solde théorique vs comptage.</p>
-                <div className="space-y-2 rounded-lg bg-[#FFEFF8] p-3 text-[13px]">
-                  <div className="flex justify-between text-ink/55">
-                    <span>Fonds initial</span>
-                    <span className="font-semibold text-ink">{formatMad(session?.openingFloat ?? 0)}</span>
-                  </div>
-                  <div className="flex justify-between text-ink/55">
-                    <span>+ Encaissements espèces</span>
-                    <span className="font-semibold text-emerald-700">{formatMad(session?.cashIn ?? 0)}</span>
-                  </div>
-                  <div className="flex justify-between text-ink/55">
-                    <span>- Sorties tiroir</span>
-                    <span className="font-semibold text-[#BA1A1A]">{formatMad(-(session?.cashOut ?? 0))}</span>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-[#E4BDC2]/40 pt-2 font-bold">
-                    <span>= Solde théorique</span>
-                    <span className="text-[22px] text-primary">{formatMad(theoretical)}</span>
-                  </div>
-                </div>
-                {canWrite ? (
-                  <>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-ink/45">
-                      Espèces comptées
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        value={counted}
-                        onChange={(e) => setCounted(e.target.value)}
-                        className="mt-1 h-12 w-full rounded-lg bg-[#F0DDE9] px-4 text-[22px] font-bold outline-none"
-                      />
-                    </label>
-                    {gap != null && gap !== 0 ? (
-                      <div className="rounded-lg bg-[#FFDAD6] p-3 text-[#93000A]">
-                        <div className="flex items-center gap-1.5 text-[14px] font-bold">
-                          <AlertTriangle size={16} />
-                          Écart constaté : {formatMad(gap)}
-                        </div>
-                        <p className="mt-1 text-[13px]">Un motif est obligatoire avant validation.</p>
-                      </div>
-                    ) : gap === 0 ? (
-                      <p className="text-[13px] font-semibold text-emerald-700">Comptage aligné.</p>
-                    ) : null}
-                    <label className="block text-[13px]">
-                      <span className="mb-1 block text-ink/55">Motif de clôture</span>
-                      <textarea
-                        value={closeReason}
-                        onChange={(e) => setCloseReason(e.target.value)}
-                        rows={2}
-                        placeholder="Ex. fond conforme, rendu monnaie…"
-                        className="w-full rounded-lg bg-[#FFEFF8] p-2.5 text-[13px] outline-none"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      disabled={submitting || counted === "" || !closeReason.trim()}
-                      onClick={handleClose}
-                      className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-[14px] font-bold text-white shadow-md disabled:opacity-40"
-                    >
-                      <Lock size={18} />
-                      Valider le rapprochement
-                    </button>
-                  </>
-                ) : (
-                  <p className="text-[13px] text-ink/45">Lecture seule.</p>
-                )}
-              </div>
-            ) : null}
-
+          <div className="space-y-4 xl:col-span-4">
             <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <h3 className="text-[18px] font-semibold">Ventilation du jour</h3>
@@ -1028,46 +817,3 @@ export function CashRegisterPageView() {
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  hint,
-  icon,
-  alert,
-  accent,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: ReactNode;
-  alert?: boolean;
-  accent?: boolean;
-}) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between text-ink/45">
-        <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        <span className="rounded-lg bg-[#FCE9F4] p-1.5 text-primary">{icon}</span>
-      </div>
-      <div className="mt-2">
-        <div className={cn("text-[22px] font-semibold tracking-tight", accent ? "text-primary" : "text-ink")}>
-          {value}
-        </div>
-        <p className={cn("mt-1 text-[13px]", alert ? "font-semibold text-[#BA1A1A]" : "text-ink/50")}>{hint}</p>
-      </div>
-    </div>
-  );
-}
-
-function RoleCard({ title, items, muted }: { title: string; items: string[]; muted?: boolean }) {
-  return (
-    <div className={cn("space-y-2 rounded-lg p-4", muted ? "bg-[#FFEFF8]" : "bg-[#F0DDE9]/50")}>
-      <p className="text-[14px] font-bold">{title}</p>
-      <ul className="space-y-1 text-[13px] text-ink">
-        {items.map((item) => (
-          <li key={item}>· {item}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}

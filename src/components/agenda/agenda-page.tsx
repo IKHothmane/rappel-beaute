@@ -42,6 +42,7 @@ import { listStaffForAgenda } from "@/modules/staff/service";
 import { listResourcesForAgenda } from "@/modules/resources/service";
 import { loadPlanningApi } from "@/modules/planning/service";
 import { getWhatsAppDashboard } from "@/modules/whatsapp/service";
+import { isSameBusinessDay } from "@/lib/time/business-timezone";
 import type { ServiceAgendaOption, ServiceFormOptions } from "@/types/service";
 import type { StaffAgendaContext } from "@/types/staff";
 import type { ResourceAgendaContext } from "@/types/resource";
@@ -277,13 +278,46 @@ export function AgendaPage() {
   }, [appointments, formOptions, weekDates]);
 
   const staffCounts = useMemo(() => {
+    const dates = view === "month" ? monthDates : visibleDates;
+    const staffList = formOptions?.staff ?? [];
     const counts: Record<string, number> = {};
-    for (const apt of filtered) {
-      if (apt.status === "CANCELLED") continue;
-      counts[apt.staffId] = (counts[apt.staffId] ?? 0) + 1;
+    for (const member of staffList) counts[member.id] = 0;
+
+    const nameToId = new Map(
+      staffList.map((member) => [member.name.trim().toLowerCase(), member.id]),
+    );
+
+    for (const apt of appointments) {
+      if (apt.status === "CANCELLED" || apt.status === "NO_SHOW") continue;
+      const start = new Date(apt.startAt);
+      if (!dates.some((d) => isSameBusinessDay(start, d))) continue;
+      if (serviceFilter !== "ALL" && apt.serviceId !== serviceFilter) continue;
+      if (resourceFilter !== "ALL" && apt.resourceId !== resourceFilter) continue;
+      if (statusFilter !== "ALL" && apt.status !== statusFilter) continue;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        const hay = `${apt.customerName} ${apt.serviceName} ${apt.staffName}`.toLowerCase();
+        if (!hay.includes(q)) continue;
+      }
+
+      const byId = apt.staffId && counts[apt.staffId] !== undefined ? apt.staffId : null;
+      const byName = nameToId.get(apt.staffName.trim().toLowerCase()) ?? null;
+      const key = byId ?? byName;
+      if (!key) continue;
+      counts[key] = (counts[key] ?? 0) + 1;
     }
     return counts;
-  }, [filtered]);
+  }, [
+    appointments,
+    view,
+    monthDates,
+    visibleDates,
+    formOptions?.staff,
+    serviceFilter,
+    resourceFilter,
+    statusFilter,
+    search,
+  ]);
 
   const nextSlotHint = useMemo(() => {
     if (!selected) return null;
@@ -535,27 +569,32 @@ export function AgendaPage() {
       </div>
 
       <div className="mb-3 hidden flex-wrap items-center gap-2 text-sm md:flex">
-        <span className="text-ink/45">Colonnes jour :</span>
-        <button
-          type="button"
-          onClick={() => setColumnMode("staff")}
-          className={`rounded-lg px-3 py-1.5 text-xs ${
-            columnMode === "staff" ? "bg-primary-light text-primary" : "bg-white text-ink/60"
-          }`}
-        >
-          Employées
-        </button>
-        <button
-          type="button"
-          onClick={() => setColumnMode("resource")}
-          className={`rounded-lg px-3 py-1.5 text-xs ${
-            columnMode === "resource" ? "bg-primary-light text-primary" : "bg-white text-ink/60"
-          }`}
-        >
-          Cabines
-        </button>
-        <span className="text-[11px] text-ink/40">(vue Jour uniquement)</span>
-        <Link href="/planning/" className="ml-auto text-xs text-ink/50 underline">
+        {view === "day" ? (
+          <>
+            <span className="text-ink/45">Colonnes jour :</span>
+            <button
+              type="button"
+              onClick={() => setColumnMode("staff")}
+              className={`rounded-lg px-3 py-1.5 text-xs ${
+                columnMode === "staff" ? "bg-primary-light text-primary" : "bg-white text-ink/60"
+              }`}
+            >
+              Employées
+            </button>
+            <button
+              type="button"
+              onClick={() => setColumnMode("resource")}
+              className={`rounded-lg px-3 py-1.5 text-xs ${
+                columnMode === "resource" ? "bg-primary-light text-primary" : "bg-white text-ink/60"
+              }`}
+            >
+              Cabines
+            </button>
+          </>
+        ) : (
+          <span className="text-ink/45">Colonnes jour · une colonne par journée</span>
+        )}
+        <Link href="/staff/?tab=planning" className="ml-auto text-xs text-ink/50 underline">
           Fermetures · heures supp. · remplacements
         </Link>
       </div>
@@ -571,8 +610,8 @@ export function AgendaPage() {
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.25 }}
           >
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-              <div className="lg:col-span-8 2xl:col-span-9">
+            <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
+              <div className="min-w-0 lg:col-span-8 2xl:col-span-9">
                 {view === "month" ? (
                   <AgendaMonthGrid
                     dates={monthDates}

@@ -238,11 +238,12 @@ export async function listInstituteReviews(organizationId: string) {
     createdAt: Date;
     firstName: string;
     lastName: string;
+    phone: string;
     serviceName: string;
     reportReason: string | null;
   }>(
     `SELECT r.id, r.rating, r.comment, r.status::text AS status, r."createdAt",
-            c."firstName", c."lastName",
+            c."firstName", c."lastName", c.phone,
             COALESCE(a."serviceNameSnapshot", s.name, CASE WHEN a.id IS NULL THEN 'Carte fidélité' ELSE 'Prestation' END) AS "serviceName",
             r."reportReason"
      FROM "Review" r
@@ -261,6 +262,7 @@ export async function listInstituteReviews(organizationId: string) {
     status: row.status,
     createdAt: new Date(row.createdAt).toISOString(),
     customerName: `${row.firstName} ${row.lastName}`.trim(),
+    phone: row.phone,
     serviceName: row.serviceName,
     reportReason: row.reportReason,
   }));

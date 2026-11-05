@@ -104,7 +104,7 @@ export function ResourceFocusPanel({
           maintenance. Aucun incident à afficher pour le moment.
         </p>
         <Link
-          href="/planning/"
+          href="/staff/?tab=planning"
           className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-primary"
         >
           <CalendarDays size={14} />

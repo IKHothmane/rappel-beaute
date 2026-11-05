@@ -54,3 +54,6 @@ next-env.d.ts
 /cookies.txt
 /tmp-*.mjs
 /tmp-*.ts
+
+# Playwright MCP
+.playwright-mcp/

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight, CalendarDays, Check, ChevronDown, CreditCard, ShieldCheck } from "lucide-react";
 import { JsonLd } from "@/components/www/JsonLd";
 import { Reveal } from "@/components/www/Reveal";
 import { SeoCloser } from "@/components/www/SeoCloser";
@@ -12,6 +13,18 @@ export const metadata = marketingPageMetadata({
   description: `Rappel Beauty à ${PUBLIC_OFFER.monthlyPrice} DH/mois ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH/an. ${PUBLIC_OFFER.trialDays} jours gratuits, sans carte bancaire et sans engagement. Gérez votre institut de beauté simplement.`,
   canonical: "/tarifs/",
 });
+
+const TRUST = [
+  { icon: CalendarDays, label: `${PUBLIC_OFFER.trialDays} jours gratuits` },
+  { icon: CreditCard, label: "Sans carte bancaire" },
+  { icon: ShieldCheck, label: "Sans engagement" },
+] as const;
+
+const PLAN_FEATURES = [
+  "Toutes les fonctionnalités",
+  "Support en français",
+  "Mises à jour incluses",
+] as const;
 
 const GROUPS = [
   {
@@ -106,53 +119,88 @@ export default function TarifsPage() {
           })),
         }}
       />
-      <section className="border-b border-line bg-paper py-14 sm:py-20">
+      <section className="relative overflow-hidden border-b border-line bg-gradient-to-b from-primary-light/60 via-paper to-paper py-14 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <Reveal className="text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
               Une formule pour les instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Tarifs Rappel Beauty
+              Un seul tarif, <span className="text-primary">tout inclus</span>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-ink/70 sm:text-base">
-              {PUBLIC_OFFER.trialDays} jours gratuits, sans carte bancaire et sans engagement. Les prix
-              ci-dessous sont ceux de l&apos;offre publique.
+              Toutes les fonctionnalités, en dirhams, sans option cachée. Testez{" "}
+              {PUBLIC_OFFER.trialDays} jours gratuitement, sans carte bancaire et sans engagement.
             </p>
+            <ul className="mt-6 flex flex-wrap justify-center gap-2 text-xs font-medium text-ink/75">
+              {TRUST.map(({ icon: Icon, label }) => (
+                <li
+                  key={label}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5"
+                >
+                  <Icon size={14} className="text-primary" aria-hidden="true" />
+                  {label}
+                </li>
+              ))}
+            </ul>
           </Reveal>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
+          <div className="mx-auto mt-12 grid max-w-3xl gap-5 md:grid-cols-2">
             <article className="flex h-full flex-col rounded-2xl border border-line bg-white p-6 text-left sm:p-8">
               <h2 className="font-display text-2xl font-light text-ink">Mensuel</h2>
-              <p className="mt-4 font-display text-4xl text-ink">{price} DH</p>
-              <p className="mt-1 text-sm text-ink/60">par mois</p>
-              <p className="mt-4 flex-1 text-sm leading-relaxed text-ink/70">
-                La même formule, réglée chaque mois. Douze mois reviennent à {formatPrice(price * 12)} DH.
+              <p className="mt-1 text-sm text-ink/60">Réglé chaque mois</p>
+              <p className="mt-5 flex items-end gap-1.5">
+                <span className="font-display text-5xl font-light text-ink">{price}</span>
+                <span className="mb-1.5 text-sm text-ink/60">DH / mois</span>
               </p>
+              <ul className="mt-6 flex-1 space-y-2.5">
+                {PLAN_FEATURES.map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-ink/75">
+                    <Check size={16} strokeWidth={2.5} className="shrink-0 text-primary" aria-hidden="true" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
               <Link
                 href="/professionnel/"
-                className="mt-6 inline-flex items-center justify-center rounded-full border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
+                className="mt-7 inline-flex items-center justify-center gap-2 rounded-full border border-primary px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary-light"
               >
-                S&apos;inscrire
+                Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
+                <ArrowRight size={16} aria-hidden="true" />
               </Link>
             </article>
-            <article className="flex h-full flex-col rounded-2xl border border-primary/30 bg-white p-6 text-left shadow-sm sm:p-8">
+            <article className="relative flex h-full flex-col rounded-2xl border-2 border-primary bg-white p-6 text-left shadow-[0_24px_60px_-34px_rgba(190,24,93,0.6)] sm:p-8">
+              <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-white shadow-sm">
+                Économisez {savings} DH
+              </span>
               <h2 className="font-display text-2xl font-light text-ink">Annuel</h2>
-              <p className="mt-4 font-display text-4xl text-ink">{yearly} DH</p>
-              <p className="mt-1 text-sm text-ink/60">par an</p>
-              <p className="mt-4 text-sm font-semibold text-primary">
-                {savings} DH d&apos;économie par rapport à 12 mensualités
+              <p className="mt-1 text-sm text-ink/60">Réglé une fois par an</p>
+              <p className="mt-5 flex items-end gap-1.5">
+                <span className="font-display text-5xl font-light text-primary">{yearly}</span>
+                <span className="mb-1.5 text-sm text-ink/60">DH / an</span>
               </p>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-ink/70">
-                {price} DH × 12 = {formatPrice(price * 12)} DH, contre {yearly} DH pour l&apos;année.
+              <p className="mt-2 text-xs text-ink/60">
+                au lieu de {formatPrice(price * 12)} DH en 12 mensualités
               </p>
+              <ul className="mt-5 flex-1 space-y-2.5">
+                {PLAN_FEATURES.map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-ink/75">
+                    <Check size={16} strokeWidth={2.5} className="shrink-0 text-primary" aria-hidden="true" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
               <Link
                 href="/professionnel/"
-                className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+                className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
               >
-                S&apos;inscrire
+                Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
+                <ArrowRight size={16} aria-hidden="true" />
               </Link>
             </article>
           </div>
+          <p className="mt-6 text-center text-xs text-ink/55">
+            Les deux formules donnent accès exactement aux mêmes fonctionnalités.
+          </p>
         </div>
       </section>
 
@@ -173,7 +221,10 @@ export default function TarifsPage() {
                 <h3 className="font-display text-xl font-light text-ink">{group.title}</h3>
                 <ul className="mt-4 space-y-2 text-sm text-ink/70">
                   {group.items.map((item) => (
-                    <li key={item}>{item}</li>
+                    <li key={item} className="flex items-center gap-2">
+                      <Check size={14} strokeWidth={2.5} className="shrink-0 text-primary" aria-hidden="true" />
+                      {item}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -284,8 +335,18 @@ export default function TarifsPage() {
           </h2>
           <div className="mt-9 space-y-3">
             {FAQS.map((faq) => (
-              <details key={faq.question} className="rounded-xl border border-line bg-white px-5 py-4">
-                <summary className="cursor-pointer text-sm font-semibold text-ink">{faq.question}</summary>
+              <details
+                key={faq.question}
+                className="group rounded-xl border border-line bg-white px-5 py-4 transition open:border-primary/30 open:shadow-sm"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                  {faq.question}
+                  <ChevronDown
+                    size={18}
+                    className="shrink-0 text-primary transition-transform group-open:rotate-180"
+                    aria-hidden="true"
+                  />
+                </summary>
                 <p className="mt-3 text-sm leading-6 text-ink/70">{faq.answer}</p>
               </details>
             ))}

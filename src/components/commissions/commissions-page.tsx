@@ -809,7 +809,7 @@ export function CommissionsPageView() {
               </Link>
             ) : null}
             {canExport ? (
-              <Link href="/reports/commissions/" className="rounded-lg bg-[#F6E3EF] px-3 py-2 text-center font-semibold">
+              <Link href="/commissions/report/" className="rounded-lg bg-[#F6E3EF] px-3 py-2 text-center font-semibold">
                 Rapport détaillé
               </Link>
             ) : null}

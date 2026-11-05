@@ -25,7 +25,6 @@ type Props = {
   financeHidden: boolean;
   onReceived: () => void;
   onToast: (msg: string, kind?: "success" | "error" | "info") => void;
-  onOpenFull?: () => void;
   onEdit?: () => void;
 };
 
@@ -36,7 +35,6 @@ export function PurchaseFocusPanel({
   financeHidden,
   onReceived,
   onToast,
-  onOpenFull,
   onEdit,
 }: Props) {
   const idempotencyRef = useRef(newIdempotencyKey());
@@ -215,7 +213,9 @@ export function PurchaseFocusPanel({
           })}
         </div>
       ) : (
-        <p className="text-[12px] text-ink/45">{p.itemCount} référence{p.itemCount > 1 ? "s" : ""} — ouvrez la fiche pour le détail.</p>
+        <p className="text-[12px] text-ink/45">
+          {p.itemCount} référence{p.itemCount > 1 ? "s" : ""}
+        </p>
       )}
 
       <p className="rounded-lg bg-[#F6E3EF] p-3 text-[12px] leading-relaxed text-ink/60">
@@ -243,20 +243,6 @@ export function PurchaseFocusPanel({
           Modifier le brouillon
         </button>
       ) : null}
-
-      {onOpenFull ? (
-        <button
-          type="button"
-          onClick={onOpenFull}
-          className="text-center text-[12px] font-semibold text-primary hover:underline"
-        >
-          Fiche complète
-        </button>
-      ) : (
-        <Link href={`/purchases/${p.id}/`} className="text-center text-[12px] font-semibold text-primary hover:underline">
-          Fiche complète
-        </Link>
-      )}
     </div>
   );
 }

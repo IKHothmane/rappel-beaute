@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode, type RefObject, useState } from "react";
-import { ChevronDown, History, Package, Search, SlidersHorizontal, Sparkles, Truck } from "lucide-react";
+import { ChevronDown, History, Package, Search, SlidersHorizontal, Truck } from "lucide-react";
 import {
   alertBarClass,
   alertChipClass,
@@ -31,10 +31,8 @@ type InventoryMobileProps = {
   catalogCount: number;
   kpis: StockKpis | null;
   optimalCount: number;
-  openOrders: number;
   canWrite: boolean;
   financeHidden: boolean;
-  insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
   searchRef: RefObject<HTMLInputElement>;
@@ -56,7 +54,6 @@ type InventoryMobileProps = {
   onAdjust: (id: string) => void;
   onReceipt: () => void;
   onInventory: () => void;
-  showPurchases: boolean;
 };
 
 export function InventoryMobile({
@@ -64,10 +61,8 @@ export function InventoryMobile({
   catalogCount,
   kpis,
   optimalCount,
-  openOrders,
   canWrite,
   financeHidden,
-  insight,
   searchInput,
   onSearchChange,
   searchRef,
@@ -89,7 +84,6 @@ export function InventoryMobile({
   onAdjust,
   onReceipt,
   onInventory,
-  showPurchases,
 }: InventoryMobileProps) {
   const out = kpis?.outOfStockCount ?? 0;
   const low = kpis?.lowStockCount ?? 0;
@@ -183,23 +177,6 @@ export function InventoryMobile({
               <span className="text-lg font-bold text-primary">{out}</span>
               <span className="text-[11px] text-ink/45">Rupture</span>
             </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-xl bg-[#F6E3EF] p-4">
-        <div className="flex items-start gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-primary">
-            <Sparkles size={16} />
-          </span>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-primary">Journal réel</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-ink/75">{insight}</p>
-            {showPurchases && openOrders > 0 ? (
-              <Link href="/purchases/" className="mt-2 inline-flex text-[12px] font-semibold text-primary">
-                {openOrders > 1 ? `${openOrders} commandes en attente →` : `${openOrders} commande en attente →`}
-              </Link>
-            ) : null}
           </div>
         </div>
       </section>

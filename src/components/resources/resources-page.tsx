@@ -542,7 +542,7 @@ export function ResourcesPageView() {
               <span>
                 {filtered.length} ressource{filtered.length !== 1 ? "s" : ""}
               </span>
-              <Link href="/planning/" className="inline-flex items-center gap-1 text-primary">
+              <Link href="/staff/?tab=planning" className="inline-flex items-center gap-1 text-primary">
                 <CalendarDays size={12} />
                 Planning
               </Link>

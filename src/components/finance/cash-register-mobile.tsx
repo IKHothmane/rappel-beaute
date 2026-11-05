@@ -13,7 +13,6 @@ import {
   type CashTab,
   closedHistoryLabel,
   formatCashDateTime,
-  formatCashTime,
   opsCount,
   paymentMix,
   saleCount,
@@ -98,206 +97,215 @@ export function CashRegisterMobile({
 
   return (
     <div className="space-y-4 pb-8 lg:hidden">
-      <section className="rounded-xl bg-white p-4 shadow-sm space-y-3">
-        <div>
-          <h1 className="text-[22px] font-semibold leading-tight text-ink">Caisse & mouvements</h1>
-          <p className="mt-0.5 text-[13px] text-ink/55">
-            {orgName} · {roleLabel}. Espèces au tiroir ≠ paiements carte / virement.
-          </p>
-        </div>
-        {canWrite && isOpen ? (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={onPay}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-lg bg-primary text-[14px] font-semibold text-white shadow-sm"
-            >
-              <Plus className="h-5 w-5" />
-              Nouvel encaissement
-            </button>
-            <button
-              type="button"
-              onClick={onOut}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-lg bg-[#FCE9F4] text-[14px] font-semibold text-ink"
-            >
-              <Banknote className="h-5 w-5 text-[#7B5900]" />
-              Sortie
-            </button>
+      <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#54112F] via-[#831D4A] to-[#B83E72] p-5 text-white shadow-lg">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full border-[28px] border-white/10" />
+        <div className="relative space-y-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-semibold">
+            <Sparkles className="h-3.5 w-3.5" />
+            Gestion financière
+          </span>
+          <div>
+            <h1 className="text-[24px] font-extrabold leading-tight">Caisse & mouvements</h1>
+            <p className="mt-1 text-[12px] text-pink-100">
+              {orgName} · {roleLabel}
+            </p>
           </div>
-        ) : null}
-
-        <div className="flex gap-2 overflow-x-auto pb-0.5">
-          {(
-            [
-              ["overview", "Vue générale"],
-              ["journal", `Flux (${txns.length})`],
-              ["out", `Sorties (${formatMad(session?.cashOut ?? 0)})`],
-              ["refunds", `Remb. (${formatMad(refunds)})`],
-              ["history", "Clôtures"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onTab(id)}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
               className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-[12px] font-bold",
-                tab === id ? "bg-primary text-white shadow-sm" : "bg-[#FCE9F4] text-ink",
+                "rounded-full px-2.5 py-1 text-[11px] font-bold",
+                isOpen ? "bg-emerald-400/20 text-emerald-100" : "bg-white/15 text-white",
               )}
             >
-              {label}
-            </button>
-          ))}
-          {showExpenses ? (
-            <Link
-              href="/expenses/"
-              className="shrink-0 rounded-full bg-[#FCE9F4] px-3 py-1.5 text-[12px] font-bold text-ink"
-            >
-              Dépenses
-            </Link>
-          ) : null}
-        </div>
-      </section>
-
-      {tab !== "history" ? (
-        <section className="space-y-2">
-          <h2 className="px-0.5 text-[18px] font-semibold text-ink">Indicateurs</h2>
-          <div className="grid grid-cols-2 gap-2">
-            <KpiMini
-              label="Espèces tiroir"
-              value={formatMad(drawer)}
-              hint={isOpen ? "Solde théorique" : "Dernier comptage"}
-              alert={session?.status === "CLOSED" && (session.difference ?? 0) !== 0}
-            />
-            <KpiMini
-              label="Encaissements"
-              value={formatMad(session?.cashIn ?? 0)}
-              hint="Espèces session"
-            />
-            <KpiMini
-              label="Sorties caisse"
-              value={formatMad(session?.cashOut ?? 0)}
-              hint="Espèces décaissées"
-            />
-            <KpiMini label="Remboursements" value={formatMad(refunds)} hint="Sorties REFUND" />
-            <KpiMini
-              label="Paiements jour"
-              value={formatMad(session?.paymentsToday.total ?? 0)}
-              hint="Toutes méthodes"
-              accent
-            />
-            <KpiMini
-              label="Mouvements"
-              value={`${ops}`}
-              hint={`${sales} encaissement${sales > 1 ? "s" : ""}`}
-            />
+              {isOpen ? "● Ouverte" : "● Fermée"}
+            </span>
           </div>
-        </section>
-      ) : null}
-
-      <section className="relative overflow-hidden rounded-xl bg-ink p-4 text-[#FEECF7] shadow-sm">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
-          <Sparkles className="h-4 w-4" />
-          Lecture de caisse
-        </div>
-        <p className="mt-2 text-[13px] leading-relaxed text-[#FEECF7]/90">{insight}</p>
-      </section>
-
-      {!isOpen && canWrite ? (
-        <section className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
-          <h2 className="text-[18px] font-semibold text-ink">Ouvrir la caisse</h2>
-          {session?.status === "CLOSED" ? (
-            <p className="text-[13px] text-ink/55">
-              Dernière clôture {formatCashTime(session.closedAt)}
-              {session.difference != null ? ` · écart ${formatMad(session.difference)}` : ""}.
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
+            <p className="text-[11px] text-pink-100">
+              {isOpen ? "Solde théorique" : "Dernier solde compté"}
             </p>
-          ) : (
-            <p className="text-[13px] text-ink/55">Aucun tiroir ouvert aujourd’hui.</p>
-          )}
-          <label className="block text-[13px]">
-            <span className="mb-1 block font-semibold">Fond de caisse</span>
-            <input
-              type="number"
-              min={0}
-              step={0.01}
-              value={float}
-              onChange={(e) => onFloat(e.target.value)}
-              className="h-12 w-full rounded-lg bg-[#FFEFF8] px-3 text-[18px] font-bold outline-none"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={onOpen}
-            className="flex h-12 w-full items-center justify-center rounded-lg bg-primary text-[14px] font-semibold text-white"
-          >
-            {submitting ? "Ouverture…" : "Ouvrir la caisse"}
-          </button>
-        </section>
-      ) : null}
-
-      {isOpen && tab !== "history" ? (
-        <section id="cash-close-mobile" className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Audit physique</p>
-            <h2 className="text-[18px] font-semibold text-ink">Rapprochement tiroir</h2>
+            <p className="mt-1 text-[26px] font-extrabold tracking-tight">{formatMad(drawer)}</p>
+            <p className="mt-2 text-[11px] leading-relaxed text-pink-100/90">{insight}</p>
           </div>
-          <div className="space-y-2 rounded-xl bg-[#FFEFF8] p-3 text-[13px]">
-            <Row label="Fonds initial" value={formatMad(session?.openingFloat ?? 0)} />
-            <Row label="+ Encaissements espèces" value={formatMad(session?.cashIn ?? 0)} positive />
-            <Row label="- Sorties tiroir" value={formatMad(-(session?.cashOut ?? 0))} negative />
-            <div className="mt-1 flex items-center justify-between rounded-lg bg-[#F0DDE9] px-2 py-1.5">
-              <span className="text-[14px] font-bold">= Solde théorique</span>
-              <span className="text-[18px] font-bold text-primary">{formatMad(theoretical)}</span>
-            </div>
-          </div>
-          {canWrite ? (
+          {canWrite && isOpen ? (
             <>
-              <label className="block text-[13px] font-semibold">
-                Espèces réellement comptées
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={onPay}
+                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-white text-[13px] font-bold text-[#831D4A]"
+                >
+                  <Plus className="h-4 w-4" />
+                  Encaisser
+                </button>
+                <button
+                  type="button"
+                  onClick={onOut}
+                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-white/30 bg-white/10 text-[13px] font-semibold text-white"
+                >
+                  <Banknote className="h-4 w-4" />
+                  Sortie
+                </button>
+              </div>
+              <div
+                id="cash-close-mobile"
+                className="space-y-3 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
+              >
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-pink-100">Clôture</p>
+                  <h2 className="mt-1 text-[18px] font-bold">Rapprochement espèces</h2>
+                </div>
+                <div className="space-y-1.5 rounded-xl bg-black/15 p-3 text-[12px]">
+                  <Row label="Fonds initial" value={formatMad(session?.openingFloat ?? 0)} light />
+                  <Row label="+ Encaissements" value={formatMad(session?.cashIn ?? 0)} positive light />
+                  <Row label="- Sorties" value={formatMad(-(session?.cashOut ?? 0))} negative light />
+                  <div className="mt-1 flex items-center justify-between border-t border-white/15 pt-2">
+                    <span className="text-[13px] font-bold">= Théorique</span>
+                    <span className="text-[16px] font-bold tabular-nums">{formatMad(theoretical)}</span>
+                  </div>
+                </div>
+                <label className="block text-[12px]">
+                  <span className="mb-1 block font-semibold text-pink-100">Espèces comptées (MAD)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={counted}
+                    onChange={(e) => onCounted(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-white/20 bg-white px-3 text-[18px] font-bold text-[#54112F] outline-none"
+                  />
+                </label>
+                {gap != null && gap !== 0 ? (
+                  <div className="rounded-xl bg-[#FFDAD6] p-3 text-[#93000A]">
+                    <div className="flex items-center gap-1.5 text-[13px] font-bold">
+                      <AlertTriangle className="h-4 w-4" />
+                      Écart {formatMad(gap)}
+                    </div>
+                    <p className="mt-1 text-[12px]">Motif obligatoire.</p>
+                  </div>
+                ) : gap === 0 ? (
+                  <p className="text-[13px] font-semibold text-emerald-200">Comptage aligné.</p>
+                ) : null}
+                <label className="block text-[12px]">
+                  <span className="mb-1 block font-semibold text-pink-100">
+                    Motif{gap != null && gap !== 0 ? " (obligatoire)" : " (optionnel)"}
+                  </span>
+                  <textarea
+                    value={closeReason}
+                    onChange={(e) => onCloseReason(e.target.value)}
+                    rows={2}
+                    placeholder={
+                      gap != null && gap !== 0
+                        ? "Expliquez l’écart constaté…"
+                        : "Ex. rendu monnaie, fond conforme…"
+                    }
+                    className="w-full rounded-xl border border-white/20 bg-white/95 p-2.5 text-[13px] text-[#54112F] outline-none"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={
+                    submitting || counted === "" || (gap != null && gap !== 0 && !closeReason.trim())
+                  }
+                  onClick={onClose}
+                  className="flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-white text-[14px] font-bold text-[#831D4A] disabled:opacity-40"
+                >
+                  <Lock className="h-4 w-4" />
+                  {submitting ? "Clôture…" : "Valider le rapprochement"}
+                </button>
+              </div>
+            </>
+          ) : null}
+
+          {!isOpen && canWrite ? (
+            <div className="space-y-3 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-pink-100">Session fermée</p>
+                <h2 className="mt-1 text-[18px] font-bold">Ouvrir la caisse</h2>
+                {session?.status === "CLOSED" ? (
+                  <p className="mt-1.5 text-[12px] text-pink-100/90">
+                    Dernière clôture : {formatCashDateTime(session.closedAt)}
+                    {session.difference != null
+                      ? session.difference === 0
+                        ? " · écart nul"
+                        : ` · écart ${formatMad(session.difference)}`
+                      : ""}
+                    .
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-[12px] text-pink-100/90">
+                    Saisissez le fond de tiroir pour démarrer.
+                  </p>
+                )}
+              </div>
+              <label className="block text-[12px]">
+                <span className="mb-1 block font-semibold text-pink-100">Fond de caisse (MAD)</span>
                 <input
                   type="number"
                   min={0}
                   step={0.01}
-                  value={counted}
-                  onChange={(e) => onCounted(e.target.value)}
-                  className="mt-1 h-12 w-full rounded-lg bg-[#FFEFF8] px-3 text-[22px] font-bold outline-none"
-                />
-              </label>
-              {gap != null && gap !== 0 ? (
-                <div className="rounded-lg bg-[#FFDAD6] p-3 text-[#93000A]">
-                  <div className="flex items-center gap-1.5 text-[14px] font-bold">
-                    <AlertTriangle className="h-4 w-4" />
-                    Écart {formatMad(gap)}
-                  </div>
-                  <p className="mt-1 text-[13px]">Un motif est obligatoire pour sceller la clôture.</p>
-                </div>
-              ) : gap === 0 ? (
-                <p className="text-[13px] font-semibold text-emerald-700">Comptage aligné sur le théorique.</p>
-              ) : null}
-              <label className="block text-[13px]">
-                <span className="mb-1 block font-semibold">Motif de clôture</span>
-                <textarea
-                  value={closeReason}
-                  onChange={(e) => onCloseReason(e.target.value)}
-                  rows={2}
-                  placeholder="Ex. rendu monnaie, fond conforme…"
-                  className="w-full rounded-lg bg-[#FFEFF8] p-2.5 text-[13px] outline-none"
+                  value={float}
+                  placeholder="Ex. 500"
+                  onChange={(e) => onFloat(e.target.value)}
+                  className="h-12 w-full rounded-xl border border-white/20 bg-white px-3 text-[18px] font-bold text-[#54112F] outline-none"
                 />
               </label>
               <button
                 type="button"
-                disabled={submitting || counted === "" || !closeReason.trim()}
-                onClick={onClose}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-[14px] font-semibold text-white disabled:opacity-40"
+                disabled={submitting || float.trim() === ""}
+                onClick={onOpen}
+                className="flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-white text-[14px] font-bold text-[#831D4A] disabled:opacity-40"
               >
-                <Lock className="h-4 w-4" />
-                Valider le rapprochement
+                <Wallet className="h-4 w-4" />
+                {submitting ? "Ouverture…" : "Ouvrir la caisse"}
               </button>
-            </>
-          ) : (
-            <p className="text-[13px] text-ink/45">Lecture seule — clôture réservée à l’encaissement.</p>
-          )}
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <div className="flex gap-2 overflow-x-auto pb-0.5">
+        {(
+          [
+            ["overview", "Vue générale"],
+            ["journal", `Journal (${txns.length})`],
+            ["out", `Sorties`],
+            ["refunds", `Remb.`],
+            ["history", "Clôtures"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onTab(id)}
+            className={cn(
+              "shrink-0 rounded-xl px-3 py-2 text-[12px] font-bold",
+              tab === id ? "bg-[#981C52] text-white shadow-sm" : "bg-white text-ink shadow-sm",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+        {showExpenses ? (
+          <Link
+            href="/expenses/"
+            className="shrink-0 rounded-xl bg-white px-3 py-2 text-[12px] font-bold text-ink shadow-sm"
+          >
+            Dépenses
+          </Link>
+        ) : null}
+      </div>
+
+      {tab !== "history" ? (
+        <section className="grid grid-cols-2 gap-2">
+          <KpiMini label="Espèces encaissées" value={formatMad(session?.cashIn ?? 0)} hint="Session" />
+          <KpiMini label="Sorties" value={formatMad(session?.cashOut ?? 0)} hint="Décaissements" />
+          <KpiMini label="Remboursements" value={formatMad(refunds)} hint="REFUND" />
+          <KpiMini
+            label="Mouvements"
+            value={`${ops}`}
+            hint={`${sales} encaissement${sales > 1 ? "s" : ""}`}
+          />
         </section>
       ) : null}
 
@@ -484,20 +492,23 @@ function Row({
   value,
   positive,
   negative,
+  light,
 }: {
   label: string;
   value: string;
   positive?: boolean;
   negative?: boolean;
+  light?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-ink/55">{label}</span>
+      <span className={light ? "text-pink-100/85" : "text-ink/55"}>{label}</span>
       <span
         className={cn(
           "font-semibold",
-          positive && "text-emerald-700",
-          negative && "text-[#BA1A1A]",
+          light ? "text-white" : undefined,
+          positive && (light ? "text-emerald-200" : "text-emerald-700"),
+          negative && (light ? "text-rose-200" : "text-[#BA1A1A]"),
         )}
       >
         {value}

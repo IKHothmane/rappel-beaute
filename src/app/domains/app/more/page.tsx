@@ -12,8 +12,7 @@ const GROUPS = [
     title: "Gestion",
     links: [
       { href: "/services/", label: "Services" },
-      { href: "/staff/", label: "Employées" },
-      { href: "/planning/", label: "Planning Équipe" },
+      { href: "/staff/", label: "Équipe & Planning" },
       { href: "/salon-3d/", label: "Plan 3D" },
       { href: "/resources/", label: "Ressources" },
     ],
@@ -39,7 +38,6 @@ const GROUPS = [
     title: "Pilotage",
     links: [
       { href: "/analytics/", label: "Analytics" },
-      { href: "/reports/", label: "Rapports" },
       { href: "/notifications/", label: "Notifications" },
       { href: "/support/", label: "Aide & Support" },
       { href: "/settings/", label: "Paramètres" },

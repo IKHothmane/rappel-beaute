@@ -310,7 +310,7 @@ export function StaffPageView() {
                 </button>
               ) : null}
               <Link
-                href="/planning/"
+                href="/staff/?tab=planning"
                 className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm"
               >
                 <CalendarDays size={16} className="text-[#7B5900]" />
@@ -732,7 +732,7 @@ function StaffMasterCard({
         <span className="text-ink/45">{STAFF_STATUS_LABEL[s.status]}</span>
         <div className="flex items-center gap-1.5">
           <Link
-            href="/planning/"
+            href="/staff/?tab=planning"
             onClick={(e) => e.stopPropagation()}
             className="rounded-lg bg-[#FCE9F4] px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-[#F0DDE9]"
           >

@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/select";
+import { ServiceImageUpload } from "@/components/services/service-image-upload";
 import { ServiceStaffSelector } from "@/components/services/service-staff-selector";
 import { DURATION_PRESETS, SERVICE_NAME_SUGGESTIONS } from "@/components/services/services-helpers";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,10 @@ type ServiceFormProps = {
   onCancel: () => void;
 };
 
+function isCatalogDefaultUrl(url: string | null | undefined) {
+  return Boolean(url && url.includes("/services/platform/"));
+}
+
 export function ServiceForm({
   initial,
   options,
@@ -32,13 +37,43 @@ export function ServiceForm({
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [durationMin, setDurationMin] = useState(initial?.durationMin?.toString() ?? "60");
   const [staffIds, setStaffIds] = useState<string[]>(initial?.staff?.map((s) => s.staffId) ?? []);
+  const [imageUrl, setImageUrl] = useState<string | null>(initial?.imageUrl ?? null);
   const [active, setActive] = useState(initial?.active ?? true);
   const [nameOpen, setNameOpen] = useState(false);
+  const [catalogDefaults, setCatalogDefaults] = useState<Record<string, string>>({});
   const nameBox = useRef<HTMLDivElement>(null);
   const nameQuery = name.trim().toLowerCase();
   const nameSuggestions = SERVICE_NAME_SUGGESTIONS.filter((item) =>
     nameQuery ? item.toLowerCase().includes(nameQuery) : true,
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/services/catalog-defaults/", { credentials: "include", cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as { defaults?: Record<string, string> };
+        if (!cancelled) setCatalogDefaults(data.defaults ?? {});
+      })
+      .catch(() => {
+        /* ignore — suggestions restent utilisables sans image */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function applySuggestedName(item: string) {
+    setName(item);
+    setNameOpen(false);
+    const defaultImage = catalogDefaults[item] ?? null;
+    if (!defaultImage) return;
+
+    // Nouvelle fiche, ou photo absente / encore une image catalogue : appliquer le défaut.
+    if (!initial?.id || !imageUrl || isCatalogDefaultUrl(imageUrl)) {
+      setImageUrl(defaultImage);
+    }
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,6 +82,7 @@ export function ServiceForm({
       description: description.trim() || undefined,
       price: Number(price),
       durationMin: Number(durationMin),
+      imageUrl,
       active,
       staffIds,
     });
@@ -54,6 +90,16 @@ export function ServiceForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <span className="mb-1.5 block text-sm font-medium">Photo du service</span>
+        <ServiceImageUpload value={imageUrl} onChange={setImageUrl} disabled={submitting} />
+        {isCatalogDefaultUrl(imageUrl) ? (
+          <p className="mt-1.5 text-[11px] text-ink/45">
+            Image catalogue par défaut — vous pouvez la remplacer par votre photo.
+          </p>
+        ) : null}
+      </div>
+
       <div className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>
         <div ref={nameBox} className="relative">
@@ -77,21 +123,29 @@ export function ServiceForm({
           />
           {nameOpen && nameSuggestions.length > 0 ? (
             <ul className="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-line bg-white py-1 shadow-soft">
-              {nameSuggestions.map((item) => (
-                <li key={item}>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 text-left text-sm text-ink hover:bg-[#FFEFF8]"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setName(item);
-                      setNameOpen(false);
-                    }}
-                  >
-                    {item}
-                  </button>
-                </li>
-              ))}
+              {nameSuggestions.map((item) => {
+                const thumb = catalogDefaults[item];
+                return (
+                  <li key={item}>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink hover:bg-[#FFEFF8]"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applySuggestedName(item)}
+                    >
+                      {thumb ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={thumb} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                      ) : (
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FCE9F4] text-[10px] font-bold text-primary">
+                          {item.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                      <span>{item}</span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
         </div>

@@ -21,6 +21,7 @@ export type PublicServiceItem = {
   cleanupTimeMin: number;
   totalBlockMin: number;
   deposit: number | null;
+  imageUrl: string | null;
 };
 
 export type PublicStaffItem = {

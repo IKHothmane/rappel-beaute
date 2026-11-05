@@ -216,7 +216,7 @@ export function AdminMrrView() {
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8 lg:gap-6">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-5 pb-8 lg:gap-6">
       {/* Header */}
       <header className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">

@@ -81,6 +81,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (error instanceof Error && error.message === "NOT_FOUND") {
       return NextResponse.json({ error: "Service introuvable." }, { status: 404 });
     }
+    if (error instanceof Error && error.message === "INVALID_IMAGE") {
+      return NextResponse.json({ error: "Image invalide pour cet institut." }, { status: 400 });
+    }
     console.error("[PATCH /api/services/:id]", error);
     return NextResponse.json(
       { error: "Impossible de mettre à jour le service." },

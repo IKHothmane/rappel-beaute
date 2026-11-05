@@ -176,13 +176,22 @@ export function PublicHomePage({ slug }: { slug: string }) {
                 className="overflow-hidden rounded-2xl border border-[#EBDDE4] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
               >
                 <div className="relative h-44">
-                  <Image
-                    src={servicePlaceholderImage(service.id)}
-                    alt={service.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 100vw, 25vw"
-                  />
+                  {service.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={service.imageUrl}
+                      alt={service.name}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={servicePlaceholderImage(service.id)}
+                      alt={service.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, 25vw"
+                    />
+                  )}
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold">{service.name}</h3>

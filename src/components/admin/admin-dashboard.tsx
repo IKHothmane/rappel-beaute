@@ -111,7 +111,7 @@ export function AdminDashboardView() {
   if (!s || !data) return null;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 lg:gap-6">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-5 lg:gap-6">
       {/* Accueil */}
       <section className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between lg:p-8">
         <div className="space-y-1">

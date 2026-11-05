@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Gift, Search } from "lucide-react";
 import {
   fetchOrganization,
@@ -24,7 +24,7 @@ export function AdminLoyaltyView() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileInputId = useId();
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
@@ -166,14 +166,15 @@ export function AdminLoyaltyView() {
                 <p className="mt-6 text-sm text-white/75">0 / 10 passages</p>
               </article>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => fileRef.current?.click()}
-                  className="h-10 rounded-xl bg-ink px-4 text-sm font-bold text-white disabled:opacity-60"
+                <label
+                  htmlFor={fileInputId}
+                  aria-disabled={busy}
+                  className={`inline-flex h-10 cursor-pointer items-center rounded-xl bg-ink px-4 text-sm font-bold text-white ${
+                    busy ? "pointer-events-none opacity-60" : ""
+                  }`}
                 >
                   {busy ? "…" : backgroundUrl ? "Changer l'image" : "Ajouter une image"}
-                </button>
+                </label>
                 {backgroundUrl ? (
                   <button
                     type="button"
@@ -187,13 +188,15 @@ export function AdminLoyaltyView() {
               </div>
               <p className="text-[12px] text-ink/45">PNG, JPG ou WEBP · 2 Mo maximum.</p>
               <input
-                ref={fileRef}
+                id={fileInputId}
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
-                className="hidden"
+                className="sr-only"
+                disabled={busy}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) void saveBackground(file);
+                  event.target.value = "";
                 }}
               />
             </div>

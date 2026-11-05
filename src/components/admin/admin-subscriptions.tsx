@@ -439,7 +439,7 @@ export function AdminSubscriptionsView() {
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8 lg:gap-6">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-5 pb-8 lg:gap-6">
       {/* Header */}
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="max-w-3xl space-y-1">

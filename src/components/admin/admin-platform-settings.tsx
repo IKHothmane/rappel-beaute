@@ -246,7 +246,7 @@ export function AdminPlatformSettingsView() {
   const snap = bundle?.snapshots;
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 pb-12">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-5 pb-12">
       {/* Sticky header */}
       <div className="sticky top-0 z-20 -mx-1 flex flex-col gap-3 rounded-2xl bg-white/90 p-4 shadow-sm backdrop-blur-md md:flex-row md:items-center md:justify-between">
         <div>

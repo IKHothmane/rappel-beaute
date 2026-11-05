@@ -367,7 +367,7 @@ export function AdminAuditSecurityView() {
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 pb-12">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-5 pb-12">
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>

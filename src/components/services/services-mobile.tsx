@@ -395,9 +395,18 @@ function MobileServiceCard({
       </div>
 
       <div className="flex gap-2">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#F6E3EF] text-primary">
-          <Icon size={26} />
-        </div>
+        {s.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={s.imageUrl}
+            alt={s.name}
+            className="h-16 w-16 shrink-0 rounded-xl object-cover"
+          />
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#F6E3EF] text-primary">
+            <Icon size={26} />
+          </div>
+        )}
         <div className="flex min-w-0 flex-col justify-center">
           <h2 className="truncate text-[16px] font-bold leading-snug text-ink">{s.name}</h2>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">

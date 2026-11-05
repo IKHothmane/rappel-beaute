@@ -375,7 +375,7 @@ export function SupportTicketsPageView() {
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8 lg:gap-6">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-5 pb-8 lg:gap-6">
       {/* Header */}
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>

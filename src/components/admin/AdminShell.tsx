@@ -13,6 +13,7 @@ import {
   MonitorDot,
   PanelLeftClose,
   PanelLeftOpen,
+  Scissors,
   Search,
   Settings,
   Shield,
@@ -51,6 +52,10 @@ const NAV: NavGroup[] = [
     items: [{ href: "/billing/", label: "MRR & Revenus", icon: Activity }],
   },
   {
+    title: "Catalogue",
+    items: [{ href: "/services/", label: "Images services", icon: Scissors }],
+  },
+  {
     title: "Marketing",
     items: [{ href: "/marketing/ads/", label: "Agent Ads IA", icon: Megaphone }],
   },
@@ -72,10 +77,10 @@ const NAV: NavGroup[] = [
 ];
 
 const MOBILE_NAV: NavItem[] = [
-  { href: "/dashboard/", label: "Vue Globale", icon: LayoutDashboard },
+  { href: "/dashboard/", label: "Accueil", icon: LayoutDashboard },
   { href: "/organizations/", label: "Instituts", icon: Store },
-  { href: "/loyalty/", label: "Fidélité", icon: Gift },
-  { href: "/subscriptions/", label: "Abonnements", icon: CreditCard },
+  { href: "/services/", label: "Services", icon: Scissors },
+  { href: "/subscriptions/", label: "Abos", icon: CreditCard },
   { href: "/support/tickets/", label: "Support", icon: LifeBuoy, badge: "tickets" },
   { href: "/system/health/", label: "Système", icon: Terminal },
 ];
@@ -117,6 +122,12 @@ function isActive(pathname: string, href: string) {
   }
   if (href === "/subscriptions/") {
     return path.startsWith("/subscriptions");
+  }
+  if (href === "/services/") {
+    return path.startsWith("/services");
+  }
+  if (href === "/loyalty/") {
+    return path.startsWith("/loyalty");
   }
   return path === href || path.startsWith(href.replace(/\/$/, ""));
 }
@@ -490,7 +501,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </div>
             </header>
-            <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
+            <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-5 xl:p-6">{children}</main>
           </div>
 
           {/* Mobile layout */}
@@ -523,7 +534,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </div>
             </header>
-            <main className="flex-1 p-4">{children}</main>
+            <main className="min-w-0 flex-1 p-3 sm:p-4">{children}</main>
             <nav
               className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
               aria-label="Navigation mobile Super Admin"

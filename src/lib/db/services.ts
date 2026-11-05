@@ -26,6 +26,7 @@ type ServiceRow = {
   cleanupTimeMin: number;
   deposit: string | null;
   recommendedReturnDays: number | null;
+  imageUrl: string | null;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +35,21 @@ type ServiceRow = {
   resourceCount: string;
   productCount: string;
 };
+
+function assertOwnedServiceImageUrl(
+  imageUrl: string | null | undefined,
+  organizationId: string,
+): string | null | undefined {
+  if (imageUrl === undefined) return undefined;
+  if (imageUrl === null || imageUrl === "") return null;
+  if (imageUrl.includes("..")) throw new Error("INVALID_IMAGE");
+  const orgMarker = `/services/${organizationId}/`;
+  const catalogMarker = "/services/platform/";
+  if (!imageUrl.includes(orgMarker) && !imageUrl.includes(catalogMarker)) {
+    throw new Error("INVALID_IMAGE");
+  }
+  return imageUrl;
+}
 
 function rowToListItem(row: ServiceRow): ServiceListItem {
   return {
@@ -47,6 +63,7 @@ function rowToListItem(row: ServiceRow): ServiceListItem {
     cleanupTimeMin: row.cleanupTimeMin,
     deposit: row.deposit != null ? parseFloat(row.deposit) : null,
     recommendedReturnDays: row.recommendedReturnDays,
+    imageUrl: row.imageUrl ?? null,
     active: row.active,
     staffCount: parseInt(row.staffCount, 10) || 0,
     staffNames: row.staffNames ?? [],
@@ -67,6 +84,7 @@ const LIST_SELECT = `
     s."cleanupTimeMin",
     s.deposit::text,
     s."recommendedReturnDays",
+    s."imageUrl",
     s.active,
     s."createdAt",
     s."updatedAt",
@@ -377,11 +395,12 @@ export async function createService(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    const imageUrl = assertOwnedServiceImageUrl(input.imageUrl, organizationId) ?? null;
     await client.query(
       `INSERT INTO "Service" (
         id, "organizationId", name, description, category, price, "durationMin",
-        "prepTimeMin", "cleanupTimeMin", deposit, "recommendedReturnDays", active, "updatedAt"
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())`,
+        "prepTimeMin", "cleanupTimeMin", deposit, "recommendedReturnDays", "imageUrl", active, "updatedAt"
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())`,
       [
         id,
         organizationId,
@@ -396,6 +415,7 @@ export async function createService(
         input.recommendedReturnDays != null && input.recommendedReturnDays > 0
           ? input.recommendedReturnDays
           : null,
+        imageUrl,
         input.active !== false,
       ],
     );
@@ -476,6 +496,9 @@ export async function updateService(
       );
     }
     if (input.active !== undefined) setField("active", input.active);
+    if (input.imageUrl !== undefined) {
+      setField("imageUrl", assertOwnedServiceImageUrl(input.imageUrl, organizationId) ?? null);
+    }
 
     if (sets.length > 0) {
       sets.push(`"updatedAt" = NOW()`);

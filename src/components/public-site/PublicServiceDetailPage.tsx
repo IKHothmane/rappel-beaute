@@ -69,14 +69,23 @@ export function PublicServiceDetailPage({
 
       <div className="mt-6 overflow-hidden rounded-3xl border border-[#EBDDE4] bg-white shadow-sm">
         <div className="relative h-64 sm:h-80">
-          <Image
-            src={servicePlaceholderImage(service.id)}
-            alt={service.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 768px"
-            priority
-          />
+          {service.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={service.imageUrl}
+              alt={service.name}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <Image
+              src={servicePlaceholderImage(service.id)}
+              alt={service.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 768px"
+              priority
+            />
+          )}
         </div>
         <div className="p-6 sm:p-8">
           {service.category ? (

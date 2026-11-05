@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -189,7 +189,7 @@ function TenantDrawer({
   const [periodMode, setPeriodMode] = useState<"date" | "extend">("date");
   const [priceInput, setPriceInput] = useState("");
   const [backgroundBusy, setBackgroundBusy] = useState(false);
-  const backgroundInputRef = useRef<HTMLInputElement>(null);
+  const backgroundInputId = useId();
 
   async function reload() {
     const r = await fetchOrganization(orgId);
@@ -215,7 +215,6 @@ function TenantDrawer({
       window.alert(error instanceof Error ? error.message : "Image impossible.");
     } finally {
       setBackgroundBusy(false);
-      if (backgroundInputRef.current) backgroundInputRef.current.value = "";
     }
   }
 
@@ -565,14 +564,15 @@ function TenantDrawer({
                   <p className="mt-2 text-[11px] text-ink/45">Aucune image pour cette carte.</p>
                 )}
                 <div className="mt-2 flex gap-1.5">
-                  <button
-                    type="button"
-                    disabled={backgroundBusy}
-                    onClick={() => backgroundInputRef.current?.click()}
-                    className="h-9 flex-1 rounded-lg bg-[#FFEFF8] text-[11px] font-bold text-ink disabled:opacity-60"
+                  <label
+                    htmlFor={backgroundInputId}
+                    aria-disabled={backgroundBusy}
+                    className={`inline-flex h-9 flex-1 cursor-pointer items-center justify-center rounded-lg bg-[#FFEFF8] text-[11px] font-bold text-ink ${
+                      backgroundBusy ? "pointer-events-none opacity-60" : ""
+                    }`}
                   >
                     {backgroundBusy ? "…" : detail.cardBackgroundUrl ? "Changer l'image" : "Ajouter une image"}
-                  </button>
+                  </label>
                   {detail.cardBackgroundUrl ? (
                     <button
                       type="button"
@@ -585,13 +585,15 @@ function TenantDrawer({
                   ) : null}
                 </div>
                 <input
-                  ref={backgroundInputRef}
+                  id={backgroundInputId}
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
+                  className="sr-only"
+                  disabled={backgroundBusy}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) void saveCardBackground(file);
+                    event.target.value = "";
                   }}
                 />
               </div>
@@ -886,7 +888,7 @@ export function AdminOrganizationsView() {
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8 lg:gap-6">
+    <div className="flex w-full min-w-0 max-w-none flex-col gap-5 pb-8 lg:gap-6">
       {/* Header */}
       <header className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

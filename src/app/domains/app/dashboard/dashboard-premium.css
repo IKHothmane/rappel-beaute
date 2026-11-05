@@ -1,0 +1,154 @@
+/* ==========================================
+   RAPPEL BEAUTY — DASHBOARD PREMIUM
+   ========================================== */
+
+.rappel-dashboard-premium {
+  --rb-primary: #b60050;
+  --rb-primary-dark: #75133d;
+  --rb-primary-light: #fce7f1;
+  --rb-background: #f8f7fa;
+  --rb-text: #261524;
+  --rb-muted: #887787;
+  --rb-border: #f0e5ec;
+
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: calc(100dvh - 72px);
+  color: var(--rb-text);
+  background:
+    radial-gradient(
+      ellipse at 92% 0%,
+      rgba(244, 183, 211, 0.22),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 0% 100%,
+      rgba(255, 209, 231, 0.18),
+      transparent 38%
+    ),
+    var(--rb-background);
+}
+
+.rappel-dashboard-premium > * {
+  width: 100%;
+  min-width: 0;
+}
+
+.rappel-dashboard-premium .rb-card {
+  border: 1px solid var(--rb-border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow:
+    0 3px 8px rgba(60, 20, 40, 0.025),
+    0 12px 30px rgba(60, 20, 40, 0.045);
+}
+
+.rappel-dashboard-premium .rb-card-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #f0e0e9;
+  border-radius: 22px;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(255, 214, 232, 0.35),
+      transparent 36%
+    ),
+    linear-gradient(110deg, #ffffff 0%, #fff9fc 72%, #fff5f7 100%);
+  box-shadow:
+    0 3px 8px rgba(60, 20, 40, 0.025),
+    0 12px 30px rgba(60, 20, 40, 0.045);
+}
+
+.rappel-dashboard-premium h1 {
+  color: #341629;
+  font-size: clamp(1.5rem, 2.2vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.rappel-dashboard-premium h2,
+.rappel-dashboard-premium h3 {
+  color: #301a2a;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.rappel-dashboard-premium button:focus-visible,
+.rappel-dashboard-premium a:focus-visible {
+  outline: 3px solid rgba(182, 0, 80, 0.3);
+  outline-offset: 3px;
+}
+
+.rappel-dashboard-premium .text-primary {
+  color: var(--rb-primary);
+}
+
+.rappel-dashboard-premium .bg-primary {
+  background-color: var(--rb-primary);
+}
+
+.rappel-dashboard-premium .recharts-responsive-container {
+  min-height: 200px;
+}
+
+.rappel-dashboard-premium .recharts-cartesian-grid line {
+  stroke: #f1e7ed;
+}
+
+.rappel-dashboard-premium .recharts-cartesian-axis-tick text {
+  fill: #8e7d8a;
+  font-size: 11px;
+}
+
+.rappel-dashboard-premium .recharts-tooltip-wrapper {
+  z-index: 30;
+}
+
+.rappel-dashboard-premium ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.rappel-dashboard-premium ::-webkit-scrollbar-thumb {
+  background: #e6bfd1;
+  border-radius: 20px;
+}
+
+.rappel-dashboard-premium ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes rb-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rappel-dashboard-premium .rb-card,
+.rappel-dashboard-premium .rb-card-hero {
+  animation: rb-fade-up 380ms ease both;
+}
+
+@media (max-width: 768px) {
+  .rappel-dashboard-premium .rb-card,
+  .rappel-dashboard-premium .rb-card-hero {
+    border-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rappel-dashboard-premium *,
+  .rappel-dashboard-premium *::before,
+  .rappel-dashboard-premium *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

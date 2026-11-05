@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useSession } from "@/components/auth/session-provider";
 import { isAppSession } from "@/lib/auth/types";
 import { Header } from "./header";
@@ -52,7 +52,7 @@ export function AppShell({ children }: AppShellProps) {
 
   if (loading || !user || !isAppSession(user)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] text-sm text-ink/60">
+      <div className="flex min-h-screen items-center justify-center bg-[#F8F7FA] text-sm text-ink/60">
         Chargement…
       </div>
     );
@@ -60,7 +60,7 @@ export function AppShell({ children }: AppShellProps) {
 
   if (user.mustChangePassword) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] text-sm text-ink/60">
+      <div className="flex min-h-screen items-center justify-center bg-[#F8F7FA] text-sm text-ink/60">
         Redirection…
       </div>
     );
@@ -69,7 +69,7 @@ export function AppShell({ children }: AppShellProps) {
   const isOwner = user.role === "OWNER";
 
   return (
-    <div className="min-h-dvh bg-[#F3F4F6] text-ink">
+    <div className="min-h-dvh bg-[#F8F7FA] text-ink">
       {isOwner ? (
         <OwnerSidebar
           open={sidebarOpen}
@@ -83,25 +83,30 @@ export function AppShell({ children }: AppShellProps) {
 
       <div
         className={cn(
-          "min-h-dvh transition-[margin] duration-300",
+          "min-h-dvh min-w-0 overflow-x-hidden transition-[margin] duration-300",
           isOwner
             ? collapsed
               ? "lg:ml-[76px]"
               : "lg:ml-[280px]"
             : "lg:pl-[260px]",
         )}
+        style={
+          {
+            ["--app-sidebar-offset"]: isOwner ? (collapsed ? "76px" : "280px") : "260px",
+          } as CSSProperties
+        }
       >
         <Header onMenuOpen={() => setSidebarOpen(true)} />
 
         <main
           className={cn(
-            "min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-72px)]",
+            "min-h-[calc(100vh-64px)] min-w-0 sm:min-h-[calc(100vh-72px)]",
             fullBleed
               ? "px-0 pb-20 pt-0 lg:pb-0"
-              : "px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-8",
+              : "px-3 pb-28 pt-4 sm:px-4 lg:px-5 lg:pb-6 xl:px-6",
           )}
         >
-          <div className={cn(fullBleed ? "w-full" : "mx-auto max-w-[1600px]")}>
+          <div className="w-full min-w-0 max-w-none">
             <StaffColorProvider>
               <PlanFeatureRouteGuard>{children}</PlanFeatureRouteGuard>
             </StaffColorProvider>

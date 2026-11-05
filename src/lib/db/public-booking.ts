@@ -143,8 +143,9 @@ export async function getPublicServices(organizationId: string): Promise<PublicS
     prepTimeMin: number;
     cleanupTimeMin: number;
     deposit: string | null;
+    imageUrl: string | null;
   }>(
-    `SELECT id, name, description, category, price::text, "durationMin", "prepTimeMin", "cleanupTimeMin", deposit::text
+    `SELECT id, name, description, category, price::text, "durationMin", "prepTimeMin", "cleanupTimeMin", deposit::text, "imageUrl"
      FROM "Service"
      WHERE "organizationId" = $1 AND active = true
      ORDER BY name`,
@@ -161,6 +162,7 @@ export async function getPublicServices(organizationId: string): Promise<PublicS
     cleanupTimeMin: s.cleanupTimeMin,
     totalBlockMin: s.prepTimeMin + s.durationMin + s.cleanupTimeMin,
     deposit: s.deposit != null ? parseFloat(s.deposit) : null,
+    imageUrl: s.imageUrl ?? null,
   }));
 }
 

@@ -11,6 +11,7 @@ export type ServiceListItem = {
   cleanupTimeMin: number;
   deposit: number | null;
   recommendedReturnDays: number | null;
+  imageUrl: string | null;
   active: boolean;
   staffCount: number;
   staffNames: string[];
@@ -78,6 +79,7 @@ export type CreateServiceInput = {
   cleanupTimeMin?: number;
   deposit?: number;
   recommendedReturnDays?: number | null;
+  imageUrl?: string | null;
   active?: boolean;
   staffIds?: string[];
   resources?: { resourceId: string; quantity?: number }[];

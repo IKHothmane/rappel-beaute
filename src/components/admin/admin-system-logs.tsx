@@ -403,7 +403,7 @@ export function AdminSystemLogsView() {
   }
 
   return (
-    <div className="relative mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8 lg:gap-6">
+    <div className="relative flex w-full min-w-0 max-w-none flex-col gap-5 pb-8 lg:gap-6">
       <div className="pointer-events-none absolute -right-20 -top-16 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
 
       {/* Header */}

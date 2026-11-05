@@ -18,6 +18,26 @@ function parseNum(value: unknown, field: string, errors: Record<string, string>,
   return n;
 }
 
+/** Accepte uniquement une URL de stockage services ou null pour suppression. */
+function parseImageUrl(raw: unknown, errors: Record<string, string>): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null || raw === "") return null;
+  const url = String(raw).trim();
+  if (!url) return null;
+  const localOk = /^\/api\/storage\/local\/services\/[a-zA-Z0-9_-]+\//.test(url);
+  const objectOk = /\/services\/[a-zA-Z0-9_-]+\//.test(url) && !url.includes("..");
+  const catalogOk = url.includes("/services/platform/");
+  if (!localOk && !objectOk && !catalogOk) {
+    errors.imageUrl = "Image invalide. Utilisez le téléversement intégré.";
+    return undefined;
+  }
+  if (url.startsWith("data:") || url.length > 2048) {
+    errors.imageUrl = "Image invalide.";
+    return undefined;
+  }
+  return url;
+}
+
 function parseCommission(raw: unknown): CreateServiceInput["commissions"] {
   if (!Array.isArray(raw)) return undefined;
   return raw
@@ -66,6 +86,7 @@ export function validateCreateService(body: unknown): ValidationResult<CreateSer
         raw.recommendedReturnDays === null || raw.recommendedReturnDays === ""
           ? null
           : parseNum(raw.recommendedReturnDays, "recommendedReturnDays", errors, 1) ?? undefined,
+      imageUrl: parseImageUrl(raw.imageUrl, errors),
       active: raw.active !== false,
       staffIds: Array.isArray(raw.staffIds) ? raw.staffIds.map(String) : [],
       resources: Array.isArray(raw.resources)
@@ -129,6 +150,12 @@ export function validateUpdateService(body: unknown): ValidationResult<UpdateSer
   }
   if (raw.description !== undefined) data.description = String(raw.description).trim() || undefined;
   if (raw.category !== undefined) data.category = String(raw.category).trim() || undefined;
+  if (raw.imageUrl !== undefined) {
+    const imageUrl = parseImageUrl(raw.imageUrl, errors);
+    if (imageUrl !== undefined || raw.imageUrl === null || raw.imageUrl === "") {
+      data.imageUrl = imageUrl ?? null;
+    }
+  }
   if (raw.active !== undefined) data.active = Boolean(raw.active);
   if (raw.staffIds !== undefined) data.staffIds = Array.isArray(raw.staffIds) ? raw.staffIds.map(String) : [];
   if (raw.resources !== undefined) {

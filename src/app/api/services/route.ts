@@ -76,6 +76,9 @@ export async function POST(request: NextRequest) {
     const service = await createService(auth.session.organizationId, validated.data);
     return NextResponse.json(service, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_IMAGE") {
+      return NextResponse.json({ error: "Image invalide pour cet institut." }, { status: 400 });
+    }
     console.error("[POST /api/services]", error);
     return NextResponse.json(
       { error: "Impossible de créer le service." },

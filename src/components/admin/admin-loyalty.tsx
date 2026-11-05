@@ -70,7 +70,6 @@ export function AdminLoyaltyView() {
       setError(err instanceof Error ? err.message : "Image impossible.");
     } finally {
       setBusy(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   }
 

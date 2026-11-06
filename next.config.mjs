@@ -40,7 +40,7 @@ const nextConfig = {
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
   experimental: {
-    serverComponentsExternalPackages: ["web-push"],
+    serverComponentsExternalPackages: ["web-push", "sharp"],
   },
   images: {
     remotePatterns: [

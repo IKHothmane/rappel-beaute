@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarDays, Clock3 } from "lucide-react";
 import { bookPath } from "@/components/public-site/PublicSiteShell";
+import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 import { slugifyLabel } from "@/lib/booking-qr";
 import { servicePlaceholderImage } from "@/lib/public-site";
 import {
@@ -102,12 +103,12 @@ export function PublicServicesPage({ slug }: { slug: string }) {
                   key={service.id}
                   className="overflow-hidden rounded-2xl border border-[#EBDDE4] bg-white shadow-sm"
                 >
-                  <div className="relative h-52">
+                  <div className="relative aspect-[4/3]">
                     {service.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={service.imageUrl}
+                      <ServiceResponsiveImage
+                        imageUrl={service.imageUrl}
                         alt={service.name}
+                        variant="thumb"
                         className="absolute inset-0 h-full w-full object-cover"
                       />
                     ) : (

@@ -6,7 +6,8 @@ const ROOT = process.env.STORAGE_LOCAL_DIR ?? path.join(process.cwd(), "uploads"
 
 function buildKey(input: PutObjectInput): string {
   const safe = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${input.category}/${input.organizationId}/${Date.now()}_${safe}`;
+  const stamp = input.stamp ?? Date.now();
+  return `${input.category}/${input.organizationId}/${stamp}_${safe}`;
 }
 
 function publicUrl(key: string): string {

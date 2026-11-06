@@ -37,7 +37,8 @@ export async function GET(_request: Request, context: RouteContext) {
     return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": MIME[ext] ?? "application/octet-stream",
-        "Cache-Control": "public, max-age=86400",
+        // Clés horodatées → cache long navigateur / CDN
+        "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
   } catch {

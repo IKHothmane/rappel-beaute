@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { Camera, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 
 type Props = {
   value: string | null;
@@ -72,18 +73,28 @@ export function ServiceImageUpload({
   return (
     <div className="space-y-3">
       <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-[20px] border-2 border-dashed border-[#EAC4D5] bg-[#FFF5F9]">
-        {preview || value ? (
+        {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={preview || value || ""}
+            src={preview}
             alt="Aperçu du service"
+            width={800}
+            height={600}
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
+        ) : value ? (
+          <ServiceResponsiveImage
+            imageUrl={value}
+            alt="Aperçu du service"
+            variant="main"
             className="h-full w-full object-cover"
           />
         ) : (
           <div className="flex flex-col items-center gap-3 text-[#A55477]">
             <Camera size={35} />
             <p className="text-sm font-semibold">Ajouter une photo du service</p>
-            <p className="text-xs">JPG, PNG, WebP · 2 Mo maximum</p>
+            <p className="text-xs">800×600 (4:3) · JPG, PNG, WebP · 2 Mo max</p>
           </div>
         )}
 

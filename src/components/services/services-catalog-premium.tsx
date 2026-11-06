@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 import type { ServiceListItem } from "@/types/service";
 
 export type ServiceWithImage = ServiceListItem & {
@@ -106,11 +107,10 @@ function ServicePhoto({
   return (
     <div className={`relative overflow-hidden bg-gradient-to-br from-[#FDE7F0] to-[#F7C5DA] ${className}`}>
       {service.imageUrl && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={service.imageUrl}
+        <ServiceResponsiveImage
+          imageUrl={service.imageUrl}
           alt={`Photo de ${service.name}`}
-          loading="lazy"
+          variant="thumb"
           onError={() => setFailed(true)}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
@@ -150,7 +150,7 @@ function ServiceCard({
       <ServicePhoto
         key={`${service.id}-${service.imageUrl ?? ""}`}
         service={service}
-        className={view === "list" ? "h-52 w-full shrink-0 sm:h-auto sm:w-56" : "aspect-[16/9] w-full"}
+        className={view === "list" ? "aspect-[4/3] w-full shrink-0 sm:h-auto sm:w-56" : "aspect-[4/3] w-full"}
       />
 
       <div className="flex min-w-0 flex-1 flex-col p-4">

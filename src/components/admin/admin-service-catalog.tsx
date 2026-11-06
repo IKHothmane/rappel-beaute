@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Camera, ImagePlus, Loader2, Search, Trash2 } from "lucide-react";
+import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 import { cn } from "@/lib/utils";
 
 type CatalogItem = {
@@ -96,6 +97,7 @@ export function AdminServiceCatalogView() {
         <p className="mt-2 max-w-2xl text-sm text-ink/55">
           Ces photos s’appliquent automatiquement quand un institut choisit un nom dans la liste
           « Nouveau service ». Chaque institut peut ensuite remplacer l’image par la sienne.
+          Idéal : WebP ou JPG 800×600 (4:3), max 2 Mo — conversion WebP automatique.
         </p>
         <p className="mt-3 text-xs font-semibold text-[#B60050]">
           {withImage} / {items.length} soins avec image par défaut
@@ -145,8 +147,12 @@ export function AdminServiceCatalogView() {
               >
                 <div className="relative flex aspect-[4/3] items-center justify-center bg-[#FFF5F9]">
                   {item.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                    <ServiceResponsiveImage
+                      imageUrl={item.imageUrl}
+                      alt={item.name}
+                      variant="thumb"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-[#A55477]">
                       <Camera size={28} />

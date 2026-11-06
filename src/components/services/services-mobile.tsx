@@ -16,6 +16,7 @@ import {
   categoryIcon,
   staffInitials,
 } from "@/components/services/services-helpers";
+import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 import { cn } from "@/lib/utils";
 import { formatMad, formatPct } from "@/modules/analytics/service";
 import { formatDuration } from "@/modules/services/service";
@@ -396,10 +397,10 @@ function MobileServiceCard({
 
       <div className="flex gap-2">
         {s.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={s.imageUrl}
+          <ServiceResponsiveImage
+            imageUrl={s.imageUrl}
             alt={s.name}
+            variant="thumb"
             className="h-16 w-16 shrink-0 rounded-xl object-cover"
           />
         ) : (

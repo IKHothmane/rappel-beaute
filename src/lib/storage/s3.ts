@@ -22,7 +22,8 @@ export class S3StorageService implements StorageService {
 
   async put(input: PutObjectInput): Promise<StoredObject> {
     const safe = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const key = `${input.category}/${input.organizationId}/${Date.now()}_${safe}`;
+    const stamp = input.stamp ?? Date.now();
+    const key = `${input.category}/${input.organizationId}/${stamp}_${safe}`;
     const url = `${this.endpoint}/${this.bucket}/${key}`;
 
     const accessKey = process.env.S3_ACCESS_KEY;

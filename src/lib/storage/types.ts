@@ -6,6 +6,8 @@ export type PutObjectInput = {
   filename: string;
   data: Buffer;
   contentType: string;
+  /** Horodatage partagé pour lier des variantes (ex. image + miniature). */
+  stamp?: number;
 };
 
 export type StoredObject = {

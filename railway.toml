@@ -11,7 +11,9 @@ buildCommand = "npm run build"
 [deploy]
 # start = process HTTP uniquement. Les migrations passent en releaseCommand
 # (Pre-Deploy), pas au démarrage — évite double migrate et race au boot.
-startCommand = "npm run start"
+# MALLOC_ARENA_MAX / VIPS_CONCURRENCY : limite fragmentation glibc + Sharp.
+# --max-old-space-size : plafond heap V8 (ne limite pas la RAM native Sharp).
+startCommand = "MALLOC_ARENA_MAX=2 VIPS_CONCURRENCY=1 node --max-old-space-size=768 ./node_modules/next/dist/bin/next start"
 # Migrations avant bascule trafic — jamais prisma db push / migrate reset en staging/prod
 releaseCommand = "npx prisma migrate deploy"
 # Un seul environnement Railway (staging). Pas de second stack production.

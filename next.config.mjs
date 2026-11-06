@@ -41,8 +41,15 @@ const nextConfig = {
   poweredByHeader: false,
   experimental: {
     serverComponentsExternalPackages: ["web-push", "sharp"],
+    instrumentationHook: true,
   },
   images: {
+    // Défaut Next = 60s → Sharp ré-encode en boucle (bots) et RSS monte (libvips).
+    minimumCacheTTL: 31 * 24 * 60 * 60,
+    // Évite les variantes 3840px inutiles sur le marketing / vitrine.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ["image/webp"],
     remotePatterns: [
       {
         protocol: "https",

@@ -15,9 +15,8 @@ export const pool =
     connectionTimeoutMillis: 8_000,
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPg.pgPool = pool;
-}
+// Toujours réutiliser le pool (HMR local + multi-chargements Next).
+globalForPg.pgPool = pool;
 
 if (process.env.NEXT_PHASE !== "phase-production-build") {
   void import("@/lib/push/scheduler").then((mod) => mod.startCustomerPushScheduler());

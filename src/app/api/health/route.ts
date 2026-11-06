@@ -1,21 +1,18 @@
 import { NextResponse } from "next/server";
+import { pool } from "@/lib/db/pool";
+import { getMemorySnapshot, memoryDiagnosticsEnabled } from "@/lib/ops/memory";
 import { appEnvironment } from "@/lib/site";
 import { pingRedis } from "@/lib/redis/client";
-import { Pool } from "pg";
 
 export const dynamic = "force-dynamic";
 
 async function checkDatabase(): Promise<boolean> {
-  const url = process.env.DATABASE_URL;
-  if (!url) return false;
-  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 3000 });
+  if (!process.env.DATABASE_URL) return false;
   try {
     await pool.query("SELECT 1");
     return true;
   } catch {
     return false;
-  } finally {
-    await pool.end().catch(() => undefined);
   }
 }
 
@@ -34,6 +31,7 @@ export async function GET() {
     app: appEnvironment(),
     version: process.env.npm_package_version ?? "unknown",
     timestamp: new Date().toISOString(),
+    ...(memoryDiagnosticsEnabled() ? { memory: getMemorySnapshot() } : {}),
   };
 
   if (!ok && process.env.ALERT_ON_HEALTH_DEGRADED === "true") {

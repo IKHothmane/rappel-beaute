@@ -97,22 +97,26 @@ export async function optimizeServiceImage(
     throw new Error("Image trop grande.");
   }
 
-  const [mainData, thumbData] = await Promise.all([
-    encodeWebpWithinBudget(
-      sharp,
-      buf,
-      SERVICE_IMAGE_WIDTH,
-      SERVICE_IMAGE_HEIGHT,
-      SERVICE_IMAGE_MAIN_MAX_BYTES,
-    ),
-    encodeWebpWithinBudget(
-      sharp,
-      buf,
-      SERVICE_IMAGE_CARD_WIDTH,
-      SERVICE_IMAGE_CARD_HEIGHT,
-      SERVICE_IMAGE_THUMB_MAX_BYTES,
-    ),
-  ]);
+  const { memoryDiagnosticsEnabled, logMemoryUsage } = await import("@/lib/ops/memory");
+  if (memoryDiagnosticsEnabled()) logMemoryUsage("sharp:before");
+
+  // Séquentiel : moins de pics libvips qu’un Promise.all parallèle.
+  const mainData = await encodeWebpWithinBudget(
+    sharp,
+    buf,
+    SERVICE_IMAGE_WIDTH,
+    SERVICE_IMAGE_HEIGHT,
+    SERVICE_IMAGE_MAIN_MAX_BYTES,
+  );
+  const thumbData = await encodeWebpWithinBudget(
+    sharp,
+    buf,
+    SERVICE_IMAGE_CARD_WIDTH,
+    SERVICE_IMAGE_CARD_HEIGHT,
+    SERVICE_IMAGE_THUMB_MAX_BYTES,
+  );
+
+  if (memoryDiagnosticsEnabled()) logMemoryUsage("sharp:after");
 
   return {
     main: {

@@ -22,6 +22,32 @@ const EMPTY_COUNTS: JobCounts = {
   delayed: 0,
 };
 
+type JobsHealthGlobal = {
+  jobHealthQueues?: Queue[];
+};
+
+const globalForJobs = globalThis as unknown as JobsHealthGlobal;
+
+function getHealthQueues(): Queue[] {
+  if (!process.env.REDIS_URL) return [];
+  if (!globalForJobs.jobHealthQueues) {
+    globalForJobs.jobHealthQueues = JOB_QUEUE_NAMES.map(
+      (name) =>
+        new Queue(name, {
+          connection: {
+            url: process.env.REDIS_URL,
+            maxRetriesPerRequest: 1,
+            connectTimeout: 3000,
+            commandTimeout: 3000,
+            enableOfflineQueue: false,
+            retryStrategy: () => null,
+          },
+        }),
+    );
+  }
+  return globalForJobs.jobHealthQueues;
+}
+
 export function jobsStatusFromCounts(counts: JobCounts, workers: number): JobsHealthStatus {
   if (counts.failed > 0) return "degraded";
   if (counts.waiting > 0 && workers === 0) return "degraded";
@@ -41,19 +67,7 @@ export async function readJobsHealth() {
     };
   }
 
-  const queues = JOB_QUEUE_NAMES.map(
-    (name) =>
-      new Queue(name, {
-        connection: {
-          url: process.env.REDIS_URL,
-          maxRetriesPerRequest: 1,
-          connectTimeout: 3000,
-          commandTimeout: 3000,
-          enableOfflineQueue: false,
-          retryStrategy: () => null,
-        },
-      }),
-  );
+  const queues = getHealthQueues();
 
   try {
     const details = await Promise.all(
@@ -100,7 +114,5 @@ export async function readJobsHealth() {
       queues: [],
       message: "Redis ou BullMQ injoignable",
     };
-  } finally {
-    await Promise.all(queues.map((queue) => queue.close().catch(() => undefined)));
   }
 }

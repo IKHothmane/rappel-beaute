@@ -7,8 +7,6 @@ import {
   AGENDA_OPEN_HOUR,
   AGENDA_WEEK_SLOT_HEIGHT_PX,
 } from "@/modules/appointments/constants";
-import { staffColor } from "@/components/agenda/staff-colors";
-import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import {
   agendaBlockPosition,
   agendaYToSlot,
@@ -18,8 +16,51 @@ import {
 import { layoutOverlappingEvents } from "@/components/agenda/agenda-overlap-layout";
 import { isSameBusinessDay } from "@/lib/time/business-timezone";
 import { cn } from "@/lib/utils";
-import type { Appointment } from "@/types/appointment";
+import type { Appointment, AppointmentStatus } from "@/types/appointment";
 import type { OrganizationClosureItem } from "@/types/planning";
+
+function statusCardTone(status: AppointmentStatus) {
+  switch (status) {
+    case "CONFIRMED":
+    case "ARRIVED":
+      return {
+        soft: "bg-[#E3F7E9]",
+        bar: "bg-[#16834B]",
+        text: "text-[#16834B]",
+      };
+    case "PENDING":
+      return {
+        soft: "bg-[#FFF0D8]",
+        bar: "bg-[#B77612]",
+        text: "text-[#B77612]",
+      };
+    case "IN_PROGRESS":
+      return {
+        soft: "bg-[#E3F0FF]",
+        bar: "bg-[#2F5FBF]",
+        text: "text-[#2F5FBF]",
+      };
+    case "COMPLETED":
+      return {
+        soft: "bg-[#F0E7FF]",
+        bar: "bg-[#7434B4]",
+        text: "text-[#7434B4]",
+      };
+    case "CANCELLED":
+    case "NO_SHOW":
+      return {
+        soft: "bg-[#FCE5EA]",
+        bar: "bg-[#C42B4A]",
+        text: "text-[#C42B4A]",
+      };
+    default:
+      return {
+        soft: "bg-[#FFF0F6]",
+        bar: "bg-[#AC0E4C]",
+        text: "text-[#AC0E4C]",
+      };
+  }
+}
 
 type AgendaWeekBoardProps = {
   dates: Date[];
@@ -79,7 +120,6 @@ export function AgendaWeekBoard({
   onEmptySlotClick,
   onDrop,
 }: AgendaWeekBoardProps) {
-  const palette = useStaffPalette();
   const layout = useMemo(
     () =>
       buildAgendaLayout(
@@ -96,6 +136,7 @@ export function AgendaWeekBoard({
     [appointments],
   );
   const { rows, totalHeight } = layout;
+  const isEmpty = appointments.length === 0;
 
   const cols = `56px repeat(${dates.length}, minmax(0, 1fr))`;
 
@@ -156,6 +197,16 @@ export function AgendaWeekBoard({
               height: totalHeight,
             }}
           >
+            {isEmpty ? (
+              <div className="pointer-events-none absolute inset-0 z-[5] flex items-start justify-center pt-20">
+                <div className="rounded-2xl border border-[#F0DDE4] bg-white/90 px-5 py-4 text-center shadow-sm backdrop-blur-sm">
+                  <p className="text-sm font-semibold text-[#54112F]">Aucun rendez-vous sur cette période</p>
+                  <p className="mt-1 text-xs text-[#876879]">
+                    Cliquez un créneau libre pour créer un rendez-vous.
+                  </p>
+                </div>
+              </div>
+            ) : null}
             <div className="relative border-r border-[#F1E8EC] bg-[#FCF8FA]">
               {rows.map((row) =>
                 row.kind === "gap" ? (
@@ -275,7 +326,7 @@ export function AgendaWeekBoard({
                   {layoutOverlappingEvents(dayAppts).map(({ event: apt, left, width, columns }) => {
                     const start = new Date(apt.startAt);
                     const end = new Date(apt.endAt);
-                    const color = staffColor(apt.staffId, palette);
+                    const color = statusCardTone(apt.status);
                     const muted = apt.status === "CANCELLED" || apt.status === "NO_SHOW";
                     const active = apt.id === selectedAppointmentId;
                     const durationMin = (end.getTime() - start.getTime()) / 60_000;
@@ -306,19 +357,19 @@ export function AgendaWeekBoard({
                           className={cn(
                             "group relative flex h-full w-full cursor-grab flex-col overflow-hidden rounded-xl border border-white/70 text-left shadow-[0_2px_10px_rgba(60,20,40,0.08)] transition-all duration-200 hover:z-30 hover:shadow-lg active:cursor-grabbing",
                             color.soft,
-                            muted && "bg-gray-100 opacity-70",
+                            muted && "opacity-70",
                             active && "ring-2 ring-[#B83E72]",
                             short || narrow ? "gap-1 p-2 pl-3" : "gap-1.5 p-2.5 pl-3.5",
                           )}
                         >
-                          <span className={cn("absolute inset-y-1.5 left-1.5 w-1 rounded-full", muted ? "bg-gray-400" : color.bar)} />
+                          <span className={cn("absolute inset-y-1.5 left-1.5 w-1 rounded-full", color.bar)} />
 
                           <div className="flex min-w-0 items-start gap-2">
                             {!narrow ? (
                               <span
                                 className={cn(
                                   "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm",
-                                  muted ? "bg-gray-400" : color.bar,
+                                  color.bar,
                                 )}
                               >
                                 {initials(name)}

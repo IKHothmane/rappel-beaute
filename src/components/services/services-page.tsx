@@ -266,6 +266,7 @@ export function ServicesPageView() {
         }}
         title={editing ? "Modifier le service" : "Nouveau service"}
         side="right"
+        preserveHeader
       >
         {options ? (
           <ServiceForm

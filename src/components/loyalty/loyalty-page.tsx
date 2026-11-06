@@ -359,6 +359,8 @@ export function LoyaltyPageView() {
         program={program}
         visitCards={visitCards}
         journal={journal}
+        membersThisMonth={kpis?.membersThisMonth ?? 0}
+        settingsOpen={settingsOpen}
         onRefresh={() => void refresh()}
         onOpenSettings={() => setSettingsOpen(true)}
       />

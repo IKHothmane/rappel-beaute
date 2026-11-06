@@ -8,7 +8,6 @@ import {
   Info,
 } from "lucide-react";
 import {
-  CATEGORY_CHIPS,
   STATUS_FILTERS,
   formatClock,
   iconTone,
@@ -102,25 +101,6 @@ export function NotificationsMobile({ vm }: { vm: NotificationsViewModel }) {
             >
               {f.label}
               {count != null ? ` (${count})` : ""}
-            </button>
-          );
-        })}
-        {CATEGORY_CHIPS.map((chip) => {
-          const active = vm.category === chip.value;
-          const count = vm.categoryCounts[chip.value] ?? 0;
-          return (
-            <button
-              key={chip.value}
-              type="button"
-              onClick={() => vm.onCategory(active ? null : chip.value)}
-              className={cn(
-                "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-semibold shadow-sm",
-                active
-                  ? "bg-primary-container font-bold text-on-primary"
-                  : "bg-surface-container-lowest text-on-surface",
-              )}
-            >
-              {chip.short} ({count})
             </button>
           );
         })}

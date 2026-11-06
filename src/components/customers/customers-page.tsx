@@ -99,6 +99,7 @@ function mapListItem(item: CustomerListItem, extras?: Partial<Customer>): Custom
     email: item.email || null,
     status: mapCustomerStatus(item),
     lastVisit: item.lastVisitAt ?? null,
+    createdAt: item.createdAt ?? null,
     visits: Number.isFinite(visitsFromList) ? visitsFromList : 0,
     totalSpent: Number.isFinite(revenueFromList) ? revenueFromList : 0,
     loyaltyPoints: typeof extras?.loyaltyPoints === "number" ? extras.loyaltyPoints : 0,

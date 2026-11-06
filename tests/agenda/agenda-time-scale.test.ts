@@ -14,11 +14,13 @@ function at(h: number, m = 0) {
 }
 
 describe("Échelle agenda compacte", () => {
-  it("replie une journée sans rendez-vous en un seul bandeau", () => {
+  it("garde tous les créneaux visibles quand la journée est vide", () => {
+    const slots = buildAgendaSlots();
     const layout = buildAgendaLayout([]);
-    expect(layout.rows).toHaveLength(1);
-    expect(layout.rows[0]).toMatchObject({ kind: "gap", label: "08:00 – 00:00" });
-    expect(layout.totalHeight).toBe(AGENDA_LONG_GAP_HEIGHT_PX);
+    expect(layout.rows).toHaveLength(slots.length);
+    expect(layout.rows.every((row) => row.kind === "slot" && row.empty)).toBe(true);
+    expect(layout.totalHeight).toBe(AGENDA_EMPTY_SLOT_HEIGHT_PX * slots.length);
+    expect(layout.rows[0]).toMatchObject({ kind: "slot", slot: { label: "08:00" } });
   });
 
   it("garde la hauteur normale autour d’un rendez-vous et replie les longs trous", () => {

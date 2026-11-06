@@ -2,28 +2,23 @@
 
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowRight,
-  ArrowUpRight,
-  BadgeCheck,
   CalendarCheck2,
   CalendarDays,
   CircleDollarSign,
-  CreditCard,
   Landmark,
-  Package,
   RefreshCw,
   ShoppingBag,
   Sparkles,
   Star,
   Users,
   Wallet,
-  Zap,
 } from "lucide-react";
 import { AnalyticsCharts } from "@/components/analytics/analytics-charts";
 import {
   ANALYTICS_PRESETS,
   deltaClass,
+  formatIsoDate,
   initials,
   serviceMarginPct,
   hourlyAffluence,
@@ -31,29 +26,11 @@ import {
   weekdayAffluence,
   type AnalyticsViewModel,
 } from "@/components/analytics/analytics-helpers";
+import { resolvePreset } from "@/lib/analytics/period";
 import { cn } from "@/lib/utils";
 import { staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { formatMad, formatPct } from "@/modules/analytics/service";
-
-function paymentBarColor(method: string): string {
-  switch (method) {
-    case "CARD":
-      return "bg-primary-container";
-    case "CASH":
-      return "bg-secondary";
-    case "GIFT_CARD":
-      return "bg-secondary-fixed";
-    case "TRANSFER":
-      return "bg-outline";
-    case "ONLINE":
-      return "bg-primary";
-    case "CHECK":
-      return "bg-outline";
-    default:
-      return "bg-surface-container-high";
-  }
-}
 
 export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
   const palette = useStaffPalette();
@@ -63,167 +40,79 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
   const cancelled = statusCount(vm.appointments, "CANCELLED");
   const noShowRate = vm.appointments?.noShow.rate ?? null;
   const noShowCount = vm.appointments?.noShow.count ?? 0;
-  const stockAlerts = (vm.inventory?.lowStockCount ?? 0) + (vm.inventory?.outOfStockCount ?? 0);
-  const posShare =
-    ov && ov.revenue.value > 0 && vm.inventory
-      ? Math.round((vm.inventory.posRevenue / ov.revenue.value) * 1000) / 10
-      : null;
-  const topPos = vm.inventory?.topPosProducts?.[0] ?? null;
   const presetLabel = ANALYTICS_PRESETS.find((p) => p.value === vm.preset)?.label ?? vm.periodLabel;
+  const periodBounds = resolvePreset(vm.preset);
+  const dateRangeLabel = `${formatIsoDate(periodBounds.from)} - ${formatIsoDate(periodBounds.to)}`;
+  const sparkValues = (vm.revenue?.daily ?? []).map((d) => d.revenue).slice(-14);
 
   return (
-    <div className="hidden space-y-6 lg:block">
-      <header className="flex flex-col gap-4">
-        <div className="min-w-0 space-y-2">
-          <h1 className="text-[40px] font-bold leading-tight tracking-tight text-on-surface">
-            Analytics &amp; Performance Décisionnelle
+    <div className="hidden space-y-5 lg:block">
+      <header
+        className="relative flex min-h-[96px] items-center overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
+        style={{
+          backgroundImage:
+            'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/hero-background.png")',
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+        }}
+      >
+        <div className="relative z-10 min-w-0">
+          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
+            Analytics &amp; Performance
           </h1>
-          <p className="max-w-4xl text-[15px] text-on-surface-variant">
-            Pilotage décisionnel en temps réel : CA, rétention, équipe, stock et marketing — consolidé en
-            dirhams marocains (MAD).
+          <p className="mt-1 max-w-lg text-sm leading-5 text-[#654254]">
+            Pilotez efficacement votre institut : ventes, clientes, services, équipe et rentabilité.
           </p>
         </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-2 text-sm">
-              <CalendarDays className="h-4 w-4 text-secondary" />
-              <span className="font-bold">{vm.periodLabel}</span>
-              <span className="rounded-full bg-secondary-fixed px-2 py-0.5 text-[10px] font-bold uppercase text-on-secondary-fixed">
-                {presetLabel}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {ANALYTICS_PRESETS.map((o) => (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => vm.onPreset(o.value)}
-                  className={cn(
-                    "h-10 rounded-lg px-3 text-sm font-semibold transition-colors",
-                    vm.preset === o.value
-                      ? "bg-primary-container text-on-primary font-bold shadow-sm"
-                      : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface",
-                  )}
-                >
-                  {o.short}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={vm.onCompare}
-              className={cn(
-                "flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold",
-                vm.compare ? "bg-surface-container-high text-primary" : "bg-surface-container-low text-on-surface",
-              )}
-            >
-              {vm.compareLabel}
-            </button>
-          </div>
-          <button type="button" onClick={vm.onRefresh} className="flex items-center gap-1 text-xs text-on-surface-variant">
-            <RefreshCw className="h-3.5 w-3.5 text-secondary" />
-            Actualisé à {vm.generatedAt} — Casablanca
-          </button>
-        </div>
-        {vm.scopeNote ? <p className="text-xs text-on-surface-variant">{vm.scopeNote}</p> : null}
       </header>
 
-      {/* Copilote */}
-      <section className="relative overflow-hidden rounded-2xl bg-inverse-surface p-8 text-inverse-on-surface shadow-xl">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full bg-primary-container/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 right-1/3 h-64 w-64 rounded-full bg-secondary-fixed/10 blur-3xl" />
-        <div className="relative z-10 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-bright/10 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/30 text-secondary-fixed">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[22px] font-extrabold tracking-tight text-surface-bright">
-                    Copilote IA Prestige
-                  </span>
-                  <span className="rounded-full bg-secondary-fixed px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-on-secondary-fixed">
-                    Synthèse · {presetLabel}
-                  </span>
-                </div>
-                <p className="text-[13px] text-surface-dim">
-                  {vm.insight.greeting}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={vm.insight.ctaHref}
-                className="flex h-10 items-center gap-1.5 rounded-lg bg-primary-container px-4 text-sm font-bold text-on-primary shadow-lg shadow-primary/30 transition-all hover:bg-primary"
-              >
-                <Zap className="h-4 w-4" />
-                {vm.insight.cta}
-              </Link>
-              {vm.insight.secondaryCta && vm.insight.secondaryHref ? (
-                <Link
-                  href={vm.insight.secondaryHref}
-                  className="flex h-10 items-center gap-1.5 rounded-lg bg-surface-container-lowest/10 px-4 text-sm font-semibold text-surface-bright transition-all hover:bg-surface-container-lowest/20"
-                >
-                  <Users className="h-4 w-4 text-secondary-fixed" />
-                  {vm.insight.secondaryCta}
-                </Link>
-              ) : null}
-            </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[#F1E8EC] bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-xl bg-[#FCF8FA] px-3 py-2 text-sm">
+            <CalendarDays className="h-4 w-4 text-[#981C52]" aria-hidden />
+            <span className="font-bold text-[#30202C]">{dateRangeLabel}</span>
+            <span className="rounded-full bg-[#FCE9F4] px-2 py-0.5 text-[10px] font-bold uppercase text-[#981C52]">
+              {presetLabel}
+            </span>
           </div>
-
-          {vm.loading ? (
-            <p className="text-sm text-surface-dim">Analyse des indicateurs en cours…</p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-              <div className="flex flex-col gap-2 rounded-lg bg-surface-container-lowest/10 p-4 backdrop-blur-md lg:col-span-5">
-                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-secondary-fixed">
-                  <ArrowUpRight className="h-4 w-4" />
-                  Performance
-                </p>
-                <p className="text-[15px] text-surface-bright">{vm.insight.performance}</p>
-              </div>
-              <div className="flex flex-col gap-2 rounded-lg bg-surface-container-lowest/10 p-4 backdrop-blur-md lg:col-span-4">
-                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-error-container">
-                  <AlertTriangle className="h-4 w-4" />
-                  Vigilance
-                </p>
-                {vm.insight.alert ? (
-                  <p className="text-[15px] text-surface-bright">{vm.insight.alert}</p>
-                ) : (
-                  <p className="text-[15px] text-surface-dim">Aucune alerte prioritaire sur la période.</p>
+          <div className="flex flex-wrap gap-1.5">
+            {ANALYTICS_PRESETS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => vm.onPreset(o.value)}
+                className={cn(
+                  "h-10 rounded-xl px-3 text-sm font-semibold transition-colors",
+                  vm.preset === o.value
+                    ? "bg-[#981C52] text-white shadow-sm"
+                    : "bg-[#FCF8FA] text-[#765E6B] hover:bg-[#FAF0F5]",
                 )}
-              </div>
-              <div className="flex flex-col gap-2 rounded-lg bg-surface-container-lowest/10 p-4 backdrop-blur-md lg:col-span-3">
-                <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-primary-fixed">
-                  <BadgeCheck className="h-4 w-4" />
-                  Moniteurs
-                </p>
-                {vm.insight.monitors.length === 0 ? (
-                  <p className="text-sm text-surface-dim">Rien à signaler.</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {vm.insight.monitors.map((m) => (
-                      <li key={m.text} className="flex items-start gap-2 text-[13px] text-surface-bright">
-                        <span
-                          className={cn(
-                            "mt-1 h-1.5 w-1.5 shrink-0 rounded-full",
-                            m.tone === "error" && "bg-error",
-                            m.tone === "warn" && "bg-secondary-container",
-                            m.tone === "ok" && "bg-primary-fixed",
-                          )}
-                        />
-                        {m.text}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
+              >
+                {o.short}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={vm.onCompare}
+            className={cn(
+              "flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold",
+              vm.compare ? "bg-[#FFF1F7] text-[#981C52]" : "bg-[#FCF8FA] text-[#765E6B]",
+            )}
+          >
+            {vm.compareLabel}
+          </button>
         </div>
-      </section>
+        <button
+          type="button"
+          onClick={vm.onRefresh}
+          className="flex items-center gap-1 text-xs text-[#765E6B]"
+        >
+          <RefreshCw className="h-3.5 w-3.5 text-[#981C52]" aria-hidden />
+          Actualisé à {vm.generatedAt} — Casablanca
+        </button>
+      </div>
+      {vm.scopeNote ? <p className="text-xs text-[#765E6B]">{vm.scopeNote}</p> : null}
 
       {/* Health score */}
       <section className="rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
@@ -269,22 +158,21 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
         </div>
       </section>
 
-      {/* 6 KPIs */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      {/* 5 KPIs mockup */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MacroCard
-          label="Chiffre d'Affaires"
+          label="Chiffre d'affaires"
           icon={<CircleDollarSign className="h-5 w-5" />}
           iconClass="text-primary-container"
           value={vm.loading || !ov ? "—" : ov.revenue.value.toLocaleString("fr-MA")}
-          unit="DH"
+          unit="MAD"
           delta={!vm.loading && ov ? formatPct(ov.revenue.changePercent) : null}
           tone={ov?.revenue.changePercent ?? null}
-          hint={ov?.revenue.previous != null ? `vs ${formatMad(ov.revenue.previous)}` : undefined}
-          footLabel="CA net période"
-          footValue={ov ? formatMad(ov.revenue.value) : "—"}
+          spark={sparkValues}
+          valueNegative={Boolean(ov && ov.revenue.value < 0)}
         />
         <MacroCard
-          label="Rendez-vous Total"
+          label="Rendez-vous"
           icon={<CalendarCheck2 className="h-5 w-5" />}
           iconClass="text-secondary"
           value={
@@ -296,14 +184,12 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
                   ? String(ov.appointments.value)
                   : "—"
           }
-          unit="RDV"
+          unit=""
           delta={!vm.loading && ov ? formatPct(ov.appointments.changePercent) : null}
           tone={ov?.appointments.changePercent ?? null}
-          footLabel="Présence effective"
-          footValue={vm.presence != null ? `${vm.presence.toLocaleString("fr-MA")} %` : "—"}
         />
         <MacroCard
-          label="Clientes Actives"
+          label="Clientes actives"
           icon={<Users className="h-5 w-5" />}
           iconClass="text-primary"
           value={
@@ -315,61 +201,34 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
                   ? String(ov.customers.value)
                   : "—"
           }
-          unit="Actives"
-          delta={null}
-          tone={null}
-          hint={vm.customers ? `${vm.customers.kpis.total} au fichier` : "Fenêtre 90 j"}
-          footLabel="Nouvelles / VIP"
-          footValue={
-            vm.customers
-              ? `+${vm.customers.kpis.newInPeriod} · ${vm.customers.kpis.vip} VIP`
-              : "—"
+          unit=""
+          delta={
+            !vm.loading && ov?.customers.changePercent != null
+              ? formatPct(ov.customers.changePercent)
+              : null
           }
-          footAccent
+          tone={ov?.customers.changePercent ?? null}
         />
         <MacroCard
-          label="Panier Moyen"
+          label="Panier moyen"
           icon={<ShoppingBag className="h-5 w-5" />}
           iconClass="text-secondary"
           value={vm.loading || !ov ? "—" : ov.averageTicket.value.toLocaleString("fr-MA")}
-          unit="DH"
+          unit="MAD"
           delta={!vm.loading && ov ? formatPct(ov.averageTicket.changePercent) : null}
           tone={ov?.averageTicket.changePercent ?? null}
-          footLabel="Ticket moyen consolidé"
-          footValue={ov ? formatMad(ov.averageTicket.value) : "—"}
+          spark={sparkValues}
         />
         <MacroCard
-          label="E-Réputation"
-          icon={<Star className="h-5 w-5" />}
-          iconClass="text-secondary"
-          value={
-            vm.loading || vm.reviews?.averageInternalScore == null
-              ? "—"
-              : vm.reviews.averageInternalScore.toLocaleString("fr-MA", { maximumFractionDigits: 1 })
-          }
-          unit="/ 5"
-          delta={null}
-          tone={null}
-          hint={
-            vm.reviews
-              ? `${vm.reviews.recordedSatisfaction} avis · ${vm.reviews.sentInPeriod} envois`
-              : undefined
-          }
-          footLabel="Satisfaction enregistrée"
-          footValue={vm.reviews ? String(vm.reviews.recordedSatisfaction) : "—"}
-        />
-        <MacroCard
-          label="Bénéfice / Marge Net"
+          label="Bénéfice net"
           icon={<Landmark className="h-5 w-5" />}
           iconClass="text-primary-container"
           value={vm.loading || !ov ? "—" : ov.margin.value.toLocaleString("fr-MA")}
-          unit="DH"
+          unit="MAD"
           delta={!vm.loading && ov ? formatPct(ov.margin.changePercent) : null}
           tone={ov?.margin.changePercent ?? null}
-          footLabel="Taux de marge"
-          footValue={
-            vm.pnl.marginRate != null ? `${vm.pnl.marginRate.toLocaleString("fr-MA")} %` : "—"
-          }
+          spark={sparkValues}
+          valueNegative={Boolean(ov && ov.margin.value < 0)}
         />
       </section>
 
@@ -707,145 +566,6 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
         </div>
       </section>
 
-      {/* Operational modules */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <h2 className="text-[22px] font-bold text-on-surface">Modules Opérationnels</h2>
-            <p className="text-[13px] text-on-surface-variant">
-              Boutique, stock, encaissements, marketing et réactivation
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-          <ModuleCard
-            href="/products/"
-            icon={<ShoppingBag className="h-5 w-5" />}
-            iconTone="bg-primary-container/10 text-primary-container"
-            badge={posShare != null ? `${posShare.toLocaleString("fr-MA")} % du CA` : "Retail"}
-            badgeTone="text-secondary"
-            title="Boutique Produits"
-            description={
-              vm.inventory
-                ? `${formatMad(vm.inventory.posRevenue)} · ${vm.inventory.posStockConsumed} unités sorties`
-                : "CA POS produits"
-            }
-            lines={[
-              {
-                label: "CA boutique",
-                value: vm.inventory ? formatMad(vm.inventory.posRevenue) : "—",
-                strong: true,
-              },
-              {
-                label: "Top vente",
-                value: topPos ? topPos.productName : "—",
-              },
-            ]}
-            loading={vm.loading}
-          />
-          <ModuleCard
-            href={vm.canStock ? "/stock/" : "/analytics/"}
-            icon={<Package className="h-5 w-5" />}
-            iconTone="bg-surface-container-high text-secondary"
-            badge={stockAlerts > 0 ? `${stockAlerts} alerte${stockAlerts > 1 ? "s" : ""}` : "OK"}
-            badgeTone={stockAlerts > 0 ? "text-error" : "text-secondary"}
-            title="Stock & Réserve"
-            description={
-              vm.inventory
-                ? `Valeur ${formatMad(vm.inventory.stockValue)} · ${vm.inventory.outOfStockCount} rupture${vm.inventory.outOfStockCount > 1 ? "s" : ""}`
-                : "Alertes et valeur marchande"
-            }
-            lines={[
-              {
-                label: "Stock bas",
-                value: vm.inventory ? String(vm.inventory.lowStockCount) : "—",
-              },
-              {
-                label: "Ruptures",
-                value: vm.inventory ? String(vm.inventory.outOfStockCount) : "—",
-                strong: stockAlerts > 0,
-              },
-            ]}
-            loading={vm.loading}
-          />
-          <ModuleCard
-            href="/cash-register/"
-            icon={<CreditCard className="h-5 w-5" />}
-            iconTone="bg-secondary-fixed text-on-secondary-fixed"
-            badge="Mix caisse"
-            badgeTone="text-on-surface-variant"
-            title="Règlement Caisse"
-            description="Répartition des encaissements par moyen de paiement"
-            lines={
-              vm.payments.length
-                ? vm.payments.slice(0, 3).map((p, i) => ({
-                    label: p.label,
-                    value: `${p.percent.toLocaleString("fr-MA")} % · ${formatMad(p.amount)}`,
-                    strong: i === 0,
-                  }))
-                : [{ label: "Paiements", value: "—" }]
-            }
-            extra={
-              vm.payments.length > 0 ? (
-                <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-surface-container">
-                  {vm.payments.map((p) => (
-                    <div
-                      key={p.method}
-                      className={cn("h-full", paymentBarColor(p.method))}
-                      style={{ width: `${Math.min(100, p.percent)}%` }}
-                      title={p.label}
-                    />
-                  ))}
-                </div>
-              ) : null
-            }
-            loading={vm.loading}
-          />
-          <ModuleCard
-            href="/promotions/"
-            icon={<Wallet className="h-5 w-5" />}
-            iconTone="bg-primary-fixed text-on-primary-fixed"
-            badge={`${vm.marketing.length} campagne${vm.marketing.length > 1 ? "s" : ""}`}
-            badgeTone="text-primary"
-            title="Marketing Attribué"
-            description="CA associé aux campagnes sur la période"
-            lines={[
-              {
-                label: "CA attribué",
-                value: formatMad(vm.marketingRevenue),
-                strong: true,
-              },
-              {
-                label: "Top campagne",
-                value: vm.marketing[0]?.campaignName ?? "—",
-              },
-            ]}
-            loading={vm.loading}
-          />
-          <ModuleCard
-            href="/customers/"
-            icon={<RefreshCw className="h-5 w-5" />}
-            iconTone="bg-surface-container text-primary"
-            badge="Relances"
-            badgeTone="text-primary"
-            title="Réactivation"
-            description="Clientes réactivées sur la fenêtre analytique"
-            lines={[
-              {
-                label: "Réactivées",
-                value: vm.customers ? String(vm.customers.kpis.reactivated) : "—",
-                strong: true,
-              },
-              {
-                label: "Inactives",
-                value: vm.customers ? String(vm.customers.kpis.inactive) : "—",
-              },
-            ]}
-            loading={vm.loading}
-          />
-        </div>
-      </section>
-
     </div>
   );
 }
@@ -888,6 +608,34 @@ function HealthGauge({ score, loading }: { score: number | null; loading?: boole
   );
 }
 
+function MiniSpark({ values, negative }: { values: number[]; negative?: boolean }) {
+  if (values.length < 2) return null;
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = Math.max(max - min, 1);
+  const w = 72;
+  const h = 28;
+  const pts = values
+    .map((v, i) => {
+      const x = (i / (values.length - 1)) * w;
+      const y = h - ((v - min) / range) * (h - 4) - 2;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  return (
+    <svg width={w} height={h} className="overflow-visible" aria-hidden>
+      <polyline
+        fill="none"
+        stroke={negative ? "#C44536" : "#E31C5F"}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={pts}
+      />
+    </svg>
+  );
+}
+
 function MacroCard({
   label,
   icon,
@@ -896,10 +644,8 @@ function MacroCard({
   unit,
   delta,
   tone,
-  hint,
-  footLabel,
-  footValue,
-  footAccent,
+  spark,
+  valueNegative,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -908,34 +654,40 @@ function MacroCard({
   unit: string;
   delta: string | null;
   tone: number | null;
-  hint?: string;
-  footLabel: string;
-  footValue: string;
-  footAccent?: boolean;
+  spark?: number[];
+  valueNegative?: boolean;
 }) {
   return (
-    <div className="flex flex-col justify-between gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">{label}</span>
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-low", iconClass)}>
+    <div className="flex flex-col justify-between gap-3 rounded-[22px] border border-[#F1E8EC] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-md">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-[#765E6B]">{label}</span>
+        <div
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FAF4F7]",
+            iconClass,
+          )}
+        >
           {icon}
         </div>
       </div>
-      <div>
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-[32px] font-bold leading-none tracking-tight text-on-surface">{value}</span>
-          {unit ? <span className="text-sm font-bold text-secondary">{unit}</span> : null}
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className={cn(
+                "text-[28px] font-bold leading-none tracking-tight xl:text-[32px]",
+                valueNegative ? "text-red-600" : "text-[#30202C]",
+              )}
+            >
+              {value}
+            </span>
+            {unit ? <span className="text-sm font-bold text-[#981C52]">{unit}</span> : null}
+          </div>
+          {delta ? (
+            <p className={cn("mt-1.5 text-[11px] font-bold", deltaClass(tone))}>{delta}</p>
+          ) : null}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {delta ? <span className={cn("text-[11px] font-bold", deltaClass(tone))}>{delta}</span> : null}
-          {hint ? <span className="text-[12px] text-on-surface-variant">{hint}</span> : null}
-        </div>
-      </div>
-      <div className="flex items-center justify-between pt-1 text-[12px] text-on-surface-variant">
-        <span>{footLabel}</span>
-        <span className={cn("font-bold", footAccent ? "text-primary-container" : "text-on-surface")}>
-          {footValue}
-        </span>
+        {spark && spark.length > 1 ? <MiniSpark values={spark} negative={valueNegative} /> : null}
       </div>
     </div>
   );
@@ -976,70 +728,3 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ModuleCard({
-  href,
-  icon,
-  iconTone,
-  badge,
-  badgeTone,
-  title,
-  description,
-  lines,
-  extra,
-  loading,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  iconTone: string;
-  badge: string;
-  badgeTone: string;
-  title: string;
-  description: string;
-  lines: { label: string; value: string; strong?: boolean }[];
-  extra?: React.ReactNode;
-  loading?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex flex-col justify-between gap-3 rounded-2xl bg-surface-container-lowest p-5 shadow-sm transition-all hover:shadow-md"
-    >
-      <div>
-        <div className="flex items-center justify-between">
-          <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", iconTone)}>{icon}</div>
-          <span className={cn("text-[11px] font-bold uppercase tracking-widest", badgeTone)}>{badge}</span>
-        </div>
-        <h3 className="mt-2 text-base font-bold text-on-surface transition-colors group-hover:text-primary-container">
-          {title}
-        </h3>
-        <p className="mt-0.5 text-[12px] text-on-surface-variant">{description}</p>
-      </div>
-      {loading ? (
-        <p className="text-sm text-on-surface-variant">Chargement…</p>
-      ) : (
-        <div className="flex flex-col gap-1 rounded-lg bg-surface-container-low p-3 text-sm">
-          {lines.map((line) => (
-            <div
-              key={line.label}
-              className={cn("flex justify-between gap-2", line.strong && "border-t border-surface-container pt-1")}
-            >
-              <span className="truncate text-on-surface-variant">{line.label}</span>
-              <span
-                className={cn(
-                  "max-w-[55%] truncate shrink-0 font-semibold",
-                  line.strong && "font-bold text-primary-container",
-                )}
-              >
-                {line.value}
-              </span>
-            </div>
-          ))}
-          {extra}
-        </div>
-      )}
-      <span className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-surface-container text-sm font-bold transition-colors group-hover:bg-primary-container group-hover:text-on-primary">
-        Ouvrir <ArrowRight className="h-4 w-4" />
-      </span>
-    </Link>
-  );
-}

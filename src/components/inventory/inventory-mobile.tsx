@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type ReactNode, type RefObject, useState } from "react";
-import { ChevronDown, History, Package, Search, SlidersHorizontal, Truck } from "lucide-react";
+import { ChevronDown, History, Search } from "lucide-react";
 import {
   alertBarClass,
   alertChipClass,
@@ -27,7 +27,6 @@ export type StockTab = "niveaux" | "alertes" | "mouvements" | "inventaire";
 export type UsageFilter = "all" | "sellable" | "consumable";
 
 type InventoryMobileProps = {
-  orgName: string;
   catalogCount: number;
   kpis: StockKpis | null;
   optimalCount: number;
@@ -43,21 +42,16 @@ type InventoryMobileProps = {
   usage: UsageFilter;
   onUsage: (u: UsageFilter) => void;
   tab: StockTab;
-  onTab: (t: StockTab) => void;
   filtered: ProductListItem[];
   movements: InventoryMovementItem[];
-  movementTotal: number;
   loading: boolean;
   latestByProduct: Map<string, InventoryMovementItem>;
   onQuickIn: (id: string) => void;
   onQuickOut: (id: string) => void;
   onAdjust: (id: string) => void;
-  onReceipt: () => void;
-  onInventory: () => void;
 };
 
 export function InventoryMobile({
-  orgName,
   catalogCount,
   kpis,
   optimalCount,
@@ -73,17 +67,13 @@ export function InventoryMobile({
   usage,
   onUsage,
   tab,
-  onTab,
   filtered,
   movements,
-  movementTotal,
   loading,
   latestByProduct,
   onQuickIn,
   onQuickOut,
   onAdjust,
-  onReceipt,
-  onInventory,
 }: InventoryMobileProps) {
   const out = kpis?.outOfStockCount ?? 0;
   const low = kpis?.lowStockCount ?? 0;
@@ -94,44 +84,6 @@ export function InventoryMobile({
 
   return (
     <div className="flex flex-col gap-4 lg:hidden">
-      <section className="flex flex-col gap-3">
-        <div>
-          <h1 className="font-display text-[28px] font-bold leading-9 tracking-tight text-ink">
-            Stock & mouvements
-          </h1>
-          <p className="mt-0.5 text-[13px] text-ink/50">
-            {catalogCount} {catalogCount > 1 ? "références" : "référence"} · {orgName || "Votre institut"}
-          </p>
-        </div>
-        {canWrite ? (
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={onReceipt}
-              className="inline-flex h-12 items-center justify-center gap-1 rounded-xl bg-[#F0DDE9] text-[12px] font-semibold text-ink"
-            >
-              <Truck size={16} className="text-[#7B5900]" />
-              Entrée BL
-            </button>
-            <button
-              type="button"
-              onClick={() => onAdjust("")}
-              className="inline-flex h-12 items-center justify-center gap-1 rounded-xl bg-[#F0DDE9] text-[12px] font-semibold text-ink"
-            >
-              <SlidersHorizontal size={16} />
-              Ajustement
-            </button>
-            <button
-              type="button"
-              onClick={onInventory}
-              className="inline-flex h-12 items-center justify-center gap-1 rounded-xl bg-primary text-[12px] font-semibold text-white shadow-md"
-            >
-              Inventaire
-            </button>
-          </div>
-        ) : null}
-      </section>
-
       <section className="grid grid-cols-2 gap-2">
         <Kpi label="Catalogue" value={String(catalogCount)} hint="Références actives" />
         {!financeHidden ? (
@@ -180,21 +132,6 @@ export function InventoryMobile({
           </div>
         </div>
       </section>
-
-      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Pill active={tab === "niveaux"} onClick={() => onTab("niveaux")}>
-          Niveaux ({catalogCount})
-        </Pill>
-        <Pill active={tab === "alertes"} onClick={() => onTab("alertes")}>
-          Alertes ({out + low})
-        </Pill>
-        <Pill active={tab === "mouvements"} onClick={() => onTab("mouvements")}>
-          Mouvements ({movementTotal})
-        </Pill>
-        <Pill active={tab === "inventaire"} onClick={() => onTab("inventaire")}>
-          Inventaire
-        </Pill>
-      </div>
 
       {tab !== "mouvements" && tab !== "inventaire" ? (
         <>
@@ -294,22 +231,17 @@ function StockCard({
   const fill = stockFillPercent(p);
   return (
     <div className="flex flex-col gap-2.5 rounded-xl bg-white p-3 shadow-sm">
-      <div className="flex items-start gap-2.5">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#FCE9F4] text-primary">
-          <Package size={20} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", alertChipClass(p.alert))}>
-              {STOCK_ALERT_LABEL[p.alert]}
-            </span>
-            <span className="text-[13px] font-bold text-ink">{formatQty(p.stock, p.unit)}</span>
-          </div>
-          <h4 className="mt-0.5 truncate text-[14px] font-bold text-ink">{p.name}</h4>
-          <p className="truncate text-[12px] text-ink/45">
-            {p.sku} · {PRODUCT_CATEGORY_LABEL[p.category]} · {usageLabel(p)}
-          </p>
+      <div className="min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", alertChipClass(p.alert))}>
+            {STOCK_ALERT_LABEL[p.alert]}
+          </span>
+          <span className="text-[13px] font-bold text-ink">{formatQty(p.stock, p.unit)}</span>
         </div>
+        <h4 className="mt-0.5 truncate text-[14px] font-bold text-ink">{p.name}</h4>
+        <p className="truncate text-[12px] text-ink/45">
+          {p.sku} · {PRODUCT_CATEGORY_LABEL[p.category]} · {usageLabel(p)}
+        </p>
       </div>
       <div>
         <div className="mb-1 flex justify-between text-[10px] font-semibold text-ink/40">

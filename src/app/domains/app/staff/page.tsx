@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { TeamWorkspace } from "@/components/staff/team-workspace";
 
 export const metadata: Metadata = {
-  title: "Équipe & Planning",
+  title: "Équipe & Planning | Rappel Beauty",
 };
 
 export default function StaffPage() {

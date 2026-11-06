@@ -23,7 +23,6 @@ import {
   formatPaymentDateTime,
   formatPaymentServices,
   isUnpaidDue,
-  paymentInsight,
   paymentInitials,
   paymentKpis,
   paymentMix,
@@ -80,7 +79,7 @@ function MethodGlyph({ method, className }: { method: PaymentMethod; className?:
   return <Wallet className={cls} />;
 }
 
-export function PaymentsPageView() {
+export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }) {
   const { toast } = useToast();
   const user = useCurrentUser();
   const canWrite = canWriteCashRegister(user.role);
@@ -154,7 +153,6 @@ export function PaymentsPageView() {
 
   const kpis = useMemo(() => paymentKpis(scoped), [scoped]);
   const mix = useMemo(() => paymentMix(kpis), [kpis]);
-  const insight = useMemo(() => paymentInsight(kpis, period), [kpis, period]);
   const operators = useMemo(() => staffOptions(rows), [rows]);
 
   const filtered = useMemo(() => scoped.filter((p) => matchesPaymentTab(p, tab)), [scoped, tab]);
@@ -254,6 +252,13 @@ export function PaymentsPageView() {
     }
   }
 
+  useEffect(() => {
+    if (createSignal > 0 && canWrite) {
+      void openPay();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- signal-driven open from banner
+  }, [createSignal]);
+
   async function handlePay() {
     if (!aptId) return;
     const serviceAmount = Number(payAmount);
@@ -337,7 +342,6 @@ export function PaymentsPageView() {
     <>
       <PaymentsMobile
         orgName={user.orgName}
-        insight={insight}
         kpis={kpis}
         mix={mix}
         search={search}
@@ -377,7 +381,7 @@ export function PaymentsPageView() {
       ) : null}
 
       <div className="hidden space-y-4 lg:block">
-        <section className="flex flex-col justify-between gap-4 rounded-xl bg-white p-6 shadow-sm lg:flex-row lg:items-center">
+        <section className="finance-premium__payment-actions flex flex-col justify-end gap-4 rounded-xl bg-white p-4 shadow-sm lg:flex-row lg:items-center">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <CreditCard size={22} />
@@ -526,14 +530,6 @@ export function PaymentsPageView() {
             inverse
             icon={<Sparkles size={20} className="text-[#FFDEA4]" />}
           />
-        </section>
-
-        <section className="relative overflow-hidden rounded-xl bg-ink p-5 text-[#FEECF7] shadow-sm">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-[#FFDEA4]">
-            <Sparkles size={16} />
-            Lecture du journal
-          </div>
-          <p className="mt-2 text-[16px] font-semibold leading-7">{insight}</p>
         </section>
 
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">

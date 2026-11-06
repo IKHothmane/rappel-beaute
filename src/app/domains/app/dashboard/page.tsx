@@ -5,8 +5,8 @@ import "./dashboard-premium.css";
 
 export default function DashboardPage() {
   return (
-    <div className="rappel-dashboard-premium">
+    <main className="rappel-dashboard-premium">
       <SaasDashboard />
-    </div>
+    </main>
   );
 }

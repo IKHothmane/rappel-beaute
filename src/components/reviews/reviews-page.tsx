@@ -7,6 +7,7 @@ import {
 } from "@/components/reviews/public-reviews-moderation";
 import { useToast } from "@/components/ui/toast";
 import { getReviewsDashboard } from "@/modules/reviews/service";
+import type { StaffReviewScore } from "@/types/review";
 
 export function ReviewsPageView() {
   const { toast } = useToast();
@@ -16,6 +17,7 @@ export function ReviewsPageView() {
     averageScore: null,
     pendingRequests: 0,
   });
+  const [staffScores, setStaffScores] = useState<StaffReviewScore[]>([]);
 
   const refresh = useCallback(async () => {
     try {
@@ -26,6 +28,7 @@ export function ReviewsPageView() {
         averageScore: res.kpis.averageScore,
         pendingRequests: res.kpis.pendingToSend + res.kpis.awaitingRecord,
       });
+      setStaffScores(res.staffScores ?? []);
     } catch {
       toast("Impossible de charger les indicateurs internes.", "error");
     }
@@ -36,11 +39,6 @@ export function ReviewsPageView() {
   }, [refresh]);
 
   return (
-    <PublicReviewsModeration
-      internal={internal}
-      onAskReview={() => {
-        toast("Ouvrez une fiche cliente pour demander un avis WhatsApp.", "info");
-      }}
-    />
+    <PublicReviewsModeration internal={internal} staffScores={staffScores} />
   );
 }

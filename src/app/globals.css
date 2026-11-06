@@ -159,3 +159,91 @@ body {
     radial-gradient(circle at 18% 12%, rgba(227, 28, 95, 0.14) 0%, rgba(255, 240, 245, 0.6) 42%, rgba(255, 247, 249, 0) 75%),
     radial-gradient(circle at 85% 30%, rgba(199, 154, 59, 0.1) 0%, rgba(255, 247, 249, 0) 50%);
 }
+
+/* Sidebar propriétaire — thème luxe bordeaux */
+.app-sidebar {
+  background: linear-gradient(180deg, #54112f 0%, #641331 65%, #470e26 100%) !important;
+  border-right: 1px solid #792445 !important;
+  color: #fff;
+  scrollbar-width: thin;
+  scrollbar-color: #8a3558 #54112f;
+}
+
+.app-sidebar nav,
+.app-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #8a3558 #54112f;
+}
+
+.app-sidebar nav::-webkit-scrollbar,
+.app-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app-sidebar nav::-webkit-scrollbar-track,
+.app-sidebar::-webkit-scrollbar-track {
+  background: #54112f;
+}
+
+.app-sidebar nav::-webkit-scrollbar-thumb,
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: #8a3558;
+  border-radius: 999px;
+  border: 2px solid #54112f;
+}
+
+.app-sidebar nav::-webkit-scrollbar-thumb:hover,
+.app-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a44a6d;
+}
+
+.app-sidebar nav a {
+  color: #f5e4ec;
+}
+
+.app-sidebar nav a:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.app-sidebar nav a.bg-primary-light {
+  background: #fbdce8 !important;
+  color: #79183f !important;
+  font-weight: 700;
+}
+
+.app-sidebar nav a.bg-primary-light svg {
+  color: #a7144d !important;
+}
+
+.app-sidebar nav a:not(.bg-primary-light) svg {
+  color: #f0c9da;
+}
+
+.app-sidebar nav > div > div:first-child {
+  color: #e8b5cb;
+}
+
+.app-sidebar > div:first-of-type,
+.app-sidebar > div:last-of-type {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.app-sidebar button,
+.app-sidebar .font-display {
+  color: #fff;
+}
+
+.app-sidebar a[href="/profile/"] {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+}
+
+.app-sidebar a[href="/profile/"] .text-ink\/45 {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.app-sidebar button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}

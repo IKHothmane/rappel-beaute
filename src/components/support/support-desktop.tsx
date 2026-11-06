@@ -6,10 +6,9 @@ import {
   Headphones,
   Lightbulb,
   Paperclip,
-  RefreshCw,
+  Plus,
   Search,
   Send,
-  Timer,
 } from "lucide-react";
 import {
   SUPPORT_CATEGORY_LABEL,
@@ -28,92 +27,70 @@ import { cn } from "@/lib/utils";
 
 export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
   return (
-    <div className="hidden space-y-8 lg:block">
-      {/* Header */}
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
-            <h1 className="flex items-center gap-2 text-[28px] font-bold text-on-surface">
-              <Headphones className="h-8 w-8 text-primary" />
-              Support &amp; Conciergerie Technique Métier
-            </h1>
-            <p className="max-w-3xl text-[15px] text-on-surface-variant">
-              Créez une demande et suivez la conversation avec l&apos;équipe Rappel Beauté — données
-              réelles de votre institut.
-            </p>
-          </div>
-          {vm.canWrite ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => vm.onOpenModal("ticket")}
-                className="flex h-12 items-center gap-2 rounded-lg bg-primary-container px-4 text-sm font-bold text-on-primary-container shadow-sm transition-all hover:bg-primary hover:shadow-md"
-              >
-                Nouveau Ticket
-              </button>
-              <button
-                type="button"
-                onClick={() => vm.onOpenModal("bug")}
-                className="flex h-12 items-center gap-2 rounded-lg bg-surface-container-lowest px-4 text-sm font-bold text-on-surface shadow-sm transition-all hover:bg-surface-container"
-              >
-                <Bug className="h-5 w-5 text-error" />
-                Signaler un Bug
-              </button>
-              <button
-                type="button"
-                onClick={() => vm.onOpenModal("feature")}
-                className="flex h-12 items-center gap-2 rounded-lg bg-inverse-surface px-4 text-sm font-bold text-secondary-fixed shadow-sm transition-all hover:opacity-95"
-              >
-                <Lightbulb className="h-5 w-5" />
-                Proposer une idée
-              </button>
-            </div>
-          ) : null}
+    <div className="hidden space-y-5 lg:block">
+      <header
+        className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
+        style={{
+          backgroundImage:
+            'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/hero-background.png")',
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+        }}
+      >
+        <div className="relative z-10 min-w-0">
+          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
+            Support
+          </h1>
+          <p className="mt-1 max-w-lg text-sm leading-5 text-[#654254]">
+            Créez une demande et suivez la conversation avec l&apos;équipe Rappel Beauté.
+          </p>
         </div>
-
-        <div className="grid grid-cols-1 items-center gap-4 lg:grid-cols-12">
-          <div className="relative lg:col-span-8">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant" />
-            <input
-              value={vm.search}
-              onChange={(e) => vm.onSearch(e.target.value)}
-              placeholder="Rechercher un ticket (#RB-…), une problématique…"
-              className="h-12 w-full rounded-xl bg-surface-container-lowest py-2 pl-12 pr-4 text-[15px] text-on-surface shadow-sm placeholder:text-on-surface-variant/50 focus:outline-none"
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-xl bg-surface-container-lowest p-3 shadow-sm lg:col-span-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container text-primary">
-                <Timer className="h-[18px] w-[18px]" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[11px] font-bold uppercase text-on-surface-variant">
-                  1ère réponse moyenne
-                </span>
-                <span className="text-lg font-extrabold text-on-surface">
-                  {vm.avgResponseMin != null ? `${vm.avgResponseMin} min` : "—"}
-                  <span className="ml-1 text-[11px] font-bold text-secondary">
-                    {vm.avgResponseMin != null ? "mesuré" : "pas encore de données"}
-                  </span>
-                </span>
-              </div>
-            </div>
+        {vm.canWrite ? (
+          <div className="relative z-10 flex shrink-0 flex-wrap items-center justify-end gap-2">
             <button
               type="button"
-              onClick={vm.onRefresh}
-              className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container"
-              title="Actualiser"
+              onClick={() => vm.onOpenModal("ticket")}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
             >
-              <RefreshCw className="h-4 w-4" />
+              <Plus size={17} aria-hidden />
+              Nouveau ticket
+            </button>
+            <button
+              type="button"
+              onClick={() => vm.onOpenModal("bug")}
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#E7B9CD] bg-white px-5 text-sm font-semibold text-[#831D4A] transition hover:bg-[#FFF7FA]"
+            >
+              <Bug size={17} aria-hidden />
+              Signaler un bug
+            </button>
+            <button
+              type="button"
+              onClick={() => vm.onOpenModal("feature")}
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#E7B9CD] bg-white px-5 text-sm font-semibold text-[#831D4A] transition hover:bg-[#FFF7FA]"
+            >
+              <Lightbulb size={17} aria-hidden />
+              Proposer une idée
             </button>
           </div>
-        </div>
-      </section>
+        ) : null}
+      </header>
 
-      {/* KPIs */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="relative">
+        <Search
+          className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A58B99]"
+          aria-hidden
+        />
+        <input
+          value={vm.search}
+          onChange={(e) => vm.onSearch(e.target.value)}
+          placeholder="Rechercher un ticket…"
+          className="h-12 w-full rounded-xl border border-[#F0E4EA] bg-white py-2 pl-12 pr-4 text-[15px] text-[#30202C] shadow-sm outline-none transition placeholder:text-[#B69CA9] focus:border-[#C95483] focus:ring-2 focus:ring-pink-100"
+        />
+      </div>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Tickets Totaux"
+          label="Tickets totaux"
           value={vm.counters.total}
           hint={`${vm.counters.thisMonth} ce mois-ci`}
           bar={vm.counters.total ? Math.min(100, (vm.counters.thisMonth / vm.counters.total) * 100) : 0}
@@ -129,22 +106,21 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
           accent="primary"
         />
         <KpiCard
-          label="En Attente Support"
+          label="En attente support"
           value={vm.counters.waiting}
           hint="Réponse institut ou plateforme"
           accent="secondary"
         />
         <KpiCard
-          label="Résolus & Clôturés"
+          label="Résolus & clôturés"
           value={vm.counters.resolved}
           hint="Historique scellé"
           accent="done"
         />
       </section>
 
-      {/* Filters + split */}
       <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-lowest p-2 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[#F1E8EC] bg-white p-2 shadow-sm">
           <div className="flex items-center gap-1.5 overflow-x-auto py-1">
             {TICKET_FILTERS.map((f) => {
               const count =
@@ -166,17 +142,17 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
                   type="button"
                   onClick={() => vm.onFilter(f.value)}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm transition-colors",
+                    "flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm transition-colors",
                     active
-                      ? "bg-primary font-bold text-on-primary shadow-sm"
-                      : "font-medium text-on-surface-variant hover:bg-surface-container",
+                      ? "bg-[#981C52] font-bold text-white shadow-sm"
+                      : "font-medium text-[#765E6B] hover:bg-[#FAF0F5]",
                   )}
                 >
                   {f.label}
                   <span
                     className={cn(
-                      "rounded px-1.5 py-0.5 text-[11px] font-bold",
-                      active ? "bg-white/20 text-white" : "bg-surface-container-high text-on-surface-variant",
+                      "rounded-lg px-1.5 py-0.5 text-[11px] font-bold",
+                      active ? "bg-white/20 text-white" : "bg-[#FCF8FA] text-[#765E6B]",
                     )}
                   >
                     {count}
@@ -185,12 +161,12 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
               );
             })}
           </div>
-          <div className="flex items-center gap-2 text-[13px] text-on-surface-variant">
-            <span className="text-[11px] font-semibold uppercase">Trier :</span>
+          <div className="flex items-center gap-2 text-[13px] text-[#765E6B]">
+            <span className="text-[11px] font-semibold uppercase">Trier</span>
             <select
               value={vm.sort}
               onChange={(e) => vm.onSort(e.target.value as "recent" | "priority" | "number")}
-              className="cursor-pointer rounded-lg bg-surface-container-high px-2.5 py-1 text-[11px] font-bold text-on-surface focus:outline-none"
+              className="cursor-pointer rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] px-2.5 py-1.5 text-[11px] font-bold text-[#30202C] focus:outline-none"
             >
               <option value="recent">Dernière activité</option>
               <option value="priority">Priorité</option>
@@ -199,13 +175,12 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-          {/* List */}
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
           <div className="flex flex-col gap-3 lg:col-span-7">
             {vm.loading ? (
-              <p className="text-sm text-on-surface-variant">Chargement…</p>
+              <p className="text-sm text-[#765E6B]">Chargement…</p>
             ) : vm.filtered.length === 0 ? (
-              <div className="rounded-xl bg-surface-container-lowest p-8 text-center text-sm text-on-surface-variant shadow-sm">
+              <div className="rounded-[22px] border border-[#F0E7EB] bg-white p-8 text-center text-sm text-[#765E6B] shadow-sm">
                 Aucun ticket pour ce filtre.
               </div>
             ) : (
@@ -218,8 +193,8 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
                     type="button"
                     onClick={() => vm.onSelect(t.id)}
                     className={cn(
-                      "flex flex-col gap-1.5 rounded-xl bg-surface-container-lowest p-4 text-left shadow-sm transition-all hover:shadow-md",
-                      selected && "ring-2 ring-primary",
+                      "flex flex-col gap-1.5 rounded-[22px] border border-[#F0E7EB] bg-white p-4 text-left shadow-sm transition-all hover:border-[#E7B9CD] hover:shadow-md",
+                      selected && "border-[#981C52] ring-2 ring-[#981C52]/20",
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -271,24 +246,23 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
             )}
           </div>
 
-          {/* Detail pane */}
-          <div className="sticky top-24 flex min-h-[640px] flex-col justify-between rounded-xl bg-surface-container-lowest p-6 shadow-sm lg:col-span-5">
+          <div className="sticky top-24 flex min-h-[640px] flex-col justify-between rounded-[26px] border border-[#F0E7EB] bg-white p-5 shadow-sm lg:col-span-5 lg:p-6">
             {!vm.selected ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center text-sm text-on-surface-variant">
-                <Headphones className="h-10 w-10 text-primary/40" />
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center text-sm text-[#765E6B]">
+                <Headphones className="h-10 w-10 text-[#C88BA6]" aria-hidden />
                 <p>Sélectionnez un ticket pour afficher la conversation.</p>
               </div>
             ) : (
               <>
-                <div className="flex flex-col gap-1.5 border-b border-surface-container pb-4">
+                <div className="flex flex-col gap-1.5 border-b border-[#F4EDF0] pb-4">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[22px] font-black text-primary">
+                      <span className="text-[22px] font-black text-[#981C52]">
                         {ticketRef(vm.selected)}
                       </span>
                       <span
                         className={cn(
-                          "rounded px-2 py-0.5 text-[11px] font-extrabold",
+                          "rounded-full px-2 py-0.5 text-[11px] font-extrabold",
                           priorityTone(vm.selected.priority),
                         )}
                       >
@@ -296,7 +270,7 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
                       </span>
                       <span
                         className={cn(
-                          "rounded px-2 py-0.5 text-[11px] font-bold",
+                          "rounded-full px-2 py-0.5 text-[11px] font-bold",
                           statusTone(vm.selected.status),
                         )}
                       >
@@ -305,13 +279,13 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
                     </div>
                     <Link
                       href={`/support/${vm.selected.id}/`}
-                      className="rounded-lg bg-surface-container px-2 py-1 text-[11px] font-bold text-on-surface hover:bg-surface-container-high"
+                      className="rounded-xl bg-[#FCF8FA] px-2.5 py-1 text-[11px] font-bold text-[#765E6B] hover:bg-[#FAF0F5]"
                     >
                       Plein écran
                     </Link>
                   </div>
-                  <h3 className="text-lg font-bold text-on-surface">{vm.selected.subject}</h3>
-                  <p className="text-[13px] text-on-surface-variant">
+                  <h3 className="text-lg font-bold text-[#30202C]">{vm.selected.subject}</h3>
+                  <p className="text-[13px] text-[#765E6B]">
                     Ouvert le{" "}
                     {new Date(vm.selected.createdAt).toLocaleString("fr-MA", {
                       dateStyle: "short",
@@ -323,9 +297,9 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
 
                 <div className="max-h-[380px] flex-1 space-y-4 overflow-y-auto py-4 pr-1">
                   {vm.messagesLoading ? (
-                    <p className="text-sm text-on-surface-variant">Chargement des messages…</p>
+                    <p className="text-sm text-[#765E6B]">Chargement des messages…</p>
                   ) : vm.messages.length === 0 ? (
-                    <p className="text-sm text-on-surface-variant">Aucun message.</p>
+                    <p className="text-sm text-[#765E6B]">Aucun message.</p>
                   ) : (
                     vm.messages.map((m) => {
                       const mine = m.senderType === "INSTITUT";
@@ -338,8 +312,8 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
                             className={cn(
                               "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[14px] font-bold shadow-sm",
                               mine
-                                ? "bg-primary-container text-on-primary-container"
-                                : "bg-secondary-fixed text-on-secondary-fixed",
+                                ? "bg-[#FCE9F4] text-[#981C52]"
+                                : "bg-[#FFF1F7] text-[#831D4A]",
                             )}
                           >
                             {(m.senderName ?? (mine ? vm.userName : "Support"))
@@ -356,24 +330,24 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
                             )}
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-on-surface">
+                              <span className="text-sm font-bold text-[#30202C]">
                                 {m.senderName ?? (mine ? "Vous" : "Support")}
                               </span>
                               {!mine ? (
-                                <span className="rounded bg-secondary-fixed px-1.5 py-0.5 text-[10px] font-bold text-on-secondary-fixed">
+                                <span className="rounded bg-[#FCE9F4] px-1.5 py-0.5 text-[10px] font-bold text-[#981C52]">
                                   SUPPORT
                                 </span>
                               ) : null}
-                              <span className="text-[11px] text-on-surface-variant">
+                              <span className="text-[11px] text-[#765E6B]">
                                 {formatClock(m.createdAt)}
                               </span>
                             </div>
                             <div
                               className={cn(
-                                "rounded-2xl p-3 text-[13px] text-on-surface shadow-sm",
+                                "rounded-2xl p-3 text-[13px] text-[#30202C] shadow-sm",
                                 mine
-                                  ? "rounded-tl-none bg-surface-container-low"
-                                  : "rounded-tr-none bg-surface-container-high",
+                                  ? "rounded-tl-none bg-[#FFF7FB]"
+                                  : "rounded-tr-none bg-[#FCF8FA]",
                               )}
                             >
                               {m.message}
@@ -386,24 +360,24 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
                 </div>
 
                 {vm.canWrite && vm.selected.status !== "CLOSED" ? (
-                  <div className="flex flex-col gap-2 border-t border-surface-container pt-3">
+                  <div className="flex flex-col gap-2 border-t border-[#F4EDF0] pt-3">
                     <textarea
                       value={vm.reply}
                       onChange={(e) => vm.onReplyChange(e.target.value)}
                       rows={3}
-                      placeholder="Écrire votre réponse…"
-                      className="w-full rounded-xl bg-surface-container-low p-3 text-[13px] text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="Écrire une réponse…"
+                      className="w-full rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] p-3 text-[13px] text-[#30202C] outline-none placeholder:text-[#B69CA9] focus:border-[#C95483] focus:ring-2 focus:ring-pink-100"
                     />
                     <div className="flex items-center justify-between gap-2">
-                      <Paperclip className="h-5 w-5 text-on-surface-variant/40" />
+                      <Paperclip className="h-5 w-5 text-[#C88BA6]" aria-hidden />
                       <button
                         type="button"
                         disabled={vm.sending || !vm.reply.trim()}
                         onClick={vm.onSendReply}
-                        className="flex items-center gap-1.5 rounded-lg bg-primary-container px-4 py-2 text-sm font-bold text-on-primary-container shadow-sm transition-all hover:bg-primary disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-xl bg-[#981C52] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#7d1643] disabled:opacity-50"
                       >
                         Envoyer
-                        <Send className="h-4 w-4" />
+                        <Send className="h-4 w-4" aria-hidden />
                       </button>
                     </div>
                   </div>
@@ -431,30 +405,27 @@ function KpiCard({
   bar?: number;
 }) {
   return (
-    <div className="relative flex flex-col justify-between overflow-hidden rounded-xl bg-surface-container-lowest p-6 shadow-sm transition-all hover:shadow-md">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
-          {label}
-        </span>
-      </div>
-      <div className="mt-4 flex items-baseline justify-between">
+    <div className="relative flex flex-col justify-between overflow-hidden rounded-[22px] border border-[#F1E8EC] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-md">
+      <span className="text-[11px] font-bold uppercase tracking-wider text-[#765E6B]">{label}</span>
+      <div className="mt-4 flex items-baseline justify-between gap-2">
         <div
           className={cn(
-            "text-[40px] font-extrabold leading-none tracking-tight",
-            accent === "primary" && "text-primary",
-            accent === "secondary" && "text-secondary",
-            !accent && "text-on-surface",
+            "text-[36px] font-extrabold leading-none tracking-tight xl:text-[40px]",
+            accent === "primary" && "text-[#981C52]",
+            accent === "secondary" && "text-amber-700",
+            accent === "done" && "text-emerald-700",
+            !accent && "text-[#30202C]",
           )}
         >
           {value}
         </div>
-        <span className="rounded bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
+        <span className="rounded-lg bg-[#FCF8FA] px-2 py-0.5 text-[11px] font-semibold text-[#765E6B]">
           {hint}
         </span>
       </div>
       {bar != null ? (
-        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-surface-container-high">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${bar}%` }} />
+        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#F6EAF0]">
+          <div className="h-full rounded-full bg-[#981C52]" style={{ width: `${bar}%` }} />
         </div>
       ) : null}
     </div>

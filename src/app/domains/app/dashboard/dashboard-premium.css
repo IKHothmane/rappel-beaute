@@ -1,148 +1,526 @@
-/* ==========================================
-   RAPPEL BEAUTY — DASHBOARD PREMIUM
-   ========================================== */
+/* =========================================
+   RAPPEL BEAUTY — DASHBOARD LUXURY
+   ========================================= */
 
 .rappel-dashboard-premium {
   --rb-primary: #b60050;
-  --rb-primary-dark: #75133d;
+  --rb-primary-dark: #54112f;
   --rb-primary-light: #fce7f1;
-  --rb-background: #f8f7fa;
-  --rb-text: #261524;
-  --rb-muted: #887787;
-  --rb-border: #f0e5ec;
+  --rb-background: #faf7fa;
+  --rb-text: #301625;
+  --rb-muted: #8d7382;
+  --rb-border: #f0dce5;
 
-  box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  min-height: calc(100dvh - 72px);
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding: clamp(12px, 1.5vw, 24px);
   color: var(--rb-text);
+
   background:
     radial-gradient(
-      ellipse at 92% 0%,
-      rgba(244, 183, 211, 0.22),
-      transparent 42%
+      ellipse at 90% 5%,
+      rgba(247, 196, 218, 0.23),
+      transparent 35%
     ),
-    radial-gradient(
-      ellipse at 0% 100%,
-      rgba(255, 209, 231, 0.18),
-      transparent 38%
-    ),
-    var(--rb-background);
+    linear-gradient(
+      180deg,
+      #fffafd 0%,
+      #faf7fa 45%,
+      #f9f5f8 100%
+    );
+
+  font-family:
+    "Poppins",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
 }
+
+/* CONTAINER */
 
 .rappel-dashboard-premium > * {
   width: 100%;
   min-width: 0;
 }
 
+.rappel-dashboard-premium * {
+  box-sizing: border-box;
+}
+
+/* GENERAL CARDS */
+
 .rappel-dashboard-premium .rb-card {
-  border: 1px solid var(--rb-border);
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+
+  border: 1px solid #f0dce5;
   border-radius: 20px;
   background: #fff;
+
   box-shadow:
-    0 3px 8px rgba(60, 20, 40, 0.025),
-    0 12px 30px rgba(60, 20, 40, 0.045);
+    0 3px 8px rgba(76, 16, 45, 0.025),
+    0 12px 32px rgba(76, 16, 45, 0.055);
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
+
+@media (hover: hover) {
+  .rappel-dashboard-premium .rb-card:hover {
+    border-color: #e9c3d3;
+    box-shadow:
+      0 6px 16px rgba(76, 16, 45, 0.04),
+      0 16px 36px rgba(76, 16, 45, 0.075);
+  }
+}
+
+/* =========================================
+   HERO BANNER
+   ========================================= */
 
 .rappel-dashboard-premium .rb-card-hero {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  border: 1px solid #f0e0e9;
-  border-radius: 22px;
-  background:
-    radial-gradient(
-      circle at 100% 0%,
-      rgba(255, 214, 232, 0.35),
-      transparent 36%
+
+  min-height: 96px;
+  padding: 16px 20px;
+
+  display: flex;
+  align-items: center;
+
+  border: 1px solid #efd9e1;
+  border-radius: 20px;
+
+  background-color: #f9e8e7;
+
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(255, 247, 247, 0.92) 0%,
+      rgba(255, 239, 239, 0.55) 42%,
+      rgba(255, 239, 239, 0.15) 100%
     ),
-    linear-gradient(110deg, #ffffff 0%, #fff9fc 72%, #fff5f7 100%);
-  box-shadow:
-    0 3px 8px rgba(60, 20, 40, 0.025),
-    0 12px 30px rgba(60, 20, 40, 0.045);
+    url("/marketing/hero-background.png");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  box-shadow: 0 1px 2px rgba(99, 28, 62, 0.04);
 }
 
-.rappel-dashboard-premium h1 {
-  color: #341629;
-  font-size: clamp(1.5rem, 2.2vw, 2.25rem);
-  font-weight: 800;
-  letter-spacing: -0.035em;
+@media (min-width: 640px) {
+  .rappel-dashboard-premium .rb-card-hero {
+    min-height: 108px;
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+}
+
+.rappel-dashboard-premium .rb-card-hero::after {
+  content: "";
+  position: absolute;
+  right: -45px;
+  bottom: -110px;
+  width: 290px;
+  height: 290px;
+
+  border: 30px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.rappel-dashboard-premium .rb-card-hero > * {
+  width: 100%;
+}
+
+.rappel-dashboard-premium .rb-card-hero h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
   line-height: 1.2;
+  color: #58152f;
+}
+
+@media (min-width: 640px) {
+  .rappel-dashboard-premium .rb-card-hero h1 {
+    font-size: 1.875rem;
+  }
+}
+
+.rappel-dashboard-premium .rb-card-hero p {
+  color: #80596c;
+}
+
+.rappel-dashboard-premium .rb-card-hero button {
+  flex-shrink: 0;
+}
+
+/* =========================================
+   TYPOGRAPHY
+   ========================================= */
+
+.rappel-dashboard-premium h1,
+.rappel-dashboard-premium h2,
+.rappel-dashboard-premium h3 {
+  color: #35152a;
 }
 
 .rappel-dashboard-premium h2,
 .rappel-dashboard-premium h3 {
-  color: #301a2a;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
 }
 
-.rappel-dashboard-premium button:focus-visible,
-.rappel-dashboard-premium a:focus-visible {
-  outline: 3px solid rgba(182, 0, 80, 0.3);
-  outline-offset: 3px;
+.rappel-dashboard-premium h2 {
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.rappel-dashboard-premium h3 {
+  font-size: 16px;
+  font-weight: 750;
 }
 
 .rappel-dashboard-premium .text-primary {
-  color: var(--rb-primary);
+  color: #b60050;
 }
 
 .rappel-dashboard-premium .bg-primary {
-  background-color: var(--rb-primary);
+  background-color: #b60050;
 }
 
-.rappel-dashboard-premium .recharts-responsive-container {
-  min-height: 200px;
+/* =========================================
+   KPI CARDS
+   ========================================= */
+
+@media (min-width: 1280px) {
+  .rappel-dashboard-premium
+  .lg\:flex
+  > .grid.xl\:grid-cols-4 {
+    gap: 14px;
+  }
 }
 
-.rappel-dashboard-premium .recharts-cartesian-grid line {
-  stroke: #f1e7ed;
+.rappel-dashboard-premium
+.lg\:flex
+> .grid.xl\:grid-cols-4
+> * {
+  min-height: 130px;
+
+  border: 1px solid #f0dce5;
+  border-radius: 20px;
+  background: #fff;
+
+  box-shadow:
+    0 5px 18px rgba(75, 22, 48, 0.045);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.rappel-dashboard-premium .recharts-cartesian-axis-tick text {
-  fill: #8e7d8a;
+@media (hover: hover) {
+  .rappel-dashboard-premium
+  .lg\:flex
+  > .grid.xl\:grid-cols-4
+  > *:hover {
+    transform: translateY(-3px);
+
+    box-shadow:
+      0 12px 28px rgba(75, 22, 48, 0.09);
+  }
+}
+
+/* =========================================
+   ACTIONS OF THE DAY
+   ========================================= */
+
+.rappel-dashboard-premium
+section[aria-labelledby="dash-todo-title"] {
+  border-left: 0;
+  padding: 20px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #fff 0%,
+      #fff9fc 100%
+    );
+}
+
+.rappel-dashboard-premium
+#dash-todo-title {
+  font-family: Georgia, serif;
+  font-size: 20px;
+  color: #54112f;
+}
+
+.rappel-dashboard-premium
+section[aria-labelledby="dash-todo-title"]
+.grid
+> * {
+  min-width: 0;
+  border-radius: 17px;
+  border: 1px solid #f2dfe7;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fffafb,
+      #fdf0f5
+    );
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+@media (hover: hover) {
+  .rappel-dashboard-premium
+  section[aria-labelledby="dash-todo-title"]
+  .grid
+  > *:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(99, 26, 57, 0.08);
+  }
+}
+
+/* =========================================
+   FINANCE CHART
+   ========================================= */
+
+.rappel-dashboard-premium
+section[aria-labelledby="dash-ca-title"] {
+  min-height: 400px;
+}
+
+.rappel-dashboard-premium
+#dash-ca-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  color: #54112f;
+}
+
+.rappel-dashboard-premium
+.recharts-responsive-container {
+  min-height: 280px !important;
+}
+
+.rappel-dashboard-premium
+.recharts-cartesian-grid line {
+  stroke: #f3e7ed;
+}
+
+.rappel-dashboard-premium
+.recharts-cartesian-axis-tick text {
+  fill: #957e8a;
   font-size: 11px;
 }
 
-.rappel-dashboard-premium .recharts-tooltip-wrapper {
+.rappel-dashboard-premium
+.recharts-tooltip-wrapper {
   z-index: 30;
 }
 
-.rappel-dashboard-premium ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+.rappel-dashboard-premium
+.recharts-default-tooltip {
+  border-radius: 12px !important;
+  border-color: #f0dce5 !important;
+  box-shadow:
+    0 10px 30px rgba(70, 20, 40, 0.1) !important;
 }
 
-.rappel-dashboard-premium ::-webkit-scrollbar-thumb {
-  background: #e6bfd1;
-  border-radius: 20px;
+/* =========================================
+   CASH REGISTER
+   ========================================= */
+
+.rappel-dashboard-premium
+section[aria-labelledby="dash-cash-title"] {
+  min-height: 400px;
+  justify-content: flex-start;
+  gap: 0;
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(255, 228, 238, 0.45),
+      transparent 48%
+    ),
+    #fff;
 }
 
-.rappel-dashboard-premium ::-webkit-scrollbar-track {
-  background: transparent;
+.rappel-dashboard-premium
+#dash-cash-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  color: #54112f;
 }
+
+.rappel-dashboard-premium
+section[aria-labelledby="dash-cash-title"] > a {
+  margin-top: auto;
+}
+
+.rappel-dashboard-premium
+section[aria-labelledby="dash-cash-title"]
+a[href="/cash-register/"] {
+  border-radius: 12px;
+  background: #b60050;
+  color: #fff;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.rappel-dashboard-premium
+section[aria-labelledby="dash-cash-title"]
+a[href="/cash-register/"]:hover {
+  background: #8d0c40;
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   EMPTY STATES
+   ========================================= */
+
+.rappel-dashboard-premium
+.border-dashed {
+  border-color: #efd7e2;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fffafb,
+      #fff5f9
+    );
+
+  border-radius: 15px;
+}
+
+.rappel-dashboard-premium
+.border-dashed p:first-child {
+  color: #54112f;
+}
+
+.rappel-dashboard-premium
+.border-dashed p:last-child {
+  color: #947c89;
+}
+
+/* =========================================
+   LINKS & BUTTONS
+   ========================================= */
+
+.rappel-dashboard-premium a,
+.rappel-dashboard-premium button {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.rappel-dashboard-premium
+button:focus-visible,
+.rappel-dashboard-premium
+a:focus-visible {
+  outline: 3px solid rgba(182, 0, 80, 0.35);
+  outline-offset: 3px;
+}
+
+.rappel-dashboard-premium
+a[href="/agenda/"],
+.rappel-dashboard-premium
+a[href="/inventory/"],
+.rappel-dashboard-premium
+a[href="/reviews/"] {
+  text-decoration: none;
+}
+
+/* =========================================
+   HEATMAP
+   ========================================= */
+
+.rappel-dashboard-premium
+[aria-label*="Affluence"] {
+  min-width: 0;
+}
+
+.rappel-dashboard-premium
+.bg-\[\#F0E5EC\] {
+  background-color: #f4e8ee;
+}
+
+/* =========================================
+   ANIMATIONS
+   ========================================= */
 
 @keyframes rb-fade-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-.rappel-dashboard-premium .rb-card,
-.rappel-dashboard-premium .rb-card-hero {
-  animation: rb-fade-up 380ms ease both;
+.rappel-dashboard-premium
+.rb-card,
+.rappel-dashboard-premium
+.rb-card-hero {
+  animation: rb-fade-up 0.4s ease both;
 }
 
-@media (max-width: 768px) {
-  .rappel-dashboard-premium .rb-card,
-  .rappel-dashboard-premium .rb-card-hero {
-    border-radius: 16px;
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+
+@media (max-width: 1279px) {
+  .rappel-dashboard-premium
+  section[aria-labelledby="dash-ca-title"],
+  .rappel-dashboard-premium
+  section[aria-labelledby="dash-cash-title"] {
+    min-height: 320px;
   }
 }
+
+@media (max-width: 1023px) {
+  .rappel-dashboard-premium {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 767px) {
+  .rappel-dashboard-premium {
+    padding: 10px;
+    background: #faf7fa;
+  }
+
+  .rappel-dashboard-premium
+  .rb-card {
+    border-radius: 16px;
+  }
+
+  .rappel-dashboard-premium
+  section[aria-labelledby="dash-todo-title"] {
+    padding: 14px;
+  }
+}
+
+/* ACCESSIBILITY */
 
 @media (prefers-reduced-motion: reduce) {
   .rappel-dashboard-premium *,

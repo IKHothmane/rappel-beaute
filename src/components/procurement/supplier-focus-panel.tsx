@@ -114,31 +114,31 @@ export function SupplierFocusPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-4 rounded-[22px] border border-[#F0DDE4] bg-white p-4 shadow-lg">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-primary to-[#E31C5F] text-[16px] font-bold text-white shadow-sm">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#AC0E4C] to-[#E31C5F] text-[16px] font-bold text-white shadow-sm">
               {supplierInitials(s.name)}
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
-                <h3 className="text-[18px] font-bold leading-snug text-ink">{s.name}</h3>
+                <h3 className="font-serif text-xl font-bold leading-snug text-[#54112F]">{s.name}</h3>
                 {preferred ? <Star className="h-4 w-4 fill-[#7B5900] text-[#7B5900]" /> : null}
               </div>
-              <p className="mt-0.5 text-[13px] text-ink/55">
+              <p className="mt-0.5 text-[13px] text-[#765164]">
                 {s.contactName ?? "Contact non renseigné"}
               </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 <span
                   className={cn(
-                    "rounded-full px-2 py-0.5 text-[11px] font-bold",
+                    "rounded-full px-2.5 py-1 text-[11px] font-bold",
                     s.active ? "bg-emerald-100 text-emerald-800" : "bg-[#F0DDE9] text-ink/45",
                   )}
                 >
                   {s.active ? "Actif" : "Archivé"}
                 </span>
                 {s.productCount > 0 ? (
-                  <span className="text-[11px] font-semibold text-ink/55">
+                  <span className="text-[11px] font-semibold text-[#846A79]">
                     {s.productCount} réf.
                   </span>
                 ) : null}
@@ -150,7 +150,7 @@ export function SupplierFocusPanel({
               type="button"
               onClick={onEdit}
               title="Modifier"
-              className="rounded-lg bg-[#FCE9F4] p-2 text-ink/50 hover:text-primary"
+              className="rounded-xl border border-[#EAD4DE] bg-white p-2 text-[#765164] hover:bg-[#FFF0F6] hover:text-[#AC0E4C]"
             >
               <Pencil size={16} />
             </button>
@@ -163,20 +163,20 @@ export function SupplierFocusPanel({
               href={wa}
               target="_blank"
               rel="noreferrer"
-              className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[13px] font-semibold text-white"
+              className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#25D366] text-[13px] font-semibold text-white"
             >
               <MessageCircle className="h-4 w-4" />
               WhatsApp
             </a>
           ) : (
-            <span className="flex h-10 items-center justify-center rounded-lg bg-[#F0DDE9] text-[13px] text-ink/40">
+            <span className="flex h-10 items-center justify-center rounded-xl bg-[#F0DDE9] text-[13px] text-ink/40">
               Pas de WhatsApp
             </span>
           )}
           {tel ? (
             <a
               href={tel}
-              className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FCE9F4] text-[13px] font-semibold text-ink"
+              className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[#EAD4DE] bg-[#FFF0F6] text-[13px] font-semibold text-[#54112F]"
             >
               <Phone className="h-4 w-4" />
               {s.contactName ? `Appeler` : "Appeler"}

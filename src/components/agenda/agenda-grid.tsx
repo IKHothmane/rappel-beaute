@@ -62,6 +62,7 @@ export function AgendaGrid({
     [appointments],
   );
   const { rows, totalHeight } = layout;
+  const isEmpty = appointments.length === 0;
 
   return (
     <div className="hidden w-full min-w-0 overflow-hidden rounded-xl bg-white shadow-soft md:block">
@@ -73,7 +74,7 @@ export function AgendaGrid({
       <div className="w-full min-w-0">
           <div
             className="grid border-b border-line bg-[#FBF4F6]"
-            style={{ gridTemplateColumns: `56px repeat(${staff.length}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `56px repeat(${Math.max(staff.length, 1)}, minmax(0, 1fr))` }}
           >
             <div className="px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-ink/40">
               Heure
@@ -92,10 +93,20 @@ export function AgendaGrid({
           <div
             className="relative grid"
             style={{
-              gridTemplateColumns: `56px repeat(${staff.length}, minmax(0, 1fr))`,
+              gridTemplateColumns: `56px repeat(${Math.max(staff.length, 1)}, minmax(0, 1fr))`,
               height: totalHeight,
             }}
           >
+            {isEmpty ? (
+              <div className="pointer-events-none absolute inset-0 z-[5] flex items-start justify-center pt-16">
+                <div className="rounded-2xl border border-[#F0DDE4] bg-white/90 px-5 py-4 text-center shadow-sm backdrop-blur-sm">
+                  <p className="text-sm font-semibold text-[#54112F]">Aucun rendez-vous pour cette journée</p>
+                  <p className="mt-1 text-xs text-[#876879]">
+                    Cliquez un créneau libre pour créer un rendez-vous.
+                  </p>
+                </div>
+              </div>
+            ) : null}
             {/* Time labels + grid lines */}
             <div className="relative border-r border-line">
               {rows.map((row) =>

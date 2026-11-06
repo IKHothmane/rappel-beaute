@@ -12,6 +12,8 @@ type DrawerProps = {
   children: ReactNode;
   side?: "right" | "bottom";
   className?: string;
+  /** Laisse la barre du haut (header) visible et blanche. */
+  preserveHeader?: boolean;
 };
 
 export function Drawer({
@@ -21,6 +23,7 @@ export function Drawer({
   children,
   side = "right",
   className,
+  preserveHeader = false,
 }: DrawerProps) {
   useEffect(() => {
     if (!open) return;
@@ -48,7 +51,14 @@ export function Drawer({
           <motion.button
             type="button"
             aria-label="Fermer"
-            className="fixed inset-0 z-[60] bg-ink/30"
+            className={cn(
+              "fixed z-[60] bg-black/20",
+              isBottom
+                ? "inset-0"
+                : preserveHeader
+                  ? "bottom-0 left-0 right-0 top-[64px] sm:top-[72px]"
+                  : "inset-0",
+            )}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -61,7 +71,9 @@ export function Drawer({
               "fixed z-[70] flex flex-col border-line bg-white shadow-soft",
               isBottom
                 ? "bottom-0 left-0 right-0 max-h-[92vh] rounded-t-2xl border-t"
-                : "right-0 top-0 h-full w-full max-w-md border-l",
+                : preserveHeader
+                  ? "right-0 top-[64px] h-[calc(100%-64px)] w-full max-w-md border-l sm:top-[72px] sm:h-[calc(100%-72px)]"
+                  : "right-0 top-0 h-full w-full max-w-md border-l",
               className,
             )}
             initial={isBottom ? { y: "100%" } : { x: "100%" }}

@@ -314,7 +314,6 @@ export function ResourcesMobile({
           current={currentOf(selected.id)}
           next={nextOf(selected.id)}
           todayCount={todayCountOf(selected.id)}
-          insight={insight}
           canWrite={canWrite}
           onEdit={() => onEdit(selected.id)}
           onMaintenance={onMaintenance}

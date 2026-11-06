@@ -14,7 +14,7 @@ export function Header({ onMenuOpen }: HeaderProps) {
   const { logout } = useSession();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line/70 bg-white/85 backdrop-blur-xl">
+    <header className="sticky top-0 z-[65] border-b border-line/70 bg-white backdrop-blur-xl">
       <div className="flex h-[64px] items-center justify-between gap-2 px-4 sm:h-[72px] sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <button

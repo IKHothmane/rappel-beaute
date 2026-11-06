@@ -6,7 +6,6 @@ import {
   Headphones,
   Lightbulb,
   Send,
-  Timer,
 } from "lucide-react";
 import {
   SUPPORT_CATEGORY_LABEL,
@@ -73,35 +72,20 @@ export function SupportMobile({ vm }: { vm: SupportViewModel }) {
         ) : null}
       </section>
 
-      {/* SLA + KPIs */}
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center justify-between rounded-lg bg-surface-container-lowest px-3.5 py-2.5 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Timer className="h-4 w-4 text-primary" />
-            <span className="text-[11px] font-bold text-on-surface">
-              1ère réponse :{" "}
-              {vm.avgResponseMin != null ? `${vm.avgResponseMin} min` : "—"}
-            </span>
-          </div>
-          <span className="rounded-full bg-primary-fixed/40 px-2 py-0.5 text-[11px] font-semibold text-primary">
-            {vm.avgResponseMin != null ? "Mesuré" : "En attente"}
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <MiniKpi label="Total" value={vm.counters.total} hint={`${vm.counters.thisMonth} ce mois`} />
-          <MiniKpi
-            label="Ouverts"
-            value={vm.counters.open}
-            hint={
-              vm.counters.urgentOpen > 0
-                ? `${vm.counters.urgentOpen} urgent`
-                : "RAS"
-            }
-            accent
-          />
-          <MiniKpi label="En attente" value={vm.counters.waiting} hint="Support" />
-          <MiniKpi label="Résolus" value={vm.counters.resolved} hint="Clôturés" />
-        </div>
+      <section className="grid grid-cols-2 gap-2">
+        <MiniKpi label="Total" value={vm.counters.total} hint={`${vm.counters.thisMonth} ce mois`} />
+        <MiniKpi
+          label="Ouverts"
+          value={vm.counters.open}
+          hint={
+            vm.counters.urgentOpen > 0
+              ? `${vm.counters.urgentOpen} urgent`
+              : "RAS"
+          }
+          accent
+        />
+        <MiniKpi label="En attente" value={vm.counters.waiting} hint="Support" />
+        <MiniKpi label="Résolus" value={vm.counters.resolved} hint="Clôturés" />
       </section>
 
       {/* Search + filters */}

@@ -11,9 +11,18 @@ type ModalProps = {
   title?: string;
   children: ReactNode;
   className?: string;
+  /** Laisse la barre du haut (social bar) visible et blanche. */
+  preserveHeader?: boolean;
 };
 
-export function Modal({ open, onClose, title, children, className }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  className,
+  preserveHeader = false,
+}: ModalProps) {
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -34,11 +43,18 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[80] flex items-end justify-center p-4 sm:items-center">
+        <div
+          className={cn(
+            "fixed z-[80] flex items-end justify-center p-4 sm:items-center",
+            preserveHeader
+              ? "bottom-0 left-0 right-0 top-[64px] sm:top-[72px]"
+              : "inset-0",
+          )}
+        >
           <motion.button
             type="button"
             aria-label="Fermer"
-            className="absolute inset-0 bg-ink/30"
+            className="absolute inset-0 bg-black/25"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -48,7 +64,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             role="dialog"
             aria-modal
             className={cn(
-              "relative w-full max-w-md rounded-2xl border border-line bg-white shadow-soft",
+              "relative max-h-[min(88vh,720px)] w-full max-w-lg overflow-y-auto rounded-2xl border border-line bg-white shadow-soft",
               className,
             )}
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -56,7 +72,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             exit={{ opacity: 0, scale: 0.96, y: 12 }}
           >
             {title ? (
-              <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-white px-5 py-4">
                 <h2 className="font-display text-lg font-semibold">{title}</h2>
                 <button
                   type="button"

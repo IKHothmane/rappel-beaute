@@ -9,7 +9,6 @@ import {
   Landmark,
   Plus,
   Search,
-  Sparkles,
   Wallet,
 } from "lucide-react";
 import {
@@ -45,7 +44,6 @@ type Kpis = {
 
 type Props = {
   orgName: string;
-  insight: string;
   kpis: Kpis;
   mix: MixSlice[];
   search: string;
@@ -82,7 +80,6 @@ function MethodGlyph({ method }: { method: PaymentMethod }) {
 
 export function PaymentsMobile({
   orgName,
-  insight,
   kpis,
   mix,
   search,
@@ -348,14 +345,6 @@ export function PaymentsMobile({
           </div>
         </section>
       ) : null}
-
-      <section className="relative overflow-hidden rounded-xl bg-ink p-4 text-[#FEECF7] shadow-sm">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
-          <Sparkles className="h-4 w-4" />
-          Lecture du journal
-        </div>
-        <p className="mt-2 text-[13px] leading-relaxed text-[#FEECF7]/90">{insight}</p>
-      </section>
 
       <div className="flex items-center justify-between">
         <h2 className="text-[16px] font-semibold">Journal</h2>

@@ -1,28 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ElementType } from "react";
 import {
-  Users,
-  Search,
-  SlidersHorizontal,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import {
   CalendarDays,
-  MessageCircle,
-  Wallet,
-  Heart,
-  Clock3,
-  Sparkles,
-  TrendingUp,
-  X,
   ChevronLeft,
   ChevronRight,
-  Plus,
+  Clock3,
+  CreditCard,
+  Heart,
+  Mail,
+  MessageCircle,
+  Pencil,
   Phone,
-  Star,
-  Gift,
-  StickyNote,
-  Receipt,
-  MoreHorizontal,
+  Plus,
   RefreshCw,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  TrendingUp,
+  Users,
+  Wallet,
 } from "lucide-react";
 
 export type CustomerStatus =
@@ -47,6 +50,7 @@ export type Customer = {
   email?: string | null;
   status: CustomerStatus;
   lastVisit?: string | null;
+  createdAt?: string | null;
   visits: number;
   totalSpent: number;
   loyaltyPoints: number;
@@ -60,10 +64,6 @@ export type CustomerFilter =
   | "followup"
   | "vip"
   | "new";
-
-type ProfileTab = "activity" | "loyalty" | "notes";
-
-const DEFAULT_PAGE_SIZE = 8;
 
 type Props = {
   customers: Customer[];
@@ -93,16 +93,14 @@ type Props = {
   canCreate?: boolean;
 };
 
-const mad = (value?: number | null) => {
-  const amount = typeof value === "number" && Number.isFinite(value) ? value : 0;
-  return (
-    new Intl.NumberFormat("fr-MA", {
-      maximumFractionDigits: 2,
-    }).format(amount) + " MAD"
-  );
-};
+type DetailTab = "activity" | "profile";
 
-const dateText = (value?: string | null) => {
+const money = (value: number) =>
+  `${new Intl.NumberFormat("fr-MA", {
+    maximumFractionDigits: 2,
+  }).format(value)} MAD`;
+
+const dateLabel = (value?: string | null) => {
   if (!value) return "Jamais venue";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -113,25 +111,15 @@ const dateText = (value?: string | null) => {
   });
 };
 
-const relativeVisit = (value?: string | null) => {
-  if (!value) return "Aucune visite";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  const days = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
-  if (days === 0) return "Aujourd’hui";
-  if (days === 1) return "Hier";
-  return `Il y a ${days} j`;
-};
-
 const initials = (name: string) =>
   name
+    .trim()
     .split(/\s+/)
-    .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "?";
 
-const statusLabels: Record<CustomerStatus, string> = {
+const statusText: Record<CustomerStatus, string> = {
   active: "Active",
   new: "Nouvelle",
   inactive: "Inactive",
@@ -139,54 +127,101 @@ const statusLabels: Record<CustomerStatus, string> = {
   vip: "VIP",
 };
 
-const statusStyles: Record<CustomerStatus, string> = {
-  active: "bg-emerald-50 text-emerald-700",
-  new: "bg-pink-50 text-pink-700",
+const statusClass: Record<CustomerStatus, string> = {
+  active: "bg-emerald-100 text-emerald-700",
+  new: "bg-pink-100 text-pink-700",
   inactive: "bg-slate-100 text-slate-600",
-  followup: "bg-orange-50 text-orange-700",
-  vip: "bg-amber-50 text-amber-700",
+  followup: "bg-orange-100 text-orange-700",
+  vip: "bg-amber-100 text-amber-800",
 };
 
+const cardClass =
+  "rounded-[22px] border border-[#f0dce5] bg-white shadow-[0_6px_24px_rgba(80,17,47,0.045)]";
+
 function StatCard({
+  icon,
   label,
   value,
   subtitle,
-  icon: Icon,
-  tone = "pink",
+  color = "pink",
 }: {
+  icon: ReactNode;
   label: string;
   value: string | number;
   subtitle?: string;
-  icon: ElementType;
-  tone?: "pink" | "green" | "orange" | "gold";
+  color?: "pink" | "green" | "orange" | "purple";
 }) {
   const tones = {
-    pink: "bg-pink-50 text-[#B50D52]",
-    green: "bg-emerald-50 text-emerald-600",
-    orange: "bg-orange-50 text-orange-600",
-    gold: "bg-amber-50 text-amber-600",
+    pink: "bg-pink-100 text-[#b50050]",
+    green: "bg-emerald-100 text-emerald-700",
+    orange: "bg-orange-100 text-orange-600",
+    purple: "bg-violet-100 text-violet-700",
   };
 
   return (
-    <div className="min-w-0 rounded-2xl border border-[#F2E3EB] bg-white p-4 shadow-sm transition hover:shadow-md">
+    <div className={`${cardClass} min-w-0 p-4`}>
       <div className="flex items-start justify-between gap-2">
-        <span className="text-xs font-semibold text-slate-500">{label}</span>
-        <span className={`rounded-xl p-2 ${tones[tone]}`}>
-          <Icon size={18} />
+        <span className="text-xs font-medium text-[#754458]">{label}</span>
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${tones[color]}`}
+        >
+          {icon}
         </span>
       </div>
-      <div className="mt-3 break-words text-2xl font-extrabold tracking-tight text-[#351526]">{value}</div>
-      {subtitle ? <p className="mt-1 text-[11px] text-slate-400">{subtitle}</p> : null}
+
+      <div className="mt-1 text-[clamp(18px,1.5vw,26px)] font-extrabold tracking-tight text-[#390c22]">
+        {value}
+      </div>
+
+      {subtitle ? <p className="mt-1 text-xs text-[#9a7a88]">{subtitle}</p> : null}
     </div>
   );
 }
 
-function StatusBadge({ status }: { status?: CustomerStatus | null }) {
-  const key: CustomerStatus = status && status in statusLabels ? status : "active";
+function Avatar({
+  name,
+  large = false,
+}: {
+  name: string;
+  large?: boolean;
+}) {
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusStyles[key]}`}>
-      {statusLabels[key]}
-    </span>
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ffe5ef] to-[#f9c3d9] font-bold text-[#a80049] ${
+        large ? "h-16 w-16 text-2xl" : "h-10 w-10 text-xs"
+      }`}
+    >
+      {initials(name)}
+    </div>
+  );
+}
+
+function ActionButton({
+  children,
+  onClick,
+  disabled,
+  variant = "light",
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  variant?: "light" | "primary" | "green";
+}) {
+  const styles = {
+    light: "border border-[#ecd9e2] bg-white text-[#54112f] hover:bg-[#fff1f7]",
+    primary: "bg-[#ae004b] text-white hover:bg-[#880039]",
+    green: "bg-[#07975b] text-white hover:bg-[#087848]",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || !onClick}
+      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${styles[variant]}`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -200,11 +235,11 @@ export default function CustomersDashboard({
   onSearchChange,
   filterValue,
   onFilterChange,
-  selectedId: selectedIdProp,
+  selectedId,
   onSelectCustomer,
-  page: pageProp,
-  pageSize = DEFAULT_PAGE_SIZE,
-  totalPages: totalPagesProp,
+  page,
+  pageSize = 10,
+  totalPages,
   totalResults,
   onPageChange,
   serverControlled = false,
@@ -215,117 +250,116 @@ export default function CustomersDashboard({
   onWhatsApp,
   onRefresh,
   loading = false,
-  canCreate = true,
+  canCreate = false,
 }: Props) {
-  const [searchLocal, setSearchLocal] = useState("");
-  const [filterLocal, setFilterLocal] = useState<CustomerFilter>("all");
-  const [selectedIdLocal, setSelectedIdLocal] = useState<string | null>(null);
-  const [tab, setTab] = useState<ProfileTab>("activity");
-  const [pageLocal, setPageLocal] = useState(1);
-  const [sort, setSort] = useState<"name" | "recent" | "spent">("name");
+  const [localSearch, setLocalSearch] = useState("");
+  const [localFilter, setLocalFilter] = useState<CustomerFilter>("all");
+  const [localPage, setLocalPage] = useState(1);
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>("activity");
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<"recent" | "name" | "spent">("recent");
 
-  const search = searchValue ?? searchLocal;
-  const filter = filterValue ?? filterLocal;
-  const selectedId = selectedIdProp !== undefined ? selectedIdProp : selectedIdLocal;
-  const page = pageProp ?? pageLocal;
+  const search = searchValue ?? localSearch;
+  const filter = filterValue ?? localFilter;
+  const currentPage = page ?? localPage;
 
   const setSearch = (value: string) => {
-    onSearchChange?.(value);
-    if (searchValue === undefined) setSearchLocal(value);
+    if (onSearchChange) onSearchChange(value);
+    else setLocalSearch(value);
+    if (!serverControlled) setLocalPage(1);
   };
 
   const setFilter = (value: CustomerFilter) => {
-    onFilterChange?.(value);
-    if (filterValue === undefined) setFilterLocal(value);
+    if (onFilterChange) onFilterChange(value);
+    else setLocalFilter(value);
+    if (!serverControlled) setLocalPage(1);
   };
 
-  const setSelectedId = (value: string | null) => {
-    if (selectedIdProp === undefined) setSelectedIdLocal(value);
-    if (value == null) {
-      onSelectCustomer?.(null);
-      return;
-    }
-    const customer = customers.find((c) => c.id === value) ?? null;
-    if (customer) onSelectCustomer?.(customer);
+  const setPage = (value: number) => {
+    if (onPageChange) onPageChange(value);
+    else setLocalPage(value);
   };
 
-  const setPage = (value: number | ((current: number) => number)) => {
-    const next = typeof value === "function" ? value(page) : value;
-    onPageChange?.(next);
-    if (pageProp === undefined) setPageLocal(next);
+  const selectCustomer = (customer: Customer | null) => {
+    if (onSelectCustomer) onSelectCustomer(customer);
+    else setLocalSelectedId(customer?.id ?? null);
+    setDetailTab("activity");
   };
 
-  const selected = customers.find((c) => c.id === selectedId) ?? null;
-
-  const counts = useMemo(
-    () => ({
-      all: filterCounts?.all ?? customers.length,
-      active:
-        filterCounts?.active ??
-        customers.filter((c) => c.status === "active" || c.status === "vip").length,
-      followup: filterCounts?.followup ?? customers.filter((c) => c.status === "followup").length,
-      vip: filterCounts?.vip ?? customers.filter((c) => c.status === "vip").length,
-      new: filterCounts?.new ?? customers.filter((c) => c.status === "new").length,
-    }),
-    [customers, filterCounts],
-  );
+  const selectedKey = selectedId !== undefined ? selectedId : localSelectedId;
 
   const filtered = useMemo(() => {
     if (serverControlled) return customers;
 
-    const query = search.trim().toLocaleLowerCase();
+    const q = search.trim().toLowerCase();
 
-    return customers
-      .filter((c) => {
-        const matchesSearch =
-          !query ||
-          [c.name, c.phone, c.email].some((value) => value?.toLocaleLowerCase().includes(query));
+    return customers.filter((customer) => {
+      const matchesSearch =
+        !q ||
+        [customer.name, customer.phone, customer.email].some((value) =>
+          (value ?? "").toLowerCase().includes(q),
+        );
 
-        const matchesFilter =
-          filter === "all" ||
-          (filter === "active" ? c.status === "active" || c.status === "vip" : c.status === filter);
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "followup" ? customer.status === "followup" : customer.status === filter);
 
-        return matchesSearch && matchesFilter;
-      })
-      .sort((a, b) => {
-        if (sort === "spent") return b.totalSpent - a.totalSpent;
-        if (sort === "recent") {
-          return (
-            (b.lastVisit ? new Date(b.lastVisit).getTime() : 0) -
-            (a.lastVisit ? new Date(a.lastVisit).getTime() : 0)
-          );
-        }
-        return a.name.localeCompare(b.name, "fr");
-      });
-  }, [customers, search, filter, sort, serverControlled]);
+      return matchesSearch && matchesFilter;
+    });
+  }, [customers, search, filter, serverControlled]);
 
-  const totalPages = Math.max(
-    1,
-    totalPagesProp ?? Math.ceil(filtered.length / pageSize),
-  );
-  const resultCount = totalResults ?? filtered.length;
+  const sorted = useMemo(() => {
+    const rows = [...filtered];
+
+    if (sortBy === "name") {
+      rows.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    } else if (sortBy === "spent") {
+      rows.sort((a, b) => b.totalSpent - a.totalSpent);
+    } else {
+      rows.sort((a, b) =>
+        (b.createdAt ?? b.lastVisit ?? "").localeCompare(a.createdAt ?? a.lastVisit ?? ""),
+      );
+    }
+
+    return rows;
+  }, [filtered, sortBy]);
+
+  const count = totalResults ?? filtered.length;
+
+  const pages = serverControlled
+    ? Math.max(1, totalPages ?? 1)
+    : Math.max(1, Math.ceil(sorted.length / pageSize));
+
   const visible = serverControlled
-    ? filtered
-    : filtered.slice((page - 1) * pageSize, page * pageSize);
+    ? sorted
+    : sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const selected =
+    customers.find((c) => c.id === selectedKey) ??
+    (selectedKey === null ? null : customers[0] ?? null);
 
   useEffect(() => {
-    if (!serverControlled) setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset page only when local filters change
-  }, [search, filter, sort, serverControlled]);
+    if (!serverControlled && !selectedKey && customers.length) {
+      setLocalSelectedId(customers[0]!.id);
+    }
+  }, [customers, selectedKey, serverControlled]);
 
-  useEffect(() => {
-    if (serverControlled) return;
-    setPage((current) => Math.min(current, totalPages));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalPages, serverControlled]);
+  const getCount = (key: CustomerFilter) => {
+    if (filterCounts?.[key] !== undefined) {
+      return filterCounts[key]!;
+    }
+    if (key === "all") return customers.length;
+    return customers.filter((c) => c.status === key).length;
+  };
 
-  function selectCustomer(customer: Customer) {
-    setSelectedId(customer.id);
-    setTab("activity");
-  }
+  const totalCustomers = getCount("all");
+  const newCustomers = newCustomersCount ?? getCount("new");
 
-  const filterOptions: { id: CustomerFilter; label: string }[] = [
+  const tabs: {
+    id: CustomerFilter;
+    label: string;
+  }[] = [
     { id: "all", label: "Toutes" },
     { id: "active", label: "Actives" },
     { id: "followup", label: "À relancer" },
@@ -333,439 +367,510 @@ export default function CustomersDashboard({
     { id: "new", label: "Nouvelles" },
   ];
 
-  const rangeFrom = resultCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  const rangeTo = Math.min(page * pageSize, resultCount);
-
   return (
-    <div className="space-y-5 text-[#351526]">
-      <section className="relative overflow-hidden rounded-[26px] bg-gradient-to-r from-[#691035] via-[#A01852] to-[#D34183] p-6 text-white shadow-lg lg:p-8">
-        <div className="pointer-events-none absolute -right-10 -top-20 h-72 w-72 rounded-full border-[35px] border-white/10" />
-        <div className="pointer-events-none absolute bottom-0 right-32 h-28 w-28 rounded-full bg-pink-300/20 blur-3xl" />
-
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-pink-100">
-            <Sparkles size={15} />
-            Gestion de la relation cliente
-          </div>
-          <h1 className="mt-3 text-3xl font-extrabold lg:text-4xl">Gestion des clientes</h1>
-          <p className="mt-2 max-w-xl text-sm text-pink-100">
+    <div className="w-full min-w-0 space-y-5 text-[#390c22]">
+      <header
+        className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
+        style={{
+          backgroundImage:
+            'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/hero-background.png")',
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+        }}
+      >
+        <div className="relative z-10 min-w-0">
+          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
+            Gestion des clientes
+          </h1>
+          <p className="mt-1 max-w-lg text-sm leading-5 text-[#654254]">
             Retrouvez, fidélisez et accompagnez vos clientes depuis un seul espace.
           </p>
         </div>
-      </section>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="Total clientes" value={counts.all} icon={Users} />
-        <StatCard label="Nouvelles" value={newCustomersCount ?? counts.new} icon={Sparkles} />
-        <StatCard label="Actives" value={counts.active} icon={Heart} tone="green" />
-        <StatCard label="À relancer" value={counts.followup} icon={Clock3} tone="orange" />
-        <StatCard
-          label="CA du mois"
-          value={monthlyRevenue === undefined ? "—" : mad(monthlyRevenue)}
-          icon={TrendingUp}
-          tone="gold"
-        />
-        <StatCard
-          label="Panier moyen"
-          value={averageBasket === undefined ? "—" : mad(averageBasket)}
-          icon={Wallet}
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex min-w-[220px] flex-1 items-center gap-3 rounded-2xl border border-[#EEDDE5] bg-white px-4 shadow-sm">
-          <Search size={19} className="text-[#B90E54]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher nom, téléphone, e-mail..."
-            aria-label="Rechercher une cliente"
-            className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
-          />
-          {search ? (
-            <button type="button" onClick={() => setSearch("")} aria-label="Effacer la recherche">
-              <X size={16} className="text-slate-400" />
-            </button>
-          ) : null}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowFilters((v) => !v)}
-          aria-expanded={showFilters}
-          className="flex h-12 items-center gap-2 rounded-xl border border-[#EEDDE5] bg-white px-4 text-sm font-semibold hover:bg-pink-50"
-        >
-          <SlidersHorizontal size={17} />
-          Filtres
-        </button>
-
-        {canCreate ? (
+        {canCreate && onCreateCustomer ? (
           <button
             type="button"
             onClick={onCreateCustomer}
-            disabled={!onCreateCustomer}
-            className="flex h-12 items-center gap-2 rounded-xl bg-[#B60050] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#91003F] disabled:opacity-50"
+            className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
           >
-            <Plus size={18} />
+            <Plus size={18} aria-hidden />
             Nouvelle cliente
           </button>
         ) : null}
-      </div>
+      </header>
 
-      {showFilters ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-white p-4">
-          {!serverControlled ? (
-            <>
-              <label htmlFor="customer-sort" className="text-sm font-medium">
-                Trier par
-              </label>
-              <select
-                id="customer-sort"
-                value={sort}
-                onChange={(e) => setSort(e.target.value as typeof sort)}
-                className="rounded-lg border border-pink-100 px-3 py-2 text-sm"
-              >
-                <option value="name">Nom A–Z</option>
-                <option value="recent">Dernière visite</option>
-                <option value="spent">Dépenses cumulées</option>
-              </select>
-            </>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => void onRefresh?.()}
-            disabled={!onRefresh || loading}
-            className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
-          >
-            <RefreshCw size={15} />
-            Actualiser
-          </button>
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <StatCard
+          icon={<Users size={20} aria-hidden />}
+          label="Total clientes"
+          value={totalCustomers}
+          subtitle="Dans votre répertoire"
+        />
+        <StatCard
+          icon={<Sparkles size={20} aria-hidden />}
+          label="Nouvelles"
+          value={newCustomers}
+          color="purple"
+          subtitle="Nouvelles clientes"
+        />
+        <StatCard
+          icon={<Heart size={20} aria-hidden />}
+          label="Actives"
+          value={getCount("active")}
+          color="green"
+          subtitle="Clientes régulières"
+        />
+        <StatCard
+          icon={<RefreshCw size={20} aria-hidden />}
+          label="À relancer"
+          value={getCount("followup")}
+          color="orange"
+          subtitle="Suivi recommandé"
+        />
+        {monthlyRevenue !== undefined ? (
+          <StatCard
+            icon={<TrendingUp size={20} aria-hidden />}
+            label="CA du mois"
+            value={money(monthlyRevenue)}
+          />
+        ) : null}
+        {averageBasket !== undefined ? (
+          <StatCard
+            icon={<Wallet size={20} aria-hidden />}
+            label="Panier moyen"
+            value={money(averageBasket)}
+            color="orange"
+          />
+        ) : null}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap gap-3">
+          <div className="relative min-w-[220px] flex-1">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b50050]"
+              aria-hidden
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher nom, téléphone, e-mail..."
+              className="h-12 w-full rounded-2xl border border-[#efdce5] bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-[#b39aa5] focus:border-[#c72b70] focus:ring-2 focus:ring-pink-100"
+            />
+          </div>
+
+          <ActionButton onClick={() => setShowFilters(!showFilters)}>
+            <SlidersHorizontal size={16} aria-hidden />
+            Filtres
+          </ActionButton>
         </div>
-      ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {filterOptions.map((item) => {
-          const active = filter === item.id;
-          return (
+        {showFilters ? (
+          <div className={`${cardClass} flex flex-wrap items-center gap-3 p-4`}>
+            <label className="text-xs font-semibold" htmlFor="customers-sort">
+              Trier par
+            </label>
+            <select
+              id="customers-sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "recent" | "name" | "spent")}
+              className="rounded-xl border border-[#efdce5] bg-[#fff7fa] px-3 py-2 text-sm outline-none"
+            >
+              <option value="recent">Plus récentes</option>
+              <option value="name">Nom A–Z</option>
+              <option value="spent">Dépenses décroissantes</option>
+            </select>
             <button
-              key={item.id}
               type="button"
-              onClick={() => setFilter(item.id)}
-              aria-pressed={active}
-              className={`rounded-full px-4 py-2.5 text-xs font-bold transition ${
-                active
-                  ? "bg-gradient-to-r from-[#9B0B43] to-[#D51B70] text-white shadow-md"
-                  : "border border-[#F1DDE7] bg-white text-[#69344D] hover:bg-pink-50"
+              onClick={() => {
+                setSearch("");
+                setFilter("all");
+                setSortBy("recent");
+              }}
+              className="text-xs font-semibold text-[#ae004b] hover:underline"
+            >
+              Réinitialiser
+            </button>
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setFilter(tab.id)}
+              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                filter === tab.id
+                  ? "border-[#ae004b] bg-[#ae004b] text-white shadow-md"
+                  : "border-[#efdce5] bg-white text-[#54112f] hover:bg-pink-50"
               }`}
             >
-              {item.label} ({counts[item.id]})
+              {tab.label} ({getCount(tab.id)})
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      </section>
 
-      <div
-        className={`grid items-start gap-4 ${
-          selected ? "grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid-cols-1"
-        }`}
-      >
-        <section className="min-w-0 overflow-hidden rounded-[22px] border border-[#F0DFE8] bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#F1E8ED] p-5">
+      <section className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]">
+        <div className={`${cardClass} min-w-0 overflow-hidden`}>
+          <div className="flex items-center justify-between gap-3 border-b border-[#f4e5ec] px-5 py-5">
             <div>
-              <h2 className="text-lg font-extrabold">Liste des clientes</h2>
-              <p className="mt-1 text-xs text-slate-400">{resultCount} résultat(s)</p>
+              <h2 className="text-base font-extrabold">Liste des clientes</h2>
+              <p className="mt-1 text-xs text-[#a18793]">{count} résultat(s)</p>
             </div>
             <button
               type="button"
               onClick={() => void onRefresh?.()}
               disabled={!onRefresh || loading}
-              aria-label="Actualiser les clientes"
-              className="rounded-lg p-2 text-[#B60050] hover:bg-pink-50 disabled:opacity-40"
+              title="Actualiser"
+              className="rounded-xl p-2 text-[#ae004b] transition hover:bg-pink-50 disabled:opacity-40"
             >
-              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+              <RefreshCw size={17} className={loading ? "animate-spin" : ""} aria-hidden />
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[680px] text-left">
-              <thead className="bg-[#FFF4F9] text-[11px] uppercase tracking-wide text-[#926A7E]">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[690px] border-collapse text-left">
+              <thead className="bg-[#fff1f7] text-[10px] font-bold uppercase tracking-wide text-[#94677a]">
                 <tr>
-                  <th className="px-5 py-4">Cliente</th>
-                  <th className="px-3 py-4">Dernière visite</th>
-                  <th className="px-3 py-4">Visites</th>
-                  <th className="px-3 py-4">CA cumulé</th>
-                  <th className="px-3 py-4">Statut</th>
+                  <th className="px-4 py-3">Cliente</th>
+                  <th className="px-3 py-3">Dernière visite</th>
+                  <th className="px-3 py-3 text-center">Visites</th>
+                  {monthlyRevenue !== undefined ? <th className="px-3 py-3">CA cumulé</th> : null}
+                  <th className="px-3 py-3">Statut</th>
                 </tr>
               </thead>
 
               <tbody>
                 {visible.map((customer) => {
-                  const active = selectedId === customer.id;
-                  const visits = Number(customer.visits) || 0;
-                  const spent = Number(customer.totalSpent) || 0;
+                  const isSelected = selected?.id === customer.id;
 
                   return (
                     <tr
                       key={customer.id}
                       onClick={() => selectCustomer(customer)}
-                      className={`cursor-pointer border-t border-[#F7EDF2] transition ${
-                        active ? "bg-[#FCE5EF]" : "hover:bg-[#FFF7FA]"
+                      className={`cursor-pointer border-b border-[#f8edf1] transition hover:bg-[#fff3f8] ${
+                        isSelected ? "bg-[#fce4ee]" : "bg-white"
                       }`}
                     >
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FCE0EC] text-xs font-extrabold text-[#B60050]">
-                            {initials(customer.name)}
-                          </div>
+                          <Avatar name={customer.name} />
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-bold">{customer.name}</p>
-                            <p className="text-xs text-slate-400">{customer.phone || "Sans téléphone"}</p>
+                            <div className="max-w-[180px] truncate text-xs font-bold">
+                              {customer.name}
+                            </div>
+                            <div className="mt-1 text-[11px] text-[#997f8b]">
+                              {customer.phone || "Sans téléphone"}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-3">
-                        <p className="text-sm font-medium text-slate-700">{dateText(customer.lastVisit)}</p>
-                        <p className="text-[11px] text-slate-400">{relativeVisit(customer.lastVisit)}</p>
-                      </td>
-                      <td className="px-3 py-3 text-sm font-medium">{visits}</td>
-                      <td className="px-3 py-3 text-sm font-bold">{mad(spent)}</td>
                       <td className="px-3 py-3">
-                        <StatusBadge status={customer.status} />
+                        <p className="text-xs font-medium">{dateLabel(customer.lastVisit)}</p>
+                        <p className="mt-1 text-[10px] text-[#a58b97]">
+                          {customer.lastVisit ? "Dernière prestation" : "Aucune visite"}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 text-center text-xs font-semibold">
+                        {customer.visits}
+                      </td>
+                      {monthlyRevenue !== undefined ? (
+                        <td className="px-3 py-3 text-xs font-bold">{money(customer.totalSpent)}</td>
+                      ) : null}
+                      <td className="px-3 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${statusClass[customer.status]}`}
+                        >
+                          {statusText[customer.status]}
+                        </span>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+
+            {!loading && visible.length === 0 ? (
+              <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
+                <Users size={30} className="text-[#d79bb4]" aria-hidden />
+                <p className="mt-3 text-sm font-semibold">Aucune cliente trouvée</p>
+                <p className="mt-1 text-xs text-[#a18793]">
+                  Modifiez votre recherche ou vos filtres.
+                </p>
+              </div>
+            ) : null}
+
+            {loading && visible.length === 0 ? (
+              <div className="py-20 text-center text-sm text-[#a18793]">
+                Chargement des clientes...
+              </div>
+            ) : null}
           </div>
 
-          {!loading && filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 px-5 py-16 text-center">
-              <Users size={36} className="text-pink-300" />
-              <p className="font-bold">Aucune cliente trouvée</p>
-              <p className="text-sm text-slate-400">Essayez une autre recherche ou un autre filtre.</p>
-            </div>
-          ) : null}
-
-          {loading ? (
-            <div className="p-8 text-center text-sm text-slate-500" role="status">
-              Chargement des clientes...
-            </div>
-          ) : null}
-
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#F1E8ED] p-4">
-            <p className="text-xs text-slate-400">
-              {resultCount === 0
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+            <span className="text-xs text-[#a18793]">
+              {count === 0
                 ? "0 résultat"
-                : `${rangeFrom}–${Math.min(rangeTo, resultCount)} sur ${resultCount}`}
-            </p>
+                : `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, count)} sur ${count}`}
+            </span>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
+                disabled={currentPage <= 1}
+                onClick={() => setPage(currentPage - 1)}
+                className="rounded-lg border border-[#efdce5] p-2 disabled:opacity-30"
                 aria-label="Page précédente"
-                className="rounded-lg border p-2 disabled:opacity-30"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={16} aria-hidden />
               </button>
-              <span className="rounded-lg bg-[#B60050] px-3 py-2 text-xs font-bold text-white">
-                {page} / {totalPages}
+              <span className="rounded-lg bg-[#ae004b] px-3 py-2 text-xs font-bold text-white">
+                {currentPage} / {pages}
               </span>
               <button
                 type="button"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                disabled={currentPage >= pages}
+                onClick={() => setPage(currentPage + 1)}
+                className="rounded-lg border border-[#efdce5] p-2 disabled:opacity-30"
                 aria-label="Page suivante"
-                className="rounded-lg border p-2 disabled:opacity-30"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={16} aria-hidden />
               </button>
             </div>
           </div>
-        </section>
+        </div>
 
-        {selected ? (
-          <aside className="min-w-0 overflow-hidden rounded-[22px] border border-[#F0DFE8] bg-white shadow-sm xl:sticky xl:top-5">
-            <div className="bg-gradient-to-br from-[#FFF0F7] to-white p-5">
-              <div className="flex items-start gap-3">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#F9CDE1] text-xl font-extrabold text-[#A60949]">
-                  {initials(selected.name)}
-                </div>
+        <aside className={`${cardClass} min-w-0 overflow-hidden lg:sticky lg:top-5`}>
+          {selected ? (
+            <>
+              <div className="bg-gradient-to-b from-[#fff5f9] to-white p-5">
+                <div className="flex items-start gap-3">
+                  <Avatar name={selected.name} large />
 
-                <div className="min-w-0 flex-1">
-                  <h2 className="break-words text-lg font-extrabold">{selected.name}</h2>
-                  <div className="mt-2">
-                    <StatusBadge status={selected.status} />
-                  </div>
-                  <p className="mt-2 flex items-center gap-1 text-xs text-slate-500">
-                    <Phone size={12} />
-                    {selected.phone || "Sans téléphone"}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(null)}
-                  aria-label="Fermer la fiche cliente"
-                  className="rounded-lg p-2 hover:bg-pink-100"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  disabled={!onNewAppointment}
-                  onClick={() => onNewAppointment?.(selected)}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-[#B60050] px-3 py-3 text-xs font-bold text-white disabled:opacity-40"
-                >
-                  <CalendarDays size={15} />
-                  Nouveau RDV
-                </button>
-                <button
-                  type="button"
-                  disabled={!onWhatsApp || !selected.phone}
-                  onClick={() => onWhatsApp?.(selected)}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-[#079A62] px-3 py-3 text-xs font-bold text-white disabled:opacity-40"
-                >
-                  <MessageCircle size={15} />
-                  WhatsApp
-                </button>
-                <button
-                  type="button"
-                  disabled={!onPayment}
-                  onClick={() => onPayment?.(selected)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-pink-100 bg-white px-3 py-3 text-xs font-bold disabled:opacity-40"
-                >
-                  <Wallet size={15} />
-                  Encaisser
-                </button>
-                <button
-                  type="button"
-                  disabled={!onEditCustomer}
-                  onClick={() => onEditCustomer?.(selected)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-pink-100 bg-white px-3 py-3 text-xs font-bold disabled:opacity-40"
-                >
-                  <MoreHorizontal size={15} />
-                  Modifier
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 p-4">
-              {[
-                { label: "Visites", value: selected.visits, icon: CalendarDays },
-                { label: "Dépenses", value: mad(selected.totalSpent), icon: Wallet },
-                { label: "Points fidélité", value: selected.loyaltyPoints, icon: Gift },
-                { label: "Dernière visite", value: dateText(selected.lastVisit), icon: Clock3 },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.label} className="rounded-xl bg-[#FFF1F7] p-3">
-                    <div className="flex items-center gap-2 text-[11px] text-[#926A7E]">
-                      <Icon size={13} />
-                      {item.label}
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate font-serif text-2xl font-bold">{selected.name}</h2>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-[10px] font-bold ${statusClass[selected.status]}`}
+                      >
+                        {statusText[selected.status]}
+                      </span>
+                      {selected.phone ? (
+                        <span className="flex items-center gap-1 text-xs text-[#805768]">
+                          <Phone size={12} aria-hidden />
+                          {selected.phone}
+                        </span>
+                      ) : null}
                     </div>
-                    <p className="mt-2 break-words text-sm font-extrabold">{item.value}</p>
                   </div>
-                );
-              })}
-            </div>
 
-            <div className="grid grid-cols-3 gap-1 border-y border-[#F1E8ED] p-2">
-              {(
-                [
-                  { id: "activity", label: "Activité", icon: CalendarDays },
-                  { id: "loyalty", label: "Fidélité", icon: Gift },
-                  { id: "notes", label: "Notes", icon: StickyNote },
-                ] as const
-              ).map((item) => {
-                const Icon = item.icon;
-                return (
                   <button
-                    key={item.id}
                     type="button"
-                    onClick={() => setTab(item.id)}
-                    aria-pressed={tab === item.id}
-                    className={`flex items-center justify-center gap-1 rounded-lg px-2 py-3 text-xs font-bold ${
-                      tab === item.id ? "bg-[#FCE4EF] text-[#B60050]" : "text-slate-500 hover:bg-slate-50"
+                    disabled={!onEditCustomer}
+                    onClick={() => onEditCustomer?.(selected)}
+                    className="rounded-lg p-2 text-[#ae004b] hover:bg-pink-100 disabled:opacity-40"
+                    title="Modifier"
+                  >
+                    <Pencil size={17} aria-hidden />
+                  </button>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <ActionButton
+                    variant="primary"
+                    onClick={() => onNewAppointment?.(selected)}
+                  >
+                    <CalendarDays size={15} aria-hidden />
+                    Nouveau RDV
+                  </ActionButton>
+
+                  <ActionButton
+                    variant="green"
+                    disabled={!selected.phone}
+                    onClick={selected.phone ? () => onWhatsApp?.(selected) : undefined}
+                  >
+                    <MessageCircle size={15} aria-hidden />
+                    WhatsApp
+                  </ActionButton>
+
+                  <ActionButton onClick={() => onPayment?.(selected)}>
+                    <CreditCard size={15} aria-hidden />
+                    Encaisser
+                  </ActionButton>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 border-y border-[#f4e4eb] bg-[#fffafd]">
+                {(
+                  [
+                    ["activity", "Activité"],
+                    ["profile", "Profil"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setDetailTab(key)}
+                    className={`border-b-2 px-1 py-4 text-xs font-semibold transition ${
+                      detailTab === key
+                        ? "border-[#ae004b] text-[#ae004b]"
+                        : "border-transparent text-[#826575] hover:text-[#ae004b]"
                     }`}
                   >
-                    <Icon size={15} />
-                    {item.label}
+                    {label}
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
 
-            <div className="min-h-[250px] p-5">
-              {tab === "activity" ? (
-                <div className="space-y-3">
-                  <h3 className="font-bold">Historique des prestations</h3>
-
-                  {selected.appointments?.length ? (
-                    selected.appointments.map((appointment) => (
-                      <div
-                        key={appointment.id}
-                        className="flex items-start justify-between gap-3 rounded-xl border border-[#F3E5EC] bg-[#FFFAFC] p-3"
-                      >
-                        <div className="flex items-start gap-2">
-                          <Receipt size={17} className="mt-0.5 text-[#B60050]" />
-                          <div>
-                            <p className="text-sm font-bold">{appointment.service}</p>
-                            <p className="text-xs text-slate-400">{dateText(appointment.date)}</p>
-                            <p className="mt-1 text-xs text-slate-500">{appointment.status}</p>
-                          </div>
-                        </div>
-                        <span className="whitespace-nowrap text-xs font-bold">{mad(appointment.amount)}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="py-8 text-center text-sm text-slate-400">Aucun rendez-vous enregistré.</p>
-                  )}
-                </div>
-              ) : null}
-
-              {tab === "loyalty" ? (
-                <div className="space-y-4">
-                  <div className="rounded-xl bg-gradient-to-r from-[#831343] to-[#C72D72] p-5 text-white">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Star size={18} />
-                      Programme fidélité
+              <div className="min-h-64 p-5">
+                {detailTab === "activity" ? (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-3">
+                      <MiniMetric
+                        icon={<CalendarDays size={17} aria-hidden />}
+                        label="Visites"
+                        value={String(selected.visits)}
+                      />
+                      {monthlyRevenue !== undefined ? (
+                        <MiniMetric
+                          icon={<Wallet size={17} aria-hidden />}
+                          label="Dépenses"
+                          value={money(selected.totalSpent)}
+                        />
+                      ) : null}
+                      <MiniMetric
+                        icon={<Clock3 size={17} aria-hidden />}
+                        label="Dernière visite"
+                        value={dateLabel(selected.lastVisit)}
+                      />
                     </div>
-                    <p className="mt-3 text-3xl font-extrabold">{selected.loyaltyPoints}</p>
-                    <p className="text-xs text-pink-100">Points disponibles</p>
-                  </div>
-                  <p className="text-xs leading-5 text-slate-500">
-                    Consultez le module Fidélité pour les passages, récompenses et conditions du programme.
-                  </p>
-                </div>
-              ) : null}
 
-              {tab === "notes" ? (
-                <div className="space-y-3">
-                  <h3 className="font-bold">Notes internes</h3>
-                  {selected.notes?.length ? (
-                    selected.notes.map((note, index) => (
-                      <div
-                        key={`${selected.id}-note-${index}`}
-                        className="rounded-xl bg-[#FFF4F9] p-4 text-sm text-[#593348]"
-                      >
-                        {note}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="py-8 text-center text-sm text-slate-400">Aucune note enregistrée.</p>
-                  )}
-                </div>
-              ) : null}
+                    <div>
+                      <h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold">
+                        <Clock3 size={17} className="text-[#ae004b]" aria-hidden />
+                        Historique des prestations
+                      </h3>
+
+                      {selected.appointments?.length ? (
+                        <div className="space-y-2">
+                          {selected.appointments.map((appointment) => (
+                            <div
+                              key={appointment.id}
+                              className="flex items-center justify-between gap-3 rounded-xl border border-[#f2dfe8] bg-[#fff8fb] p-3"
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-bold">{appointment.service}</p>
+                                <p className="mt-1 text-[11px] text-[#9a7b8a]">
+                                  {dateLabel(appointment.date)}
+                                </p>
+                                <p className="mt-1 text-[10px] text-[#ae004b]">{appointment.status}</p>
+                              </div>
+                              {monthlyRevenue !== undefined ? (
+                                <strong className="shrink-0 text-xs">{money(appointment.amount)}</strong>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <EmptyMessage text="Aucune prestation dans l’historique chargé." />
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {detailTab === "profile" ? (
+                  <div className="space-y-3">
+                    <ProfileField
+                      icon={<Users size={16} aria-hidden />}
+                      label="Nom complet"
+                      value={selected.name}
+                    />
+                    <ProfileField
+                      icon={<Phone size={16} aria-hidden />}
+                      label="Téléphone"
+                      value={selected.phone || "Non renseigné"}
+                    />
+                    <ProfileField
+                      icon={<Mail size={16} aria-hidden />}
+                      label="E-mail"
+                      value={selected.email || "Non renseigné"}
+                    />
+                    <ProfileField
+                      icon={<Star size={16} aria-hidden />}
+                      label="Statut"
+                      value={statusText[selected.status]}
+                    />
+                    <ActionButton onClick={() => onEditCustomer?.(selected)}>
+                      <Pencil size={15} aria-hidden />
+                      Modifier la fiche
+                    </ActionButton>
+                  </div>
+                ) : null}
+
+              </div>
+            </>
+          ) : (
+            <div className="flex min-h-80 flex-col items-center justify-center p-8 text-center">
+              <Users size={32} className="text-[#d99bb5]" aria-hidden />
+              <h3 className="mt-3 font-bold">Fiche cliente</h3>
+              <p className="mt-2 text-xs text-[#a18793]">
+                Sélectionnez une cliente pour consulter son profil.
+              </p>
             </div>
-          </aside>
-        ) : null}
+          )}
+        </aside>
+      </section>
+    </div>
+  );
+}
+
+function MiniMetric({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-xl bg-[#fff0f6] p-3">
+      <div className="flex items-center gap-2 text-[#ae004b]">
+        {icon}
+        <span className="text-[11px]">{label}</span>
       </div>
+      <p className="mt-2 break-words text-sm font-extrabold">{value}</p>
+    </div>
+  );
+}
+
+function ProfileField({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-[#fff6fa] p-3">
+      <span className="text-[#ae004b]">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[10px] text-[#9a7b8a]">{label}</p>
+        <p className="break-words text-xs font-semibold">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function EmptyMessage({ text }: { text: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-[#edcfdd] bg-[#fff9fb] p-6 text-center text-xs text-[#9a7b8a]">
+      {text}
     </div>
   );
 }

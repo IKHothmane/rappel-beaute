@@ -5,20 +5,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Building2,
   MessageCircle,
-  Package,
   Phone,
-  Plus,
   Search,
   ShoppingCart,
-  Sparkles,
-  Wallet,
 } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { SupplierFocusPanel } from "@/components/procurement/supplier-focus-panel";
 import { SupplierForm } from "@/components/procurement/supplier-form";
+import { SuppliersPremiumHeader } from "@/components/procurement/suppliers-premium-header";
 import {
   supplierInitials,
-  supplierInsight,
   supplierWhatsappMessage,
   telHref,
   whatsappHref,
@@ -45,7 +41,6 @@ export function SuppliersPageView() {
   const canWrite = canWriteStock(user.role);
   const financeHidden = user.role === "STAFF" || user.role === "CASHIER";
   const showPurchases = canAccessNav(user.role, "purchases");
-  const showExpenses = canAccessNav(user.role, "expenses");
 
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -100,7 +95,18 @@ export function SuppliersPageView() {
   const selected = rows.find((r) => r.id === selectedId) ?? null;
   const productLinks = useMemo(() => rows.reduce((n, s) => n + s.productCount, 0), [rows]);
   const inactiveCount = Math.max(0, (kpis?.supplierCount ?? 0) - (kpis?.activeCount ?? 0));
-  const insight = useMemo(() => supplierInsight(rows), [rows]);
+  const topSuppliers = useMemo(
+    () =>
+      [...rows]
+        .sort((a, b) => b.totalPurchased - a.totalPurchased || b.purchaseCount - a.purchaseCount)
+        .slice(0, 5)
+        .map((s) => ({
+          name: s.name,
+          total: s.totalPurchased,
+          orders: s.purchaseCount,
+        })),
+    [rows],
+  );
 
   async function openCreate() {
     setEditing(null);
@@ -145,8 +151,6 @@ export function SuppliersPageView() {
         canWrite={canWrite}
         financeHidden={financeHidden}
         showPurchases={showPurchases}
-        showExpenses={showExpenses}
-        insight={insight}
         searchInput={searchInput}
         onSearchChange={setSearchInput}
         searchRef={searchRef}
@@ -164,121 +168,20 @@ export function SuppliersPageView() {
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-            <div>
-              <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink">
-                <Building2 size={26} className="text-primary" />
-                Fournisseurs & relations commerciales
-              </h1>
-              <p className="mt-1 max-w-3xl text-[15px] text-ink/50">
-                Répertoire partenaires, tarifs liés au catalogue et suivi des commandes.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {showPurchases ? (
-                <Link
-                  href="/purchases/"
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm"
-                >
-                  <ShoppingCart size={16} className="text-[#7B5900]" />
-                  Bon de commande
-                </Link>
-              ) : null}
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={() => void openCreate()}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-[13px] font-semibold text-white shadow-md"
-                >
-                  <Plus size={18} />
-                  Nouveau fournisseur
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </section>
+        <SuppliersPremiumHeader
+          supplierCount={kpis?.supplierCount ?? 0}
+          activeCount={kpis?.activeCount ?? 0}
+          inactiveCount={inactiveCount}
+          productLinks={productLinks}
+          openOrders={kpis?.openOrdersCount ?? 0}
+          monthPurchases={financeHidden ? null : formatMad(kpis?.monthPurchasesTotal ?? 0)}
+          canWrite={canWrite}
+          topSuppliers={topSuppliers}
+          financeHidden={financeHidden}
+          onCreate={() => void openCreate()}
+        />
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[14px] font-semibold text-white shadow-sm">
-            <Building2 size={16} />
-            Fournisseurs ({kpis?.supplierCount ?? 0})
-          </span>
-          {showPurchases ? (
-            <Link
-              href="/purchases/"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#FFEFF8] px-4 py-2 text-[14px] font-semibold text-ink hover:bg-[#FCE9F4]"
-            >
-              <ShoppingCart size={16} />
-              Commandes ({kpis?.openOrdersCount ?? 0})
-            </Link>
-          ) : null}
-          {showExpenses ? (
-            <Link
-              href="/expenses/"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#FFEFF8] px-4 py-2 text-[14px] font-semibold text-ink hover:bg-[#FCE9F4]"
-            >
-              <Wallet size={16} />
-              Dépenses
-            </Link>
-          ) : null}
-        </div>
-
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-6">
-          <KpiCard
-            label="Fournisseurs"
-            value={String(kpis?.supplierCount ?? 0)}
-            hint={`${kpis?.activeCount ?? 0} actifs · ${inactiveCount} inact.`}
-            icon={Building2}
-          />
-          <KpiCard
-            label="Produits liés"
-            value={String(productLinks)}
-            hint="Liaisons catalogue"
-            icon={Package}
-          />
-          <KpiCard
-            label="Commandes en cours"
-            value={String(kpis?.openOrdersCount ?? 0)}
-            hint="Commandées ou en réception"
-            icon={ShoppingCart}
-            tone="primary"
-          />
-          <KpiCard
-            label="Achats ce mois"
-            value={financeHidden ? "—" : formatMad(kpis?.monthPurchasesTotal ?? 0)}
-            hint="Hors commandes annulées"
-            icon={Wallet}
-          />
-          <KpiCard
-            label="Commandes cumulées"
-            value={String(rows.reduce((n, s) => n + s.purchaseCount, 0))}
-            hint="Sur la liste affichée"
-            icon={ShoppingCart}
-          />
-          <KpiCard
-            label="Archivés"
-            value={String(inactiveCount)}
-            hint="Toujours dans le répertoire"
-            icon={Building2}
-          />
-        </section>
-
-        <div className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFDEA4]/60 text-[#7B5900]">
-              <Sparkles size={24} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#7B5900]">
-                Lecture du répertoire
-              </p>
-              <p className="mt-1.5 text-[14px] leading-relaxed text-ink">{insight}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm md:flex-row md:items-center">
+        <div className="flex flex-col gap-3 rounded-[22px] border border-[#F0DDE4] bg-white p-4 shadow-sm md:flex-row md:items-center">
           <div className="relative max-w-lg flex-1">
             <Search className="absolute left-3 top-3 h-[18px] w-[18px] text-ink/35" />
             <input
@@ -286,13 +189,13 @@ export function SuppliersPageView() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Rechercher un fournisseur, contact, téléphone…"
-              className="h-11 w-full rounded-lg bg-[#FFEFF8] pl-9 pr-4 text-[13px] outline-none placeholder:text-ink/35"
+              className="h-11 w-full rounded-xl bg-[#FFEFF8] pl-9 pr-4 text-[13px] outline-none placeholder:text-ink/35"
             />
           </div>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as StatusFilter)}
-            className="h-11 rounded-lg bg-[#FFEFF8] px-3 text-[13px] outline-none"
+            className="h-11 rounded-xl bg-[#FFEFF8] px-3 text-[13px] outline-none"
           >
             <option value="all">Statut : Tous</option>
             <option value="active">Actifs</option>
@@ -300,15 +203,15 @@ export function SuppliersPageView() {
           </select>
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
-          <div className="lg:col-span-7 xl:col-span-8">
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-              <div className="flex items-center justify-between bg-[#FFEFF8] p-4">
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
+          <div className="xl:col-span-8">
+            <div className="overflow-hidden rounded-[22px] border border-[#F0DDE4] bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#F0DDE4] bg-[#FFF0F6] p-4">
                 <div className="flex items-center gap-2">
-                  <Building2 size={20} className="text-primary" />
-                  <h2 className="text-[18px] font-bold text-ink">Répertoire partenaires</h2>
+                  <Building2 size={20} className="text-[#AC0E4C]" />
+                  <h2 className="font-serif text-lg font-bold text-[#54112F]">Répertoire partenaires</h2>
                 </div>
-                <span className="text-[12px] text-ink/45">
+                <span className="text-[12px] text-[#846A79]">
                   {rows.length} affiché{rows.length > 1 ? "s" : ""}
                   {total > rows.length ? ` sur ${total}` : ""}
                 </span>
@@ -321,7 +224,7 @@ export function SuppliersPageView() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-[13px]">
-                    <thead className="bg-[#FCE9F4] text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                    <thead className="bg-[#FFF0F6] text-[11px] font-bold uppercase tracking-wider text-[#74334E]">
                       <tr>
                         <th className="px-4 py-3">Fournisseur</th>
                         <th className="px-4 py-3">Contact</th>
@@ -347,41 +250,41 @@ export function SuppliersPageView() {
                           <tr
                             key={s.id}
                             className={cn(
-                              "cursor-pointer border-t border-[#F0DDE9]/60 transition-colors",
-                              activeRow ? "bg-[#FFEFF8]/80" : "hover:bg-[#FFEFF8]/50",
+                              "cursor-pointer border-t border-[#F0DDE4]/70 transition-colors hover:bg-[#FFF7FA]",
+                              activeRow && "bg-[#FFF0F6]",
                             )}
                             onClick={() => setSelectedId(s.id)}
                           >
                             <td className="px-4 py-3.5">
                               <div className="flex items-center gap-2.5">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F6E3EF] text-[12px] font-extrabold text-primary">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#FDE3ED] to-[#F0B8D0] text-[12px] font-extrabold text-[#AC0E4C]">
                                   {supplierInitials(s.name)}
                                 </div>
                                 <div>
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-bold text-ink">{s.name}</span>
-                                  </div>
+                                  <span className="font-bold text-[#43182D]">{s.name}</span>
                                   {s.email ? (
-                                    <p className="text-[11px] text-ink/45">{s.email}</p>
+                                    <p className="text-[11px] text-[#846A79]">{s.email}</p>
                                   ) : null}
                                 </div>
                               </div>
                             </td>
                             <td className="whitespace-nowrap px-4 py-3.5">
-                              <p className="font-medium text-ink">{s.contactName ?? "—"}</p>
-                              <p className="text-[11px] text-ink/45">{s.phone ?? "—"}</p>
+                              <p className="font-medium text-[#43182D]">{s.contactName ?? "—"}</p>
+                              <p className="text-[11px] text-[#846A79]">{s.phone ?? "—"}</p>
                             </td>
                             <td className="px-4 py-3.5">
-                              <p className="font-bold text-ink">{s.productCount} réf.</p>
+                              <p className="font-bold text-[#43182D]">{s.productCount} réf.</p>
                               {!financeHidden ? (
-                                <p className="text-[10px] text-primary">{formatMad(s.totalPurchased)}</p>
+                                <p className="text-[10px] font-semibold text-[#AC0E4C]">
+                                  {formatMad(s.totalPurchased)}
+                                </p>
                               ) : null}
                             </td>
-                            <td className="px-4 py-3.5 font-medium">{s.purchaseCount}</td>
+                            <td className="px-4 py-3.5 font-medium text-[#43182D]">{s.purchaseCount}</td>
                             <td className="px-4 py-3.5">
                               <span
                                 className={cn(
-                                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold",
+                                  "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold",
                                   s.active
                                     ? "bg-emerald-100 text-emerald-800"
                                     : "bg-[#F0DDE9] text-ink/45",
@@ -404,7 +307,7 @@ export function SuppliersPageView() {
                                     target="_blank"
                                     rel="noreferrer"
                                     title="WhatsApp"
-                                    className="rounded-lg bg-emerald-100 p-1.5 text-emerald-800"
+                                    className="rounded-xl bg-emerald-100 p-1.5 text-emerald-800"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <MessageCircle size={16} />
@@ -414,7 +317,7 @@ export function SuppliersPageView() {
                                   <a
                                     href={tel}
                                     title="Appeler"
-                                    className="rounded-lg bg-[#F6E3EF] p-1.5 text-ink"
+                                    className="rounded-xl bg-[#FFF0F6] p-1.5 text-[#54112F]"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <Phone size={16} />
@@ -424,7 +327,7 @@ export function SuppliersPageView() {
                                   <Link
                                     href="/purchases/"
                                     title="Commander"
-                                    className="rounded-lg bg-primary p-1.5 text-white"
+                                    className="rounded-xl bg-[#AC0E4C] p-1.5 text-white"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <ShoppingCart size={16} />
@@ -442,7 +345,7 @@ export function SuppliersPageView() {
             </div>
           </div>
 
-          <div className="lg:col-span-5 xl:col-span-4">
+          <div className="xl:sticky xl:top-20 xl:col-span-4">
             {selected ? (
               <SupplierFocusPanel
                 supplierId={selected.id}
@@ -455,7 +358,7 @@ export function SuppliersPageView() {
                 onEdit={() => void openEdit(selected.id)}
               />
             ) : (
-              <div className="rounded-2xl bg-white p-8 text-center text-sm text-ink/40 shadow-sm">
+              <div className="rounded-[22px] border border-[#F0DDE4] bg-white p-8 text-center text-sm text-ink/40 shadow-sm">
                 Sélectionnez un fournisseur.
               </div>
             )}
@@ -486,33 +389,3 @@ export function SuppliersPageView() {
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  tone,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: typeof Building2;
-  tone?: "primary";
-}) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between text-ink/45">
-        <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        <span className="rounded-lg bg-[#FFEFF8] p-1.5 text-primary">
-          <Icon size={18} />
-        </span>
-      </div>
-      <div className="mt-3">
-        <p className="text-[28px] font-extrabold leading-none text-ink">{value}</p>
-        <p className={cn("mt-1 text-[12px] text-ink/45", tone === "primary" && "font-semibold text-primary")}>
-          {hint}
-        </p>
-      </div>
-    </div>
-  );
-}

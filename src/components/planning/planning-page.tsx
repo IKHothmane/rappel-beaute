@@ -17,7 +17,6 @@ import {
   Sparkles,
   Trash2,
   TriangleAlert,
-  Umbrella,
   Users,
 } from "lucide-react";
 import { staffColor, type StaffColor } from "@/components/agenda/staff-colors";
@@ -26,7 +25,6 @@ import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
 import { Label, Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -97,10 +95,31 @@ function Card({
   id?: string;
 }) {
   return (
-    <section id={id} className={cn("rounded-2xl border border-line bg-white p-5 shadow-soft", className)}>
+    <section
+      id={id}
+      className={cn(
+        "rounded-[20px] border border-[#f0dce5] bg-white p-5 shadow-[0_8px_24px_rgba(84,17,47,0.05)]",
+        className,
+      )}
+    >
       {children}
     </section>
   );
+}
+
+function PremiumEmpty({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-[#efd7e2] bg-gradient-to-br from-[#fffafb] to-[#fff5f9] px-4 py-6 text-center text-xs text-[#947c89]">
+      {children}
+    </div>
+  );
+}
+
+function leaveStatusTone(status: string) {
+  if (status === "APPROVED") return "bg-emerald-50 text-emerald-700";
+  if (status === "PENDING") return "bg-amber-50 text-amber-700";
+  if (status === "CANCELLED") return "bg-slate-100 text-slate-500";
+  return "bg-[#fce7f1] text-[#a7084b]";
 }
 
 function OffBadge({ children = "OFF" }: { children?: string }) {
@@ -575,18 +594,6 @@ export function PlanningPageView() {
 
   return (
     <div className="space-y-6 pb-8">
-      <Card className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
-            Planning & horaires de l’équipe
-          </h1>
-          <p className="mt-1 max-w-xl text-xs text-ink/55">
-            Définissez les shifts, congés et ouvertures. Les créneaux travaillés alimentent directement les
-            réservations de l’Agenda.
-          </p>
-        </div>
-      </Card>
-
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <KpiCard
           icon={<Users size={16} />}
@@ -1063,113 +1070,6 @@ export function PlanningPageView() {
             </Card>
           )}
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Card className="space-y-3">
-              <div className="flex items-center justify-between border-b border-line pb-3">
-                <button type="button" onClick={() => void focusHistory("ALL")} className="flex items-center gap-2 text-left">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-primary">
-                    <Umbrella size={14} />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-ink">Congés & absences</h3>
-                    <p className="text-[10px] text-ink/45">Carte à droite · bloque les RDV</p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingLeaveId(null);
-                    setLeaveReason("");
-                    setLeaveOpen(true);
-                  }}
-                  className="rounded-lg border border-primary/20 bg-primary-light px-2 py-1 text-[11px] font-bold text-primary"
-                >
-                  + Ajouter absence
-                </button>
-              </div>
-              <div className="max-h-72 divide-y divide-line/80 overflow-y-auto text-xs">
-                {upcomingLeaves.length ? (
-                  upcomingLeaves.map((leave) => (
-                    <div key={leave.id} className="flex items-center justify-between gap-2 py-2.5">
-                      <button type="button" onClick={() => void focusHistory(leave.staff.id)} className="flex min-w-0 items-center gap-2 text-left">
-                        <span className={cn("h-2 w-2 shrink-0 rounded-full", staffColor(leave.staff.id, staffColors).bar)} />
-                        <span className="font-bold text-ink">{leave.staff.firstName}</span>
-                        <span className="truncate text-ink/60">{formatLeaveSpan(leave.startAt, leave.endAt)}</span>
-                      </button>
-                      <span className="shrink-0 rounded border border-primary/20 bg-primary-light px-2 py-0.5 text-[10px] font-extrabold text-primary">
-                        {LEAVE_TYPE_LABEL[leave.type]}
-                      </span>
-                      <span className="flex shrink-0 gap-1">
-                        <button type="button" aria-label="Modifier l’absence" onClick={() => beginEditLeave(leave)} className="rounded-lg p-1 text-ink/50 hover:bg-[#FBF5F7] hover:text-ink">
-                          <Pencil size={13} />
-                        </button>
-                        <button type="button" aria-label="Supprimer l’absence" onClick={() => void removeLeave(leave.staff.id, leave.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
-                          <Trash2 size={13} />
-                        </button>
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="py-4 text-ink/45">Aucun congé à venir sur les fiches employées.</p>
-                )}
-              </div>
-            </Card>
-
-            <Card className="space-y-3">
-              <div className="flex items-center justify-between border-b border-line pb-3">
-                <button type="button" onClick={() => void focusHistory("ALL")} className="text-left">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-ink">Heures supp. & remplacements</h3>
-                  <p className="text-[10px] text-ink/45">Carte à droite</p>
-                </button>
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]" onClick={() => { setEditingOtId(null); setOtReason(""); setExtraOpen("overtime"); }}>
-                    + Heures supp.
-                  </button>
-                  <button type="button" className="rounded-lg border border-line px-2 py-1 text-[11px] font-bold text-ink hover:bg-[#FBF5F7]" onClick={() => { setEditingRepId(null); setRepReason(""); setExtraOpen("replacement"); }}>
-                    + Remplacement
-                  </button>
-                </div>
-              </div>
-              <div className="max-h-72 space-y-2 overflow-y-auto">
-                {overtimes.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-2 text-[11px] text-ink/70">
-                    <button type="button" onClick={() => void focusHistory(item.staffId)} className="min-w-0 text-left">
-                      <span className="font-bold text-amber-800">HS</span>{" "}
-                      {item.staffName ?? staff.find((s) => s.id === item.staffId)?.firstName ?? ""} ·{" "}
-                      {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </button>
-                    <span className="flex shrink-0 gap-1">
-                      <button type="button" aria-label="Modifier les heures supplémentaires" onClick={() => beginEditOvertime(item)} className="rounded-lg p-1 text-ink/50 hover:bg-[#FBF5F7] hover:text-ink">
-                        <Pencil size={13} />
-                      </button>
-                      <button type="button" aria-label="Supprimer les heures supplémentaires" onClick={() => void removeOvertime(item.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
-                        <Trash2 size={13} />
-                      </button>
-                    </span>
-                  </div>
-                ))}
-                {replacements.filter((r) => r.active).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-2 text-[11px] text-ink/70">
-                    <button type="button" onClick={() => void focusHistory(item.absentStaffId)} className="min-w-0 text-left">
-                      <span className="font-bold text-violet-700">Rempl.</span> {item.absentName} → {item.substituteName}
-                    </button>
-                    <span className="flex shrink-0 gap-1">
-                      <button type="button" aria-label="Modifier le remplacement" onClick={() => beginEditReplacement(item)} className="rounded-lg p-1 text-ink/50 hover:bg-[#FBF5F7] hover:text-ink">
-                        <Pencil size={13} />
-                      </button>
-                      <button type="button" aria-label="Supprimer le remplacement" onClick={() => void removeReplacement(item.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
-                        <Trash2 size={13} />
-                      </button>
-                    </span>
-                  </div>
-                ))}
-                {!overtimes.length && !replacements.some((r) => r.active) ? (
-                  <p className="py-4 text-xs text-ink/45">Aucune heure supplémentaire ni remplacement.</p>
-                ) : null}
-              </div>
-            </Card>
-          </div>
-
           {conflicts.length ? (
             <div className="rounded-2xl border border-rose-200 bg-gradient-to-r from-white to-rose-50/40 p-4 shadow-soft">
               <div className="flex items-start gap-3">
@@ -1202,117 +1102,366 @@ export function PlanningPageView() {
           {selected ? (
             <>
               <Card className="space-y-4">
-                <div className="flex items-center justify-between border-b border-line pb-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3 border-b border-[#f0dce5] pb-4">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div
                       className={cn(
-                        "flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold text-white",
+                        "flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-sm",
                         staffColor(selected.id, staffColors).bar,
                       )}
                     >
                       {initialForDay(selected)}
                       {selected.lastName?.[0]?.toUpperCase() ?? ""}
                     </div>
-                    <div>
-                      <h3 className="text-sm font-black text-ink">{selected.displayName}</h3>
-                      <p className="text-xs text-ink/50">
-                        Poste :{" "}
-                        <strong className={staffColor(selected.id, staffColors).text}>
-                          {positions[selected.id] || "—"}
-                        </strong>
-                      </p>
+                    <div className="min-w-0">
+                      <h3 className="truncate font-serif text-lg font-bold text-[#54112f]">
+                        {selected.displayName}
+                      </h3>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold text-[#a82c62]">
+                          {positions[selected.id] || "Collaboratrice"}
+                        </span>
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+                            isOnDutyToday(selected)
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-slate-100 text-slate-500",
+                          )}
+                        >
+                          {isOnDutyToday(selected) ? "Active" : "Hors service"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <span
-                    className={cn(
-                      "h-3 w-3 rounded-full border-2 border-white",
-                      isOnDutyToday(selected) ? "bg-emerald-500" : "bg-slate-300",
-                    )}
-                    title={isOnDutyToday(selected) ? "En service" : "Hors service"}
-                  />
                 </div>
-                <div className="space-y-1 text-xs">
-                  {[1, 2, 3, 4, 5, 6, 0].map((day) => {
-                    const label = DAY_LABELS[day];
-                    const date = weekDates.find((d) => d.getDay() === day) ?? weekDates[0];
-                    const cell = cellForStaffDay(selected, date);
-                    const extra = cell.kind === "work" ? overtimeSpanOnDay(selected, date) : null;
-                    const replaced = replacementSpanOnDay(selected, date);
-                    const covering = coveringSpanOnDay(selected, date);
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => {
-                          setEditDay(day);
-                          openScheduleEditor();
-                        }}
-                        className={cn(
-                          "flex w-full items-center justify-between rounded-lg py-1",
-                          editDay === day && "bg-primary-light/60 px-2",
-                        )}
-                      >
-                        <span className="font-bold text-ink/70">{label}</span>
-                        {cell.kind === "work" || cell.kind === "overtime" ? (
-                          <span className="flex flex-col items-end gap-1">
-                            <span
-                              className={cn(
-                                "rounded px-2 py-0.5 text-[11px] font-extrabold",
-                                staffColor(selected.id, staffColors).soft,
-                                staffColor(selected.id, staffColors).text,
-                              )}
-                            >
-                              {cell.kind === "overtime" ? "HS " : ""}
-                              {cell.start} → {cell.end}
+
+                <div>
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#947c89]">
+                    Planning de la semaine
+                  </p>
+                  <div className="space-y-1.5 text-xs">
+                    {[1, 2, 3, 4, 5, 6, 0].map((day) => {
+                      const label = DAY_LABELS[day];
+                      const date = weekDates.find((d) => d.getDay() === day) ?? weekDates[0];
+                      const cell = cellForStaffDay(selected, date);
+                      const extra = cell.kind === "work" ? overtimeSpanOnDay(selected, date) : null;
+                      const replaced = replacementSpanOnDay(selected, date);
+                      const covering = coveringSpanOnDay(selected, date);
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => {
+                            setEditDay(day);
+                            openScheduleEditor();
+                          }}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-xl px-2.5 py-2 transition",
+                            editDay === day ? "bg-[#fce7f1]" : "hover:bg-[#fff7fa]",
+                          )}
+                        >
+                          <span className="font-bold text-[#6f5666]">{label}</span>
+                          {cell.kind === "work" || cell.kind === "overtime" ? (
+                            <span className="flex flex-col items-end gap-1">
+                              <span
+                                className={cn(
+                                  "rounded-lg px-2.5 py-1 text-[11px] font-extrabold",
+                                  staffColor(selected.id, staffColors).soft,
+                                  staffColor(selected.id, staffColors).text,
+                                )}
+                              >
+                                {cell.kind === "overtime" ? "HS " : ""}
+                                {cell.start} → {cell.end}
+                              </span>
+                              {extra ? (
+                                <span className="rounded-lg bg-amber-50 px-2 py-0.5 text-[11px] font-extrabold text-amber-800">
+                                  HS {extra.start} → {extra.end}
+                                </span>
+                              ) : null}
+                              {replaced ? (
+                                <span className="rounded-lg bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-800">
+                                  Rempl. {replaced.substituteName.split(" ")[0]} {replaced.start} → {replaced.end}
+                                </span>
+                              ) : null}
+                              {covering ? (
+                                <span className="rounded-lg bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-800">
+                                  Remplace {covering.absentName.split(" ")[0]} {covering.start} → {covering.end}
+                                </span>
+                              ) : null}
                             </span>
-                            {extra ? (
-                              <span className="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-extrabold text-amber-800">
-                                HS {extra.start} → {extra.end}
-                              </span>
-                            ) : null}
-                            {replaced ? (
-                              <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-800">
-                                Rempl. {replaced.substituteName.split(" ")[0]} {replaced.start} → {replaced.end}
-                              </span>
-                            ) : null}
-                            {covering ? (
-                              <span className="rounded bg-violet-50 px-2 py-0.5 text-[11px] font-extrabold text-violet-800">
-                                Remplace {covering.absentName.split(" ")[0]} {covering.start} → {covering.end}
-                              </span>
-                            ) : null}
-                          </span>
-                        ) : cell.kind === "leave" ? (
-                          <span className="rounded bg-rose-50 px-2 py-0.5 text-[11px] font-extrabold text-rose-600">
-                            {cell.label}
-                          </span>
-                        ) : (
-                          <span className="rounded bg-rose-50 px-2 py-0.5 text-[11px] font-extrabold text-rose-600">
-                            Repos
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center justify-end border-t border-line pt-3">
+                          ) : cell.kind === "leave" ? (
+                            <span className="rounded-lg bg-rose-50 px-2.5 py-1 text-[11px] font-extrabold text-rose-600">
+                              {cell.label}
+                            </span>
+                          ) : (
+                            <span className="rounded-lg bg-[#fff0f5] px-2.5 py-1 text-[11px] font-extrabold text-[#b00052]">
+                              Repos
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <button
                     type="button"
                     onClick={openScheduleEditor}
-                    className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white"
+                    className="mt-3 w-full rounded-xl bg-[#a9004e] px-3 py-2.5 text-xs font-bold text-white shadow-sm"
                   >
-                    Modifier
+                    Modifier les horaires
                   </button>
+                </div>
+
+                <div className="border-t border-[#f0dce5] pt-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h4 className="font-serif text-sm font-bold text-[#54112f]">Congés &amp; absences</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLeaveStaff(selected.id);
+                        setEditingLeaveId(null);
+                        setLeaveReason("");
+                        setLeaveOpen(true);
+                      }}
+                      className="text-[11px] font-bold text-[#a7084b] hover:underline"
+                    >
+                      + Ajouter
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {upcomingLeaves.filter((leave) => leave.staff.id === selected.id).length ? (
+                      upcomingLeaves
+                        .filter((leave) => leave.staff.id === selected.id)
+                        .slice(0, 3)
+                        .map((leave) => (
+                          <div
+                            key={leave.id}
+                            className="rounded-2xl border border-[#f0dce5] bg-[#fff5f9] px-3.5 py-3"
+                          >
+                            <p className="text-sm font-bold text-[#401126]">
+                              {leave.reason?.trim() || LEAVE_TYPE_LABEL[leave.type]}
+                            </p>
+                            <p className="mt-1 text-xs text-[#80596c]">
+                              Du {formatLeaveSpan(leave.startAt, leave.endAt)}
+                            </p>
+                          </div>
+                        ))
+                    ) : (
+                      <PremiumEmpty>Aucun congé à venir.</PremiumEmpty>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t border-[#f0dce5] pt-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="font-serif text-sm font-bold text-[#54112f]">
+                      Heures supp. &amp; remplacements
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtStaff(selected.id);
+                          setEditingOtId(null);
+                          setOtReason("");
+                          setExtraOpen("overtime");
+                        }}
+                        className="text-[11px] font-bold text-[#a7084b] hover:underline"
+                      >
+                        + HS
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRepAbsent(selected.id);
+                          setEditingRepId(null);
+                          setRepReason("");
+                          setExtraOpen("replacement");
+                        }}
+                        className="text-[11px] font-bold text-[#a7084b] hover:underline"
+                      >
+                        + Remplacement
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {(() => {
+                      const staffOt = overtimes.filter((item) => item.staffId === selected.id);
+                      const staffRep = replacements.filter(
+                        (item) =>
+                          item.active &&
+                          (item.absentStaffId === selected.id || item.substituteStaffId === selected.id),
+                      );
+                      if (!staffOt.length && !staffRep.length) {
+                        return <PremiumEmpty>Aucune heure supplémentaire ni remplacement.</PremiumEmpty>;
+                      }
+                      return (
+                        <>
+                          {staffOt.slice(0, 4).map((item) => (
+                            <div
+                              key={item.id}
+                              className="rounded-2xl border border-amber-100 bg-amber-50/50 px-3.5 py-3"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-[#401126]">
+                                    <span className="mr-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">
+                                      HS
+                                    </span>
+                                    {item.reason?.trim() || "Heures supplémentaires"}
+                                  </p>
+                                  <p className="mt-1 text-xs text-[#80596c]">
+                                    {new Date(item.startAt).toLocaleString("fr-FR", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                    {" → "}
+                                    {new Date(item.endAt).toLocaleString("fr-FR", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </p>
+                                </div>
+                                <span className="flex shrink-0 gap-1">
+                                  <button
+                                    type="button"
+                                    aria-label="Modifier les heures supplémentaires"
+                                    onClick={() => beginEditOvertime(item)}
+                                    className="rounded-lg p-1.5 text-[#947c89] hover:bg-white"
+                                  >
+                                    <Pencil size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label="Supprimer les heures supplémentaires"
+                                    onClick={() => void removeOvertime(item.id)}
+                                    className="rounded-lg p-1.5 text-[#947c89] hover:bg-rose-50 hover:text-rose-600"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                          {staffRep.slice(0, 4).map((item) => (
+                            <div
+                              key={item.id}
+                              className="rounded-2xl border border-violet-100 bg-violet-50/50 px-3.5 py-3"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-[#401126]">
+                                    {item.absentStaffId === selected.id
+                                      ? `Remplacée par ${item.substituteName}`
+                                      : `Remplace ${item.absentName}`}
+                                  </p>
+                                  <p className="mt-1 text-xs text-[#80596c]">
+                                    {new Date(item.startAt).toLocaleString("fr-FR", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                    {" → "}
+                                    {new Date(item.endAt).toLocaleString("fr-FR", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </p>
+                                  {item.reason ? (
+                                    <p className="mt-1 text-[11px] text-[#947c89]">{item.reason}</p>
+                                  ) : null}
+                                </div>
+                                <span className="flex shrink-0 gap-1">
+                                  <button
+                                    type="button"
+                                    aria-label="Modifier le remplacement"
+                                    onClick={() => beginEditReplacement(item)}
+                                    className="rounded-lg p-1.5 text-[#947c89] hover:bg-white"
+                                  >
+                                    <Pencil size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label="Supprimer le remplacement"
+                                    onClick={() => void removeReplacement(item.id)}
+                                    className="rounded-lg p-1.5 text-[#947c89] hover:bg-rose-50 hover:text-rose-600"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
               </Card>
             </>
           ) : null}
 
+          <Card className="space-y-4">
+            <div className="flex items-center justify-between gap-3 border-b border-[#f0dce5] pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fce7f1] text-[#a7084b]">
+                  <Clock3 size={18} aria-hidden />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-bold text-[#54112f]">
+                    Horaires d&apos;ouverture du salon
+                  </h3>
+                  <p className="text-[11px] text-[#947c89]">Dérivés des shifts de l&apos;équipe</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={openHoursEditor}
+                className="rounded-xl border border-[#edcfdb] bg-white px-3 py-2 text-[11px] font-bold text-[#831d4a] hover:bg-[#fff7fa]"
+              >
+                Modifier
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              {openingHours.map((row) => (
+                <div
+                  key={row.day}
+                  className={cn(
+                    "flex items-center justify-between rounded-xl px-3 py-2.5 text-xs",
+                    row.hours.includes("Fermé")
+                      ? "bg-[#fff0f5] font-bold text-[#b00052]"
+                      : "bg-[#fff8fb] text-[#6f5666]",
+                  )}
+                >
+                  <span className="font-semibold">{row.label}</span>
+                  <span className={row.hours.includes("Fermé") ? undefined : "font-extrabold text-[#401126]"}>
+                    {row.hours}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
           <Card id="planning-history" className="space-y-4">
-            <div className="border-b border-line pb-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-ink">
-                Historique congés, absences et remplacements
-              </h3>
-              <p className="text-[10px] text-ink/45">Toute l’équipe, y compris les périodes passées</p>
+            <div className="flex items-start gap-3 border-b border-[#f0dce5] pb-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fce7f1] text-[#a7084b]">
+                <CalendarDays size={18} aria-hidden />
+              </div>
+              <div>
+                <h3 className="font-serif text-base font-bold text-[#54112f]">
+                  Historique congés, absences et remplacements
+                </h3>
+                <p className="mt-0.5 text-[11px] text-[#947c89]">
+                  Toute l’équipe, y compris les périodes passées
+                </p>
+              </div>
             </div>
             <Select value={historyStaffId} onChange={(e) => setHistoryStaffId(e.target.value)}>
               <option value="ALL">Toute l’équipe</option>
@@ -1323,92 +1472,118 @@ export function PlanningPageView() {
               ))}
             </Select>
             <div className="max-h-[32rem] space-y-5 overflow-y-auto">
-              <section className="space-y-2">
-                <h3 className="text-xs font-black uppercase tracking-wider text-ink">Congés & absences</h3>
+              <section className="space-y-2.5">
+                <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#947c89]">
+                  Congés &amp; absences
+                </h3>
                 {historyLeaves.filter((leave) => historyStaffId === "ALL" || leave.staffId === historyStaffId).length ? (
                   historyLeaves
                     .filter((leave) => historyStaffId === "ALL" || leave.staffId === historyStaffId)
                     .map((leave) => (
-                      <div key={leave.id} className="flex items-start justify-between gap-2 rounded-xl border border-line px-3 py-2 text-xs">
-                        <div>
-                          <p className="font-bold text-ink">{leave.staffName}</p>
-                          <p className="text-ink/55">
-                            {formatLeaveSpan(leave.startAt, leave.endAt)} · {LEAVE_TYPE_LABEL[leave.type]} · {LEAVE_STATUS_LABEL[leave.status]}
-                          </p>
-                          {leave.reason ? <p className="text-ink/45">{leave.reason}</p> : null}
+                      <div
+                        key={leave.id}
+                        className="rounded-2xl border border-[#f0dce5] bg-gradient-to-r from-[#fff8fb] to-white p-3.5"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-bold text-[#401126]">{leave.staffName}</p>
+                              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", leaveStatusTone(leave.status))}>
+                                {LEAVE_STATUS_LABEL[leave.status]}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-[#80596c]">
+                              {formatLeaveSpan(leave.startAt, leave.endAt)} · {LEAVE_TYPE_LABEL[leave.type]}
+                            </p>
+                            {leave.reason ? (
+                              <p className="mt-1 text-[11px] font-medium text-[#a7084b]">{leave.reason}</p>
+                            ) : null}
+                          </div>
+                          {leave.status !== "CANCELLED" ? (
+                            <span className="flex shrink-0 gap-1">
+                              <button type="button" aria-label="Modifier l’absence" onClick={() => beginEditLeave(leave)} className="rounded-lg p-1.5 text-[#947c89] hover:bg-[#fff0f5]">
+                                <Pencil size={13} />
+                              </button>
+                              <button type="button" aria-label="Supprimer l’absence" onClick={() => void removeLeave(leave.staffId, leave.id)} className="rounded-lg p-1.5 text-[#947c89] hover:bg-rose-50 hover:text-rose-600">
+                                <Trash2 size={13} />
+                              </button>
+                            </span>
+                          ) : null}
                         </div>
-                        {leave.status !== "CANCELLED" ? (
-                          <span className="flex shrink-0 gap-1">
-                            <button type="button" aria-label="Modifier l’absence" onClick={() => beginEditLeave(leave)} className="rounded-lg p-1 text-ink/50 hover:bg-[#FBF5F7]">
-                              <Pencil size={13} />
-                            </button>
-                            <button type="button" aria-label="Supprimer l’absence" onClick={() => void removeLeave(leave.staffId, leave.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
-                              <Trash2 size={13} />
-                            </button>
-                          </span>
-                        ) : null}
                       </div>
                     ))
                 ) : (
-                  <p className="text-xs text-ink/45">Aucun congé ni absence.</p>
+                  <PremiumEmpty>Aucun congé ni absence.</PremiumEmpty>
                 )}
               </section>
-              <section className="space-y-2">
-                <h3 className="text-xs font-black uppercase tracking-wider text-ink">Heures supp. & remplacements</h3>
+              <section className="space-y-2.5">
+                <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#947c89]">
+                  Heures supp. &amp; remplacements
+                </h3>
                 {historyOvertimes
                   .filter((item) => historyStaffId === "ALL" || item.staffId === historyStaffId)
                   .map((item) => (
-                    <div key={item.id} className="flex items-start justify-between gap-2 rounded-xl border border-amber-100 bg-amber-50/40 px-3 py-2 text-xs">
-                      <div>
-                        <p className="font-bold text-ink">HS · {item.staffName ?? staff.find((s) => s.id === item.staffId)?.displayName ?? "Employée"}</p>
-                        <p className="text-ink/55">
-                          {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                          {" → "}
-                          {new Date(item.endAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                        {item.reason ? <p className="text-ink/45">{item.reason}</p> : null}
+                    <div key={item.id} className="rounded-2xl border border-amber-100 bg-amber-50/40 p-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-[#401126]">
+                            HS · {item.staffName ?? staff.find((s) => s.id === item.staffId)?.displayName ?? "Employée"}
+                          </p>
+                          <p className="mt-1 text-xs text-[#80596c]">
+                            {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            {" → "}
+                            {new Date(item.endAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                          {item.reason ? <p className="mt-1 text-[11px] text-[#947c89]">{item.reason}</p> : null}
+                        </div>
+                        <span className="flex shrink-0 gap-1">
+                          <button type="button" aria-label="Modifier les heures supplémentaires" onClick={() => beginEditOvertime(item)} className="rounded-lg p-1.5 text-[#947c89] hover:bg-white">
+                            <Pencil size={13} />
+                          </button>
+                          <button type="button" aria-label="Supprimer les heures supplémentaires" onClick={() => void removeOvertime(item.id)} className="rounded-lg p-1.5 text-[#947c89] hover:bg-rose-50 hover:text-rose-600">
+                            <Trash2 size={13} />
+                          </button>
+                        </span>
                       </div>
-                      <span className="flex shrink-0 gap-1">
-                        <button type="button" aria-label="Modifier les heures supplémentaires" onClick={() => beginEditOvertime(item)} className="rounded-lg p-1 text-ink/50 hover:bg-white">
-                          <Pencil size={13} />
-                        </button>
-                        <button type="button" aria-label="Supprimer les heures supplémentaires" onClick={() => void removeOvertime(item.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
-                          <Trash2 size={13} />
-                        </button>
-                      </span>
                     </div>
                   ))}
                 {historyReplacements
                   .filter((item) => historyStaffId === "ALL" || item.absentStaffId === historyStaffId || item.substituteStaffId === historyStaffId)
                   .map((item) => (
-                    <div key={item.id} className="flex items-start justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2 text-xs">
-                      <div>
-                        <p className="font-bold text-ink">
-                          {item.absentName} → {item.substituteName}
-                          {!item.active ? " · annulé" : ""}
-                        </p>
-                        <p className="text-ink/55">
-                          {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                          {" → "}
-                          {new Date(item.endAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                        {item.reason ? <p className="text-ink/45">{item.reason}</p> : null}
+                    <div key={item.id} className="rounded-2xl border border-violet-100 bg-violet-50/40 p-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-[#401126]">
+                            {item.absentName} → {item.substituteName}
+                            {!item.active ? (
+                              <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                                annulé
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="mt-1 text-xs text-[#80596c]">
+                            {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            {" → "}
+                            {new Date(item.endAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                          {item.reason ? <p className="mt-1 text-[11px] text-[#947c89]">{item.reason}</p> : null}
+                        </div>
+                        {item.active ? (
+                          <span className="flex shrink-0 gap-1">
+                            <button type="button" aria-label="Modifier le remplacement" onClick={() => beginEditReplacement(item)} className="rounded-lg p-1.5 text-[#947c89] hover:bg-white">
+                              <Pencil size={13} />
+                            </button>
+                            <button type="button" aria-label="Supprimer le remplacement" onClick={() => void removeReplacement(item.id)} className="rounded-lg p-1.5 text-[#947c89] hover:bg-rose-50 hover:text-rose-600">
+                              <Trash2 size={13} />
+                            </button>
+                          </span>
+                        ) : null}
                       </div>
-                      {item.active ? (
-                        <span className="flex shrink-0 gap-1">
-                          <button type="button" aria-label="Modifier le remplacement" onClick={() => beginEditReplacement(item)} className="rounded-lg p-1 text-ink/50 hover:bg-white">
-                            <Pencil size={13} />
-                          </button>
-                          <button type="button" aria-label="Supprimer le remplacement" onClick={() => void removeReplacement(item.id)} className="rounded-lg p-1 text-ink/50 hover:bg-rose-50 hover:text-rose-600">
-                            <Trash2 size={13} />
-                          </button>
-                        </span>
-                      ) : null}
                     </div>
                   ))}
                 {!historyOvertimes.filter((item) => historyStaffId === "ALL" || item.staffId === historyStaffId).length &&
                 !historyReplacements.filter((item) => historyStaffId === "ALL" || item.absentStaffId === historyStaffId || item.substituteStaffId === historyStaffId).length ? (
-                  <p className="text-xs text-ink/45">Aucune heure supplémentaire ni remplacement.</p>
+                  <PremiumEmpty>Aucune heure supplémentaire ni remplacement.</PremiumEmpty>
                 ) : null}
               </section>
             </div>
@@ -1443,47 +1618,17 @@ export function PlanningPageView() {
             </div>
           ) : null}
 
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between border-b border-line pb-2">
-              <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-ink">
-                <Clock3 size={14} className="text-gold" />
-                Horaires d’ouverture (dérivés des shifts)
-              </h3>
-              <button
-                type="button"
-                onClick={openHoursEditor}
-                className="text-[11px] font-bold text-primary hover:underline"
-              >
-                Paramètres
-              </button>
-            </div>
-            <div className="space-y-1.5 text-xs">
-              {openingHours.map((row) => (
-                <div
-                  key={row.day}
-                  className={cn(
-                    "flex justify-between py-0.5",
-                    row.hours.includes("Fermé") ? "font-bold text-rose-600" : "text-ink/70",
-                  )}
-                >
-                  <span>{row.label}</span>
-                  <span className={row.hours.includes("Fermé") ? undefined : "font-extrabold text-ink"}>
-                    {row.hours}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
         </div>
       </div>
 
-      <Modal
+      <Drawer
         open={leaveOpen}
         onClose={() => {
           setLeaveOpen(false);
           setEditingLeaveId(null);
         }}
         title={editingLeaveId ? "Modifier l’absence" : "Ajouter une absence"}
+        side="right"
       >
         <div className="space-y-3">
           <Label>Employée</Label>
@@ -1522,15 +1667,16 @@ export function PlanningPageView() {
             </Button>
           </div>
         </div>
-      </Modal>
+      </Drawer>
 
-      <Modal
+      <Drawer
         open={extraOpen === "overtime"}
         onClose={() => {
           setExtraOpen(null);
           setEditingOtId(null);
         }}
         title={editingOtId ? "Modifier les heures supplémentaires" : "Heures supplémentaires"}
+        side="right"
       >
         <div className="space-y-3">
           <Select value={otStaff} onChange={(e) => setOtStaff(e.target.value)}>
@@ -1547,15 +1693,16 @@ export function PlanningPageView() {
             {editingOtId ? "Enregistrer" : "Ajouter"}
           </Button>
         </div>
-      </Modal>
+      </Drawer>
 
-      <Modal
+      <Drawer
         open={extraOpen === "replacement"}
         onClose={() => {
           setExtraOpen(null);
           setEditingRepId(null);
         }}
         title={editingRepId ? "Modifier le remplacement" : "Remplacement"}
+        side="right"
       >
         <div className="space-y-3">
           <Label>Absente</Label>
@@ -1581,7 +1728,7 @@ export function PlanningPageView() {
             {editingRepId ? "Enregistrer" : "Ajouter"}
           </Button>
         </div>
-      </Modal>
+      </Drawer>
 
       <Drawer
         open={scheduleOpen}

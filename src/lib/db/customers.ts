@@ -236,7 +236,7 @@ export async function listCustomers(
     WHERE ${where}
     GROUP BY c.id
     ${having}
-    ORDER BY c."lastName", c."firstName"
+    ORDER BY c."createdAt" DESC, c."lastName", c."firstName"
     LIMIT $${pi} OFFSET $${pi + 1}
   `;
 

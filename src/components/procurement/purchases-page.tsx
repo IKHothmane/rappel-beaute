@@ -1,23 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  CheckCircle2,
   ClipboardList,
-  Hourglass,
   PackageCheck,
   Plus,
   Search,
-  ShoppingCart,
-  Sparkles,
-  Truck,
-  Wallet,
 } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { PurchaseDetailView } from "@/components/procurement/purchase-detail-view";
 import { PurchaseFocusPanel } from "@/components/procurement/purchase-focus-panel";
 import { PurchaseForm } from "@/components/procurement/purchase-form";
+import { PurchasesPremiumHeader } from "@/components/procurement/purchases-premium-header";
 import { SupplierForm } from "@/components/procurement/supplier-form";
 import {
   canReceiveStatus,
@@ -55,7 +50,6 @@ export function PurchasesPageView() {
   const user = useCurrentUser();
   const canWrite = canWriteStock(user.role);
   const financeHidden = user.role === "STAFF" || user.role === "CASHIER";
-  const showExpenses = canAccessNav(user.role, "expenses");
   const showSuppliers = canAccessNav(user.role, "suppliers");
 
   const [loading, setLoading] = useState(true);
@@ -147,7 +141,7 @@ export function PurchasesPageView() {
 
   const selected = rows.find((r) => r.id === selectedId) ?? null;
   const lowStockCount = catalog.filter((p) => p.alert === "LOW" || p.alert === "OUT").length;
-  const insight = useMemo(() => purchaseInsight(kpis, lowStockCount), [kpis, lowStockCount]);
+  const insight = purchaseInsight(kpis, lowStockCount);
 
   function handleTab(next: PurchasesTab) {
     setTab(next);
@@ -262,7 +256,6 @@ export function PurchasesPageView() {
         kpis={kpis}
         canWrite={canWrite}
         financeHidden={financeHidden}
-        showExpenses={showExpenses}
         insight={insight}
         searchInput={searchInput}
         onSearchChange={setSearchInput}
@@ -291,42 +284,53 @@ export function PurchasesPageView() {
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink">
-                <ShoppingCart size={26} className="text-primary" />
-                Achats & approvisionnements
-              </h1>
-              <p className="mt-1 max-w-3xl text-[15px] text-ink/50">
-                Cycle fournisseur → bon de commande → réception. Le stock n’augmente qu’au pointage.
-              </p>
-            </div>
-            {canWrite ? (
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                className="inline-flex h-11 w-fit shrink-0 items-center gap-2 rounded-xl bg-primary px-5 text-[13px] font-semibold text-white shadow-md"
-              >
-                <Plus size={18} />
-                Nouvelle commande
-              </button>
-            ) : null}
+        <header
+          className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
+          style={{
+            backgroundImage:
+              'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/inventory-banner.webp")',
+            backgroundPosition: "center",
+            backgroundSize: "cover",
+          }}
+        >
+          <div className="relative z-10 min-w-0">
+            <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
+              Achats & approvisionnements
+            </h1>
+            <p className="mt-1 max-w-xl text-sm leading-5 text-[#654254]">
+              Cycle fournisseur → commande → réception. Le stock n’augmente qu’au
+              pointage des quantités réellement reçues.
+            </p>
           </div>
-        </section>
+          {canWrite ? (
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#AC0E4C] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#850F3C]"
+            >
+              <Plus size={17} />
+              Nouvelle commande
+            </button>
+          ) : null}
+        </header>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <nav className="flex flex-wrap gap-1.5 rounded-2xl border border-[#F1E8EC] bg-white p-2 shadow-sm">
           <button
             type="button"
             onClick={() => handleTab("orders")}
             className={cn(
-              "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[14px] font-semibold",
-              tab === "orders" ? "bg-primary text-white shadow-sm" : "bg-[#FFEFF8] text-ink",
+              "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all",
+              tab === "orders" ? "bg-[#981C52] text-white shadow-sm" : "text-[#765E6B] hover:bg-[#FAF0F5]",
             )}
           >
-            <ClipboardList size={16} />
+            <ClipboardList size={15} />
             Commandes
-            <span className={cn("rounded-full px-1.5 text-[11px] font-bold", tab === "orders" ? "bg-white text-primary" : "bg-white text-ink/55")}>
+            <span
+              className={cn(
+                "rounded-full px-1.5 text-[11px] font-bold",
+                tab === "orders" ? "bg-white/20 text-white" : "bg-[#FFF0F6] text-[#846A79]",
+              )}
+            >
               {kpis?.purchaseCount ?? 0}
             </span>
           </button>
@@ -334,108 +338,87 @@ export function PurchasesPageView() {
             type="button"
             onClick={() => handleTab("receipts")}
             className={cn(
-              "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[14px] font-semibold",
-              tab === "receipts" ? "bg-primary text-white shadow-sm" : "bg-[#FFEFF8] text-ink",
+              "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all",
+              tab === "receipts" ? "bg-[#981C52] text-white shadow-sm" : "text-[#765E6B] hover:bg-[#FAF0F5]",
             )}
           >
-            <PackageCheck size={16} />
+            <PackageCheck size={15} />
             Réceptions
-            <span className={cn("rounded-full px-1.5 text-[11px] font-bold", tab === "receipts" ? "bg-white text-primary" : "bg-white text-ink/55")}>
+            <span
+              className={cn(
+                "rounded-full px-1.5 text-[11px] font-bold",
+                tab === "receipts" ? "bg-white/20 text-white" : "bg-[#FFF0F6] text-[#846A79]",
+              )}
+            >
               {kpis?.awaitingReceiptCount ?? 0}
             </span>
           </button>
-          {showExpenses ? (
-            <Link
-              href="/expenses/"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#FFEFF8] px-4 py-2 text-[14px] font-semibold text-ink hover:bg-[#FCE9F4]"
-            >
-              <Wallet size={16} />
-              Dépenses
-            </Link>
-          ) : null}
+        </nav>
+
+        <PurchasesPremiumHeader
+          purchaseCount={kpis?.purchaseCount ?? 0}
+          draftCount={kpis?.draftCount ?? 0}
+          orderedCount={kpis?.orderedCount ?? 0}
+          receivedCount={kpis?.receivedCount ?? 0}
+          awaitingReceipt={kpis?.awaitingReceiptCount ?? 0}
+          monthTotal={financeHidden ? null : formatMad(kpis?.monthTotal ?? 0)}
+        />
+
+        <div className="rounded-[18px] border border-[#F0D4A8] bg-[#FFF8E8] px-4 py-3 text-sm text-[#7A5A1E]">
+          <span className="font-bold text-[#6B4A12]">Rappel important :</span>{" "}
+          le stock augmente uniquement après validation des quantités réellement réceptionnées.
         </div>
 
-        <div className="flex flex-col gap-3 rounded-xl bg-white p-3.5 shadow-sm xl:flex-row xl:items-center">
-          <div className="relative min-w-[260px] flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
-            <input
-              ref={searchRef}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Rechercher par n° ou fournisseur…"
-              className="h-10 w-full rounded-lg bg-[#FFEFF8] pl-9 pr-4 text-[13px] outline-none"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {tab === "orders" ? (
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as PurchaseStatus | "")}
-                className="h-10 rounded-lg bg-[#FFEFF8] px-3 text-[13px]"
-              >
-                <option value="">Statut : Tous</option>
-                <option value="DRAFT">Brouillon</option>
-                <option value="ORDERED">Commandée</option>
-                <option value="PARTIALLY_RECEIVED">Partiellement reçue</option>
-                <option value="RECEIVED">Reçue</option>
-                <option value="CANCELLED">Annulée</option>
-              </select>
-            ) : null}
-            <select
-              value={supplierId}
-              onChange={(e) => setSupplierId(e.target.value)}
-              className="h-10 rounded-lg bg-[#FFEFF8] px-3 text-[13px]"
-            >
-              <option value="">Fournisseur : Tous</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-6">
-          <KpiCard label="Total commandes" value={String(kpis?.purchaseCount ?? 0)} hint="Journal complet" icon={ShoppingCart} />
-          <KpiCard label="Brouillons" value={String(kpis?.draftCount ?? 0)} hint="Pas encore envoyés" icon={Hourglass} />
-          <KpiCard label="Commandées" value={String(kpis?.orderedCount ?? 0)} hint="Chez le fournisseur" icon={Truck} tone="primary" />
-          <KpiCard label="Reçues" value={String(kpis?.receivedCount ?? 0)} hint="Stock incrémenté" icon={CheckCircle2} />
-          <KpiCard
-            label="Achats ce mois"
-            value={financeHidden ? "—" : formatMad(kpis?.monthTotal ?? 0)}
-            hint="Hors commandes annulées"
-            icon={Wallet}
-          />
-          <KpiCard
-            label="À réceptionner"
-            value={String(kpis?.awaitingReceiptCount ?? 0)}
-            hint="Commandées ou partielles"
-            icon={PackageCheck}
-            alert={(kpis?.awaitingReceiptCount ?? 0) > 0}
-          />
-        </section>
-
-        <div className="relative overflow-hidden rounded-2xl bg-ink p-5 text-[#FEECF7] shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#FFDEA4]">
-              <Sparkles size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#FFDEA4]">Lecture du journal</p>
-              <p className="mt-1.5 text-[14px] leading-relaxed">{insight}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm">
-              <div className="flex items-center justify-between p-4">
-                <h2 className="text-[18px] font-semibold text-ink">Journal des commandes</h2>
-                <span className="rounded-full bg-[#F6E3EF] px-2.5 py-0.5 text-[11px] font-semibold text-ink/55">
-                  {total} bon{total > 1 ? "s" : ""}
-                </span>
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
+          <div className="xl:col-span-8">
+            <div className="overflow-hidden rounded-[22px] border border-[#F0DDE4] bg-white shadow-sm">
+              <div className="space-y-3 border-b border-[#F0DDE4] bg-[#FFF0F6] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-serif text-lg font-bold text-[#54112F]">Journal des commandes</h2>
+                  <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-semibold text-[#846A79]">
+                    {total} bon{total > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+                  <div className="relative min-w-0 flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
+                    <input
+                      ref={searchRef}
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      placeholder="Rechercher une commande, un fournisseur…"
+                      className="h-10 w-full rounded-xl border border-[#F0DDE4] bg-white pl-9 pr-4 text-[13px] outline-none"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {tab === "orders" ? (
+                      <select
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value as PurchaseStatus | "")}
+                        className="h-10 rounded-xl border border-[#F0DDE4] bg-white px-3 text-[13px]"
+                      >
+                        <option value="">Statut : Tous</option>
+                        <option value="DRAFT">Brouillon</option>
+                        <option value="ORDERED">Commandée</option>
+                        <option value="PARTIALLY_RECEIVED">Partiellement reçue</option>
+                        <option value="RECEIVED">Reçue</option>
+                        <option value="CANCELLED">Annulée</option>
+                      </select>
+                    ) : null}
+                    <select
+                      value={supplierId}
+                      onChange={(e) => setSupplierId(e.target.value)}
+                      className="h-10 rounded-xl border border-[#F0DDE4] bg-white px-3 text-[13px]"
+                    >
+                      <option value="">Fournisseur : Tous</option>
+                      {suppliers.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
               {loading ? (
                 <p className="p-8 text-center text-sm text-ink/40">Chargement…</p>
@@ -444,14 +427,15 @@ export function PurchasesPageView() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-[13px]">
-                    <thead className="bg-[#FFEFF8] text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                    <thead className="bg-[#FFF7FA] text-[11px] font-bold uppercase tracking-wider text-[#74334E]">
                       <tr>
-                        <th className="px-4 py-3">N°</th>
-                        <th className="px-4 py-3">Fournisseur</th>
-                        <th className="px-4 py-3">Dates</th>
-                        <th className="px-4 py-3">Lignes</th>
-                        <th className="px-4 py-3 text-right">Total</th>
-                        <th className="px-4 py-3 text-center">Statut</th>
+                        <th className="w-10 px-3 py-3" aria-label="Sélection" />
+                        <th className="px-3 py-3">N°</th>
+                        <th className="px-3 py-3">Fournisseur</th>
+                        <th className="px-3 py-3">Dates</th>
+                        <th className="px-3 py-3">Lignes</th>
+                        <th className="px-3 py-3 text-right">Total</th>
+                        <th className="px-3 py-3 text-center">Statut</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -459,42 +443,62 @@ export function PurchasesPageView() {
                         <tr
                           key={p.id}
                           className={cn(
-                            "cursor-pointer border-t border-[#F0DDE9]/60 transition-colors",
-                            p.id === selectedId ? "bg-[#FFEFF8]/80" : "hover:bg-[#FFEFF8]/40",
-                            p.status === "PARTIALLY_RECEIVED" && "bg-[#FFDEA4]/10",
+                            "cursor-pointer border-t border-[#F0DDE4]/70 transition-colors hover:bg-[#FFF7FA]",
+                            p.id === selectedId && "bg-[#FFF0F6]",
+                            p.status === "PARTIALLY_RECEIVED" && p.id !== selectedId && "bg-[#FFF4E6]/60",
                           )}
                           onClick={() => setSelectedId(p.id)}
                         >
-                          <td className="whitespace-nowrap px-4 py-3.5 font-mono text-[12px] font-bold text-ink">
+                          <td className="px-3 py-3.5">
+                            <input
+                              type="radio"
+                              name="purchase-row"
+                              checked={p.id === selectedId}
+                              onChange={() => setSelectedId(p.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-4 w-4 accent-[#AC0E4C]"
+                              aria-label={`Sélectionner ${p.number}`}
+                            />
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-3.5 font-mono text-[12px] font-bold text-[#43182D]">
                             {p.number}
                           </td>
-                          <td className="px-4 py-3.5">
+                          <td className="px-3 py-3.5">
                             {showSuppliers && p.supplierId ? (
                               <Link
                                 href={`/suppliers/${p.supplierId}/`}
-                                className="font-semibold text-primary hover:underline"
+                                className="font-semibold text-[#AC0E4C] hover:underline"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {p.supplierName}
                               </Link>
                             ) : (
-                              <span className="font-semibold">{p.supplierName}</span>
+                              <span className="font-semibold text-[#43182D]">{p.supplierName}</span>
                             )}
                           </td>
-                          <td className="whitespace-nowrap px-4 py-3.5 text-[12px] text-ink/50">
+                          <td className="whitespace-nowrap px-3 py-3.5 text-[12px] text-[#846A79]">
                             <div>Émise {formatPurchaseDate(p.createdAt)}</div>
                             {p.receivedAt ? (
-                              <div className="font-semibold text-ink">Reçue {formatPurchaseDate(p.receivedAt)}</div>
+                              <div className="font-semibold text-[#43182D]">
+                                Reçue {formatPurchaseDate(p.receivedAt)}
+                              </div>
                             ) : p.orderedAt ? (
-                              <div className="font-semibold text-ink">Commandée {formatPurchaseDate(p.orderedAt)}</div>
+                              <div className="font-semibold text-[#43182D]">
+                                Commandée {formatPurchaseDate(p.orderedAt)}
+                              </div>
                             ) : null}
                           </td>
-                          <td className="px-4 py-3.5 text-ink/55">{purchaseSummaryLine(p)}</td>
-                          <td className="whitespace-nowrap px-4 py-3.5 text-right font-bold">
+                          <td className="px-3 py-3.5 text-[#846A79]">{purchaseSummaryLine(p)}</td>
+                          <td className="whitespace-nowrap px-3 py-3.5 text-right font-bold text-[#43182D]">
                             {financeHidden ? "—" : formatMad(p.total)}
                           </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <span className={cn("inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold", purchaseStatusChip(p.status))}>
+                          <td className="px-3 py-3.5 text-center">
+                            <span
+                              className={cn(
+                                "inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold",
+                                purchaseStatusChip(p.status),
+                              )}
+                            >
                               {PURCHASE_STATUS_LABEL[p.status]}
                             </span>
                           </td>
@@ -505,38 +509,9 @@ export function PurchasesPageView() {
                 </div>
               )}
             </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-white p-4 text-[12px] text-ink/45 shadow-sm">
-              <span className="font-bold text-ink">Chaîne :</span>
-              {showSuppliers ? (
-                <Link href="/suppliers/" className="hover:text-primary">
-                  Fournisseurs
-                </Link>
-              ) : (
-                <span>Fournisseurs</span>
-              )}
-              <span>→</span>
-              <span className="font-semibold text-primary">Achats</span>
-              <span>→</span>
-              <Link href="/stock/" className="hover:text-primary">
-                Stock
-              </Link>
-              <span>→</span>
-              <Link href="/products/" className="hover:text-primary">
-                Produits
-              </Link>
-              {showExpenses ? (
-                <>
-                  <span>→</span>
-                  <Link href="/expenses/" className="hover:text-primary">
-                    Dépenses
-                  </Link>
-                </>
-              ) : null}
-            </div>
           </div>
 
-          <div className="lg:col-span-4">
+          <div className="xl:sticky xl:top-20 xl:col-span-4">
             {selected ? (
               <PurchaseFocusPanel
                 purchaseId={selected.id}
@@ -551,7 +526,7 @@ export function PurchasesPageView() {
                 }}
               />
             ) : (
-              <div className="rounded-xl bg-white p-8 text-center text-sm text-ink/40 shadow-sm">
+              <div className="rounded-[22px] border border-[#F0DDE4] bg-white p-8 text-center text-sm text-ink/40 shadow-sm">
                 Sélectionnez une commande.
               </div>
             )}
@@ -624,31 +599,3 @@ export function PurchasesPageView() {
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  tone,
-  alert,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: typeof ShoppingCart;
-  tone?: "primary";
-  alert?: boolean;
-}) {
-  return (
-    <div className={cn("flex flex-col justify-between rounded-xl p-4 shadow-sm", alert ? "bg-[#FFDAD6]/50" : "bg-white")}>
-      <div className="flex items-center justify-between text-ink/45">
-        <span className={cn("text-[11px] font-bold uppercase tracking-wider", alert && "text-[#BA1A1A]")}>{label}</span>
-        <Icon size={16} className={alert ? "text-[#BA1A1A]" : "text-primary"} />
-      </div>
-      <div className="mt-2">
-        <p className={cn("text-[28px] font-extrabold leading-none text-ink", alert && "text-[#BA1A1A]")}>{value}</p>
-        <p className={cn("mt-1 text-[12px] text-ink/45", tone === "primary" && "font-semibold text-primary")}>{hint}</p>
-      </div>
-    </div>
-  );
-}

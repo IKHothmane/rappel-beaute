@@ -51,7 +51,7 @@ import type { ExpenseKpis, ExpenseListItem } from "@/types/expense";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
 import { PAYMENT_METHOD_LABEL, PAYMENT_METHODS, type PaymentMethod } from "@/types/finance";
 
-export function ExpensesPageView() {
+export function ExpensesPageView({ createSignal = 0 }: { createSignal?: number }) {
   const { toast } = useToast();
   const user = useCurrentUser();
   const canCreate = canCreateExpense(user.role);
@@ -81,6 +81,12 @@ export function ExpensesPageView() {
   const [voidTarget, setVoidTarget] = useState<ExpenseListItem | null>(null);
   const [voidReason, setVoidReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (createSignal > 0 && canCreate) {
+      setCreateOpen(true);
+    }
+  }, [createSignal, canCreate]);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 250);
@@ -235,7 +241,7 @@ export function ExpensesPageView() {
       />
 
       <div className="hidden space-y-4 lg:block">
-        <section className="flex flex-col justify-between gap-4 rounded-xl bg-white p-6 shadow-sm lg:flex-row lg:items-center">
+        <section className="finance-premium__expense-actions flex flex-col justify-end gap-4 rounded-xl bg-white p-4 shadow-sm lg:flex-row lg:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-[28px] font-semibold leading-9 tracking-tight">

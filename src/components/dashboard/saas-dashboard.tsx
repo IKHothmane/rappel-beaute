@@ -7,6 +7,7 @@ import {
   Banknote,
   CalendarDays,
   Clock3,
+  CreditCard,
   Headphones,
   LayoutGrid,
   Package,
@@ -40,7 +41,6 @@ import { getStockKpis } from "@/modules/inventory/service";
 import { getReviewsDashboard } from "@/modules/reviews/service";
 import { listStaff } from "@/modules/staff/service";
 import { listSupportTickets } from "@/modules/support/service";
-import { getWhatsAppDashboard } from "@/modules/whatsapp/service";
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
 import { cn } from "@/lib/utils";
 import { staffColor } from "@/components/agenda/staff-colors";
@@ -58,7 +58,6 @@ import type {
 import type { CashRegisterState } from "@/types/finance";
 import type { StockKpis } from "@/types/inventory";
 import type { ReviewKpis } from "@/types/review";
-import type { WhatsAppKpis } from "@/types/whatsapp";
 
 type PeriodKey = Extract<AnalyticsPeriodPreset, "today" | "week" | "month" | "year">;
 
@@ -130,7 +129,6 @@ export function SaasDashboard() {
   const [platformReplyTickets, setPlatformReplyTickets] = useState(0);
   const [activeStaff, setActiveStaff] = useState(0);
   const [resourceCount, setResourceCount] = useState(0);
-  const [waKpis, setWaKpis] = useState<WhatsAppKpis | null>(null);
   const [reviewKpis, setReviewKpis] = useState<ReviewKpis | null>(null);
   const loadGen = useRef(0);
 
@@ -194,7 +192,6 @@ export function SaasDashboard() {
       stockKpis,
       tickets,
       staffList,
-      wa,
       reviewsDash,
       resources,
     ] = await Promise.all([
@@ -209,7 +206,6 @@ export function SaasDashboard() {
         data: [],
         pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
       })),
-      getWhatsAppDashboard("pending").catch(() => null),
       getReviewsDashboard().catch(() => null),
       listResources({ active: true, limit: 1 }).catch(() => ({
         data: [],
@@ -235,7 +231,6 @@ export function SaasDashboard() {
     setPlatformReplyTickets(open.filter((t) => t.lastSenderType === "PLATFORM").length);
     setActiveStaff(staffList.pagination.total);
     setResourceCount(resources.pagination.total);
-    setWaKpis(wa?.kpis ?? null);
     setReviewKpis(reviewsDash?.kpis ?? null);
   }, [period]);
 
@@ -287,7 +282,7 @@ export function SaasDashboard() {
     ? Math.max(0, stock.activeCount - stock.lowStockCount - stock.outOfStockCount)
     : 0;
   const chartData = daily.map((d) => ({ day: d.label || d.date.slice(5), ca: d.revenue }));
-  const hasChartData = chartData.some((d) => d.ca !== 0);
+  const hasChartData = chartData.length > 0;
   const revenueChange = overview?.revenue.changePercent ?? null;
   const appointmentsChange = overview?.appointments.changePercent ?? null;
   const customersChange = overview?.customers.changePercent ?? null;
@@ -325,28 +320,21 @@ export function SaasDashboard() {
 
       <div className="hidden flex-col gap-5 lg:flex">
         {/* 1. En-tête */}
-        <header className="rb-card-hero p-6 sm:p-7">
-          <div className="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-center">
+        <header className="rb-card-hero">
+          <div className="relative z-10 flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-[#B60050]">
-                  Tableau de bord
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FCE7F1] px-2.5 py-0.5 text-xs font-medium text-[#75133D]">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
-                  {user.orgName}
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap items-baseline gap-3">
+              <div className="flex flex-wrap items-baseline gap-3">
                 <h1>Bonjour {user.firstName}</h1>
                 <span className="text-sm font-medium capitalize text-[#887787]">— {todayLabel}</span>
               </div>
-              <p className="mt-2 text-sm text-[#887787]">
+              <p className="mt-1 max-w-lg text-sm leading-5 text-[#654254]">
+                {user.orgName}
+                {" · "}
                 {activeStaff} {activeStaff > 1 ? "praticiennes actives" : "praticienne active"}
                 {resourceCount > 0 ? ` · ${resourceCount} ressource${resourceCount > 1 ? "s" : ""}` : ""}
               </p>
               {error ? (
-                <p role="alert" className="mt-2 text-sm text-red-600">
+                <p role="alert" className="mt-1 text-sm text-red-600">
                   {error}
                 </p>
               ) : null}
@@ -503,48 +491,42 @@ export function SaasDashboard() {
 
         {/* 4. CA + Caisse */}
         <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-12">
-          <section className="rb-card flex flex-col gap-4 p-5 sm:p-6 xl:col-span-7" aria-labelledby="dash-ca-title">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-widest text-[#B60050]">
-                  Analyse financière
-                </span>
-                <h3 id="dash-ca-title" className="text-lg font-bold">
-                  Évolution du chiffre d&apos;affaires
-                </h3>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="inline-flex items-center gap-1.5 font-medium text-[#4A2F3E]">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#B60050]" aria-hidden />
-                  Période ({formatMad(revenueTotals?.periodNet ?? overview?.revenue.value ?? 0)})
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-[#887787]">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#E4BDC2]" aria-hidden />
-                  Mois préc. ({formatMad(revenueTotals?.prevMonth ?? overview?.revenue.previous ?? 0)})
-                </span>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2 rounded-xl bg-[#F8F0F4] p-3">
-              <div>
-                <p className="text-[11px] text-[#887787]">Total cumulé</p>
-                <p className="text-lg font-bold text-[#261524]">
-                  {loading ? "…" : formatMad(revenueTotals?.periodNet ?? overview?.revenue.value ?? 0)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] text-[#887787]">Mois précédent</p>
-                <p className="text-lg font-bold text-[#887787]">
-                  {loading ? "…" : formatMad(revenueTotals?.prevMonth ?? overview?.revenue.previous ?? 0)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] text-[#887787]">Écart</p>
-                <p className="text-lg font-bold text-[#B60050]">
-                  {loading ? "…" : formatPct(revenueChange)}
-                </p>
+          <section
+            className="rb-card flex flex-col p-5 sm:p-6 xl:col-span-7"
+            aria-labelledby="dash-ca-title"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <h3 id="dash-ca-title" className="font-serif text-[22px] font-bold text-[#54112F]">
+                Analyse financière
+              </h3>
+              <div className="grid grid-cols-3 gap-4 sm:gap-6">
+                <div>
+                  <p className="text-[11px] font-medium text-[#8D7382]">Total cumulé</p>
+                  <p className="mt-0.5 text-base font-extrabold text-[#301625] sm:text-lg">
+                    {loading ? "…" : formatMad(revenueTotals?.periodNet ?? overview?.revenue.value ?? 0)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-[#8D7382]">Mois précédent</p>
+                  <p className="mt-0.5 text-base font-extrabold text-[#6F5666] sm:text-lg">
+                    {loading ? "…" : formatMad(revenueTotals?.prevMonth ?? overview?.revenue.previous ?? 0)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-[#8D7382]">Écart</p>
+                  <p
+                    className={cn(
+                      "mt-0.5 text-base font-extrabold sm:text-lg",
+                      (revenueChange ?? 0) >= 0 ? "text-[#16834B]" : "text-[#B60050]",
+                    )}
+                  >
+                    {loading ? "…" : formatPct(revenueChange)}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="h-52 min-h-[208px] pt-1">
+
+            <div className="mt-5 h-[280px] w-full">
               {loading ? (
                 <SkeletonBlock className="h-full w-full" />
               ) : !hasChartData ? (
@@ -553,31 +535,63 @@ export function SaasDashboard() {
                   hint="Le graphique s’affichera dès les premiers paiements enregistrés."
                 />
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <AreaChart
+                    data={chartData}
+                    margin={{ top: 14, right: 12, left: 0, bottom: 0 }}
+                  >
                     <defs>
-                      <linearGradient id="dashCaFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#B60050" stopOpacity={0.28} />
-                        <stop offset="100%" stopColor="#B60050" stopOpacity={0} />
+                      <linearGradient
+                        id="dashboardLuxuryRevenue"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="0%" stopColor="#C40C5C" stopOpacity={0.22} />
+                        <stop offset="100%" stopColor="#C40C5C" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid stroke="#F1E7ED" strokeDasharray="3 3" vertical={false} />
+                    <CartesianGrid stroke="#F2E4EA" strokeDasharray="4 4" vertical={false} />
                     <XAxis
                       dataKey="day"
-                      axisLine={false}
                       tickLine={false}
-                      tick={{ fill: "#8E7D8A", fontSize: 11 }}
+                      axisLine={false}
+                      tick={{ fill: "#987C8C", fontSize: 11 }}
+                      interval="preserveStartEnd"
+                      minTickGap={24}
                     />
                     <Tooltip
-                      formatter={(value) => [`${Number(value ?? 0).toLocaleString("fr-MA")} MAD`, "CA"]}
-                      contentStyle={{ borderRadius: 12, border: "1px solid #F0E3E6" }}
+                      contentStyle={{
+                        background: "#FFFFFF",
+                        border: "1px solid #F0DCE5",
+                        borderRadius: 14,
+                        boxShadow: "0 12px 30px rgba(70,20,40,0.1)",
+                      }}
+                      formatter={(value) => [
+                        `${Number(value ?? 0).toLocaleString("fr-MA")} MAD`,
+                        "Chiffre d'affaires",
+                      ]}
                     />
                     <Area
                       type="monotone"
                       dataKey="ca"
                       stroke="#B60050"
                       strokeWidth={3}
-                      fill="url(#dashCaFill)"
+                      fill="url(#dashboardLuxuryRevenue)"
+                      dot={{
+                        fill: "#FFFFFF",
+                        stroke: "#B60050",
+                        strokeWidth: 2,
+                        r: 3,
+                      }}
+                      activeDot={{
+                        r: 6,
+                        fill: "#B60050",
+                        stroke: "#FFFFFF",
+                        strokeWidth: 3,
+                      }}
+                      animationDuration={700}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -585,55 +599,64 @@ export function SaasDashboard() {
             </div>
           </section>
 
-          <section className="rb-card flex flex-col p-5 sm:p-6 xl:col-span-5" aria-labelledby="dash-cash-title">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE7F1] text-[#B60050]">
-                  <Wallet size={18} aria-hidden />
-                </div>
-                <div>
-                  <h3 id="dash-cash-title" className="text-lg font-bold">
-                    Caisse du jour
-                  </h3>
-                  <p className="text-xs font-medium text-[#887787]">
-                    {session?.status === "OPEN" ? "Session ouverte" : "Aucune session ouverte"}
-                  </p>
-                </div>
+          <section
+            className="rb-card flex flex-col p-5 sm:p-6 xl:col-span-5"
+            aria-labelledby="dash-cash-title"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 id="dash-cash-title" className="font-serif text-[22px] font-bold text-[#54112F]">
+                  Caisse du jour
+                </h3>
+                <p className="mt-1 text-xs font-medium text-[#8D7382]">
+                  {session?.status === "OPEN" ? "Session ouverte" : "Aucune session ouverte"}
+                </p>
               </div>
-              <span className="text-xl font-extrabold text-[#B60050]">
-                {formatMad(payments?.total ?? 0)}
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#FCE7F1] text-[#B60050]">
+                <Wallet size={18} aria-hidden />
               </span>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-[#F8F0F4] p-3 text-center">
-              <div>
-                <span className="text-[11px] text-[#887787]">Espèces</span>
-                <p className="text-sm font-bold">{formatMad(payments?.cash ?? 0)}</p>
-              </div>
-              <div>
-                <span className="text-[11px] text-[#887787]">Carte</span>
-                <p className="text-sm font-bold">{formatMad(payments?.card ?? 0)}</p>
-              </div>
-              <div>
-                <span className="text-[11px] text-[#887787]">Virements</span>
-                <p className="text-sm font-bold">{formatMad(payments?.transfer ?? 0)}</p>
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-between px-1 text-sm">
-              <span className="font-semibold text-red-600">
-                Sorties : −{formatMad(session?.cashOut ?? 0)}
-              </span>
-              <span className="font-bold text-[#261524]">
-                Solde :{" "}
-                <span className="font-extrabold text-[#B60050]">
-                  {formatMad(session?.theoreticalBalance ?? 0)}
+
+            <p className="mt-8 font-serif text-5xl font-extrabold tracking-tight text-[#B60050]">
+              {loading ? "…" : formatMad(payments?.total ?? 0)}
+            </p>
+
+            <div className="mt-8 grid grid-cols-3 gap-3">
+              <div className="rounded-2xl bg-[#FFF5F9] px-3 py-4 text-center">
+                <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#B60050] shadow-sm">
+                  <Banknote size={15} aria-hidden />
                 </span>
-              </span>
+                <p className="mt-2.5 text-[11px] font-medium text-[#8D7382]">Espèces</p>
+                <p className="mt-1 text-sm font-extrabold text-[#301625]">
+                  {formatMad(payments?.cash ?? 0)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-[#FFF5F9] px-3 py-4 text-center">
+                <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#B60050] shadow-sm">
+                  <CreditCard size={15} aria-hidden />
+                </span>
+                <p className="mt-2.5 text-[11px] font-medium text-[#8D7382]">Carte</p>
+                <p className="mt-1 text-sm font-extrabold text-[#301625]">
+                  {formatMad(payments?.card ?? 0)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-[#FFF5F9] px-3 py-4 text-center">
+                <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#B60050] shadow-sm">
+                  <ArrowRight size={15} aria-hidden />
+                </span>
+                <p className="mt-2.5 text-[11px] font-medium text-[#8D7382]">Virements</p>
+                <p className="mt-1 text-sm font-extrabold text-[#301625]">
+                  {formatMad(payments?.transfer ?? 0)}
+                </p>
+              </div>
             </div>
+
             <Link
               href="/cash-register/"
-              className="mt-auto flex h-11 items-center justify-center rounded-xl bg-[#B60050] text-sm font-bold text-white shadow-sm transition hover:bg-[#75133D]"
+              className="mt-auto flex h-12 items-center justify-center gap-2 rounded-xl bg-[#B60050] text-sm font-bold text-white shadow-md shadow-[#B60050]/20 transition hover:bg-[#8d0c40]"
             >
               Ouvrir / Gérer la caisse
+              <ArrowRight size={16} aria-hidden />
             </Link>
           </section>
         </div>
@@ -834,8 +857,8 @@ export function SaasDashboard() {
           </section>
         </div>
 
-        {/* 6. Top prestations / Heatmap / Campagnes & avis */}
-        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
+        {/* 6. Top prestations / Heatmap / Avis */}
+        <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-3">
           <section className="rb-card flex flex-col gap-3 p-5" aria-labelledby="dash-top-title">
             <div className="flex items-center justify-between">
               <h3 id="dash-top-title" className="text-base font-bold">
@@ -943,51 +966,56 @@ export function SaasDashboard() {
             )}
           </section>
 
-          <div className="flex flex-col gap-5">
-            <section className="rb-card flex flex-col justify-between p-5" aria-labelledby="dash-wa-title">
-              <span id="dash-wa-title" className="text-[11px] font-bold uppercase tracking-wide text-[#B60050]">
-                Campagnes
-              </span>
-              <div className="my-3">
-                <p className="text-2xl font-extrabold text-[#261524]">{waKpis?.pendingToday ?? 0}</p>
-                <p className="text-xs text-[#887787]">Messages WhatsApp à envoyer</p>
-              </div>
-              <Link href="/whatsapp/" className="text-xs font-bold text-[#75133D]">
-                Ouvrir WhatsApp →
-              </Link>
-            </section>
-            <section className="rb-card flex flex-col justify-between p-5" aria-labelledby="dash-reviews-title">
-              <div className="flex items-center justify-between">
-                <span
-                  id="dash-reviews-title"
-                  className="text-[11px] font-bold uppercase tracking-wide text-[#75133D]"
-                >
-                  Avis clientes
-                </span>
-                <Star size={14} className="fill-[#B60050] text-[#B60050]" aria-hidden />
-              </div>
-              <div className="my-3">
-                {reviewScore != null ? (
-                  <p className="text-2xl font-extrabold text-[#261524]">
-                    {reviewScore.toFixed(1)}{" "}
-                    <span className="text-sm font-normal text-[#887787]">/ 5</span>
+          <section className="rb-card flex flex-col gap-3 p-5" aria-labelledby="dash-reviews-title">
+            <div className="flex items-center justify-between">
+              <h3 id="dash-reviews-title" className="text-base font-bold">
+                Avis clientes
+              </h3>
+              <Star size={16} className="fill-[#B60050] text-[#B60050]" aria-hidden />
+            </div>
+            {loading ? (
+              <SkeletonBlock className="h-32 w-full" />
+            ) : reviewCount === 0 ? (
+              <EmptyState
+                title="Aucun avis pour le moment"
+                hint="Les notes clientes s’afficheront dès le premier retour enregistré."
+              />
+            ) : (
+              <div className="flex flex-1 flex-col justify-center gap-3">
+                <div>
+                  <p className="font-serif text-4xl font-extrabold text-[#301625]">
+                    {reviewScore != null ? reviewScore.toFixed(1) : "—"}
+                    <span className="ml-1 text-base font-medium text-[#8D7382]">/ 5</span>
                   </p>
-                ) : (
-                  <p className="text-2xl font-extrabold text-[#261524]">—</p>
-                )}
-                <p className="text-xs text-[#887787]">
-                  {reviewCount > 0
-                    ? `${reviewCount} avis enregistrés`
-                    : "Aucun avis pour le moment"}
-                </p>
+                  <p className="mt-1 text-sm text-[#8D7382]">
+                    {reviewCount} avis enregistré{reviewCount > 1 ? "s" : ""}
+                  </p>
+                </div>
+                {reviewKpis?.satisfiedPercent != null ? (
+                  <p className="text-sm font-semibold text-[#16834B]">
+                    {reviewKpis.satisfiedPercent} % satisfaites
+                  </p>
+                ) : null}
+                {reviewKpis && (reviewKpis.pendingToSend > 0 || reviewKpis.awaitingRecord > 0) ? (
+                  <p className="text-xs text-[#8D7382]">
+                    {reviewKpis.pendingToSend > 0
+                      ? `${reviewKpis.pendingToSend} demande${reviewKpis.pendingToSend > 1 ? "s" : ""} à envoyer`
+                      : null}
+                    {reviewKpis.pendingToSend > 0 && reviewKpis.awaitingRecord > 0 ? " · " : null}
+                    {reviewKpis.awaitingRecord > 0
+                      ? `${reviewKpis.awaitingRecord} en attente de réponse`
+                      : null}
+                  </p>
+                ) : null}
               </div>
-              <Link href="/reviews/" className="text-xs font-semibold text-[#B60050]">
-                {reviewKpis?.satisfiedPercent != null
-                  ? `${reviewKpis.satisfiedPercent} % satisfaites`
-                  : "Voir les avis"}
-              </Link>
-            </section>
-          </div>
+            )}
+            <Link
+              href="/reviews/"
+              className="mt-auto rounded-xl bg-[#F8F0F4] py-2 text-center text-xs font-semibold text-[#4A2F3E] hover:bg-[#FCE7F1]"
+            >
+              Voir les avis
+            </Link>
+          </section>
         </div>
       </div>
 

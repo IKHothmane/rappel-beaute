@@ -9,9 +9,15 @@ export type MemorySnapshot = {
   rssMb: number;
   heapUsedMb: number;
   heapTotalMb: number;
+  /** C++ objects bound to JS (inclut déjà arrayBuffers). */
   externalMb: number;
+  /** Sous-ensemble de external — métrique informative, ne pas double-compter. */
   arrayBuffersMb: number;
-  /** RSS hors heap V8 ≈ allocations natives (Sharp/libvips, buffers, etc.). */
+  /**
+   * Approximation RSS − heapUsed − external.
+   * Indique la RAM hors V8 (code natif, Sharp/libvips, stacks, fragmentation…),
+   * pas une mesure exacte « Sharp seul ».
+   */
   unaccountedMb: number;
   /** Plafond --max-old-space-size (Mo). Si ~1536+ sans env → limite non appliquée. */
   heapSizeLimitMb: number;
@@ -29,13 +35,14 @@ export function getMemorySnapshot(): MemorySnapshot {
   const externalMb = mb(memory.external);
   const arrayBuffersMb = mb(memory.arrayBuffers);
   const heapSizeLimitMb = mb(v8.getHeapStatistics().heap_size_limit);
+  // arrayBuffers ⊆ external : ne pas soustraire les deux (double comptage).
   return {
     rssMb,
     heapUsedMb,
     heapTotalMb,
     externalMb,
     arrayBuffersMb,
-    unaccountedMb: Math.max(0, rssMb - heapUsedMb - externalMb - arrayBuffersMb),
+    unaccountedMb: Math.max(0, rssMb - heapUsedMb - externalMb),
     heapSizeLimitMb,
   };
 }

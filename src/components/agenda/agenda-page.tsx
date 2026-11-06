@@ -1,14 +1,12 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Sparkles } from "lucide-react";
 import {
   AgendaGrid,
   AgendaMonthGrid,
 } from "@/components/agenda/agenda-grid";
-import { AgendaChrome } from "@/components/agenda/agenda-toolbar";
+import { AgendaPremiumLayout } from "@/components/agenda/agenda-premium-layout";
 import { AgendaWeekBoard } from "@/components/agenda/agenda-week-board";
 import { AgendaMobile } from "@/components/agenda/agenda-mobile";
 import { AppointmentDetails } from "@/components/agenda/appointment-details";
@@ -19,7 +17,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import {
   filterAppointmentsForDates,
-  getAvailableSlots,
   getMonthGrid,
   getWeekDates,
 } from "@/modules/appointments/availability";
@@ -42,7 +39,6 @@ import { listStaffForAgenda } from "@/modules/staff/service";
 import { listResourcesForAgenda } from "@/modules/resources/service";
 import { loadPlanningApi } from "@/modules/planning/service";
 import { getWhatsAppDashboard } from "@/modules/whatsapp/service";
-import { isSameBusinessDay } from "@/lib/time/business-timezone";
 import type { ServiceAgendaOption, ServiceFormOptions } from "@/types/service";
 import type { StaffAgendaContext } from "@/types/staff";
 import type { ResourceAgendaContext } from "@/types/resource";
@@ -53,8 +49,6 @@ import type {
   AppointmentStatus,
   CreateAppointmentInput,
 } from "@/types/appointment";
-import type { AgendaColumnMode } from "@/types/planning";
-
 type DrawerMode = "create" | "detail" | "edit" | null;
 
 function sameDay(a: Date, b: Date) {
@@ -99,7 +93,6 @@ export function AgendaPage() {
   const [closures, setClosures] = useState<OrganizationClosureItem[]>([]);
   const [whatsappConnected, setWhatsappConnected] = useState<boolean | null>(null);
   const [createSeed, setCreateSeed] = useState<Partial<CreateAppointmentInput> | undefined>();
-  const [fullscreen, setFullscreen] = useState(false);
   const [services, setServices] = useState<ServiceAgendaOption[]>([]);
   const [formOptions, setFormOptions] = useState<ServiceFormOptions | null>(null);
   const [staffContexts, setStaffContexts] = useState<StaffAgendaContext[]>([]);
@@ -109,7 +102,6 @@ export function AgendaPage() {
   const [resourceFilter, setResourceFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
-  const [columnMode, setColumnMode] = useState<AgendaColumnMode>("staff");
 
   const refreshMeta = useCallback(async () => {
     const servicesP = listServicesForAgenda().catch(() => []);
@@ -212,14 +204,6 @@ export function AgendaPage() {
   }, [appointments, date, visibleDates, view, staffFilter, serviceFilter, resourceFilter, statusFilter, search]);
 
   const gridColumns = useMemo(() => {
-    if (columnMode === "resource") {
-      const allRes = formOptions?.resources ?? [];
-      if (resourceFilter !== "ALL") {
-        const r = allRes.find((x) => x.id === resourceFilter);
-        return r ? [{ id: r.id, name: r.name }] : allRes.map((x) => ({ id: x.id, name: x.name }));
-      }
-      return allRes.map((x) => ({ id: x.id, name: x.name }));
-    }
     const allStaff = formOptions?.staff ?? [];
     if (staffFilter !== "ALL") {
       const s = allStaff.find((x) => x.id === staffFilter);
@@ -230,14 +214,18 @@ export function AgendaPage() {
       cols.push({ id: "", name: "Sans employée" });
     }
     return cols;
-  }, [columnMode, staffFilter, resourceFilter, formOptions, appointments]);
+  }, [staffFilter, formOptions, appointments]);
 
   const weekDates = useMemo(() => getWeekDates(date), [date]);
   const monthDates = useMemo(() => getMonthGrid(date), [date]);
 
   const kpis = useMemo(() => {
     const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
     const dayAppts = appointments.filter((a) => sameDay(new Date(a.startAt), today));
+    const yesterdayAppts = appointments.filter((a) => sameDay(new Date(a.startAt), yesterday));
     const confirmed = dayAppts.filter((a) =>
       ["CONFIRMED", "ARRIVED", "IN_PROGRESS", "COMPLETED"].includes(a.status),
     ).length;
@@ -255,6 +243,38 @@ export function AgendaPage() {
     const capacity = staffN * (AGENDA_CLOSE_HOUR - AGENDA_OPEN_HOUR) * 60;
     const occupancy = dayAppts.length === 0 ? null : Math.min(100, Math.round((bookedMin / capacity) * 100));
 
+    const yActive = yesterdayAppts.filter((a) => a.status !== "CANCELLED" && a.status !== "NO_SHOW");
+    const yBookedMin = yActive.reduce((s, a) => {
+      return s + Math.max(0, (new Date(a.endAt).getTime() - new Date(a.startAt).getTime()) / 60_000);
+    }, 0);
+    const yOccupancy =
+      yesterdayAppts.length === 0 ? null : Math.min(100, Math.round((yBookedMin / capacity) * 100));
+
+    const todayDeltaPct =
+      yesterdayAppts.length === 0
+        ? dayAppts.length > 0
+          ? 100
+          : null
+        : Math.round(((dayAppts.length - yesterdayAppts.length) / yesterdayAppts.length) * 100);
+    const confirmedPct =
+      dayAppts.length === 0 ? null : Math.round((confirmed / dayAppts.length) * 100);
+    const occupancyDelta =
+      occupancy == null || yOccupancy == null ? null : occupancy - yOccupancy;
+
+    const clientesIds = new Set(active.map((a) => a.customerId).filter(Boolean));
+    const clientesToday = clientesIds.size;
+    let newClientesToday = 0;
+    for (const id of clientesIds) {
+      const earlier = appointments.some(
+        (a) =>
+          a.customerId === id &&
+          a.status !== "CANCELLED" &&
+          a.status !== "NO_SHOW" &&
+          new Date(a.startAt) < new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+      );
+      if (!earlier) newClientesToday += 1;
+    }
+
     const weekCounts = weekDates.map((d) =>
       appointments.filter((a) => sameDay(new Date(a.startAt), d) && a.status !== "CANCELLED").length,
     );
@@ -267,72 +287,30 @@ export function AgendaPage() {
 
     return {
       todayCount: dayAppts.length,
+      todayDeltaPct,
       confirmed,
+      confirmedPct,
       pending,
       cancelled,
+      clientesToday,
+      newClientesToday,
       forecast,
+      forecastCount: active.length,
       secured,
       occupancy,
+      occupancyDelta,
       starLabel,
     };
   }, [appointments, formOptions, weekDates]);
 
-  const staffCounts = useMemo(() => {
-    const dates = view === "month" ? monthDates : visibleDates;
-    const staffList = formOptions?.staff ?? [];
-    const counts: Record<string, number> = {};
-    for (const member of staffList) counts[member.id] = 0;
-
-    const nameToId = new Map(
-      staffList.map((member) => [member.name.trim().toLowerCase(), member.id]),
-    );
-
-    for (const apt of appointments) {
-      if (apt.status === "CANCELLED" || apt.status === "NO_SHOW") continue;
-      const start = new Date(apt.startAt);
-      if (!dates.some((d) => isSameBusinessDay(start, d))) continue;
-      if (serviceFilter !== "ALL" && apt.serviceId !== serviceFilter) continue;
-      if (resourceFilter !== "ALL" && apt.resourceId !== resourceFilter) continue;
-      if (statusFilter !== "ALL" && apt.status !== statusFilter) continue;
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const hay = `${apt.customerName} ${apt.serviceName} ${apt.staffName}`.toLowerCase();
-        if (!hay.includes(q)) continue;
-      }
-
-      const byId = apt.staffId && counts[apt.staffId] !== undefined ? apt.staffId : null;
-      const byName = nameToId.get(apt.staffName.trim().toLowerCase()) ?? null;
-      const key = byId ?? byName;
-      if (!key) continue;
-      counts[key] = (counts[key] ?? 0) + 1;
-    }
-    return counts;
-  }, [
-    appointments,
-    view,
-    monthDates,
-    visibleDates,
-    formOptions?.staff,
-    serviceFilter,
-    resourceFilter,
-    statusFilter,
-    search,
-  ]);
-
-  const nextSlotHint = useMemo(() => {
-    if (!selected) return null;
-    const service = services.find((s) => s.id === selected.serviceId);
-    const ctx = staffContexts.find((c) => c.id === selected.staffId);
-    const slots = getAvailableSlots(appointments, {
-      date,
-      staffId: selected.staffId,
-      resourceId: selected.resourceId,
-      durationMinutes: service?.durationMin ?? 60,
-      excludeAppointmentId: selected.id,
-      staffContext: ctx,
-    }).filter((s) => s.available);
-    return slots[0]?.time ?? null;
-  }, [selected, services, staffContexts, appointments, date]);
+  const weekNumber = useMemo(() => {
+    if (view !== "week" && view !== "3days") return null;
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }, [date, view]);
 
   const rangeLabel = useMemo(() => {
     const cap = (value: string) => value.replace(/^\p{L}/u, (letter) => letter.toUpperCase());
@@ -350,12 +328,6 @@ export function AgendaPage() {
     const to = last.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
     return view === "week" ? `Semaine du ${from} au ${to}` : `Du ${from} au ${to}`;
   }, [view, date, visibleDates]);
-
-  const todayChip = new Date().toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-  });
 
   function shiftDate(delta: number) {
     setDate((d) => {
@@ -375,8 +347,7 @@ export function AgendaPage() {
 
   function openDetail(id: string) {
     setSelectedId(id);
-    if (!isXl) setDrawer("detail");
-    else setDrawer(null);
+    setDrawer("detail");
   }
 
   async function handleCreate(data: CreateAppointmentInput) {
@@ -501,9 +472,7 @@ export function AgendaPage() {
   }
 
   async function handleDrop(columnId: string, hour: number, minute: number, appointmentId: string) {
-    const patch =
-      columnMode === "resource" ? { resourceId: columnId } : { staffId: columnId };
-    await moveAppointment(date, hour, minute, appointmentId, patch);
+    await moveAppointment(date, hour, minute, appointmentId, { staffId: columnId });
   }
 
   async function handleWeekDrop(day: Date, hour: number, minute: number, appointmentId: string) {
@@ -525,209 +494,138 @@ export function AgendaPage() {
     openCreate({
       startAt: start.toISOString(),
       endAt: end.toISOString(),
-      ...(columnMode === "resource" ? { resourceId: columnId } : { staffId: columnId }),
+      staffId: columnId,
     });
   }
 
-  const showWeekBoard = view === "week" || view === "3days";
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className={fullscreen ? "fixed inset-0 z-[45] overflow-auto bg-[#F3F4F6] p-4 lg:p-6" : undefined}
+      transition={{ duration: 0.3 }}
+      className="min-w-0"
     >
       <div className="hidden md:block">
-        <AgendaChrome
+        <AgendaPremiumLayout
+          date={date}
           view={view}
-          onViewChange={setView}
+          appointments={appointments}
+          todayCount={kpis.todayCount}
+          todayDeltaPct={kpis.todayDeltaPct}
+          confirmed={kpis.confirmed}
+          confirmedPct={kpis.confirmedPct}
+          pending={kpis.pending}
+          clientesToday={kpis.clientesToday}
+          newClientesToday={kpis.newClientesToday}
+          forecast={kpis.forecast}
+          forecastCount={kpis.forecastCount}
+          occupancy={kpis.occupancy}
+          occupancyDelta={kpis.occupancyDelta}
           rangeLabel={rangeLabel}
-          todayChip={`${todayChip} (en cours)`}
-          onPrev={() => shiftDate(-1)}
-          onNext={() => shiftDate(1)}
-          onToday={() => setDate(new Date())}
-          onCreate={() => openCreate()}
-          onFullscreen={() => setFullscreen((v) => !v)}
-          kpis={kpis}
+          weekNumber={weekNumber}
+          staff={(formOptions?.staff ?? []).map((s) => ({
+            id: s.id,
+            name: s.name,
+          }))}
+          services={services.map((s) => ({
+            id: s.id,
+            name: s.name,
+          }))}
+          resources={(formOptions?.resources ?? []).map((r) => ({
+            id: r.id,
+            name: r.name,
+          }))}
           staffFilter={staffFilter}
           serviceFilter={serviceFilter}
           resourceFilter={resourceFilter}
           statusFilter={statusFilter}
-          search={search}
-          services={services}
-          staffOptions={formOptions?.staff ?? []}
-          resourceOptions={formOptions?.resources ?? []}
-          staffCounts={staffCounts}
-          whatsappConnected={whatsappConnected}
           onStaffFilter={setStaffFilter}
           onServiceFilter={setServiceFilter}
           onResourceFilter={setResourceFilter}
           onStatusFilter={setStatusFilter}
-          onSearch={setSearch}
-        />
+          onViewChange={setView}
+          onDateChange={setDate}
+          onPrev={() => shiftDate(-1)}
+          onNext={() => shiftDate(1)}
+          onToday={() => setDate(new Date())}
+          onCreate={() => openCreate()}
+          onAppointmentClick={openDetail}
+        >
+          {loading ? (
+            <AgendaSkeleton />
+          ) : (
+            <>
+              {view === "month" ? (
+                <AgendaMonthGrid
+                  dates={monthDates}
+                  anchor={date}
+                  appointments={filtered}
+                  onSelectDay={(d) => {
+                    setDate(d);
+                    setView("day");
+                  }}
+                />
+              ) : null}
+
+              {view === "week" || view === "3days" ? (
+                <AgendaWeekBoard
+                  dates={visibleDates}
+                  selected={date}
+                  selectedAppointmentId={selectedId}
+                  appointments={filtered}
+                  closures={closures}
+                  onSelectDay={setDate}
+                  onAppointmentClick={openDetail}
+                  onEmptySlotClick={handleEmptyWeekSlot}
+                  onDrop={handleWeekDrop}
+                />
+              ) : null}
+
+              {view === "day" ? (
+                <AgendaGrid
+                  date={date}
+                  staff={gridColumns}
+                  appointments={filtered}
+                  staffContexts={staffContexts}
+                  columnMode="staff"
+                  onAppointmentClick={openDetail}
+                  onSlotDrop={handleDrop}
+                  onEmptySlotClick={handleEmptyDaySlot}
+                />
+              ) : null}
+            </>
+          )}
+        </AgendaPremiumLayout>
       </div>
 
-      <div className="mb-3 hidden flex-wrap items-center gap-2 text-sm md:flex">
-        {view === "day" ? (
-          <>
-            <span className="text-ink/45">Colonnes jour :</span>
-            <button
-              type="button"
-              onClick={() => setColumnMode("staff")}
-              className={`rounded-lg px-3 py-1.5 text-xs ${
-                columnMode === "staff" ? "bg-primary-light text-primary" : "bg-white text-ink/60"
-              }`}
-            >
-              Employées
-            </button>
-            <button
-              type="button"
-              onClick={() => setColumnMode("resource")}
-              className={`rounded-lg px-3 py-1.5 text-xs ${
-                columnMode === "resource" ? "bg-primary-light text-primary" : "bg-white text-ink/60"
-              }`}
-            >
-              Cabines
-            </button>
-          </>
+      <div className="md:hidden">
+        {loading ? (
+          <AgendaSkeleton />
         ) : (
-          <span className="text-ink/45">Colonnes jour · une colonne par journée</span>
+          <AgendaMobile
+            date={date}
+            view={view}
+            onViewChange={setView}
+            onSelectDate={setDate}
+            staffFilter={staffFilter}
+            onStaffFilter={setStaffFilter}
+            staffOptions={(formOptions?.staff ?? []).map((s) => ({
+              id: s.id,
+              name: s.name,
+              role: s.role,
+            }))}
+            staffContexts={staffContexts}
+            appointments={filtered}
+            allAppointments={appointments}
+            closures={closures}
+            kpis={kpis}
+            whatsappConnected={whatsappConnected}
+            onAppointmentClick={openDetail}
+            onCreate={(seed) => openCreate(seed)}
+            onStatusChange={(id, status) => void handleStatus(status, id)}
+          />
         )}
-        <Link href="/staff/?tab=planning" className="ml-auto text-xs text-ink/50 underline">
-          Fermetures · heures supp. · remplacements
-        </Link>
       </div>
-
-      {loading ? (
-        <AgendaSkeleton />
-      ) : (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${view}-${date.toISOString().slice(0, 10)}`}
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.25 }}
-          >
-            <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
-              <div className="min-w-0 lg:col-span-8 2xl:col-span-9">
-                {view === "month" ? (
-                  <AgendaMonthGrid
-                    dates={monthDates}
-                    anchor={date}
-                    appointments={appointments}
-                    onSelectDay={(d) => {
-                      setDate(d);
-                      setView("day");
-                    }}
-                  />
-                ) : null}
-
-                {showWeekBoard ? (
-                  <AgendaWeekBoard
-                    dates={visibleDates}
-                    selected={date}
-                    selectedAppointmentId={selectedId}
-                    appointments={filtered}
-                    closures={closures}
-                    onSelectDay={setDate}
-                    onAppointmentClick={openDetail}
-                    onEmptySlotClick={handleEmptyWeekSlot}
-                    onDrop={handleWeekDrop}
-                  />
-                ) : null}
-
-                {view === "day" ? (
-                  <AgendaGrid
-                    date={date}
-                    staff={gridColumns}
-                    appointments={filtered}
-                    staffContexts={staffContexts}
-                    columnMode={columnMode}
-                    onAppointmentClick={openDetail}
-                    onSlotDrop={handleDrop}
-                    onEmptySlotClick={handleEmptyDaySlot}
-                  />
-                ) : null}
-              </div>
-
-              <aside className="hidden flex-col gap-4 lg:col-span-4 lg:flex 2xl:col-span-3">
-                <div className="rounded-xl bg-white p-5 shadow-soft">
-                  {selected ? (
-                    <AppointmentDetails
-                      appointment={selected}
-                      services={services}
-                      staff={(formOptions?.staff ?? []).map((member) => ({
-                        id: member.id,
-                        name: member.name,
-                      }))}
-                      onEdit={() => setDrawer("edit")}
-                      onStatusChange={handleStatus}
-                      onCancel={() => setConfirmCancel(true)}
-                      onChange={patchSelected}
-                      onApplyPromo={applyPromo}
-                    />
-                  ) : (
-                    <div className="flex flex-col gap-3 text-sm text-ink/55">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">
-                        Fiche rendez-vous
-                      </p>
-                      <p>Sélectionnez un rendez-vous dans la grille pour voir la cliente, le statut et l&apos;encaissement.</p>
-                      <button
-                        type="button"
-                        onClick={() => openCreate()}
-                        className="rounded-lg bg-primary py-2.5 font-semibold text-white"
-                      >
-                        Nouveau rendez-vous
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div className="rounded-xl bg-white p-4 shadow-soft">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Sparkles size={16} className="text-gold" />
-                    <h4 className="font-semibold text-ink">Disponibilité</h4>
-                  </div>
-                  {nextSlotHint && selected ? (
-                    <p className="text-sm text-ink/70">
-                      Prochain créneau libre pour {selected.staffName.split(" ")[0]} :{" "}
-                      <strong>{nextSlotHint}</strong>
-                    </p>
-                  ) : (
-                    <p className="text-xs text-ink/45">
-                      Cliquez un créneau vide pour créer un rendez-vous. Les conflits sont revérifiés en base.
-                    </p>
-                  )}
-                </div>
-              </aside>
-            </div>
-
-            <AgendaMobile
-              date={date}
-              view={view}
-              onViewChange={setView}
-              onSelectDate={setDate}
-              staffFilter={staffFilter}
-              onStaffFilter={setStaffFilter}
-              staffOptions={(formOptions?.staff ?? []).map((s) => ({
-                id: s.id,
-                name: s.name,
-                role: s.role,
-              }))}
-              staffContexts={staffContexts}
-              appointments={filtered}
-              allAppointments={appointments}
-              closures={closures}
-              kpis={kpis}
-              whatsappConnected={whatsappConnected}
-              onAppointmentClick={openDetail}
-              onCreate={(seed) => openCreate(seed)}
-              onStatusChange={(id, status) => void handleStatus(status, id)}
-            />
-          </motion.div>
-        </AnimatePresence>
-      )}
 
       <Drawer
         open={drawer === "create"}
@@ -790,7 +688,7 @@ export function AgendaPage() {
       </Drawer>
 
       <Drawer
-        open={drawer === "detail" && !!selected && !isXl}
+        open={drawer === "detail" && !!selected}
         onClose={() => {
           setDrawer(null);
           setSelectedId(null);

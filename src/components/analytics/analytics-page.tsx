@@ -60,7 +60,7 @@ export function AnalyticsPageView() {
   const canReviews = canAccessNav(user.role, "reviews");
   const canLoyalty = canAccessNav(user.role, "loyalty");
 
-  const [preset, setPreset] = useState<AnalyticsPeriodPreset>("month");
+  const [preset, setPreset] = useState<AnalyticsPeriodPreset>("year");
   const [compare, setCompare] = useState(true);
   const [loading, setLoading] = useState(true);
 

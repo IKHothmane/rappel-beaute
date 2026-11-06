@@ -2,22 +2,15 @@
 
 import Link from "next/link";
 import {
-  AlertTriangle,
-  ArrowRight,
-  BadgeCheck,
   CalendarCheck2,
   CalendarDays,
   CircleDollarSign,
-  CreditCard,
   Landmark,
-  Package,
-  RefreshCw,
   ShoppingBag,
   Sparkles,
   Star,
   Users,
   Wallet,
-  Zap,
 } from "lucide-react";
 import { AnalyticsCharts } from "@/components/analytics/analytics-charts";
 import {
@@ -35,25 +28,6 @@ import { staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { formatMad, formatPct } from "@/modules/analytics/service";
 
-function paymentBarColor(method: string): string {
-  switch (method) {
-    case "CARD":
-      return "bg-primary-container";
-    case "CASH":
-      return "bg-secondary";
-    case "GIFT_CARD":
-      return "bg-secondary-fixed";
-    case "TRANSFER":
-      return "bg-outline";
-    case "ONLINE":
-      return "bg-primary";
-    case "CHECK":
-      return "bg-outline";
-    default:
-      return "bg-surface-container-high";
-  }
-}
-
 export function AnalyticsMobile(vm: AnalyticsViewModel) {
   const palette = useStaffPalette();
   const ov = vm.overview;
@@ -62,12 +36,6 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
   const cancelled = statusCount(vm.appointments, "CANCELLED");
   const noShowRate = vm.appointments?.noShow.rate ?? null;
   const noShowCount = vm.appointments?.noShow.count ?? 0;
-  const stockAlerts = (vm.inventory?.lowStockCount ?? 0) + (vm.inventory?.outOfStockCount ?? 0);
-  const posShare =
-    ov && ov.revenue.value > 0 && vm.inventory
-      ? Math.round((vm.inventory.posRevenue / ov.revenue.value) * 1000) / 10
-      : null;
-  const topPos = vm.inventory?.topPosProducts?.[0] ?? null;
   const presetLabel = ANALYTICS_PRESETS.find((p) => p.value === vm.preset)?.label ?? vm.periodLabel;
 
   return (
@@ -79,7 +47,7 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
             Analytics &amp; Performance
           </h1>
           <p className="text-sm leading-relaxed text-on-surface-variant">
-            Pilotage décisionnel · MAD
+            Ventes, clientes, services et rentabilité
           </p>
         </div>
       </section>
@@ -129,76 +97,6 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
           </button>
         </div>
         {vm.scopeNote ? <p className="text-[11px] text-on-surface-variant">{vm.scopeNote}</p> : null}
-      </section>
-
-      {/* Copilote */}
-      <section className="relative overflow-hidden rounded-2xl bg-inverse-surface p-4 text-inverse-on-surface shadow-lg">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary-container/15 blur-3xl" />
-        <div className="relative z-10">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-secondary-fixed" />
-            <Sparkles className="h-5 w-5 text-secondary-fixed" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-secondary-fixed">
-              Copilote · {presetLabel}
-            </span>
-          </div>
-          <BadgeCheck className="h-4 w-4 text-secondary-container" />
-        </div>
-        <p className="mb-2 text-xs text-surface-dim">{vm.insight.greeting}</p>
-        {vm.loading ? (
-          <p className="text-sm text-surface-dim">Analyse en cours…</p>
-        ) : (
-          <div className="space-y-2 text-sm text-surface-bright">
-            <div className="rounded-lg bg-surface-container-lowest/10 p-2.5">
-              <p>{vm.insight.performance}</p>
-            </div>
-            {vm.insight.alert ? (
-              <div className="flex items-start gap-2 rounded-lg bg-surface-container-lowest/10 p-2.5 backdrop-blur-sm">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-secondary-container" />
-                <p className="text-surface-container-high">
-                  <span className="font-bold text-surface-bright">Alerte Prioritaire : </span>
-                  {vm.insight.alert}
-                </p>
-              </div>
-            ) : null}
-            {vm.insight.monitors.length > 0 ? (
-              <ul className="space-y-1 rounded-lg bg-surface-container-lowest/10 p-2.5 text-[12px]">
-                {vm.insight.monitors.map((m) => (
-                  <li key={m.text} className="flex items-start gap-2">
-                    <span
-                      className={cn(
-                        "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                        m.tone === "error" && "bg-error",
-                        m.tone === "warn" && "bg-secondary-container",
-                        m.tone === "ok" && "bg-primary-fixed",
-                      )}
-                    />
-                    {m.text}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        )}
-        <div className="mt-3 flex flex-col gap-2">
-          <Link
-            href={vm.insight.ctaHref}
-            className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-primary-container text-sm font-bold text-on-primary shadow-lg shadow-primary/30 active:scale-[0.98]"
-          >
-            <Zap className="h-4 w-4" />
-            {vm.insight.cta}
-          </Link>
-          {vm.insight.secondaryCta && vm.insight.secondaryHref ? (
-            <Link
-              href={vm.insight.secondaryHref}
-              className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-surface-container-lowest/10 text-sm font-semibold text-surface-bright active:bg-surface-container-lowest/20"
-            >
-              {vm.insight.secondaryCta}
-            </Link>
-          ) : null}
-        </div>
-        </div>
       </section>
 
       {/* Health */}
@@ -574,92 +472,6 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
         </div>
       </section>
 
-      {/* Operational rows */}
-      <section className="space-y-2">
-        <h2 className="px-0.5 text-base font-bold text-on-surface">Piliers Opérationnels</h2>
-        <OpRow
-          href="/products/"
-          icon={<ShoppingBag className="h-4 w-4" />}
-          iconTone="bg-primary-container/10 text-primary-container"
-          title="Boutique Produits"
-          value={vm.inventory ? formatMad(vm.inventory.posRevenue) : "—"}
-          hint={
-            posShare != null
-              ? `${posShare.toLocaleString("fr-MA")} % du CA`
-              : topPos
-                ? topPos.productName
-                : "POS"
-          }
-          loading={vm.loading}
-        />
-        <OpRow
-          href={vm.canStock ? "/stock/" : "/analytics/"}
-          icon={<Package className="h-4 w-4" />}
-          iconTone="bg-surface-container-high text-secondary"
-          title="Stock & Alertes"
-          value={
-            vm.inventory
-              ? `${stockAlerts} alerte${stockAlerts > 1 ? "s" : ""}`
-              : "—"
-          }
-          hint={vm.inventory ? `Valeur ${formatMad(vm.inventory.stockValue)}` : "Réserve cabine"}
-          loading={vm.loading}
-          alert={stockAlerts > 0}
-        />
-        <OpRow
-          href="/cash-register/"
-          icon={<CreditCard className="h-4 w-4" />}
-          iconTone="bg-secondary-fixed text-on-secondary-fixed"
-          title="Mix Paiements"
-          value={
-            vm.payments[0]
-              ? `${vm.payments[0].label} ${vm.payments[0].percent.toLocaleString("fr-MA")} %`
-              : "—"
-          }
-          hint={ov ? `Total ${formatMad(ov.revenue.value)}` : "Caisse"}
-          loading={vm.loading}
-          extra={
-            vm.payments.length > 0 ? (
-              <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-surface-container">
-                {vm.payments.map((p) => (
-                  <div
-                    key={p.method}
-                    className={cn("h-full", paymentBarColor(p.method))}
-                    style={{ width: `${Math.min(100, p.percent)}%` }}
-                  />
-                ))}
-              </div>
-            ) : null
-          }
-        />
-        <OpRow
-          href="/promotions/"
-          icon={<Wallet className="h-4 w-4" />}
-          iconTone="bg-primary-fixed text-on-primary-fixed"
-          title="Marketing Attribué"
-          value={formatMad(vm.marketingRevenue)}
-          hint={
-            vm.marketing[0]
-              ? vm.marketing[0].campaignName
-              : `${vm.marketing.length} campagne${vm.marketing.length > 1 ? "s" : ""}`
-          }
-          loading={vm.loading}
-        />
-        <OpRow
-          href="/customers/"
-          icon={<RefreshCw className="h-4 w-4" />}
-          iconTone="bg-surface-container text-primary"
-          title="Réactivation"
-          value={vm.customers ? String(vm.customers.kpis.reactivated) : "—"}
-          hint={
-            vm.customers
-              ? `${vm.customers.kpis.inactive} inactives`
-              : "Relances clientes"
-          }
-          loading={vm.loading}
-        />
-      </section>
-
     </div>
   );
 }
@@ -762,55 +574,3 @@ function Row({
   );
 }
 
-function OpRow({
-  href,
-  icon,
-  iconTone,
-  title,
-  value,
-  hint,
-  loading,
-  alert,
-  extra,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  iconTone: string;
-  title: string;
-  value: string;
-  hint: string;
-  loading?: boolean;
-  alert?: boolean;
-  extra?: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex flex-col gap-1 rounded-xl bg-surface-container-lowest p-3.5 shadow-sm active:scale-[0.99]"
-    >
-      <div className="flex items-center gap-3">
-        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", iconTone)}>
-          {icon}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-sm font-bold text-on-surface">{title}</p>
-            <ArrowRight className="h-4 w-4 shrink-0 text-on-surface-variant" />
-          </div>
-          {loading ? (
-            <p className="text-[11px] text-on-surface-variant">Chargement…</p>
-          ) : (
-            <p className="truncate text-[11px] text-on-surface-variant">
-              <span className={cn("font-bold", alert ? "text-error" : "text-primary-container")}>
-                {value}
-              </span>
-              {" · "}
-              {hint}
-            </p>
-          )}
-        </div>
-      </div>
-      {extra}
-    </Link>
-  );
-}

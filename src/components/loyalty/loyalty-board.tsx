@@ -12,7 +12,6 @@ import {
   Percent,
   Plus,
   Settings,
-  Sparkles,
   Target,
   TrendingUp,
   Users,
@@ -26,10 +25,6 @@ import { LoyaltyBrandCard } from "@/components/loyalty/loyalty-brand-card";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import type { LoyaltyJournalItem, LoyaltyProgramConfig } from "@/types/loyalty";
-
-type BoardTab = "cards" | "clients" | "rewards" | "settings";
-
-const LOYALTY_HERO_BG = "/loyalty/Coffret%20cadeau%20rose%20sur%20podium%20lumineux.png";
 
 function phoneLabel(phone: string | null | undefined) {
   if (!phone || phone.startsWith("WL")) return "Sans téléphone";
@@ -85,6 +80,7 @@ export function LoyaltyBoard({
   program,
   visitCards,
   journal = [],
+  membersThisMonth = 0,
   onRefresh,
   onOpenSettings,
 }: {
@@ -93,12 +89,13 @@ export function LoyaltyBoard({
   program: LoyaltyProgramConfig | null;
   visitCards: VisitCardRow[];
   journal?: LoyaltyJournalItem[];
+  membersThisMonth?: number;
+  settingsOpen?: boolean;
   onRefresh: () => void;
   onOpenSettings: () => void;
 }) {
   const { toast } = useToast();
   const router = useRouter();
-  const [tab, setTab] = useState<BoardTab>("cards");
   const [focusId, setFocusId] = useState<string | null>(null);
   const [joinImage, setJoinImage] = useState<string | null>(null);
   const [joinBusy, setJoinBusy] = useState(false);
@@ -115,7 +112,7 @@ export function LoyaltyBoard({
   const focused = focusId ? visitCards.find((card) => card.customerId === focusId) ?? null : null;
   const cycleVisits = focused && threshold ? visitCycle(focused.visits, threshold) : 0;
   const filled = threshold ? Math.min(threshold, Math.max(0, cycleVisits)) : 0;
-  const stampCount = threshold ? Math.min(threshold, 12) : 0;
+  const stampCount = threshold && threshold > 0 ? threshold : 0;
 
   function rememberScan(customerId: string) {
     setFocusId(customerId);
@@ -140,31 +137,15 @@ export function LoyaltyBoard({
     const withVisits = visitCards.filter((card) => card.visits > 0).length;
     const rewards = visitCards.filter((card) => Boolean(card.promoCode)).length;
     const engagement = totalCards > 0 ? Math.round((withVisits / totalCards) * 100) : 0;
-    return { totalCards, totalVisits, withVisits, rewards, engagement };
-  }, [visitCards]);
-
-  const distribution = useMemo(() => {
-    const limit = threshold ?? 10;
-    const half = Math.max(1, Math.ceil(limit / 2));
-    let vip = 0;
-    let actives = 0;
-    let news = 0;
-    let inactive = 0;
-    for (const card of visitCards) {
-      const cycle = visitCycle(card.visits, card.visitsPerReward || limit);
-      if (card.visits === 0) inactive += 1;
-      else if (cycle >= limit || card.visits >= limit) vip += 1;
-      else if (cycle >= half) actives += 1;
-      else news += 1;
-    }
-    const total = Math.max(1, visitCards.length);
-    return [
-      { label: `VIP (${limit}+)`, value: vip, color: "#54112F", pct: Math.round((vip / total) * 100) },
-      { label: `Actives (${half}–${limit - 1})`, value: actives, color: "#981C52", pct: Math.round((actives / total) * 100) },
-      { label: `Nouvelles (1–${half - 1 || 1})`, value: news, color: "#C95483", pct: Math.round((news / total) * 100) },
-      { label: "Inactives", value: inactive, color: "#E7B9CD", pct: Math.round((inactive / total) * 100) },
-    ];
-  }, [visitCards, threshold]);
+    const previousMembers = Math.max(0, totalCards - membersThisMonth);
+    const monthGrowthPct =
+      membersThisMonth > 0 && previousMembers > 0
+        ? Math.round((membersThisMonth / previousMembers) * 100)
+        : membersThisMonth > 0 && previousMembers === 0
+          ? 100
+          : null;
+    return { totalCards, totalVisits, withVisits, rewards, engagement, monthGrowthPct };
+  }, [visitCards, membersThisMonth]);
 
   const recentClients = scannedList.slice(0, 8);
   const recentActivity = useMemo(() => {
@@ -336,7 +317,6 @@ export function LoyaltyBoard({
     rememberScan(card.customerId);
     const code = (card.cardCode || card.promoCode || (card.publicToken ? shortCardCode(card.publicToken) : "")).trim();
     if (code) setPassageToken(code);
-    setTab("cards");
   }
 
   async function resolveScannedCode(raw: string) {
@@ -379,46 +359,36 @@ export function LoyaltyBoard({
   const field =
     "h-11 w-full min-w-0 rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] px-3 text-sm outline-none transition focus:border-[#C95483] focus:ring-2 focus:ring-pink-100";
 
-  const tabs: { id: BoardTab; label: string }[] = [
-    { id: "cards", label: "Cartes de fidélité" },
-    { id: "clients", label: "Clientes fidélité" },
-    { id: "rewards", label: "Récompenses" },
-    { id: "settings", label: "Paramètres" },
-  ];
-
-  const donutGradient = (() => {
-    let cursor = 0;
-    const stops = distribution
-      .filter((d) => d.value > 0)
-      .map((d) => {
-        const start = cursor;
-        cursor += d.pct;
-        return `${d.color} ${start}% ${cursor}%`;
-      });
-    if (!stops.length) return "conic-gradient(#F1E8EC 0% 100%)";
-    return `conic-gradient(${stops.join(", ")})`;
-  })();
-
   return (
-    <div className="w-full min-w-0 space-y-6 overflow-x-clip [zoom:0.8]">
+    <div className="w-full min-w-0 space-y-5 overflow-x-clip pb-6">
       <header
-        className="relative overflow-hidden rounded-[28px] px-6 py-8 text-white shadow-lg sm:px-10 sm:py-10"
+        className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
         style={{
-          backgroundImage: `linear-gradient(90deg, rgba(84,17,47,0.92) 0%, rgba(131,29,74,0.72) 42%, rgba(184,62,114,0.28) 72%, rgba(184,62,114,0.08) 100%), url("${LOYALTY_HERO_BG}")`,
+          backgroundImage:
+            'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/hero-background.png")',
+          backgroundPosition: "center",
           backgroundSize: "cover",
-          backgroundPosition: "right center",
         }}
       >
-        <div className="relative max-w-xl">
-          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold">
-            <Sparkles size={14} />
-            Fidélisation & récompenses
-          </span>
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Programme de fidélité</h1>
-          <p className="mt-3 text-sm leading-7 text-pink-100">
-            Récompensez la fidélité de vos clientes, boostez les passages et augmentez la valeur de votre institut.
+        <div className="relative z-10 min-w-0">
+          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
+            Programme de fidélité
+          </h1>
+          <p className="mt-1 max-w-lg text-sm leading-5 text-[#654254]">
+            Récompensez la fidélité de vos clientes, boostez les passages et augmentez la valeur de votre
+            institut.
           </p>
         </div>
+        {canWrite ? (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
+          >
+            <Settings size={18} aria-hidden />
+            Configurer
+          </button>
+        ) : null}
       </header>
 
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
@@ -426,31 +396,41 @@ export function LoyaltyBoard({
           {
             label: "Clientes fidélité",
             value: stats.totalCards.toLocaleString("fr-FR"),
-            hint: `${stats.withVisits} actives`,
+            hint:
+              stats.monthGrowthPct != null
+                ? `+${stats.monthGrowthPct} % ce mois`
+                : membersThisMonth > 0
+                  ? `+${membersThisMonth} ce mois`
+                  : `${stats.withVisits} actives`,
+            hintTone: stats.monthGrowthPct != null || membersThisMonth > 0 ? "growth" : "muted",
             icon: Users,
           },
           {
             label: "Passages enregistrés",
             value: stats.totalVisits.toLocaleString("fr-FR"),
             hint: "Tous cycles confondus",
+            hintTone: "muted",
             icon: Activity,
           },
           {
             label: "Récompenses offertes",
             value: stats.rewards.toLocaleString("fr-FR"),
             hint: "Codes promo actifs",
+            hintTone: "muted",
             icon: Gift,
           },
           {
             label: "Programme",
             value: program?.active ? "Actif" : "Inactif",
             hint: threshold ? `${threshold} passages requis` : "À configurer",
+            hintTone: program?.active ? "ok" : "muted",
             icon: CheckCircle2,
           },
           {
             label: "Taux d’engagement",
             value: `${stats.engagement} %`,
             hint: "Clientes avec passages",
+            hintTone: "muted",
             icon: TrendingUp,
           },
         ].map((stat) => {
@@ -463,43 +443,27 @@ export function LoyaltyBoard({
               <div className="flex items-start justify-between gap-2">
                 <p className="text-xs font-semibold text-slate-500">{stat.label}</p>
                 <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FFF1F6] text-[#981C52]">
-                  <Icon size={17} />
+                  <Icon size={17} aria-hidden />
                 </span>
               </div>
               <p className="mt-3 text-2xl font-extrabold tracking-tight text-[#30202C] xl:text-3xl">{stat.value}</p>
-              <p className="mt-1 text-xs text-slate-400">{stat.hint}</p>
+              <p
+                className={cn(
+                  "mt-1 text-xs",
+                  stat.hintTone === "growth" && "font-semibold text-emerald-600",
+                  stat.hintTone === "ok" && "font-medium text-emerald-600",
+                  stat.hintTone === "muted" && "text-slate-400",
+                )}
+              >
+                {stat.hint}
+              </p>
             </div>
           );
         })}
       </section>
 
-      <nav className="flex flex-wrap gap-1.5 rounded-2xl border border-[#F1E8EC] bg-white p-2 shadow-sm">
-        {tabs.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => {
-              if (item.id === "settings") {
-                onOpenSettings();
-                return;
-              }
-              setTab(item.id);
-            }}
-            className={cn(
-              "rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all duration-200",
-              tab === item.id ? "bg-[#981C52] text-white shadow-sm" : "text-[#765E6B] hover:bg-[#FAF0F5]",
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-
-      {tab === "cards" || tab === "clients" ? (
-        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
           <div className="space-y-5 xl:col-span-8">
-            {tab === "cards" ? (
-              <>
                 <section className="rounded-[26px] border border-[#F0E7EB] bg-white p-5 shadow-sm md:p-6">
                   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-lg font-bold text-[#30202C]">Carte de fidélité active</h2>
@@ -547,17 +511,19 @@ export function LoyaltyBoard({
                         <div className="flex flex-wrap gap-2">
                           {Array.from({ length: stampCount }, (_, index) => {
                             const done = focused ? index < filled : false;
+                            const compact = stampCount > 10;
                             return (
                               <span
                                 key={index}
                                 className={cn(
-                                  "flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold",
+                                  "flex items-center justify-center rounded-full border font-bold",
+                                  compact ? "h-7 w-7 text-[10px]" : "h-9 w-9 text-xs",
                                   done
                                     ? "border-[#981C52] bg-[#981C52] text-white"
                                     : "border-[#E7B9CD] bg-white text-[#C88BA6]",
                                 )}
                               >
-                                {done ? <Check size={16} /> : index + 1}
+                                {done ? <Check size={compact ? 12 : 16} aria-hidden /> : index + 1}
                               </span>
                             );
                           })}
@@ -602,19 +568,15 @@ export function LoyaltyBoard({
                     </div>
                   </div>
                 </section>
-              </>
-            ) : null}
 
             <section className="overflow-hidden rounded-[26px] border border-[#F0E7EB] bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-[#F4EDF0] px-5 py-4">
-                <h2 className="text-lg font-bold text-[#30202C]">
-                  {tab === "clients" ? "Clientes fidélité" : "Clientes fidélité (récentes)"}
-                </h2>
+                <h2 className="text-lg font-bold text-[#30202C]">Clientes fidélité</h2>
                 <span className="rounded-full bg-[#FCE9F4] px-2.5 py-0.5 text-[11px] font-bold text-[#981C52]">
-                  {(tab === "clients" ? scannedList : recentClients).length}
+                  {scannedList.length}
                 </span>
               </div>
-              {(tab === "clients" ? scannedList : recentClients).length === 0 ? (
+              {scannedList.length === 0 ? (
                 <p className="p-6 text-sm text-[#765E6B]">Aucune cliente pour le moment.</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -630,7 +592,7 @@ export function LoyaltyBoard({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F4EDF0]">
-                      {(tab === "clients" ? scannedList : recentClients).map((card) => {
+                      {scannedList.map((card) => {
                         const cycle = visitCycle(card.visits, card.visitsPerReward);
                         const pct = Math.min(100, Math.round((cycle / Math.max(1, card.visitsPerReward)) * 100));
                         const status = clientStatus(card);
@@ -683,12 +645,11 @@ export function LoyaltyBoard({
           </div>
 
           <aside className="space-y-5 xl:col-span-4">
-            {tab === "cards" ? (
-              <div className="grid origin-top gap-4 [zoom:1.2]">
+              <div className="grid gap-4">
                 <section className="rounded-[26px] border border-[#F1E8EC] bg-white p-5 shadow-sm">
                   <div className="flex items-start gap-3">
                     <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFF1F6] text-[#981C52]">
-                      <Camera size={22} />
+                      <Camera size={22} aria-hidden />
                     </span>
                     <div>
                       <h3 className="text-base font-bold text-[#30202C]">Scanner</h3>
@@ -698,9 +659,9 @@ export function LoyaltyBoard({
                   <button
                     type="button"
                     onClick={() => void startCamera()}
-                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#981C52] text-sm font-semibold text-white"
+                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#981C52] text-sm font-semibold text-white transition hover:bg-[#7d1643]"
                   >
-                    <Camera size={18} />
+                    <Camera size={18} aria-hidden />
                     Ouvrir la caméra
                   </button>
                   {cameraOn ? (
@@ -759,36 +720,6 @@ export function LoyaltyBoard({
                   )}
                 </section>
               </div>
-            ) : null}
-
-            <section className="rounded-[26px] border border-[#F0E7EB] bg-white p-5 shadow-sm">
-              <h3 className="text-base font-bold text-[#30202C]">Répartition des clientes</h3>
-              <div className="mt-5 flex items-center justify-center">
-                <div
-                  className="relative h-40 w-40 rounded-full"
-                  style={{ background: donutGradient }}
-                  aria-hidden
-                >
-                  <div className="absolute inset-6 flex flex-col items-center justify-center rounded-full bg-white">
-                    <p className="text-2xl font-extrabold text-[#30202C]">{stats.totalCards}</p>
-                    <p className="text-[11px] text-[#765E6B]">cartes</p>
-                  </div>
-                </div>
-              </div>
-              <ul className="mt-5 space-y-2.5">
-                {distribution.map((item) => (
-                  <li key={item.label} className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 text-[#765E6B]">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />
-                      {item.label}
-                    </span>
-                    <span className="font-semibold text-[#30202C]">
-                      {item.value} · {item.pct}%
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
 
             <section className="rounded-[26px] border border-[#F0E7EB] bg-white p-5 shadow-sm">
               <h3 className="text-base font-bold text-[#30202C]">Dernières activités</h3>
@@ -811,53 +742,6 @@ export function LoyaltyBoard({
             </section>
           </aside>
         </div>
-      ) : null}
-
-      {tab === "rewards" ? (
-        <section className="rounded-[26px] border border-[#F0E7EB] bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-[#30202C]">Récompenses du programme</h2>
-          <p className="mt-1 text-sm text-[#765E6B]">
-            Configuration réelle de l’institut — pas de valeurs fictives.
-          </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: "Récompense", value: rewardLabel || "—" },
-              { label: "Passages requis", value: threshold != null ? String(threshold) : "—" },
-              {
-                label: "Type",
-                value:
-                  program?.rewardKind === "DISCOUNT"
-                    ? "Remise"
-                    : program?.rewardKind === "FREE_SERVICE"
-                      ? "Soin offert"
-                      : "—",
-              },
-              {
-                label: "Validité",
-                value: program?.rewardValidityDays ? `${program.rewardValidityDays} jours` : "—",
-              },
-            ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-[#F6EAF0] bg-[#FCF7F9] px-4 py-3">
-                <p className="text-[11px] text-[#765E6B]">{item.label}</p>
-                <p className="mt-1 text-sm font-bold text-[#30202C]">{item.value}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-5 text-sm text-[#765E6B]">
-            Codes promo actifs : <strong className="text-[#30202C]">{stats.rewards}</strong>
-          </p>
-          {canWrite ? (
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-[#981C52] px-4 text-sm font-semibold text-white"
-            >
-              <Settings size={16} />
-              Modifier les récompenses
-            </button>
-          ) : null}
-        </section>
-      ) : null}
     </div>
   );
 }

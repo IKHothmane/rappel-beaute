@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type RefObject, useState } from "react";
-import { Plus, Search, ShoppingCart, Sparkles, Wallet } from "lucide-react";
+import { Plus, Search, ShoppingCart, Sparkles } from "lucide-react";
 import { PurchaseFocusPanel } from "@/components/procurement/purchase-focus-panel";
 import {
   formatPurchaseDate,
@@ -21,7 +21,6 @@ type Props = {
   kpis: PurchaseKpis | null;
   canWrite: boolean;
   financeHidden: boolean;
-  showExpenses: boolean;
   insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
@@ -50,7 +49,6 @@ export function PurchasesMobile({
   kpis,
   canWrite,
   financeHidden,
-  showExpenses,
   insight,
   searchInput,
   onSearchChange,
@@ -149,11 +147,6 @@ export function PurchasesMobile({
             >
               Réceptions ({kpis?.awaitingReceiptCount ?? 0})
             </button>
-            {showExpenses ? (
-              <Link href="/expenses/" className="shrink-0 rounded-full bg-white px-3 py-2 text-[14px] font-semibold text-ink">
-                Dépenses
-              </Link>
-            ) : null}
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -277,15 +270,6 @@ export function PurchasesMobile({
             <Link href="/stock/" className="hover:text-primary">
               Stock
             </Link>
-            {showExpenses ? (
-              <>
-                <span>→</span>
-                <Link href="/expenses/" className="hover:text-primary">
-                  <Wallet className="mr-0.5 inline h-3 w-3" />
-                  Dépenses
-                </Link>
-              </>
-            ) : null}
           </div>
         </div>
       )}

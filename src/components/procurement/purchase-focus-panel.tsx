@@ -114,35 +114,35 @@ export function PurchaseFocusPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-2 border-b border-[#FFEFF8] pb-3">
+    <div className="flex flex-col gap-4 rounded-[22px] border border-[#F0DDE4] bg-white p-4 shadow-lg">
+      <div className="flex items-start justify-between gap-2 border-b border-[#F0DDE4] pb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <PackageCheck className="h-5 w-5 text-primary" />
-            <h3 className="text-[18px] font-bold text-ink">Contrôle de réception</h3>
+            <PackageCheck className="h-5 w-5 text-[#AC0E4C]" />
+            <h3 className="font-serif text-xl font-bold text-[#54112F]">Contrôle de réception</h3>
           </div>
-          <p className="mt-1 font-mono text-[12px] font-semibold text-ink">{p.number}</p>
+          <p className="mt-1 font-mono text-[12px] font-semibold text-[#43182D]">{p.number}</p>
           {p.supplierId ? (
-            <Link href={`/suppliers/${p.supplierId}/`} className="text-[13px] font-semibold text-primary hover:underline">
+            <Link href={`/suppliers/${p.supplierId}/`} className="text-[13px] font-semibold text-[#AC0E4C] hover:underline">
               {p.supplierName}
             </Link>
           ) : (
-            <p className="text-[13px] font-semibold text-ink/55">{p.supplierName}</p>
+            <p className="text-[13px] font-semibold text-[#846A79]">{p.supplierName}</p>
           )}
         </div>
-        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold", purchaseStatusChip(p.status))}>
+        <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold", purchaseStatusChip(p.status))}>
           {PURCHASE_STATUS_LABEL[p.status]}
         </span>
       </div>
 
-      <div className="rounded-lg bg-[#FFEFF8] p-3 text-[12px] text-ink/55">
+      <div className="rounded-2xl bg-[#FFF0F6] p-4 text-[12px] text-[#765164]">
         <p>
           Émise : {formatPurchaseDate(p.createdAt) ?? "—"}
           {p.orderedAt ? ` · Commandée : ${formatPurchaseDate(p.orderedAt)}` : ""}
           {p.receivedAt ? ` · Reçue : ${formatPurchaseDate(p.receivedAt)}` : ""}
         </p>
         {!financeHidden ? (
-          <p className="mt-0.5 font-semibold text-ink">Total {formatMad(p.total)}</p>
+          <p className="mt-0.5 font-semibold text-[#43182D]">Total {formatMad(p.total)}</p>
         ) : null}
       </div>
 
@@ -218,8 +218,8 @@ export function PurchaseFocusPanel({
         </p>
       )}
 
-      <p className="rounded-lg bg-[#F6E3EF] p-3 text-[12px] leading-relaxed text-ink/60">
-        <strong className="text-ink">Règle de stock :</strong> seules les quantités reçues créent un mouvement d’entrée. Le reliquat reste ouvert jusqu’à un prochain pointage.
+      <p className="rounded-2xl bg-[#FFF0F6] p-4 text-[12px] leading-relaxed text-[#765164]">
+        <strong className="text-[#43182D]">Règle de stock :</strong> seules les quantités reçues créent un mouvement d’entrée. Le reliquat reste ouvert jusqu’à un prochain pointage.
       </p>
 
       {canReceive ? (
@@ -227,7 +227,7 @@ export function PurchaseFocusPanel({
           type="button"
           disabled={submitting || !detail}
           onClick={() => void handleReceive()}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-[14px] font-semibold text-white shadow-sm disabled:opacity-50"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#AC0E4C] text-[14px] font-semibold text-white shadow-sm disabled:opacity-50"
         >
           <CheckCircle2 className="h-4 w-4" />
           {submitting ? "Réception…" : "Valider la réception"}
@@ -238,7 +238,7 @@ export function PurchaseFocusPanel({
         <button
           type="button"
           onClick={onEdit}
-          className="flex h-11 w-full items-center justify-center rounded-lg bg-primary text-[14px] font-semibold text-white shadow-sm"
+          className="flex h-11 w-full items-center justify-center rounded-xl border border-[#EAD4DE] bg-white text-[14px] font-semibold text-[#54112F]"
         >
           Modifier le brouillon
         </button>

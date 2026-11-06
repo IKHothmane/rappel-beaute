@@ -5,9 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   BadgePercent,
-  Bot,
   CalendarDays,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -19,7 +17,6 @@ import {
   Search,
   Users,
   Wallet,
-  Zap,
 } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import {
@@ -315,96 +312,48 @@ export function PromotionsPageView() {
         onToggleStatus={handleToggle}
       />
 
-      <div className="hidden space-y-6 lg:block">
-        <header className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#54112F] via-[#831D4A] to-[#B83E72] px-7 py-9 text-white shadow-lg xl:px-10 xl:py-11">
-          <div className="pointer-events-none absolute -right-20 -top-28 h-80 w-80 rounded-full border-[50px] border-white/5" />
-          <div className="pointer-events-none absolute bottom-[-100px] right-1/4 h-64 w-64 rounded-full bg-pink-300/10 blur-3xl" />
-
-          <div className="relative flex flex-wrap items-center justify-between gap-6">
-            <div className="max-w-2xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold">
-                <BadgePercent size={14} />
-                Espace marketing & fidélisation
-              </div>
-
-              <h1 className="text-3xl font-bold tracking-tight xl:text-4xl">Promotions & offres</h1>
-
-              <p className="mt-3 text-sm leading-7 text-pink-100">
-                Créez des offres attractives, fidélisez vos clientes et suivez les performances de vos
-                campagnes commerciales.
-              </p>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                {canWrite && (
-                  <button
-                    type="button"
-                    onClick={() => openCreate()}
-                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-[#831D4A] shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <Plus size={17} />
-                    Nouvelle promotion
-                  </button>
-                )}
-
-                {canWrite && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openCreate({
-                        name: "Relance inactives −10 %",
-                        code: "RELANCE10",
-                        value: "10",
-                      })
-                    }
-                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/20"
-                  >
-                    <Zap size={17} />
-                    Préparer une offre
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex min-w-[190px] flex-col items-center rounded-3xl border border-white/20 bg-white/10 px-8 py-6 backdrop-blur-sm">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
-                <Gift size={29} className="text-pink-100" />
-              </div>
-              <span className="text-4xl font-extrabold">{kpis?.activeCount ?? "—"}</span>
-              <span className="mt-1 text-xs font-medium text-pink-100">Promotions actives</span>
-            </div>
+      <div className="hidden space-y-5 lg:block">
+        <header
+          className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
+          style={{
+            backgroundImage:
+              'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/hero-background.png")',
+            backgroundPosition: "center",
+            backgroundSize: "cover",
+          }}
+        >
+          <div className="relative z-10 min-w-0">
+            <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
+              Promotions &amp; offres
+            </h1>
+            <p className="mt-1 max-w-lg text-sm leading-5 text-[#654254]">
+              Créez des offres attractives, fidélisez vos clientes et suivez les performances de vos
+              campagnes commerciales.
+            </p>
           </div>
+          {canWrite ? (
+            <button
+              type="button"
+              onClick={() => openCreate()}
+              className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
+            >
+              <Plus size={18} aria-hidden />
+              Nouvelle promotion
+            </button>
+          ) : null}
         </header>
-
-        <section className="relative overflow-hidden rounded-[24px] border border-[#EAD5DF] bg-gradient-to-r from-[#FFF4F8] via-white to-[#FFF8FB] p-6 text-[#382633] shadow-sm">
-          <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
-            <div className="max-w-4xl space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#FCE9F4] text-[#831D4A]">
-                  <Bot size={14} />
-                </span>
-                <span className="text-[14px] font-bold uppercase tracking-wider text-[#831D4A]">
-                  Copilote · performance & conflits
-                </span>
-                <span className="rounded-full bg-[#FCE9F4] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[#981C52]">
-                  Données du mois
-                </span>
-              </div>
-              <p className="text-[15px] leading-relaxed text-[#382633]">{insight.headline}</p>
-              <p className="text-[13px] text-[#765E6B]">{insight.recommendation}</p>
-              <p className="inline-flex items-center gap-1 rounded-lg bg-white/80 px-2.5 py-0.5 text-[11px] text-[#765E6B]">
-                <CheckCircle2 size={13} className="text-emerald-600" />
-                {insight.conflict}
-              </p>
-            </div>
-          </div>
-        </section>
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <Kpi
             label="Promotions actives"
             value={kpis ? String(kpis.activeCount) : "—"}
-            hint={`${kpis?.archivedCount ?? 0} archivées · ${kpis?.totalCount ?? 0} au total`}
+            hint={
+              kpis
+                ? `${kpis.archivedCount} archivées · ${kpis.totalCount} au total`
+                : "—"
+            }
             icon={<Gift size={18} className="text-primary" />}
+            accent={Boolean(kpis && kpis.activeCount > 0)}
           />
           <Kpi
             label="Clientes touchées"
@@ -417,7 +366,11 @@ export function PromotionsPageView() {
             value={kpis ? String(kpis.usedThisMonth) : "—"}
             hint={hints.pos}
             icon={<Receipt size={18} className="text-[#7B5900]" />}
-            accent={Boolean(kpis && deltaPct(kpis.usedThisMonth, kpis.usedPrevMonth) != null && (deltaPct(kpis.usedThisMonth, kpis.usedPrevMonth) ?? 0) > 0)}
+            accent={Boolean(
+              kpis &&
+                deltaPct(kpis.usedThisMonth, kpis.usedPrevMonth) != null &&
+                (deltaPct(kpis.usedThisMonth, kpis.usedPrevMonth) ?? 0) > 0,
+            )}
           />
           <Kpi
             label="CA généré brut"
@@ -440,32 +393,6 @@ export function PromotionsPageView() {
         </section>
 
         <section className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-1.5 rounded-2xl border border-[#F1E8EC] bg-white p-2 shadow-sm">
-              {(
-                [
-                  ["all", "Toutes"],
-                  ["codes", "Codes promo"],
-                  ["auto", "Offres auto"],
-                  ["audit", "Historique"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setTab(id)}
-                  className={cn(
-                    "rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all duration-200",
-                    tab === id
-                      ? "bg-[#981C52] text-white shadow-sm"
-                      : "text-[#765E6B] hover:bg-[#FAF0F5]",
-                  )}
-                >
-                  {label} ({counts[id]})
-                </button>
-              ))}
-            </div>
-          </div>
           <div className="flex flex-wrap items-center gap-2 rounded-[22px] border border-[#F1E8EC] bg-white p-3 shadow-sm">
             <div className="relative min-w-[240px] flex-1">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

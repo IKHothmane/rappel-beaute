@@ -59,7 +59,7 @@ export function monthTitle(d = casablancaNow()): string {
 
 export function promoShortId(id: string): string {
   const tail = id.replace(/^promo_?/i, "").slice(-6).toUpperCase();
-  return `#PRM-${tail || id.slice(-6).toUpperCase()}`;
+  return `#PR-${tail || id.slice(-6).toUpperCase()}`;
 }
 
 export function isScheduled(p: PromotionListItem, now = casablancaNow()): boolean {

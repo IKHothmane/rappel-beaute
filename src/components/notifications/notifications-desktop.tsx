@@ -2,17 +2,16 @@
 
 import type { ReactNode } from "react";
 import {
+  AlertTriangle,
+  BadgeCheck,
   Check,
   CheckCheck,
+  Info,
+  RefreshCw,
   Search,
   Zap,
-  AlertTriangle,
-  Info,
-  BadgeCheck,
-  RefreshCw,
 } from "lucide-react";
 import {
-  CATEGORY_CHIPS,
   STATUS_FILTERS,
   formatClock,
   iconTone,
@@ -26,83 +25,92 @@ import { NOTIFICATION_TYPE_LABEL } from "@/types/notifications";
 import { cn } from "@/lib/utils";
 
 export function NotificationsDesktop({ vm }: { vm: NotificationsViewModel }) {
-  return (
-    <div className="hidden space-y-8 lg:block">
-      {/* Header */}
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-[40px] font-extrabold tracking-tight text-on-surface">
-              Centre de Notifications &amp; Alertes Métier
-            </h1>
-            <p className="max-w-3xl text-[15px] text-on-surface-variant">
-              Supervisez les urgences cabines, paiements, rendez-vous et opportunités métier en temps réel.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={vm.onReadAll}
-              disabled={vm.counters.unread === 0}
-              className="flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container disabled:opacity-50"
-            >
-              <CheckCheck className="h-[18px] w-[18px] text-primary" />
-              Tout marquer comme lu
-            </button>
-            <button
-              type="button"
-              onClick={vm.onRefresh}
-              className="flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-on-surface shadow-sm transition-all hover:bg-surface-container"
-            >
-              <RefreshCw className="h-[18px] w-[18px] text-on-surface-variant" />
-              Actualiser
-            </button>
-          </div>
-        </div>
+  const recentActivity = (vm.items.length ? vm.items : vm.filtered).slice(0, 8);
 
-        {/* Counters */}
-        <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <CounterCard
-            value={vm.counters.urgent}
-            label="Urgentes"
-            hint="Action requise"
-            tone="urgent"
-            icon={<AlertTriangle className="h-[26px] w-[26px]" />}
-          />
-          <CounterCard
-            value={vm.counters.important}
-            label="Importantes"
-            hint="Attention du jour"
-            tone="warn"
-            icon={<AlertTriangle className="h-[26px] w-[26px]" />}
-          />
-          <CounterCard
-            value={vm.counters.info}
-            label="Informations"
-            hint="Activité générale"
-            tone="info"
-            icon={<Info className="h-[26px] w-[26px]" />}
-          />
-          <CounterCard
-            value={vm.counters.resolvedToday}
-            label="Résolues"
-            hint="Traitées aujourd'hui"
-            tone="done"
-            icon={<BadgeCheck className="h-[26px] w-[26px]" />}
-          />
+  return (
+    <div className="hidden space-y-5 lg:block">
+      <header
+        className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
+        style={{
+          backgroundImage:
+            'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/hero-background.png")',
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+        }}
+      >
+        <div className="relative z-10 min-w-0">
+          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
+            Centre de notifications
+          </h1>
+          <p className="mt-1 max-w-lg text-sm leading-5 text-[#654254]">
+            Supervisez les urgences cabines, paiements, rendez-vous et opportunités métier en temps
+            réel.
+          </p>
         </div>
+        <div className="relative z-10 flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={vm.onReadAll}
+            disabled={vm.counters.unread === 0}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035] disabled:opacity-50"
+          >
+            <CheckCheck size={17} aria-hidden />
+            Tout marquer comme lu
+          </button>
+          <button
+            type="button"
+            onClick={vm.onRefresh}
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#E7B9CD] bg-white px-5 text-sm font-semibold text-[#831D4A] transition hover:bg-[#FFF7FA]"
+          >
+            <RefreshCw size={17} aria-hidden />
+            Actualiser
+          </button>
+        </div>
+      </header>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <CounterCard
+          value={vm.counters.urgent}
+          label="Urgentes"
+          hint="Action requise"
+          tone="urgent"
+          icon={<AlertTriangle className="h-[22px] w-[22px]" />}
+        />
+        <CounterCard
+          value={vm.counters.important}
+          label="Importantes"
+          hint="Attention du jour"
+          tone="warn"
+          icon={<AlertTriangle className="h-[22px] w-[22px]" />}
+        />
+        <CounterCard
+          value={vm.counters.info}
+          label="Informations"
+          hint="Activité générale"
+          tone="info"
+          icon={<Info className="h-[22px] w-[22px]" />}
+        />
+        <CounterCard
+          value={vm.counters.resolvedToday}
+          label="Résolues"
+          hint="Traitées aujourd'hui"
+          tone="done"
+          icon={<BadgeCheck className="h-[22px] w-[22px]" />}
+        />
       </section>
 
-      {/* Toolbar */}
-      <section className="space-y-4 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
+      <section className="space-y-4 rounded-[24px] border border-[#F1E8EC] bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col items-stretch justify-between gap-4 lg:flex-row lg:items-center">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant" />
+            <Search
+              className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A58B99]"
+              aria-hidden
+            />
             <input
               value={vm.search}
               onChange={(e) => vm.onSearch(e.target.value)}
               placeholder="Rechercher une alerte (stock, paiement, avis, cliente…)"
-              className="w-full rounded-lg bg-surface-container-low py-3 pl-11 pr-4 text-[13px] text-on-surface shadow-inner placeholder:text-on-surface-variant/50 focus:bg-surface focus:outline-none"
+              className="h-12 w-full rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] py-3 pl-11 pr-4 text-[13px] text-[#30202C] outline-none transition focus:border-[#C95483] focus:ring-2 focus:ring-pink-100"
             />
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -125,12 +133,12 @@ export function NotificationsDesktop({ vm }: { vm: NotificationsViewModel }) {
                     vm.onStatus(f.value);
                   }}
                   className={cn(
-                    "rounded-lg px-4 py-2 text-[11px] font-bold transition-all",
+                    "rounded-xl px-4 py-2.5 text-[12px] font-bold transition-all",
                     active
-                      ? "bg-primary text-on-primary shadow-sm"
+                      ? "bg-[#981C52] text-white shadow-sm"
                       : f.value === "urgent"
-                        ? "bg-surface-container text-primary hover:bg-primary-fixed"
-                        : "bg-surface-container text-on-surface hover:bg-surface-container-high",
+                        ? "bg-[#FFF1F7] text-[#981C52] hover:bg-[#FCE9F4]"
+                        : "bg-[#FCF8FA] text-[#765E6B] hover:bg-[#FAF0F5]",
                   )}
                 >
                   {f.label}
@@ -140,85 +148,106 @@ export function NotificationsDesktop({ vm }: { vm: NotificationsViewModel }) {
             })}
           </div>
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
-          {CATEGORY_CHIPS.map((chip) => {
-            const count = vm.categoryCounts[chip.value] ?? 0;
-            const active = vm.category === chip.value;
-            return (
-              <button
-                key={chip.value}
-                type="button"
-                onClick={() => vm.onCategory(active ? null : chip.value)}
-                className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-transform active:scale-95",
-                  active
-                    ? chip.value === "marketing"
-                      ? "bg-inverse-surface text-secondary-fixed shadow-sm"
-                      : "bg-primary-fixed text-on-primary-fixed"
-                    : "bg-surface-container font-semibold text-on-surface hover:bg-surface-container-high",
-                )}
-              >
-                {chip.label} ({count})
-              </button>
-            );
-          })}
-        </div>
       </section>
 
-      {/* Urgences */}
-      <section id="urgences" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 animate-ping rounded-full bg-primary" />
-            <h2 className="text-[22px] font-extrabold tracking-tight text-on-surface">
-              Alertes Prioritaires &amp; Urgences Métier
-            </h2>
-          </div>
-          <span className="rounded-full bg-primary-fixed px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
-            {vm.urgentItems.length} action{vm.urgentItems.length !== 1 ? "s" : ""} requise
-            {vm.urgentItems.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-        {vm.loading ? (
-          <p className="text-sm text-on-surface-variant">Chargement des urgences…</p>
-        ) : vm.urgentItems.length === 0 ? (
-          <div className="rounded-2xl bg-surface-container-lowest p-6 text-sm text-on-surface-variant shadow-sm">
-            Aucune urgence critique ouverte.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {vm.urgentItems.map((item) => (
-              <UrgentCard key={item.id} item={item} onOpen={vm.onOpen} onMarkRead={vm.onMarkRead} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section id="liste" className="flex flex-col gap-8">
-        {vm.loading ? (
-          <p className="text-sm text-on-surface-variant">Chargement du flux…</p>
-        ) : vm.groups.length === 0 ? (
-          <div className="rounded-xl bg-surface-container-lowest p-8 text-center text-sm text-on-surface-variant shadow-sm">
-            Aucune notification pour ce filtre.
-          </div>
-        ) : (
-          vm.groups.map((group) => (
-            <div key={group.key} className="space-y-4">
-              <div className="flex items-center justify-between pb-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[22px] font-bold capitalize text-on-surface">{group.label}</span>
-                  <span className="rounded-full bg-surface-container-high px-2 py-0.5 text-[11px] font-bold text-on-surface-variant">
-                    {group.items.length} notification{group.items.length > 1 ? "s" : ""}
-                  </span>
-                </div>
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
+        <div className="space-y-5 xl:col-span-8">
+          <section id="urgences" className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 animate-ping rounded-full bg-[#981C52]" aria-hidden />
+                <h2 className="text-lg font-extrabold tracking-tight text-[#30202C]">
+                  Alertes Prioritaires &amp; Urgences Métier
+                </h2>
               </div>
-              {group.items.map((item) => (
-                <TimelineCard key={item.id} item={item} onOpen={vm.onOpen} onMarkRead={vm.onMarkRead} />
-              ))}
+              <span className="rounded-full bg-[#FCE9F4] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#981C52]">
+                {vm.urgentItems.length} action{vm.urgentItems.length !== 1 ? "s" : ""} requise
+                {vm.urgentItems.length !== 1 ? "s" : ""}
+              </span>
             </div>
-          ))
-        )}
-      </section>
+            {vm.loading ? (
+              <p className="text-sm text-[#765E6B]">Chargement des urgences…</p>
+            ) : vm.urgentItems.length === 0 ? (
+              <div className="rounded-[22px] border border-[#F0E7EB] bg-white p-6 text-sm text-[#765E6B] shadow-sm">
+                Aucune urgence critique ouverte.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {vm.urgentItems.map((item) => (
+                  <UrgentCard key={item.id} item={item} onOpen={vm.onOpen} onMarkRead={vm.onMarkRead} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section id="liste" className="flex flex-col gap-6">
+            {vm.loading ? (
+              <p className="text-sm text-[#765E6B]">Chargement du flux…</p>
+            ) : vm.groups.length === 0 ? (
+              <div className="rounded-[22px] border border-[#F0E7EB] bg-white p-8 text-center text-sm text-[#765E6B] shadow-sm">
+                Aucune notification pour ce filtre.
+              </div>
+            ) : (
+              vm.groups.map((group) => (
+                <div key={group.key} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold capitalize text-[#30202C]">{group.label}</span>
+                    <span className="rounded-full bg-[#FCE9F4] px-2 py-0.5 text-[11px] font-bold text-[#981C52]">
+                      {group.items.length}
+                    </span>
+                  </div>
+                  {group.items.map((item) => (
+                    <TimelineCard
+                      key={item.id}
+                      item={item}
+                      onOpen={vm.onOpen}
+                      onMarkRead={vm.onMarkRead}
+                    />
+                  ))}
+                </div>
+              ))
+            )}
+          </section>
+        </div>
+
+        <aside className="space-y-4 xl:col-span-4">
+          <section className="rounded-[26px] border border-[#F0E7EB] bg-white p-5 shadow-sm">
+            <h3 className="text-base font-bold text-[#30202C]">Activité récente</h3>
+            {recentActivity.length === 0 ? (
+              <p className="mt-4 text-sm text-[#765E6B]">Aucune activité récente.</p>
+            ) : (
+              <ul className="mt-4 space-y-4">
+                {recentActivity.map((item) => {
+                  const Icon = typeIcon(item.type);
+                  return (
+                    <li key={item.id} className="flex gap-3">
+                      <div
+                        className={cn(
+                          "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                          iconTone(item.severity),
+                        )}
+                      >
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => vm.onOpen(item)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <p className="truncate text-sm font-semibold text-[#30202C]">{item.title}</p>
+                        <p className="mt-0.5 line-clamp-2 text-xs text-[#765E6B]">{item.message}</p>
+                        <p className="mt-1 text-[11px] text-slate-400">
+                          {formatClock(item.createdAt)} · {formatRelativeTime(item.createdAt)}
+                        </p>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -237,20 +266,20 @@ function CounterCard({
   icon: ReactNode;
 }) {
   return (
-    <div className="group relative flex items-center justify-between overflow-hidden rounded-xl bg-surface-container-lowest p-4 shadow-sm">
+    <div className="group relative flex items-center justify-between overflow-hidden rounded-[22px] border border-[#F1E8EC] bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-md">
       <div className="flex items-center gap-4">
         <div
           className={cn(
-            "relative flex h-12 w-12 items-center justify-center rounded-xl",
-            tone === "urgent" && "bg-primary/10 text-primary",
-            tone === "warn" && "bg-secondary-fixed text-on-secondary-fixed",
-            tone === "info" && "bg-surface-container-high text-on-surface-variant",
-            tone === "done" && "bg-surface-container text-on-surface",
+            "relative flex h-12 w-12 items-center justify-center rounded-2xl",
+            tone === "urgent" && "bg-red-50 text-red-600",
+            tone === "warn" && "bg-amber-50 text-amber-700",
+            tone === "info" && "bg-sky-50 text-sky-700",
+            tone === "done" && "bg-emerald-50 text-emerald-700",
           )}
         >
           {icon}
           {tone === "urgent" && value > 0 ? (
-            <span className="absolute -right-1 -top-1 h-3 w-3 animate-pulse rounded-full bg-primary" />
+            <span className="absolute -right-1 -top-1 h-3 w-3 animate-pulse rounded-full bg-red-500" />
           ) : null}
         </div>
         <div className="flex flex-col">
@@ -258,21 +287,23 @@ function CounterCard({
             <span
               className={cn(
                 "text-[28px] font-extrabold leading-none",
-                tone === "urgent" && "text-primary",
-                tone === "warn" && "text-secondary",
-                (tone === "info" || tone === "done") && "text-on-surface",
+                tone === "urgent" && "text-red-600",
+                tone === "warn" && "text-amber-700",
+                tone === "info" && "text-sky-700",
+                tone === "done" && "text-emerald-700",
               )}
             >
               {value}
             </span>
-            <span className="text-sm font-bold text-on-surface">{label}</span>
+            <span className="text-sm font-bold text-[#30202C]">{label}</span>
           </div>
           <span
             className={cn(
               "mt-1 text-[11px] font-bold uppercase tracking-wider",
-              tone === "urgent" && "text-primary",
-              tone === "warn" && "text-secondary",
-              (tone === "info" || tone === "done") && "font-medium text-on-surface-variant",
+              tone === "urgent" && "text-red-600",
+              tone === "warn" && "text-amber-700",
+              tone === "info" && "text-sky-700",
+              tone === "done" && "text-emerald-700",
             )}
           >
             {hint}
@@ -295,41 +326,51 @@ function UrgentCard({
   const Icon = typeIcon(item.type);
   const badge = severityBadge(item.severity);
   return (
-    <article className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-surface-container-lowest p-6 shadow-md transition-transform hover:-translate-y-0.5 lg:flex-row lg:items-center">
+    <article className="flex flex-col items-start justify-between gap-5 rounded-[22px] border border-[#F0E7EB] bg-white p-5 shadow-sm transition-transform hover:-translate-y-0.5 lg:flex-row lg:items-center">
       <div className="flex max-w-3xl items-start gap-4">
-        <div className={cn("flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm", iconTone(item.severity))}>
-          <Icon className="h-8 w-8" />
+        <div
+          className={cn(
+            "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm",
+            iconTone(item.severity),
+          )}
+        >
+          <Icon className="h-7 w-7" aria-hidden />
         </div>
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide", badge.className)}>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide",
+                badge.className,
+              )}
+            >
               {NOTIFICATION_TYPE_LABEL[item.type]}
             </span>
-            <span className="text-[11px] font-medium text-on-surface-variant">
+            <span className="text-[11px] font-medium text-[#765E6B]">
               · {formatRelativeTime(item.createdAt)}
             </span>
           </div>
-          <p className="text-[15px] font-semibold text-on-surface">{item.title}</p>
-          <p className="text-[13px] text-on-surface-variant">{item.message}</p>
+          <p className="text-[15px] font-semibold text-[#30202C]">{item.title}</p>
+          <p className="text-[13px] text-[#765E6B]">{item.message}</p>
         </div>
       </div>
       <div className="flex w-full flex-wrap items-center justify-start gap-2 lg:w-auto lg:justify-end">
         <button
           type="button"
           onClick={() => onOpen(item)}
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-sm transition-all hover:bg-primary-container"
+          className="flex items-center gap-1.5 rounded-xl bg-[#981C52] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#7d1643]"
         >
-          <Zap className="h-[18px] w-[18px]" />
+          <Zap className="h-[18px] w-[18px]" aria-hidden />
           {primaryActionLabel(item)}
         </button>
         {!item.readAt ? (
           <button
             type="button"
             onClick={() => onMarkRead(item)}
-            className="rounded-lg p-2.5 text-on-surface-variant transition-all hover:bg-surface-container"
+            className="rounded-xl p-2.5 text-[#765E6B] transition hover:bg-[#FAF0F5]"
             title="Marquer comme lu"
           >
-            <Check className="h-5 w-5" />
+            <Check className="h-5 w-5" aria-hidden />
           </button>
         ) : null}
       </div>
@@ -350,21 +391,26 @@ function TimelineCard({
   return (
     <div
       className={cn(
-        "flex flex-col items-start justify-between gap-4 rounded-xl bg-surface-container-lowest p-4 shadow-sm transition-all hover:bg-surface-bright sm:flex-row sm:items-center",
-        !item.readAt && "ring-1 ring-primary/15",
+        "flex flex-col items-start justify-between gap-4 rounded-[18px] border border-[#F0E7EB] bg-white p-4 shadow-sm transition-all hover:border-[#E7B9CD] sm:flex-row sm:items-center",
+        !item.readAt && "ring-1 ring-[#981C52]/15",
       )}
     >
       <div className="flex items-start gap-3">
-        <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", iconTone(item.severity))}>
-          <Icon className="h-[22px] w-[22px]" />
+        <div
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+            iconTone(item.severity),
+          )}
+        >
+          <Icon className="h-[22px] w-[22px]" aria-hidden />
         </div>
         <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-on-surface">{item.title}</span>
-            <span className="text-[11px] text-on-surface-variant">{formatClock(item.createdAt)}</span>
-            {!item.readAt ? <span className="h-1.5 w-1.5 rounded-full bg-primary" /> : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-bold text-[#30202C]">{item.title}</span>
+            <span className="text-[11px] text-[#765E6B]">{formatClock(item.createdAt)}</span>
+            {!item.readAt ? <span className="h-1.5 w-1.5 rounded-full bg-[#981C52]" /> : null}
           </div>
-          <p className="mt-0.5 text-[13px] text-on-surface-variant">{item.message}</p>
+          <p className="mt-0.5 text-[13px] text-[#765E6B]">{item.message}</p>
         </div>
       </div>
       <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
@@ -372,7 +418,7 @@ function TimelineCard({
           <button
             type="button"
             onClick={() => onMarkRead(item)}
-            className="rounded-lg bg-surface-container px-3 py-1.5 text-[11px] font-bold text-on-surface hover:bg-surface-container-high"
+            className="rounded-xl bg-[#FCF8FA] px-3 py-1.5 text-[11px] font-bold text-[#765E6B] hover:bg-[#FAF0F5]"
           >
             Marquer lu
           </button>
@@ -380,7 +426,7 @@ function TimelineCard({
         <button
           type="button"
           onClick={() => onOpen(item)}
-          className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-on-primary hover:bg-primary-container"
+          className="rounded-xl bg-[#981C52] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#7d1643]"
         >
           {primaryActionLabel(item)}
         </button>

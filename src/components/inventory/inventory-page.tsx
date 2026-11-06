@@ -12,10 +12,9 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
-  Truck,
   Wallet,
 } from "lucide-react";
-import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser } from "@/components/auth/session-provider";
 import { InventoryAccordion, InventoryMobile, type StockTab, type UsageFilter } from "@/components/inventory/inventory-mobile";
 import {
   alertBarClass,
@@ -56,10 +55,12 @@ import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_LABEL } from "@/types/inventory";
 
 type InventoryPageViewProps = {
   initialTab?: StockTab;
+  hideKpis?: boolean;
 };
 
 export function InventoryPageView({
   initialTab = "niveaux",
+  hideKpis = false,
 }: InventoryPageViewProps) {
   const { toast } = useToast();
   const user = useCurrentUser();
@@ -81,8 +82,6 @@ export function InventoryPageView({
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
-  const [receiptOpen, setReceiptOpen] = useState(false);
-  const [blOpen, setBlOpen] = useState(false);
   const [invOpen, setInvOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adjustType, setAdjustType] = useState<MovementType>("ADJUSTMENT_IN");
@@ -244,8 +243,6 @@ export function InventoryPageView({
       return;
     }
     setAdjustOpen(false);
-    setReceiptOpen(false);
-    setBlOpen(false);
     toast("Mouvement enregistré.", "success");
     refresh();
   }
@@ -253,7 +250,6 @@ export function InventoryPageView({
   return (
     <div className="flex flex-col gap-5 pb-8">
       <InventoryMobile
-        orgName={user.orgName}
         catalogCount={products.length}
         kpis={kpis}
         optimalCount={optimalCount}
@@ -269,189 +265,92 @@ export function InventoryPageView({
         usage={usage}
         onUsage={setUsage}
         tab={tab}
-        onTab={(t) => {
-          setTab(t);
-          if (t === "inventaire") setInvOpen(true);
-        }}
         filtered={filtered}
         movements={movements}
-        movementTotal={movementTotal}
         loading={loading}
         latestByProduct={latestByProduct}
         onQuickIn={(id) => void stepStock(id, "IN")}
         onQuickOut={(id) => void stepStock(id, "OUT")}
         onAdjust={(id) => openAdjust(id)}
-        onReceipt={() => setBlOpen(true)}
-        onInventory={() => {
-          setTab("inventaire");
-          setInvOpen(true);
-        }}
       />
 
-      {canWrite ? (
-        <>
-          <InventoryAccordion
-            title="Réception rapide BL"
-            hint="Entrée fournisseur via un mouvement Achat"
-            open={blOpen}
-            onToggle={() => setBlOpen((v) => !v)}
-          >
-            <ReceiptForm
-              products={products}
-              defaultId={selected?.id ?? ""}
-              submitting={submitting}
-              onSubmit={async (input) => {
-                setSelectedId(input.productId);
-                await submitMovement({
-                  type: "PURCHASE",
-                  quantity: input.quantity,
-                  reason: input.reason,
-                  productId: input.productId,
-                });
-              }}
-            />
-          </InventoryAccordion>
-          <InventoryAccordion
-            title="Contrôle d’inventaire"
-            hint="Écarts → mouvements d’ajustement"
-            open={invOpen || tab === "inventaire"}
-            onToggle={() => setInvOpen((v) => !v)}
-          >
-            <InventoryCountForm
-              products={products.slice(0, 12)}
-              counts={counts}
-              onChange={setCounts}
-              canWrite={canWrite}
-              submitting={submitting}
-              onSubmit={handleInventory}
-              compact
-            />
-          </InventoryAccordion>
-        </>
+      {canWrite && tab === "inventaire" ? (
+        <InventoryAccordion
+          title="Contrôle d’inventaire"
+          hint="Écarts → mouvements d’ajustement"
+          open={invOpen || tab === "inventaire"}
+          onToggle={() => setInvOpen((v) => !v)}
+        >
+          <InventoryCountForm
+            products={products.slice(0, 12)}
+            counts={counts}
+            onChange={setCounts}
+            canWrite={canWrite}
+            submitting={submitting}
+            onSubmit={handleInventory}
+            compact
+          />
+        </InventoryAccordion>
       ) : null}
 
       <div className="hidden flex-col gap-5 lg:flex">
-        <section className="rounded-2xl bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-[28px] font-bold tracking-tight text-ink lg:text-[32px]">
-                  Stock & mouvements
-                </h1>
-                <span className="rounded-full bg-[#FFF7E7] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#8C6510]">
-                  {ROLE_LABEL[user.role]}
-                </span>
-              </div>
-              <p className="mt-1 max-w-3xl text-[14px] text-ink/50">
-                Quantités réelles, décomptes liés aux soins clôturés, réceptions fournisseurs et inventaire
-                physique. Le stock affiché est un cache recalculé à partir des mouvements.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={() => openAdjust()}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm ring-1 ring-black/5"
-                >
-                  <SlidersHorizontal size={16} className="text-[#C79A3B]" />
-                  Ajustement
-                </button>
-              ) : null}
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={() => setReceiptOpen(true)}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-[#FFF7F9] px-3.5 text-[13px] font-semibold text-ink shadow-sm ring-1 ring-black/5"
-                >
-                  <Truck size={16} className="text-primary" />
-                  Entrée BL
-                </button>
-              ) : null}
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={() => setTab("inventaire")}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-[13px] font-semibold text-white shadow-md"
-                >
-                  <Package size={16} />
-                  Inventaire
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <KpiCard
-            label="Références"
-            value={String(kpis?.activeCount ?? products.length)}
-            hint={`${sellableCount} revente · ${cabineCount} cabine`}
-            icon={<Package size={16} />}
-          />
-          <KpiCard
-            label="Stock normal"
-            value={String(optimalCount)}
-            hint={products.length ? `${((optimalCount / products.length) * 100).toFixed(0)} % conforme` : "—"}
-            icon={<Package size={16} />}
-            tone="emerald"
-          />
-          <KpiCard
-            label="Stock bas"
-            value={String(kpis?.lowStockCount ?? 0)}
-            hint="Sous le seuil min"
-            icon={<Package size={16} />}
-            tone="warn"
-            onClick={() => {
-              setTab("niveaux");
-              setAlert(alert === "LOW" ? "" : "LOW");
-            }}
-          />
-          <KpiCard
-            label="Ruptures"
-            value={String(kpis?.outOfStockCount ?? 0)}
-            hint="À commander"
-            icon={<Package size={16} />}
-            tone="error"
-            onClick={() => {
-              setTab("niveaux");
-              setAlert(alert === "OUT" ? "" : "OUT");
-            }}
-          />
-          {!financeHidden ? (
+        {!hideKpis ? (
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             <KpiCard
-              label="Valeur stock"
-              value={kpis ? formatMad(kpis.totalStockValue) : "—"}
-              hint="Prix d’achat × quantité"
-              icon={<Wallet size={16} />}
-              tone="gold"
+              label="Références"
+              value={String(kpis?.activeCount ?? products.length)}
+              hint={`${sellableCount} revente · ${cabineCount} cabine`}
+              icon={<Package size={16} />}
             />
-          ) : (
-            <KpiCard label="Lots" value={String(kpis?.expiringSoonCount ?? 0)} hint="Expirent sous 30 j" icon={<History size={16} />} />
-          )}
-          <KpiCard
-            label="Flux"
-            value={String(movementTotal)}
-            hint={`${inCount} in · ${outCount} out${careCount ? ` · ${careCount} soins` : ""} (100 derniers)`}
-            icon={<History size={16} />}
-            onClick={() => setTab("mouvements")}
-          />
-        </section>
-
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabBtn active={tab === "niveaux"} onClick={() => setTab("niveaux")} icon={<Package size={16} />}>
-            Niveaux de stock ({products.length})
-          </TabBtn>
-          <TabBtn active={tab === "mouvements"} onClick={() => setTab("mouvements")} icon={<History size={16} />}>
-            Journal ({movementTotal})
-          </TabBtn>
-          <TabBtn active={tab === "inventaire"} onClick={() => setTab("inventaire")} icon={<SlidersHorizontal size={16} />}>
-            Inventaire
-          </TabBtn>
-          <TabBtn active={tab === "alertes"} onClick={() => setTab("alertes")} icon={<Package size={16} />} danger>
-            Alertes ({(kpis?.outOfStockCount ?? 0) + (kpis?.lowStockCount ?? 0)})
-          </TabBtn>
-        </div>
+            <KpiCard
+              label="Stock normal"
+              value={String(optimalCount)}
+              hint={products.length ? `${((optimalCount / products.length) * 100).toFixed(0)} % conforme` : "—"}
+              icon={<Package size={16} />}
+              tone="emerald"
+            />
+            <KpiCard
+              label="Stock bas"
+              value={String(kpis?.lowStockCount ?? 0)}
+              hint="Sous le seuil min"
+              icon={<Package size={16} />}
+              tone="warn"
+              onClick={() => {
+                setTab("niveaux");
+                setAlert(alert === "LOW" ? "" : "LOW");
+              }}
+            />
+            <KpiCard
+              label="Ruptures"
+              value={String(kpis?.outOfStockCount ?? 0)}
+              hint="À commander"
+              icon={<Package size={16} />}
+              tone="error"
+              onClick={() => {
+                setTab("niveaux");
+                setAlert(alert === "OUT" ? "" : "OUT");
+              }}
+            />
+            {!financeHidden ? (
+              <KpiCard
+                label="Valeur stock"
+                value={kpis ? formatMad(kpis.totalStockValue) : "—"}
+                hint="Prix d’achat × quantité"
+                icon={<Wallet size={16} />}
+                tone="gold"
+              />
+            ) : (
+              <KpiCard label="Lots" value={String(kpis?.expiringSoonCount ?? 0)} hint="Expirent sous 30 j" icon={<History size={16} />} />
+            )}
+            <KpiCard
+              label="Flux"
+              value={String(movementTotal)}
+              hint={`${inCount} in · ${outCount} out${careCount ? ` · ${careCount} soins` : ""} (100 derniers)`}
+              icon={<History size={16} />}
+              onClick={() => setTab("mouvements")}
+            />
+          </section>
+        ) : null}
 
         {tab !== "inventaire" && tab !== "mouvements" ? (
           <div className="flex flex-col gap-3 rounded-2xl bg-white p-3.5 shadow-sm lg:flex-row lg:items-center">
@@ -543,31 +442,6 @@ export function InventoryPageView({
           </section>
 
           <aside className="flex flex-col gap-5 xl:sticky xl:top-20 xl:col-span-4">
-            {canWrite ? (
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
-                <div className="mb-3 flex items-center gap-2.5 border-b border-[#F0E3E6] pb-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFF0F4] text-primary">
-                    <Truck size={18} />
-                  </span>
-                  <h3 className="text-[16px] font-bold text-ink">Réception rapide BL</h3>
-                </div>
-                <ReceiptForm
-                  products={products}
-                  defaultId={selected?.id ?? ""}
-                  submitting={submitting}
-                  onSubmit={async (input) => {
-                    setSelectedId(input.productId);
-                    await submitMovement({
-                      type: "PURCHASE",
-                      quantity: input.quantity,
-                      reason: input.reason,
-                      productId: input.productId,
-                    });
-                  }}
-                />
-              </div>
-            ) : null}
-
             <div className="rounded-2xl bg-white p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between border-b border-[#F0E3E6] pb-3">
                 <div className="flex items-center gap-2.5">
@@ -603,22 +477,6 @@ export function InventoryPageView({
         />
       </Drawer>
 
-      <Drawer open={receiptOpen} onClose={() => setReceiptOpen(false)} title="Entrée BL">
-        <ReceiptForm
-          products={products}
-          defaultId={selected?.id ?? ""}
-          submitting={submitting}
-          onSubmit={async (input) => {
-            setSelectedId(input.productId);
-            await submitMovement({
-              type: "PURCHASE",
-              quantity: input.quantity,
-              reason: input.reason,
-              productId: input.productId,
-            });
-          }}
-        />
-      </Drawer>
     </div>
   );
 }
@@ -695,20 +553,15 @@ function StockTable({
                     className={cn("transition-colors hover:bg-[#FFF7F9]", (p.alert === "OUT" || p.alert === "EXPIRED") && "bg-red-50/30")}
                   >
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0F4] text-primary">
-                          <Package size={18} />
-                        </span>
-                        <div className="min-w-0">
-                          <Link href={`/products/${p.id}/`} className="truncate text-[13px] font-bold text-ink hover:text-primary">
-                            {p.name}
-                          </Link>
-                          <div className="mt-0.5 flex items-center gap-1.5">
-                            <span className="font-mono text-[10px] font-bold text-ink/40">{p.sku}</span>
-                            <span className="rounded bg-[#FCE9F4] px-1.5 py-0.5 text-[10px] font-bold text-ink/55">
-                              {PRODUCT_CATEGORY_LABEL[p.category]}
-                            </span>
-                          </div>
+                      <div className="min-w-0">
+                        <Link href={`/products/${p.id}/`} className="truncate text-[13px] font-bold text-ink hover:text-primary">
+                          {p.name}
+                        </Link>
+                        <div className="mt-0.5 flex items-center gap-1.5">
+                          <span className="font-mono text-[10px] font-bold text-ink/40">{p.sku}</span>
+                          <span className="rounded bg-[#FCE9F4] px-1.5 py-0.5 text-[10px] font-bold text-ink/55">
+                            {PRODUCT_CATEGORY_LABEL[p.category]}
+                          </span>
                         </div>
                       </div>
                     </td>
@@ -907,109 +760,6 @@ function stepWholeQty(raw: string, delta: number) {
   const current = parseQty(raw);
   const base = Number.isFinite(current) ? current : 0;
   return formatQtyInput(base + delta);
-}
-
-function ReceiptForm({
-  products,
-  defaultId,
-  submitting,
-  onSubmit,
-}: {
-  products: ProductListItem[];
-  defaultId: string;
-  submitting: boolean;
-  onSubmit: (input: { productId: string; quantity: number; reason?: string }) => void;
-}) {
-  const [productId, setProductId] = useState(defaultId);
-  const [qty, setQty] = useState("1");
-  const [bl, setBl] = useState("");
-  const [supplier, setSupplier] = useState("");
-  const current = products.find((p) => p.id === productId) ?? products[0];
-
-  useEffect(() => {
-    if (defaultId) setProductId(defaultId);
-  }, [defaultId]);
-
-  useEffect(() => {
-    if (current?.supplierName && !supplier) setSupplier(current.supplierName);
-  }, [current, supplier]);
-
-  if (products.length === 0) {
-    return <p className="text-[13px] text-ink/45">Aucun produit actif.</p>;
-  }
-
-  return (
-    <form
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const quantity = Number(qty.replace(",", "."));
-        if (!Number.isFinite(quantity) || quantity <= 0 || !productId) return;
-        const parts = [bl.trim() && `BL ${bl.trim()}`, supplier.trim()].filter(Boolean);
-        onSubmit({ productId, quantity, reason: parts.join(" · ") || undefined });
-      }}
-    >
-      <label className="sm:col-span-2 block text-[12px]">
-        <span className="mb-1 block font-bold text-ink">Référence</span>
-        <select
-          value={productId || current?.id}
-          onChange={(e) => setProductId(e.target.value)}
-          className="h-10 w-full rounded-xl bg-[#FFF7F9] px-3 text-[13px] font-medium text-ink outline-none"
-        >
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} ({p.sku})
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block text-[12px]">
-        <span className="mb-1 block font-bold text-ink">Quantité reçue</span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Diminuer la quantité reçue"
-            onClick={() => setQty((current) => stepWholeQty(current, -1))}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-white text-lg font-bold text-ink hover:bg-[#FFEFF8]"
-          >
-            −
-          </button>
-          <Input
-            inputMode="decimal"
-            value={qty}
-            onChange={(e) => setQty(sanitizeQty(e.target.value))}
-            required
-          />
-          <button
-            type="button"
-            aria-label="Augmenter la quantité reçue"
-            onClick={() => setQty((current) => stepWholeQty(current, 1))}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-white text-lg font-bold text-ink hover:bg-[#FFEFF8]"
-          >
-            +
-          </button>
-        </div>
-      </label>
-      <label className="block text-[12px]">
-        <span className="mb-1 block font-bold text-ink">N° bon de livraison</span>
-        <Input value={bl} onChange={(e) => setBl(e.target.value)} placeholder="BL-2026-99" />
-      </label>
-      <label className="sm:col-span-2 block text-[12px]">
-        <span className="mb-1 block font-bold text-ink">Fournisseur (motif)</span>
-        <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="Nom du fournisseur" />
-      </label>
-      <p className="sm:col-span-2 text-[11px] text-ink/40">
-        Crée un mouvement Achat. Le prix catalogue ne se modifie pas ici.
-      </p>
-      <button
-        type="submit"
-        disabled={submitting}
-        className="sm:col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#221820] text-[13px] font-bold text-white disabled:opacity-60"
-      >
-        Valider l’entrée en stock
-      </button>
-    </form>
-  );
 }
 
 function InventoryCountForm({
@@ -1221,36 +971,6 @@ function KpiCard({
     );
   }
   return <div className={className}>{inner}</div>;
-}
-
-function TabBtn({
-  active,
-  onClick,
-  icon,
-  danger,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: ReactNode;
-  danger?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold",
-        active && "bg-primary font-bold text-white shadow-md",
-        !active && !danger && "bg-white text-ink/55 shadow-sm",
-        !active && danger && "bg-white text-[#D81B43] shadow-sm",
-      )}
-    >
-      {icon}
-      {children}
-    </button>
-  );
 }
 
 function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {

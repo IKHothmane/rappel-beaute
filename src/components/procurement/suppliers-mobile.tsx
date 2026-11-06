@@ -9,7 +9,6 @@ import {
   Plus,
   Search,
   ShoppingCart,
-  Sparkles,
 } from "lucide-react";
 import { SupplierFocusPanel } from "@/components/procurement/supplier-focus-panel";
 import {
@@ -34,8 +33,6 @@ type Props = {
   canWrite: boolean;
   financeHidden: boolean;
   showPurchases: boolean;
-  showExpenses: boolean;
-  insight: string;
   searchInput: string;
   onSearchChange: (value: string) => void;
   searchRef: RefObject<HTMLInputElement>;
@@ -60,8 +57,6 @@ export function SuppliersMobile({
   canWrite,
   financeHidden,
   showPurchases,
-  showExpenses,
-  insight,
   searchInput,
   onSearchChange,
   searchRef,
@@ -178,36 +173,6 @@ export function SuppliersMobile({
               value={financeHidden ? "—" : formatMad(kpis?.monthPurchasesTotal ?? 0)}
               hint="Achats"
             />
-          </div>
-
-          <div className="rounded-xl bg-ink p-4 text-[#FEECF7] shadow-sm">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#FFDEA4]">
-              <Sparkles className="h-4 w-4" />
-              Lecture du répertoire
-            </div>
-            <p className="mt-2 text-[13px] leading-relaxed text-[#FEECF7]/90">{insight}</p>
-          </div>
-
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <span className="shrink-0 rounded-full bg-primary px-3 py-2 text-[14px] font-bold text-white">
-              Fournisseurs ({kpis?.supplierCount ?? 0})
-            </span>
-            {showPurchases ? (
-              <Link
-                href="/purchases/"
-                className="shrink-0 rounded-full bg-white px-3 py-2 text-[14px] font-semibold text-ink"
-              >
-                Commandes ({kpis?.openOrdersCount ?? 0})
-              </Link>
-            ) : null}
-            {showExpenses ? (
-              <Link
-                href="/expenses/"
-                className="shrink-0 rounded-full bg-white px-3 py-2 text-[14px] font-semibold text-ink"
-              >
-                Dépenses
-              </Link>
-            ) : null}
           </div>
 
           <div className="relative">

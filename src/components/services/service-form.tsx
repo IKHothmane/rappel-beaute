@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/select";
-import { ServiceImageUpload } from "@/components/services/service-image-upload";
 import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 import { ServiceStaffSelector } from "@/components/services/service-staff-selector";
 import { DURATION_PRESETS, SERVICE_NAME_SUGGESTIONS } from "@/components/services/services-helpers";
@@ -20,10 +19,6 @@ type ServiceFormProps = {
   onSubmit: (data: CreateServiceInput) => void;
   onCancel: () => void;
 };
-
-function isCatalogDefaultUrl(url: string | null | undefined) {
-  return Boolean(url && url.includes("/services/platform/"));
-}
 
 function catalogImageForName(name: string, defaults: Record<string, string>): string | null {
   const exact = SERVICE_NAME_SUGGESTIONS.find((item) => item.toLowerCase() === name.trim().toLowerCase());
@@ -45,7 +40,6 @@ export function ServiceForm({
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [durationMin, setDurationMin] = useState(initial?.durationMin?.toString() ?? "60");
   const [staffIds, setStaffIds] = useState<string[]>(initial?.staff?.map((s) => s.staffId) ?? []);
-  const [imageUrl, setImageUrl] = useState<string | null>(initial?.imageUrl ?? null);
   const [active, setActive] = useState(initial?.active ?? true);
   const [nameOpen, setNameOpen] = useState(false);
   const [catalogDefaults, setCatalogDefaults] = useState<Record<string, string>>({});
@@ -54,6 +48,8 @@ export function ServiceForm({
   const nameSuggestions = SERVICE_NAME_SUGGESTIONS.filter((item) =>
     nameQuery ? item.toLowerCase().includes(nameQuery) : true,
   );
+  const displayImage =
+    catalogImageForName(name, catalogDefaults) ?? (!isCreate ? initial?.imageUrl ?? null : null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,36 +67,22 @@ export function ServiceForm({
     };
   }, []);
 
-  useEffect(() => {
-    if (!isCreate) return;
-    setImageUrl(catalogImageForName(name, catalogDefaults));
-  }, [isCreate, name, catalogDefaults]);
-
   function applySuggestedName(item: string) {
     setName(item);
     setNameOpen(false);
-    if (!isCreate) {
-      const defaultImage = catalogDefaults[item] ?? null;
-      if (!defaultImage) return;
-      if (!imageUrl || isCatalogDefaultUrl(imageUrl)) {
-        setImageUrl(defaultImage);
-      }
-    }
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmedName = name.trim();
-    const resolvedImage = isCreate
-      ? catalogImageForName(trimmedName, catalogDefaults)
-      : imageUrl;
-
     onSubmit({
       name: trimmedName,
       description: description.trim() || undefined,
       price: Number(price),
       durationMin: Number(durationMin),
-      imageUrl: resolvedImage,
+      imageUrl:
+        catalogImageForName(trimmedName, catalogDefaults) ??
+        (!isCreate ? initial?.imageUrl ?? null : null),
       active,
       staffIds,
     });
@@ -108,32 +90,20 @@ export function ServiceForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {isCreate ? (
-        imageUrl ? (
-          <div>
-            <span className="mb-1.5 block text-sm font-medium">Photo du service</span>
-            <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-[20px] border border-[#EAC4D5] bg-[#FFF5F9]">
-              <ServiceResponsiveImage
-                imageUrl={imageUrl}
-                alt={name || "Photo du service"}
-                variant="main"
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <p className="mt-1.5 text-[11px] text-ink/45">Image catalogue du soin sélectionné.</p>
-          </div>
-        ) : null
-      ) : (
+      {displayImage ? (
         <div>
           <span className="mb-1.5 block text-sm font-medium">Photo du service</span>
-          <ServiceImageUpload value={imageUrl} onChange={setImageUrl} disabled={submitting} />
-          {isCatalogDefaultUrl(imageUrl) ? (
-            <p className="mt-1.5 text-[11px] text-ink/45">
-              Image catalogue par défaut — vous pouvez la remplacer par votre photo.
-            </p>
-          ) : null}
+          <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-[20px] border border-[#EAC4D5] bg-[#FFF5F9]">
+            <ServiceResponsiveImage
+              imageUrl={displayImage}
+              alt={name || "Photo du service"}
+              variant="main"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <p className="mt-1.5 text-[11px] text-ink/45">Image catalogue du soin.</p>
         </div>
-      )}
+      ) : null}
 
       <div className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>

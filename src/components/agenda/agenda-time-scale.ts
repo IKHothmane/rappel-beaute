@@ -167,6 +167,15 @@ export function layoutAgendaTime(
     }
   };
 
+  const hasOccupied = occupied.some(Boolean);
+
+  // Journée entièrement libre : chaque créneau reste visible et cliquable
+  // (sinon toute la plage serait compressée en un seul bandeau « gap »).
+  if (!hasOccupied) {
+    pushSlots(0, slots.length, true);
+    return { slots, rows, tops, heights, totalHeight: cursor };
+  }
+
   let index = 0;
   while (index < slots.length) {
     if (occupied[index]) {

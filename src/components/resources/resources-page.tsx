@@ -3,44 +3,29 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  Building2,
   CalendarDays,
-  CheckCircle2,
-  LayoutGrid,
-  MoreHorizontal,
-  Download,
-  Plus,
   Search,
-  Table2,
-  Timer,
-  Wallet,
-  Wrench,
 } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { ResourceFocusPanel } from "@/components/resources/resource-focus-panel";
 import { ResourceForm } from "@/components/resources/resource-form";
+import { ResourcePremiumCard } from "@/components/resources/resource-premium-card";
 import {
-  exportResourcesCsv,
-  formatTime,
-  liveChipClass,
-  liveDotClass,
   liveStatus,
-  LIVE_STATUS_LABEL,
   nextAppointment,
   overlappingNow,
-  remainingMinutes,
-  resourceTypeIcon,
   todayAppointments,
 } from "@/components/resources/resource-helpers";
 import { ResourcesMobile } from "@/components/resources/resources-mobile";
+import { ResourcesPremiumHeader } from "@/components/resources/resources-premium-header";
 import { Drawer } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { canReadAnalytics, canReadFeature, canWriteResources } from "@/lib/rbac";
+import { canReadFeature, canWriteResources } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
-import { formatMad, formatPct, getAnalyticsOverview } from "@/modules/analytics/service";
+import { getAnalyticsOverview } from "@/modules/analytics/service";
 import { listAppointments } from "@/modules/appointments/service";
 import {
   createResource,
@@ -64,7 +49,6 @@ import type {
 import { MAINTENANCE_STATUS_LABEL, MAINTENANCE_TYPE_LABEL, RESOURCE_TYPE_LABEL, RESOURCE_TYPES } from "@/types/resource";
 
 type StatusFilter = "all" | "available" | "occupied" | "soon" | "maintenance" | "inactive";
-type ViewMode = "grid" | "table";
 
 export function ResourcesPageView() {
   const { toast } = useToast();
@@ -72,7 +56,6 @@ export function ResourcesPageView() {
   const canWrite = canWriteResources(user.role);
   const canAgenda = canReadFeature(user.role, "agenda");
   const financeHidden = user.role === "STAFF" || user.role === "CASHIER";
-  const canExport = canReadAnalytics(user.role) && !financeHidden;
 
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -80,7 +63,6 @@ export function ResourcesPageView() {
   const [typeFilter, setTypeFilter] = useState<ResourceType | "">("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [location, setLocation] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [catalog, setCatalog] = useState<ResourceListItem[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
@@ -340,8 +322,6 @@ export function ResourcesPageView() {
     setMaintenanceOpen(true);
   }
 
-  const apptChange = overview?.appointments.changePercent;
-
   return (
     <div className="flex flex-col gap-5 pb-8">
       <ResourcesMobile
@@ -384,89 +364,16 @@ export function ResourcesPageView() {
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="flex items-center gap-2 font-display text-[28px] font-bold leading-9 tracking-tight text-ink lg:text-[32px]">
-                <Building2 size={26} className="text-primary" />
-                Ressources, cabines & équipements
-              </h1>
-              <p className="mt-1 max-w-3xl text-[15px] text-ink/50">
-                Espaces de soin, postes et appareils — un créneau, une ressource.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => exportResourcesCsv(catalog)}
-                className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm"
-              >
-                <Download size={16} />
-                Exporter
-              </button>
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={openMaintenance}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[13px] font-semibold text-ink shadow-sm"
-                >
-                  <Wrench size={16} className="text-[#7B5900]" />
-                  Planifier maintenance
-                </button>
-              ) : null}
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={() => void openCreate()}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-[13px] font-semibold text-white shadow-md"
-                >
-                  <Plus size={18} />
-                  Ajouter une ressource
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </section>
+        <ResourcesPremiumHeader
+          total={catalog.length}
+          available={availableCount}
+          occupied={occupiedCount}
+          maintenance={maintenanceCount}
+          canWrite={canWrite}
+          onCreate={() => void openCreate()}
+        />
 
-        <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <KpiCard
-            label="Total espaces"
-            value={String(catalog.length)}
-            hint={`${activeCount} actives`}
-            icon={Building2}
-          />
-          <KpiCard
-            label="Disponibles"
-            value={String(availableCount)}
-            hint="Libres maintenant"
-            icon={CheckCircle2}
-            tone="emerald"
-          />
-          <KpiCard
-            label="En soin"
-            value={String(occupiedCount)}
-            hint={
-              apptChange != null ? (
-                <span className={apptChange >= 0 ? "text-emerald-700" : "text-red-700"}>
-                  {formatPct(apptChange)} RDV vs m-1
-                </span>
-              ) : (
-                "Créneau en cours"
-              )
-            }
-            icon={Timer}
-            tone="primary"
-          />
-          <KpiCard
-            label="CA du mois"
-            value={financeHidden || !canExport ? "—" : overview ? formatMad(overview.revenue.value) : "—"}
-            hint={maintenanceCount ? `${maintenanceCount} en maintenance` : "Institut"}
-            icon={Wallet}
-            tone="gold"
-          />
-        </section>
-
-        <div className="flex flex-col gap-3 rounded-xl bg-white p-3 shadow-sm">
+        <div className="flex flex-col gap-3 rounded-xl border border-[#EFDCE4] bg-white p-3 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative min-w-[240px] flex-1">
               <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/35" />
@@ -474,7 +381,7 @@ export function ResourcesPageView() {
                 ref={searchRef}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Rechercher une cabine, un poste, un équipement… (⌘K)"
+                placeholder="Rechercher une ressource… (⌘K)"
                 className="h-11 w-full rounded-lg bg-[#FFEFF8] pl-11 pr-14 text-sm text-ink outline-none placeholder:text-ink/35 focus:ring-2 focus:ring-primary/20"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded bg-[#F6E3EF] px-1.5 py-0.5 font-mono text-[10px] text-ink/45">
@@ -505,28 +412,10 @@ export function ResourcesPageView() {
                 </option>
               ))}
             </select>
-            <div className="flex rounded-lg bg-[#FFEFF8] p-1">
-              <button
-                type="button"
-                title="Vue cartes"
-                onClick={() => setViewMode("grid")}
-                className={cn("rounded-md p-1.5", viewMode === "grid" ? "bg-white text-primary shadow-sm" : "text-ink/40")}
-              >
-                <LayoutGrid size={16} />
-              </button>
-              <button
-                type="button"
-                title="Vue tableau"
-                onClick={() => setViewMode("table")}
-                className={cn("rounded-md p-1.5", viewMode === "table" ? "bg-white text-primary shadow-sm" : "text-ink/40")}
-              >
-                <Table2 size={16} />
-              </button>
-            </div>
           </div>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             <FilterPill active={typeFilter === ""} onClick={() => setTypeFilter("")}>
-              Tous les espaces ({catalog.length})
+              Toutes ({catalog.length})
             </FilterPill>
             {typeCounts.map(([t, n]) => (
               <FilterPill key={t} active={typeFilter === t} onClick={() => setTypeFilter(t)}>
@@ -536,8 +425,8 @@ export function ResourcesPageView() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
-          <div className="flex flex-col gap-4 lg:col-span-7">
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
+          <div className="flex flex-col gap-4 xl:col-span-8">
             <div className="flex items-center justify-between px-1 text-[11px] font-semibold uppercase tracking-wider text-ink/40">
               <span>
                 {filtered.length} ressource{filtered.length !== 1 ? "s" : ""}
@@ -552,76 +441,27 @@ export function ResourcesPageView() {
               <p className="py-12 text-center text-sm text-ink/40">Chargement…</p>
             ) : filtered.length === 0 ? (
               <p className="py-12 text-center text-sm text-ink/45">Aucune ressource trouvée.</p>
-            ) : viewMode === "table" ? (
-              <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-[#E4BDC2]/40 text-[11px] uppercase tracking-wider text-ink/40">
-                      <th className="px-4 py-3 font-semibold">Ressource</th>
-                      <th className="px-4 py-3 font-semibold">Type</th>
-                      <th className="px-4 py-3 font-semibold">Statut</th>
-                      <th className="px-4 py-3 font-semibold">RDV j</th>
-                      <th className="px-4 py-3 font-semibold">Services</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((r) => {
-                      const st = statusOf(r);
-                      return (
-                        <tr
-                          key={r.id}
-                          onClick={() => setSelectedId(r.id)}
-                          className={cn(
-                            "cursor-pointer border-b border-[#E4BDC2]/20 hover:bg-[#FFEFF8]/60",
-                            selected?.id === r.id && "bg-[#FFEFF8]",
-                          )}
-                        >
-                          <td className="px-4 py-3">
-                            <p className="font-semibold text-ink">{r.name}</p>
-                            <p className="text-[12px] text-ink/45">{r.location || "—"}</p>
-                          </td>
-                          <td className="px-4 py-3">{RESOURCE_TYPE_LABEL[r.type]}</td>
-                          <td className="px-4 py-3">
-                            <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", liveChipClass(st))}>
-                              {LIVE_STATUS_LABEL[st]}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">{todayCountOf(r.id)}</td>
-                          <td className="max-w-[180px] truncate px-4 py-3 text-[12px] text-ink/55">
-                            {r.serviceNames.slice(0, 3).join(" · ") || "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
             ) : (
-              filtered.map((r) => (
-                <MasterCard
-                  key={r.id}
-                  resource={r}
-                  status={statusOf(r)}
-                  current={currentOf(r.id)}
-                  next={nextOf(r.id)}
-                  todayCount={todayCountOf(r.id)}
-                  selected={selected?.id === r.id}
-                  canWrite={canWrite}
-                  menuOpen={menuId === r.id}
-                  onSelect={() => {
-                    setSelectedId(r.id);
-                    setMenuId(null);
-                  }}
-                  onMenu={() => setMenuId(menuId === r.id ? null : r.id)}
-                  onEdit={() => void openEdit(r.id)}
-                  onToggle={() => void handleToggle(r)}
-                  onDelete={() => void handleDelete(r)}
-                />
-              ))
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {filtered.map((resource) => (
+                  <ResourcePremiumCard
+                    key={resource.id}
+                    resource={resource}
+                    status={statusOf(resource)}
+                    selected={selected?.id === resource.id}
+                    canWrite={canWrite}
+                    onSelect={() => {
+                      setSelectedId(resource.id);
+                      setMenuId(null);
+                    }}
+                    onEdit={() => void openEdit(resource.id)}
+                  />
+                ))}
+              </div>
             )}
           </div>
 
-          <div className="lg:sticky lg:top-20 lg:col-span-5">
+          <div className="xl:sticky xl:top-20 xl:col-span-4">
             {selected ? (
               <ResourceFocusPanel
                 resourceId={selected.id}
@@ -629,13 +469,12 @@ export function ResourcesPageView() {
                 current={currentOf(selected.id)}
                 next={nextOf(selected.id)}
                 todayCount={todayCountOf(selected.id)}
-                insight={insight}
                 canWrite={canWrite}
                 onEdit={() => void openEdit(selected.id)}
                 onMaintenance={openMaintenance}
               />
             ) : (
-              <div className="rounded-2xl bg-white p-8 text-center text-sm text-ink/45 shadow-sm">
+              <div className="rounded-[22px] border border-[#EFDCE4] bg-white p-8 text-center text-sm text-ink/45 shadow-lg">
                 Sélectionnez une ressource pour afficher sa fiche.
               </div>
             )}
@@ -747,169 +586,6 @@ export function ResourcesPageView() {
   );
 }
 
-function MasterCard({
-  resource: r,
-  status,
-  current,
-  next,
-  todayCount,
-  selected,
-  canWrite,
-  menuOpen,
-  onSelect,
-  onMenu,
-  onEdit,
-  onToggle,
-  onDelete,
-}: {
-  resource: ResourceListItem;
-  status: ReturnType<typeof liveStatus>;
-  current?: Appointment;
-  next?: Appointment;
-  todayCount: number;
-  selected: boolean;
-  canWrite: boolean;
-  menuOpen: boolean;
-  onSelect: () => void;
-  onMenu: () => void;
-  onEdit: () => void;
-  onToggle: () => void;
-  onDelete: () => void;
-}) {
-  const Icon = resourceTypeIcon(r.type);
-  const left = current ? remainingMinutes(current.endAt) : null;
-
-  return (
-    <article
-      onClick={onSelect}
-      className={cn(
-        "relative cursor-pointer overflow-hidden rounded-xl bg-white shadow-sm transition-all",
-        selected && "bg-[#E8F1FF] shadow-md ring-2 ring-[#3B6FD8]",
-      )}
-    >
-      {r.imageUrl ? (
-        <div className="aspect-[16/9] w-full overflow-hidden bg-[#FFF5F9]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={r.imageUrl}
-            alt=""
-            width={800}
-            height={450}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
-        </div>
-      ) : null}
-      <div className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#FFD9DE] text-primary">
-            {r.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={r.imageUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <Icon size={22} />
-            )}
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-[18px] font-bold text-ink">{r.name}</h3>
-              <span className="rounded-full bg-[#FCE9F4] px-2 py-0.5 text-[11px] font-semibold text-ink/55">
-                {RESOURCE_TYPE_LABEL[r.type]}
-              </span>
-            </div>
-            <p className="mt-0.5 text-[13px] text-ink/50">
-              {r.location || "Emplacement non renseigné"} · capacité {r.capacity}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold", liveChipClass(status))}>
-            <span className={cn("h-2 w-2 rounded-full", liveDotClass(status), status === "occupied" && "animate-pulse")} />
-            {LIVE_STATUS_LABEL[status]}
-          </span>
-          {canWrite ? (
-            <button
-              type="button"
-              aria-label="Actions"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMenu();
-              }}
-              className="rounded-lg p-1.5 text-ink/40 hover:bg-[#FCE9F4] hover:text-ink"
-            >
-              <MoreHorizontal size={16} />
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {current ? (
-        <div className="mt-4 flex flex-col justify-between gap-2 rounded-lg bg-[#FFEFF8] p-3 md:flex-row md:items-center">
-          <div>
-            <p className="text-[11px] uppercase text-ink/40">
-              En cours · {formatTime(current.startAt)} → {formatTime(current.endAt)}
-              {left != null ? ` · reste ${left} min` : ""}
-            </p>
-            <p className="mt-0.5 font-bold text-ink">{current.serviceName}</p>
-            <p className="text-[13px] text-ink/55">
-              {current.customerName} · {current.staffName}
-            </p>
-          </div>
-          <div className="text-right text-[12px] text-ink/45">
-            <p>{todayCount} RDV aujourd’hui</p>
-            <p>{r.serviceCount} prestation{r.serviceCount !== 1 ? "s" : ""}</p>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 rounded-lg bg-[#FFEFF8] p-3 text-[13px] text-ink/60">
-          {next ? (
-            <>Prochain : {next.serviceName} à {formatTime(next.startAt)} · {next.staffName}</>
-          ) : r.upcomingMaintenance ? (
-            "Maintenance planifiée — créneaux bloqués à l’agenda."
-          ) : (
-            "Aucun rendez-vous en cours."
-          )}
-          <span className="ml-2 text-ink/40">{todayCount} RDV aujourd’hui</span>
-        </div>
-      )}
-
-      {r.serviceNames.length ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {r.serviceNames.slice(0, 4).map((name) => (
-            <span key={name} className="rounded bg-[#FCE9F4] px-2 py-0.5 text-[11px] text-ink/55">
-              {name}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      {menuOpen && canWrite ? (
-        <div
-          className="absolute right-4 top-14 z-10 min-w-[160px] rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button type="button" onClick={onEdit} className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]">
-            Modifier
-          </button>
-          <button type="button" onClick={onToggle} className="block w-full px-3 py-2 text-left text-[13px] hover:bg-[#FFEFF8]">
-            {r.active ? "Désactiver" : "Réactiver"}
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="block w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50"
-          >
-            Supprimer
-          </button>
-        </div>
-      ) : null}
-      </div>
-    </article>
-  );
-}
-
 function toDatetimeLocal(iso: string) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
@@ -979,43 +655,6 @@ function MaintenanceForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function KpiCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  tone = "ink",
-}: {
-  label: string;
-  value: string;
-  hint: ReactNode;
-  icon: typeof Building2;
-  tone?: "ink" | "emerald" | "gold" | "primary";
-}) {
-  const box = {
-    ink: "bg-[#FCE9F4] text-primary",
-    emerald: "bg-emerald-50 text-emerald-700",
-    gold: "bg-[#FFDEA4]/50 text-[#7B5900]",
-    primary: "bg-[#FFD9DE] text-primary",
-  };
-  return (
-    <div className="flex flex-col justify-between overflow-hidden rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between text-ink/45">
-        <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
-        <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", box[tone])}>
-          <Icon size={18} />
-        </span>
-      </div>
-      <div className="mt-3">
-        <p className={cn("font-display text-[32px] font-extrabold leading-9", tone === "primary" ? "text-primary" : "text-ink")}>
-          {value}
-        </p>
-        <p className="mt-2 rounded-lg bg-[#FFEFF8] px-2.5 py-1.5 text-[12px] text-ink/50">{hint}</p>
-      </div>
-    </div>
   );
 }
 

@@ -145,10 +145,30 @@ export async function getPublicServices(organizationId: string): Promise<PublicS
     deposit: string | null;
     imageUrl: string | null;
   }>(
-    `SELECT id, name, description, category, price::text, "durationMin", "prepTimeMin", "cleanupTimeMin", deposit::text, "imageUrl"
-     FROM "Service"
-     WHERE "organizationId" = $1 AND active = true
-     ORDER BY name`,
+    `SELECT
+       s.id,
+       s.name,
+       s.description,
+       s.category,
+       s.price::text,
+       s."durationMin",
+       s."prepTimeMin",
+       s."cleanupTimeMin",
+       s.deposit::text,
+       COALESCE(
+         NULLIF(TRIM(s."imageUrl"), ''),
+         (
+           SELECT scd."imageUrl"
+           FROM "ServiceCatalogDefault" scd
+           WHERE scd.name = s.name
+             AND scd."imageUrl" IS NOT NULL
+             AND scd."imageUrl" <> ''
+           LIMIT 1
+         )
+       ) AS "imageUrl"
+     FROM "Service" s
+     WHERE s."organizationId" = $1 AND s.active = true
+     ORDER BY s.name`,
     [organizationId],
   );
   return rows.map((s) => ({

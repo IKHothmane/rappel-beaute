@@ -26,6 +26,7 @@ type ResourceRow = {
   location: string | null;
   notes: string | null;
   active: boolean;
+  imageUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
   serviceCount: string;
@@ -33,6 +34,17 @@ type ResourceRow = {
   appointmentCount: string;
   upcomingMaintenance: boolean | null;
 };
+
+const CATALOG_IMAGE_SQL = `
+  (
+    SELECT rcd."imageUrl"
+    FROM "ResourceCatalogDefault" rcd
+    WHERE rcd.type = r.type
+      AND rcd."imageUrl" IS NOT NULL
+      AND rcd."imageUrl" <> ''
+    LIMIT 1
+  ) AS "imageUrl"
+`;
 
 function rowToListItem(row: ResourceRow): ResourceListItem {
   return {
@@ -43,6 +55,7 @@ function rowToListItem(row: ResourceRow): ResourceListItem {
     location: row.location,
     notes: row.notes,
     active: row.active,
+    imageUrl: row.imageUrl ?? null,
     serviceCount: parseInt(row.serviceCount, 10) || 0,
     serviceNames: row.serviceNames ?? [],
     upcomingMaintenance: Boolean(row.upcomingMaintenance),
@@ -166,6 +179,7 @@ export async function listResources(
   const listSql = `
     SELECT
       r.id, r.name, r.type, r.capacity, r.location, r.notes, r.active,
+      ${CATALOG_IMAGE_SQL},
       r."createdAt", r."updatedAt",
       COUNT(DISTINCT sr."serviceId")::text AS "serviceCount",
       COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), '{}') AS "serviceNames",
@@ -205,6 +219,7 @@ export async function getResourceById(
   const { rows } = await pool.query<ResourceRow>(
     `SELECT
       r.id, r.name, r.type, r.capacity, r.location, r.notes, r.active,
+      ${CATALOG_IMAGE_SQL},
       r."createdAt", r."updatedAt",
       COUNT(DISTINCT sr."serviceId")::text AS "serviceCount",
       COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), '{}') AS "serviceNames",

@@ -89,9 +89,11 @@ async function encodeWebpWithinBudget(
 export async function optimizeServiceImage(
   buf: Buffer,
   _contentType: string,
-  filenameBase: "service" | "catalog" = "service",
+  filenameBase: "service" | "catalog" | "resource" = "service",
 ): Promise<OptimizedServiceImages> {
   const sharp = (await import("sharp")).default;
+  sharp.cache(false);
+  sharp.concurrency(1);
   const meta = await sharp(buf, { failOn: "none" }).metadata();
   if ((meta.width ?? 0) > 8000 || (meta.height ?? 0) > 8000) {
     throw new Error("Image trop grande.");

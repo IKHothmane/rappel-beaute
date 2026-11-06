@@ -17,7 +17,10 @@ export function getStorageService(): StorageService {
     instance = new LocalStorageService();
   } else {
     instance = new LocalStorageService();
-    console.warn("[storage] S3 non configuré en production — fallback local (configurer avant go-live)");
+    // Disque conteneur éphémère : les images disparaissent à chaque redéploiement Railway.
+    console.warn(
+      "[storage] S3/R2 non configuré — stockage local éphémère. Les photos services/logos seront perdues au redeploy.",
+    );
   }
 
   return instance;

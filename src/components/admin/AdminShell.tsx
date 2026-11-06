@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Activity,
+  Armchair,
   CreditCard,
   Gift,
   LayoutDashboard,
@@ -53,7 +54,10 @@ const NAV: NavGroup[] = [
   },
   {
     title: "Catalogue",
-    items: [{ href: "/services/", label: "Images services", icon: Scissors }],
+    items: [
+      { href: "/services/", label: "Images services", icon: Scissors },
+      { href: "/resources/", label: "Images ressources", icon: Armchair },
+    ],
   },
   {
     title: "Marketing",
@@ -125,6 +129,9 @@ function isActive(pathname: string, href: string) {
   }
   if (href === "/services/") {
     return path.startsWith("/services");
+  }
+  if (href === "/resources/") {
+    return path.startsWith("/resources");
   }
   if (href === "/loyalty/") {
     return path.startsWith("/loyalty");

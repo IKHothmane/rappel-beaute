@@ -3,6 +3,8 @@
  * Activer via MEMORY_DIAGNOSTICS=1 sur Railway.
  */
 
+import v8 from "node:v8";
+
 export type MemorySnapshot = {
   rssMb: number;
   heapUsedMb: number;
@@ -11,6 +13,8 @@ export type MemorySnapshot = {
   arrayBuffersMb: number;
   /** RSS hors heap V8 ≈ allocations natives (Sharp/libvips, buffers, etc.). */
   unaccountedMb: number;
+  /** Plafond --max-old-space-size (Mo). Si ~1536+ sans env → limite non appliquée. */
+  heapSizeLimitMb: number;
 };
 
 function mb(bytes: number): number {
@@ -24,6 +28,7 @@ export function getMemorySnapshot(): MemorySnapshot {
   const heapTotalMb = mb(memory.heapTotal);
   const externalMb = mb(memory.external);
   const arrayBuffersMb = mb(memory.arrayBuffers);
+  const heapSizeLimitMb = mb(v8.getHeapStatistics().heap_size_limit);
   return {
     rssMb,
     heapUsedMb,
@@ -31,6 +36,7 @@ export function getMemorySnapshot(): MemorySnapshot {
     externalMb,
     arrayBuffersMb,
     unaccountedMb: Math.max(0, rssMb - heapUsedMb - externalMb - arrayBuffersMb),
+    heapSizeLimitMb,
   };
 }
 
@@ -49,6 +55,7 @@ export function logMemoryUsage(label: string): MemorySnapshot {
     external: `${snapshot.externalMb} MB`,
     arrayBuffers: `${snapshot.arrayBuffersMb} MB`,
     unaccounted: `${snapshot.unaccountedMb} MB`,
+    heapLimit: `${snapshot.heapSizeLimitMb} MB`,
   });
   return snapshot;
 }

@@ -112,11 +112,31 @@ export function ResourceFocusPanel({
         </Link>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-4 overflow-hidden rounded-xl bg-white shadow-sm">
+        {resource.imageUrl ? (
+          <div className="aspect-[16/9] w-full overflow-hidden bg-[#FFF5F9]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={resource.imageUrl}
+              alt={resource.name}
+              width={800}
+              height={450}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFD9DE] text-primary">
-              <Icon size={22} />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#FFD9DE] text-primary">
+              {resource.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={resource.imageUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <Icon size={22} />
+              )}
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
@@ -263,6 +283,7 @@ export function ResourceFocusPanel({
             Maintenance
           </button>
         ) : null}
+        </div>
       </div>
     </div>
   );

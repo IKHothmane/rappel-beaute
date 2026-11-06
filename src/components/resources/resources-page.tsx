@@ -783,14 +783,34 @@ function MasterCard({
     <article
       onClick={onSelect}
       className={cn(
-        "relative cursor-pointer rounded-xl bg-white p-4 shadow-sm transition-all",
+        "relative cursor-pointer overflow-hidden rounded-xl bg-white shadow-sm transition-all",
         selected && "bg-[#E8F1FF] shadow-md ring-2 ring-[#3B6FD8]",
       )}
     >
+      {r.imageUrl ? (
+        <div className="aspect-[16/9] w-full overflow-hidden bg-[#FFF5F9]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={r.imageUrl}
+            alt=""
+            width={800}
+            height={450}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
+        </div>
+      ) : null}
+      <div className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFD9DE] text-primary">
-            <Icon size={22} />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#FFD9DE] text-primary">
+            {r.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={r.imageUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Icon size={22} />
+            )}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -885,6 +905,7 @@ function MasterCard({
           </button>
         </div>
       ) : null}
+      </div>
     </article>
   );
 }

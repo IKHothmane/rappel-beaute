@@ -5,8 +5,6 @@ import {
   Search,
   Plus,
   SlidersHorizontal,
-  LayoutGrid,
-  List,
   Scissors,
   CalendarDays,
   Wallet,
@@ -32,7 +30,6 @@ export type ServiceWithImage = ServiceListItem & {
 };
 
 type Filter = "all" | "active" | "inactive";
-type View = "grid" | "list";
 
 type Props = {
   services: ServiceWithImage[];
@@ -126,14 +123,12 @@ function ServicePhoto({
 
 function ServiceCard({
   service,
-  view,
   canWrite,
   onEdit,
   onToggle,
   onDelete,
 }: {
   service: ServiceWithImage;
-  view: View;
   canWrite: boolean;
   onEdit: (id: string) => void;
   onToggle?: (id: string) => void;
@@ -142,15 +137,11 @@ function ServiceCard({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <article
-      className={`group relative overflow-hidden rounded-[22px] border border-[#F0DDE7] bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_40px_rgba(109,22,61,0.12)] ${
-        view === "list" ? "sm:flex" : ""
-      }`}
-    >
+    <article className="group relative overflow-hidden rounded-[22px] border border-[#F0DDE7] bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_40px_rgba(109,22,61,0.12)]">
       <ServicePhoto
         key={`${service.id}-${service.imageUrl ?? ""}`}
         service={service}
-        className={view === "list" ? "aspect-[4/3] w-full shrink-0 sm:h-auto sm:w-56" : "aspect-[4/3] w-full"}
+        className="aspect-[4/3] w-full"
       />
 
       <div className="flex min-w-0 flex-1 flex-col p-4">
@@ -290,7 +281,6 @@ export default function ServicesCatalogPremium({
 }: Props) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [view, setView] = useState<View>("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("name");
@@ -504,26 +494,6 @@ export default function ServicesCatalogPremium({
           ))}
         </div>
 
-        <div className="flex items-center rounded-xl border border-[#F0DFE7] bg-white p-1">
-          <button
-            type="button"
-            onClick={() => setView("grid")}
-            aria-label="Affichage en grille"
-            aria-pressed={view === "grid"}
-            className={`rounded-lg p-2.5 ${view === "grid" ? "bg-[#FCE1ED] text-[#B60050]" : "text-slate-500"}`}
-          >
-            <LayoutGrid size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("list")}
-            aria-label="Affichage en liste"
-            aria-pressed={view === "list"}
-            className={`rounded-lg p-2.5 ${view === "list" ? "bg-[#FCE1ED] text-[#B60050]" : "text-slate-500"}`}
-          >
-            <List size={18} />
-          </button>
-        </div>
       </div>
 
       {loading ? (
@@ -533,18 +503,11 @@ export default function ServicesCatalogPremium({
           ))}
         </div>
       ) : visible.length ? (
-        <div
-          className={
-            view === "grid"
-              ? "grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3"
-              : "flex flex-col gap-4"
-          }
-        >
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((service) => (
             <ServiceCard
               key={service.id}
               service={service}
-              view={view}
               canWrite={canWrite}
               onEdit={onEdit}
               onToggle={onToggle}

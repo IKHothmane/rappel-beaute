@@ -10,7 +10,8 @@ export const pool =
   globalForPg.pgPool ??
   new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 10,
+    // Instance Railway unique : 5 connexions suffisent et coûtent moins de RAM.
+    max: Number(process.env.PG_POOL_MAX ?? 5),
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 8_000,
   });

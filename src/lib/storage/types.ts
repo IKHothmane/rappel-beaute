@@ -1,4 +1,4 @@
-export type StorageCategory = "logos" | "exports" | "documents" | "loyalty" | "services";
+export type StorageCategory = "logos" | "exports" | "documents" | "loyalty" | "services" | "resources";
 
 export type PutObjectInput = {
   category: StorageCategory;

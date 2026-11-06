@@ -2482,6 +2482,16 @@ model ServiceCatalogDefault {
   createdAt DateTime @default(now())
 }
 
+/// Images par défaut des types de ressources (Cabine, Salle, Fauteuil, …)
+model ResourceCatalogDefault {
+  id        String       @id @default(cuid())
+  type      ResourceType @unique
+  imageUrl  String
+  updatedAt DateTime     @updatedAt
+  updatedBy String?
+  createdAt DateTime     @default(now())
+}
+
 model Plan {
   id                        String          @id @default(cuid())
   code                      String          @unique

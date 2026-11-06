@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/select";
 import { ServiceImageUpload } from "@/components/services/service-image-upload";
+import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 import { ServiceStaffSelector } from "@/components/services/service-staff-selector";
 import { DURATION_PRESETS, SERVICE_NAME_SUGGESTIONS } from "@/components/services/services-helpers";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,12 @@ function isCatalogDefaultUrl(url: string | null | undefined) {
   return Boolean(url && url.includes("/services/platform/"));
 }
 
+function catalogImageForName(name: string, defaults: Record<string, string>): string | null {
+  const exact = SERVICE_NAME_SUGGESTIONS.find((item) => item.toLowerCase() === name.trim().toLowerCase());
+  if (!exact) return null;
+  return defaults[exact] ?? null;
+}
+
 export function ServiceForm({
   initial,
   options,
@@ -32,6 +39,7 @@ export function ServiceForm({
   onSubmit,
   onCancel,
 }: ServiceFormProps) {
+  const isCreate = !initial?.id;
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
@@ -63,26 +71,36 @@ export function ServiceForm({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isCreate) return;
+    setImageUrl(catalogImageForName(name, catalogDefaults));
+  }, [isCreate, name, catalogDefaults]);
+
   function applySuggestedName(item: string) {
     setName(item);
     setNameOpen(false);
-    const defaultImage = catalogDefaults[item] ?? null;
-    if (!defaultImage) return;
-
-    // Nouvelle fiche, ou photo absente / encore une image catalogue : appliquer le défaut.
-    if (!initial?.id || !imageUrl || isCatalogDefaultUrl(imageUrl)) {
-      setImageUrl(defaultImage);
+    if (!isCreate) {
+      const defaultImage = catalogDefaults[item] ?? null;
+      if (!defaultImage) return;
+      if (!imageUrl || isCatalogDefaultUrl(imageUrl)) {
+        setImageUrl(defaultImage);
+      }
     }
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const trimmedName = name.trim();
+    const resolvedImage = isCreate
+      ? catalogImageForName(trimmedName, catalogDefaults)
+      : imageUrl;
+
     onSubmit({
-      name: name.trim(),
+      name: trimmedName,
       description: description.trim() || undefined,
       price: Number(price),
       durationMin: Number(durationMin),
-      imageUrl,
+      imageUrl: resolvedImage,
       active,
       staffIds,
     });
@@ -90,15 +108,32 @@ export function ServiceForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <span className="mb-1.5 block text-sm font-medium">Photo du service</span>
-        <ServiceImageUpload value={imageUrl} onChange={setImageUrl} disabled={submitting} />
-        {isCatalogDefaultUrl(imageUrl) ? (
-          <p className="mt-1.5 text-[11px] text-ink/45">
-            Image catalogue par défaut — vous pouvez la remplacer par votre photo.
-          </p>
-        ) : null}
-      </div>
+      {isCreate ? (
+        imageUrl ? (
+          <div>
+            <span className="mb-1.5 block text-sm font-medium">Photo du service</span>
+            <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-[20px] border border-[#EAC4D5] bg-[#FFF5F9]">
+              <ServiceResponsiveImage
+                imageUrl={imageUrl}
+                alt={name || "Photo du service"}
+                variant="main"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] text-ink/45">Image catalogue du soin sélectionné.</p>
+          </div>
+        ) : null
+      ) : (
+        <div>
+          <span className="mb-1.5 block text-sm font-medium">Photo du service</span>
+          <ServiceImageUpload value={imageUrl} onChange={setImageUrl} disabled={submitting} />
+          {isCatalogDefaultUrl(imageUrl) ? (
+            <p className="mt-1.5 text-[11px] text-ink/45">
+              Image catalogue par défaut — vous pouvez la remplacer par votre photo.
+            </p>
+          ) : null}
+        </div>
+      )}
 
       <div className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>

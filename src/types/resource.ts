@@ -52,6 +52,8 @@ export type ResourceListItem = {
   location: string | null;
   notes: string | null;
   active: boolean;
+  /** Image catalogue plateforme selon le type (Cabine, Salle…). */
+  imageUrl: string | null;
   serviceCount: number;
   serviceNames: string[];
   upcomingMaintenance: boolean;

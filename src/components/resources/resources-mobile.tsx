@@ -356,11 +356,31 @@ function ResourceCard({
   const left = current ? remainingMinutes(current.endAt) : null;
 
   return (
-    <article className={cn("relative rounded-xl bg-white p-3.5 shadow-sm", selected && "bg-[#E8F1FF] ring-2 ring-[#3B6FD8]")}>
+    <article className={cn("relative overflow-hidden rounded-xl bg-white shadow-sm", selected && "bg-[#E8F1FF] ring-2 ring-[#3B6FD8]")}>
+      {r.imageUrl ? (
+        <button type="button" onClick={onOpen} className="block aspect-[16/9] w-full overflow-hidden bg-[#FFF5F9]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={r.imageUrl}
+            alt=""
+            width={400}
+            height={225}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
+        </button>
+      ) : null}
+      <div className="p-3.5">
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={onOpen} className="flex min-w-0 items-start gap-2 text-left">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFD9DE] text-primary">
-            <Icon size={18} />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#FFD9DE] text-primary">
+            {r.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={r.imageUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Icon size={18} />
+            )}
           </div>
           <div className="min-w-0">
             <p className="truncate text-[16px] font-bold text-ink">{r.name}</p>
@@ -432,6 +452,7 @@ function ResourceCard({
           </button>
         </div>
       ) : null}
+      </div>
     </article>
   );
 }

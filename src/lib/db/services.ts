@@ -84,7 +84,17 @@ const LIST_SELECT = `
     s."cleanupTimeMin",
     s.deposit::text,
     s."recommendedReturnDays",
-    s."imageUrl",
+    COALESCE(
+      NULLIF(TRIM(s."imageUrl"), ''),
+      (
+        SELECT scd."imageUrl"
+        FROM "ServiceCatalogDefault" scd
+        WHERE scd.name = s.name
+          AND scd."imageUrl" IS NOT NULL
+          AND scd."imageUrl" <> ''
+        LIMIT 1
+      )
+    ) AS "imageUrl",
     s.active,
     s."createdAt",
     s."updatedAt",

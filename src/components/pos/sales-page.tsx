@@ -228,7 +228,7 @@ export function SalesPageView() {
             className="h-10 min-w-[140px]"
           >
             <option value="">Tous</option>
-            {PAYMENT_METHODS.filter((m) => m !== "ONLINE").map((m) => (
+            {PAYMENT_METHODS.map((m) => (
               <option key={m} value={m}>
                 {PAYMENT_METHOD_LABEL[m]}
               </option>

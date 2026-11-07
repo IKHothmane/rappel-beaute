@@ -4,7 +4,7 @@ import type {
   UpdateExpenseInput,
 } from "@/types/expense";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/types/finance";
+import { isSelectablePaymentMethod, type PaymentMethod } from "@/types/finance";
 
 function str(v: unknown): string | undefined {
   if (typeof v !== "string") return undefined;
@@ -29,9 +29,7 @@ function category(v: unknown): ExpenseCategory | undefined {
 
 function method(v: unknown): PaymentMethod | undefined {
   const s = str(v);
-  return s && PAYMENT_METHODS.includes(s as PaymentMethod)
-    ? (s as PaymentMethod)
-    : undefined;
+  return s && isSelectablePaymentMethod(s) ? s : undefined;
 }
 
 export function parseExpenseListQuery(sp: URLSearchParams) {

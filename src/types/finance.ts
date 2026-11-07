@@ -13,17 +13,26 @@ export type CashTxnType =
   | "EXPENSE";
 
 /** Méthodes proposées à l’encaissement (hors historiques). */
-export const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "CARD", "TRANSFER"];
+export const PAYMENT_METHODS = ["CASH", "CARD", "TRANSFER"] as const satisfies readonly PaymentMethod[];
+export type SelectablePaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export function isSelectablePaymentMethod(m: string): m is SelectablePaymentMethod {
+  return (PAYMENT_METHODS as readonly string[]).includes(m);
+}
 
 /** Toutes les méthodes connues (affichage historique / filtres). */
-export const ALL_PAYMENT_METHODS: PaymentMethod[] = [
+export const ALL_PAYMENT_METHODS = [
   "CASH",
   "CARD",
   "TRANSFER",
   "CHECK",
   "ONLINE",
   "GIFT_CARD",
-];
+] as const satisfies readonly PaymentMethod[];
+
+export function isPaymentMethod(m: string): m is PaymentMethod {
+  return (ALL_PAYMENT_METHODS as readonly string[]).includes(m);
+}
 
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   CASH: "Espèces",

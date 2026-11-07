@@ -7,7 +7,7 @@ import type {
   PaymentMethod,
   RefundPaymentInput,
 } from "@/types/finance";
-import { ALL_PAYMENT_METHODS, PAYMENT_METHODS } from "@/types/finance";
+import { isPaymentMethod, isSelectablePaymentMethod } from "@/types/finance";
 
 function str(v: unknown): string | undefined {
   if (typeof v !== "string") return undefined;
@@ -25,9 +25,7 @@ function num(v: unknown): number | undefined {
 
 function method(v: unknown): PaymentMethod | undefined {
   const s = str(v);
-  return s && ALL_PAYMENT_METHODS.includes(s as PaymentMethod)
-    ? (s as PaymentMethod)
-    : undefined;
+  return s && isPaymentMethod(s) ? s : undefined;
 }
 
 export function validateOpenCash(
@@ -95,7 +93,7 @@ export function validateCreatePayments(
         ? (kindRaw as PaymentKind)
         : "PAYMENT";
     if (amount === undefined || amount <= 0 || !m) return { ok: false, errors: ["items"] };
-    if (!PAYMENT_METHODS.includes(m)) return { ok: false, errors: ["items"] };
+    if (!isSelectablePaymentMethod(m)) return { ok: false, errors: ["items"] };
     if (kind === "REFUND") return { ok: false, errors: ["items"] };
     items.push({
       amount,

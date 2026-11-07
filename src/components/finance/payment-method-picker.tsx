@@ -2,12 +2,14 @@
 
 import { Banknote, CreditCard, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PAYMENT_METHODS, PAYMENT_METHOD_LABEL, type PaymentMethod } from "@/types/finance";
+import {
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABEL,
+  type PaymentMethod,
+  type SelectablePaymentMethod,
+} from "@/types/finance";
 
-const METHOD_ICON: Record<
-  (typeof PAYMENT_METHODS)[number],
-  typeof Banknote
-> = {
+const METHOD_ICON: Record<SelectablePaymentMethod, typeof Banknote> = {
   CASH: Banknote,
   CARD: CreditCard,
   TRANSFER: Landmark,
@@ -28,7 +30,8 @@ export function PaymentMethodPicker({
   label = "Méthode",
   className,
 }: Props) {
-  const selected = PAYMENT_METHODS.includes(value) ? value : "CASH";
+  const selected: SelectablePaymentMethod =
+    value === "CASH" || value === "CARD" || value === "TRANSFER" ? value : "CASH";
 
   return (
     <div className={cn("block text-sm", className)}>

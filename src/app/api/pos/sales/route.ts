@@ -7,7 +7,7 @@ import {
 } from "@/lib/auth/api-guard";
 import { createPosSale, getPosSalesKpis, listPosSales } from "@/lib/db/pos";
 import type { PaymentMethod } from "@/types/finance";
-import { PAYMENT_METHODS } from "@/types/finance";
+import { isSelectablePaymentMethod } from "@/types/finance";
 
 const ERROR_MAP: Record<string, { status: number; message: string }> = {
   EMPTY_CART: { status: 400, message: "Panier vide." },
@@ -54,10 +54,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const raw = stripOrganizationId((await request.json()) as Record<string, unknown>);
-    const method = String(raw.paymentMethod ?? "") as PaymentMethod;
-    if (!PAYMENT_METHODS.includes(method)) {
+    const methodRaw = String(raw.paymentMethod ?? "");
+    if (!isSelectablePaymentMethod(methodRaw)) {
       return NextResponse.json({ error: "Moyen de paiement invalide." }, { status: 400 });
     }
+    const method: PaymentMethod = methodRaw;
 
     const linesRaw = Array.isArray(raw.lines) ? raw.lines : [];
     const lines = linesRaw.map((l) => {

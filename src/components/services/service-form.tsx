@@ -107,7 +107,7 @@ export function ServiceForm({
               imageUrl={displayImage}
               alt={name || "Photo du service"}
               variant="main"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain object-center"
             />
           </div>
           <p className="mt-1.5 text-[11px] text-ink/45">Image catalogue du soin.</p>

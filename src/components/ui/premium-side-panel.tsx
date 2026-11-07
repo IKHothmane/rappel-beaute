@@ -2,7 +2,8 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 type PremiumSidePanelProps = {
@@ -28,6 +29,12 @@ export function PremiumSidePanel({
   className,
   size = "lg",
 }: PremiumSidePanelProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -48,14 +55,16 @@ export function PremiumSidePanel({
 
   const titleId = "premium-side-panel-title";
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[80]">
+        <>
           <motion.button
             type="button"
             aria-label="Fermer"
-            className="absolute inset-0 bg-[#261524]/35 backdrop-blur-[1px]"
+            className="rb-fullscreen-overlay fixed z-[200] bg-[#261524]/35 backdrop-blur-[1px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -66,8 +75,8 @@ export function PremiumSidePanel({
             aria-modal
             aria-labelledby={titleId}
             className={cn(
-              "absolute right-0 top-0 flex h-full w-full flex-col overflow-hidden border-l border-[#F0DDE6] bg-white shadow-2xl",
-              size === "lg" ? "max-w-lg sm:max-w-xl" : "max-w-md sm:max-w-lg",
+              "rb-side-panel fixed z-[201] flex flex-col overflow-hidden border-l border-[#F0DDE6] bg-white shadow-2xl",
+              size === "lg" ? "w-[min(100vw,36rem)]" : "w-[min(100vw,28rem)]",
               className,
             )}
             initial={{ x: "100%" }}
@@ -111,8 +120,9 @@ export function PremiumSidePanel({
               </footer>
             ) : null}
           </motion.aside>
-        </div>
+        </>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

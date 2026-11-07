@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { loyaltyCardBackgroundStyle } from "@/lib/loyalty/card-background";
 
 type Appointment = { at: string; service: string; staff: string };
 type Session = { name: string; used: number; total: number; remaining: number };
@@ -29,11 +30,7 @@ export function ClientPassCard({
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="w-full rounded-3xl p-5 text-left text-white shadow-lg"
-        style={{
-          background: backgroundUrl
-            ? `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${backgroundUrl}") center / cover no-repeat`
-            : "linear-gradient(135deg, #221820 0%, #4A2033 48%, #ba0049 100%)",
-        }}
+        style={{ background: loyaltyCardBackgroundStyle(backgroundUrl) }}
       >
         <div className="flex items-start justify-between gap-3">
           <div>

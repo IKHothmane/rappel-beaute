@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Rocket,
   Search,
-  Settings,
   Shield,
   Sparkles,
   Star,
@@ -109,7 +108,6 @@ export function LoyaltyPageView() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [rewardOpen, setRewardOpen] = useState(false);
   const [pkgOpen, setPkgOpen] = useState(false);
   const [redeemMember, setRedeemMember] = useState<LoyaltyAccountSummary | null>(null);
@@ -264,7 +262,6 @@ export function LoyaltyPageView() {
       return;
     }
     setProgram(result.program);
-    setSettingsOpen(false);
     toast("Programme enregistré.", "success");
     refresh();
   }
@@ -360,119 +357,8 @@ export function LoyaltyPageView() {
         visitCards={visitCards}
         journal={journal}
         membersThisMonth={kpis?.membersThisMonth ?? 0}
-        settingsOpen={settingsOpen}
         onRefresh={() => void refresh()}
-        onOpenSettings={() => setSettingsOpen(true)}
       />
-
-      <Drawer open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Configurer le programme">
-        <div className="space-y-3 text-sm">
-          <div className="rounded-xl bg-[#FFEFF8] p-3 space-y-2">
-            <p className="text-xs font-bold text-primary uppercase tracking-wider">Carte fidélité (Passages)</p>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink/70">Nombre de passages requis</span>
-              <Input type="number" min={1} max={50} value={visitsPerReward} onChange={(e) => setVisitsPerReward(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink/70">Nom du programme</span>
-              <Input placeholder="Fidélité de l'institut" value={programName} onChange={(e) => setProgramName(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink/70">Nom de la récompense</span>
-              <Input placeholder="Soin visage offert" value={rewardLabelConfig} onChange={(e) => setRewardLabelConfig(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink/70">Type de récompense</span>
-              <Select value={rewardKind} onChange={(e) => setRewardKind(e.target.value === "DISCOUNT" ? "DISCOUNT" : "FREE_SERVICE")}>
-                <option value="FREE_SERVICE">Service offert</option>
-                <option value="DISCOUNT">Réduction</option>
-              </Select>
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink/70">Valeur (DH, facultatif)</span>
-              <Input type="number" min={0} value={visitRewardValue} onChange={(e) => setVisitRewardValue(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink/70">Validité de la récompense (jours)</span>
-              <Input type="number" min={1} max={365} value={rewardValidityDays} onChange={(e) => setRewardValidityDays(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-ink/70">Services éligibles</span>
-              <Select
-                value=""
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (!id || eligibleServiceIds.includes(id)) return;
-                  setEligibleServiceIds((current) => [...current, id]);
-                }}
-              >
-                <option value="">Tous les services</option>
-                {services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name}
-                  </option>
-                ))}
-              </Select>
-              {eligibleServiceIds.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {eligibleServiceIds.map((id) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setEligibleServiceIds((current) => current.filter((item) => item !== id))}
-                      className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold"
-                    >
-                      {services.find((service) => service.id === id)?.name ?? "Service"} ×
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-1 text-[11px] text-ink/45">Aucun filtre : toutes les prestations comptent.</p>
-              )}
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={productsEligible} onChange={(e) => setProductsEligible(e.target.checked)} />
-              Produits éligibles
-            </label>
-            <p className="text-[11px] text-ink/45">
-              Un passage est validé sur une prestation terminée. Une vente produit seule n&apos;ajoute pas de passage.
-            </p>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={stackRewards} onChange={(e) => setStackRewards(e.target.checked)} />
-              Cumuler plusieurs récompenses
-            </label>
-          </div>
-          <label className="block">
-            <span className="mb-1.5 block font-medium">MAD pour 1 point</span>
-            <Input type="number" min={0.01} step={0.01} value={madPerPoint} onChange={(e) => setMadPerPoint(e.target.value)} />
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block">
-              <span className="mb-1 block text-xs text-ink/50">Seuil Bronze</span>
-              <Input type="number" value={bronzeMin} onChange={(e) => setBronzeMin(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs text-ink/50">Seuil Silver</span>
-              <Input type="number" value={silverMin} onChange={(e) => setSilverMin(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs text-ink/50">Seuil Gold</span>
-              <Input type="number" value={goldMin} onChange={(e) => setGoldMin(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs text-ink/50">Seuil VIP</span>
-              <Input type="number" value={vipMin} onChange={(e) => setVipMin(e.target.value)} />
-            </label>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={programActive} onChange={(e) => setProgramActive(e.target.checked)} />
-            Statut : {programActive ? "Activé" : "Désactivé"}
-          </label>
-          <Button type="button" variant="primary" className="w-full" disabled={!canWrite || submitting} onClick={saveProgram}>
-            Enregistrer
-          </Button>
-        </div>
-      </Drawer>
 
       <Drawer open={rewardOpen} onClose={() => setRewardOpen(false)} title="Nouvelle récompense">
         <div className="space-y-3 text-sm">

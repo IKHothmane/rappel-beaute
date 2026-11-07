@@ -78,7 +78,7 @@ export function ResourceForm({
               imageUrl={previewUrl}
               alt={RESOURCE_TYPE_LABEL[type]}
               variant="main"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain object-center"
             />
           </div>
           <p className="mt-1.5 text-[11px] text-ink/45">

@@ -39,11 +39,11 @@ export function AppLoginForm() {
       };
       await refresh();
       if (data.user?.scope === "platform" || data.user?.accountType === "PLATFORM") {
-        window.location.replace("/dashboard/");
+        window.location.replace("/dashboard/?__host=admin");
       } else if (data.mustChangePassword) {
-        window.location.replace("/changer-mot-de-passe/");
+        window.location.replace("/changer-mot-de-passe/?__host=app");
       } else {
-        window.location.replace("/dashboard/");
+        window.location.replace("/dashboard/?__host=app");
       }
     } catch {
       setError("Identifiants invalides.");

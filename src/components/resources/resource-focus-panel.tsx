@@ -91,7 +91,7 @@ export function ResourceFocusPanel({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 overflow-hidden rounded-[22px] border border-[#EFDCE4] bg-white shadow-lg">
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-[#FDE3ED] via-[#F8CEDF] to-[#F0B8D0]">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-[#FDE3ED] via-[#F8CEDF] to-[#F0B8D0]">
           {resource.imageUrl && !imageFailed ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -102,7 +102,7 @@ export function ResourceFocusPanel({
               loading="lazy"
               decoding="async"
               onError={() => setImageFailed(true)}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain object-center"
             />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-4 text-[#A63869]">

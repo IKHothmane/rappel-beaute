@@ -124,7 +124,7 @@ function ServicePhoto({
           alt={`Photo de la prestation ${service.name}`}
           variant="thumb"
           onError={() => setFailed(true)}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          className="h-full w-full object-contain object-center"
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-[#A63869]">
@@ -189,7 +189,7 @@ function ServiceCard({
         <ServicePhoto
           key={`${service.id}:${service.imageUrl ?? ""}`}
           service={service}
-          className="aspect-[16/7] w-full"
+          className="aspect-[4/3] w-full"
         />
 
         <span

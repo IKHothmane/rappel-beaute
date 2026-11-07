@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AvailabilitySlots } from "@/components/agenda/availability-slots";
 import { staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
@@ -156,6 +157,7 @@ export default function NouveauRendezVousModal({
   const [customersLoading, setCustomersLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
+  const [mounted, setMounted] = useState(false);
   const [staffOpen, setStaffOpen] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
   const [extraOpenIdx, setExtraOpenIdx] = useState<number | null>(null);
@@ -164,6 +166,10 @@ export default function NouveauRendezVousModal({
   const staffRef = useRef<HTMLDivElement>(null);
   const serviceRef = useRef<HTMLDivElement>(null);
   const resourceRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -447,14 +453,16 @@ export default function NouveauRendezVousModal({
       : selectedStaff.name;
   const busy = submitting || creating;
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[80]">
+        <>
           <motion.button
             type="button"
             aria-label="Fermer"
-            className="absolute inset-0 bg-[#261524]/35 backdrop-blur-[1px]"
+            className="rb-fullscreen-overlay fixed z-[200] bg-[#261524]/35 backdrop-blur-[1px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -464,7 +472,7 @@ export default function NouveauRendezVousModal({
             role="dialog"
             aria-modal
             aria-labelledby="nrv-title"
-            className="absolute right-0 top-0 flex h-full w-full max-w-lg flex-col overflow-hidden border-l border-[#F0DDE6] bg-white shadow-2xl sm:max-w-xl"
+            className="rb-side-panel fixed z-[201] flex w-[min(100vw,36rem)] flex-col overflow-hidden border-l border-[#F0DDE6] bg-white shadow-2xl"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -1259,8 +1267,9 @@ export default function NouveauRendezVousModal({
               </footer>
             </form>
           </motion.aside>
-        </div>
+        </>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

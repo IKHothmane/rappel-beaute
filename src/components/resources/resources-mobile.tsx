@@ -357,7 +357,7 @@ function ResourceCard({
   return (
     <article className={cn("relative overflow-hidden rounded-xl bg-white shadow-sm", selected && "bg-[#E8F1FF] ring-2 ring-[#3B6FD8]")}>
       {r.imageUrl ? (
-        <button type="button" onClick={onOpen} className="block aspect-[16/9] w-full overflow-hidden bg-[#FFF5F9]">
+        <button type="button" onClick={onOpen} className="block aspect-[4/3] w-full overflow-hidden bg-[#FFF5F9]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={r.imageUrl}
@@ -366,7 +366,7 @@ function ResourceCard({
             height={225}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain object-center"
           />
         </button>
       ) : null}

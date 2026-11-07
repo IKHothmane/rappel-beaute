@@ -9,7 +9,6 @@ import {
   MessageCircle,
   Rocket,
   Search,
-  Settings,
   Sparkles,
   Wallet,
 } from "lucide-react";
@@ -73,7 +72,6 @@ type Props = {
   canWhatsapp: boolean;
   canMarketing: boolean;
   canReactivation: boolean;
-  onSettings: () => void;
   onNewReward: () => void;
   onNewPackage: () => void;
   onRedeem: (member: LoyaltyAccountSummary) => void;
@@ -116,7 +114,6 @@ export function LoyaltyMobile(props: Props) {
     canWhatsapp,
     canMarketing,
     canReactivation,
-    onSettings,
     onNewReward,
     onRedeem,
     onBirthdayBonus,
@@ -207,9 +204,6 @@ export function LoyaltyMobile(props: Props) {
           <span className="inline-flex items-center gap-1 rounded-full bg-[#FFDEA4]/20 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-[#FFDEA4]">
             {program?.active ? "Programme actif" : "Programme inactif"}
           </span>
-          <button type="button" onClick={onSettings} className="text-[12px] font-bold text-[#FFB2BD]">
-            Configurer
-          </button>
         </div>
         <h2 className="mt-2 text-[18px] font-bold text-white">{ratio} MAD dépensé = 1 point</h2>
         <p className="mt-1 text-[13px] text-white/70">
@@ -426,14 +420,6 @@ export function LoyaltyMobile(props: Props) {
       </section>
 
       <div className="flex gap-2 pb-4">
-        <button
-          type="button"
-          onClick={onSettings}
-          className="flex h-11 flex-1 items-center justify-center gap-1 rounded-lg bg-white text-[13px] font-semibold shadow-sm"
-        >
-          <Settings size={16} />
-          Règles
-        </button>
         <button
           type="button"
           onClick={onExport}

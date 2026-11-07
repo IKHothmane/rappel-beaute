@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { UserPlus, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { limitPhoneDigits, splitCustomerName } from "@/lib/validation/customer";
 import {
   EMAIL_MAX,
@@ -34,6 +35,11 @@ export default function NouvelleClienteModal({
   const [phone, setPhone] = useState(limitPhoneDigits(initial?.phone ?? ""));
   const [email, setEmail] = useState(initial?.email ?? "");
   const [formError, setFormError] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -86,14 +92,16 @@ export default function NouvelleClienteModal({
     "h-11 w-full rounded-xl border border-[#E8D4DE] bg-white px-3 text-sm outline-none transition focus:border-[#B60050]";
   const label = "text-xs font-semibold uppercase tracking-wide text-[#887787]";
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[80]">
+        <>
           <motion.button
             type="button"
             aria-label="Fermer"
-            className="absolute inset-0 bg-[#261524]/35 backdrop-blur-[1px]"
+            className="rb-fullscreen-overlay fixed z-[200] bg-[#261524]/35 backdrop-blur-[1px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -103,7 +111,7 @@ export default function NouvelleClienteModal({
             role="dialog"
             aria-modal
             aria-labelledby="ncl-title"
-            className="absolute right-0 top-0 flex h-full w-full max-w-lg flex-col overflow-hidden border-l border-[#F0DDE6] bg-white shadow-2xl sm:max-w-xl"
+            className="rb-side-panel fixed z-[201] flex w-[min(100vw,36rem)] flex-col overflow-hidden border-l border-[#F0DDE6] bg-white shadow-2xl"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -220,8 +228,9 @@ export default function NouvelleClienteModal({
               </footer>
             </form>
           </motion.aside>
-        </div>
+        </>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

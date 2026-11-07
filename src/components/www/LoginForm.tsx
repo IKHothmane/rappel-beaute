@@ -52,11 +52,11 @@ function LoginFormFields() {
         const isPlatform =
           data?.user?.scope === "platform" || data?.user?.accountType === "PLATFORM";
         if (isPlatform) {
-          window.location.replace("/dashboard/");
+          window.location.replace("/dashboard/?__host=admin");
         } else if (data?.mustChangePassword) {
-          window.location.replace("/changer-mot-de-passe/");
+          window.location.replace("/changer-mot-de-passe/?__host=app");
         } else {
-          window.location.replace("/dashboard/");
+          window.location.replace("/dashboard/?__host=app");
         }
         return;
       }

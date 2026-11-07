@@ -11,7 +11,6 @@ import {
   Gift,
   Percent,
   Plus,
-  Settings,
   Target,
   TrendingUp,
   Users,
@@ -82,7 +81,6 @@ export function LoyaltyBoard({
   journal = [],
   membersThisMonth = 0,
   onRefresh,
-  onOpenSettings,
 }: {
   orgName: string;
   canWrite: boolean;
@@ -90,9 +88,7 @@ export function LoyaltyBoard({
   visitCards: VisitCardRow[];
   journal?: LoyaltyJournalItem[];
   membersThisMonth?: number;
-  settingsOpen?: boolean;
   onRefresh: () => void;
-  onOpenSettings: () => void;
 }) {
   const { toast } = useToast();
   const router = useRouter();
@@ -379,16 +375,6 @@ export function LoyaltyBoard({
             institut.
           </p>
         </div>
-        {canWrite ? (
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
-          >
-            <Settings size={18} aria-hidden />
-            Configurer
-          </button>
-        ) : null}
       </header>
 
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">

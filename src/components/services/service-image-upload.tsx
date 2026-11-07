@@ -81,14 +81,14 @@ export function ServiceImageUpload({
             width={800}
             height={600}
             decoding="async"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain object-center"
           />
         ) : value ? (
           <ServiceResponsiveImage
             imageUrl={value}
             alt="Aperçu du service"
             variant="main"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain object-center"
           />
         ) : (
           <div className="flex flex-col items-center gap-3 text-[#A55477]">

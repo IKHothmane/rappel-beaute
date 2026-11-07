@@ -47,7 +47,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
     setUser(null);
-    window.location.href = "/connexion/";
+    // Remplace l’historique pour éviter un retour vers /dashboard/?__host=app en cache.
+    window.location.replace("/connexion/");
   }, []);
 
   const value = useMemo(

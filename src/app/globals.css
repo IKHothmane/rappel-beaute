@@ -24,6 +24,22 @@ html {
   max-height: calc(100dvh / 0.8);
 }
 
+/* Compense html { zoom: 0.8 } — sinon les popups latéraux s’arrêtent avant le bas */
+.rb-fullscreen-overlay {
+  top: 0;
+  left: 0;
+  width: calc(100vw / 0.8);
+  height: calc(100dvh / 0.8);
+}
+
+.rb-side-panel {
+  top: 0;
+  right: 0;
+  bottom: auto;
+  height: calc(100dvh / 0.8);
+  max-height: calc(100dvh / 0.8);
+}
+
 /* Compense html { zoom: 0.8 } — sinon l’iframe Plan 3D a une hauteur nulle / tronquée en prod */
 .salon-3d-embed {
   height: calc(100dvh / 0.8 - 4.5rem);

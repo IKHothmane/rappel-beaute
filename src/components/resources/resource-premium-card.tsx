@@ -57,7 +57,7 @@ export function ResourcePremiumCard({
         aria-label={`Consulter ${resource.name}`}
         aria-pressed={selected}
       >
-        <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-[#FDE3ED] via-[#F8CEDF] to-[#F0B8D0]">
+        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[#FDE3ED] via-[#F8CEDF] to-[#F0B8D0]">
           {resource.imageUrl && !imageFailed ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -66,7 +66,7 @@ export function ResourcePremiumCard({
               loading="lazy"
               decoding="async"
               onError={() => setImageFailed(true)}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="h-full w-full object-contain object-center"
             />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-4 text-[#A63869]">

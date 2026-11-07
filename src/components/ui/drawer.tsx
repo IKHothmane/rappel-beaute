@@ -54,10 +54,10 @@ export function Drawer({
             className={cn(
               "fixed z-[60] bg-black/20",
               isBottom
-                ? "inset-0"
+                ? "rb-fullscreen-overlay"
                 : preserveHeader
-                  ? "bottom-0 left-0 right-0 top-[64px] sm:top-[72px]"
-                  : "inset-0",
+                  ? "bottom-0 left-0 right-0 top-[calc(64px/0.8)] sm:top-[calc(72px/0.8)]"
+                  : "rb-fullscreen-overlay",
             )}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -72,8 +72,9 @@ export function Drawer({
               isBottom
                 ? "bottom-0 left-0 right-0 max-h-[92vh] rounded-t-2xl border-t"
                 : preserveHeader
-                  ? "right-0 top-[64px] h-[calc(100%-64px)] w-full max-w-md border-l sm:top-[72px] sm:h-[calc(100%-72px)]"
-                  : "right-0 top-0 h-full w-full max-w-md border-l",
+                  ? "right-0 top-[calc(64px/0.8)] w-full max-w-md border-l sm:top-[calc(72px/0.8)]"
+                  : "rb-side-panel w-full max-w-md border-l",
+              !isBottom && preserveHeader && "h-[calc((100dvh-64px)/0.8)] sm:h-[calc((100dvh-72px)/0.8)]",
               className,
             )}
             initial={isBottom ? { y: "100%" } : { x: "100%" }}

@@ -55,6 +55,20 @@ function resolveDomain(
   request: NextRequest,
   session: { scope?: string } | null,
 ): Domain {
+  const path = request.nextUrl.pathname;
+
+  // Vitrine /connexion etc. restent www même avec un ?__host=app résiduel
+  // (évite de traiter /connexion comme route protégée de l’espace app).
+  if (isMarketingPath(path) && path !== "/book" && !path.startsWith("/book/")) {
+    const fromHost = resolveDomainFromHostname(
+      request.headers.get("host"),
+      request.headers.get("x-forwarded-host") ??
+        request.headers.get("x-rappel-public-host"),
+    );
+    if (fromHost === "app" || fromHost === "admin") return fromHost;
+    return "www";
+  }
+
   // 1) Query localhost / apex (?__host=admin)
   const explicit = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
   if (explicit) return explicit;
@@ -71,7 +85,6 @@ function resolveDomain(
   );
   if (fromHost === "app" || fromHost === "admin") return fromHost;
 
-  const path = request.nextUrl.pathname;
   if (path === "/book" || path.startsWith("/book/")) return "app";
 
   // 4) Espace institut sur le domaine public. Le cookie admin ne doit pas
@@ -126,7 +139,8 @@ function publicRedirect(
   pathname: string,
   domain: Domain,
   hostname: string,
-  status: 307 | 308 = 308,
+  /** 307 : jamais 308 pour l’auth — les navigateurs mettent les 308 en cache et bouclent. */
+  status: 307 | 308 = 307,
   extraSearch?: Record<string, string>,
 ) {
   const proto =
@@ -265,10 +279,11 @@ export async function middleware(request: NextRequest) {
       mustChange ? `${CHANGE_PASSWORD_PATH}/` : "/dashboard/",
       "app",
       hostname,
+      307,
     );
   }
   if (isLoginPath && session?.scope === "platform") {
-    return publicRedirect(request, "/dashboard/", "admin", hostname);
+    return publicRedirect(request, "/dashboard/", "admin", hostname, 307);
   }
 
   const domain = resolveDomain(request, session);
@@ -298,7 +313,7 @@ export async function middleware(request: NextRequest) {
           loginPath,
           loginPath === "/connexion/" ? "www" : domain,
           hostname,
-          308,
+          307,
           logicalPath !== "/" && logicalPath !== ""
             ? { next: logicalPath }
             : undefined,
@@ -306,7 +321,7 @@ export async function middleware(request: NextRequest) {
       }
       if (session.scope === "platform") {
         const loginPath = isAppOrAdminHostname(hostname) ? "/login/" : "/connexion/";
-        return publicRedirect(request, loginPath, loginPath === "/connexion/" ? "www" : domain, hostname);
+        return publicRedirect(request, loginPath, loginPath === "/connexion/" ? "www" : domain, hostname, 307);
       }
       // Reset admin : accès limité à la page de changement de MDP
       if (
@@ -337,7 +352,7 @@ export async function middleware(request: NextRequest) {
           "/login/",
           domain,
           hostname,
-          308,
+          307,
           logicalPath !== "/" && logicalPath !== ""
             ? { next: logicalPath }
             : undefined,
@@ -375,7 +390,7 @@ export async function middleware(request: NextRequest) {
       const local = request.nextUrl.clone();
       local.pathname = "/connexion/";
       local.search = "";
-      return withFrameDeny(NextResponse.redirect(local, 308));
+      return withFrameDeny(NextResponse.redirect(local, 307));
     }
 
     const res = withFrameDeny(NextResponse.next({ request: { headers } }));

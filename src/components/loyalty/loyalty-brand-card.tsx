@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Crown } from "lucide-react";
+import { loyaltyCardBackgroundStyle } from "@/lib/loyalty/card-background";
 
 type Props = {
   organizationName: string;
@@ -46,11 +47,7 @@ export function LoyaltyBrandCard({
   return (
     <article
       className="relative min-w-0 overflow-hidden rounded-3xl p-4 text-white shadow-md sm:p-6"
-      style={{
-        background: backgroundUrl
-          ? `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${backgroundUrl}") center / cover no-repeat`
-          : "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)",
-      }}
+      style={{ background: loyaltyCardBackgroundStyle(backgroundUrl) }}
     >
       <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#E8C56B]/10" />
       <div className="flex items-start justify-between gap-3">

@@ -294,7 +294,7 @@ export function loyaltyInsight(
         ? `Relancer les ${nearGold} cliente${nearGold > 1 ? "s" : ""} Silver à moins de 150 pts de Gold — via WhatsApp ou la fiche cliente.`
         : kpis.rewardsReady > 0
           ? `${kpis.rewardsReady} coupon${kpis.rewardsReady > 1 ? "s" : ""} prêt${kpis.rewardsReady > 1 ? "s" : ""} : proposer l’utilisation au prochain passage POS.`
-          : "Le ratio MAD / point se règle dans Configurer le programme.",
+          : "Le ratio MAD / point est défini dans le programme de fidélité.",
   };
 }
 

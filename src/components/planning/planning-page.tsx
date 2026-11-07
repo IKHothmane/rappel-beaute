@@ -23,10 +23,17 @@ import { staffColor, type StaffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Label, Select } from "@/components/ui/select";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
+import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import {
+  DualDateField,
+  DualDateTimeField,
+  LimitedTextField,
+  PremiumListSelect,
+} from "@/components/planning/planning-form-controls";
+import { NOTES_MAX, limitNotes } from "@/lib/validation/input-limits";
 import {
   getMonthGrid,
   getWeekDates,
@@ -202,6 +209,28 @@ export function PlanningPageView() {
 
   const weekDates = useMemo(() => getWeekDates(anchor), [anchor]);
   const monthCells = useMemo(() => getMonthGrid(anchor), [anchor]);
+  const staffOptions = useMemo(
+    () =>
+      staff.map((person) => ({
+        value: person.id,
+        label: person.displayName,
+        hint:
+          person.status === "ON_LEAVE"
+            ? "En congé"
+            : person.status === "INACTIVE"
+              ? "Inactive"
+              : undefined,
+      })),
+    [staff],
+  );
+  const leaveTypeOptions = useMemo(
+    () =>
+      (Object.keys(LEAVE_TYPE_LABEL) as LeaveType[]).map((key) => ({
+        value: key,
+        label: LEAVE_TYPE_LABEL[key],
+      })),
+    [],
+  );
 
   useEffect(() => {
     if (!staffMenuOpen) return;
@@ -1621,120 +1650,199 @@ export function PlanningPageView() {
         </div>
       </div>
 
-      <Drawer
+      <PremiumSidePanel
         open={leaveOpen}
         onClose={() => {
           setLeaveOpen(false);
           setEditingLeaveId(null);
         }}
         title={editingLeaveId ? "Modifier l’absence" : "Ajouter une absence"}
-        side="right"
-      >
-        <div className="space-y-3">
-          <Label>Employée</Label>
-          <Select value={leaveStaff} onChange={(e) => setLeaveStaff(e.target.value)}>
-            {staff.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.displayName}
-              </option>
-            ))}
-          </Select>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Début</Label>
-              <Input type="date" value={leaveStart} onChange={(e) => setLeaveStart(e.target.value)} />
-            </div>
-            <div>
-              <Label>Fin</Label>
-              <Input type="date" value={leaveEnd} onChange={(e) => setLeaveEnd(e.target.value)} />
-            </div>
-          </div>
-          <Label>Type</Label>
-          <Select value={leaveType} onChange={(e) => setLeaveType(e.target.value as LeaveType)}>
-            {(Object.keys(LEAVE_TYPE_LABEL) as LeaveType[]).map((key) => (
-              <option key={key} value={key}>
-                {LEAVE_TYPE_LABEL[key]}
-              </option>
-            ))}
-          </Select>
-          <Input placeholder="Motif (optionnel)" value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => { setLeaveOpen(false); setEditingLeaveId(null); }}>
+        description="Bloquez les créneaux agenda pendant le congé ou l’absence."
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setLeaveOpen(false);
+                setEditingLeaveId(null);
+              }}
+              className="h-11 rounded-xl border border-[#E8D4DE] px-5 text-sm font-semibold text-[#654254] transition hover:bg-[#F8F0F4]"
+            >
               Annuler
-            </Button>
-            <Button type="button" variant="brand" disabled={!leaveStaff || !leaveStart || !leaveEnd} onClick={addLeave}>
-              {editingLeaveId ? "Enregistrer" : "Enregistrer"}
-            </Button>
+            </button>
+            <button
+              type="button"
+              disabled={!leaveStaff || !leaveStart || !leaveEnd}
+              onClick={() => void addLeave()}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
+            >
+              Enregistrer
+            </button>
           </div>
+        }
+      >
+        <div className="space-y-4">
+          <PremiumListSelect
+            label="Employée"
+            value={leaveStaff}
+            options={staffOptions}
+            onChange={setLeaveStaff}
+            placeholder="Choisir une employée"
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <DualDateField label="Début" value={leaveStart} onChange={setLeaveStart} />
+            <DualDateField label="Fin" value={leaveEnd} onChange={setLeaveEnd} />
+          </div>
+          <PremiumListSelect
+            label="Type"
+            value={leaveType}
+            options={leaveTypeOptions}
+            onChange={(v) => setLeaveType(v as LeaveType)}
+          />
+          <LimitedTextField
+            label="Motif"
+            optional
+            placeholder="Ex. Congé annuel"
+            maxLength={NOTES_MAX}
+            value={leaveReason}
+            onChange={(v) => setLeaveReason(limitNotes(v))}
+          />
         </div>
-      </Drawer>
+      </PremiumSidePanel>
 
-      <Drawer
+      <PremiumSidePanel
         open={extraOpen === "overtime"}
         onClose={() => {
           setExtraOpen(null);
           setEditingOtId(null);
         }}
         title={editingOtId ? "Modifier les heures supplémentaires" : "Heures supplémentaires"}
-        side="right"
+        description="Ajoutez une plage hors planning habituel pour une employée."
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setExtraOpen(null);
+                setEditingOtId(null);
+              }}
+              className="h-11 rounded-xl border border-[#E8D4DE] px-5 text-sm font-semibold text-[#654254] transition hover:bg-[#F8F0F4]"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              disabled={!otStaff || !otStart || !otEnd}
+              onClick={() => void addOt()}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
+            >
+              {editingOtId ? "Enregistrer" : "Ajouter"}
+            </button>
+          </div>
+        }
       >
-        <div className="space-y-3">
-          <Select value={otStaff} onChange={(e) => setOtStaff(e.target.value)}>
-            {staff.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.displayName}
-              </option>
-            ))}
-          </Select>
-          <Input type="datetime-local" value={otStart} onChange={(e) => setOtStart(e.target.value)} />
-          <Input type="datetime-local" value={otEnd} onChange={(e) => setOtEnd(e.target.value)} />
-          <Input placeholder="Motif" value={otReason} onChange={(e) => setOtReason(e.target.value)} />
-          <Button type="button" variant="brand" disabled={!otStaff || !otStart || !otEnd} onClick={addOt}>
-            {editingOtId ? "Enregistrer" : "Ajouter"}
-          </Button>
+        <div className="space-y-4">
+          <PremiumListSelect
+            label="Employée"
+            value={otStaff}
+            options={staffOptions}
+            onChange={setOtStaff}
+            placeholder="Choisir une employée"
+          />
+          <DualDateTimeField label="Début" value={otStart} onChange={setOtStart} />
+          <DualDateTimeField label="Fin" value={otEnd} onChange={setOtEnd} />
+          <LimitedTextField
+            label="Motif"
+            placeholder="Ex. Affluence samedi"
+            maxLength={NOTES_MAX}
+            value={otReason}
+            onChange={(v) => setOtReason(limitNotes(v))}
+          />
         </div>
-      </Drawer>
+      </PremiumSidePanel>
 
-      <Drawer
+      <PremiumSidePanel
         open={extraOpen === "replacement"}
         onClose={() => {
           setExtraOpen(null);
           setEditingRepId(null);
         }}
         title={editingRepId ? "Modifier le remplacement" : "Remplacement"}
-        side="right"
+        description="Indiquez qui remplace qui, et sur quelle plage horaire."
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setExtraOpen(null);
+                setEditingRepId(null);
+              }}
+              className="h-11 rounded-xl border border-[#E8D4DE] px-5 text-sm font-semibold text-[#654254] transition hover:bg-[#F8F0F4]"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              disabled={!repAbsent || !repSub || !repStart || !repEnd}
+              onClick={() => void addRep()}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
+            >
+              {editingRepId ? "Enregistrer" : "Ajouter"}
+            </button>
+          </div>
+        }
       >
-        <div className="space-y-3">
-          <Label>Absente</Label>
-          <Select value={repAbsent} onChange={(e) => setRepAbsent(e.target.value)}>
-            {staff.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.displayName}
-              </option>
-            ))}
-          </Select>
-          <Label>Remplaçante</Label>
-          <Select value={repSub} onChange={(e) => setRepSub(e.target.value)}>
-            {staff.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.displayName}
-              </option>
-            ))}
-          </Select>
-          <Input type="datetime-local" value={repStart} onChange={(e) => setRepStart(e.target.value)} />
-          <Input type="datetime-local" value={repEnd} onChange={(e) => setRepEnd(e.target.value)} />
-          <Input placeholder="Motif" value={repReason} onChange={(e) => setRepReason(e.target.value)} />
-          <Button type="button" variant="brand" disabled={!repAbsent || !repSub || !repStart || !repEnd} onClick={addRep}>
-            {editingRepId ? "Enregistrer" : "Ajouter"}
-          </Button>
+        <div className="space-y-4">
+          <PremiumListSelect
+            label="Absente"
+            value={repAbsent}
+            options={staffOptions}
+            onChange={setRepAbsent}
+            placeholder="Employée absente"
+          />
+          <PremiumListSelect
+            label="Remplaçante"
+            value={repSub}
+            options={staffOptions.filter((o) => o.value !== repAbsent)}
+            onChange={setRepSub}
+            placeholder="Employée remplaçante"
+          />
+          <DualDateTimeField label="Début" value={repStart} onChange={setRepStart} />
+          <DualDateTimeField label="Fin" value={repEnd} onChange={setRepEnd} />
+          <LimitedTextField
+            label="Motif"
+            placeholder="Ex. Remplacement congé"
+            maxLength={NOTES_MAX}
+            value={repReason}
+            onChange={(v) => setRepReason(limitNotes(v))}
+          />
         </div>
-      </Drawer>
+      </PremiumSidePanel>
 
-      <Drawer
+      <PremiumSidePanel
         open={scheduleOpen}
         onClose={() => setScheduleOpen(false)}
         title={selected ? `Modifier le planning de ${selected.firstName}` : "Modifier le planning"}
-        side="right"
+        description="Définissez les jours et horaires de travail de l’employée."
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setScheduleOpen(false)}
+              className="h-11 rounded-xl border border-[#E8D4DE] px-5 text-sm font-semibold text-[#654254] transition hover:bg-[#F8F0F4]"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              disabled={savingSchedule}
+              onClick={() => void saveSchedule()}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
+            >
+              {savingSchedule ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </div>
+        }
       >
         <div className="flex flex-col gap-3">
           {weekDraft
@@ -1795,22 +1903,35 @@ export function PlanningPageView() {
                 )}
               </div>
             ))}
-          <Button type="button" variant="brand" disabled={savingSchedule} onClick={() => void saveSchedule()}>
-            {savingSchedule ? "Enregistrement…" : "Enregistrer"}
-          </Button>
         </div>
-      </Drawer>
+      </PremiumSidePanel>
 
-      <Drawer
+      <PremiumSidePanel
         open={hoursOpen}
         onClose={() => setHoursOpen(false)}
         title="Horaires d’ouverture"
-        side="right"
+        description="Ces horaires s’appliquent à toutes les employées actives."
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setHoursOpen(false)}
+              className="h-11 rounded-xl border border-[#E8D4DE] px-5 text-sm font-semibold text-[#654254] transition hover:bg-[#F8F0F4]"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              disabled={savingSchedule}
+              onClick={() => void saveOpeningHours()}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
+            >
+              {savingSchedule ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </div>
+        }
       >
         <div className="flex flex-col gap-3">
-          <p className="text-[12px] text-ink/50">
-            Ces horaires s’appliquent à toutes les employées actives.
-          </p>
           {hoursDraft.map((row) => (
             <div key={row.day} className="rounded-xl border border-line bg-[#FFEFF8]/50 p-3">
               <label className="flex items-center gap-2 text-sm font-semibold text-ink">
@@ -1860,11 +1981,8 @@ export function PlanningPageView() {
               )}
             </div>
           ))}
-          <Button type="button" variant="brand" disabled={savingSchedule} onClick={() => void saveOpeningHours()}>
-            {savingSchedule ? "Enregistrement…" : "Enregistrer"}
-          </Button>
         </div>
-      </Drawer>
+      </PremiumSidePanel>
     </div>
   );
 }

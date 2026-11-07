@@ -9,12 +9,8 @@ import {
   uploadOrganizationCardBackground,
 } from "@/modules/admin/client";
 import type { OrganizationListItem } from "@/types/platform";
+import { loyaltyCardBackgroundStyle } from "@/lib/loyalty/card-background";
 import { cn } from "@/lib/utils";
-
-function cardBackground(url: string | null) {
-  if (!url) return "linear-gradient(145deg, #4A1024 0%, #7A1838 48%, #3A0E1E 100%)";
-  return `linear-gradient(180deg, rgba(18, 8, 12, 0.2), rgba(18, 8, 12, 0.35)), url("${url}") center / cover no-repeat`;
-}
 
 export function AdminLoyaltyView() {
   const [items, setItems] = useState<OrganizationListItem[]>([]);
@@ -158,7 +154,7 @@ export function AdminLoyaltyView() {
               </div>
               <article
                 className="min-h-44 rounded-3xl p-5 text-white shadow-md"
-                style={{ background: cardBackground(backgroundUrl) }}
+                style={{ background: loyaltyCardBackgroundStyle(backgroundUrl) }}
               >
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#E8C56B]">Carte fidélité</p>
                 <p className="mt-4 font-display text-3xl">{selected.name}</p>

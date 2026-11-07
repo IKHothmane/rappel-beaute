@@ -27,6 +27,7 @@ type Props = {
   onRefund: () => void;
   onClose: () => void;
   onOpen: () => void;
+  onSelectKpi?: (kpi: "in" | "out" | "refunds" | "movements") => void;
   float?: string;
   onFloatChange?: (value: string) => void;
   submitting?: boolean;
@@ -36,6 +37,8 @@ type Props = {
   cashIn?: number;
   cashOut?: number;
   theoretical?: number;
+  /** CA encaissé du jour (toutes méthodes) */
+  paymentsToday?: number;
   refunds?: number;
   movements?: number;
   counted?: string;
@@ -56,6 +59,7 @@ export function CashRegisterHero({
   canWrite,
   onClose,
   onOpen,
+  onSelectKpi,
   float = "",
   onFloatChange,
   submitting = false,
@@ -65,6 +69,7 @@ export function CashRegisterHero({
   cashIn = 0,
   cashOut = 0,
   theoretical = 0,
+  paymentsToday = 0,
   refunds = 0,
   movements = 0,
   counted = "",
@@ -152,22 +157,30 @@ export function CashRegisterHero({
             <MiniKpi
               icon={<Coins size={14} className="text-[#981C52]" />}
               label="Encaissements"
-              value={formatMad(cashIn)}
+              value={formatMad(isOpen ? cashIn : paymentsToday)}
+              hint={isOpen ? "Espèces session" : "CA du jour"}
+              onClick={onSelectKpi ? () => onSelectKpi("in") : undefined}
             />
             <MiniKpi
               icon={<ArrowUpRight size={14} className="text-[#981C52]" />}
               label="Sorties de caisse"
               value={formatMad(cashOut)}
+              hint="Décaissements"
+              onClick={onSelectKpi ? () => onSelectKpi("out") : undefined}
             />
             <MiniKpi
               icon={<ArrowLeftRight size={14} className="text-[#981C52]" />}
               label="Remboursements"
               value={formatMad(refunds)}
+              hint="Tiroir"
+              onClick={onSelectKpi ? () => onSelectKpi("refunds") : undefined}
             />
             <MiniKpi
               icon={<Layers size={14} className="text-[#981C52]" />}
               label="Mouvements"
               value={`${movements}`}
+              hint="Opérations"
+              onClick={onSelectKpi ? () => onSelectKpi("movements") : undefined}
             />
           </div>
         </div>
@@ -332,13 +345,22 @@ function MiniKpi({
   icon,
   label,
   value,
+  hint,
+  onClick,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
+  hint?: string;
+  onClick?: () => void;
 }) {
-  return (
-    <div className="rounded-2xl bg-white px-3 py-3 text-[#2A1520] shadow-[0_4px_14px_rgba(20,0,10,.12)]">
+  const className = cn(
+    "w-full rounded-2xl bg-white px-3 py-3 text-left text-[#2A1520] shadow-[0_4px_14px_rgba(20,0,10,.12)]",
+    onClick &&
+      "transition hover:bg-[#FFF7FB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#981C52]/40",
+  );
+  const body = (
+    <>
       <div className="mb-1.5 flex items-center gap-1.5">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#FCE9F4]">
           {icon}
@@ -348,8 +370,17 @@ function MiniKpi({
         </span>
       </div>
       <p className="truncate pl-0.5 text-[15px] font-extrabold tabular-nums tracking-tight">{value}</p>
-    </div>
+      {hint ? <p className="mt-0.5 truncate pl-0.5 text-[10px] text-[#9A7F8C]">{hint}</p> : null}
+    </>
   );
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {body}
+      </button>
+    );
+  }
+  return <div className={className}>{body}</div>;
 }
 
 function CloseRow({

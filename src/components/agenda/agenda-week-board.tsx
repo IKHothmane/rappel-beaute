@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Users } from "lucide-react";
 import {
   AGENDA_CLOSE_HOUR,
@@ -13,7 +13,11 @@ import {
   buildAgendaLayout,
   type AgendaTimeLayout,
 } from "@/components/agenda/agenda-time-scale";
-import { layoutOverlappingEvents } from "@/components/agenda/agenda-overlap-layout";
+import {
+  layoutOverlappingEvents,
+  peersInOverlapGroup,
+} from "@/components/agenda/agenda-overlap-layout";
+import { AgendaStackPicker } from "@/components/agenda/agenda-stack-picker";
 import { isSameBusinessDay } from "@/lib/time/business-timezone";
 import { cn } from "@/lib/utils";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
@@ -120,6 +124,7 @@ export function AgendaWeekBoard({
   onEmptySlotClick,
   onDrop,
 }: AgendaWeekBoardProps) {
+  const [stackPeers, setStackPeers] = useState<Appointment[] | null>(null);
   const layout = useMemo(
     () =>
       buildAgendaLayout(
@@ -235,6 +240,7 @@ export function AgendaWeekBoard({
 
             {dates.map((day) => {
               const dayAppts = appointments.filter((a) => sameDay(new Date(a.startAt), day));
+              const positioned = layoutOverlappingEvents(dayAppts);
               const today = isToday(day);
               const sat = isSaturday(day);
               const dayClosures = closures.filter((c) => {
@@ -323,28 +329,35 @@ export function AgendaWeekBoard({
                     );
                   })}
 
-                  {layoutOverlappingEvents(dayAppts).map(({ event: apt, left, width, columns }) => {
+                  {positioned.map(
+                    ({ event: apt, left, width, columns, zIndex, groupId }) => {
                     const start = new Date(apt.startAt);
                     const end = new Date(apt.endAt);
                     const color = statusCardTone(apt.status);
                     const muted = apt.status === "CANCELLED" || apt.status === "NO_SHOW";
                     const active = apt.id === selectedAppointmentId;
                     const durationMin = (end.getTime() - start.getTime()) / 60_000;
-                    const narrow = columns > 1;
+                    const stacked = columns > 1;
                     const short = durationMin <= 35;
                     const name = apt.customerName.trim() || "Cliente";
 
                     return (
                       <div
                         key={apt.id}
-                        className="absolute z-10 px-[3px]"
+                        className="absolute px-[3px]"
                         style={{
                           ...blockStyle(layout, start, end),
                           left: `${left}%`,
                           width: `${width}%`,
                           right: "auto",
                           minWidth: 0,
+                          zIndex,
                         }}
+                        title={
+                          stacked
+                            ? `${columns} rendez-vous — cliquer pour choisir`
+                            : undefined
+                        }
                       >
                         <button
                           type="button"
@@ -352,36 +365,43 @@ export function AgendaWeekBoard({
                           onDragStart={(e) => e.dataTransfer.setData("appointmentId", apt.id)}
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (stacked) {
+                              setStackPeers(peersInOverlapGroup(positioned, groupId));
+                              return;
+                            }
                             onAppointmentClick(apt.id);
                           }}
                           className={cn(
-                            "group relative flex h-full w-full cursor-grab flex-col overflow-hidden rounded-xl border border-white/70 text-left shadow-[0_2px_10px_rgba(60,20,40,0.08)] transition-all duration-200 hover:z-30 hover:shadow-lg active:cursor-grabbing",
+                            "group relative flex h-full w-full cursor-grab flex-col overflow-hidden rounded-xl border border-white/70 text-left shadow-[0_2px_10px_rgba(60,20,40,0.08)] transition-all duration-200 hover:!z-[40] hover:shadow-lg active:cursor-grabbing",
                             color.soft,
                             muted && "opacity-70",
                             active && "ring-2 ring-[#B83E72]",
-                            short || narrow ? "gap-1 p-2 pl-3" : "gap-1.5 p-2.5 pl-3.5",
+                            short ? "gap-1 p-2 pl-3" : "gap-1.5 p-2.5 pl-3.5",
                           )}
                         >
                           <span className={cn("absolute inset-y-1.5 left-1.5 w-1 rounded-full", color.bar)} />
+                          {stacked ? (
+                            <span className="absolute right-1.5 top-1.5 rounded-full bg-ink/80 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                              {columns}
+                            </span>
+                          ) : null}
 
                           <div className="flex min-w-0 items-start gap-2">
-                            {!narrow ? (
-                              <span
-                                className={cn(
-                                  "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm",
-                                  color.bar,
-                                )}
-                              >
-                                {initials(name)}
-                              </span>
-                            ) : null}
+                            <span
+                              className={cn(
+                                "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm",
+                                color.bar,
+                              )}
+                            >
+                              {initials(name)}
+                            </span>
                             <div className="min-w-0 flex-1">
                               <p className={cn("truncate text-[13px] font-bold leading-tight text-ink", muted && "line-through")}>
                                 {name}
                               </p>
                               <p className="truncate text-[12px] leading-snug text-ink/55">{apt.serviceName}</p>
                             </div>
-                            {!short && !narrow ? (
+                            {!short ? (
                               <Users size={13} className={cn("mt-0.5 shrink-0 opacity-70", color.text)} />
                             ) : null}
                           </div>
@@ -409,6 +429,17 @@ export function AgendaWeekBoard({
             })}
           </div>
       </div>
+
+      {stackPeers ? (
+        <AgendaStackPicker
+          appointments={stackPeers}
+          onClose={() => setStackPeers(null)}
+          onSelect={(id) => {
+            setStackPeers(null);
+            onAppointmentClick(id);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -12,7 +12,11 @@ export type CashTxnType =
   | "CLOSING"
   | "EXPENSE";
 
-export const PAYMENT_METHODS: PaymentMethod[] = [
+/** Méthodes proposées à l’encaissement (hors historiques). */
+export const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "CARD", "TRANSFER"];
+
+/** Toutes les méthodes connues (affichage historique / filtres). */
+export const ALL_PAYMENT_METHODS: PaymentMethod[] = [
   "CASH",
   "CARD",
   "TRANSFER",

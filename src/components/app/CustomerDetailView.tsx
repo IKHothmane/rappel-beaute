@@ -574,14 +574,30 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
 
       {tab === "Fidélité" ? (
         <div className="surface space-y-4 p-5 text-sm sm:p-6">
-          {loyalty?.account ? (
+          {loyalty?.account || loyalty?.cardCode ? (
             <>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink/40">Niveau</p>
-                <p className="font-display text-2xl font-semibold">
-                  {LOYALTY_LEVEL_LABEL[loyalty.account.level]}
-                </p>
-                <p className="font-mono text-xl">{formatPoints(loyalty.account.balance)}</p>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-ink/40">Niveau</p>
+                  <p className="font-display text-2xl font-semibold">
+                    {loyalty.account
+                      ? LOYALTY_LEVEL_LABEL[loyalty.account.level]
+                      : "—"}
+                  </p>
+                  <p className="font-mono text-xl">
+                    {formatPoints(loyalty.account?.balance ?? 0)}
+                  </p>
+                </div>
+                {loyalty.cardCode ? (
+                  <div className="rounded-xl bg-[#FFEFF8] px-4 py-3 text-center">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+                      Code carte
+                    </p>
+                    <p className="mt-1 font-mono text-2xl font-extrabold tracking-[0.2em] text-primary">
+                      {loyalty.cardCode}
+                    </p>
+                  </div>
+                ) : null}
               </div>
               {canRedeem && (loyalty.redeemableRewards?.length ?? 0) > 0 ? (
                 <div className="space-y-2">

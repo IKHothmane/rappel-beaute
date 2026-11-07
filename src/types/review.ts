@@ -51,6 +51,10 @@ export type ReviewKpis = {
   verySatisfiedCount: number;
   satisfiedCount: number;
   dissatisfiedCount: number;
+  /** Avis publics (table Review), hors rejetés. */
+  publicCount: number;
+  publicAverageScore: number | null;
+  publicPendingCount: number;
 };
 
 export type StaffReviewScore = {

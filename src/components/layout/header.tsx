@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu, Search } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { OrgLogo } from "@/components/app/org-logo";
 import { useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -31,14 +31,6 @@ export function Header({ onMenuOpen }: HeaderProps) {
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-ink">{user.orgName}</p>
             </div>
-          </div>
-
-          <div className="hidden min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-[#FBF4F6]/80 px-3 py-2 md:flex md:max-w-[280px] md:flex-none">
-            <Search size={17} className="shrink-0 text-ink/35" />
-            <input
-              placeholder="Rechercher…"
-              className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-ink/35"
-            />
           </div>
         </div>
 

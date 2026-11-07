@@ -825,7 +825,17 @@ function CustomerFocusMobile({
           </Link>
         </div>
       ) : tab === "fidelity" ? (
-        <div className="flex flex-col gap-2 rounded-xl bg-white p-3 shadow-sm text-[13px] text-ink/70">
+        <div className="flex flex-col gap-3 rounded-xl bg-white p-3 shadow-sm text-[13px] text-ink/70">
+          {loyalty?.cardCode ? (
+            <div className="rounded-xl bg-[#FFEFF8] px-3 py-3 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+                Code carte
+              </p>
+              <p className="mt-1 font-mono text-xl font-extrabold tracking-[0.2em] text-primary">
+                {loyalty.cardCode}
+              </p>
+            </div>
+          ) : null}
           <p>
             Solde : <strong className="text-ink">{points} pts</strong>
             {loyalty?.account ? ` · ${LOYALTY_LEVEL_LABEL[loyalty.account.level]}` : ""}

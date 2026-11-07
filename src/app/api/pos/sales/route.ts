@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   try {
     const raw = stripOrganizationId((await request.json()) as Record<string, unknown>);
     const method = String(raw.paymentMethod ?? "") as PaymentMethod;
-    if (!PAYMENT_METHODS.includes(method) || method === "ONLINE") {
+    if (!PAYMENT_METHODS.includes(method)) {
       return NextResponse.json({ error: "Moyen de paiement invalide." }, { status: 400 });
     }
 

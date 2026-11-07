@@ -45,7 +45,7 @@ import type { PosProductItem, PosSaleDetail } from "@/types/pos";
 type CartLine = { product: PosProductItem; quantity: number };
 type Customer = { id: string; name: string; phone: string };
 
-const POS_METHODS: PaymentMethod[] = ["CASH", "CARD", "TRANSFER", "CHECK", "GIFT_CARD"];
+const POS_METHODS: PaymentMethod[] = ["CASH", "CARD", "TRANSFER"];
 
 export function PosPageView() {
   const { toast } = useToast();
@@ -685,7 +685,7 @@ export function PosPageView() {
                     <p className="text-[13px] text-primary">Remise {formatMad(discountNum)}</p>
                   ) : null}
                 </div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <div className="grid grid-cols-3 gap-2">
                   {POS_METHODS.map((m) => (
                     <button
                       key={m}
@@ -698,8 +698,7 @@ export function PosPageView() {
                     >
                       {m === "CASH" ? <Wallet size={20} /> : null}
                       {m === "CARD" ? <CreditCard size={20} /> : null}
-                      {m === "TRANSFER" || m === "CHECK" ? <Landmark size={20} /> : null}
-                      {m === "GIFT_CARD" ? <ShoppingBag size={20} /> : null}
+                      {m === "TRANSFER" ? <Landmark size={20} /> : null}
                       {PAYMENT_METHOD_LABEL[m]}
                     </button>
                   ))}

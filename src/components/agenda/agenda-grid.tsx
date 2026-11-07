@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AGENDA_CLOSE_HOUR, AGENDA_OPEN_HOUR } from "@/modules/appointments/constants";
 import type { Appointment } from "@/types/appointment";
 import type { StaffAgendaContext } from "@/types/staff";
 import { LEAVE_TYPE_LABEL } from "@/types/staff";
 import { AppointmentCard } from "@/components/agenda/appointment-card";
+import { AgendaStackPicker } from "@/components/agenda/agenda-stack-picker";
 import { agendaAppointmentSurface, staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import {
@@ -14,7 +15,10 @@ import {
   buildAgendaLayout,
   type AgendaTimeLayout,
 } from "@/components/agenda/agenda-time-scale";
-import { layoutOverlappingEvents } from "@/components/agenda/agenda-overlap-layout";
+import {
+  layoutOverlappingEvents,
+  peersInOverlapGroup,
+} from "@/components/agenda/agenda-overlap-layout";
 import { cn } from "@/lib/utils";
 
 type StaffCol = { id: string; name: string };
@@ -51,6 +55,7 @@ export function AgendaGrid({
   onEmptySlotClick,
 }: AgendaGridProps) {
   const palette = useStaffPalette();
+  const [stackPeers, setStackPeers] = useState<Appointment[] | null>(null);
   const layout = useMemo(
     () =>
       buildAgendaLayout(
@@ -138,6 +143,7 @@ export function AgendaGrid({
               const colAppts = appointments.filter((a) =>
                 columnMode === "resource" ? a.resourceId === col.id : a.staffId === col.id,
               );
+              const positioned = layoutOverlappingEvents(colAppts);
               const ctx =
                 columnMode === "staff"
                   ? staffContexts.find((c) => c.id === col.id)
@@ -221,36 +227,61 @@ export function AgendaGrid({
                         })
                     : null}
 
-                  {layoutOverlappingEvents(colAppts).map(({ event: apt, left, width }) => {
+                  {positioned.map(
+                    ({ event: apt, left, width, zIndex, columns, groupId }) => {
                     const start = new Date(apt.startAt);
                     const end = new Date(apt.endAt);
                     return (
                       <div
                         key={apt.id}
-                        className="absolute z-10 px-[2px]"
+                        className="absolute px-[2px]"
                         style={{
                           ...blockStyle(layout, start, end),
                           left: `${left}%`,
                           width: `${width}%`,
                           right: "auto",
                           minWidth: 0,
+                          zIndex,
                         }}
+                        title={
+                          columns > 1
+                            ? `${columns} rendez-vous — cliquer pour choisir`
+                            : undefined
+                        }
                       >
                         <AppointmentCard
                           appointment={apt}
                           compact
                           draggable
-                          onClick={() => onAppointmentClick(apt.id)}
-                          className="h-full overflow-hidden"
+                          onClick={() => {
+                            if (columns > 1) {
+                              setStackPeers(peersInOverlapGroup(positioned, groupId));
+                              return;
+                            }
+                            onAppointmentClick(apt.id);
+                          }}
+                          className="h-full overflow-hidden shadow-md ring-1 ring-black/5"
                         />
                       </div>
                     );
-                  })}
+                  },
+                  )}
                 </div>
               );
             })}
           </div>
       </div>
+
+      {stackPeers ? (
+        <AgendaStackPicker
+          appointments={stackPeers}
+          onClose={() => setStackPeers(null)}
+          onSelect={(id) => {
+            setStackPeers(null);
+            onAppointmentClick(id);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

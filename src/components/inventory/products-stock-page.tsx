@@ -117,7 +117,15 @@ export function ProductsStockPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <header className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-gradient-to-r from-[#FFF7F7] via-[#FFEFEF] to-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7">
+      <header
+        className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
+        style={{
+          backgroundImage:
+            'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/hero-background.png")',
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+        }}
+      >
         <div className="relative z-10 min-w-0">
           <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
             Produits & Stock

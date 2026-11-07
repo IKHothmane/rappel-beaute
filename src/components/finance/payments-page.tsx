@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import { AppointmentPromoNote } from "@/components/finance/appointment-promo-note";
+import { PaymentMethodPicker } from "@/components/finance/payment-method-picker";
 import {
   PAYMENT_PAGE_SIZE,
   type PaymentPeriod,
@@ -171,6 +172,7 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
     paged[0] ??
     filtered[0] ??
     null;
+  const selectedBillable = billable.find((b) => b.id === aptId) ?? null;
 
   useEffect(() => {
     setPage(1);
@@ -245,11 +247,12 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
           ...list,
         ];
       }
-      setBillable(next);
-      const id = preset?.appointmentId || next[0]?.id || "";
+      const id = preset?.appointmentId || "";
+      const selectedOnly = id ? next.filter((b) => b.id === id) : [];
+      setBillable(selectedOnly);
       setAptId(id);
-      setPayMode("service");
-      const fromList = next.find((b) => b.id === id);
+      setPayMode(id ? "service" : "products");
+      const fromList = selectedOnly[0];
       setPayAmount(String(preset?.amount ?? fromList?.remaining ?? ""));
       setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
       setAddonReset((n) => n + 1);
@@ -819,55 +822,44 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
               <p className="text-[13px] text-ink/55">
                 Encaissez le rendez-vous et, si besoin, ajoutez des produits au même encaissement.
               </p>
-              <label className="block text-sm">
-                <span className="mb-1.5 block font-medium">Rendez-vous</span>
-                <Select
-                  value={aptId}
-                  onChange={(e) => {
-                    setAptId(e.target.value);
-                    const b = billable.find((x) => x.id === e.target.value);
-                    if (b) setPayAmount(String(b.remaining));
-                  }}
-                >
-                  {billable.length === 0 ? (
-                    <option value="">Aucun RDV à encaisser</option>
-                  ) : (
-                    billable.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.customerName} · {formatPaymentServices(b.serviceName)} · reste{" "}
-                        {formatMad(b.remaining)}
-                      </option>
-                    ))
-                  )}
-                </Select>
-              </label>
+              {selectedBillable ? (
+                <div className="rounded-xl bg-[#FFEFF8] px-3 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+                    Rendez-vous
+                  </p>
+                  <p className="mt-1 text-[15px] font-semibold text-ink">
+                    {selectedBillable.customerName}
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-ink/55">
+                    {formatPaymentServices(selectedBillable.serviceName)} · reste{" "}
+                    {formatMad(selectedBillable.remaining)}
+                  </p>
+                </div>
+              ) : (
+                <p className="rounded-xl bg-[#FFEFF8] px-3 py-3 text-[13px] text-ink/60">
+                  Aucun rendez-vous sélectionné. Choisissez-en un dans la liste.
+                </p>
+              )}
               <AppointmentPromoNote
-                promotionCode={billable.find((b) => b.id === aptId)?.promotionCode}
-                promotionName={billable.find((b) => b.id === aptId)?.promotionName}
-                discount={billable.find((b) => b.id === aptId)?.discount}
+                promotionCode={selectedBillable?.promotionCode}
+                promotionName={selectedBillable?.promotionName}
+                discount={selectedBillable?.discount}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm">
-                  <span className="mb-1.5 block font-medium">Montant service</span>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(limitPriceDigits(e.target.value))}
-                    maxLength={PRICE_MAX_DIGITS}
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="mb-1.5 block font-medium">Méthode</span>
-                  <Select value={payMethod} onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}>
-                    {PAYMENT_METHODS.map((m) => (
-                      <option key={m} value={m}>
-                        {PAYMENT_METHOD_LABEL[m]}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-              </div>
+              <label className="block text-sm">
+                <span className="mb-1.5 block font-medium">Montant service</span>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(limitPriceDigits(e.target.value))}
+                  maxLength={PRICE_MAX_DIGITS}
+                />
+              </label>
+              <PaymentMethodPicker
+                value={payMethod}
+                onChange={setPayMethod}
+                disabled={submitting}
+              />
 
               <ProductSalePanel
                 embedded
@@ -926,16 +918,11 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
                 maxLength={PRICE_MAX_DIGITS}
               />
             </label>
-            <label className="block">
-              <span className="mb-1.5 block font-medium">Méthode</span>
-              <Select value={refundMethod} onChange={(e) => setRefundMethod(e.target.value as PaymentMethod)}>
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABEL[m]}
-                  </option>
-                ))}
-              </Select>
-            </label>
+            <PaymentMethodPicker
+              value={refundMethod}
+              onChange={setRefundMethod}
+              disabled={submitting}
+            />
             <label className="block">
               <span className="mb-1.5 block font-medium">Motif</span>
               <Input

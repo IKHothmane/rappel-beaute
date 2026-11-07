@@ -7,6 +7,8 @@ import { COOKIE_HOST } from "@/lib/domain";
 export async function POST(request: NextRequest) {
   const session = getSessionFromRequest(request);
   const res = NextResponse.json({ ok: true });
+  // Purge le cache navigateur (308 stockés) pour casser ERR_TOO_MANY_REDIRECTS.
+  res.headers.set("Clear-Site-Data", '"cache"');
   res.cookies.set(clearSessionCookie());
   // Évite un ?__host=app résiduel qui rejoue l’espace app après déconnexion.
   res.cookies.set({

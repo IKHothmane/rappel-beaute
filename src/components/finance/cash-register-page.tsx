@@ -20,6 +20,8 @@ import {
 import { formatPaymentServices } from "@/components/finance/payment-helpers";
 import { CashRegisterHero } from "@/components/finance/cash-register-hero";
 import { CashRegisterMobile } from "@/components/finance/cash-register-mobile";
+import { PaymentMethodPicker } from "@/components/finance/payment-method-picker";
+import { PaymentsJournalPanel } from "@/components/finance/payments-journal-panel";
 import { PaymentTicketModal } from "@/components/finance/payment-ticket";
 import {
   ProductSalePanel,
@@ -30,8 +32,8 @@ import {
   newPosIdempotencyKey,
 } from "@/modules/pos/service";
 import { Button } from "@/components/ui/button";
-import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canWriteCashRegister } from "@/lib/rbac";
@@ -51,7 +53,6 @@ import {
 } from "@/modules/finance/service";
 import { listPurchases } from "@/modules/procurement/service";
 import type { CashRegisterState, PaymentItem, PaymentMethod } from "@/types/finance";
-import { PAYMENT_METHODS } from "@/types/finance";
 import type { PurchaseListItem } from "@/types/procurement";
 
 type Billable = Awaited<ReturnType<typeof listBillableAppointments>>[number];
@@ -95,6 +96,7 @@ export function CashRegisterPageView() {
   const [closeReason, setCloseReason] = useState("");
   const [ticketPayment, setTicketPayment] = useState<PaymentItem | null>(null);
   const [ticketLoadingId, setTicketLoadingId] = useState<string | null>(null);
+  const [paymentsJournalKey, setPaymentsJournalKey] = useState(0);
 
   const payKeyRef = useRef(newIdempotencyKey());
 
@@ -126,6 +128,7 @@ export function CashRegisterPageView() {
     refresh().finally(() => setLoading(false));
   }, [refresh]);
 
+  const selectedApt = billable.find((b) => b.id === aptId) ?? null;
   const session = state?.session ?? null;
   const txns = state?.transactions ?? [];
   const recentClosed = state?.recentClosed ?? [];
@@ -156,11 +159,12 @@ export function CashRegisterPageView() {
     const id = typeof presetId === "string" ? presetId : undefined;
     try {
       const list = await listBillableAppointments(id);
-      setBillable(list);
       const chosen = id && list.some((item) => item.id === id) ? id : "";
+      const selectedOnly = chosen ? list.filter((item) => item.id === chosen) : [];
+      setBillable(selectedOnly);
       setAptId(chosen);
-      setPayMode("service");
-      const found = list.find((item) => item.id === chosen);
+      setPayMode(chosen ? "service" : "products");
+      const found = selectedOnly[0];
       setPayAmount(found ? String(found.remaining) : "");
       setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
       setAddonReset((n) => n + 1);
@@ -238,6 +242,7 @@ export function CashRegisterPageView() {
     setPayOpen(false);
     setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
     payKeyRef.current = newIdempotencyKey();
+    setPaymentsJournalKey((n) => n + 1);
     refresh();
   }
 
@@ -296,7 +301,7 @@ export function CashRegisterPageView() {
 
   const tabs: { id: CashTab; label: string }[] = [
     { id: "overview", label: "Vue générale" },
-    { id: "journal", label: `Journal (${txns.length})` },
+    { id: "journal", label: "Journal paiements" },
     { id: "out", label: `Sorties (${formatMad(session?.cashOut ?? 0)})` },
     { id: "refunds", label: `Remboursements (${formatMad(refunds)})` },
     { id: "history", label: "Clôtures" },
@@ -373,12 +378,18 @@ export function CashRegisterPageView() {
           cashIn={session?.cashIn ?? 0}
           cashOut={session?.cashOut ?? 0}
           theoretical={theoretical}
+          paymentsToday={session?.paymentsToday.total ?? 0}
           refunds={refunds}
           movements={ops}
           counted={counted}
           onCountedChange={setCounted}
           closeReason={closeReason}
           onCloseReasonChange={setCloseReason}
+          onSelectKpi={(kpi) => {
+            if (kpi === "in" || kpi === "movements") setTab("journal");
+            else if (kpi === "out") setTab("out");
+            else setTab("refunds");
+          }}
           onPayment={() => void openPayDrawer()}
           onWithdrawal={() => void openOut("out")}
           onRefund={() => {
@@ -456,11 +467,13 @@ export function CashRegisterPageView() {
                   ))
                 )}
               </div>
-            ) : (
+            ) : tab === "out" || tab === "refunds" ? (
               <div className="space-y-5 rounded-[24px] border border-[#F1E8EC] bg-white p-6 shadow-[0_8px_30px_rgba(60,20,40,0.06)] sm:p-7">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-ink">Journal des opérations</h2>
+                    <h2 className="text-xl font-bold text-ink">
+                      {tab === "out" ? "Sorties de caisse" : "Remboursements tiroir"}
+                    </h2>
                     <p className="text-[13px] text-ink/50">Mouvements de la session courante.</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -490,77 +503,55 @@ export function CashRegisterPageView() {
                       Aucun mouvement.
                     </p>
                   ) : (
-                    filtered.map((t) => {
-                      const canTicket = Boolean(t.paymentId) && t.type === "SALE";
-                      return (
-                        <div
-                          key={t.id}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F1E8EC] bg-[#FFFBFD] px-4 py-3.5 transition hover:border-[#E8C9D6]"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="truncate text-[15px] font-bold text-ink">{CASH_TXN_LABEL[t.type]}</p>
-                              <span
-                                className={cn(
-                                  "inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold",
-                                  txnTypeChip(t.type),
-                                )}
-                              >
-                                {t.method ? PAYMENT_METHOD_LABEL[t.method] : "Espèces"}
-                              </span>
-                            </div>
-                            <p className="mt-0.5 text-[12px] text-ink/50">
-                              {formatCashDateTime(t.createdAt)}
-                              {t.userName ? ` · ${t.userName}` : ""}
-                              {t.reason ? ` · ${t.reason}` : ""}
+                    filtered.map((t) => (
+                      <div
+                        key={t.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F1E8EC] bg-[#FFFBFD] px-4 py-3.5 transition hover:border-[#E8C9D6]"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-[15px] font-bold text-ink">
+                              {CASH_TXN_LABEL[t.type]}
                             </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <p
+                            <span
                               className={cn(
-                                "text-[16px] font-extrabold tabular-nums",
-                                t.amount < 0 ? "text-[#BA1A1A]" : "text-[#981C52]",
+                                "inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold",
+                                txnTypeChip(t.type),
                               )}
                             >
-                              {t.amount > 0 ? "+" : ""}
-                              {formatMad(t.amount)}
-                            </p>
-                            {canTicket ? (
-                              <button
-                                type="button"
-                                className="rounded-lg bg-[#FCE9F4] px-2.5 py-1.5 text-[12px] font-semibold text-ink hover:bg-[#F0DDE9] disabled:opacity-50"
-                                disabled={ticketLoadingId === t.paymentId}
-                                onClick={() => void openTicket(t.paymentId)}
-                              >
-                                {ticketLoadingId === t.paymentId ? "…" : "Ticket"}
-                              </button>
-                            ) : null}
+                              {t.method ? PAYMENT_METHOD_LABEL[t.method] : "Espèces"}
+                            </span>
                           </div>
+                          <p className="mt-0.5 text-[12px] text-ink/50">
+                            {formatCashDateTime(t.createdAt)}
+                            {t.userName ? ` · ${t.userName}` : ""}
+                            {t.reason ? ` · ${t.reason}` : ""}
+                          </p>
                         </div>
-                      );
-                    })
+                        <p
+                          className={cn(
+                            "text-[16px] font-extrabold tabular-nums",
+                            t.amount < 0 ? "text-[#BA1A1A]" : "text-[#981C52]",
+                          )}
+                        >
+                          {t.amount > 0 ? "+" : ""}
+                          {formatMad(t.amount)}
+                        </p>
+                      </div>
+                    ))
                   )}
                 </div>
-
-                {session ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#FAF0F5] p-4 text-[13px]">
-                    <span className="text-ink/55">
-                      {filtered.length} opération{filtered.length > 1 ? "s" : ""}
-                    </span>
-                    <div className="flex flex-wrap gap-2 text-[13px] font-semibold">
-                      <span className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
-                        Carte : {formatMad(session.paymentsToday.card)}
-                      </span>
-                      <span className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
-                        Espèces : {formatMad(session.paymentsToday.cash)}
-                      </span>
-                      <span className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
-                        Virement : {formatMad(session.paymentsToday.transfer)}
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
               </div>
+            ) : (
+              <PaymentsJournalPanel
+                canWrite={canWrite}
+                refreshKey={paymentsJournalKey}
+                onCollect={({ appointmentId, amount }) => {
+                  void openPayDrawer(appointmentId).then(() => {
+                    setPayAmount(String(amount));
+                  });
+                }}
+              />
             )}
           </div>
 
@@ -631,12 +622,17 @@ export function CashRegisterPageView() {
         </div>
       </div>
 
-      <Drawer open={payOpen} onClose={() => setPayOpen(false)} title="Encaisser">
+      <PremiumSidePanel
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        title="Encaisser"
+        description="Encaissez un rendez-vous ou des produits."
+      >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#FFEFF8] p-1">
             {(
               [
-                ["service", "Service"],
+                ["service", "Service / RDV"],
                 ["products", "Produits"],
               ] as const
             ).map(([id, label]) => (
@@ -662,62 +658,53 @@ export function CashRegisterPageView() {
               onSold={(sale) => {
                 toast(`Vente produits · ${formatMad(sale.total)}`, "success");
                 setPayOpen(false);
+                setPaymentsJournalKey((n) => n + 1);
                 void refresh();
               }}
             />
-          ) : null}
-
-          {payMode === "service" ? (
+          ) : (
             <>
-              <label className="block text-sm">
-                <span className="mb-1.5 block font-medium">Rendez-vous</span>
-                <Select
-                  value={aptId}
-                  onChange={(e) => {
-                    setAptId(e.target.value);
-                    const b = billable.find((x) => x.id === e.target.value);
-                    if (b) setPayAmount(String(b.remaining));
-                  }}
-                >
-                  <option value="">Choisir un RDV…</option>
-                  {billable.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.customerName} · {formatPaymentServices(b.serviceName)} · reste{" "}
-                      {formatMad(b.remaining)}
-                    </option>
-                  ))}
-                </Select>
-              </label>
+              <p className="text-[13px] text-ink/55">
+                Encaissez le rendez-vous et, si besoin, ajoutez des produits au même encaissement.
+              </p>
+              {selectedApt ? (
+                <div className="rounded-xl bg-[#FFEFF8] px-3 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+                    Rendez-vous
+                  </p>
+                  <p className="mt-1 text-[15px] font-semibold text-ink">
+                    {selectedApt.customerName}
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-ink/55">
+                    {formatPaymentServices(selectedApt.serviceName)} · reste{" "}
+                    {formatMad(selectedApt.remaining)}
+                  </p>
+                </div>
+              ) : (
+                <p className="rounded-xl bg-[#FFEFF8] px-3 py-3 text-[13px] text-ink/60">
+                  Aucun rendez-vous sélectionné. Choisissez-en un dans le journal.
+                </p>
+              )}
               <AppointmentPromoNote
-                promotionCode={billable.find((b) => b.id === aptId)?.promotionCode}
-                promotionName={billable.find((b) => b.id === aptId)?.promotionName}
-                discount={billable.find((b) => b.id === aptId)?.discount}
+                promotionCode={selectedApt?.promotionCode}
+                promotionName={selectedApt?.promotionName}
+                discount={selectedApt?.discount}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm">
-                  <span className="mb-1.5 block font-medium">Montant service</span>
-                  <Input
-                    type="number"
-                    min={0.01}
-                    step={0.01}
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="mb-1.5 block font-medium">Méthode</span>
-                  <Select
-                    value={payMethod}
-                    onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
-                  >
-                    {PAYMENT_METHODS.map((m) => (
-                      <option key={m} value={m}>
-                        {PAYMENT_METHOD_LABEL[m]}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-              </div>
+              <label className="block text-sm">
+                <span className="mb-1.5 block font-medium">Montant service</span>
+                <Input
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                />
+              </label>
+              <PaymentMethodPicker
+                value={payMethod}
+                onChange={setPayMethod}
+                disabled={submitting}
+              />
 
               <ProductSalePanel
                 embedded
@@ -730,7 +717,7 @@ export function CashRegisterPageView() {
 
               {addonCart.lines.length > 0 ? (
                 <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/60">
-                  Total : service {formatMad(Number(payAmount) || 0)} + produits{" "}
+                  Total à encaisser : service {formatMad(Number(payAmount) || 0)} + produits{" "}
                   {formatMad(addonCart.total)} ={" "}
                   <strong className="text-ink">
                     {formatMad((Number(payAmount) || 0) + addonCart.total)}
@@ -746,26 +733,23 @@ export function CashRegisterPageView() {
                 onClick={() => void handlePay()}
               >
                 {submitting
-                  ? "Enregistrement…"
+                  ? "Encaissement…"
                   : addonCart.lines.length > 0
                     ? `Encaisser service + produits · ${formatMad((Number(payAmount) || 0) + addonCart.total)}`
                     : "Encaisser le service"}
               </Button>
             </>
-          ) : null}
-
+          )}
         </div>
-      </Drawer>
+      </PremiumSidePanel>
 
-      <Drawer
+      <PremiumSidePanel
         open={outOpen}
         onClose={() => setOutOpen(false)}
         title={outKind === "bank" ? "Sortie banque / coffre" : "Sortie de caisse"}
+        description="Retirez des espèces du tiroir pour un achat ou une sortie libre."
       >
         <div className="space-y-4">
-          <p className="text-[13px] text-ink/55">
-            Retire des espèces du tiroir. Vous pouvez payer une facture d’achat ou une sortie libre.
-          </p>
           <label className="block text-sm">
             <span className="mb-1.5 block font-medium">Facture d’achat (facultatif)</span>
             <Select
@@ -812,7 +796,7 @@ export function CashRegisterPageView() {
             Enregistrer la sortie
           </Button>
         </div>
-      </Drawer>
+      </PremiumSidePanel>
     </>
   );
 }

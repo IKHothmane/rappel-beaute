@@ -267,9 +267,6 @@ export function PaymentsMobile({
           <option value="CASH">Espèces</option>
           <option value="CARD">Carte</option>
           <option value="TRANSFER">Virement</option>
-          <option value="CHECK">Chèque</option>
-          <option value="ONLINE">En ligne</option>
-          <option value="GIFT_CARD">Carte cadeau</option>
         </select>
       </div>
 

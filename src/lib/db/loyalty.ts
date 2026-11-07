@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
+import { shortCardCode } from "@/lib/loyalty/card-code";
 import type {
   CreatePackageInput,
   CreateRewardInput,
@@ -885,7 +886,7 @@ export async function getCustomerLoyalty(
 
   const balance = account?.balance ?? 0;
 
-  const [todayRes, txns, rewards] = await Promise.all([
+  const [todayRes, txns, rewards, cardRes] = await Promise.all([
     pool.query<{ t: string }>(
       `SELECT COALESCE(SUM(points), 0)::text AS t FROM "LoyaltyTransaction"
        WHERE "organizationId" = $1 AND "customerId" = $2 AND type = 'EARN'
@@ -908,6 +909,13 @@ export async function getCustomerLoyalty(
       [organizationId, customerId],
     ),
     listRewards(organizationId, true),
+    pool.query<{ publicToken: string }>(
+      `SELECT "publicToken" FROM "LoyaltyCard"
+       WHERE "organizationId" = $1 AND "customerId" = $2 AND status = 'ACTIVE'
+       ORDER BY "createdAt" DESC
+       LIMIT 1`,
+      [organizationId, customerId],
+    ),
   ]);
 
   const activeRewards = rewards
@@ -915,9 +923,11 @@ export async function getCustomerLoyalty(
     .sort((a, b) => a.pointsCost - b.pointsCost);
   const redeemable = activeRewards.filter((r) => r.pointsCost <= balance);
   const nextToUnlock = activeRewards.find((r) => r.pointsCost > balance) ?? null;
+  const cardToken = cardRes.rows[0]?.publicToken ?? null;
 
   return {
     account,
+    cardCode: cardToken ? shortCardCode(cardToken) : null,
     todayEarned: parseInt(todayRes.rows[0]?.t ?? "0", 10) || 0,
     nextReward: nextToUnlock,
     pointsToNextReward: nextToUnlock ? nextToUnlock.pointsCost - balance : null,

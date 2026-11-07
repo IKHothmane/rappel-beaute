@@ -260,23 +260,24 @@ export async function syncReviewRequests(organizationId: string): Promise<void> 
 }
 
 export async function getReviewKpis(organizationId: string): Promise<ReviewKpis> {
-  const { rows } = await pool.query<{
-    pendingToSend: number;
-    sentThisMonth: number;
-    recordedCount: number;
-    avgScore: string | null;
-    satisfiedPct: string | null;
-    recordedThisMonth: number;
-    recordedPrevMonth: number;
-    positiveCount: number;
-    sensitiveCount: number;
-    awaitingRecord: number;
-    skippedCount: number;
-    verySatisfiedCount: number;
-    satisfiedCount: number;
-    dissatisfiedCount: number;
-  }>(
-    `SELECT
+  const [{ rows }, publicRes] = await Promise.all([
+    pool.query<{
+      pendingToSend: number;
+      sentThisMonth: number;
+      recordedCount: number;
+      avgScore: string | null;
+      satisfiedPct: string | null;
+      recordedThisMonth: number;
+      recordedPrevMonth: number;
+      positiveCount: number;
+      sensitiveCount: number;
+      awaitingRecord: number;
+      skippedCount: number;
+      verySatisfiedCount: number;
+      satisfiedCount: number;
+      dissatisfiedCount: number;
+    }>(
+      `SELECT
       COUNT(*) FILTER (WHERE status = 'PENDING'::"ReviewRequestStatus")::int AS "pendingToSend",
       COUNT(*) FILTER (
         WHERE status = 'SENT'::"ReviewRequestStatus" AND "sentAt" >= date_trunc('month', NOW())
@@ -310,11 +311,27 @@ export async function getReviewKpis(organizationId: string): Promise<ReviewKpis>
       COUNT(*) FILTER (WHERE satisfaction = 'DISSATISFIED')::int AS "dissatisfiedCount"
      FROM "ReviewRequest"
      WHERE "organizationId" = $1`,
-    [organizationId],
-  );
+      [organizationId],
+    ),
+    pool.query<{
+      publicCount: number;
+      publicPendingCount: number;
+      publicAvg: string | null;
+    }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE status IN ('PENDING'::"PublicReviewStatus", 'PUBLISHED'::"PublicReviewStatus"))::int AS "publicCount",
+         COUNT(*) FILTER (WHERE status = 'PENDING'::"PublicReviewStatus")::int AS "publicPendingCount",
+         AVG(rating) FILTER (WHERE status IN ('PENDING'::"PublicReviewStatus", 'PUBLISHED'::"PublicReviewStatus"))::text AS "publicAvg"
+       FROM "Review"
+       WHERE "organizationId" = $1`,
+      [organizationId],
+    ),
+  ]);
 
   const r = rows[0];
+  const p = publicRes.rows[0];
   const avg = r?.avgScore != null ? parseFloat(r.avgScore) : null;
+  const publicAvg = p?.publicAvg != null ? parseFloat(p.publicAvg) : null;
   return {
     pendingToSend: r?.pendingToSend ?? 0,
     sentThisMonth: r?.sentThisMonth ?? 0,
@@ -330,6 +347,9 @@ export async function getReviewKpis(organizationId: string): Promise<ReviewKpis>
     verySatisfiedCount: r?.verySatisfiedCount ?? 0,
     satisfiedCount: r?.satisfiedCount ?? 0,
     dissatisfiedCount: r?.dissatisfiedCount ?? 0,
+    publicCount: p?.publicCount ?? 0,
+    publicAverageScore: publicAvg != null ? Math.round(publicAvg * 10) / 10 : null,
+    publicPendingCount: p?.publicPendingCount ?? 0,
   };
 }
 

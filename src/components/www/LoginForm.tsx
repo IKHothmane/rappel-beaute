@@ -51,12 +51,13 @@ function LoginFormFields() {
         } | null;
         const isPlatform =
           data?.user?.scope === "platform" || data?.user?.accountType === "PLATFORM";
+        // `auth=1` contourne un éventuel 308 mis en cache sur /dashboard/?__host=app.
         if (isPlatform) {
-          window.location.replace("/dashboard/?__host=admin");
+          window.location.replace("/dashboard/?__host=admin&auth=1");
         } else if (data?.mustChangePassword) {
-          window.location.replace("/changer-mot-de-passe/?__host=app");
+          window.location.replace("/changer-mot-de-passe/?__host=app&auth=1");
         } else {
-          window.location.replace("/dashboard/?__host=app");
+          window.location.replace("/dashboard/?__host=app&auth=1");
         }
         return;
       }

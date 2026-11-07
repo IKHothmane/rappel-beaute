@@ -168,7 +168,11 @@ function publicRedirect(
     }
   }
   preserveHostParam(url, domain, hostname);
-  return withFrameDeny(NextResponse.redirect(url, status));
+  const res = withFrameDeny(NextResponse.redirect(url, status));
+  // Empêche le navigateur de rejouer d’anciens 308 (ERR_TOO_MANY_REDIRECTS).
+  res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.headers.set("Pragma", "no-cache");
+  return res;
 }
 
 function withFrameDeny(response: NextResponse) {
@@ -274,16 +278,20 @@ export async function middleware(request: NextRequest) {
   if (isLoginPath && session?.scope === "app") {
     const mustChange =
       "mustChangePassword" in session && Boolean(session.mustChangePassword);
+    // `auth=1` : URL différente des 308 mis en cache (ERR_TOO_MANY_REDIRECTS).
     return publicRedirect(
       request,
       mustChange ? `${CHANGE_PASSWORD_PATH}/` : "/dashboard/",
       "app",
       hostname,
       307,
+      mustChange ? undefined : { auth: "1" },
     );
   }
   if (isLoginPath && session?.scope === "platform") {
-    return publicRedirect(request, "/dashboard/", "admin", hostname, 307);
+    return publicRedirect(request, "/dashboard/", "admin", hostname, 307, {
+      auth: "1",
+    });
   }
 
   const domain = resolveDomain(request, session);

@@ -12,18 +12,45 @@ import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { COOKIE_HOST } from "@/lib/domain";
 
+async function readLoginBody(request: NextRequest): Promise<{
+  email?: string;
+  password?: string;
+  organizationId?: string;
+  remember?: boolean;
+} | null> {
+  const raw = await request.text();
+  if (!raw.trim()) return null;
+  try {
+    return stripOrganizationId(JSON.parse(raw) as Record<string, unknown>) as {
+      email?: string;
+      password?: string;
+      organizationId?: string;
+      remember?: boolean;
+    };
+  } catch {
+    // Fallback si le corps arrive en form-urlencoded (certains clients / proxies).
+    try {
+      const params = new URLSearchParams(raw);
+      if (!params.has("email") && !params.has("password")) return null;
+      return {
+        email: params.get("email") ?? undefined,
+        password: params.get("password") ?? undefined,
+        remember: params.get("remember") !== "false",
+      };
+    } catch {
+      return null;
+    }
+  }
+}
+
 export async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
   try {
-    const body = stripOrganizationId(
-      (await request.json()) as {
-        email?: string;
-        password?: string;
-        organizationId?: string;
-        remember?: boolean;
-      },
-    );
+    const body = await readLoginBody(request);
+    if (!body) {
+      return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+    }
     const email = body.email?.trim();
     const password = body.password;
     const remember = body.remember !== false;
@@ -73,6 +100,7 @@ export async function POST(request: NextRequest) {
           scope: session.scope,
         },
       });
+      res.headers.set("Clear-Site-Data", '"cache"');
       res.cookies.set(createSessionCookie(session, sessionMaxAge));
       res.cookies.set(COOKIE_HOST, "admin", {
         path: "/",
@@ -113,6 +141,7 @@ export async function POST(request: NextRequest) {
       mustChangePassword: session.mustChangePassword,
     });
 
+    res.headers.set("Clear-Site-Data", '"cache"');
     res.cookies.set(createSessionCookie(session, sessionMaxAge));
     res.cookies.set(COOKIE_HOST, "app", {
       path: "/",

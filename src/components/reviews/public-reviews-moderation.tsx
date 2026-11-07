@@ -340,9 +340,16 @@ export function PublicReviewsModeration({
                 Chargement des avis…
               </div>
             ) : filtered.length === 0 ? (
-              <div className="flex min-h-44 flex-col items-center justify-center text-center">
+              <div className="flex min-h-44 flex-col items-center justify-center rounded-2xl border border-dashed border-[#EAD5E0] bg-[#FFF9FB] px-4 py-10 text-center">
                 <MessageSquare size={28} className="mb-3 text-[#C88BA6]" aria-hidden />
-                <p className="font-semibold text-[#382633]">Aucun avis trouvé</p>
+                <p className="font-semibold text-[#382633]">
+                  {items.length === 0 ? "Aucun avis pour le moment" : "Aucun avis trouvé"}
+                </p>
+                <p className="mt-1 max-w-sm text-sm text-[#8A7482]">
+                  {items.length === 0
+                    ? "Les notes clientes s’afficheront dès le premier retour enregistré."
+                    : "Essayez un autre filtre ou une autre recherche."}
+                </p>
               </div>
             ) : (
               filtered.map((item) => (

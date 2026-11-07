@@ -31,7 +31,6 @@ import {
   appointmentRemaining,
 } from "@/components/agenda/appointment-pay-badge";
 import { cn } from "@/lib/utils";
-import { DEPOSIT_STATE_LABEL } from "@/types/booking-policy";
 import { extraIdsFromNotes, notesWithServices, soinLabelsFromNotes } from "@/components/agenda/service-notes";
 
 type ServiceChoice = { id: string; name: string; price: number; durationMin: number };
@@ -70,6 +69,10 @@ export function AppointmentDetails({
   const start = new Date(appointment.startAt);
   const end = new Date(appointment.endAt);
   const transitions = STATUS_TRANSITIONS[appointment.status] ?? [];
+  const canComplete =
+    appointment.status !== "COMPLETED" &&
+    appointment.status !== "CANCELLED" &&
+    appointment.status !== "NO_SHOW";
   const depositState = appointment.depositState ?? "NOT_REQUIRED";
   const awaitingDeposit = depositState === "AWAITING";
   const color = staffColor(appointment.staffId, palette);
@@ -217,6 +220,84 @@ export function AppointmentDetails({
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-2">
+        {transitions.includes("ARRIVED") ? (
+          <button
+            type="button"
+            onClick={() => onStatusChange("ARRIVED")}
+            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2.5 text-sm font-semibold text-ink hover:bg-[#F0DDE9]"
+          >
+            <CheckCheck size={16} />
+            Marquer présente
+          </button>
+        ) : transitions.includes("IN_PROGRESS") ? (
+          <button
+            type="button"
+            onClick={() => onStatusChange("IN_PROGRESS")}
+            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2.5 text-sm font-semibold text-ink hover:bg-[#F0DDE9]"
+          >
+            <CheckCheck size={16} />
+            Commencer
+          </button>
+        ) : transitions.includes("CONFIRMED") ? (
+          <button
+            type="button"
+            disabled={awaitingDeposit}
+            onClick={() => onStatusChange("CONFIRMED")}
+            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2.5 text-sm font-semibold text-primary disabled:opacity-50"
+          >
+            Confirmer
+          </button>
+        ) : (
+          <span />
+        )}
+        {appointment.paymentState === "paid" ? (
+          <span className="flex items-center justify-center gap-1 rounded-lg bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-800">
+            Payé
+          </span>
+        ) : (
+          <Link
+            href={`/cash-register/?appointmentId=${appointment.id}`}
+            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2.5 text-sm font-semibold text-ink hover:bg-[#F0DDE9]"
+          >
+            <Wallet size={16} />
+            {appointment.paymentState === "partial"
+              ? `Encaisser ${formatMad(appointmentRemaining(appointment))}`
+              : "Encaisser"}
+          </Link>
+        )}
+        {canComplete ? (
+          <button
+            type="button"
+            onClick={() => onStatusChange("COMPLETED")}
+            className="col-span-2 flex items-center justify-center gap-1 rounded-lg bg-primary py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark"
+          >
+            <CheckCheck size={16} />
+            Terminer la prestation
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onEdit}
+          className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2 text-sm font-semibold text-ink/70 hover:text-ink"
+        >
+          <Pencil size={14} />
+          Modifier
+        </button>
+        {transitions.includes("NO_SHOW") || transitions.includes("CANCELLED") ? (
+          <button
+            type="button"
+            onClick={transitions.includes("NO_SHOW") ? () => onStatusChange("NO_SHOW") : onCancel}
+            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+          >
+            <UserX size={14} />
+            {transitions.includes("NO_SHOW") ? "No-show / Annuler" : "Annuler"}
+          </button>
+        ) : (
+          <span />
+        )}
+      </div>
+
       {noShows >= 2 ? (
         <div className="flex items-start gap-2.5 rounded-lg bg-[#FBF4F6] p-3">
           <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-600" />
@@ -230,18 +311,6 @@ export function AppointmentDetails({
                 : ""}
             </p>
           </div>
-        </div>
-      ) : null}
-
-      {awaitingDeposit ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
-          <p className="font-medium">Acompte en attente — {DEPOSIT_STATE_LABEL[depositState]}</p>
-          <Link
-            href={`/cash-register/?appointmentId=${appointment.id}&kind=DEPOSIT`}
-            className="mt-1 inline-block font-semibold text-primary underline"
-          >
-            Enregistrer l&apos;acompte
-          </Link>
         </div>
       ) : null}
 
@@ -412,93 +481,6 @@ export function AppointmentDetails({
       </div>
 
       {visibleNotes ? <p className="text-sm text-ink/60">{visibleNotes}</p> : null}
-
-      <div className="grid grid-cols-2 gap-2">
-        {transitions.includes("COMPLETED") ? (
-          <button
-            type="button"
-            onClick={() => onStatusChange("COMPLETED")}
-            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2.5 text-sm font-semibold text-ink hover:bg-[#F0DDE9]"
-          >
-            <CheckCheck size={16} />
-            Marquer fait
-          </button>
-        ) : transitions.includes("ARRIVED") ? (
-          <button
-            type="button"
-            onClick={() => onStatusChange("ARRIVED")}
-            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2.5 text-sm font-semibold text-ink hover:bg-[#F0DDE9]"
-          >
-            <CheckCheck size={16} />
-            Marquer présente
-          </button>
-        ) : transitions.includes("IN_PROGRESS") ? (
-          <button
-            type="button"
-            onClick={() => onStatusChange("IN_PROGRESS")}
-            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2.5 text-sm font-semibold text-ink hover:bg-[#F0DDE9]"
-          >
-            <CheckCheck size={16} />
-            Commencer
-          </button>
-        ) : (
-          <span />
-        )}
-        {appointment.paymentState === "paid" ? (
-          <span className="flex items-center justify-center gap-1 rounded-lg bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-800">
-            Payé
-          </span>
-        ) : (
-          <Link
-            href={`/cash-register/?appointmentId=${appointment.id}`}
-            className="flex items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark"
-          >
-            <Wallet size={16} />
-            {appointment.paymentState === "partial"
-              ? `Encaisser ${formatMad(appointmentRemaining(appointment))}`
-              : "Encaisser"}
-          </Link>
-        )}
-        <button
-          type="button"
-          onClick={onEdit}
-          className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2 text-sm font-semibold text-ink/70 hover:text-ink"
-        >
-          <Pencil size={14} />
-          Modifier
-        </button>
-        {transitions.includes("NO_SHOW") || transitions.includes("CANCELLED") ? (
-          <button
-            type="button"
-            onClick={transitions.includes("NO_SHOW") ? () => onStatusChange("NO_SHOW") : onCancel}
-            className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
-          >
-            <UserX size={14} />
-            {transitions.includes("NO_SHOW") ? "No-show / Annuler" : "Annuler"}
-          </button>
-        ) : (
-          <span />
-        )}
-        {transitions.includes("CONFIRMED") ? (
-          <button
-            type="button"
-            disabled={awaitingDeposit}
-            onClick={() => onStatusChange("CONFIRMED")}
-            className="col-span-2 rounded-lg bg-[#FBF4F6] py-2 text-sm font-semibold text-primary disabled:opacity-50"
-          >
-            {awaitingDeposit ? "Confirmer (acompte requis)" : "Confirmer le rendez-vous"}
-          </button>
-        ) : null}
-        {transitions.includes("CANCELLED") && transitions.includes("NO_SHOW") ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="col-span-2 text-center text-xs text-ink/40 underline"
-          >
-            Annuler le rendez-vous
-          </button>
-        ) : null}
-      </div>
 
       <div className="flex flex-col gap-2 rounded-lg bg-emerald-50 p-3.5">
         <div className="flex items-center justify-between">

@@ -93,6 +93,8 @@ export type LoyaltyRewardItem = {
 
 export type CustomerLoyaltyView = {
   account: LoyaltyAccountSummary | null;
+  /** Code court de la carte (ex. RR6Q), dérivé du jeton public. */
+  cardCode: string | null;
   todayEarned: number;
   nextReward: LoyaltyRewardItem | null;
   pointsToNextReward: number | null;

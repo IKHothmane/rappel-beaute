@@ -47,8 +47,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
     setUser(null);
-    // Remplace l’historique pour éviter un retour vers /dashboard/?__host=app en cache.
-    window.location.replace("/connexion/");
+    // `signed_out=1` évite un 308 en cache sur /connexion/ (boucle login/logout).
+    window.location.replace("/connexion/?signed_out=1");
   }, []);
 
   const value = useMemo(

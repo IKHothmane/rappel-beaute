@@ -2,19 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Minus, Plus, Search, ShoppingBag, Tag } from "lucide-react";
+import { PaymentMethodPicker } from "@/components/finance/payment-method-picker";
 import { filterPosCatalog, productStockState } from "@/components/pos/pos-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { formatMad, PAYMENT_METHOD_LABEL } from "@/modules/finance/service";
+import { formatMad } from "@/modules/finance/service";
 import {
   createPosSaleApi,
   listPosProductsApi,
   newPosIdempotencyKey,
 } from "@/modules/pos/service";
 import { listPromotions } from "@/modules/promo/service";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/types/finance";
+import type { PaymentMethod } from "@/types/finance";
 import type { PosProductItem, PosSaleDetail } from "@/types/pos";
 import {
   PROMOTION_TYPE_LABEL,
@@ -528,36 +528,25 @@ export function ProductSalePanel({
         ) : null
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span className="mb-1.5 block font-medium">Méthode</span>
-              <Select
-                value={method}
-                onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-                disabled={disabled}
-              >
-                {PAYMENT_METHODS.map((item) => (
-                  <option key={item} value={item}>
-                    {PAYMENT_METHOD_LABEL[item]}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <div className="flex flex-col justify-end rounded-lg bg-[#FFEFF8] px-3 py-2">
-              {discount > 0 ? (
-                <>
-                  <span className="text-[11px] text-ink/45">
-                    Brut {formatMad(subtotal)} · promo −{formatMad(discount)}
-                  </span>
-                  <span className="text-[18px] font-extrabold text-primary">{formatMad(total)}</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-[11px] text-ink/45">Total</span>
-                  <span className="text-[18px] font-extrabold text-primary">{formatMad(total)}</span>
-                </>
-              )}
-            </div>
+          <PaymentMethodPicker
+            value={method}
+            onChange={setMethod}
+            disabled={disabled}
+          />
+          <div className="flex flex-col justify-end rounded-lg bg-[#FFEFF8] px-3 py-2">
+            {discount > 0 ? (
+              <>
+                <span className="text-[11px] text-ink/45">
+                  Brut {formatMad(subtotal)} · promo −{formatMad(discount)}
+                </span>
+                <span className="text-[18px] font-extrabold text-primary">{formatMad(total)}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-[11px] text-ink/45">Total</span>
+                <span className="text-[18px] font-extrabold text-primary">{formatMad(total)}</span>
+              </>
+            )}
           </div>
 
           <Button

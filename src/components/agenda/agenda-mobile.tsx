@@ -583,15 +583,26 @@ function MobileAptRow({
             {apt.staffName.split(" ")[0]}
             {apt.resourceName ? ` · ${apt.resourceName}` : ""}
           </span>
-          {transitions.includes("ARRIVED") ? (
-            <button
-              type="button"
-              className="font-bold text-primary"
-              onClick={() => onStatusChange(apt.id, "ARRIVED")}
-            >
-              Notifier arrivée
-            </button>
-          ) : null}
+          <span className="flex items-center gap-2">
+            {transitions.includes("ARRIVED") ? (
+              <button
+                type="button"
+                className="font-bold text-primary"
+                onClick={() => onStatusChange(apt.id, "ARRIVED")}
+              >
+                Notifier arrivée
+              </button>
+            ) : null}
+            {transitions.includes("COMPLETED") ? (
+              <button
+                type="button"
+                className="font-bold text-primary"
+                onClick={() => onStatusChange(apt.id, "COMPLETED")}
+              >
+                Terminer
+              </button>
+            ) : null}
+          </span>
         </div>
 
         {expanded ? (

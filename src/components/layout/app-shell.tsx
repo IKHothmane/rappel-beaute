@@ -39,7 +39,7 @@ export function AppShell({ children }: AppShellProps) {
     path.startsWith("/activate") ||
     path.startsWith("/book");
 
-  const fullBleed = path.startsWith("/salon-3d");
+  const fullBleed = path.startsWith("/salon-3d") || path.startsWith("/ai");
 
   useEffect(() => {
     if (loading || bare) return;

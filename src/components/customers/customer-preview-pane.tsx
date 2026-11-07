@@ -307,7 +307,17 @@ export function CustomerPreviewPane({
           )}
         </div>
       ) : tab === "fidelity" ? (
-        <div className="space-y-2 text-[13px] text-ink/70">
+        <div className="space-y-3 text-[13px] text-ink/70">
+          {loyalty?.cardCode ? (
+            <div className="rounded-xl bg-[#FFEFF8] px-3 py-3 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+                Code carte
+              </p>
+              <p className="mt-1 font-mono text-xl font-extrabold tracking-[0.2em] text-primary">
+                {loyalty.cardCode}
+              </p>
+            </div>
+          ) : null}
           <p>
             Solde : <strong className="text-ink">{points} pts</strong>
             {loyalty?.account ? ` · ${LOYALTY_LEVEL_LABEL[loyalty.account.level]}` : ""}

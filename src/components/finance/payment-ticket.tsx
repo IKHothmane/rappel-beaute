@@ -74,23 +74,27 @@ export function PaymentTicketModal({
   remaining,
   onClose,
 }: {
-  payment: PaymentItem;
+  payment: PaymentItem | null;
   orgName: string;
   remaining: AppointmentPaymentSummary | null;
   onClose: () => void;
 }) {
-  const [lines, setLines] = useState<TicketLine[]>(() =>
-    buildLines(payment, null, []),
-  );
+  const [lines, setLines] = useState<TicketLine[]>([]);
   const [summary, setSummary] = useState<AppointmentPaymentSummary | null>(remaining);
-  const [loading, setLoading] = useState(Boolean(payment.appointmentId));
-  const signed = signedPaymentAmount(payment);
+  const [loading, setLoading] = useState(Boolean(payment?.appointmentId));
+  const signed = payment ? signedPaymentAmount(payment) : 0;
 
   useEffect(() => {
     setSummary(remaining);
   }, [remaining]);
 
   useEffect(() => {
+    if (!payment) {
+      setLines([]);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     (async () => {
       if (!payment.appointmentId) {
@@ -143,7 +147,8 @@ export function PaymentTicketModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const ticket = useMemo<BeautyTicket>(() => {
+  const ticket = useMemo<BeautyTicket | null>(() => {
+    if (!payment) return null;
     const priced = lines.map((line) => ({
       name: line.name,
       detail: line.detail,
@@ -176,6 +181,8 @@ export function PaymentTicketModal({
       currency: "DH",
     };
   }, [lines, orgName, payment, signed, summary]);
+
+  if (!payment || !ticket) return null;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/55 p-3 sm:p-4 print:static print:inset-auto print:bg-transparent print:p-0">

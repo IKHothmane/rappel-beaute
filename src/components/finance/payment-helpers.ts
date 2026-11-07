@@ -130,8 +130,8 @@ export function sortPaymentsNewestFirst(rows: PaymentItem[]): PaymentItem[] {
 }
 
 export function paymentShortId(id: string) {
-  if (id.startsWith("due:")) return "DÛ";
-  return id.slice(-6).toUpperCase();
+  const raw = id.startsWith("due:") ? id.slice("due:".length) : id;
+  return raw.slice(-6).toUpperCase() || "—";
 }
 
 /** Découpe « Soin A + Soin B » en libellés individuels. */

@@ -6,12 +6,21 @@ export type CalendarEvent = {
 
 export type PositionedEvent<T extends CalendarEvent> = {
   event: T;
+  /** Index dans la pile (0 = fond) */
   column: number;
+  /** Nombre de RDV qui se chevauchent dans le groupe */
   columns: number;
+  /** Identifiant du groupe de chevauchement */
+  groupId: string;
   left: number;
   width: number;
+  zIndex: number;
 };
 
+/**
+ * Empile les RDV qui se chevauchent (un sur l’autre), avec un léger décalage
+ * horizontal pour laisser voir les cartes du dessous — pas de colonnes côte à côte.
+ */
 export function layoutOverlappingEvents<T extends CalendarEvent>(
   events: T[],
 ): PositionedEvent<T>[] {
@@ -35,38 +44,24 @@ export function layoutOverlappingEvents<T extends CalendarEvent>(
   function flushGroup() {
     if (!group.length) return;
 
-    const columnsEnd: number[] = [];
-    const assigned: Array<{ event: T; column: number }> = [];
+    const stacked = [...group];
+    const columns = stacked.length;
+    const groupId = stacked[0]!.id;
+    const maxOffset = Math.min(18, Math.max(0, columns - 1) * 6);
 
-    for (const event of group) {
-      const start = new Date(event.startAt).getTime();
-      const end = new Date(event.endAt).getTime();
-
-      let column = columnsEnd.findIndex((columnEnd) => columnEnd <= start);
-
-      if (column === -1) {
-        column = columnsEnd.length;
-        columnsEnd.push(end);
-      } else {
-        columnsEnd[column] = end;
-      }
-
-      assigned.push({ event, column });
-    }
-
-    const columns = columnsEnd.length;
-    const gap = 1.5;
-    const width = 100 / columns;
-
-    for (const { event, column } of assigned) {
+    stacked.forEach((event, index) => {
+      const offset =
+        columns <= 1 ? 0 : (index / Math.max(1, columns - 1)) * maxOffset;
       result.push({
         event,
-        column,
+        column: index,
         columns,
-        left: column * width,
-        width: Math.max(0, width - gap),
+        groupId,
+        left: offset,
+        width: Math.max(72, 100 - offset - 1),
+        zIndex: 10 + index,
       });
-    }
+    });
 
     group = [];
     groupEnd = -Infinity;
@@ -93,4 +88,11 @@ export function layoutOverlappingEvents<T extends CalendarEvent>(
   flushGroup();
 
   return result;
+}
+
+export function peersInOverlapGroup<T extends CalendarEvent>(
+  positioned: PositionedEvent<T>[],
+  groupId: string,
+): T[] {
+  return positioned.filter((p) => p.groupId === groupId).map((p) => p.event);
 }

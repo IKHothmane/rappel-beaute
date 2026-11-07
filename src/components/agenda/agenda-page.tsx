@@ -13,7 +13,7 @@ import { AppointmentDetails } from "@/components/agenda/appointment-details";
 import { AppointmentForm } from "@/components/agenda/appointment-form";
 import NouveauRendezVousModal from "@/components/agenda/nouveau-rendez-vous-modal";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
-import { Drawer } from "@/components/ui/drawer";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -180,6 +180,23 @@ export function AgendaPage() {
       cancelled = true;
     };
   }, [refresh, refreshMeta]);
+
+  // Recharge périodiquement : le serveur termine auto les RDV dont endAt est dépassé.
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "hidden") return;
+      void refresh();
+    };
+    const id = window.setInterval(tick, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refresh]);
 
   const selected = appointments.find((a) => a.id === selectedId);
   const visibleDates = useMemo(() => visibleDatesFor(view, date), [view, date]);
@@ -645,10 +662,12 @@ export function AgendaPage() {
         onCreate={handleCreate}
       />
 
-      <Drawer
+      <PremiumSidePanel
         open={drawer === "edit" && !!selected}
         onClose={() => setDrawer(isXl ? null : "detail")}
         title="Modifier le rendez-vous"
+        description="Mettez à jour le créneau, la prestation ou l’équipe."
+        size="md"
       >
         {selected ? (
           <AppointmentForm
@@ -677,16 +696,17 @@ export function AgendaPage() {
             onCancel={() => setDrawer(isXl ? null : "detail")}
           />
         ) : null}
-      </Drawer>
+      </PremiumSidePanel>
 
-      <Drawer
+      <PremiumSidePanel
         open={drawer === "detail" && !!selected}
         onClose={() => {
           setDrawer(null);
           setSelectedId(null);
         }}
         title="Détail du rendez-vous"
-        side="right"
+        description="Suivez le statut, terminez la prestation ou encaissez."
+        size="md"
       >
         {selected ? (
           <AppointmentDetails
@@ -703,7 +723,7 @@ export function AgendaPage() {
             onApplyPromo={applyPromo}
           />
         ) : null}
-      </Drawer>
+      </PremiumSidePanel>
 
       <ConfirmDialog
         open={confirmCancel}

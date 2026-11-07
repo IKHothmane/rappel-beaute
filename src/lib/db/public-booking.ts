@@ -320,6 +320,26 @@ export async function getPublicStaffForService(
   }));
 }
 
+export async function getPublicDayClosedStatus(
+  organizationId: string,
+  date: string,
+): Promise<{ closed: boolean; reason: string | null }> {
+  const dayStart = new Date(`${date}T00:00:00+01:00`);
+  const dayEnd = new Date(`${date}T23:59:59+01:00`);
+  const { items } = await listStaff(organizationId, {
+    page: 1,
+    limit: 500,
+    agenda: true,
+  });
+  const { getSalonClosedStatus } = await import("@/lib/db/planning");
+  return getSalonClosedStatus(
+    organizationId,
+    dayStart,
+    dayEnd,
+    items as StaffAgendaContext[],
+  );
+}
+
 export async function getPublicAvailabilitySlots(
   organizationId: string,
   opts: {
@@ -333,14 +353,12 @@ export async function getPublicAvailabilitySlots(
   if (!service) throw new Error("SERVICE_NOT_FOUND");
 
   const dateObj = new Date(`${opts.date}T12:00:00+01:00`);
-  const dayStart = new Date(`${opts.date}T00:00:00+01:00`);
-  const dayEnd = new Date(`${opts.date}T23:59:59+01:00`);
 
-  const { isOrganizationClosed } = await import("@/lib/db/planning");
-  const closure = await isOrganizationClosed(organizationId, dayStart, dayEnd);
-  if (closure.closed) return [];
+  const dayClosed = await getPublicDayClosedStatus(organizationId, opts.date);
+  if (dayClosed.closed) return [];
 
   const staffList = await loadStaffContexts(organizationId, opts.serviceId);
+
   const resources = await loadResourceContexts(organizationId, opts.serviceId);
   const appointments = await loadAppointmentsForDay(
     organizationId,
@@ -441,9 +459,8 @@ export async function planPublicSlot(
   const endAt = new Date(startAt.getTime() + service.totalBlockMin * 60_000);
   if (startAt.getTime() < Date.now() - 60_000) throw new Error("SLOT_PAST");
 
-  const { isOrganizationClosed } = await import("@/lib/db/planning");
-  const closure = await isOrganizationClosed(organizationId, startAt, endAt);
-  if (closure.closed) throw new Error("SLOT_UNAVAILABLE");
+  const salonClosed = await getPublicDayClosedStatus(organizationId, input.date);
+  if (salonClosed.closed) throw new Error("SALON_CLOSED");
 
   const staffList = await loadStaffContexts(organizationId, input.serviceId);
   const resources = await loadResourceContexts(organizationId, input.serviceId);

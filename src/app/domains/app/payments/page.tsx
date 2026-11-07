@@ -1,13 +1,18 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { FinanceLedgerPage } from "@/components/finance/finance-ledger-page";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Paiements & dépenses" };
+type Props = {
+  searchParams: Promise<{ vue?: string; customerId?: string; appointmentId?: string }>;
+};
 
-export default function PaymentsPage() {
-  return (
-    <Suspense fallback={<p className="p-8 text-sm text-ink/45">Chargement…</p>}>
-      <FinanceLedgerPage />
-    </Suspense>
-  );
+/** Ancienne adresse : tout est regroupé sur /cash-register/. */
+export default async function PaymentsPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  if (sp.vue === "depenses") {
+    redirect("/expenses/");
+  }
+  const params = new URLSearchParams();
+  if (sp.customerId) params.set("customerId", sp.customerId);
+  if (sp.appointmentId) params.set("appointmentId", sp.appointmentId);
+  const qs = params.toString();
+  redirect(qs ? `/cash-register/?${qs}` : "/cash-register/");
 }

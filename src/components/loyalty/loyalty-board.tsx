@@ -23,7 +23,20 @@ import { memberInitials } from "@/components/loyalty/loyalty-helpers";
 import { LoyaltyBrandCard } from "@/components/loyalty/loyalty-brand-card";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { updateProgram } from "@/modules/loyalty/service";
 import type { LoyaltyJournalItem, LoyaltyProgramConfig } from "@/types/loyalty";
+
+function rewardSummary(program: LoyaltyProgramConfig | null) {
+  if (!program) return "—";
+  const label = program.rewardLabel?.trim() || "Récompense";
+  if (program.rewardKind === "PERCENTAGE" && program.rewardValue != null) {
+    return `${label} · −${program.rewardValue} %`;
+  }
+  if (program.rewardKind === "DISCOUNT" && program.rewardValue != null) {
+    return `${label} · −${program.rewardValue} MAD`;
+  }
+  return `${label} · soin offert`;
+}
 
 function phoneLabel(phone: string | null | undefined) {
   if (!phone || phone.startsWith("WL")) return "Sans téléphone";
@@ -102,9 +115,29 @@ export function LoyaltyBoard({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const onScanRef = useRef<(value: string) => void>(() => {});
   const [scannedIds, setScannedIds] = useState<string[]>([]);
+  const [cfgVisits, setCfgVisits] = useState("5");
+  const [cfgLabel, setCfgLabel] = useState("Récompense");
+  const [cfgKind, setCfgKind] = useState<"FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE">("FREE_SERVICE");
+  const [cfgValue, setCfgValue] = useState("");
+  const [cfgDays, setCfgDays] = useState("30");
+  const [cfgBusy, setCfgBusy] = useState(false);
+
+  useEffect(() => {
+    if (!program) return;
+    setCfgVisits(String(program.visitsPerReward > 0 ? program.visitsPerReward : 5));
+    setCfgLabel(program.rewardLabel?.trim() || "Récompense");
+    setCfgKind(
+      program.rewardKind === "DISCOUNT"
+        ? "DISCOUNT"
+        : program.rewardKind === "PERCENTAGE"
+          ? "PERCENTAGE"
+          : "FREE_SERVICE",
+    );
+    setCfgValue(program.rewardValue != null ? String(program.rewardValue) : "");
+    setCfgDays(String(program.rewardValidityDays > 0 ? program.rewardValidityDays : 30));
+  }, [program]);
 
   const threshold = program?.visitsPerReward && program.visitsPerReward > 0 ? program.visitsPerReward : null;
-  const rewardLabel = program?.rewardLabel?.trim() || "";
   const focused = focusId ? visitCards.find((card) => card.customerId === focusId) ?? null : null;
   const cycleVisits = focused && threshold ? visitCycle(focused.visits, threshold) : 0;
   const filled = threshold ? Math.min(threshold, Math.max(0, cycleVisits)) : 0;
@@ -252,8 +285,11 @@ export function LoyaltyBoard({
       const matched = visitCards.find((card) => card.customerName === body.customerName);
       if (matched) rememberScan(matched.customerId);
       if (body.promoCode) {
-        setPassageNote(`${body.customerName} · code ${body.promoCode} : un soin est offert. Compteur à 0.`);
-        toast(`Code ${body.promoCode} : un soin est offert. Compteur à 0.`, "success");
+        const rewardText = rewardSummary(program);
+        setPassageNote(
+          `${body.customerName} · code promo ${body.promoCode} activé (${rewardText}). Compteur remis à 0.`,
+        );
+        toast(`Code promo ${body.promoCode} activé · ${rewardText}`, "success");
       } else {
         const limit = body.visitsPerReward ?? threshold ?? 0;
         const shown = limit > 0 ? visitCycle(body.visits ?? 0, limit) : (body.visits ?? 0);
@@ -350,6 +386,33 @@ export function LoyaltyBoard({
       return;
     }
     setCameraOn(true);
+  }
+
+  async function saveRewardConfig() {
+    if (!canWrite) return;
+    const visits = Math.max(1, Math.min(20, Number(cfgVisits) || 5));
+    const value =
+      cfgKind === "FREE_SERVICE" ? null : cfgValue.trim() ? Number(cfgValue) : null;
+    if (cfgKind !== "FREE_SERVICE" && !(value != null && value > 0)) {
+      toast("Indiquez la valeur de la réduction.", "error");
+      return;
+    }
+    setCfgBusy(true);
+    const result = await updateProgram({
+      visitsPerReward: visits,
+      rewardLabel: cfgLabel.trim() || "Récompense",
+      rewardKind: cfgKind,
+      rewardValue: value,
+      rewardValidityDays: Math.max(1, Number(cfgDays) || 30),
+      active: true,
+    });
+    setCfgBusy(false);
+    if (!result.ok) {
+      toast(result.error, "error");
+      return;
+    }
+    toast("Récompense du programme enregistrée.", "success");
+    onRefresh();
   }
 
   const field =
@@ -472,7 +535,9 @@ export function LoyaltyBoard({
                       threshold={threshold}
                       highlightLabel={focused?.promoCode ? "Code promo" : "Prochaine récompense"}
                       highlightValue={
-                        focused?.promoCode ? `${focused.promoCode} · soin offert` : rewardLabel || "—"
+                        focused?.promoCode
+                          ? `${focused.promoCode} · ${rewardSummary(program)}`
+                          : rewardSummary(program)
                       }
                       qrSrc={joinImage}
                       qrAlt={`QR fidélité ${orgName}`}
@@ -527,7 +592,7 @@ export function LoyaltyBoard({
                         {
                           icon: Gift,
                           label: "Récompense",
-                          value: rewardLabel || "—",
+                          value: rewardSummary(program),
                         },
                         {
                           icon: Percent,
@@ -552,6 +617,99 @@ export function LoyaltyBoard({
                         );
                       })}
                     </div>
+
+                    {canWrite ? (
+                      <form
+                        className="space-y-3 rounded-2xl border border-dashed border-[#E7B9CD] bg-[#FFF9FB] p-4"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void saveRewardConfig();
+                        }}
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-[#30202C]">Récompense choisie par l’institut</p>
+                          <p className="mt-0.5 text-xs text-[#765E6B]">
+                            À {cfgVisits || "5"} prestations, le code de la cliente devient un code promo.
+                          </p>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block space-y-1">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-[#765E6B]">
+                              Prestations requises
+                            </span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={20}
+                              value={cfgVisits}
+                              onChange={(e) => setCfgVisits(e.target.value)}
+                              className={field}
+                            />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-[#765E6B]">
+                              Type de récompense
+                            </span>
+                            <select
+                              value={cfgKind}
+                              onChange={(e) =>
+                                setCfgKind(e.target.value as "FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE")
+                              }
+                              className={field}
+                            >
+                              <option value="FREE_SERVICE">Soin offert</option>
+                              <option value="DISCOUNT">Remise MAD</option>
+                              <option value="PERCENTAGE">Remise %</option>
+                            </select>
+                          </label>
+                          <label className="block space-y-1 sm:col-span-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-[#765E6B]">
+                              Libellé
+                            </span>
+                            <input
+                              value={cfgLabel}
+                              onChange={(e) => setCfgLabel(e.target.value)}
+                              placeholder="Ex : Soin offert"
+                              className={field}
+                            />
+                          </label>
+                          {cfgKind !== "FREE_SERVICE" ? (
+                            <label className="block space-y-1">
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-[#765E6B]">
+                                Valeur {cfgKind === "PERCENTAGE" ? "(%)" : "(MAD)"}
+                              </span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={cfgValue}
+                                onChange={(e) => setCfgValue(e.target.value)}
+                                placeholder={cfgKind === "PERCENTAGE" ? "20" : "100"}
+                                className={field}
+                              />
+                            </label>
+                          ) : null}
+                          <label className="block space-y-1">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-[#765E6B]">
+                              Validité (jours)
+                            </span>
+                            <input
+                              type="number"
+                              min={1}
+                              value={cfgDays}
+                              onChange={(e) => setCfgDays(e.target.value)}
+                              className={field}
+                            />
+                          </label>
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={cfgBusy}
+                          className="h-11 w-full rounded-xl bg-[#981C52] text-sm font-semibold text-white transition hover:bg-[#7d1643] disabled:opacity-50 sm:w-auto sm:px-5"
+                        >
+                          {cfgBusy ? "Enregistrement…" : "Enregistrer la récompense"}
+                        </button>
+                      </form>
+                    ) : null}
                   </div>
                 </section>
 
@@ -670,7 +828,7 @@ export function LoyaltyBoard({
                     <div>
                       <h3 className="text-base font-bold text-[#30202C]">Ajouter un passage</h3>
                       <p className="text-sm text-[#765E6B]">
-                        Au {threshold ?? program?.visitsPerReward ?? 10}e passage → récompense
+                        Au {threshold ?? program?.visitsPerReward ?? 5}e passage → code promo client
                       </p>
                     </div>
                   </div>

@@ -25,9 +25,27 @@ export const STAFF_COLOR_LIST: StaffColor[] = [
   { name: "Lime", bar: "bg-lime-600", text: "text-lime-800", soft: "bg-lime-50", ring: "ring-lime-200", fill: "bg-lime-200", border: "border-lime-400" },
 ];
 
-/** Annulé et no-show restent gris pour ne pas se confondre avec une praticienne. */
-export function agendaAppointmentSurface(color: StaffColor, muted: boolean) {
+/** Annulé / no-show = gris. Terminé = violet distinct. Sinon couleur employée. */
+export function agendaAppointmentSurface(
+  color: StaffColor,
+  muted: boolean,
+  status?: string,
+) {
   if (muted) return { fill: "bg-gray-100", border: "border-gray-300", bar: "bg-gray-400" };
+  if (status === "COMPLETED") {
+    return {
+      fill: "bg-[#EDE4FF]",
+      border: "border-[#7434B4]/45",
+      bar: "bg-[#7434B4]",
+    };
+  }
+  if (status === "IN_PROGRESS") {
+    return {
+      fill: "bg-[#DCE9FF]",
+      border: "border-[#2F5FBF]/40",
+      bar: "bg-[#2F5FBF]",
+    };
+  }
   return { fill: color.fill, border: color.border, bar: color.bar };
 }
 

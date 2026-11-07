@@ -368,15 +368,16 @@ export function AgendaPage() {
     setDrawer("detail");
   }
 
-  async function handleCreate(data: CreateAppointmentInput) {
+  async function handleCreate(
+    data: CreateAppointmentInput,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
     const code = data.promotionCode?.trim();
     const { promotionCode: _code, ...payload } = data;
     setSubmitting(true);
     const result = await createAppointment(payload);
     if (!result.ok) {
       setSubmitting(false);
-      toast(result.error, "error");
-      return;
+      return { ok: false, error: result.error };
     }
     if (code) {
       const promo = await applyAppointmentPromo(result.appointment.id, code);
@@ -386,16 +387,17 @@ export function AgendaPage() {
       setCreateSeed(undefined);
       if (!promo.ok) {
         toast(`Rendez-vous créé. ${promo.error}`, "error");
-        return;
+        return { ok: true };
       }
       toast("Rendez-vous créé. Code promo appliqué sur une prestation.", "success");
-      return;
+      return { ok: true };
     }
     setSubmitting(false);
     await refresh();
     setDrawer(null);
     setCreateSeed(undefined);
     toast("Rendez-vous créé.", "success");
+    return { ok: true };
   }
 
   async function handleUpdate(data: CreateAppointmentInput) {
@@ -657,6 +659,7 @@ export function AgendaPage() {
         formOptions={formOptions}
         staffContexts={staffContexts}
         resourceContexts={resourceContexts}
+        closures={closures}
         initial={createSeed}
         submitting={submitting}
         onCreate={handleCreate}

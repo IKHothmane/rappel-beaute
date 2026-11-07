@@ -227,6 +227,12 @@ async function bookOrAvailability(
   if (typeof availability === "string") return { reply: availability };
   if (availability.tool !== "GET_AVAILABILITY") return { reply: deniedReply() };
   const open = availability.times;
+  if (availability.closed) {
+    const detail = availability.closedReason ? ` (${availability.closedReason})` : "";
+    return {
+      reply: `Le salon est fermé le ${intent.date}${detail}. Impossible de créer un rendez-vous ce jour-là.`,
+    };
+  }
   if (!intent.time) {
     if (!open.length) return { reply: `Aucun créneau libre pour ${service.name} le ${intent.date}.` };
     return { reply: `${service.name} le ${intent.date} : ${open.slice(0, 8).join(", ")}.` };
@@ -261,6 +267,9 @@ async function bookOrAvailability(
 
 function visitorError(error: unknown): string {
   const message = error instanceof Error ? error.message : "";
+  if (message === "SALON_CLOSED") {
+    return "Le salon est fermé à cette date. Impossible de créer un rendez-vous.";
+  }
   if (message === "SLOT_UNAVAILABLE" || message === "SLOT_CONFLICT" || message === "SLOT_PAST") {
     return "Ce créneau n'est plus disponible.";
   }

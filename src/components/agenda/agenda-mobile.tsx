@@ -88,7 +88,10 @@ function statusTone(apt: Appointment) {
   if (soon && (apt.status === "CONFIRMED" || apt.status === "ARRIVED")) {
     return { label: "Arrivée imminente", className: "text-gold", pulse: true };
   }
-  if (apt.status === "CONFIRMED" || apt.status === "ARRIVED" || apt.status === "COMPLETED") {
+  if (apt.status === "COMPLETED") {
+    return { label: APPOINTMENT_STATUS_LABEL[apt.status], className: "text-[#7434B4]", pulse: false };
+  }
+  if (apt.status === "CONFIRMED" || apt.status === "ARRIVED") {
     return { label: APPOINTMENT_STATUS_LABEL[apt.status], className: "text-emerald-700", pulse: false };
   }
   return { label: APPOINTMENT_STATUS_LABEL[apt.status], className: "text-ink/45", pulse: false };
@@ -509,7 +512,7 @@ function MobileAptRow({
   const palette = useStaffPalette();
   const color = staffColor(apt.staffId, palette);
   const muted = apt.status === "CANCELLED" || apt.status === "NO_SHOW";
-  const surface = agendaAppointmentSurface(color, muted);
+  const surface = agendaAppointmentSurface(color, muted, apt.status);
   const tone = statusTone(apt);
   const phone = customer?.phone?.trim() || "";
   const noShows = customer?.noShowCount ?? 0;

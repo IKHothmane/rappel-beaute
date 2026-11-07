@@ -125,6 +125,14 @@ export function AgendaWeekBoard({
   onDrop,
 }: AgendaWeekBoardProps) {
   const [stackPeers, setStackPeers] = useState<Appointment[] | null>(null);
+  const liveStackPeers = useMemo(() => {
+    if (!stackPeers) return null;
+    const byId = new Map(appointments.map((a) => [a.id, a]));
+    const next = stackPeers
+      .map((peer) => byId.get(peer.id))
+      .filter((a): a is Appointment => Boolean(a));
+    return next.length > 0 ? next : null;
+  }, [stackPeers, appointments]);
   const layout = useMemo(
     () =>
       buildAgendaLayout(
@@ -430,9 +438,9 @@ export function AgendaWeekBoard({
           </div>
       </div>
 
-      {stackPeers ? (
+      {liveStackPeers ? (
         <AgendaStackPicker
-          appointments={stackPeers}
+          appointments={liveStackPeers}
           onClose={() => setStackPeers(null)}
           onSelect={(id) => {
             setStackPeers(null);

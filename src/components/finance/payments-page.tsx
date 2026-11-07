@@ -87,7 +87,16 @@ function MethodGlyph({ method, className }: { method: PaymentMethod; className?:
   return <Wallet className={cls} />;
 }
 
-export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }) {
+export function PaymentsPageView({
+  createSignal = 0,
+  refreshKey = 0,
+  /** Intégré dans la page Caisse : pas de double en-tête ni de lien Caisse. */
+  embedded = false,
+}: {
+  createSignal?: number;
+  refreshKey?: number;
+  embedded?: boolean;
+}) {
   const { toast } = useToast();
   const user = useCurrentUser();
   const canWrite = canWriteCashRegister(user.role);
@@ -146,6 +155,10 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
     setLoading(true);
     refresh().finally(() => setLoading(false));
   }, [refresh]);
+
+  useEffect(() => {
+    if (refreshKey > 0) void refresh();
+  }, [refreshKey, refresh]);
 
   const scoped = useMemo(
     () =>
@@ -350,36 +363,38 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
 
   return (
     <>
-      <PaymentsMobile
-        orgName={user.orgName}
-        kpis={kpis}
-        mix={mix}
-        search={search}
-        onSearch={setSearch}
-        tab={tab}
-        onTab={setTab}
-        period={period}
-        onPeriod={setPeriod}
-        method={methodFilter}
-        onMethod={setMethodFilter}
-        canWrite={canWrite}
-        canPos={canPos}
-        canCash={canCash}
-        loading={loading}
-        rows={filtered}
-        selected={selected}
-        onSelect={setSelectedId}
-        remaining={remaining}
-        onNew={() => openPay()}
-        onRefund={openRefund}
-        onCollectRemaining={() => {
-          if (!selected?.appointmentId) return;
-          const amount = remaining?.remaining ?? selected.amount;
-          void openPay({ appointmentId: selected.appointmentId, amount });
-        }}
-        canRefund={canRefundRow}
-        onTicket={setTicketPayment}
-      />
+      {!embedded ? (
+        <PaymentsMobile
+          orgName={user.orgName}
+          kpis={kpis}
+          mix={mix}
+          search={search}
+          onSearch={setSearch}
+          tab={tab}
+          onTab={setTab}
+          period={period}
+          onPeriod={setPeriod}
+          method={methodFilter}
+          onMethod={setMethodFilter}
+          canWrite={canWrite}
+          canPos={canPos}
+          canCash={canCash}
+          loading={loading}
+          rows={filtered}
+          selected={selected}
+          onSelect={setSelectedId}
+          remaining={remaining}
+          onNew={() => openPay()}
+          onRefund={openRefund}
+          onCollectRemaining={() => {
+            if (!selected?.appointmentId) return;
+            const amount = remaining?.remaining ?? selected.amount;
+            void openPay({ appointmentId: selected.appointmentId, amount });
+          }}
+          canRefund={canRefundRow}
+          onTicket={setTicketPayment}
+        />
+      ) : null}
 
       {ticketPayment && !isUnpaidDue(ticketPayment) ? (
         <PaymentTicketModal
@@ -390,37 +405,52 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
         />
       ) : null}
 
-      <div className="hidden space-y-4 lg:block">
-        <section className="finance-premium__payment-actions flex flex-col justify-end gap-4 rounded-xl bg-white p-4 shadow-sm lg:flex-row lg:items-center">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <CreditCard size={22} />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[28px] font-semibold leading-9 tracking-tight">Paiements & règlements</h1>
-                <span className="rounded-full bg-[#FFDEA4] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#261900]">
-                  {ROLE_LABEL[user.role]}
-                </span>
+      <div className={cn("space-y-4", !embedded && "hidden lg:block")}>
+        {!embedded ? (
+          <section className="finance-premium__payment-actions flex flex-col justify-end gap-4 rounded-xl bg-white p-4 shadow-sm lg:flex-row lg:items-center">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CreditCard size={22} />
               </div>
-              <p className="mt-0.5 text-[13px] text-ink/55">
-                Journal des encaissements Agenda et POS · {user.orgName}
-              </p>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-[28px] font-semibold leading-9 tracking-tight">
+                    Paiements & règlements
+                  </h1>
+                  <span className="rounded-full bg-[#FFDEA4] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#261900]">
+                    {ROLE_LABEL[user.role]}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[13px] text-ink/55">
+                  Journal des encaissements Agenda et POS · {user.orgName}
+                </p>
+              </div>
             </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {canWrite ? (
+                <button
+                  type="button"
+                  onClick={() => openPay()}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-[14px] font-semibold text-white shadow-sm"
+                >
+                  <Plus size={18} />
+                  Nouveau paiement
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : canWrite ? (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => openPay()}
+              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-[14px] font-semibold text-white shadow-sm"
+            >
+              <Plus size={18} />
+              Nouveau paiement
+            </button>
           </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {canWrite ? (
-              <button
-                type="button"
-                onClick={() => openPay()}
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-[14px] font-semibold text-white shadow-sm"
-              >
-                <Plus size={18} />
-                Nouveau paiement
-              </button>
-            ) : null}
-          </div>
-        </section>
+        ) : null}
 
         <section className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
           <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-2 lg:grid-cols-12">
@@ -721,7 +751,7 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
                 canWrite={canWrite}
                 canCustomers={canCustomers}
                 canPos={canPos}
-                canCash={canCash}
+                canCash={!embedded && canCash}
                 canRefund={canRefundRow(selected)}
                 onRefund={() => openRefund(selected)}
                 onTicket={() => setTicketPayment(selected)}

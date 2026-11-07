@@ -669,7 +669,7 @@ function CustomerFocusMobile({
             WhatsApp
           </SendCustomerWhatsAppButton>
           <Link
-            href={`/payments/?customerId=${person.id}`}
+            href={`/cash-register/?customerId=${person.id}`}
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-ink text-[12px] font-semibold text-white shadow-sm"
           >
             <Wallet size={16} />
@@ -820,7 +820,7 @@ function CustomerFocusMobile({
           <p>
             {visits} visite{visits > 1 ? "s" : ""} honorée{visits > 1 ? "s" : ""}
           </p>
-          <Link href={`/payments/?customerId=${person.id}`} className="font-semibold text-primary">
+          <Link href={`/cash-register/?customerId=${person.id}`} className="font-semibold text-primary">
             Voir les encaissements
           </Link>
         </div>

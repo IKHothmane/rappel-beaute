@@ -23,7 +23,8 @@ const GROUPS = [
       { href: "/inventory/", label: "Stock" },
       { href: "/suppliers/", label: "Fournisseurs" },
       { href: "/purchases/", label: "Achats" },
-      { href: "/payments/", label: "Paiements & dépenses" },
+      { href: "/cash-register/", label: "Caisse & paiements" },
+      { href: "/expenses/", label: "Dépenses" },
     ],
   },
   {

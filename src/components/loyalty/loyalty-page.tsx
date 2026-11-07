@@ -121,10 +121,10 @@ export function LoyaltyPageView() {
   const [goldMin, setGoldMin] = useState("3000");
   const [vipMin, setVipMin] = useState("6000");
   const [programActive, setProgramActive] = useState(true);
-  const [visitsPerReward, setVisitsPerReward] = useState("10");
+  const [visitsPerReward, setVisitsPerReward] = useState("5");
   const [rewardLabelConfig, setRewardLabelConfig] = useState("Récompense");
   const [programName, setProgramName] = useState("");
-  const [rewardKind, setRewardKind] = useState<"FREE_SERVICE" | "DISCOUNT">("FREE_SERVICE");
+  const [rewardKind, setRewardKind] = useState<"FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE">("FREE_SERVICE");
   const [visitRewardValue, setVisitRewardValue] = useState("");
   const [rewardValidityDays, setRewardValidityDays] = useState("30");
   const [productsEligible, setProductsEligible] = useState(false);
@@ -171,10 +171,16 @@ export function LoyaltyPageView() {
       setGoldMin(String(dash.program.goldMin));
       setVipMin(String(dash.program.vipMin));
       setProgramActive(dash.program.active);
-      setVisitsPerReward(String(dash.program.visitsPerReward ?? 10));
+      setVisitsPerReward(String(dash.program.visitsPerReward ?? 5));
       setRewardLabelConfig(dash.program.rewardLabel ?? "Récompense");
       setProgramName(dash.program.name ?? "");
-      setRewardKind(dash.program.rewardKind === "DISCOUNT" ? "DISCOUNT" : "FREE_SERVICE");
+      setRewardKind(
+        dash.program.rewardKind === "DISCOUNT"
+          ? "DISCOUNT"
+          : dash.program.rewardKind === "PERCENTAGE"
+            ? "PERCENTAGE"
+            : "FREE_SERVICE",
+      );
       setVisitRewardValue(dash.program.rewardValue != null ? String(dash.program.rewardValue) : "");
       setRewardValidityDays(String(dash.program.rewardValidityDays ?? 30));
       setProductsEligible(Boolean(dash.program.productsEligible));
@@ -246,7 +252,7 @@ export function LoyaltyPageView() {
       goldMin: Number(goldMin),
       vipMin: Number(vipMin),
       active: programActive,
-      visitsPerReward: Number(visitsPerReward) || 10,
+      visitsPerReward: Number(visitsPerReward) || 5,
       rewardLabel: rewardLabelConfig || "Récompense",
       name: programName,
       rewardKind,

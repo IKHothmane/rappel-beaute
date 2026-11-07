@@ -28,7 +28,7 @@ export type LoyaltyProgramConfig = {
   visitsPerReward: number;
   rewardLabel: string;
   name: string;
-  rewardKind: "FREE_SERVICE" | "DISCOUNT";
+  rewardKind: "FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE";
   rewardValue: number | null;
   rewardValidityDays: number;
   productsEligible: boolean;
@@ -163,7 +163,7 @@ export type UpdateLoyaltyProgramInput = {
   rewardLabel?: string;
   rewardName?: string;
   name?: string;
-  rewardKind?: "FREE_SERVICE" | "DISCOUNT";
+  rewardKind?: "FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE";
   rewardValue?: number | null;
   rewardValidityDays?: number;
   productsEligible?: boolean;

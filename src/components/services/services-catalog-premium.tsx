@@ -5,11 +5,9 @@ import {
   BadgeCheck,
   CalendarDays,
   Check,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Eye,
   ImagePlus,
   Layers3,
   MoreHorizontal,
@@ -24,7 +22,6 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { Modal } from "@/components/ui/modal";
 import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 import type { ServiceListItem } from "@/types/service";
 
@@ -169,14 +166,12 @@ function StaffAvatars({ names }: { names: string[] }) {
 function ServiceCard({
   service,
   canWrite,
-  onPreview,
   onEdit,
   onToggle,
   onDelete,
 }: {
   service: Service;
   canWrite: boolean;
-  onPreview: (service: Service) => void;
   onEdit: (id: string) => void;
   onToggle?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -284,27 +279,22 @@ function ServiceCard({
 
         <div className="mt-auto pt-4">
           <StaffAvatars names={service.staffNames} />
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => onPreview(service)}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[#EDD5DF] bg-[#FFF7FA] text-xs font-bold text-[#57243B] transition hover:bg-[#FCE6EF]"
-            >
-              <Eye size={16} />
-              Aperçu
-            </button>
-
+          <div className="mt-3">
             {canWrite ? (
               <button
                 type="button"
                 onClick={() => onEdit(service.id)}
-                className="flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#951341] to-[#B91656] text-xs font-bold text-white transition hover:brightness-110"
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#951341] to-[#B91656] text-xs font-bold text-white transition hover:brightness-110"
               >
                 <Pencil size={15} />
                 Modifier
               </button>
             ) : (
-              <button type="button" disabled className="rounded-xl bg-[#F6EEF2] text-xs text-[#9F8794]">
+              <button
+                type="button"
+                disabled
+                className="h-10 w-full rounded-xl bg-[#F6EEF2] text-xs text-[#9F8794]"
+              >
                 Lecture seule
               </button>
             )}
@@ -334,7 +324,6 @@ export default function ServicesCatalogPremium({
   const [status, setStatus] = useState<StatusFilter>("all");
   const [sort, setSort] = useState("name");
   const [page, setPage] = useState(1);
-  const [preview, setPreview] = useState<Service | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
   const categories = useMemo(() => {
@@ -565,7 +554,6 @@ export default function ServicesCatalogPremium({
               key={service.id}
               service={service}
               canWrite={canWrite}
-              onPreview={setPreview}
               onEdit={onEdit}
               onToggle={onToggle}
               onDelete={onDelete}
@@ -616,73 +604,6 @@ export default function ServicesCatalogPremium({
           </div>
         </div>
       ) : null}
-
-      <Modal
-        open={preview !== null}
-        onClose={() => setPreview(null)}
-        title="Aperçu de la prestation"
-        preserveHeader
-      >
-        {preview ? (
-          <div className="space-y-5">
-            <ServicePhoto
-              key={`preview-${preview.id}-${preview.imageUrl ?? ""}`}
-              service={preview}
-              className="aspect-[4/3] w-full rounded-2xl"
-            />
-
-            <div>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                <CheckCircle2 size={13} />
-                {preview.active ? "Actif" : "Inactif"}
-              </span>
-              <h2 className="mt-3 font-serif text-2xl font-bold text-[#54112F]">{preview.name}</h2>
-              <p className="mt-1 text-sm font-medium text-[#A01C50]">
-                {preview.category || "Prestation"}
-              </p>
-              <p className="mt-4 text-sm leading-7 text-[#756071]">
-                {preview.description || "Aucune description renseignée."}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-[#FFF0F6] p-4">
-                <Clock3 size={18} className="text-[#9C1648]" />
-                <p className="mt-2 text-xs text-[#77566A]">Durée</p>
-                <p className="font-bold">{duration(preview.durationMin)}</p>
-              </div>
-              <div className="rounded-xl bg-[#FFF0F6] p-4">
-                <Wallet size={18} className="text-[#9C1648]" />
-                <p className="mt-2 text-xs text-[#77566A]">Tarif</p>
-                <p className="font-bold">{mad(preview.price)}</p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#EBD9E1] p-4">
-              <p className="mb-3 flex items-center gap-2 text-sm font-bold">
-                <Users size={17} />
-                Équipe assignée
-              </p>
-              <StaffAvatars names={preview.staffNames} />
-            </div>
-
-            {canWrite ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const id = preview.id;
-                  setPreview(null);
-                  onEdit(id);
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#9C1246] px-4 py-3 text-sm font-bold text-white"
-              >
-                <Pencil size={16} />
-                Modifier le service
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </Modal>
     </div>
   );
 }

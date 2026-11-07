@@ -298,7 +298,7 @@ export type DiagnosticAction = {
 
 export const DIAGNOSTIC_ACTIONS: DiagnosticAction[] = [
   { id: "cabine", label: "Comment débloquer une cabine en conflit ?", href: "/agenda/" },
-  { id: "cmi", label: "Résoudre un refus de transaction CMI / TPE", href: "/payments/" },
+  { id: "cmi", label: "Résoudre un refus de transaction CMI / TPE", href: "/cash-register/" },
   { id: "wa", label: "Rétablir la passerelle WhatsApp", href: "/whatsapp/" },
   { id: "access", label: "Ajouter un droit d’accès collaboratrice", href: "/staff/" },
 ];

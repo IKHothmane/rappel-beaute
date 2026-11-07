@@ -1663,10 +1663,10 @@ model LoyaltyProgram {
   vipMin         Int      @default(6000)
   active         Boolean  @default(true)
   /// Passages requis pour une récompense (programme par visites)
-  visitsPerReward    Int      @default(10)
+  visitsPerReward    Int      @default(5)
   rewardLabel        String   @default("Récompense")
   name               String   @default("")
-  /// FREE_SERVICE ou DISCOUNT
+  /// FREE_SERVICE, DISCOUNT (MAD) ou PERCENTAGE
   rewardKind         String   @default("FREE_SERVICE")
   rewardValue        Decimal? @db.Decimal(10, 2)
   rewardValidityDays Int      @default(30)

@@ -4,7 +4,10 @@ import { writeAuditLog } from "@/lib/db/audit";
 import { listAppointmentsByOrg } from "@/lib/db/appointments";
 import { listStaff } from "@/lib/db/staff";
 import { listResources } from "@/lib/db/resources";
-import { checkAvailability } from "@/modules/appointments/availability";
+import {
+  checkAvailability,
+  isStaffAvailableOnDate,
+} from "@/modules/appointments/availability";
 import { endOfBusinessDay, startOfBusinessDay } from "@/lib/time/business-timezone";
 import type {
   CreateOrganizationClosureInput,
@@ -524,6 +527,38 @@ export async function isOrganizationClosed(
 }
 
 /**
+ * Fermeture institut : période OrganizationClosure, ou aucun staff agenda
+ * disponible ce jour (horaires d'ouverture / congés / absences).
+ */
+export async function getSalonClosedStatus(
+  organizationId: string,
+  start: Date,
+  end: Date,
+  staffList?: StaffAgendaContext[],
+): Promise<{ closed: boolean; reason: string | null }> {
+  const closure = await isOrganizationClosed(organizationId, start, end);
+  if (closure.closed) {
+    return {
+      closed: true,
+      reason: closure.reason ? `fermeture — ${closure.reason}` : "fermeture planifiée",
+    };
+  }
+
+  const staff =
+    staffList ??
+    ((await listStaff(organizationId, { page: 1, limit: 500, agenda: true }))
+      .items as StaffAgendaContext[]);
+
+  if (staff.length === 0) return { closed: false, reason: null };
+
+  const anyoneOpen = staff.some((member) => isStaffAvailableOnDate(member, start));
+  if (!anyoneOpen) {
+    return { closed: true, reason: "hors horaires d'ouverture" };
+  }
+  return { closed: false, reason: null };
+}
+
+/**
  * Validation serveur unique — création / déplacement / booking public.
  * N'écrit pas en DB ; lève AVAILABILITY_CONFLICT si hors dispo.
  */
@@ -539,17 +574,6 @@ export async function assertAppointmentBookable(params: {
   const end = typeof params.endAt === "string" ? new Date(params.endAt) : params.endAt;
   if (!(end > start)) throw new Error("INVALID_RANGE");
 
-  const closure = await isOrganizationClosed(params.organizationId, start, end);
-  if (closure.closed) {
-    const err = new Error("AVAILABILITY_CONFLICT");
-    (err as Error & { conflicts: string[] }).conflicts = [
-      closure.reason
-        ? `Institut fermé (${closure.reason}).`
-        : "Institut fermé sur ce créneau.",
-    ];
-    throw err;
-  }
-
   const dayStart = startOfBusinessDay(start);
   const dayEnd = endOfBusinessDay(start);
 
@@ -559,8 +583,25 @@ export async function assertAppointmentBookable(params: {
     listAppointmentsByOrg(params.organizationId),
   ]);
 
+  const staffItems = staffRes.items as StaffAgendaContext[];
+  const salonClosed = await getSalonClosedStatus(
+    params.organizationId,
+    start,
+    end,
+    staffItems,
+  );
+  if (salonClosed.closed) {
+    const err = new Error("AVAILABILITY_CONFLICT");
+    (err as Error & { conflicts: string[] }).conflicts = [
+      salonClosed.reason
+        ? `Institut fermé (${salonClosed.reason}).`
+        : "Institut fermé sur ce créneau.",
+    ];
+    throw err;
+  }
+
   const staffContext = params.staffId
-    ? (staffRes.items as StaffAgendaContext[]).find((s) => s.id === params.staffId)
+    ? staffItems.find((s) => s.id === params.staffId)
     : undefined;
   const resourceContext = params.resourceId
     ? (resourceRes.items as ResourceAgendaContext[]).find((r) => r.id === params.resourceId)

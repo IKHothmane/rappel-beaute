@@ -10,7 +10,6 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  CircleDollarSign,
   ClipboardList,
   Gift,
   LayoutDashboard,
@@ -18,6 +17,7 @@ import {
   Megaphone,
   MessageCircle,
   Package,
+  ReceiptText,
   Settings,
   ShoppingCart,
   Sparkles,
@@ -74,8 +74,8 @@ const sections: { title: string | null; items: NavItem[] }[] = [
   {
     title: "Ventes & Finance",
     items: [
-      { label: "Caisse", href: "/cash-register/", icon: WalletCards, key: "cash-register" },
-      { label: "Paiements & dépenses", href: "/payments/", icon: CircleDollarSign, key: "payments" },
+      { label: "Caisse & paiements", href: "/cash-register/", icon: WalletCards, key: "cash-register" },
+      { label: "Dépenses", href: "/expenses/", icon: ReceiptText, key: "expenses" },
     ],
   },
   {
@@ -106,8 +106,8 @@ function isActive(pathname: string, href: string) {
   if (href === "/dashboard/") {
     return path === "/" || path.startsWith("/dashboard");
   }
-  if (href === "/payments/") {
-    return path.startsWith("/payments") || path.startsWith("/expenses");
+  if (href === "/cash-register/") {
+    return path.startsWith("/cash-register") || path.startsWith("/payments");
   }
   if (href === "/products/") {
     return path.startsWith("/products") || path.startsWith("/stock") || path.startsWith("/inventory");
@@ -218,8 +218,10 @@ export default function OwnerSidebar({
                   const Icon = item.icon;
                   const active = isActive(pathname, item.href);
                   const planLocked =
-                    item.key === "payments"
-                      ? !planLoading && !isNavEnabled("payments") && !isNavEnabled("expenses")
+                    item.key === "cash-register"
+                      ? !planLoading &&
+                        !isNavEnabled("cash-register") &&
+                        !isNavEnabled("payments")
                       : item.key === "staff"
                         ? !planLoading && !isNavEnabled("staff") && !isNavEnabled("planning")
                         : !planLoading && !isNavEnabled(item.key);

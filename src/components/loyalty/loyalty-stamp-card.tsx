@@ -66,7 +66,7 @@ export function LoyaltyStampCard({
   appointments,
   sessions,
 }: Props) {
-  const threshold = Math.max(1, Math.min(20, Math.floor(visitsPerReward || 10)));
+  const threshold = Math.max(1, Math.min(20, Math.floor(visitsPerReward || 5)));
   const progress = rewardsAvailable > 0 ? threshold : Math.min(threshold, Math.max(0, cycle));
   const percentage = Math.round((progress / threshold) * 100);
   const name = `${firstName} ${lastName}`.trim();

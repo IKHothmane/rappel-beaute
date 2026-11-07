@@ -4,6 +4,7 @@ import { isExclusionViolation } from "@/lib/db/appointments";
 import {
   dispatchPublicBookingSideEffects,
   getPublicAvailabilitySlots,
+  getPublicDayClosedStatus,
   getPublicServices,
   insertOrganizationBooking,
   planPublicSlot,
@@ -150,6 +151,11 @@ export async function proposeAssistantAppointment(input: {
     (item) => item.id === parsed.serviceId,
   );
   if (!service) throw new Error("SERVICE_NOT_FOUND");
+  const dayClosed = await getPublicDayClosedStatus(
+    input.session.organizationId,
+    parsed.date,
+  );
+  if (dayClosed.closed) throw new Error("SALON_CLOSED");
   const slots = await getPublicAvailabilitySlots(input.session.organizationId, {
     serviceId: service.id,
     date: parsed.date,

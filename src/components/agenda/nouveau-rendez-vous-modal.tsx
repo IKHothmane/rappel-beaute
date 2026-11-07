@@ -10,6 +10,7 @@ import {
   DoorOpen,
   Plus,
   Search,
+  Tag,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -22,8 +23,14 @@ import {
   notesWithServices,
   soinLabelsFromNotes,
 } from "@/components/agenda/service-notes";
+import { discountLabel } from "@/components/promo/promo-helpers";
 import { createCustomer, listCustomers } from "@/modules/customers/service";
-import { getAvailableSlots, isResourceAvailableOnDate } from "@/modules/appointments/availability";
+import {
+  getAvailableSlots,
+  isResourceAvailableOnDate,
+  isStaffAvailableOnDate,
+} from "@/modules/appointments/availability";
+import { listPromotions } from "@/modules/promo/service";
 import { limitPhoneDigits, moroccoPhoneSearchVariants } from "@/lib/validation/customer";
 import {
   limitName,
@@ -40,6 +47,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { Appointment, CreateAppointmentInput } from "@/types/appointment";
 import type { CustomerListItem } from "@/types/customer";
+import type { OrganizationClosureItem } from "@/types/planning";
+import type { PromotionListItem } from "@/types/promo";
 import type { ResourceAgendaContext } from "@/types/resource";
 import { RESOURCE_TYPE_LABEL } from "@/types/resource";
 import type { ServiceAgendaOption, ServiceFormOptions } from "@/types/service";
@@ -56,10 +65,46 @@ export type NouveauRendezVousModalProps = {
   formOptions: ServiceFormOptions | null;
   staffContexts: StaffAgendaContext[];
   resourceContexts: ResourceAgendaContext[];
+  closures?: OrganizationClosureItem[];
   initial?: Partial<CreateAppointmentInput>;
   submitting?: boolean;
-  onCreate: (payload: BookingPayload) => void | Promise<void>;
+  onCreate: (
+    payload: BookingPayload,
+  ) =>
+    | void
+    | Promise<void>
+    | { ok: true }
+    | { ok: false; error: string }
+    | Promise<{ ok: true } | { ok: false; error: string }>;
 };
+
+function salonClosedMessage(
+  day: Date,
+  staffContexts: StaffAgendaContext[],
+  closures: OrganizationClosureItem[],
+): string | null {
+  const dayStart = new Date(day);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(day);
+  dayEnd.setHours(23, 59, 59, 999);
+  const closure = closures.find((item) => {
+    const start = new Date(item.startAt);
+    const end = new Date(item.endAt);
+    return start < dayEnd && end > dayStart;
+  });
+  if (closure) {
+    return closure.reason
+      ? `Le salon est fermé ce jour-là (${closure.reason}). Impossible de créer un rendez-vous.`
+      : "Le salon est fermé ce jour-là. Impossible de créer un rendez-vous.";
+  }
+  if (
+    staffContexts.length > 0 &&
+    !staffContexts.some((member) => isStaffAvailableOnDate(member, day))
+  ) {
+    return "Le salon est fermé ce jour-là (hors horaires d’ouverture). Impossible de créer un rendez-vous.";
+  }
+  return null;
+}
 
 function todayIsoLocal(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
@@ -103,6 +148,7 @@ export default function NouveauRendezVousModal({
   formOptions,
   staffContexts,
   resourceContexts,
+  closures = [],
   initial,
   submitting,
   onCreate,
@@ -152,11 +198,14 @@ export default function NouveauRendezVousModal({
   });
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [promoCode, setPromoCode] = useState("");
+  const [activePromos, setActivePromos] = useState<PromotionListItem[]>([]);
+  const [promosLoading, setPromosLoading] = useState(false);
   const [freeNotes, setFreeNotes] = useState("");
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [customersLoading, setCustomersLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
+  const [closedPopup, setClosedPopup] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [staffOpen, setStaffOpen] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
@@ -195,26 +244,52 @@ export default function NouveauRendezVousModal({
     setPromoCode("");
     setFreeNotes("");
     setFormError("");
+    setClosedPopup(null);
     setStaffOpen(false);
     setServiceOpen(false);
     setExtraOpenIdx(null);
     setResourceOpen(false);
     setServiceQuery("");
     setListOpen(false);
-  }, [open, initial, services]);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
+      const [y, m, d] = nextDate.split("-").map(Number);
+      const msg = salonClosedMessage(
+        new Date(y, m - 1, d),
+        staffContexts,
+        closures,
+      );
+      if (msg) setClosedPopup(msg);
+    }
+  }, [open, initial, services, staffContexts, closures]);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
       setCustomersLoading(true);
+      setPromosLoading(true);
       try {
-        const res = await listCustomers({ limit: 200 });
-        if (!cancelled) setCustomers(res.data);
+        const [customersRes, promoRes] = await Promise.all([
+          listCustomers({ limit: 200 }),
+          listPromotions({ status: "ACTIVE", limit: 80 }).catch(() => ({
+            data: [] as PromotionListItem[],
+          })),
+        ]);
+        if (cancelled) return;
+        setCustomers(customersRes.data);
+        setActivePromos(
+          promoRes.data.filter((promo) => Boolean(promo.code?.trim())),
+        );
       } catch {
-        if (!cancelled) setCustomers([]);
+        if (!cancelled) {
+          setCustomers([]);
+          setActivePromos([]);
+        }
       } finally {
-        if (!cancelled) setCustomersLoading(false);
+        if (!cancelled) {
+          setCustomersLoading(false);
+          setPromosLoading(false);
+        }
       }
     })();
     return () => {
@@ -258,6 +333,15 @@ export default function NouveauRendezVousModal({
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
   const service = services.find((s) => s.id === serviceId);
+  const selectablePromos = useMemo(() => {
+    return activePromos.filter(
+      (promo) => !promo.serviceId || !serviceId || promo.serviceId === serviceId,
+    );
+  }, [activePromos, serviceId]);
+  const selectedPromo =
+    selectablePromos.find(
+      (promo) => promo.code?.toUpperCase() === promoCode.trim().toUpperCase(),
+    ) ?? null;
   const extraServices = extraIds
     .map((id) => services.find((s) => s.id === id))
     .filter((s): s is ServiceAgendaOption => Boolean(s));
@@ -387,6 +471,11 @@ export default function NouveauRendezVousModal({
     return created.ok ? { id: created.customer.id } : { error: created.error };
   }
 
+  function showClosedPopup(message: string) {
+    setFormError("");
+    setClosedPopup(message);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!serviceId) {
@@ -395,6 +484,16 @@ export default function NouveauRendezVousModal({
     }
     if (!date) {
       setFormError("Indiquez une date valide (JJ/MM/AAAA).");
+      return;
+    }
+    const [checkY, checkM, checkD] = date.split("-").map(Number);
+    const closedMsg = salonClosedMessage(
+      new Date(checkY, checkM - 1, checkD),
+      staffContexts,
+      closures,
+    );
+    if (closedMsg) {
+      showClosedPopup(closedMsg);
       return;
     }
     const chosen = slots.find((slot) => slot.time === time && slot.available);
@@ -429,7 +528,7 @@ export default function NouveauRendezVousModal({
     const notes = [baseNotes, freeNotes.trim()].filter(Boolean).join("\n");
 
     try {
-      await onCreate({
+      const result = await onCreate({
         customerId: resolvedCustomer.id,
         serviceId,
         staffId: staffId || undefined,
@@ -440,6 +539,13 @@ export default function NouveauRendezVousModal({
         notes: notes || undefined,
         promotionCode: promoCode.trim() || undefined,
       });
+      if (result && "ok" in result && !result.ok) {
+        if (/fermé|fermeture|horaires d/i.test(result.error)) {
+          showClosedPopup(result.error);
+        } else {
+          setFormError(result.error);
+        }
+      }
     } finally {
       setCreating(false);
     }
@@ -456,6 +562,7 @@ export default function NouveauRendezVousModal({
   if (!mounted) return null;
 
   return createPortal(
+    <>
     <AnimatePresence>
       {open ? (
         <>
@@ -1156,6 +1263,13 @@ export default function NouveauRendezVousModal({
                         const iso = frToIso(formatted);
                         if (iso) {
                           setDate(iso);
+                          const [y, m, d] = iso.split("-").map(Number);
+                          const msg = salonClosedMessage(
+                            new Date(y, m - 1, d),
+                            staffContexts,
+                            closures,
+                          );
+                          if (msg) showClosedPopup(msg);
                           setTime("");
                         } else if (formatted.length === 10) {
                           setDate("");
@@ -1188,23 +1302,90 @@ export default function NouveauRendezVousModal({
                     </p>
                   </label>
 
-                  <label className="block space-y-1.5">
+                  <div className="block space-y-1.5 sm:col-span-2">
                     <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
                       Code promo
                     </span>
-                    <input
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(limitPromoCode(e.target.value))}
-                      maxLength={PROMO_CODE_MAX}
-                      placeholder="Ex : E4FB"
-                      autoComplete="off"
-                      className="h-11 w-full rounded-xl border border-[#E8D4DE] bg-white px-3 text-sm outline-none focus:border-[#B60050]"
-                    />
+                    <div className="overflow-hidden rounded-xl border border-[#E8D4DE] bg-white">
+                      <div className="flex items-center gap-1.5 border-b border-[#F3E4EC] px-3 py-2">
+                        <Tag size={13} className="text-[#B60050]" />
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-[#887787]">
+                          Codes actifs
+                          {!promosLoading ? ` (${selectablePromos.length})` : ""}
+                        </p>
+                      </div>
+                      <div className="max-h-36 space-y-1 overflow-y-auto p-2">
+                        {promosLoading ? (
+                          <p className="px-2 py-2 text-center text-[12px] text-[#887787]">
+                            Chargement…
+                          </p>
+                        ) : selectablePromos.length === 0 ? (
+                          <p className="px-2 py-2 text-center text-[12px] text-[#887787]">
+                            Aucun code promo actif.
+                          </p>
+                        ) : (
+                          selectablePromos.map((promo) => {
+                            const active =
+                              selectedPromo?.id === promo.id ||
+                              promo.code?.toUpperCase() === promoCode.trim().toUpperCase();
+                            return (
+                              <button
+                                key={promo.id}
+                                type="button"
+                                onClick={() =>
+                                  setPromoCode(
+                                    active ? "" : limitPromoCode(promo.code ?? ""),
+                                  )
+                                }
+                                className={cn(
+                                  "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition",
+                                  active
+                                    ? "bg-[#B60050] text-white"
+                                    : "bg-[#FFEFF8] hover:bg-[#F8DDEB]",
+                                )}
+                              >
+                                <span className="min-w-0">
+                                  <span className="block font-mono text-[12px] font-bold tracking-wide">
+                                    {promo.code}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "mt-0.5 block truncate text-[11px]",
+                                      active ? "text-white/80" : "text-[#887787]",
+                                    )}
+                                  >
+                                    {promo.name} · {discountLabel(promo)}
+                                  </span>
+                                </span>
+                                <span
+                                  className={cn(
+                                    "shrink-0 text-[11px] font-semibold",
+                                    active ? "text-white" : "text-[#B60050]",
+                                  )}
+                                >
+                                  {active ? "Sélectionné" : "Choisir"}
+                                </span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                      <div className="border-t border-[#F3E4EC] p-2">
+                        <input
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(limitPromoCode(e.target.value))}
+                          maxLength={PROMO_CODE_MAX}
+                          placeholder="Ou saisir un code…"
+                          autoComplete="off"
+                          className="h-10 w-full rounded-lg border border-[#E8D4DE] bg-white px-3 font-mono text-sm uppercase outline-none focus:border-[#B60050]"
+                        />
+                      </div>
+                    </div>
                     <p className="text-xs text-[#887787]">
                       Réduction sur une seule prestation :{" "}
                       {service?.name ?? "la prestation principale"}.
                     </p>
-                  </label>
+                  </div>
 
                   <div className="space-y-1.5 sm:col-span-2">
                     <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
@@ -1269,7 +1450,49 @@ export default function NouveauRendezVousModal({
           </motion.aside>
         </>
       ) : null}
-    </AnimatePresence>,
+    </AnimatePresence>
+    <AnimatePresence>
+      {closedPopup ? (
+        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
+          <motion.button
+            type="button"
+            aria-label="Fermer"
+            className="absolute inset-0 bg-[#261524]/45"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setClosedPopup(null)}
+          />
+          <motion.div
+            role="alertdialog"
+            aria-modal
+            aria-labelledby="nrv-closed-title"
+            aria-describedby="nrv-closed-desc"
+            className="relative w-full max-w-md rounded-2xl border border-[#F0DDE6] bg-white p-5 shadow-2xl"
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+          >
+            <h2 id="nrv-closed-title" className="font-display text-lg font-semibold text-[#261524]">
+              Salon fermé
+            </h2>
+            <p id="nrv-closed-desc" className="mt-2 text-sm leading-relaxed text-[#654254]">
+              {closedPopup}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setClosedPopup(null)}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30]"
+              >
+                Compris
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
+    </AnimatePresence>
+    </>,
     document.body,
   );
 }

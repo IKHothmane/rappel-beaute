@@ -267,10 +267,9 @@ export function CashRegisterMobile({
       <div className="flex gap-2 overflow-x-auto pb-0.5">
         {(
           [
-            ["overview", "Vue générale"],
-            ["journal", `Journal (${txns.length})`],
-            ["out", `Sorties`],
-            ["refunds", `Remb.`],
+            ["overview", "Caisse & paiements"],
+            ["out", "Sorties"],
+            ["refunds", "Remb."],
             ["history", "Clôtures"],
           ] as const
         ).map(([id, label]) => (
@@ -369,15 +368,12 @@ export function CashRegisterMobile({
             ))
           )}
         </section>
-      ) : (
+      ) : tab === "out" || tab === "refunds" ? (
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-[18px] font-semibold">Flux de session</h2>
-            {showPayments ? (
-              <Link href="/payments/" className="text-[12px] font-bold text-primary">
-                Paiements
-              </Link>
-            ) : null}
+            <h2 className="text-[18px] font-semibold">
+              {tab === "out" ? "Sorties de caisse" : "Remboursements"}
+            </h2>
           </div>
           <input
             value={search}
@@ -438,7 +434,7 @@ export function CashRegisterMobile({
             })
           )}
         </section>
-      )}
+      ) : null}
 
       <section className="space-y-2 rounded-xl bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2">

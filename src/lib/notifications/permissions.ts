@@ -102,7 +102,7 @@ export function buildNotificationHref(
     case "Appointment":
       return `/agenda/?appointmentId=${entityId}`;
     case "Payment":
-      return `/payments/?paymentId=${entityId}`;
+      return `/cash-register/?paymentId=${entityId}`;
     case "Expense":
       return `/expenses/${entityId}/`;
     case "ReviewRequest":

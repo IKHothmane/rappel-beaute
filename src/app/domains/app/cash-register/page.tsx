@@ -1,8 +1,13 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { CashRegisterPageView } from "@/components/finance/cash-register-page";
+import { FinanceLedgerPage } from "@/components/finance/finance-ledger-page";
 
-export const metadata: Metadata = { title: "Caisse" };
+export const metadata: Metadata = { title: "Caisse & paiements" };
 
 export default function CashRegisterPage() {
-  return <CashRegisterPageView />;
+  return (
+    <Suspense fallback={<p className="p-8 text-sm text-ink/45">Chargement…</p>}>
+      <FinanceLedgerPage />
+    </Suspense>
+  );
 }

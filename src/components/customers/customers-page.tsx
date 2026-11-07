@@ -357,7 +357,7 @@ export function CustomersPageView() {
           onCreateCustomer={canWrite ? openCreate : undefined}
           onEditCustomer={canWrite ? (customer) => openEdit(customer.id) : undefined}
           onNewAppointment={(customer) => router.push(`/agenda/?customerId=${customer.id}`)}
-          onPayment={(customer) => router.push(`/payments/?customerId=${customer.id}`)}
+          onPayment={(customer) => router.push(`/cash-register/?customerId=${customer.id}`)}
           onWhatsApp={openCustomerWhatsApp}
           onRefresh={refresh}
         />

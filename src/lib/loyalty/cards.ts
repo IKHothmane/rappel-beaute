@@ -18,6 +18,8 @@ export function newPublicToken() {
   return token;
 }
 
+export type VisitRewardKind = "FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE";
+
 export type VisitProgram = {
   visitsPerReward: number;
   rewardLabel: string;
@@ -25,10 +27,17 @@ export type VisitProgram = {
   rewardValidityDays: number;
   stackRewards: boolean;
   eligibleServiceIds: string[];
+  rewardKind: VisitRewardKind;
   rewardValue: number | null;
   cardBackgroundUrl: string | null;
   cardBackgroundColor: string | null;
 };
+
+function normalizeRewardKind(raw: string | null | undefined): VisitRewardKind {
+  if (raw === "DISCOUNT") return "DISCOUNT";
+  if (raw === "PERCENTAGE") return "PERCENTAGE";
+  return "FREE_SERVICE";
+}
 
 export async function getVisitProgram(organizationId: string): Promise<VisitProgram> {
   await getOrCreateLoyaltyProgram(organizationId);
@@ -39,23 +48,25 @@ export async function getVisitProgram(organizationId: string): Promise<VisitProg
     rewardValidityDays: number;
     stackRewards: boolean;
     eligibleServiceIds: string[] | null;
+    rewardKind: string | null;
     rewardValue: string | null;
     cardBackgroundUrl: string | null;
     cardBackgroundColor: string | null;
   }>(
     `SELECT "visitsPerReward", "rewardLabel", active, "rewardValidityDays", "stackRewards", "eligibleServiceIds",
-            "rewardValue"::text AS "rewardValue", "cardBackgroundUrl", "cardBackgroundColor"
+            "rewardKind", "rewardValue"::text AS "rewardValue", "cardBackgroundUrl", "cardBackgroundColor"
      FROM "LoyaltyProgram" WHERE "organizationId" = $1`,
     [organizationId],
   );
   const row = rows[0];
   return {
-    visitsPerReward: row?.visitsPerReward && row.visitsPerReward > 0 ? row.visitsPerReward : 10,
+    visitsPerReward: row?.visitsPerReward && row.visitsPerReward > 0 ? row.visitsPerReward : 5,
     rewardLabel: row?.rewardLabel?.trim() || "Récompense",
     active: row?.active ?? true,
     rewardValidityDays: row?.rewardValidityDays && row.rewardValidityDays > 0 ? row.rewardValidityDays : 30,
     stackRewards: row?.stackRewards ?? true,
     eligibleServiceIds: row?.eligibleServiceIds ?? [],
+    rewardKind: normalizeRewardKind(row?.rewardKind),
     rewardValue: row?.rewardValue != null ? parseFloat(row.rewardValue) : null,
     cardBackgroundUrl: row?.cardBackgroundUrl ?? null,
     cardBackgroundColor: row?.cardBackgroundColor ?? null,

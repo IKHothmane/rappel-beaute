@@ -13,7 +13,6 @@ import {
   filterCashTxns,
   formatCashDateTime,
   opsCount,
-  paymentMix,
   sumAbsTypes,
   txnTypeChip,
 } from "@/components/finance/cash-helpers";
@@ -21,7 +20,7 @@ import { formatPaymentServices } from "@/components/finance/payment-helpers";
 import { CashRegisterHero } from "@/components/finance/cash-register-hero";
 import { CashRegisterMobile } from "@/components/finance/cash-register-mobile";
 import { PaymentMethodPicker } from "@/components/finance/payment-method-picker";
-import { PaymentsJournalPanel } from "@/components/finance/payments-journal-panel";
+import { PaymentsPageView } from "@/components/finance/payments-page";
 import { PaymentTicketModal } from "@/components/finance/payment-ticket";
 import {
   ProductSalePanel,
@@ -96,7 +95,7 @@ export function CashRegisterPageView() {
   const [closeReason, setCloseReason] = useState("");
   const [ticketPayment, setTicketPayment] = useState<PaymentItem | null>(null);
   const [ticketLoadingId, setTicketLoadingId] = useState<string | null>(null);
-  const [paymentsJournalKey, setPaymentsJournalKey] = useState(0);
+  const [paymentsRefreshKey, setPaymentsRefreshKey] = useState(0);
 
   const payKeyRef = useRef(newIdempotencyKey());
 
@@ -135,7 +134,6 @@ export function CashRegisterPageView() {
   const isOpen = session?.status === "OPEN";
   const insight = useMemo(() => cashInsight(session, txns), [session, txns]);
   const filtered = useMemo(() => filterCashTxns(txns, tab, search), [txns, tab, search]);
-  const mix = paymentMix(session);
   const refunds = sumAbsTypes(txns, ["REFUND_OUT"]);
   const ops = opsCount(txns);
   const theoretical = session?.theoreticalBalance ?? 0;
@@ -242,7 +240,7 @@ export function CashRegisterPageView() {
     setPayOpen(false);
     setAddonCart({ lines: [], total: 0, discount: 0, promoCode: null });
     payKeyRef.current = newIdempotencyKey();
-    setPaymentsJournalKey((n) => n + 1);
+    setPaymentsRefreshKey((n) => n + 1);
     refresh();
   }
 
@@ -300,8 +298,7 @@ export function CashRegisterPageView() {
   }
 
   const tabs: { id: CashTab; label: string }[] = [
-    { id: "overview", label: "Vue générale" },
-    { id: "journal", label: "Journal paiements" },
+    { id: "overview", label: "Caisse & paiements" },
     { id: "out", label: `Sorties (${formatMad(session?.cashOut ?? 0)})` },
     { id: "refunds", label: `Remboursements (${formatMad(refunds)})` },
     { id: "history", label: "Clôtures" },
@@ -313,36 +310,41 @@ export function CashRegisterPageView() {
 
   return (
     <>
-      <CashRegisterMobile
-        orgName={user.orgName || "Votre institut"}
-        roleLabel={ROLE_LABEL[user.role]}
-        session={session}
-        isOpen={Boolean(isOpen)}
-        canWrite={canWrite}
-        showExpenses={showExpenses}
-        showPayments={showPayments}
-        insight={insight}
-        tab={tab}
-        onTab={setTab}
-        search={search}
-        onSearch={setSearch}
-        txns={txns}
-        filtered={filtered}
-        recentClosed={recentClosed}
-        float={float}
-        onFloat={setFloat}
-        counted={counted}
-        onCounted={setCounted}
-        closeReason={closeReason}
-        onCloseReason={setCloseReason}
-        submitting={submitting}
-        onOpen={handleOpen}
-        onPay={() => void openPayDrawer()}
-        onOut={() => openOut("out")}
-        onClose={handleClose}
-        onTicket={(paymentId) => void openTicket(paymentId)}
-        ticketLoadingId={ticketLoadingId}
-      />
+      <div className="space-y-4 lg:hidden">
+        <CashRegisterMobile
+          orgName={user.orgName || "Votre institut"}
+          roleLabel={ROLE_LABEL[user.role]}
+          session={session}
+          isOpen={Boolean(isOpen)}
+          canWrite={canWrite}
+          showExpenses={showExpenses}
+          showPayments={showPayments}
+          insight={insight}
+          tab={tab}
+          onTab={setTab}
+          search={search}
+          onSearch={setSearch}
+          txns={txns}
+          filtered={filtered}
+          recentClosed={recentClosed}
+          float={float}
+          onFloat={setFloat}
+          counted={counted}
+          onCounted={setCounted}
+          closeReason={closeReason}
+          onCloseReason={setCloseReason}
+          submitting={submitting}
+          onOpen={handleOpen}
+          onPay={() => void openPayDrawer()}
+          onOut={() => openOut("out")}
+          onClose={handleClose}
+          onTicket={(paymentId) => void openTicket(paymentId)}
+          ticketLoadingId={ticketLoadingId}
+        />
+        {tab === "overview" && showPayments ? (
+          <PaymentsPageView embedded refreshKey={paymentsRefreshKey} />
+        ) : null}
+      </div>
 
       {ticketPayment ? (
         <PaymentTicketModal
@@ -386,7 +388,7 @@ export function CashRegisterPageView() {
           closeReason={closeReason}
           onCloseReasonChange={setCloseReason}
           onSelectKpi={(kpi) => {
-            if (kpi === "in" || kpi === "movements") setTab("journal");
+            if (kpi === "in" || kpi === "movements") setTab("overview");
             else if (kpi === "out") setTab("out");
             else setTab("refunds");
           }}
@@ -426,177 +428,31 @@ export function CashRegisterPageView() {
           ) : null}
         </nav>
 
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
-          <div className="min-w-0 space-y-4 xl:col-span-8">
-            {!isOpen && !canWrite ? (
-              <p className="rounded-2xl bg-white p-6 text-[13px] text-ink/50 shadow-sm">
-                Lecture seule. Aucune caisse ouverte.
-              </p>
-            ) : null}
+        <div className="min-w-0 space-y-4">
+          {!isOpen && !canWrite ? (
+            <p className="rounded-2xl bg-white p-6 text-[13px] text-ink/50 shadow-sm">
+              Lecture seule. Aucune caisse ouverte.
+            </p>
+          ) : null}
 
-            {tab === "history" ? (
-              <div className="space-y-3 rounded-xl bg-white p-6 shadow-sm">
-                <h2 className="text-[22px] font-semibold">Historique des clôtures</h2>
-                {recentClosed.length === 0 ? (
-                  <p className="text-[13px] text-ink/50">Aucune clôture enregistrée.</p>
-                ) : (
-                  recentClosed.map((row) => (
-                    <div
-                      key={row.id}
-                      className="flex items-center justify-between rounded-lg bg-[#FFEFF8] p-3"
-                    >
-                      <div>
-                        <p className="text-[14px] font-semibold">{closedHistoryLabel(row)}</p>
-                        <p className="text-[12px] text-ink/50">
-                          {row.closedByName ?? "—"}
-                          {row.expectedBalance != null ? ` · Th. ${formatMad(row.expectedBalance)}` : ""}
-                          {row.closingCounted != null ? ` · Réel ${formatMad(row.closingCounted)}` : ""}
-                        </p>
-                      </div>
-                      <span
-                        className={cn(
-                          "rounded px-2 py-0.5 text-[11px] font-bold",
-                          (row.difference ?? 0) === 0
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-[#FFDAD6] text-[#93000A]",
-                        )}
-                      >
-                        {row.difference == null ? "—" : formatMad(row.difference)}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : tab === "out" || tab === "refunds" ? (
-              <div className="space-y-5 rounded-[24px] border border-[#F1E8EC] bg-white p-6 shadow-[0_8px_30px_rgba(60,20,40,0.06)] sm:p-7">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-ink">
-                      {tab === "out" ? "Sorties de caisse" : "Remboursements tiroir"}
-                    </h2>
-                    <p className="text-[13px] text-ink/50">Mouvements de la session courante.</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
-                      <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Ticket, motif…"
-                        className="h-10 w-56 rounded-xl bg-[#FAF0F5] pl-9 pr-3 text-[13px] outline-none focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      title="Exporter CSV"
-                      onClick={() => exportCashCsv(filtered)}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FAF0F5] text-ink hover:bg-[#FCE9F4]"
-                    >
-                      <Download size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {filtered.length === 0 ? (
-                    <p className="rounded-2xl bg-[#FAF0F5] p-8 text-center text-[13px] text-ink/50">
-                      Aucun mouvement.
-                    </p>
-                  ) : (
-                    filtered.map((t) => (
-                      <div
-                        key={t.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F1E8EC] bg-[#FFFBFD] px-4 py-3.5 transition hover:border-[#E8C9D6]"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate text-[15px] font-bold text-ink">
-                              {CASH_TXN_LABEL[t.type]}
-                            </p>
-                            <span
-                              className={cn(
-                                "inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold",
-                                txnTypeChip(t.type),
-                              )}
-                            >
-                              {t.method ? PAYMENT_METHOD_LABEL[t.method] : "Espèces"}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-[12px] text-ink/50">
-                            {formatCashDateTime(t.createdAt)}
-                            {t.userName ? ` · ${t.userName}` : ""}
-                            {t.reason ? ` · ${t.reason}` : ""}
-                          </p>
-                        </div>
-                        <p
-                          className={cn(
-                            "text-[16px] font-extrabold tabular-nums",
-                            t.amount < 0 ? "text-[#BA1A1A]" : "text-[#981C52]",
-                          )}
-                        >
-                          {t.amount > 0 ? "+" : ""}
-                          {formatMad(t.amount)}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            ) : (
-              <PaymentsJournalPanel
-                canWrite={canWrite}
-                refreshKey={paymentsJournalKey}
-                onCollect={({ appointmentId, amount }) => {
-                  void openPayDrawer(appointmentId).then(() => {
-                    setPayAmount(String(amount));
-                  });
-                }}
-              />
-            )}
-          </div>
-
-          <div className="space-y-4 xl:col-span-4">
-            <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[18px] font-semibold">Ventilation du jour</h3>
-                <span className="text-[13px] font-semibold text-[#7B5900]">
-                  {formatMad(session?.paymentsToday.total ?? 0)}
-                </span>
-              </div>
-              {mix.length === 0 ? (
-                <p className="text-[13px] text-ink/50">Aucun paiement aujourd’hui.</p>
-              ) : (
-                <div className="space-y-3">
-                  {mix.map((m) => (
-                    <div key={m.key} className="space-y-1">
-                      <div className="flex justify-between text-[13px]">
-                        <span className="flex items-center gap-1.5">
-                          <span className={cn("h-2.5 w-2.5 rounded-full", m.dot)} />
-                          {m.label}
-                        </span>
-                        <span className="font-semibold">
-                          {formatMad(m.amount)} ({m.pct} %)
-                        </span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-[#FFEFF8]">
-                        <div className={cn("h-full rounded-full", m.bar)} style={{ width: `${m.pct}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2 rounded-xl bg-white p-6 shadow-sm">
-              <h3 className="text-[18px] font-semibold">Dernières clôtures</h3>
+          {tab === "history" ? (
+            <div className="space-y-3 rounded-xl bg-white p-6 shadow-sm">
+              <h2 className="text-[22px] font-semibold">Historique des clôtures</h2>
               {recentClosed.length === 0 ? (
-                <p className="text-[13px] text-ink/50">Aucune clôture.</p>
+                <p className="text-[13px] text-ink/50">Aucune clôture enregistrée.</p>
               ) : (
-                recentClosed.slice(0, 4).map((row) => (
-                  <div key={row.id} className="flex items-center justify-between rounded-lg bg-[#FFEFF8] p-2.5">
+                recentClosed.map((row) => (
+                  <div
+                    key={row.id}
+                    className="flex items-center justify-between rounded-lg bg-[#FFEFF8] p-3"
+                  >
                     <div>
-                      <p className="text-[13px] font-semibold">{closedHistoryLabel(row)}</p>
-                      <p className="text-[12px] text-ink/50">{row.closedByName ?? "—"}</p>
+                      <p className="text-[14px] font-semibold">{closedHistoryLabel(row)}</p>
+                      <p className="text-[12px] text-ink/50">
+                        {row.closedByName ?? "—"}
+                        {row.expectedBalance != null ? ` · Th. ${formatMad(row.expectedBalance)}` : ""}
+                        {row.closingCounted != null ? ` · Réel ${formatMad(row.closingCounted)}` : ""}
+                      </p>
                     </div>
                     <span
                       className={cn(
@@ -612,13 +468,88 @@ export function CashRegisterPageView() {
                 ))
               )}
             </div>
+          ) : tab === "out" || tab === "refunds" ? (
+            <div className="space-y-5 rounded-[24px] border border-[#F1E8EC] bg-white p-6 shadow-[0_8px_30px_rgba(60,20,40,0.06)] sm:p-7">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-ink">
+                    {tab === "out" ? "Sorties de caisse" : "Remboursements tiroir"}
+                  </h2>
+                  <p className="text-[13px] text-ink/50">Mouvements de la session courante.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Ticket, motif…"
+                      className="h-10 w-56 rounded-xl bg-[#FAF0F5] pl-9 pr-3 text-[13px] outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    title="Exporter CSV"
+                    onClick={() => exportCashCsv(filtered)}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FAF0F5] text-ink hover:bg-[#FCE9F4]"
+                  >
+                    <Download size={16} />
+                  </button>
+                </div>
+              </div>
 
-            {showPayments ? (
-              <Link href="/payments/" className="block text-center text-[13px] font-semibold text-primary hover:underline">
-                Historique des paiements →
-              </Link>
-            ) : null}
-          </div>
+              <div className="space-y-2">
+                {filtered.length === 0 ? (
+                  <p className="rounded-2xl bg-[#FAF0F5] p-8 text-center text-[13px] text-ink/50">
+                    Aucun mouvement.
+                  </p>
+                ) : (
+                  filtered.map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F1E8EC] bg-[#FFFBFD] px-4 py-3.5 transition hover:border-[#E8C9D6]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-[15px] font-bold text-ink">
+                            {CASH_TXN_LABEL[t.type]}
+                          </p>
+                          <span
+                            className={cn(
+                              "inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold",
+                              txnTypeChip(t.type),
+                            )}
+                          >
+                            {t.method ? PAYMENT_METHOD_LABEL[t.method] : "Espèces"}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[12px] text-ink/50">
+                          {formatCashDateTime(t.createdAt)}
+                          {t.userName ? ` · ${t.userName}` : ""}
+                          {t.reason ? ` · ${t.reason}` : ""}
+                        </p>
+                      </div>
+                      <p
+                        className={cn(
+                          "text-[16px] font-extrabold tabular-nums",
+                          t.amount < 0 ? "text-[#BA1A1A]" : "text-[#981C52]",
+                        )}
+                      >
+                        {t.amount > 0 ? "+" : ""}
+                        {formatMad(t.amount)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          ) : showPayments ? (
+            <PaymentsPageView embedded refreshKey={paymentsRefreshKey} />
+          ) : (
+            <p className="rounded-2xl bg-white p-6 text-[13px] text-ink/50 shadow-sm">
+              Les paiements ne sont pas accessibles pour votre rôle.
+            </p>
+          )}
         </div>
       </div>
 
@@ -658,7 +589,7 @@ export function CashRegisterPageView() {
               onSold={(sale) => {
                 toast(`Vente produits · ${formatMad(sale.total)}`, "success");
                 setPayOpen(false);
-                setPaymentsJournalKey((n) => n + 1);
+                setPaymentsRefreshKey((n) => n + 1);
                 void refresh();
               }}
             />

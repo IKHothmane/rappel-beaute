@@ -296,7 +296,7 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
             Message IA
           </button>
         ) : null}
-        <Link href={`/payments/?customerId=${customerId}`} className="btn-ghost text-xs sm:text-sm">
+        <Link href={`/cash-register/?customerId=${customerId}`} className="btn-ghost text-xs sm:text-sm">
           Nouveau paiement
         </Link>
         {canWrite ? (

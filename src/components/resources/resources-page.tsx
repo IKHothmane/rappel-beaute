@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   CalendarDays,
+  CheckCircle2,
+  Pencil,
   Search,
+  Wrench,
 } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { ResourceFocusPanel } from "@/components/resources/resource-focus-panel";
@@ -18,11 +21,9 @@ import {
 } from "@/components/resources/resource-helpers";
 import { ResourcesMobile } from "@/components/resources/resources-mobile";
 import { ResourcesPremiumHeader } from "@/components/resources/resources-premium-header";
-import { Drawer } from "@/components/ui/drawer";
 import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canReadFeature, canWriteResources } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -509,85 +510,154 @@ export function ResourcesPageView() {
         />
       </PremiumSidePanel>
 
-      <Drawer
+      <PremiumSidePanel
         open={maintenanceOpen}
         onClose={() => {
           setMaintenanceOpen(false);
           setEditingMaintenance(null);
         }}
         title={editingMaintenance ? "Modifier la maintenance" : "Maintenance"}
+        description={
+          selected
+            ? `${selected.name} · bloquez le créneau pendant l’intervention.`
+            : "Planifiez une intervention sur une ressource."
+        }
+        size="md"
       >
         {selected ? (
           <div className="space-y-5">
-            {openMaintenances.length ? (
-              <ul className="space-y-2">
-                {openMaintenances.map((item) => (
-                  <li key={item.id} className="rounded-xl border border-line p-3 text-sm">
-                    <p className="font-semibold text-ink">
-                      {MAINTENANCE_TYPE_LABEL[item.type]} · {MAINTENANCE_STATUS_LABEL[item.status]}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-ink/55">
-                      {new Date(item.startAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      {" → "}
-                      {new Date(item.endAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                    {item.reason ? <p className="mt-0.5 text-[12px] text-ink/45">{item.reason}</p> : null}
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        type="button"
-                        className="rounded-lg border border-line px-2.5 py-1 text-[12px] font-bold text-ink hover:bg-[#FBF5F7]"
-                        onClick={() => setEditingMaintenance(item)}
+            <div className="flex items-center gap-3 rounded-xl bg-[#FFEFF8] px-3 py-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary shadow-sm">
+                <Wrench size={18} aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+                  Ressource
+                </p>
+                <p className="truncate text-[15px] font-semibold text-ink">{selected.name}</p>
+                <p className="text-[12px] text-ink/50">
+                  {RESOURCE_TYPE_LABEL[selected.type]}
+                  {selected.location ? ` · ${selected.location}` : ""}
+                </p>
+              </div>
+            </div>
+
+            <section className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-[13px] font-bold text-ink">En cours / planifiées</h3>
+                <span className="rounded-full bg-[#FCE9F4] px-2 py-0.5 text-[11px] font-bold text-primary">
+                  {openMaintenances.length}
+                </span>
+              </div>
+              {openMaintenances.length ? (
+                <ul className="space-y-2">
+                  {openMaintenances.map((item) => {
+                    const active = editingMaintenance?.id === item.id;
+                    return (
+                      <li
+                        key={item.id}
+                        className={cn(
+                          "rounded-xl bg-[#FFF8FA] p-3 text-sm ring-1 ring-[#F0DDE6] transition",
+                          active && "ring-2 ring-primary/40",
+                        )}
                       >
-                        Modifier
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[12px] font-bold text-white disabled:opacity-50"
-                        disabled={submitting}
-                        onClick={() => void finishMaintenance(item)}
-                      >
-                        Terminer
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-ink/50">Aucune maintenance en cours.</p>
-            )}
-            <MaintenanceForm
-              key={editingMaintenance?.id ?? "new"}
-              resourceName={selected.name}
-              initial={editingMaintenance}
-              submitting={submitting}
-              onCancel={() => {
-                if (editingMaintenance) setEditingMaintenance(null);
-                else {
-                  setMaintenanceOpen(false);
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-ink">
+                              {MAINTENANCE_TYPE_LABEL[item.type]}
+                            </p>
+                            <p className="mt-0.5 text-[12px] text-ink/55">
+                              {formatMaintenanceRange(item.startAt, item.endAt)}
+                            </p>
+                            {item.reason ? (
+                              <p className="mt-1 text-[12px] text-ink/45">{item.reason}</p>
+                            ) : null}
+                          </div>
+                          <span
+                            className={cn(
+                              "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                              item.status === "IN_PROGRESS"
+                                ? "bg-[#E3F0FF] text-[#2F5FBF]"
+                                : "bg-[#FFF0D8] text-[#B77612]",
+                            )}
+                          >
+                            {MAINTENANCE_STATUS_LABEL[item.status]}
+                          </span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center gap-1 rounded-lg bg-white py-2 text-[12px] font-semibold text-ink ring-1 ring-[#F0DDE6] hover:bg-[#FBF4F6]"
+                            onClick={() => setEditingMaintenance(item)}
+                          >
+                            <Pencil size={13} aria-hidden />
+                            Modifier
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-600 py-2 text-[12px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                            disabled={submitting}
+                            onClick={() => void finishMaintenance(item)}
+                          >
+                            <CheckCircle2 size={13} aria-hidden />
+                            Terminer
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="rounded-xl border border-dashed border-[#EAD5E0] bg-[#FFF9FB] px-4 py-6 text-center">
+                  <p className="text-sm font-semibold text-ink">Aucune maintenance en cours</p>
+                  <p className="mt-1 text-[12px] text-ink/50">
+                    Planifiez une intervention ci-dessous.
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <div className="border-t border-[#F0DDE6] pt-4">
+              <h3 className="mb-3 text-[13px] font-bold text-ink">
+                {editingMaintenance ? "Modifier l’intervention" : "Nouvelle intervention"}
+              </h3>
+              <MaintenanceForm
+                key={editingMaintenance?.id ?? "new"}
+                resourceName={selected.name}
+                initial={editingMaintenance}
+                submitting={submitting}
+                onCancel={() => {
+                  if (editingMaintenance) setEditingMaintenance(null);
+                  else {
+                    setMaintenanceOpen(false);
+                    setEditingMaintenance(null);
+                  }
+                }}
+                onSubmit={async (input) => {
+                  setSubmitting(true);
+                  const result = editingMaintenance
+                    ? await updateResourceMaintenance(selected.id, editingMaintenance.id, input)
+                    : await createResourceMaintenance(selected.id, input);
+                  setSubmitting(false);
+                  if (!result.ok) {
+                    toast(result.error, "error");
+                    return;
+                  }
+                  toast(
+                    editingMaintenance ? "Maintenance modifiée." : "Maintenance planifiée.",
+                    "success",
+                  );
                   setEditingMaintenance(null);
-                }
-              }}
-              onSubmit={async (input) => {
-                setSubmitting(true);
-                const result = editingMaintenance
-                  ? await updateResourceMaintenance(selected.id, editingMaintenance.id, input)
-                  : await createResourceMaintenance(selected.id, input);
-                setSubmitting(false);
-                if (!result.ok) {
-                  toast(result.error, "error");
-                  return;
-                }
-                toast(editingMaintenance ? "Maintenance modifiée." : "Maintenance planifiée.", "success");
-                setEditingMaintenance(null);
-                await loadOpenMaintenances(selected.id);
-                refresh();
-              }}
-            />
+                  await loadOpenMaintenances(selected.id);
+                  refresh();
+                }}
+              />
+            </div>
           </div>
         ) : (
           <p className="text-sm text-ink/50">Sélectionnez une ressource.</p>
         )}
-      </Drawer>
+      </PremiumSidePanel>
     </div>
   );
 }
@@ -599,8 +669,19 @@ function toDatetimeLocal(iso: string) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function formatMaintenanceRange(startAt: string, endAt: string) {
+  const opts: Intl.DateTimeFormatOptions = {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+  return `${new Date(startAt).toLocaleString("fr-FR", opts)} → ${new Date(endAt).toLocaleString("fr-FR", opts)}`;
+}
+
+const MAINTENANCE_TYPES = Object.keys(MAINTENANCE_TYPE_LABEL) as MaintenanceType[];
+
 function MaintenanceForm({
-  resourceName,
   initial,
   submitting,
   onSubmit,
@@ -631,32 +712,63 @@ function MaintenanceForm({
         });
       }}
     >
-      <p className="text-sm text-ink/55">
-        {initial ? "Modifier" : "Planifier"} · <strong className="text-ink">{resourceName}</strong>
-      </p>
+      <div>
+        <span className="mb-1.5 block text-sm font-medium">Type</span>
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#FFEFF8] p-1">
+          {MAINTENANCE_TYPES.map((item) => {
+            const active = type === item;
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setType(item)}
+                className={cn(
+                  "rounded-lg px-2 py-2.5 text-[12px] font-semibold transition-colors",
+                  active ? "bg-white text-ink shadow-sm" : "text-ink/55 hover:text-ink/80",
+                )}
+              >
+                {MAINTENANCE_TYPE_LABEL[item]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
-          <span className="mb-1 block text-xs text-ink/50">Début</span>
-          <Input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} required />
+          <span className="mb-1.5 block font-medium">Début</span>
+          <Input
+            type="datetime-local"
+            value={startAt}
+            onChange={(e) => setStartAt(e.target.value)}
+            required
+          />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block text-xs text-ink/50">Fin</span>
-          <Input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} required />
+          <span className="mb-1.5 block font-medium">Fin</span>
+          <Input
+            type="datetime-local"
+            value={endAt}
+            onChange={(e) => setEndAt(e.target.value)}
+            required
+          />
         </label>
       </div>
-      <Select value={type} onChange={(e) => setType(e.target.value as MaintenanceType)}>
-        {Object.entries(MAINTENANCE_TYPE_LABEL).map(([k, v]) => (
-          <option key={k} value={k}>
-            {v}
-          </option>
-        ))}
-      </Select>
-      <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motif (optionnel)" />
-      <div className="flex gap-2">
-        <Button type="button" variant="ghost" className="flex-1" onClick={onCancel}>
-          Annuler
+
+      <label className="block text-sm">
+        <span className="mb-1.5 block font-medium">Motif</span>
+        <Input
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Ex. révision annuelle, panne…"
+        />
+      </label>
+
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          {initial ? "Annuler la modif." : "Fermer"}
         </Button>
-        <Button type="submit" variant="primary" className="flex-1" disabled={submitting}>
+        <Button type="submit" variant="primary" disabled={submitting || !startAt || !endAt}>
           {submitting ? "Enregistrement…" : initial ? "Enregistrer" : "Planifier"}
         </Button>
       </div>

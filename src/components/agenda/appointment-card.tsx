@@ -30,8 +30,9 @@ export function AppointmentCard({
   const palette = useStaffPalette();
   const color = staffColor(appointment.staffId, palette);
   const muted = appointment.status === "CANCELLED" || appointment.status === "NO_SHOW";
-  const surface = agendaAppointmentSurface(color, muted);
+  const surface = agendaAppointmentSurface(color, muted, appointment.status);
   const s = APPOINTMENT_STATUS_STYLE[appointment.status];
+  const completed = appointment.status === "COMPLETED";
   const start = new Date(appointment.startAt);
   const end = new Date(appointment.endAt);
   const durationMin = (end.getTime() - start.getTime()) / 60_000;
@@ -70,29 +71,42 @@ export function AppointmentCard({
       )}
     >
       <span className={cn("absolute inset-y-0 left-0 w-1.5", surface.bar)} />
-      <p className={cn("truncate text-sm font-semibold text-ink", muted && "line-through")}>
+      <p
+        className={cn(
+          "truncate text-sm font-semibold",
+          completed ? "text-[#4A1F7A]" : "text-ink",
+          muted && "line-through",
+        )}
+      >
         {appointment.customerName.trim() || "Cliente"}
       </p>
       <p className="font-mono text-[10px] font-semibold text-ink/45">{timeLabel}</p>
       <p className="truncate text-xs text-ink/60">{appointment.serviceName}</p>
-      {!short ? (
-        <>
-          <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] text-ink/45">
-            <span className={cn("h-2 w-2 shrink-0 rounded-full", color.bar)} />
-            <span className="truncate">
-              {appointment.staffName}
-              {appointment.resourceName ? ` · ${appointment.resourceName}` : ""}
-            </span>
-          </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
-            <span className={cn("text-[10px] font-semibold", s.text)}>
-              {APPOINTMENT_STATUS_LABEL[appointment.status]}
-            </span>
-            <AppointmentPayBadge appointment={appointment} />
-          </div>
-        </>
-      ) : null}
+      <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] text-ink/45">
+        <span
+          className={cn(
+            "h-2 w-2 shrink-0 rounded-full",
+            completed ? "bg-[#7434B4]" : color.bar,
+          )}
+        />
+        <span className="truncate">
+          {appointment.staffName}
+          {appointment.resourceName ? ` · ${appointment.resourceName}` : ""}
+        </span>
+      </p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[10px] font-bold",
+            completed
+              ? "bg-[#7434B4] text-white"
+              : cn(s.bg, s.text),
+          )}
+        >
+          {APPOINTMENT_STATUS_LABEL[appointment.status]}
+        </span>
+        <AppointmentPayBadge appointment={appointment} />
+      </div>
     </div>
   );
 }

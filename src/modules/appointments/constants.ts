@@ -40,10 +40,10 @@ export const APPOINTMENT_STATUS_STYLE: Record<
     dot: "bg-violet-500",
   },
   COMPLETED: {
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    text: "text-emerald-800",
-    dot: "bg-emerald-500",
+    bg: "bg-[#F0E7FF]",
+    border: "border-[#7434B4]/30",
+    text: "text-[#7434B4]",
+    dot: "bg-[#7434B4]",
   },
   CANCELLED: {
     bg: "bg-gray-50",

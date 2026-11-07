@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
 import type { Appointment, AppointmentStatus, AgendaView } from "@/types/appointment";
 
 type Option = {
@@ -310,14 +311,17 @@ export function AgendaPremiumLayout({
               cabines.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onCreate}
-            className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#AC0E4C] px-5 text-sm font-bold text-white shadow-lg shadow-[#AC0E4C]/20 transition hover:bg-[#820D39]"
-          >
-            <Plus size={18} />
-            Nouveau rendez-vous
-          </button>
+          <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-2">
+            <GoogleCalendarConnect className="h-11 max-w-[260px] rounded-xl border border-[#F0D9E3] bg-white/90 px-3 shadow-sm backdrop-blur-sm hover:bg-white" />
+            <button
+              type="button"
+              onClick={onCreate}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#AC0E4C] px-5 text-sm font-bold text-white shadow-lg shadow-[#AC0E4C]/20 transition hover:bg-[#820D39]"
+            >
+              <Plus size={18} />
+              Nouveau rendez-vous
+            </button>
+          </div>
         </div>
       </header>
 

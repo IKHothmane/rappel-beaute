@@ -1,6 +1,8 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { ExpensesPageView } from "@/components/expenses/expenses-page";
 
-/** Ancienne adresse : la page unique est /payments/. */
+export const metadata: Metadata = { title: "Dépenses" };
+
 export default function ExpensesPage() {
-  redirect("/payments/?vue=depenses");
+  return <ExpensesPageView />;
 }

@@ -69,8 +69,8 @@ type VisitInsert = {
   actorName?: string | null;
 };
 
-/** Le code carte devient un service offert, réservé à cette cliente, une seule fois. */
-async function grantPersonalFreeServicePromo(
+/** Le code carte devient un code promo perso (1 usage), selon la récompense choisie par l’institut. */
+async function grantPersonalLoyaltyPromo(
   db: Pool | PoolClient,
   opts: {
     organizationId: string;
@@ -78,13 +78,35 @@ async function grantPersonalFreeServicePromo(
     publicToken: string;
     rewardId: string;
     rewardLabel: string;
+    rewardKind: VisitProgram["rewardKind"];
+    rewardValue: number | null;
     expiresAt: Date | null;
   },
 ) {
   const code = shortCardCode(opts.publicToken);
   if (code.length < 4) return;
   const description = `loyalty:${opts.rewardId}`;
-  const name = opts.rewardLabel.trim() || "Service offert";
+  const kind = opts.rewardKind;
+  const promoType =
+    kind === "DISCOUNT"
+      ? "FIXED_AMOUNT"
+      : kind === "PERCENTAGE"
+        ? "PERCENTAGE"
+        : "FREE_SERVICE";
+  const value =
+    promoType === "FREE_SERVICE"
+      ? null
+      : opts.rewardValue != null && opts.rewardValue > 0
+        ? opts.rewardValue
+        : null;
+  if (promoType !== "FREE_SERVICE" && value == null) return;
+  const name =
+    opts.rewardLabel.trim() ||
+    (promoType === "FREE_SERVICE"
+      ? "Service offert"
+      : promoType === "PERCENTAGE"
+        ? `Remise ${value} %`
+        : `Remise ${value} MAD`);
   const existing = await db.query<{ id: string; customerId: string | null; description: string | null; status: string }>(
     `SELECT id, "customerId", description, status FROM "Promotion"
      WHERE "organizationId" = $1 AND upper(code) = $2
@@ -93,28 +115,38 @@ async function grantPersonalFreeServicePromo(
   );
   const row = existing.rows[0];
   if (row?.customerId && row.customerId !== opts.customerId) return;
-  if (row?.description === description && row.status === "ACTIVE") return;
   if (row) {
     await db.query(
       `UPDATE "Promotion"
-       SET status = 'ACTIVE', type = 'FREE_SERVICE'::"PromotionType", name = $2, "customerId" = $3,
-           "maxUses" = 1, "maxUsesPerCustomer" = 1, "usageCount" = 0,
-           "serviceId" = NULL, "endsAt" = $4, description = $5, "deletedAt" = NULL, "updatedAt" = NOW()
+       SET status = 'ACTIVE', type = $2::"PromotionType", name = $3, "customerId" = $4,
+           value = $5, "maxUses" = 1, "maxUsesPerCustomer" = 1, "usageCount" = 0,
+           "serviceId" = NULL, "endsAt" = $6, description = $7, "deletedAt" = NULL, "updatedAt" = NOW()
        WHERE id = $1`,
-      [row.id, name, opts.customerId, opts.expiresAt, description],
+      [row.id, promoType, name, opts.customerId, value, opts.expiresAt, description],
     );
     return;
   }
   await db.query(
     `INSERT INTO "Promotion" (
-      id, "organizationId", name, code, type, status, "customerId",
+      id, "organizationId", name, code, type, status, value, "customerId",
       "maxUses", "maxUsesPerCustomer", "usageCount", "endsAt", description, "updatedAt"
-    ) VALUES ($1,$2,$3,$4,'FREE_SERVICE'::"PromotionType",'ACTIVE'::"PromotionStatus",$5,1,1,0,$6,$7,NOW())`,
-    [newLoyaltyId("promo"), opts.organizationId, name, code, opts.customerId, opts.expiresAt, description],
+    ) VALUES ($1,$2,$3,$4,$5::"PromotionType",'ACTIVE'::"PromotionStatus",$6,$7,1,1,0,$8,$9,NOW())`,
+    [
+      newLoyaltyId("promo"),
+      opts.organizationId,
+      name,
+      code,
+      promoType,
+      value,
+      opts.customerId,
+      opts.expiresAt,
+      description,
+    ],
   );
 }
 
 export async function syncLoyaltyPromoCodes(organizationId: string) {
+  const program = await getVisitProgram(organizationId);
   const { rows } = await pool.query<{
     id: string;
     customerId: string;
@@ -137,12 +169,14 @@ export async function syncLoyaltyPromoCodes(organizationId: string) {
     [organizationId],
   );
   for (const row of rows) {
-    await grantPersonalFreeServicePromo(pool, {
+    await grantPersonalLoyaltyPromo(pool, {
       organizationId,
       customerId: row.customerId,
       publicToken: row.publicToken,
       rewardId: row.id,
-      rewardLabel: row.name,
+      rewardLabel: row.name || program.rewardLabel,
+      rewardKind: program.rewardKind,
+      rewardValue: program.rewardValue,
       expiresAt: row.expiresAt,
     });
   }
@@ -234,12 +268,14 @@ async function insertVisitAndMaybeReward(client: PoolClient, input: VisitInsert)
       );
       if (tokenRow.rows[0]) {
         const days = input.program.rewardValidityDays > 0 ? input.program.rewardValidityDays : 365;
-        await grantPersonalFreeServicePromo(client, {
+        await grantPersonalLoyaltyPromo(client, {
           organizationId: input.organizationId,
           customerId: input.customerId,
           publicToken: tokenRow.rows[0].publicToken,
           rewardId,
           rewardLabel: input.program.rewardLabel,
+          rewardKind: input.program.rewardKind,
+          rewardValue: input.program.rewardValue,
           expiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
         });
       }

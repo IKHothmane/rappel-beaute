@@ -12,7 +12,10 @@ import {
   proposeAssistantCancel,
   proposeAssistantReschedule,
 } from "@/lib/db/assistant-booking";
-import { getPublicAvailabilitySlots } from "@/lib/db/public-booking";
+import {
+  getPublicAvailabilitySlots,
+  getPublicDayClosedStatus,
+} from "@/lib/db/public-booking";
 import type { PreparedWidgetCall, WidgetToolName } from "@/lib/assistant/widget-tool-contract";
 
 type Session = { id: string; organizationId: string; organizationName: string };
@@ -40,6 +43,8 @@ export type WidgetToolResult =
       price: number;
       date: string;
       times: string[];
+      closed: boolean;
+      closedReason: string | null;
     }
   | {
       tool: "FIND_APPOINTMENT";
@@ -99,6 +104,22 @@ export async function runWidgetTool(session: Session, call: ReadyCall): Promise<
       const services = await listCatalogServices(session.organizationId);
       const service = services.find((item) => item.id === call.args.serviceId);
       if (!service) throw new Error("SERVICE_NOT_FOUND");
+      const dayClosed = await getPublicDayClosedStatus(
+        session.organizationId,
+        call.args.date,
+      );
+      if (dayClosed.closed) {
+        return {
+          tool: call.tool,
+          effect: "read",
+          serviceName: service.name,
+          price: service.price,
+          date: call.args.date,
+          times: [],
+          closed: true,
+          closedReason: dayClosed.reason,
+        };
+      }
       const slots = await getPublicAvailabilitySlots(session.organizationId, {
         serviceId: service.id,
         date: call.args.date,
@@ -110,6 +131,8 @@ export async function runWidgetTool(session: Session, call: ReadyCall): Promise<
         price: service.price,
         date: call.args.date,
         times: slots.filter((slot) => slot.available).map((slot) => slot.time),
+        closed: false,
+        closedReason: null,
       };
     }
     case "FIND_APPOINTMENT": {

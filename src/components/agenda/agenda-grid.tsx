@@ -56,6 +56,14 @@ export function AgendaGrid({
 }: AgendaGridProps) {
   const palette = useStaffPalette();
   const [stackPeers, setStackPeers] = useState<Appointment[] | null>(null);
+  const liveStackPeers = useMemo(() => {
+    if (!stackPeers) return null;
+    const byId = new Map(appointments.map((a) => [a.id, a]));
+    const next = stackPeers
+      .map((peer) => byId.get(peer.id))
+      .filter((a): a is Appointment => Boolean(a));
+    return next.length > 0 ? next : null;
+  }, [stackPeers, appointments]);
   const layout = useMemo(
     () =>
       buildAgendaLayout(
@@ -272,9 +280,9 @@ export function AgendaGrid({
           </div>
       </div>
 
-      {stackPeers ? (
+      {liveStackPeers ? (
         <AgendaStackPicker
-          appointments={stackPeers}
+          appointments={liveStackPeers}
           onClose={() => setStackPeers(null)}
           onSelect={(id) => {
             setStackPeers(null);
@@ -382,7 +390,11 @@ export function AgendaMonthGrid({
               <span className="mt-1 flex flex-col gap-0.5">
                 {dayAppts.slice(0, 3).map((apt) => {
                   const muted = apt.status === "CANCELLED" || apt.status === "NO_SHOW";
-                  const surface = agendaAppointmentSurface(staffColor(apt.staffId, palette), muted);
+                  const surface = agendaAppointmentSurface(
+                    staffColor(apt.staffId, palette),
+                    muted,
+                    apt.status,
+                  );
                   const time = new Date(apt.startAt).toLocaleTimeString("fr-FR", {
                     hour: "2-digit",
                     minute: "2-digit",

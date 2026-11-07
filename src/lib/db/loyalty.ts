@@ -86,10 +86,15 @@ export async function getOrCreateLoyaltyProgram(
       goldMin: r.goldMin,
       vipMin: r.vipMin,
       active: r.active,
-      visitsPerReward: r.visitsPerReward && r.visitsPerReward > 0 ? r.visitsPerReward : 10,
+      visitsPerReward: r.visitsPerReward && r.visitsPerReward > 0 ? r.visitsPerReward : 5,
       rewardLabel: r.rewardLabel?.trim() || "Récompense",
       name: r.name?.trim() || "",
-      rewardKind: r.rewardKind === "DISCOUNT" ? "DISCOUNT" : "FREE_SERVICE",
+      rewardKind:
+        r.rewardKind === "DISCOUNT"
+          ? "DISCOUNT"
+          : r.rewardKind === "PERCENTAGE"
+            ? "PERCENTAGE"
+            : "FREE_SERVICE",
       rewardValue: r.rewardValue != null ? parseFloat(r.rewardValue) : null,
       rewardValidityDays: r.rewardValidityDays > 0 ? r.rewardValidityDays : 30,
       productsEligible: r.productsEligible,
@@ -102,7 +107,7 @@ export async function getOrCreateLoyaltyProgram(
   await c.query(
     `INSERT INTO "LoyaltyProgram" (
       id, "organizationId", "madPerPoint", "bronzeMin", "silverMin", "goldMin", "vipMin", active, "visitsPerReward", "rewardLabel", "updatedAt"
-    ) VALUES ($1,$2,1,0,1000,3000,6000,true,10,'Récompense',NOW())
+    ) VALUES ($1,$2,1,0,1000,3000,6000,true,5,'Récompense',NOW())
     ON CONFLICT ("organizationId") DO NOTHING`,
     [id, organizationId],
   );

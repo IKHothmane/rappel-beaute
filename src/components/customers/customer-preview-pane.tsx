@@ -208,7 +208,7 @@ export function CustomerPreviewPane({
           WhatsApp
         </SendCustomerWhatsAppButton>
         <Link
-          href={`/payments/?customerId=${person.id}`}
+          href={`/cash-register/?customerId=${person.id}`}
           className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-[#FCE9F4] px-3 text-[12px] font-semibold text-ink"
         >
           <Wallet size={14} />

@@ -2,6 +2,10 @@ export function assistantBookingError(error: unknown): { status: number; message
   const message = error instanceof Error ? error.message : "";
   const map: Record<string, { status: number; message: string }> = {
     SERVICE_NOT_FOUND: { status: 404, message: "Prestation introuvable." },
+    SALON_CLOSED: {
+      status: 409,
+      message: "Le salon est fermé à cette date. Impossible de créer un rendez-vous.",
+    },
     SLOT_UNAVAILABLE: {
       status: 409,
       message: "Ce créneau n'est plus disponible. Veuillez choisir un autre horaire.",

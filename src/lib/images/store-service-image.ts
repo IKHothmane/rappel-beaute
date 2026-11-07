@@ -11,13 +11,32 @@ function slugify(value: string): string {
     .slice(0, 60) || "item";
 }
 
-/** Enregistre les 2 variantes WebP ; optionnellement sous une clé stable (catalogue). */
+function toDataUri(contentType: string, data: Buffer): string {
+  return `data:${contentType};base64,${data.toString("base64")}`;
+}
+
+function hasObjectStorage(): boolean {
+  return Boolean(process.env.S3_BUCKET?.trim() && process.env.S3_ENDPOINT?.trim());
+}
+
+/**
+ * Enregistre les 2 variantes WebP.
+ * Avec S3/R2 → URLs objet. Sinon → data URI (évite les 404 prod quand
+ * la DB distante pointe vers /api/storage/local sans fichiers sur Railway).
+ */
 export async function storeOptimizedServiceImages(
   variants: OptimizedServiceImages,
   organizationId: string,
   category: StorageCategory = "services",
   opts?: { stableId?: string },
 ): Promise<{ imageUrl: string; thumbUrl: string }> {
+  if (!hasObjectStorage()) {
+    return {
+      imageUrl: toDataUri(variants.main.contentType, variants.main.data),
+      thumbUrl: toDataUri(variants.thumb.contentType, variants.thumb.data),
+    };
+  }
+
   const storage = getStorageService();
   const stamp = Date.now();
   const slug = opts?.stableId ? slugify(opts.stableId) : null;

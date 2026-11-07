@@ -1,10 +1,10 @@
 import { readFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
+import { getLocalUploadsRoot } from "@/lib/storage/local-root";
+import { isPathInsideRoot } from "@/lib/storage/path-guard";
 
 export const runtime = "nodejs";
-
-const ROOT = process.env.STORAGE_LOCAL_DIR ?? path.join(process.cwd(), "uploads");
 
 const MIME: Record<string, string> = {
   ".png": "image/png",
@@ -14,20 +14,25 @@ const MIME: Record<string, string> = {
   ".svg": "image/svg+xml",
 };
 
-const KEY_RE = /^(logos|loyalty|services|resources)\/[a-zA-Z0-9_-]+\/[0-9]+_[a-zA-Z0-9._-]+$/;
+/** logos|loyalty|services|resources / org / fichier (horodaté ou stable) */
+const KEY_RE =
+  /^(logos|loyalty|services|resources)\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+$/;
 
 type RouteContext = { params: Promise<{ key: string[] }> };
 
 export async function GET(_request: Request, context: RouteContext) {
   const { key: parts } = await context.params;
-  const key = (parts ?? []).map((p) => decodeURIComponent(p)).join("/");
+  const key = (parts ?? [])
+    .map((p) => decodeURIComponent(p))
+    .filter(Boolean)
+    .join("/");
   if (!KEY_RE.test(key)) {
     return NextResponse.json({ error: "Fichier introuvable." }, { status: 404 });
   }
 
-  const full = path.join(ROOT, key);
-  const resolved = path.resolve(full);
-  if (!resolved.startsWith(path.resolve(ROOT))) {
+  const root = path.resolve(getLocalUploadsRoot());
+  const resolved = path.resolve(root, key);
+  if (!isPathInsideRoot(root, resolved)) {
     return NextResponse.json({ error: "Fichier introuvable." }, { status: 404 });
   }
 
@@ -37,8 +42,8 @@ export async function GET(_request: Request, context: RouteContext) {
     return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": MIME[ext] ?? "application/octet-stream",
-        // Clés horodatées → cache long navigateur / CDN
-        "Cache-Control": "public, max-age=31536000, immutable",
+        // Pas d’immutable : les clés stables sont écrasées au re-upload.
+        "Cache-Control": "public, max-age=86400, must-revalidate",
       },
     });
   } catch {

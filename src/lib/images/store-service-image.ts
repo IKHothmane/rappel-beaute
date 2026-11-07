@@ -1,14 +1,27 @@
 import type { OptimizedServiceImages } from "@/lib/images/service-image";
 import { getStorageService, type StorageCategory } from "@/lib/storage";
 
-/** Enregistre les 2 variantes WebP sous le même horodatage ; ne garde pas l’original. */
+function slugify(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "item";
+}
+
+/** Enregistre les 2 variantes WebP ; optionnellement sous une clé stable (catalogue). */
 export async function storeOptimizedServiceImages(
   variants: OptimizedServiceImages,
   organizationId: string,
   category: StorageCategory = "services",
+  opts?: { stableId?: string },
 ): Promise<{ imageUrl: string; thumbUrl: string }> {
   const storage = getStorageService();
   const stamp = Date.now();
+  const slug = opts?.stableId ? slugify(opts.stableId) : null;
+  const base = slug ? `catalog__${slug}` : null;
 
   const [main, thumb] = await Promise.all([
     storage.put({
@@ -18,6 +31,7 @@ export async function storeOptimizedServiceImages(
       data: variants.main.data,
       contentType: variants.main.contentType,
       stamp,
+      fixedKey: base ? `${base}.webp` : undefined,
     }),
     storage.put({
       category,
@@ -26,6 +40,7 @@ export async function storeOptimizedServiceImages(
       data: variants.thumb.data,
       contentType: variants.thumb.contentType,
       stamp,
+      fixedKey: base ? `${base}-thumb.webp` : undefined,
     }),
   ]);
 

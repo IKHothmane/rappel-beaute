@@ -7,6 +7,15 @@ import { Textarea } from "@/components/ui/select";
 import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
 import { ServiceStaffSelector } from "@/components/services/service-staff-selector";
 import { DURATION_PRESETS, SERVICE_NAME_SUGGESTIONS } from "@/components/services/services-helpers";
+import {
+  DESCRIPTION_MAX,
+  limitDescription,
+  limitDurationDigits,
+  limitPriceDigits,
+  limitTitle,
+  PRICE_MAX_DIGITS,
+  TITLE_MAX,
+} from "@/lib/validation/input-limits";
 import { cn } from "@/lib/utils";
 import type { CreateServiceInput, ServiceDetail, ServiceFormOptions } from "@/types/service";
 
@@ -111,7 +120,7 @@ export function ServiceForm({
           <Input
             value={name}
             onChange={(e) => {
-              setName(e.target.value);
+              setName(limitTitle(e.target.value));
               setNameOpen(true);
             }}
             onFocus={() => setNameOpen(true)}
@@ -119,6 +128,7 @@ export function ServiceForm({
               if (nameBox.current?.contains(e.relatedTarget as Node | null)) return;
               setNameOpen(false);
             }}
+            maxLength={TITLE_MAX}
             required
             placeholder="Choisir ou saisir un soin"
             autoComplete="off"
@@ -161,7 +171,8 @@ export function ServiceForm({
         <span className="mb-1.5 block font-medium">Description</span>
         <Textarea
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => setDescription(limitDescription(e.target.value))}
+          maxLength={DESCRIPTION_MAX}
           placeholder="Détails de la prestation…"
           rows={3}
         />
@@ -170,11 +181,11 @@ export function ServiceForm({
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Prix (MAD) *</span>
         <Input
-          type="number"
-          min={0}
-          step={0.01}
+          type="text"
+          inputMode="numeric"
           value={price}
-          onChange={(e) => setPrice(e.target.value)}
+          onChange={(e) => setPrice(limitPriceDigits(e.target.value))}
+          maxLength={PRICE_MAX_DIGITS}
           required
           disabled={!canEditPrice}
         />
@@ -200,10 +211,11 @@ export function ServiceForm({
           ))}
         </div>
         <Input
-          type="number"
-          min={1}
+          type="text"
+          inputMode="numeric"
           value={durationMin}
-          onChange={(e) => setDurationMin(e.target.value)}
+          onChange={(e) => setDurationMin(limitDurationDigits(e.target.value))}
+          maxLength={4}
           required
         />
       </label>

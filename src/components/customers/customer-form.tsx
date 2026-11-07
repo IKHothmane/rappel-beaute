@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { limitPhoneDigits, splitCustomerName } from "@/lib/validation/customer";
+import { limitPhoneDigits } from "@/lib/validation/customer";
+import {
+  EMAIL_MAX,
+  limitEmail,
+  limitName,
+  NAME_MAX,
+} from "@/lib/validation/input-limits";
 import type { CreateCustomerInput, CustomerDetail } from "@/types/customer";
 
 type CustomerFormProps = {
@@ -40,11 +46,21 @@ export function CustomerForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm">
           <span className="mb-1.5 block font-medium">Prénom *</span>
-          <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+          <Input
+            value={firstName}
+            onChange={(e) => setFirstName(limitName(e.target.value))}
+            maxLength={NAME_MAX}
+            required
+          />
         </label>
         <label className="block text-sm">
           <span className="mb-1.5 block font-medium">Nom *</span>
-          <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+          <Input
+            value={lastName}
+            onChange={(e) => setLastName(limitName(e.target.value))}
+            maxLength={NAME_MAX}
+            required
+          />
         </label>
       </div>
 
@@ -63,7 +79,12 @@ export function CustomerForm({
 
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">E-mail</span>
-        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(limitEmail(e.target.value))}
+          maxLength={EMAIL_MAX}
+        />
       </label>
 
       <div className="flex gap-2 pt-2">

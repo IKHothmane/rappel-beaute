@@ -54,7 +54,9 @@ export async function POST(request: NextRequest) {
     if (!sniffed) return adminError("Fichier image invalide.", 400);
 
     const optimized = await optimizeServiceImage(raw, sniffed, "catalog");
-    const stored = await storeOptimizedServiceImages(optimized, "platform");
+    const stored = await storeOptimizedServiceImages(optimized, "platform", "services", {
+      stableId: name,
+    });
 
     const item = await upsertServiceCatalogDefault(
       name,

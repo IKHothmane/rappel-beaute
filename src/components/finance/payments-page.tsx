@@ -49,9 +49,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canCreateRefund, canWriteCashRegister } from "@/lib/rbac";
+import {
+  limitNotes,
+  limitPriceDigits,
+  NOTES_MAX,
+  PRICE_MAX_DIGITS,
+} from "@/lib/validation/input-limits";
 import { cn } from "@/lib/utils";
 import {
   createPayments,
@@ -762,7 +769,12 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
         </div>
       </div>
 
-      <Drawer open={payOpen} onClose={() => setPayOpen(false)} title="Nouveau paiement">
+      <PremiumSidePanel
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        title="Nouveau paiement"
+        description="Encaissez un rendez-vous ou des produits."
+      >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#FFEFF8] p-1">
             {(
@@ -838,11 +850,11 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
                 <label className="block text-sm">
                   <span className="mb-1.5 block font-medium">Montant service</span>
                   <Input
-                    type="number"
-                    min={0.01}
-                    step={0.01}
+                    type="text"
+                    inputMode="decimal"
                     value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
+                    onChange={(e) => setPayAmount(limitPriceDigits(e.target.value))}
+                    maxLength={PRICE_MAX_DIGITS}
                   />
                 </label>
                 <label className="block text-sm">
@@ -892,7 +904,7 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
             </>
           )}
         </div>
-      </Drawer>
+      </PremiumSidePanel>
 
       <Drawer open={Boolean(refundTarget)} onClose={() => setRefundTarget(null)} title="Remboursement">
         {refundTarget ? (
@@ -907,12 +919,11 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
             <label className="block">
               <span className="mb-1.5 block font-medium">Montant</span>
               <Input
-                type="number"
-                min={0.01}
-                max={refundTarget.amount}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
                 value={refundAmount}
-                onChange={(e) => setRefundAmount(e.target.value)}
+                onChange={(e) => setRefundAmount(limitPriceDigits(e.target.value))}
+                maxLength={PRICE_MAX_DIGITS}
               />
             </label>
             <label className="block">
@@ -927,7 +938,11 @@ export function PaymentsPageView({ createSignal = 0 }: { createSignal?: number }
             </label>
             <label className="block">
               <span className="mb-1.5 block font-medium">Motif</span>
-              <Input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} />
+              <Input
+                value={refundReason}
+                onChange={(e) => setRefundReason(limitNotes(e.target.value))}
+                maxLength={NOTES_MAX}
+              />
             </label>
             <Button
               type="button"

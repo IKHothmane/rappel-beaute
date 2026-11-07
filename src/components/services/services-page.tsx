@@ -5,7 +5,7 @@ import { useCurrentUser } from "@/components/auth/session-provider";
 import { ServiceForm } from "@/components/services/service-form";
 import ServicesCatalogPremium from "@/components/services/services-catalog-premium";
 import { ServicesMobile } from "@/components/services/services-mobile";
-import { Drawer } from "@/components/ui/drawer";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { useToast } from "@/components/ui/toast";
 import { canEditServicePrice, canWriteFeature } from "@/lib/rbac";
 import { formatMad, getAnalyticsOverview, getAnalyticsServices } from "@/modules/analytics/service";
@@ -258,15 +258,18 @@ export function ServicesPageView() {
         />
       </div>
 
-      <Drawer
+      <PremiumSidePanel
         open={drawerOpen}
         onClose={() => {
           setDrawerOpen(false);
           setEditing(null);
         }}
         title={editing ? "Modifier le service" : "Nouveau service"}
-        side="right"
-        preserveHeader
+        description={
+          editing
+            ? "Mettez à jour la prestation de votre catalogue."
+            : "Ajoutez une prestation à votre catalogue."
+        }
       >
         {options ? (
           <ServiceForm
@@ -283,9 +286,9 @@ export function ServicesPageView() {
             }}
           />
         ) : (
-          <p className="text-sm text-ink/50">Chargement…</p>
+          <p className="text-sm text-[#887787]">Chargement…</p>
         )}
-      </Drawer>
+      </PremiumSidePanel>
     </div>
   );
 }

@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  limitDecimalInput,
+  limitTitle,
+  TITLE_MAX,
+} from "@/lib/validation/input-limits";
 import type { CreateProductInput, ProductDetail } from "@/types/inventory";
 
 type ProductFormProps = {
@@ -13,10 +18,7 @@ type ProductFormProps = {
 };
 
 function sanitizeDecimal(raw: string) {
-  const value = raw.replace(/\s/g, "").replace(/\./g, ",").replace(/[^\d,]/g, "");
-  const comma = value.indexOf(",");
-  if (comma === -1) return value;
-  return `${value.slice(0, comma)},${value.slice(comma + 1).replace(/,/g, "")}`;
+  return limitDecimalInput(raw);
 }
 
 function parseDecimal(raw: string) {
@@ -133,7 +135,13 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
     <form onSubmit={handleSubmit} className="space-y-4">
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Sérum 30 ml" />
+        <Input
+          value={name}
+          onChange={(e) => setName(limitTitle(e.target.value))}
+          maxLength={TITLE_MAX}
+          required
+          placeholder="Sérum 30 ml"
+        />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <AmountField label="Prix achat (MAD)" value={purchasePrice} onChange={setPurchasePrice} />
@@ -153,7 +161,11 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
       ) : null}
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Fournisseur</span>
-        <Input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} />
+        <Input
+          value={supplierName}
+          onChange={(e) => setSupplierName(limitTitle(e.target.value))}
+          maxLength={TITLE_MAX}
+        />
       </label>
       <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>

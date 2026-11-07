@@ -6,6 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/select";
 import type { CreateSupplierInput, SupplierDetail } from "@/types/procurement";
 import { limitPhoneDigits } from "@/lib/validation/customer";
+import {
+  ADDRESS_MAX,
+  EMAIL_MAX,
+  limitAddress,
+  limitEmail,
+  limitName,
+  limitNotes,
+  limitTitle,
+  NAME_MAX,
+  NOTES_MAX,
+  TITLE_MAX,
+} from "@/lib/validation/input-limits";
 
 type Props = {
   initial?: Partial<SupplierDetail>;
@@ -44,7 +56,8 @@ export function SupplierForm({ initial, submitting, onSubmit, onCancel }: Props)
           <span className="mb-1.5 block font-medium">Raison sociale *</span>
           <Input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => setName(limitTitle(e.target.value))}
+            maxLength={TITLE_MAX}
             placeholder="Ex. Laboratoires Atlas"
             required
           />
@@ -53,7 +66,8 @@ export function SupplierForm({ initial, submitting, onSubmit, onCancel }: Props)
           <span className="mb-1.5 block font-medium">Contact commercial</span>
           <Input
             value={contactName}
-            onChange={(e) => setContactName(e.target.value)}
+            onChange={(e) => setContactName(limitName(e.target.value))}
+            maxLength={NAME_MAX}
             placeholder="Nom du responsable"
           />
         </label>
@@ -61,9 +75,11 @@ export function SupplierForm({ initial, submitting, onSubmit, onCancel }: Props)
           <span className="mb-1.5 block font-medium">Téléphone / WhatsApp</span>
           <Input
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(limitPhoneDigits(e.target.value))}
+            maxLength={10}
             placeholder="06 …"
             type="tel"
+            inputMode="numeric"
           />
         </label>
         <label className="block text-sm sm:col-span-2">
@@ -71,18 +87,28 @@ export function SupplierForm({ initial, submitting, onSubmit, onCancel }: Props)
           <Input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(limitEmail(e.target.value))}
+            maxLength={EMAIL_MAX}
             placeholder="achats@fournisseur.ma"
           />
         </label>
       </div>
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Adresse</span>
-        <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+        <Input
+          value={address}
+          onChange={(e) => setAddress(limitAddress(e.target.value))}
+          maxLength={ADDRESS_MAX}
+        />
       </label>
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Notes (conditions, délais…)</span>
-        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(limitNotes(e.target.value))}
+          maxLength={NOTES_MAX}
+          rows={2}
+        />
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input

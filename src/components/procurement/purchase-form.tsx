@@ -3,14 +3,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  limitNotes,
+  limitPriceDigits,
+  limitQtyDigits,
+  limitTitle,
+  NOTES_MAX,
+  PRICE_MAX_DIGITS,
+  QTY_MAX_DIGITS,
+  TITLE_MAX,
+} from "@/lib/validation/input-limits";
 import { formatMad } from "@/modules/procurement/service";
 import type { ProductListItem } from "@/types/inventory";
 import type { PurchaseItemInput, SupplierListItem } from "@/types/procurement";
 
 type DraftLine = PurchaseItemInput & { key: string; query: string };
 
-function wholeNumber(raw: string) {
-  const digits = raw.replace(/\D/g, "");
+function wholeNumber(raw: string, maxDigits = QTY_MAX_DIGITS) {
+  const digits = limitQtyDigits(raw, maxDigits);
   if (!digits) return 0;
   return Number(digits);
 }
@@ -121,7 +131,7 @@ export function PurchaseForm({
           <Input
             value={supplierQuery}
             onChange={(e) => {
-              setSupplierQuery(e.target.value);
+              setSupplierQuery(limitTitle(e.target.value));
               setSupplierId("");
               setListOpen(true);
             }}
@@ -130,6 +140,7 @@ export function PurchaseForm({
               if (supplierBox.current?.contains(e.relatedTarget as Node | null)) return;
               setListOpen(false);
             }}
+            maxLength={TITLE_MAX}
             placeholder="Choisir ou saisir un nom"
             autoComplete="off"
             role="combobox"
@@ -192,7 +203,7 @@ export function PurchaseForm({
               <Input
                 value={line.query}
                 onChange={(e) => {
-                  const next = e.target.value;
+                  const next = limitTitle(e.target.value);
                   const match = catalog.find(
                     (product) => product.name.trim().toLowerCase() === next.trim().toLowerCase(),
                   );
@@ -208,6 +219,7 @@ export function PurchaseForm({
                   if (e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) return;
                   setOpenLine((current) => (current === line.key ? null : current));
                 }}
+                maxLength={TITLE_MAX}
                 placeholder="Choisir ou saisir un produit"
                 autoComplete="off"
                 role="combobox"
@@ -258,23 +270,27 @@ export function PurchaseForm({
               ) : null}
             </div>
             <Input
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={1}
-              step={1}
-              value={line.quantityOrdered}
+              value={line.quantityOrdered || ""}
               onChange={(e) =>
-                updateLine(line.key, { quantityOrdered: wholeNumber(e.target.value) })
+                updateLine(line.key, {
+                  quantityOrdered: Math.max(1, wholeNumber(e.target.value, QTY_MAX_DIGITS) || 1),
+                })
               }
+              maxLength={QTY_MAX_DIGITS}
               aria-label="Quantité"
             />
             <Input
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={0}
-              step={1}
-              value={line.unitPrice}
-              onChange={(e) => updateLine(line.key, { unitPrice: wholeNumber(e.target.value) })}
+              value={line.unitPrice || ""}
+              onChange={(e) =>
+                updateLine(line.key, {
+                  unitPrice: wholeNumber(limitPriceDigits(e.target.value), PRICE_MAX_DIGITS),
+                })
+              }
+              maxLength={PRICE_MAX_DIGITS}
               aria-label="Prix"
             />
             <button
@@ -305,7 +321,11 @@ export function PurchaseForm({
 
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Notes</span>
-        <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <Input
+          value={notes}
+          onChange={(e) => setNotes(limitNotes(e.target.value))}
+          maxLength={NOTES_MAX}
+        />
       </label>
 
       <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">

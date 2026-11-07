@@ -20,7 +20,7 @@ import {
   whatsappHref,
 } from "@/components/procurement/supplier-helpers";
 import { SuppliersMobile, type StatusFilter } from "@/components/procurement/suppliers-mobile";
-import { Drawer } from "@/components/ui/drawer";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canWriteStock } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -366,13 +366,18 @@ export function SuppliersPageView() {
         </div>
       </div>
 
-      <Drawer
+      <PremiumSidePanel
         open={drawerOpen}
         onClose={() => {
           setDrawerOpen(false);
           setEditing(null);
         }}
         title={editing ? "Modifier le fournisseur" : "Nouveau fournisseur"}
+        description={
+          editing
+            ? "Mettez à jour les coordonnées du partenaire."
+            : "Ajoutez un fournisseur à votre réseau."
+        }
       >
         <SupplierForm
           key={editing?.id ?? "new"}
@@ -384,7 +389,7 @@ export function SuppliersPageView() {
             setEditing(null);
           }}
         />
-      </Drawer>
+      </PremiumSidePanel>
     </div>
   );
 }

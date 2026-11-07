@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Globe } from "lucide-react";
+import { Globe, MessageCircle, Phone } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { SITE } from "@/lib/site";
+
+const WA_DIGITS = SITE.phoneInternational.replace(/\D/g, "");
+const CALL_HREF = `tel:${SITE.phoneInternational}`;
+const WA_HREF = `https://wa.me/${WA_DIGITS}?text=${encodeURIComponent(
+  "Bonjour, je souhaite créer un site web pour mon institut.",
+)}`;
 
 export function WebsiteRequestCard({ canRequest }: { canRequest: boolean }) {
   const { toast } = useToast();
@@ -45,9 +52,36 @@ export function WebsiteRequestCard({ canRequest }: { canRequest: boolean }) {
 
       <div className="space-y-4">
         <p className="text-sm leading-6 text-[#655362]">
-          Vous n’avez pas encore de site ? Envoyez-nous une demande : nous la recevons par e-mail
-          et vous recontactons pour la création.
+          Vous n’avez pas encore de site ? Envoyez-nous une demande par e-mail, ou contactez-nous
+          directement.
         </p>
+
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[#F0E4EA] bg-[#FFF5F9] p-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#887787]">
+              Contact direct
+            </p>
+            <p className="mt-1 text-lg font-bold text-[#301A2A]">{SITE.phone}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={WA_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#25D366] px-4 text-sm font-bold text-white transition hover:bg-[#1ebe57]"
+            >
+              <MessageCircle size={17} aria-hidden />
+              WhatsApp
+            </a>
+            <a
+              href={CALL_HREF}
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#E7B9CD] bg-white px-4 text-sm font-semibold text-[#831D4A] transition hover:bg-[#FFF7FA]"
+            >
+              <Phone size={17} aria-hidden />
+              Appeler
+            </a>
+          </div>
+        </div>
 
         <label className="block space-y-1.5">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#887787]">

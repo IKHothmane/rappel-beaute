@@ -8,6 +8,11 @@ export type PutObjectInput = {
   contentType: string;
   /** Horodatage partagé pour lier des variantes (ex. image + miniature). */
   stamp?: number;
+  /**
+   * Clé stable sous category/org (ex. `catalog__soin-visage.webp`).
+   * Évite de perdre le fichier quand l’URL en base change d’horodatage.
+   */
+  fixedKey?: string;
 };
 
 export type StoredObject = {

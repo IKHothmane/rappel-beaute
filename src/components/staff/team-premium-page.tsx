@@ -36,7 +36,7 @@ import {
 } from "recharts";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { whatsappHref } from "@/components/customers/customers-helpers";
-import { StaffForm } from "@/components/staff/staff-form";
+import NouveauCollaborateurModal from "@/components/staff/nouveau-collaborateur-modal";
 import {
   commissionRuleLabel,
   formatHireLabel,
@@ -44,7 +44,6 @@ import {
   statusChipClass,
   statusDotClass,
 } from "@/components/staff/staff-helpers";
-import { Drawer } from "@/components/ui/drawer";
 import { useToast } from "@/components/ui/toast";
 import {
   canViewStaffCommissions,
@@ -826,25 +825,17 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
         </aside>
       </div>
 
-      <Drawer
+      <NouveauCollaborateurModal
+        key={editing?.id ?? "new"}
         open={drawerOpen}
         onClose={() => {
           setDrawerOpen(false);
           setEditing(null);
         }}
-        title={editing ? "Modifier" : "Nouveau collaborateur"}
-      >
-        <StaffForm
-          key={editing?.id ?? "new"}
-          initial={editing ?? undefined}
-          submitting={submitting}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setDrawerOpen(false);
-            setEditing(null);
-          }}
-        />
-      </Drawer>
+        initial={editing ?? undefined}
+        submitting={submitting}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }

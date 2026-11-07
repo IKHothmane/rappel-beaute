@@ -11,6 +11,7 @@ import { AgendaWeekBoard } from "@/components/agenda/agenda-week-board";
 import { AgendaMobile } from "@/components/agenda/agenda-mobile";
 import { AppointmentDetails } from "@/components/agenda/appointment-details";
 import { AppointmentForm } from "@/components/agenda/appointment-form";
+import NouveauRendezVousModal from "@/components/agenda/nouveau-rendez-vous-modal";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { Drawer } from "@/components/ui/drawer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -627,31 +628,22 @@ export function AgendaPage() {
         )}
       </div>
 
-      <Drawer
+      <NouveauRendezVousModal
+        key={createSeed?.startAt ?? "new"}
         open={drawer === "create"}
         onClose={() => {
           setDrawer(null);
           setCreateSeed(undefined);
         }}
-        title="Nouveau rendez-vous"
-        side="right"
-      >
-        <AppointmentForm
-          key={createSeed?.startAt ?? "new"}
-          appointments={appointments}
-          services={services}
-          formOptions={formOptions}
-          staffContexts={staffContexts}
-          resourceContexts={resourceContexts}
-          initial={createSeed}
-          submitting={submitting}
-          onSubmit={handleCreate}
-          onCancel={() => {
-            setDrawer(null);
-            setCreateSeed(undefined);
-          }}
-        />
-      </Drawer>
+        appointments={appointments}
+        services={services}
+        formOptions={formOptions}
+        staffContexts={staffContexts}
+        resourceContexts={resourceContexts}
+        initial={createSeed}
+        submitting={submitting}
+        onCreate={handleCreate}
+      />
 
       <Drawer
         open={drawer === "edit" && !!selected}

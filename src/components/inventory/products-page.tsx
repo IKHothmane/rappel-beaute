@@ -27,6 +27,7 @@ import {
 } from "@/components/inventory/product-helpers";
 import { ProductsMobile } from "@/components/inventory/products-mobile";
 import { Drawer } from "@/components/ui/drawer";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
@@ -695,13 +696,18 @@ export function ProductsPageView({
         </div>
       </div>
 
-      <Drawer
+      <PremiumSidePanel
         open={drawerOpen}
         onClose={() => {
           setDrawerOpen(false);
           setEditing(null);
         }}
         title={editing ? "Modifier le produit" : "Nouveau produit"}
+        description={
+          editing
+            ? "Mettez à jour la fiche produit et les stocks."
+            : "Ajoutez un produit à votre catalogue."
+        }
       >
         <ProductForm
           key={editing?.id ?? "new"}
@@ -713,7 +719,7 @@ export function ProductsPageView({
             setEditing(null);
           }}
         />
-      </Drawer>
+      </PremiumSidePanel>
 
       <Drawer
         open={adjustOpen}

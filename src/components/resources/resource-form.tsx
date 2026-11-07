@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
+import { limitTitle, TITLE_MAX } from "@/lib/validation/input-limits";
 import type { CreateResourceInput, ResourceDetail, ResourceType } from "@/types/resource";
 import { RESOURCE_TYPE_LABEL, RESOURCE_TYPES } from "@/types/resource";
 
@@ -88,7 +89,13 @@ export function ResourceForm({
 
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Nom *</span>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Cabine Privilège 3" />
+        <Input
+          value={name}
+          onChange={(e) => setName(limitTitle(e.target.value))}
+          maxLength={TITLE_MAX}
+          required
+          placeholder="Cabine Privilège 3"
+        />
       </label>
 
       <label className="block text-sm">

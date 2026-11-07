@@ -8,28 +8,20 @@ export async function GET(request: NextRequest) {
   if (!resolved.ok) return resolved.response;
   const { session, filters, scope } = resolved.ctx;
 
-  if (scope === "cash_only") {
+  try {
+    const data = await getAnalyticsOverview(session.organizationId, filters);
     return NextResponse.json(
       withScope(
         {
-          period: filters.period,
-          comparePeriod: null,
-          revenue: { value: 0, previous: null, changePercent: null },
-          expenses: { value: 0, previous: null, changePercent: null },
-          margin: { value: 0, previous: null, changePercent: null },
-          averageTicket: { value: 0, previous: null, changePercent: null },
-          appointments: { value: 0, previous: null, changePercent: null },
-          customers: { value: 0, previous: null, changePercent: null },
-          message: "Vue caisse — utilisez l'onglet Revenus pour les paiements.",
+          ...data,
+          scope,
+          ...(scope === "cash_only"
+            ? { message: "Vue caisse — indicateurs basés sur les encaissements de la période." }
+            : {}),
         },
         scope,
       ),
     );
-  }
-
-  try {
-    const data = await getAnalyticsOverview(session.organizationId, filters);
-    return NextResponse.json(withScope({ ...data, scope }, scope));
   } catch (error) {
     console.error("[GET /api/analytics/overview]", error);
     return NextResponse.json({ error: "Erreur analytics." }, { status: 500 });

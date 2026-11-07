@@ -39,7 +39,7 @@ const PERIODS: { key: DashboardPeriodKey; label: string }[] = [
   { key: "today", label: "Aujourd'hui" },
   { key: "week", label: "Cette semaine" },
   { key: "month", label: "Ce mois" },
-  { key: "year", label: `Année ${new Date().getFullYear()}` },
+  { key: "year", label: "2026" },
 ];
 
 function aptPhase(apt: Appointment, imminentIds: Set<string>) {
@@ -72,6 +72,7 @@ export type SaasDashboardMobileProps = {
   staffRows: StaffAnalyticsRow[];
   stock: StockKpis | null;
   appointmentsAnalytics: AppointmentAnalytics | null;
+  revenueTotals: { periodNet: number; prevMonth: number } | null;
 };
 
 export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
@@ -99,6 +100,7 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
     staffRows,
     stock,
     appointmentsAnalytics,
+    revenueTotals,
   } = props;
 
   const actionCount = [
@@ -117,6 +119,13 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
   const totalStock = Math.max(1, stock?.activeCount ?? 1);
   const imminentIds = new Set(imminent.map((a) => a.id));
   const peak = peakWeekday(appointmentsAnalytics);
+  const periodRevenue = revenueTotals?.periodNet ?? overview?.revenue.value ?? 0;
+  const periodAppointments = appointmentsAnalytics?.total ?? overview?.appointments.value ?? 0;
+  const periodCustomers = customers?.kpis.active ?? overview?.customers.value ?? 0;
+  const periodTicket =
+    periodAppointments > 0 && periodRevenue > 0
+      ? Math.round(periodRevenue / periodAppointments)
+      : Math.round(overview?.averageTicket.value ?? 0);
   const pct = overview?.revenue.changePercent;
   const stockWarn = (stock?.outOfStockCount ?? 0) + (stock?.lowStockCount ?? 0);
 
@@ -243,26 +252,26 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
               : period === "week"
                 ? "Cette semaine"
                 : period === "year"
-                  ? "Année"
+                  ? "2026"
                   : "Mois en cours"}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <MobileKpi
             label="CA"
-            value={loading ? "…" : (overview?.revenue.value ?? 0).toLocaleString("fr-MA")}
+            value={loading ? "…" : periodRevenue.toLocaleString("fr-MA")}
             unit="MAD"
             change={formatPct(overview?.revenue.changePercent ?? null)}
           />
           <MobileKpi
             label="Soins réalisés"
-            value={loading ? "…" : String(overview?.appointments.value ?? 0)}
+            value={loading ? "…" : String(periodAppointments)}
             unit="soins"
             change={formatPct(overview?.appointments.changePercent ?? null)}
           />
           <MobileKpi
             label="Clientes actives"
-            value={loading ? "…" : String(customers?.kpis.active ?? overview?.customers.value ?? 0)}
+            value={loading ? "…" : String(periodCustomers)}
             unit="profils"
             change={
               customers ? `+${customers.kpis.newInPeriod} nouv.` : formatPct(overview?.customers.changePercent ?? null)
@@ -270,7 +279,7 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
           />
           <MobileKpi
             label="Panier moyen"
-            value={loading ? "…" : Math.round(overview?.averageTicket.value ?? 0).toLocaleString("fr-MA")}
+            value={loading ? "…" : periodTicket.toLocaleString("fr-MA")}
             unit="MAD"
             change={formatPct(overview?.averageTicket.changePercent ?? null)}
           />

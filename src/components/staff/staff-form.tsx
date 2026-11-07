@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { limitPhoneDigits } from "@/lib/validation/customer";
+import {
+  EMAIL_MAX,
+  limitEmail,
+  limitName,
+  limitPosition,
+  NAME_MAX,
+  POSITION_MAX,
+} from "@/lib/validation/input-limits";
 import { listServices } from "@/modules/services/service";
 import type { CreateStaffInput, StaffDetail, StaffStatus } from "@/types/staff";
 import { STAFF_STATUS_LABEL } from "@/types/staff";
@@ -80,11 +88,20 @@ export function StaffForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm">
           <span className="mb-1.5 block font-medium">Prénom *</span>
-          <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+          <Input
+            value={firstName}
+            onChange={(e) => setFirstName(limitName(e.target.value))}
+            maxLength={NAME_MAX}
+            required
+          />
         </label>
         <label className="block text-sm">
           <span className="mb-1.5 block font-medium">Nom</span>
-          <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          <Input
+            value={lastName}
+            onChange={(e) => setLastName(limitName(e.target.value))}
+            maxLength={NAME_MAX}
+          />
         </label>
       </div>
 
@@ -102,12 +119,22 @@ export function StaffForm({
 
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">E-mail</span>
-        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(limitEmail(e.target.value))}
+          maxLength={EMAIL_MAX}
+        />
       </label>
 
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">Poste</span>
-        <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Esthéticienne" />
+        <Input
+          value={position}
+          onChange={(e) => setPosition(limitPosition(e.target.value))}
+          maxLength={POSITION_MAX}
+          placeholder="Esthéticienne"
+        />
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">

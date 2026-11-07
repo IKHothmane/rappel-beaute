@@ -57,7 +57,9 @@ export async function POST(request: NextRequest) {
     if (!sniffed) return adminError("Fichier image invalide.", 400);
 
     const optimized = await optimizeServiceImage(raw, sniffed, "resource");
-    const stored = await storeOptimizedServiceImages(optimized, "platform", "resources");
+    const stored = await storeOptimizedServiceImages(optimized, "platform", "resources", {
+      stableId: type,
+    });
 
     const item = await upsertResourceCatalogDefault(
       type,

@@ -65,7 +65,7 @@ const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: "today", label: "Aujourd'hui" },
   { key: "week", label: "Cette semaine" },
   { key: "month", label: "Ce mois" },
-  { key: "year", label: String(new Date().getFullYear()) },
+  { key: "year", label: "2026" },
 ];
 
 function initials(name: string) {
@@ -106,7 +106,7 @@ export function SaasDashboard() {
   const palette = useStaffPalette();
   const user = useCurrentUser();
   const { open: drawerOpen, setOpen: setDrawerOpen } = useQuickActions();
-  const [period, setPeriod] = useState<PeriodKey>("month");
+  const [period, setPeriod] = useState<PeriodKey>("year");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
@@ -148,7 +148,6 @@ export function SaasDashboard() {
     const gen = ++loadGen.current;
     setLoading(true);
     setError(null);
-    const customerPreset = period === "today" ? "month" : period;
     const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
     const dayStart = new Date(`${todayKey}T00:00:00+01:00`);
     const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -157,15 +156,18 @@ export function SaasDashboard() {
       const [ov, revenue, apptsAnalytics, customersData, todayList] = await Promise.all([
         getAnalyticsOverview({ preset: period, compare: true }),
         getAnalyticsRevenue({ preset: period, compare: true }),
-        getAnalyticsAppointments({ preset: "week", compare: false }),
-        getAnalyticsCustomers({ preset: customerPreset, compare: false }),
-        listAppointments({ from: dayStart.toISOString(), to: dayEnd.toISOString() }),
+        getAnalyticsAppointments({ preset: period, compare: false }).catch(() => null),
+        getAnalyticsCustomers({ preset: period, compare: false }).catch(() => null),
+        listAppointments({ from: dayStart.toISOString(), to: dayEnd.toISOString() }).catch(() => []),
       ]);
 
       if (gen !== loadGen.current) return;
       setOverview(ov);
-      setDaily(revenue.daily);
-      setRevenueTotals({ periodNet: revenue.totals.periodNet, prevMonth: revenue.totals.prevMonth });
+      setDaily(revenue.daily ?? []);
+      setRevenueTotals({
+        periodNet: revenue.totals?.periodNet ?? ov.revenue.value ?? 0,
+        prevMonth: revenue.totals?.prevMonth ?? ov.revenue.previous ?? 0,
+      });
       setAppointmentsAnalytics(apptsAnalytics);
       setCustomers(customersData);
       setTodayAppts(
@@ -195,9 +197,9 @@ export function SaasDashboard() {
       reviewsDash,
       resources,
     ] = await Promise.all([
-      getAnalyticsServices({ preset: customerPreset, compare: false }).catch(() => ({ items: [] })),
-      getAnalyticsStaff({ preset: customerPreset, compare: false }).catch(() => ({ items: [] })),
-      getAnalyticsReviews({ preset: customerPreset, compare: false }).catch(() => null),
+      getAnalyticsServices({ preset: period, compare: false }).catch(() => ({ items: [] })),
+      getAnalyticsStaff({ preset: period, compare: false }).catch(() => ({ items: [] })),
+      getAnalyticsReviews({ preset: period, compare: false }).catch(() => null),
       getCashRegister().catch(() => null),
       listBillableAppointments().catch(() => []),
       getStockKpis().catch(() => null),
@@ -282,7 +284,14 @@ export function SaasDashboard() {
     ? Math.max(0, stock.activeCount - stock.lowStockCount - stock.outOfStockCount)
     : 0;
   const chartData = daily.map((d) => ({ day: d.label || d.date.slice(5), ca: d.revenue }));
-  const hasChartData = chartData.length > 0;
+  const hasChartData = chartData.some((d) => d.ca > 0);
+  const periodRevenue = revenueTotals?.periodNet ?? overview?.revenue.value ?? 0;
+  const periodAppointments = appointmentsAnalytics?.total ?? overview?.appointments.value ?? 0;
+  const periodCustomers = customers?.kpis.active ?? overview?.customers.value ?? 0;
+  const periodTicket =
+    periodAppointments > 0 && periodRevenue > 0
+      ? Math.round(periodRevenue / periodAppointments)
+      : Math.round(overview?.averageTicket.value ?? 0);
   const revenueChange = overview?.revenue.changePercent ?? null;
   const appointmentsChange = overview?.appointments.changePercent ?? null;
   const customersChange = overview?.customers.changePercent ?? null;
@@ -290,6 +299,7 @@ export function SaasDashboard() {
   const reviewScore =
     reviewKpis?.averageScore ?? reviewsAnalytics?.averageInternalScore ?? null;
   const reviewCount = reviewKpis?.recordedCount ?? reviewsAnalytics?.recordedSatisfaction ?? 0;
+  const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "période";
 
   return (
     <div className="flex flex-col gap-5 pb-8 lg:gap-5 lg:pb-24">
@@ -316,6 +326,7 @@ export function SaasDashboard() {
         staffRows={staffRows}
         stock={stock}
         appointmentsAnalytics={appointmentsAnalytics}
+        revenueTotals={revenueTotals}
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
@@ -378,43 +389,43 @@ export function SaasDashboard() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <PremiumKpiCard
             title="Chiffre d'affaires"
-            value={`${(overview?.revenue.value ?? 0).toLocaleString("fr-MA")} MAD`}
+            value={`${periodRevenue.toLocaleString("fr-MA")} MAD`}
             icon={Wallet}
             tone="pink"
             change={revenueChange}
-            subtitle="Sur la période"
+            subtitle={periodLabel}
             trend={revenueTrend}
             loading={loading}
           />
           <PremiumKpiCard
             title="Rendez-vous"
-            value={String(overview?.appointments.value ?? 0)}
+            value={String(periodAppointments)}
             icon={CalendarDays}
             tone="purple"
             change={appointmentsChange}
-            subtitle="Rendez-vous réalisés"
+            subtitle={periodLabel}
             loading={loading}
           />
           <PremiumKpiCard
             title="Clientes actives"
-            value={String(customers?.kpis.active ?? overview?.customers.value ?? 0)}
+            value={String(periodCustomers)}
             icon={Users}
             tone="green"
             change={customersChange}
             subtitle={
               customers
                 ? `+${customers.kpis.newInPeriod} nouvelle${customers.kpis.newInPeriod > 1 ? "s" : ""}`
-                : "Sur la période"
+                : periodLabel
             }
             loading={loading}
           />
           <PremiumKpiCard
             title="Panier moyen"
-            value={`${Math.round(overview?.averageTicket.value ?? 0).toLocaleString("fr-MA")} MAD`}
+            value={`${periodTicket.toLocaleString("fr-MA")} MAD`}
             icon={ShoppingBasket}
             tone="orange"
             change={ticketChange}
-            subtitle="Sur la période"
+            subtitle={periodLabel}
             loading={loading}
           />
         </div>
@@ -905,12 +916,12 @@ export function SaasDashboard() {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <h3 id="dash-heat-title" className="text-base font-bold">
-                  Affluence hebdo
+                  Affluence
                 </h3>
                 <p className="text-xs font-semibold text-[#75133D]">
                   {peakCell.count > 0 && peakDay
-                    ? `${peakDay} ${String(peakCell.hour).padStart(2, "0")}h · ${peakCell.count} RDV`
-                    : "Pas encore de pic identifié"}
+                    ? `${peakDay} ${String(peakCell.hour).padStart(2, "0")}h · ${peakCell.count} RDV · ${periodLabel}`
+                    : `Pas encore de pic · ${periodLabel}`}
                 </p>
               </div>
               <LayoutGrid size={18} className="text-[#B60050]" aria-hidden />
@@ -918,7 +929,10 @@ export function SaasDashboard() {
             {loading ? (
               <SkeletonBlock className="h-40 w-full" />
             ) : heat.every((c) => c.count === 0) ? (
-              <EmptyState title="Pas encore d’affluence" hint="La heatmap se remplit avec les rendez-vous de la semaine." />
+              <EmptyState
+                title="Pas encore d’affluence"
+                hint={`La heatmap se remplit avec les rendez-vous de la période (${periodLabel}).`}
+              />
             ) : (
               <>
                 <div className="overflow-x-auto">

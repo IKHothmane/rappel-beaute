@@ -23,6 +23,7 @@ import {
 } from "@/components/procurement/purchase-helpers";
 import { PurchasesMobile, type PurchasesTab } from "@/components/procurement/purchases-mobile";
 import { Drawer } from "@/components/ui/drawer";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canWriteStock } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -554,7 +555,7 @@ export function PurchasesPageView() {
         ) : null}
       </Drawer>
 
-      <Drawer
+      <PremiumSidePanel
         open={drawerOpen}
         onClose={() => {
           if (supplierOpen) {
@@ -565,6 +566,11 @@ export function PurchasesPageView() {
           setPickedSupplier(null);
         }}
         title={supplierOpen ? "Nouveau fournisseur" : "Nouvelle commande"}
+        description={
+          supplierOpen
+            ? "Ajoutez un fournisseur à votre réseau."
+            : "Créez une commande d’approvisionnement."
+        }
       >
         <div className={supplierOpen ? "hidden" : undefined}>
           <PurchaseForm
@@ -594,7 +600,7 @@ export function PurchasesPageView() {
             onCancel={() => setSupplierOpen(false)}
           />
         ) : null}
-      </Drawer>
+      </PremiumSidePanel>
     </div>
   );
 }

@@ -7,14 +7,13 @@ import CustomersDashboard, {
   type Customer,
   type CustomerFilter,
 } from "@/components/customers/CustomersDashboard";
-import { CustomerForm } from "@/components/customers/customer-form";
+import NouvelleClienteModal from "@/components/customers/nouvelle-cliente-modal";
 import { CustomersMobile } from "@/components/customers/customers-mobile";
 import {
   APPOINTMENT_STATUS_UI,
   customerWhatsappMessage,
   whatsappHref,
 } from "@/components/customers/customers-helpers";
-import { Drawer } from "@/components/ui/drawer";
 import { useToast } from "@/components/ui/toast";
 import { canEditCustomerMarketing, canReadAnalytics, canWriteFeatureLimited } from "@/lib/rbac";
 import { getAnalyticsOverview } from "@/modules/analytics/service";
@@ -364,27 +363,17 @@ export function CustomersPageView() {
         />
       </div>
 
-      <Drawer
+      <NouvelleClienteModal
+        key={editing?.id ?? "new"}
         open={drawerOpen || Boolean(editing)}
         onClose={() => {
           setDrawerOpen(false);
           setEditing(null);
         }}
-        title={editing ? "Modifier la cliente" : "Nouvelle cliente"}
-        side="right"
-      >
-        <CustomerForm
-          key={editing?.id ?? "new"}
-          initial={editing ?? undefined}
-          canEditMarketing={canMarketing}
-          submitting={submitting}
-          onSubmit={editing ? handleUpdate : handleCreate}
-          onCancel={() => {
-            setDrawerOpen(false);
-            setEditing(null);
-          }}
-        />
-      </Drawer>
+        initial={editing ?? undefined}
+        submitting={submitting}
+        onSubmit={editing ? handleUpdate : handleCreate}
+      />
     </div>
   );
 }

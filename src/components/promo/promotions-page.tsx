@@ -43,11 +43,19 @@ import {
 } from "@/components/promo/promo-helpers";
 import { PromotionsMobile } from "@/components/promo/promotions-mobile";
 import { Button } from "@/components/ui/button";
-import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canWritePromotions } from "@/lib/rbac";
+import {
+  limitPriceDigits,
+  limitPromoCode,
+  limitTitle,
+  PRICE_MAX_DIGITS,
+  PROMO_CODE_MAX,
+  TITLE_MAX,
+} from "@/lib/validation/input-limits";
 import { cn, formatMad } from "@/lib/utils";
 import { listCustomers } from "@/modules/customers/service";
 import { createPromotion, listPromotions, setPromotionStatus } from "@/modules/promo/service";
@@ -725,18 +733,14 @@ export function PromotionsPageView() {
         </div>
       </div>
 
-      <Drawer
+      <PremiumSidePanel
         open={addOpen}
         onClose={() => setAddOpen(false)}
         title="Nouvelle promotion"
-        side="right"
-        className="max-w-xl"
+        description="Liaison POS — une remise à la fois."
       >
-        <div className="overflow-y-auto bg-[#FFFCFD] p-5">
-          <p className="mb-4 text-[13px] text-[#765E6B]">Liaison POS — une remise à la fois.</p>
-          <PromoForm {...formProps} />
-        </div>
-      </Drawer>
+        <PromoForm {...formProps} />
+      </PremiumSidePanel>
     </>
   );
 }
@@ -816,14 +820,21 @@ function PromoForm({
     <form className="flex flex-col gap-4" onSubmit={onSubmit}>
       <label className="block text-sm">
         <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Nom</span>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Ex. Rentrée & éclat" />
+        <Input
+          value={name}
+          onChange={(e) => setName(limitTitle(e.target.value))}
+          maxLength={TITLE_MAX}
+          required
+          placeholder="Ex. Rentrée & éclat"
+        />
       </label>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block text-sm">
           <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Code</span>
           <Input
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => setCode(limitPromoCode(e.target.value))}
+            maxLength={PROMO_CODE_MAX}
             placeholder="RENTREE20"
           />
         </label>
@@ -843,7 +854,13 @@ function PromoForm({
           <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">
             Valeur ({type === "PERCENTAGE" ? "%" : "MAD"})
           </span>
-          <Input type="number" value={value} onChange={(e) => setValue(e.target.value)} />
+          <Input
+            type="text"
+            inputMode="numeric"
+            value={value}
+            onChange={(e) => setValue(limitPriceDigits(e.target.value))}
+            maxLength={PRICE_MAX_DIGITS}
+          />
         </label>
         <label className="block text-sm">
           <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Prestation (optionnel)</span>

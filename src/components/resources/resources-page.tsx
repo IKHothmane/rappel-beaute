@@ -19,6 +19,7 @@ import {
 import { ResourcesMobile } from "@/components/resources/resources-mobile";
 import { ResourcesPremiumHeader } from "@/components/resources/resources-premium-header";
 import { Drawer } from "@/components/ui/drawer";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -482,13 +483,18 @@ export function ResourcesPageView() {
         </div>
       </div>
 
-      <Drawer
+      <PremiumSidePanel
         open={drawerOpen}
         onClose={() => {
           setDrawerOpen(false);
           setEditing(null);
         }}
         title={editing ? "Modifier la ressource" : "Ajouter une ressource"}
+        description={
+          editing
+            ? "Mettez à jour la cabine ou l’équipement."
+            : "Ajoutez une cabine ou un équipement à l’institut."
+        }
       >
         <ResourceForm
           key={editing?.id ?? "new"}
@@ -501,7 +507,7 @@ export function ResourcesPageView() {
             setEditing(null);
           }}
         />
-      </Drawer>
+      </PremiumSidePanel>
 
       <Drawer
         open={maintenanceOpen}

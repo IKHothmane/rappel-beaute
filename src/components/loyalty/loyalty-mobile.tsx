@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -179,7 +180,7 @@ export function LoyaltyMobile(props: Props) {
         ) : null}
       </section>
 
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiCard label="Membres" value={String(members)} hint={`+${kpis?.membersThisMonth ?? 0} ce mois`} />
         <KpiCard
           label="Points actifs"
@@ -464,13 +465,7 @@ function compactMad(n: number) {
 }
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/40">{label}</p>
-      <p className="mt-1 text-[22px] font-extrabold leading-none">{value}</p>
-      <p className="mt-1 text-[13px] text-ink/50">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function FocusCard({

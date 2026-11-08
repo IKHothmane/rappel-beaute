@@ -1,7 +1,9 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { useId } from "react";
+import { MetricCard } from "@/components/ui/metric-card";
 
 type Tone = "pink" | "purple" | "green" | "orange";
 
@@ -16,26 +18,11 @@ type Props = {
   /** Série réelle uniquement — ignorer si vide ou uniquement des zéros */
   trend?: number[];
   loading?: boolean;
+  featured?: boolean;
+  chart?: "line" | "bars";
+  progress?: number | null;
 };
 
-const tones = {
-  pink: {
-    icon: "bg-[#FCE2EE] text-[#B60050]",
-    line: "#B60050",
-  },
-  purple: {
-    icon: "bg-[#F3E8FF] text-[#7C3AED]",
-    line: "#8B5CF6",
-  },
-  green: {
-    icon: "bg-emerald-50 text-emerald-600",
-    line: "#10B981",
-  },
-  orange: {
-    icon: "bg-orange-50 text-orange-600",
-    line: "#F97316",
-  },
-};
 
 function usableTrend(values: number[] | undefined): number[] | null {
   if (!values || values.length < 2) return null;
@@ -46,10 +33,13 @@ function usableTrend(values: number[] | undefined): number[] | null {
 function Sparkline({
   values,
   color,
+  bars = false,
 }: {
   values: number[];
   color: string;
+  bars?: boolean;
 }) {
+  const gradientId = useId();
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
@@ -61,7 +51,10 @@ function Sparkline({
   });
 
   return (
-    <svg viewBox="0 0 100 40" className="h-10 w-24" aria-hidden="true">
+    <svg viewBox="0 0 100 40" className="h-9 w-20 shrink-0 overflow-visible" aria-hidden="true">
+      <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><stop stopColor={color} stopOpacity="0.3" /><stop offset="1" stopColor={color} stopOpacity="0.02" /></linearGradient></defs>
+      {bars ? values.slice(-8).map((value, index, series) => <rect key={index} x={index * 13} y={38 - Math.max(2, value / (Math.max(...series) || 1) * 34)} width="9" height={Math.max(2, value / (Math.max(...series) || 1) * 34)} rx="2.5" fill={color} opacity={0.25 + index / series.length * 0.75} />) : <>
+      <polygon points={`0,40 ${points.join(" ")} 100,40`} fill={`url(#${gradientId})`} />
       <polyline
         points={points.join(" ")}
         fill="none"
@@ -70,6 +63,8 @@ function Sparkline({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      <circle cx="100" cy={34 - ((values[values.length - 1] - min) / range) * 28} r="2.8" fill={color} />
+      </>}
     </svg>
   );
 }
@@ -78,71 +73,29 @@ export function PremiumKpiCard({
   title,
   value,
   icon: Icon,
-  tone = "pink",
+
   change,
   subtitle,
   trend,
   loading = false,
+  featured = false,
+  chart = "line",
+  progress,
 }: Props) {
-  const style = tones[tone];
   const spark = usableTrend(trend);
-
+  const delta = change == null ? null : <>
+    {change > 0 ? <ArrowUp size={14} aria-hidden /> : change < 0 ? <ArrowDown size={14} aria-hidden /> : <Minus size={14} aria-hidden />}
+    {change === 0 ? "Stable" : `${change > 0 ? "+" : ""}${change.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`}
+  </>;
   return (
-    <article
-      className="group min-w-0 rounded-[20px] border border-[#F0E5EC] bg-white p-5 shadow-[0_8px_30px_rgba(75,24,47,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_40px_rgba(75,24,47,0.10)]"
-      aria-busy={loading || undefined}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#655362]">{title}</p>
-
-          {loading ? (
-            <div
-              className="mt-3 h-8 w-28 animate-pulse rounded-lg bg-[#FCE7F1]"
-              aria-hidden
-            />
-          ) : (
-            <p className="mt-2 break-words text-[28px] font-extrabold tracking-tight text-[#271323]">
-              {value}
-            </p>
-          )}
-        </div>
-
-        <div className={`rounded-2xl p-3 ${style.icon}`} aria-hidden>
-          <Icon size={22} strokeWidth={2} />
-        </div>
-      </div>
-
-      <div className="mt-4 flex min-h-10 items-end justify-between gap-2">
-        <div className="min-w-0">
-          {!loading && change != null ? (
-            <span
-              className={`inline-flex items-center gap-1 text-xs font-bold ${
-                change > 0
-                  ? "text-emerald-600"
-                  : change < 0
-                    ? "text-rose-600"
-                    : "text-[#7A6A76]"
-              }`}
-            >
-              {change > 0 ? (
-                <ArrowUpRight size={15} aria-hidden />
-              ) : change < 0 ? (
-                <ArrowDownRight size={15} aria-hidden />
-              ) : (
-                <Minus size={15} aria-hidden />
-              )}
-              {change === 0
-                ? "Stable vs période préc."
-                : `${change > 0 ? "+" : ""}${change.toFixed(1)} %`}
-            </span>
-          ) : null}
-
-          {subtitle ? <p className="mt-1 text-xs text-[#988895]">{subtitle}</p> : null}
-        </div>
-
-        {!loading && spark ? <Sparkline values={spark} color={style.line} /> : null}
-      </div>
-    </article>
+    <MetricCard title={title} value={value} icon={<Icon />} hint={subtitle} delta={delta} deltaNegative={change != null && change < 0} featured={featured} loading={loading}>
+      {progress != null ? (
+        <svg viewBox="0 0 100 100" className="h-16 w-16 shrink-0" aria-hidden>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAD1E3" strokeWidth="15" />
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#D90B63" strokeWidth="15" strokeDasharray={`${Math.max(0, Math.min(100, progress)) * 2.3876} 238.76`} transform="rotate(-90 50 50)" />
+          <text x="50" y="56" textAnchor="middle" fill="#741032" fontSize="21" fontWeight="800">{Math.round(progress)}%</text>
+        </svg>
+      ) : spark ? <Sparkline values={spark} color={featured ? "#FFB5D2" : "#E52C80"} bars={chart === "bars"} /> : null}
+    </MetricCard>
   );
 }

@@ -7,6 +7,7 @@ export type AccountType = "ORGANIZATION" | "PLATFORM";
 export type AppSessionUser = {
   id: string;
   email: string;
+  loginPhone?: string;
   firstName: string;
   lastName: string;
   role: AppRole;

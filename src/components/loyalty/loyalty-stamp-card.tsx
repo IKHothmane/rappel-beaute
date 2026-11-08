@@ -1,4 +1,4 @@
-import { CalendarDays, Check, Gift } from "lucide-react";
+import { CalendarDays, Gift } from "lucide-react";
 import { LoyaltyBrandCard } from "@/components/loyalty/loyalty-brand-card";
 
 type Appointment = { at: string; service: string; staff: string };
@@ -51,7 +51,6 @@ export function LoyaltyStampCard({
   organizationName,
   firstName,
   lastName,
-  visits,
   cycle,
   visitsPerReward,
   remaining,
@@ -68,7 +67,6 @@ export function LoyaltyStampCard({
 }: Props) {
   const threshold = Math.max(1, Math.min(20, Math.floor(visitsPerReward || 5)));
   const progress = rewardsAvailable > 0 ? threshold : Math.min(threshold, Math.max(0, cycle));
-  const percentage = Math.round((progress / threshold) * 100);
   const name = `${firstName} ${lastName}`.trim();
   const availableRewards = rewards.filter((reward) => reward.status === "AVAILABLE");
 
@@ -88,33 +86,6 @@ export function LoyaltyStampCard({
         footerTitle={name || firstName}
         footerSubtitle={phone && !phone.startsWith("WL") ? phone : "Carte personnelle"}
       />
-
-      <section className="overflow-hidden rounded-3xl border border-[#F0DDE7] bg-white shadow-sm">
-        <div className="px-4 pb-4 sm:px-5 sm:pb-5">
-          <div className="grid grid-cols-5 gap-2 sm:gap-3" aria-label={`${progress} passages validés sur ${visitsPerReward}`}>
-            {Array.from({ length: threshold }, (_, index) => {
-              const stamped = index < progress;
-              return (
-                <div
-                  key={index}
-                  className={`flex aspect-square items-center justify-center rounded-full border text-sm font-bold ${
-                    stamped
-                      ? "border-[#BD4E82] bg-[#BD4E82] text-white shadow-sm"
-                      : "border-[#EAD9E2] bg-[#FBF5F8] text-[#BFA8B5]"
-                  }`}
-                  aria-label={`Passage ${index + 1}${stamped ? " validé" : " à valider"}`}
-                >
-                  {stamped ? <Check size={18} aria-hidden="true" /> : index + 1}
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-            <span className="font-semibold text-[#43293A]">{visits} passage{visits > 1 ? "s" : ""} validé{visits > 1 ? "s" : ""} au total</span>
-            <span className="text-[#806B77]">{percentage}% du cycle</span>
-          </div>
-        </div>
-      </section>
 
       <section className="rounded-2xl border border-[#F0DDE7] bg-white p-4 sm:p-5">
         <div className="flex items-start gap-3">
@@ -145,13 +116,6 @@ export function LoyaltyStampCard({
             </div>
           );
         })}
-      </section>
-
-      <section className="rounded-2xl border border-[#F0DDE7] bg-white p-4 text-center sm:p-5">
-        <h2 className="text-lg font-bold text-[#43293A]">Présenter ma carte à l’institut</h2>
-        <p className="mt-1 text-sm text-[#806B77]">Montrez ce QR code à l’équipe pour retrouver votre carte et valider votre passage.</p>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qr} alt="QR code personnel de la carte de fidélité" width={220} height={220} className="mx-auto mt-4 h-48 w-48 rounded-xl border border-[#F0DDE7] p-2" />
       </section>
 
       {appointments.length > 0 ? (

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import {
   useEffect,
@@ -20,7 +21,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Star,
   TrendingUp,
@@ -151,31 +151,7 @@ function StatCard({
   subtitle?: string;
   color?: "pink" | "green" | "orange" | "purple";
 }) {
-  const tones = {
-    pink: "bg-pink-100 text-[#b50050]",
-    green: "bg-emerald-100 text-emerald-700",
-    orange: "bg-orange-100 text-orange-600",
-    purple: "bg-violet-100 text-violet-700",
-  };
-
-  return (
-    <div className={`${cardClass} min-w-0 p-4`}>
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-xs font-medium text-[#754458]">{label}</span>
-        <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${tones[color]}`}
-        >
-          {icon}
-        </span>
-      </div>
-
-      <div className="mt-1 text-[clamp(18px,1.5vw,26px)] font-extrabold tracking-tight text-[#390c22]">
-        {value}
-      </div>
-
-      {subtitle ? <p className="mt-1 text-xs text-[#9a7a88]">{subtitle}</p> : null}
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={subtitle}></MetricCard>;
 }
 
 function Avatar({
@@ -257,8 +233,6 @@ export default function CustomersDashboard({
   const [localPage, setLocalPage] = useState(1);
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>("activity");
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<"recent" | "name" | "spent">("recent");
 
   const search = searchValue ?? localSearch;
   const filter = filterValue ?? localFilter;
@@ -312,18 +286,12 @@ export default function CustomersDashboard({
   const sorted = useMemo(() => {
     const rows = [...filtered];
 
-    if (sortBy === "name") {
-      rows.sort((a, b) => a.name.localeCompare(b.name, "fr"));
-    } else if (sortBy === "spent") {
-      rows.sort((a, b) => b.totalSpent - a.totalSpent);
-    } else {
       rows.sort((a, b) =>
         (b.createdAt ?? b.lastVisit ?? "").localeCompare(a.createdAt ?? a.lastVisit ?? ""),
       );
-    }
 
     return rows;
-  }, [filtered, sortBy]);
+  }, [filtered]);
 
   const count = totalResults ?? filtered.length;
 
@@ -399,7 +367,7 @@ export default function CustomersDashboard({
         ) : null}
       </header>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
         <StatCard
           icon={<Users size={20} aria-hidden />}
           label="Total clientes"
@@ -444,9 +412,8 @@ export default function CustomersDashboard({
         ) : null}
       </section>
 
-      <section className="space-y-3">
-        <div className="flex flex-wrap gap-3">
-          <div className="relative min-w-[220px] flex-1">
+      <section className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <div className="relative min-w-[220px] xl:w-80 xl:shrink-0">
             <Search
               size={18}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b50050]"
@@ -460,42 +427,7 @@ export default function CustomersDashboard({
             />
           </div>
 
-          <ActionButton onClick={() => setShowFilters(!showFilters)}>
-            <SlidersHorizontal size={16} aria-hidden />
-            Filtres
-          </ActionButton>
-        </div>
-
-        {showFilters ? (
-          <div className={`${cardClass} flex flex-wrap items-center gap-3 p-4`}>
-            <label className="text-xs font-semibold" htmlFor="customers-sort">
-              Trier par
-            </label>
-            <select
-              id="customers-sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "recent" | "name" | "spent")}
-              className="rounded-xl border border-[#efdce5] bg-[#fff7fa] px-3 py-2 text-sm outline-none"
-            >
-              <option value="recent">Plus récentes</option>
-              <option value="name">Nom A–Z</option>
-              <option value="spent">Dépenses décroissantes</option>
-            </select>
-            <button
-              type="button"
-              onClick={() => {
-                setSearch("");
-                setFilter("all");
-                setSortBy("recent");
-              }}
-              className="text-xs font-semibold text-[#ae004b] hover:underline"
-            >
-              Réinitialiser
-            </button>
-          </div>
-        ) : null}
-
-        <div className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}

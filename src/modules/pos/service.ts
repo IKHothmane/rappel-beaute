@@ -65,6 +65,8 @@ export async function listPosSalesApi(params?: {
   paymentMethod?: string;
   status?: string;
   customerId?: string;
+  appointmentId?: string;
+  paymentId?: string;
   search?: string;
   limit?: number;
 }): Promise<{ data: PosSaleDetail[]; kpis: PosSalesKpis }> {
@@ -75,6 +77,8 @@ export async function listPosSalesApi(params?: {
   if (params?.paymentMethod) q.set("paymentMethod", params.paymentMethod);
   if (params?.status) q.set("status", params.status);
   if (params?.customerId) q.set("customerId", params.customerId);
+  if (params?.appointmentId) q.set("appointmentId", params.appointmentId);
+  if (params?.paymentId) q.set("paymentId", params.paymentId);
   if (params?.search) q.set("search", params.search);
   if (params?.limit) q.set("limit", String(params.limit));
   const res = await fetch(`/api/pos/sales/?${q}`, fetchOpts);

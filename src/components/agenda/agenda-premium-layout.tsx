@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import { useMemo, useState, type ReactNode } from "react";
 import {
@@ -17,6 +18,9 @@ import {
 } from "lucide-react";
 
 import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
+import { Dropdown, type DropdownOption } from "@/components/ui/dropdown";
+import { useStaffPalette } from "@/components/agenda/staff-color-provider";
+import { staffColor } from "@/components/agenda/staff-colors";
 import type { Appointment, AppointmentStatus, AgendaView } from "@/types/appointment";
 
 type Option = {
@@ -177,35 +181,7 @@ function StatCard({
   tone: "pink" | "green" | "orange" | "purple" | "red";
   trendUp?: boolean;
 }) {
-  const tones = {
-    pink: "bg-[#FCE1EB] text-[#B01251]",
-    green: "bg-[#E4F7EB] text-[#14874D]",
-    orange: "bg-[#FFF0D9] text-[#B57B15]",
-    purple: "bg-[#F0E7FF] text-[#7436BE]",
-    red: "bg-[#FFE8EE] text-[#C42B4A]",
-  };
-
-  return (
-    <div className="flex min-h-[104px] items-center gap-3 rounded-[20px] border border-[#F0DDE5] border-l-4 border-l-[#AD1451]/40 bg-white p-3.5 shadow-[0_5px_18px_rgba(70,20,40,0.04)]">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${tones[tone]}`}>
-        <Icon size={20} />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[11px] font-semibold text-[#795467]">{label}</p>
-        <p className="mt-0.5 text-xl font-extrabold text-[#48162E]">{value}</p>
-        {detail ? (
-          <p
-            className={`mt-0.5 flex items-center gap-1 text-[10px] font-medium ${
-              trendUp ? "text-[#16834B]" : "text-[#A08392]"
-            }`}
-          >
-            {trendUp ? <TrendingUp size={11} /> : null}
-            {detail}
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={<Icon />} hint={detail}></MetricCard>;
 }
 
 function FilterSelect({
@@ -216,25 +192,14 @@ function FilterSelect({
 }: {
   label: string;
   value: string;
-  options: { value: string; label: string }[];
+  options: DropdownOption[];
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="min-w-0">
-      <span className="sr-only">{label}</span>
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-9 rounded-xl border border-[#EEDCE4] bg-[#FFF8FA] px-3 text-xs font-semibold text-[#63334A] outline-none focus:border-[#B11051]"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="min-w-0 space-y-1.5">
+      <span className="block text-xs font-semibold text-[#765164]">{label}</span>
+      <Dropdown ariaLabel={label} value={value} onChange={onChange} options={options} />
+    </div>
   );
 }
 
@@ -276,6 +241,7 @@ export function AgendaPremiumLayout({
   onFullscreen,
   children,
 }: AgendaPremiumLayoutProps) {
+  const palette = useStaffPalette();
   const upcoming = useMemo(() => {
     const now = Date.now();
     return appointments
@@ -326,7 +292,7 @@ export function AgendaPremiumLayout({
       </header>
 
       {/* 2. KPI — 6 cartes */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
         <StatCard
           label="RDV aujourd'hui"
           value={String(todayCount)}
@@ -463,8 +429,8 @@ export function AgendaPremiumLayout({
                   value={staffFilter}
                   onChange={onStaffFilter}
                   options={[
-                    { value: "ALL", label: "Praticienne" },
-                    ...staff.map((s) => ({ value: s.id, label: s.name })),
+                    { value: "ALL", label: `Toute l’équipe (${staff.length})` },
+                    ...staff.map((s) => ({ value: s.id, label: s.name, dotClassName: staffColor(s.id, palette).bar, colorClassName: staffColor(s.id, palette).text })),
                   ]}
                 />
                 <FilterSelect
@@ -472,7 +438,7 @@ export function AgendaPremiumLayout({
                   value={serviceFilter}
                   onChange={onServiceFilter}
                   options={[
-                    { value: "ALL", label: "Service" },
+                    { value: "ALL", label: "Tous les services" },
                     ...services.map((s) => ({ value: s.id, label: s.name })),
                   ]}
                 />
@@ -481,7 +447,7 @@ export function AgendaPremiumLayout({
                   value={resourceFilter}
                   onChange={onResourceFilter}
                   options={[
-                    { value: "ALL", label: "Cabine" },
+                    { value: "ALL", label: "Toutes les cabines" },
                     ...resources.map((r) => ({ value: r.id, label: r.name })),
                   ]}
                 />
@@ -490,7 +456,7 @@ export function AgendaPremiumLayout({
                   value={statusFilter}
                   onChange={(value) => onStatusFilter(value as AppointmentStatus | "ALL")}
                   options={[
-                    { value: "ALL", label: "Statut" },
+                    { value: "ALL", label: "Tous les statuts" },
                     { value: "PENDING", label: "En attente" },
                     { value: "CONFIRMED", label: "Confirmé" },
                     { value: "ARRIVED", label: "Arrivé" },

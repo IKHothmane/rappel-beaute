@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import {
@@ -296,7 +297,7 @@ export function CashRegisterMobile({
       </div>
 
       {tab !== "history" ? (
-        <section className="grid grid-cols-2 gap-2">
+        <section className="grid grid-cols-2 gap-2 rb-metric-row">
           <KpiMini label="Espèces encaissées" value={formatMad(session?.cashIn ?? 0)} hint="Session" />
           <KpiMini label="Sorties" value={formatMad(session?.cashOut ?? 0)} hint="Décaissements" />
           <KpiMini label="Remboursements" value={formatMad(refunds)} hint="REFUND" />
@@ -474,13 +475,7 @@ function KpiMini({
   alert?: boolean;
   accent?: boolean;
 }) {
-  return (
-    <div className="rounded-xl bg-white p-3 shadow-sm">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">{label}</p>
-      <p className={cn("mt-1 text-[18px] font-bold", accent ? "text-primary" : "text-ink")}>{value}</p>
-      <p className={cn("mt-0.5 text-[11px]", alert ? "font-bold text-[#BA1A1A]" : "text-ink/45")}>{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint} alert={alert}></MetricCard>;
 }
 
 function Row({

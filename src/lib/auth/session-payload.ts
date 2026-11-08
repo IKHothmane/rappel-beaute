@@ -31,6 +31,7 @@ export function payloadToSession(payload: SessionPayload): SessionUser | null {
       orgName: payload.orgName,
       orgSlug: payload.orgSlug,
       orgLogoUrl: null,
+      loginPhone: payload.loginPhone,
       scope: "app",
       accountType: "ORGANIZATION",
       mustChangePassword: Boolean(payload.mustChangePassword),
@@ -49,6 +50,7 @@ export function payloadToSession(payload: SessionPayload): SessionUser | null {
       orgName: payload.orgName,
       orgSlug: payload.orgSlug,
       orgLogoUrl: null,
+      loginPhone: payload.loginPhone,
       scope: "app",
       accountType: "ORGANIZATION",
       mustChangePassword: Boolean(

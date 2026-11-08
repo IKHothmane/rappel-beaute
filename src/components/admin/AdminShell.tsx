@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "@/components/www/BrandLogo";
 import { adminHref } from "@/lib/admin/href";
+import { logoutDestination } from "@/lib/auth/logout-destination";
 import { cn } from "@/lib/utils";
 import { fetchAdminAudit, fetchAdminSession, platformLogout } from "@/modules/admin/client";
 import { fetchSupportTickets } from "@/modules/admin/support-tickets";
@@ -187,7 +188,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   function logout() {
     void platformLogout().then(() => {
-      window.location.href = href("/login/");
+      window.location.replace(logoutDestination(window.location.origin));
     });
   }
 

@@ -46,7 +46,7 @@ export function ExpenseForm({
 
   return (
     <form
-      className="space-y-4"
+      className="grid grid-cols-1 gap-4 rounded-2xl border border-[#F0DDE6] bg-[#FFF8FA] p-4 sm:grid-cols-2 sm:p-5"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit({
@@ -59,7 +59,7 @@ export function ExpenseForm({
         });
       }}
     >
-      <label className="block text-sm">
+      <label className="block text-sm sm:col-span-2">
         <span className="mb-1.5 block font-medium">Catégorie *</span>
         <Select
           value={category}
@@ -127,7 +127,7 @@ export function ExpenseForm({
           ))}
         </Select>
       </label>
-      <label className="block text-sm">
+      <label className="block text-sm sm:col-span-2">
         <span className="mb-1.5 block font-medium">Description</span>
         <Textarea
           value={description}
@@ -135,7 +135,7 @@ export function ExpenseForm({
           rows={2}
         />
       </label>
-      <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row">
+      <div className="flex flex-col gap-2 border-t border-[#F0DDE6] pt-4 sm:col-span-2 sm:flex-row">
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>
           Annuler
         </Button>

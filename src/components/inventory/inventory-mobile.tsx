@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { type ReactNode, type RefObject, useState } from "react";
@@ -84,7 +85,8 @@ export function InventoryMobile({
 
   return (
     <div className="flex flex-col gap-4 lg:hidden">
-      <section className="grid grid-cols-2 gap-2">
+      <section className="space-y-3">
+        <div className="rb-metric-row">
         <Kpi label="Catalogue" value={String(catalogCount)} hint="Références actives" />
         {!financeHidden ? (
           <Kpi
@@ -96,7 +98,8 @@ export function InventoryMobile({
         ) : (
           <Kpi label="Stock OK" value={String(optimalCount)} hint="Au-dessus du seuil" tone="emerald" />
         )}
-        <div className="col-span-2 rounded-xl bg-white p-3.5 shadow-sm">
+        </div>
+        <div className="rounded-xl bg-white p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-ink/40">
             <span>Disponibilité</span>
             <span className="normal-case tracking-normal text-ink">
@@ -389,21 +392,7 @@ function Kpi({
   hint: string;
   tone?: "gold" | "emerald";
 }) {
-  return (
-    <div className="flex flex-col rounded-xl bg-white p-3.5 shadow-sm">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-ink/40">{label}</span>
-      <span
-        className={cn(
-          "mt-1 text-[22px] font-bold leading-none text-ink",
-          tone === "gold" && "text-[#7B5900]",
-          tone === "emerald" && "text-emerald-700",
-        )}
-      >
-        {value}
-      </span>
-      <span className="mt-1 text-[11px] text-ink/45">{hint}</span>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 export function InventoryAccordion({

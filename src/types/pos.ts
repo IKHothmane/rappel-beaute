@@ -12,6 +12,8 @@ export type CreatePosSaleInput = {
   lines: PosCartLineInput[];
   paymentMethod: PaymentMethod;
   customerId?: string | null;
+  /** Lie la vente produits au RDV (encaissement service + produits). */
+  appointmentId?: string | null;
   discountTotal?: number;
   notes?: string | null;
   idempotencyKey: string;
@@ -32,6 +34,7 @@ export type PosSaleDetail = {
   invoiceId: string;
   invoiceNumber: string;
   paymentId: string | null;
+  appointmentId: string | null;
   customerId: string | null;
   customerName: string | null;
   status: PosSaleStatus;
@@ -64,6 +67,8 @@ export type PosSalesListFilters = {
   paymentMethod?: PaymentMethod;
   status?: PosSaleStatus | "all";
   customerId?: string;
+  appointmentId?: string;
+  paymentId?: string;
   search?: string;
   limit?: number;
 };

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -280,37 +281,14 @@ export function AnalyticsOverviewDashboard({
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="surface p-4">
-          <p className="text-xs text-ink/45">CA</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight">{formatMad(overview.revenue.value)}</p>
-          <div className="mt-1 flex items-center gap-2">
-            <Trend pct={overview.revenue.changePercent} />
-            <span className="text-[11px] text-ink/40">vs période préc.</span>
-          </div>
-        </div>
-        <div className="surface p-4">
-          <p className="text-xs text-ink/45">Rendez-vous</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight">
-            {overview.appointments.value.toLocaleString("fr-MA")}
-          </p>
-          <Trend pct={overview.appointments.changePercent} />
-        </div>
-        <div className="surface p-4">
-          <p className="text-xs text-ink/45">Clientes actives</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight">
-            {overview.customers.value.toLocaleString("fr-MA")}
-          </p>
-          <Trend pct={overview.customers.changePercent} />
-        </div>
-        <div className="surface p-4">
-          <p className="text-xs text-ink/45">Panier moyen</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight">
-            {formatMad(overview.averageTicket.value)}
-          </p>
-          <Trend pct={overview.averageTicket.changePercent} />
-        </div>
-      </div>
+      <div className="rb-metric-row">
+  {[
+    { title: "Chiffre d’affaires", value: formatMad(overview.revenue.value), change: overview.revenue.changePercent },
+    { title: "Rendez-vous", value: overview.appointments.value.toLocaleString("fr-MA"), change: overview.appointments.changePercent },
+    { title: "Clientes actives", value: overview.customers.value.toLocaleString("fr-MA"), change: overview.customers.changePercent },
+    { title: "Panier moyen", value: formatMad(overview.averageTicket.value), change: overview.averageTicket.changePercent },
+  ].map((metric) => <MetricCard key={metric.title} title={metric.title} value={metric.value} delta={metric.change != null ? formatPct(metric.change) : null} deltaNegative={metric.change != null && metric.change < 0} hint="vs période précédente" />)}
+</div>
 
       {/* CA évolution */}
       <Section title="Évolution du chiffre d'affaires">

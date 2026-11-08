@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -623,7 +624,7 @@ export function PlanningPageView() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 rb-metric-row">
         <KpiCard
           icon={<Users size={16} />}
           label="Équipe active"
@@ -2020,29 +2021,7 @@ function KpiCard({
   hintClass?: string;
   tone?: "pink" | "amber" | "indigo" | "emerald";
 }) {
-  const tones = {
-    pink: "bg-primary-light text-primary",
-    amber: "bg-amber-50 text-amber-600",
-    indigo: "bg-indigo-50 text-indigo-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-  };
-  return (
-    <div className="flex items-center justify-between rounded-2xl border border-line bg-white p-4 shadow-soft">
-      <div>
-        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ink/45">
-          {icon} {label}
-        </p>
-        <p className="mt-1 text-2xl font-extrabold text-ink">
-          {value}
-          {suffix ? <span className="text-xs font-normal text-slate-500"> {suffix}</span> : null}
-        </p>
-        <p className={cn("mt-0.5 text-[10px] font-semibold text-ink/45", hintClass)}>{hint}</p>
-      </div>
-      <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl font-bold", tones[tone])}>
-        {tone === "pink" ? <Users size={16} /> : tone === "amber" ? <Hourglass size={16} /> : tone === "indigo" ? <CalendarCheck size={16} /> : <CircleCheck size={16} />}
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} unit={suffix}></MetricCard>;
 }
 
 function StaffIdentity({

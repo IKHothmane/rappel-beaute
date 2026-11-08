@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
@@ -153,7 +154,7 @@ export function CashRegisterHero({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 rb-metric-row">
             <MiniKpi
               icon={<Coins size={14} className="text-[#981C52]" />}
               label="Encaissements"
@@ -354,33 +355,7 @@ function MiniKpi({
   hint?: string;
   onClick?: () => void;
 }) {
-  const className = cn(
-    "w-full rounded-2xl bg-white px-3 py-3 text-left text-[#2A1520] shadow-[0_4px_14px_rgba(20,0,10,.12)]",
-    onClick &&
-      "transition hover:bg-[#FFF7FB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#981C52]/40",
-  );
-  const body = (
-    <>
-      <div className="mb-1.5 flex items-center gap-1.5">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#FCE9F4]">
-          {icon}
-        </span>
-        <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-[#765E6B]">
-          {label}
-        </span>
-      </div>
-      <p className="truncate pl-0.5 text-[15px] font-extrabold tabular-nums tracking-tight">{value}</p>
-      {hint ? <p className="mt-0.5 truncate pl-0.5 text-[10px] text-[#9A7F8C]">{hint}</p> : null}
-    </>
-  );
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className={className}>
-        {body}
-      </button>
-    );
-  }
-  return <div className={className}>{body}</div>;
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} onClick={onClick}></MetricCard>;
 }
 
 function CloseRow({

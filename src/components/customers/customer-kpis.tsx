@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import {
   CheckCircle2,
@@ -92,29 +93,11 @@ export function CustomerKpisRow({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-6 rb-metric-row">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <div key={card.label} className="flex flex-col justify-between rounded-xl bg-white p-3 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink/45">{card.label}</span>
-              <span className={cn("rounded-lg p-1.5", iconBox[card.tone])}>
-                <Icon size={15} />
-              </span>
-            </div>
-            <div className="mt-2">
-              <p
-                className={cn(
-                  "font-display text-[22px] font-bold leading-7 tracking-tight",
-                  card.tone === "primary" ? "text-primary" : card.tone === "amber" ? "text-amber-800" : "text-ink",
-                )}
-              >
-                {card.value}
-              </p>
-              {card.hint ? <p className="mt-0.5 text-[11px] font-medium text-ink/45">{card.hint}</p> : null}
-            </div>
-          </div>
+          <MetricCard key={card.label} title={card.label} value={card.value} icon={<Icon />} hint={card.hint} />
         );
       })}
     </div>

@@ -1,4 +1,6 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
+import { ExpenseBanner, ExpenseFilters } from "@/components/expenses/expense-toolbar";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -7,13 +9,13 @@ import {
   Banknote,
   CalendarDays,
   Pencil,
-  Plus,
+
   Search,
   Sparkles,
   Undo2,
   Wallet,
 } from "lucide-react";
-import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
+import { useCurrentUser } from "@/components/auth/session-provider";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 import {
   EXPENSE_PAGE_SIZE,
@@ -32,9 +34,8 @@ import {
 } from "@/components/expenses/expense-helpers";
 import { ExpensesMobile } from "@/components/expenses/expenses-mobile";
 import { Button } from "@/components/ui/button";
-import { Drawer } from "@/components/ui/drawer";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canArchiveExpense, canCreateExpense, canWriteExpenses } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -241,37 +242,11 @@ export function ExpensesPageView({ createSignal = 0 }: { createSignal?: number }
       />
 
       <div className="hidden space-y-4 lg:block">
-        <section className="finance-premium__expense-actions flex flex-col justify-end gap-4 rounded-xl bg-white p-4 shadow-sm lg:flex-row lg:items-center">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[28px] font-semibold leading-9 tracking-tight">
-                Dépenses & contrôle budgétaire
-              </h1>
-              <span className="rounded-full bg-[#FFDEA4] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#261900]">
-                {ROLE_LABEL[user.role]}
-              </span>
-            </div>
-            <p className="mt-1 text-[13px] text-ink/55">
-              Centre de suivi des charges · distinct des achats stock · {user.orgName}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {canCreate ? (
-              <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-[14px] font-semibold text-white shadow-sm"
-              >
-                <Plus size={18} />
-                Nouvelle dépense
-              </button>
-            ) : null}
-          </div>
-        </section>
+        <ExpenseBanner orgName={user.orgName} canCreate={canCreate} onCreate={() => setCreateOpen(true)} />
 
         <section className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
-          <div className="space-y-2">
-            <div className="relative">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+            <div className="relative xl:w-72 xl:shrink-0">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
               <input
                 value={searchInput}
@@ -280,44 +255,8 @@ export function ExpensesPageView({ createSignal = 0 }: { createSignal?: number }
                 className="h-11 w-full rounded-lg bg-[#FFEFF8] pl-10 pr-3 text-[13px] outline-none ring-primary/30 focus:bg-white focus:ring-2"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-              <Select
-                className="h-11"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value as ExpensePeriod)}
-              >
-                <option value="month">{periodLabel("month")}</option>
-                <option value="today">{periodLabel("today")}</option>
-                <option value="all">{periodLabel("all")}</option>
-              </Select>
-              <Select className="h-11" value={category} onChange={(e) => setCategory(e.target.value)}>
-                <option value="">Toutes les catégories</option>
-                {EXPENSE_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {EXPENSE_CATEGORY_LABEL[c]}
-                  </option>
-                ))}
-              </Select>
-              <Select
-                className="h-11"
-                value={method}
-                onChange={(e) => setMethod(e.target.value as PaymentMethod | "")}
-              >
-                <option value="">Tous les règlements</option>
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {PAYMENT_METHOD_LABEL[m]}
-                  </option>
-                ))}
-              </Select>
-              <Select className="h-11" value={staff} onChange={(e) => setStaff(e.target.value)}>
-                <option value="">Toute l’équipe</option>
-                {operators.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </Select>
+            <div className="min-w-0 flex-1">
+              <ExpenseFilters period={period} onPeriod={setPeriod} category={category} onCategory={setCategory} method={method} onMethod={setMethod} categories={EXPENSE_CATEGORIES.map((value) => ({ value, label: EXPENSE_CATEGORY_LABEL[value] }))} staff={staff} onStaff={setStaff} operators={operators} />
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -367,7 +306,7 @@ export function ExpensesPageView({ createSignal = 0 }: { createSignal?: number }
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 rb-metric-row">
           <Kpi
             label="Ce mois"
             value={formatMad(kpis?.monthTotal ?? 0)}
@@ -631,16 +570,16 @@ export function ExpensesPageView({ createSignal = 0 }: { createSignal?: number }
         </div>
       </div>
 
-      <Drawer open={createOpen} onClose={() => setCreateOpen(false)} title="Nouvelle dépense">
+      <PremiumSidePanel open={createOpen} onClose={() => setCreateOpen(false)} title="Nouvelle dépense" description="Renseignez le montant, la catégorie et le mode de paiement de votre dépense.">
         <ExpenseForm
           suppliers={suppliers}
           submitting={submitting}
           onSubmit={handleCreate}
           onCancel={() => setCreateOpen(false)}
         />
-      </Drawer>
+      </PremiumSidePanel>
 
-      <Drawer open={Boolean(editTarget)} onClose={() => setEditTarget(null)} title="Modifier la dépense">
+      <PremiumSidePanel open={Boolean(editTarget)} onClose={() => setEditTarget(null)} title="Modifier la dépense" description="Mettez à jour les informations de cette dépense.">
         {editTarget ? (
           <ExpenseForm
             initial={editTarget}
@@ -650,11 +589,11 @@ export function ExpensesPageView({ createSignal = 0 }: { createSignal?: number }
             onCancel={() => setEditTarget(null)}
           />
         ) : null}
-      </Drawer>
+      </PremiumSidePanel>
 
-      <Drawer open={Boolean(voidTarget)} onClose={() => setVoidTarget(null)} title="Annuler la dépense">
+      <PremiumSidePanel open={Boolean(voidTarget)} onClose={() => setVoidTarget(null)} title="Annuler la dépense" description="Indiquez le motif de l’annulation pour conserver un suivi clair." size="md">
         {voidTarget ? (
-          <div className="space-y-4 text-sm">
+          <div className="space-y-4 rounded-2xl border border-[#F0DDE6] bg-[#FFF8FA] p-4 text-sm">
             <p className="text-ink/60">
               Passage en VOID — pas de suppression. La caisse n’est pas modifiée.
             </p>
@@ -671,7 +610,7 @@ export function ExpensesPageView({ createSignal = 0 }: { createSignal?: number }
             </Button>
           </div>
         ) : null}
-      </Drawer>
+      </PremiumSidePanel>
     </>
   );
 }
@@ -691,35 +630,7 @@ function Kpi({
   inverse?: boolean;
   alert?: boolean;
 }) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col justify-between rounded-xl p-4 shadow-sm",
-        inverse ? "bg-ink text-[#FEECF7]" : alert ? "bg-[#FFDEA4]/35" : "bg-white",
-      )}
-    >
-      <div
-        className={cn(
-          "flex items-center justify-between",
-          inverse ? "text-[#FFDEA4]" : alert ? "text-[#5D4200]" : "text-ink/50",
-        )}
-      >
-        <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        <span className="shrink-0">{icon}</span>
-      </div>
-      <div className="mt-2">
-        <div className="text-[22px] font-bold">{value}</div>
-        <div
-          className={cn(
-            "mt-1 truncate text-[11px]",
-            inverse ? "text-[#F0BF5C]" : alert ? "text-[#5D4200]/80" : "text-ink/45",
-          )}
-        >
-          {hint}
-        </div>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} alert={alert}></MetricCard>;
 }
 
 function ExpenseInspect({

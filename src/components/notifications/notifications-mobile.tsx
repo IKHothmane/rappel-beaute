@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import type { ReactNode } from "react";
 import {
@@ -41,7 +42,7 @@ export function NotificationsMobile({ vm }: { vm: NotificationsViewModel }) {
       </section>
 
       {/* Metrics 2x2 */}
-      <section className="grid grid-cols-2 gap-3">
+      <section className="grid grid-cols-2 gap-3 rb-metric-row">
         <MetricTile
           value={vm.counters.urgent}
           label="Urgentes"
@@ -250,35 +251,5 @@ function MetricTile({
   icon: ReactNode;
   tone: "urgent" | "warn" | "info" | "done";
 }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl bg-surface-container-lowest p-3 shadow-sm">
-      <div
-        className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-          tone === "urgent" && "bg-surface-container-low text-primary",
-          tone === "warn" && "bg-secondary-fixed text-on-secondary-fixed",
-          tone === "info" && "bg-surface-container text-on-surface-variant",
-          tone === "done" && "bg-surface-container-high text-on-surface",
-        )}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0 flex flex-col">
-        <div className="flex items-baseline gap-1">
-          <span
-            className={cn(
-              "text-[22px] font-bold",
-              tone === "urgent" && "text-primary",
-              tone === "warn" && "text-secondary",
-              (tone === "info" || tone === "done") && "text-on-surface",
-            )}
-          >
-            {value}
-          </span>
-          <span className="text-[11px] font-semibold text-on-surface-variant">{label}</span>
-        </div>
-        <span className="truncate text-[11px] text-on-surface-variant">{hint}</span>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} alert={tone === "urgent" && value > 0}></MetricCard>;
 }

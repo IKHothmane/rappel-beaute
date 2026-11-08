@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -341,7 +342,7 @@ export function CommissionsMobile({
         )}
       </div>
 
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 rb-metric-row">
         <Kpi
           label="Total généré"
           value={formatMad(kpis?.commissionTotal ?? 0)}
@@ -510,13 +511,7 @@ function Kpi({
   hint: string;
   accent?: boolean;
 }) {
-  return (
-    <div className={cn("flex flex-col justify-between rounded-xl p-3 shadow-sm", accent ? "bg-[#FFEFF8]" : "bg-white")}>
-      <p className={cn("text-[11px] font-medium", accent ? "font-bold text-primary" : "text-ink/50")}>{label}</p>
-      <p className={cn("mt-1 text-[18px] font-bold leading-tight", accent && "text-primary")}>{value}</p>
-      <p className="mt-0.5 text-[10px] text-ink/45">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function StaffCard({

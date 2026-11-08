@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -394,7 +395,7 @@ export function InvoicesPageView() {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 rb-metric-row">
           <Kpi
             label="CA facturé"
             value={formatMad(kpis?.billedTotal ?? 0)}
@@ -1002,23 +1003,7 @@ function Kpi({
   icon: ReactNode;
   alert?: boolean;
 }) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col justify-between rounded-xl p-4 shadow-sm",
-        alert ? "bg-amber-50" : "bg-white",
-      )}
-    >
-      <div className={cn("flex items-center justify-between", alert ? "text-amber-800" : "text-ink/50")}>
-        <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        <span className="shrink-0">{icon}</span>
-      </div>
-      <div className="mt-2">
-        <div className={cn("text-[22px] font-bold", alert && "text-amber-800")}>{value}</div>
-        <div className={cn("mt-1 text-[11px]", alert ? "text-amber-800/80" : "text-ink/45")}>{hint}</div>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} alert={alert}></MetricCard>;
 }
 
 function InvoiceInspect({

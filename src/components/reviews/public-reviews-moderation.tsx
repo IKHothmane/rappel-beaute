@@ -1,11 +1,12 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Clock3,
-  Filter,
+
   Heart,
   Loader2,
   MessageSquare,
@@ -21,7 +22,7 @@ import type { StaffReviewScore } from "@/types/review";
 
 type Review = {
   id: string;
-  rating: number;
+  rating: number | null;
   comment: string;
   status: string;
   createdAt: string;
@@ -38,8 +39,6 @@ export type PublicReviewsInternalStats = {
   pendingRequests: number;
 };
 
-type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1";
-type StatusFilter = "all" | "PENDING" | "PUBLISHED" | "REJECTED";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -92,20 +91,7 @@ function StatCard({
   tone: string;
   accent?: boolean;
 }) {
-  return (
-    <div className="rounded-[22px] border border-[#F1E8EC] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <span className="text-xs font-semibold text-slate-500">{title}</span>
-        <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${tone}`}>
-          <Icon size={18} aria-hidden />
-        </div>
-      </div>
-      <div className="mt-3 text-3xl font-bold tracking-tight text-[#30202C]">{value}</div>
-      <p className={cn("mt-1 text-xs", accent ? "font-semibold text-emerald-600" : "text-slate-400")}>
-        {subtitle}
-      </p>
-    </div>
-  );
+  return <MetricCard title={title} value={value} icon={<Icon />} hint={subtitle}></MetricCard>;
 }
 
 export function PublicReviewsModeration({
@@ -120,9 +106,6 @@ export function PublicReviewsModeration({
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [menuId, setMenuId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -147,7 +130,8 @@ export function PublicReviewsModeration({
   const stats = useMemo(() => {
     const total = items.length;
     const pending = items.filter((x) => x.status === "PENDING").length;
-    const average = total ? items.reduce((sum, x) => sum + x.rating, 0) / total : null;
+    const rated = items.filter((item): item is Review & { rating: number } => item.rating != null);
+    const average = rated.length ? rated.reduce((sum, item) => sum + item.rating, 0) / rated.length : null;
 
     const now = new Date();
     const thisKey = monthKey(now);
@@ -169,7 +153,7 @@ export function PublicReviewsModeration({
   const distribution = useMemo(() => {
     const counts = [0, 0, 0, 0, 0];
     for (const item of items) {
-      if (item.rating >= 1 && item.rating <= 5) counts[item.rating - 1]! += 1;
+      if (item.rating != null && item.rating >= 1 && item.rating <= 5) counts[item.rating - 1]! += 1;
     }
     const max = Math.max(1, ...counts);
     return counts.map((count, index) => ({
@@ -182,14 +166,12 @@ export function PublicReviewsModeration({
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return items.filter((item) => {
-      if (ratingFilter !== "all" && String(item.rating) !== ratingFilter) return false;
-      if (statusFilter !== "all" && item.status !== statusFilter) return false;
       if (!query) return true;
       return [item.customerName, item.serviceName, item.comment, item.phone ?? ""].some((value) =>
         value.toLowerCase().includes(query),
       );
     });
-  }, [items, search, ratingFilter, statusFilter]);
+  }, [items, search]);
 
   async function moderate(reviewId: string, action: "publish" | "reject" | "report") {
     setBusyId(reviewId);
@@ -231,7 +213,7 @@ export function PublicReviewsModeration({
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4 rb-metric-row">
         <StatCard
           title="Avis publics"
           value={stats.total}
@@ -289,48 +271,8 @@ export function PublicReviewsModeration({
                     className="h-11 w-full rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] pl-10 pr-4 text-sm outline-none transition focus:border-[#C95483] focus:ring-2 focus:ring-pink-100"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setFiltersOpen((v) => !v)}
-                  className={cn(
-                    "inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition",
-                    filtersOpen
-                      ? "border-[#981C52] bg-[#FFF1F7] text-[#981C52]"
-                      : "border-[#F0E4EA] bg-white text-[#765E6B] hover:bg-[#FAF0F5]",
-                  )}
-                >
-                  <Filter size={16} aria-hidden />
-                  Filtres
-                </button>
               </div>
             </div>
-
-            {filtersOpen ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <select
-                  value={ratingFilter}
-                  onChange={(e) => setRatingFilter(e.target.value as RatingFilter)}
-                  className="h-10 rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] px-3 text-sm outline-none focus:border-[#C95483]"
-                >
-                  <option value="all">Toutes notes</option>
-                  <option value="5">5 étoiles</option>
-                  <option value="4">4 étoiles</option>
-                  <option value="3">3 étoiles</option>
-                  <option value="2">2 étoiles</option>
-                  <option value="1">1 étoile</option>
-                </select>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  className="h-10 rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] px-3 text-sm outline-none focus:border-[#C95483]"
-                >
-                  <option value="all">Tous statuts</option>
-                  <option value="PENDING">À modérer</option>
-                  <option value="PUBLISHED">Publiés</option>
-                  <option value="REJECTED">Rejetés</option>
-                </select>
-              </div>
-            ) : null}
           </div>
 
           <div className="space-y-3 bg-[#FFFCFD] p-4 md:p-5">
@@ -348,7 +290,7 @@ export function PublicReviewsModeration({
                 <p className="mt-1 max-w-sm text-sm text-[#8A7482]">
                   {items.length === 0
                     ? "Les notes clientes s’afficheront dès le premier retour enregistré."
-                    : "Essayez un autre filtre ou une autre recherche."}
+                    : "Essayez une autre recherche."}
                 </p>
               </div>
             ) : (
@@ -425,8 +367,7 @@ export function PublicReviewsModeration({
                           </div>
                         ) : null}
                       </div>
-                      <RatingStars rating={item.rating} />
-                      <span className="text-xs font-semibold text-slate-500">{item.rating}/5</span>
+                      {item.rating != null ? <><RatingStars rating={item.rating} /><span className="text-xs font-semibold text-slate-500">{item.rating}/5</span></> : <span className="text-xs text-slate-500">Sans note</span>}
                     </div>
                   </div>
                 </article>

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -320,7 +321,7 @@ export function StaffPageView() {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7 rb-metric-row">
           <KpiCard
             label="Équipe totale"
             value={String(catalog.length)}
@@ -769,33 +770,7 @@ function KpiCard({
   icon: typeof Users;
   tone?: "ink" | "emerald" | "gold" | "primary";
 }) {
-  const box = {
-    ink: "bg-[#FCE9F4] text-primary",
-    emerald: "bg-emerald-50 text-emerald-700",
-    gold: "bg-[#FFDEA4]/50 text-[#7B5900]",
-    primary: "bg-[#FFD9DE] text-primary",
-  };
-  return (
-    <div className="flex flex-col justify-between overflow-hidden rounded-xl bg-white p-3.5 shadow-sm">
-      <div className="flex items-center justify-between text-ink/45">
-        <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
-        <span className={cn("flex h-7 w-7 items-center justify-center rounded-full", box[tone])}>
-          <Icon size={16} />
-        </span>
-      </div>
-      <div className="mt-2">
-        <p
-          className={cn(
-            "truncate font-display text-[22px] font-bold leading-7",
-            tone === "primary" ? "text-primary" : "text-ink",
-          )}
-        >
-          {value}
-        </p>
-        <p className="mt-0.5 text-[11px] text-ink/45">{hint}</p>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={<Icon />} hint={hint}></MetricCard>;
 }
 
 function FilterPill({

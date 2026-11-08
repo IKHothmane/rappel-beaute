@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import {
@@ -137,7 +138,7 @@ export function AnalyticsMobile(vm: AnalyticsViewModel) {
       </section>
 
       {/* 2×3 KPIs */}
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiTile
           label="CA Net"
           icon={<CircleDollarSign className="h-4 w-4" />}
@@ -523,26 +524,7 @@ function KpiTile({
   tone: number | null;
   foot: string;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-surface-container-low p-3 shadow-sm">
-      <div className="mb-1 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-          {label}
-        </span>
-        <span className={iconClass}>{icon}</span>
-      </div>
-      <div className="space-y-0.5">
-        <div className="text-[22px] font-extrabold leading-none text-on-surface">
-          {value}{" "}
-          <span className="text-[11px] font-semibold text-on-surface-variant">{unit}</span>
-        </div>
-        {delta ? (
-          <p className={cn("text-[11px] font-bold", deltaClass(tone))}>{delta}</p>
-        ) : null}
-      </div>
-      <p className="mt-2 pt-1 text-xs text-on-surface-variant">{foot}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={foot} unit={unit} delta={delta} deltaNegative={tone != null && tone < 0}></MetricCard>;
 }
 
 function Row({

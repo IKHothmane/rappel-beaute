@@ -1,4 +1,6 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PurchaseFilters } from "@/components/procurement/purchase-filters";
 
 import Link from "next/link";
 import { type RefObject, useState } from "react";
@@ -149,7 +151,7 @@ export function PurchasesMobile({
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 rb-metric-row">
             <KpiMini label="Commandes" value={String(kpis?.purchaseCount ?? 0)} hint="Journal" />
             <KpiMini label="Brouillons" value={String(kpis?.draftCount ?? 0)} hint="À envoyer" />
             <KpiMini label="Commandées" value={String(kpis?.orderedCount ?? 0)} hint="Chez fournisseur" />
@@ -186,32 +188,7 @@ export function PurchasesMobile({
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto">
-            <select
-              value={status}
-              onChange={(e) => onStatus(e.target.value as PurchaseStatus | "")}
-              className="h-9 shrink-0 rounded-lg bg-white px-3 text-[11px] font-semibold"
-            >
-              <option value="">Statut : Tous</option>
-              <option value="DRAFT">Brouillon</option>
-              <option value="ORDERED">Commandée</option>
-              <option value="PARTIALLY_RECEIVED">Partielle</option>
-              <option value="RECEIVED">Reçue</option>
-              <option value="CANCELLED">Annulée</option>
-            </select>
-            <select
-              value={supplierId}
-              onChange={(e) => onSupplier(e.target.value)}
-              className="h-9 shrink-0 rounded-lg bg-white px-3 text-[11px] font-semibold"
-            >
-              <option value="">Fournisseur</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <PurchaseFilters status={status} onStatus={onStatus} supplierId={supplierId} onSupplier={onSupplier} suppliers={suppliers} />
 
           {loading ? (
             <p className="py-8 text-center text-[13px] text-ink/40">Chargement…</p>
@@ -288,11 +265,5 @@ function KpiMini({
   hint: string;
   alert?: boolean;
 }) {
-  return (
-    <div className={cn("flex flex-col justify-between rounded-xl p-2 shadow-sm", alert ? "bg-[#FFDAD6]/60" : "bg-white")}>
-      <span className="truncate text-[10px] font-semibold uppercase text-ink/45">{label}</span>
-      <span className={cn("text-[18px] font-extrabold leading-tight text-ink", alert && "text-[#BA1A1A]")}>{value}</span>
-      <span className="truncate text-[10px] text-ink/45">{hint}</span>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint} alert={alert}></MetricCard>;
 }

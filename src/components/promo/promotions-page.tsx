@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -22,7 +23,6 @@ import { useCurrentUser } from "@/components/auth/session-provider";
 import {
   type PromoStatusFilter,
   type PromoTab,
-  type PromoTargetFilter,
   type PromoTypeFilter,
   PROMO_PAGE_SIZE,
   deltaPct,
@@ -46,6 +46,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Select } from "@/components/ui/select";
+import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canWritePromotions } from "@/lib/rbac";
 import {
@@ -84,7 +85,6 @@ export function PromotionsPageView() {
   const [tab, setTab] = useState<PromoTab>("all");
   const [statusFilter, setStatusFilter] = useState<PromoStatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<PromoTypeFilter>("all");
-  const [targetFilter, setTargetFilter] = useState<PromoTargetFilter>("all");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -146,14 +146,14 @@ export function PromotionsPageView() {
         search,
         status: statusFilter,
         type: typeFilter,
-        target: targetFilter,
+        target: "all",
       }),
-    [rowsRaw, tab, search, statusFilter, typeFilter, targetFilter],
+    [rowsRaw, tab, search, statusFilter, typeFilter],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [tab, search, statusFilter, typeFilter, targetFilter]);
+  }, [tab, search, statusFilter, typeFilter]);
 
   useEffect(() => {
     if (selectedId && !filtered.some((p) => p.id === selectedId)) {
@@ -351,7 +351,7 @@ export function PromotionsPageView() {
           ) : null}
         </header>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
           <Kpi
             label="Promotions actives"
             value={kpis ? String(kpis.activeCount) : "—"}
@@ -401,7 +401,7 @@ export function PromotionsPageView() {
         </section>
 
         <section className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2 rounded-[22px] border border-[#F1E8EC] bg-white p-3 shadow-sm">
+          <div className="flex flex-wrap items-end gap-3 rounded-[22px] border border-[#F1E8EC] bg-white p-3 shadow-sm">
             <div className="relative min-w-[240px] flex-1">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -411,38 +411,22 @@ export function PromotionsPageView() {
                 className="h-11 w-full rounded-xl border border-[#F0E4EA] bg-[#FCF8FA] pl-10 pr-4 text-[13px] outline-none transition focus:border-[#C95483] focus:ring-2 focus:ring-pink-100"
               />
             </div>
-            <Select
-              className="h-10 w-44"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as PromoStatusFilter)}
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="active">Actives</option>
-              <option value="scheduled">Programmées</option>
-              <option value="archived">Archivées</option>
-            </Select>
-            <Select
-              className="h-10 w-44"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as PromoTypeFilter)}
-            >
-              <option value="all">Tous types</option>
-              {PROMOTION_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {PROMOTION_TYPE_LABEL[t]}
-                </option>
-              ))}
-            </Select>
-            <Select
-              className="h-10 w-44"
-              value={targetFilter}
-              onChange={(e) => setTargetFilter(e.target.value as PromoTargetFilter)}
-            >
-              <option value="all">Tout le fichier</option>
-              <option value="vip">VIP / Gold</option>
-              <option value="new">Premier RDV</option>
-              <option value="targeted">Cliente ciblée</option>
-            </Select>
+            <div className="w-full min-w-0 space-y-1.5 sm:w-48">
+  <span className="block text-xs font-semibold text-ink/60">Statut</span>
+  <Dropdown ariaLabel="Statut des promotions" value={statusFilter} onChange={(value) => setStatusFilter(value as PromoStatusFilter)} options={[
+    { value: "all", label: "Tous les statuts" },
+    { value: "active", label: "Actives", dotClassName: "bg-emerald-500" },
+    { value: "scheduled", label: "Programmées", dotClassName: "bg-amber-500" },
+    { value: "archived", label: "Archivées", dotClassName: "bg-gray-400" },
+  ]} />
+</div>
+<div className="w-full min-w-0 space-y-1.5 sm:w-52">
+  <span className="block text-xs font-semibold text-ink/60">Type de promotion</span>
+  <Dropdown ariaLabel="Type de promotion" value={typeFilter} onChange={(value) => setTypeFilter(value as PromoTypeFilter)} options={[
+    { value: "all", label: "Tous les types" },
+    ...PROMOTION_TYPES.map((value) => ({ value, label: PROMOTION_TYPE_LABEL[value] })),
+  ]} />
+</div>
           </div>
         </section>
 
@@ -758,27 +742,7 @@ function Kpi({
   icon: ReactNode;
   accent?: boolean;
 }) {
-  return (
-    <div className="group relative flex flex-col justify-between overflow-hidden rounded-[22px] border border-[#F1E8EC] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-lg">
-      <div className="flex items-center justify-between text-[#765E6B]">
-        <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FAF4F7] text-[#981C52]">
-          {icon}
-        </span>
-      </div>
-      <div className="pt-2">
-        <div className="text-[22px] font-bold text-[#30202C]">{value}</div>
-        <div
-          className={cn(
-            "pt-1 text-[12px]",
-            accent ? "font-semibold text-emerald-700" : "text-[#765E6B]",
-          )}
-        >
-          {hint}
-        </div>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint}></MetricCard>;
 }
 
 function PromoForm({

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 /** Page fidélité prestige — desktop + mobile. */
 import Link from "next/link";
@@ -422,16 +423,7 @@ function Kpi({
   hint: string;
   icon: ReactNode;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-4 shadow-sm">
-      <div className="mb-2 flex items-center justify-between text-ink/40">
-        <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        {icon}
-      </div>
-      <p className="text-[28px] font-extrabold leading-none">{value}</p>
-      <p className="mt-2 text-[12px] text-ink/45">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint}></MetricCard>;
 }
 
 function TierCard({

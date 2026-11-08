@@ -14,7 +14,7 @@ function LoginFormFields() {
   const [remember, setRemember] = useState(true);
 
   useEffect(() => {
-    const fromEmail = searchParams.get("email")?.trim() ?? "";
+    const fromEmail = searchParams.get("identifier")?.trim() || searchParams.get("email")?.trim() || "";
     const fromPassword =
       searchParams.get("password")?.trim() || searchParams.get("pin")?.trim() || "";
     if (fromEmail) setEmail(fromEmail);
@@ -101,7 +101,7 @@ function LoginFormFields() {
             Se connecter
           </h1>
           <p className="mx-auto mt-3 max-w-sm text-sm font-normal leading-relaxed text-ink/55">
-            Un e-mail, un mot de passe.{" "}
+            Votre numéro WhatsApp ou votre e-mail, puis votre mot de passe.{" "}
             <span className="font-medium text-ink/80">
               Le serveur détermine automatiquement votre espace
             </span>{" "}
@@ -115,7 +115,7 @@ function LoginFormFields() {
               className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/80"
               htmlFor="email"
             >
-              E-mail professionnel
+              WhatsApp ou e-mail
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-ink/40">
@@ -134,9 +134,10 @@ function LoginFormFields() {
                 id="email"
                 name="email"
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="contact@institut.ma"
+                placeholder="0612345678 ou contact@institut.ma"
                 required
-                type="email"
+                type="text"
+                maxLength={254}
                 value={email}
               />
             </div>

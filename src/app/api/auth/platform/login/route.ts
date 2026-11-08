@@ -110,6 +110,8 @@ export async function DELETE(request: NextRequest) {
   const session = getSessionFromRequest(request);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(clearSessionCookie());
+  res.headers.set("Clear-Site-Data", '"cache"');
+  res.cookies.set({ name: COOKIE_HOST, value: "", path: "/", sameSite: "lax", maxAge: 0 });
 
   if (session?.scope === "platform") {
     await writePlatformAuditLog({

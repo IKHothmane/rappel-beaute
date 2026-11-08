@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
@@ -227,7 +228,7 @@ export function InvoicesMobile({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiMini label="CA facturé" value={formatMad(kpis?.billedTotal ?? 0)} hint={`${kpis?.monthCount ?? 0} ce mois`} />
         <KpiMini
           label="Encaissé"
@@ -396,15 +397,7 @@ function KpiMini({
   hint?: string;
   alert?: boolean;
 }) {
-  return (
-    <div className={cn("rounded-xl p-3 shadow-sm", alert ? "bg-[#FFDAD6]/50" : "bg-white")}>
-      <p className={cn("text-[11px] font-bold uppercase tracking-wider", alert ? "text-[#93000A]" : "text-ink/45")}>
-        {label}
-      </p>
-      <p className="mt-1 text-[16px] font-extrabold">{value}</p>
-      {hint ? <p className={cn("mt-0.5 text-[11px]", alert ? "text-[#93000A]/80" : "text-ink/45")}>{hint}</p> : null}
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint} alert={alert}></MetricCard>;
 }
 
 function Row({ label, value }: { label: string; value: ReactNode }) {

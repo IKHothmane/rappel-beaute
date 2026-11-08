@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Dropdown } from "@/components/ui/dropdown";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -437,7 +438,7 @@ export function ProductsPageView({
               </FilterPill>
             ))}
           </div>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
             <div className="relative min-w-[240px] flex-1">
               <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/35" />
               <input
@@ -451,41 +452,34 @@ export function ProductsPageView({
                 ⌘K
               </span>
             </div>
-            <select
-              value={usage}
-              onChange={(e) => setUsage(e.target.value as UsageFilter)}
-              className="h-11 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink outline-none"
-            >
-              <option value="all">Tous les usages</option>
-              <option value="sellable">Revente boutique</option>
-              <option value="consumable">Consommable cabine</option>
-              <option value="hybrid">Hybride</option>
-            </select>
-            <select
-              value={alert}
-              onChange={(e) => setAlert(e.target.value as StockAlertLevel | "")}
-              className="h-11 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink outline-none"
-            >
-              <option value="">Tous les stocks</option>
-              <option value="OK">En stock</option>
-              <option value="LOW">Stock bas</option>
-              <option value="OUT">Rupture</option>
-              <option value="EXPIRING">Expire bientôt</option>
-              <option value="EXPIRED">Expiré</option>
-            </select>
+            <div className="min-w-0 space-y-1.5 lg:w-48">
+              <span className="block text-xs font-semibold text-ink/60">Usage</span>
+              <Dropdown ariaLabel="Usage" value={usage} onChange={(value) => setUsage(value as UsageFilter)} options={[
+                { value: "all", label: "Tous les usages" },
+                { value: "sellable", label: "Revente boutique" },
+                { value: "consumable", label: "Consommable cabine" },
+                { value: "hybrid", label: "Hybride" },
+              ]} />
+            </div>
+            <div className="min-w-0 space-y-1.5 lg:w-44">
+              <span className="block text-xs font-semibold text-ink/60">Stock</span>
+              <Dropdown ariaLabel="Stock" value={alert} onChange={(value) => setAlert(value as StockAlertLevel | "")} options={[
+                { value: "", label: "Tous les stocks" },
+                { value: "OK", label: "En stock", dotClassName: "bg-emerald-500" },
+                { value: "LOW", label: "Stock bas", dotClassName: "bg-amber-500" },
+                { value: "OUT", label: "Rupture", dotClassName: "bg-red-500" },
+                { value: "EXPIRING", label: "Expire bientôt", dotClassName: "bg-orange-500" },
+                { value: "EXPIRED", label: "Expiré", dotClassName: "bg-red-700" },
+              ]} />
+            </div>
             {suppliers.length > 1 ? (
-              <select
-                value={supplier}
-                onChange={(e) => setSupplier(e.target.value)}
-                className="h-11 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink outline-none"
-              >
-                <option value="">Tous les fournisseurs</option>
-                {suppliers.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+              <div className="min-w-0 space-y-1.5 lg:w-52">
+                <span className="block text-xs font-semibold text-ink/60">Fournisseur</span>
+                <Dropdown ariaLabel="Fournisseur" value={supplier} onChange={setSupplier} options={[
+                  { value: "", label: "Tous les fournisseurs" },
+                  ...suppliers.map((name) => ({ value: name, label: name })),
+                ]} />
+              </div>
             ) : null}
             <div className="flex rounded-lg bg-[#FFEFF8] p-1">
               <button

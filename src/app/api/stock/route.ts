@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       !validated.data.referenceId
     ) {
       return NextResponse.json(
-        { error: "La consommation service passe par la finalisation du RDV." },
+        { error: "La consommation service se fait depuis le détail du RDV (bouton Déduire du stock)." },
         { status: 400 },
       );
     }

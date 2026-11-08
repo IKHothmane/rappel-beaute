@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/select";
 import { ServiceResponsiveImage } from "@/components/services/service-responsive-image";
+import {
+  ServiceProductSelector,
+  type ProductLink,
+} from "@/components/services/service-product-selector";
 import { ServiceStaffSelector } from "@/components/services/service-staff-selector";
 import { DURATION_PRESETS, SERVICE_NAME_SUGGESTIONS } from "@/components/services/services-helpers";
 import {
@@ -49,6 +53,14 @@ export function ServiceForm({
   const [price, setPrice] = useState(initial?.price?.toString() ?? "");
   const [durationMin, setDurationMin] = useState(initial?.durationMin?.toString() ?? "60");
   const [staffIds, setStaffIds] = useState<string[]>(initial?.staff?.map((s) => s.staffId) ?? []);
+  const [products, setProducts] = useState<ProductLink[]>(
+    () =>
+      initial?.products?.map((p) => ({
+        productId: p.productId,
+        quantity: p.quantity,
+        unit: p.unit,
+      })) ?? [],
+  );
   const [active, setActive] = useState(initial?.active ?? true);
   const [nameOpen, setNameOpen] = useState(false);
   const [catalogDefaults, setCatalogDefaults] = useState<Record<string, string>>({});
@@ -94,6 +106,13 @@ export function ServiceForm({
         (!isCreate ? initial?.imageUrl ?? null : null),
       active,
       staffIds,
+      products: products
+        .filter((p) => p.productId && p.quantity > 0)
+        .map((p) => ({
+          productId: p.productId,
+          quantity: p.quantity,
+          unit: p.unit,
+        })),
     });
   }
 
@@ -226,6 +245,18 @@ export function ServiceForm({
           Toutes les employées de l’institut. Cochez celles qui réalisent ce soin.
         </p>
         <ServiceStaffSelector options={options.staff} value={staffIds} onChange={setStaffIds} />
+      </div>
+
+      <div>
+        <span className="mb-1.5 block text-sm font-medium">Produits consommés</span>
+        <p className="mb-2 text-[12px] leading-5 text-ink/50">
+          Quantités retirées du stock automatiquement quand le rendez-vous est marqué Terminé.
+        </p>
+        <ServiceProductSelector
+          options={options.products}
+          value={products}
+          onChange={setProducts}
+        />
       </div>
 
       <div className="flex items-center justify-between gap-3 rounded-xl bg-[#FFEFF8] p-3">

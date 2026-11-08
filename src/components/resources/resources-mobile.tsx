@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode, type RefObject } from "react";
@@ -28,7 +29,6 @@ import type { Appointment } from "@/types/appointment";
 import type { ResourceListItem, ResourceType } from "@/types/resource";
 import { RESOURCE_TYPE_LABEL } from "@/types/resource";
 
-type StatusFilter = "all" | "available" | "occupied" | "soon" | "maintenance" | "inactive";
 type MobileView = "list" | "focus";
 
 type ResourcesMobileProps = {
@@ -47,11 +47,6 @@ type ResourcesMobileProps = {
   searchRef: RefObject<HTMLInputElement>;
   typeFilter: ResourceType | "";
   onTypeFilter: (type: ResourceType | "") => void;
-  statusFilter: StatusFilter;
-  onStatusFilter: (status: StatusFilter) => void;
-  location: string;
-  onLocation: (value: string) => void;
-  locations: string[];
   typeCounts: [ResourceType, number][];
   filtered: ResourceListItem[];
   loading: boolean;
@@ -86,11 +81,6 @@ export function ResourcesMobile({
   searchRef,
   typeFilter,
   onTypeFilter,
-  statusFilter,
-  onStatusFilter,
-  location,
-  onLocation,
-  locations,
   typeCounts,
   filtered,
   loading,
@@ -182,7 +172,7 @@ export function ResourcesMobile({
         <p className="mt-1 text-[13px] leading-relaxed text-ink">{insight}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 rb-metric-row">
         <Kpi label="Total" value={String(catalogCount)} hint={`${activeCount} actives`} />
         <Kpi label="Libres" value={String(availableCount)} hint="Non occupées maintenant" tone="emerald" />
         <Kpi label="En soin" value={String(occupiedCount)} hint="Créneau en cours" />
@@ -224,37 +214,7 @@ export function ResourcesMobile({
       </div>
 
       <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
-        <Pill active={statusFilter === "all"} onClick={() => onStatusFilter("all")}>
-          Tous statuts
-        </Pill>
-        <Pill active={statusFilter === "available"} onClick={() => onStatusFilter("available")}>
-          Libres ({availableCount})
-        </Pill>
-        <Pill active={statusFilter === "occupied"} onClick={() => onStatusFilter("occupied")}>
-          En soin ({occupiedCount})
-        </Pill>
-        <Pill active={statusFilter === "soon"} onClick={() => onStatusFilter("soon")}>
-          Bientôt
-        </Pill>
-        <Pill active={statusFilter === "maintenance"} onClick={() => onStatusFilter("maintenance")}>
-          Maintenance ({maintenanceCount})
-        </Pill>
       </div>
-
-      {locations.length > 1 ? (
-        <select
-          value={location}
-          onChange={(e) => onLocation(e.target.value)}
-          className="h-11 rounded-xl bg-white px-3 text-sm text-ink shadow-sm outline-none"
-        >
-          <option value="">Tous les emplacements</option>
-          {locations.map((loc) => (
-            <option key={loc} value={loc}>
-              {loc}
-            </option>
-          ))}
-        </select>
-      ) : null}
 
       <div className="flex items-center rounded-xl bg-[#F6E3EF] p-1">
         <button
@@ -467,15 +427,7 @@ function Kpi({
   hint: ReactNode;
   tone?: "emerald";
 }) {
-  return (
-    <div className="rounded-xl bg-white p-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/40">{label}</p>
-      <p className={cn("mt-1 font-display text-[22px] font-bold", tone === "emerald" ? "text-emerald-700" : "text-ink")}>
-        {value}
-      </p>
-      <p className="mt-0.5 text-[11px] text-ink/45">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function Pill({

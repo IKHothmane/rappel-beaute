@@ -7,6 +7,7 @@ import {
   CalendarClock,
   CheckCheck,
   MessageCircle,
+  PackageMinus,
   Pencil,
   Phone,
   UserX,
@@ -23,6 +24,7 @@ import {
 } from "@/modules/appointments/constants";
 import { formatMad } from "@/modules/analytics/service";
 import { getCustomer } from "@/modules/customers/service";
+import { listProducts } from "@/modules/inventory/service";
 import { staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import {
@@ -31,7 +33,15 @@ import {
   appointmentRemaining,
 } from "@/components/agenda/appointment-pay-badge";
 import { cn } from "@/lib/utils";
-import { extraIdsFromNotes, notesWithServices, soinLabelsFromNotes } from "@/components/agenda/service-notes";
+import {
+  consoFromNotes,
+  extraIdsFromNotes,
+  notesWithConso,
+  notesWithServices,
+  soinLabelsFromNotes,
+  type ConsoProductLine,
+} from "@/components/agenda/service-notes";
+import { PRODUCT_UNIT_LABEL } from "@/types/inventory";
 
 type ServiceChoice = { id: string; name: string; price: number; durationMin: number };
 type StaffChoice = { id: string; name: string };
@@ -112,11 +122,43 @@ export function AppointmentDetails({
   const [saveError, setSaveError] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState("");
+  const [productOptions, setProductOptions] = useState<
+    { id: string; name: string; unit: string; stock: number }[]
+  >([]);
+  const [consoLines, setConsoLines] = useState<ConsoProductLine[]>(() =>
+    consoFromNotes(appointment.notes),
+  );
+  const [stockNote, setStockNote] = useState("");
+  const [stockBusy, setStockBusy] = useState(false);
 
   useEffect(() => {
     setPromoCode("");
     setPromoError("");
-  }, [appointment.id]);
+    setConsoLines(consoFromNotes(appointment.notes));
+    setStockNote("");
+  }, [appointment.id, appointment.notes]);
+
+  useEffect(() => {
+    let cancelled = false;
+    listProducts({ limit: 200, active: true })
+      .then((res) => {
+        if (cancelled) return;
+        setProductOptions(
+          res.data.map((p) => ({
+            id: p.id,
+            name: p.name,
+            unit: p.unit,
+            stock: p.stock,
+          })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setProductOptions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function saveServices(serviceId: string, nextExtras: string[]) {
     const extras = nextExtras.filter((id, index) => id !== serviceId && nextExtras.indexOf(id) === index);
@@ -148,6 +190,49 @@ export function AppointmentDetails({
     if (!result.ok) setSaveError(result.error);
   }
 
+  async function saveConso(next: ConsoProductLine[]) {
+    const cleaned = next.filter((line) => line.productId && line.quantity > 0);
+    setConsoLines(next);
+    setBusy(true);
+    setSaveError("");
+    setStockNote("");
+    const result = await onChange({
+      notes: notesWithConso(appointment.notes, cleaned),
+    });
+    setBusy(false);
+    if (!result.ok) setSaveError(result.error);
+  }
+
+  async function deductStock() {
+    const products = consoLines.filter((line) => line.productId && line.quantity > 0);
+    if (products.length === 0) {
+      setStockNote("Sélectionnez au moins un produit.");
+      return;
+    }
+    setStockBusy(true);
+    setStockNote("");
+    try {
+      const res = await fetch(`/api/appointments/${appointment.id}/consume/`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ products }),
+      });
+      const body = (await res.json()) as {
+        error?: string;
+        message?: string;
+        created?: number;
+        skipped?: number;
+      };
+      if (!res.ok) throw new Error(body.error || "Déduction impossible.");
+      setStockNote(body.message || "Stock déduit.");
+    } catch (error) {
+      setStockNote(error instanceof Error ? error.message : "Déduction impossible.");
+    } finally {
+      setStockBusy(false);
+    }
+  }
+
   const payDetail = appointmentPayDetail(appointment);
   const linkedDiscount = appointment.discount ?? 0;
   const due = appointment.amountDue ?? appointment.price;
@@ -160,8 +245,17 @@ export function AppointmentDetails({
   const visibleNotes = (appointment.notes ?? "")
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith("Soins:") && !line.startsWith("extras:") && !line.startsWith("Promo:"))
+    .filter(
+      (line) =>
+        line &&
+        !line.startsWith("Soins:") &&
+        !line.startsWith("extras:") &&
+        !line.startsWith("Promo:") &&
+        !line.startsWith("conso:"),
+    )
     .join("\n");
+  const selectedProductIds = new Set(consoLines.map((line) => line.productId).filter(Boolean));
+  const canDeductStock = consoLines.some((line) => line.productId && line.quantity > 0);
   const phone = customer?.phone?.trim() || "";
   const noShows = customer?.noShowCount ?? 0;
   const vip = customer?.segment === "VIP";
@@ -373,6 +467,114 @@ export function AppointmentDetails({
               ))}
           </select>
         </div>
+
+        <div className="flex flex-col gap-1.5 border-t border-line/60 pt-3">
+          <span className="text-ink/45">Produits consommés</span>
+          <p className="text-[11px] text-ink/45">
+            Sélection manuelle — le stock ne baisse qu’avec le bouton ci-dessous.
+          </p>
+          {consoLines.map((line, index) => {
+            const product = productOptions.find((p) => p.id === line.productId);
+            const available = productOptions.filter(
+              (p) => p.id === line.productId || !selectedProductIds.has(p.id),
+            );
+            return (
+              <div key={`conso-${index}`} className="grid grid-cols-[1fr_72px_auto] gap-2">
+                <select
+                  value={line.productId}
+                  disabled={busy || stockBusy}
+                  onChange={(event) => {
+                    const next = [...consoLines];
+                    next[index] = {
+                      ...line,
+                      productId: event.target.value,
+                    };
+                    void saveConso(next);
+                  }}
+                  className="h-10 rounded-xl border border-line bg-white px-3 text-sm font-semibold outline-none focus:border-primary"
+                >
+                  <option value="">Choisir un produit…</option>
+                  {available.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} · stock {p.stock}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  step={1}
+                  value={line.quantity}
+                  disabled={busy || stockBusy || !line.productId}
+                  onChange={(event) => {
+                    const quantity = Math.max(1, Math.round(Number(event.target.value) || 1));
+                    const next = [...consoLines];
+                    next[index] = { ...line, quantity };
+                    setConsoLines(next);
+                  }}
+                  onBlur={() => void saveConso(consoLines)}
+                  className="h-10 rounded-xl border border-line bg-white px-2 text-sm font-semibold outline-none focus:border-primary"
+                  aria-label="Quantité"
+                />
+                <button
+                  type="button"
+                  disabled={busy || stockBusy}
+                  onClick={() => void saveConso(consoLines.filter((_, i) => i !== index))}
+                  className="text-sm font-semibold text-red-600"
+                >
+                  ×
+                </button>
+                {product ? (
+                  <p className="col-span-3 -mt-1 text-[11px] text-ink/45">
+                    {PRODUCT_UNIT_LABEL[product.unit as keyof typeof PRODUCT_UNIT_LABEL] ?? product.unit}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            disabled={
+              busy ||
+              stockBusy ||
+              productOptions.length === 0 ||
+              consoLines.some((line) => !line.productId) ||
+              selectedProductIds.size >= productOptions.length
+            }
+            onClick={() => setConsoLines((prev) => [...prev, { productId: "", quantity: 1 }])}
+            className="h-10 rounded-xl border border-dashed border-primary/40 bg-white text-sm font-semibold text-primary disabled:opacity-40"
+          >
+            + Ajouter un produit
+          </button>
+          <button
+            type="button"
+            disabled={busy || stockBusy || !canDeductStock}
+            onClick={() => void deductStock()}
+            className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#FFF1F6] text-sm font-semibold text-primary disabled:opacity-40"
+          >
+            <PackageMinus size={15} />
+            {stockBusy ? "Déduction…" : "Déduire du stock"}
+          </button>
+          {stockNote ? (
+            <p
+              className={cn(
+                "text-[12px] font-medium",
+                stockNote.includes("déduit") || stockNote.includes("déjà")
+                  ? "text-emerald-700"
+                  : "text-red-600",
+              )}
+            >
+              {stockNote}
+            </p>
+          ) : null}
+          {productOptions.length === 0 ? (
+            <p className="text-[11px] text-ink/45">
+              Aucun produit actif. Créez-en dans Stock / Produits.
+            </p>
+          ) : null}
+        </div>
+
         <Row
           label="Créneau"
           value={`${start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} → ${end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} (${mins} min)`}

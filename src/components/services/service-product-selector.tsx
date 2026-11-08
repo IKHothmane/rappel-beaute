@@ -21,10 +21,13 @@ export function ServiceProductSelector({
   onChange,
   disabled,
 }: ServiceProductSelectorProps) {
+  const selectedIds = new Set(value.map((v) => v.productId).filter(Boolean));
+  const hasEmptyRow = value.some((v) => !v.productId);
+  const canAdd = options.length > 0 && !hasEmptyRow && selectedIds.size < options.length;
+
   function add() {
-    const first = options.find((p) => !value.some((v) => v.productId === p.id));
-    if (!first) return;
-    onChange([...value, { productId: first.id, quantity: 1, unit: first.unit }]);
+    if (!canAdd || disabled) return;
+    onChange([...value, { productId: "", quantity: 1, unit: "" }]);
   }
 
   function update(index: number, patch: Partial<ProductLink>) {
@@ -36,6 +39,7 @@ export function ServiceProductSelector({
   }
 
   function unitLabel(unit: string) {
+    if (!unit) return "—";
     return PRODUCT_UNIT_LABEL[unit as keyof typeof PRODUCT_UNIT_LABEL] ?? unit;
   }
 
@@ -43,20 +47,31 @@ export function ServiceProductSelector({
     <div className="space-y-2">
       {value.map((item, index) => {
         const product = options.find((p) => p.id === item.productId);
+        const available = options.filter(
+          (p) => p.id === item.productId || !selectedIds.has(p.id),
+        );
         return (
-          <div key={`${item.productId}-${index}`} className="grid grid-cols-[1fr_88px_72px_auto] gap-2">
+          <div
+            key={`product-row-${index}`}
+            className="grid grid-cols-[1fr_88px_72px_auto] gap-2"
+          >
             <Select
               value={item.productId}
               onChange={(e) => {
-                const p = options.find((x) => x.id === e.target.value);
+                const nextId = e.target.value;
+                const p = options.find((x) => x.id === nextId);
                 update(index, {
-                  productId: e.target.value,
-                  unit: p?.unit ?? item.unit,
+                  productId: nextId,
+                  unit: p?.unit ?? "",
                 });
               }}
               disabled={disabled}
+              required
             >
-              {options.map((p) => (
+              <option value="" disabled>
+                Choisir un produit…
+              </option>
+              {available.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} ({p.sku})
                 </option>
@@ -64,11 +79,14 @@ export function ServiceProductSelector({
             </Select>
             <Input
               type="number"
-              min={0.001}
-              step={0.001}
+              inputMode="numeric"
+              min={1}
+              step={1}
               value={item.quantity}
-              onChange={(e) => update(index, { quantity: Number(e.target.value) || 1 })}
-              disabled={disabled}
+              onChange={(e) =>
+                update(index, { quantity: Math.max(1, Math.round(Number(e.target.value) || 1)) })
+              }
+              disabled={disabled || !item.productId}
               aria-label="Quantité consommée"
             />
             <div className="flex h-11 items-center rounded-xl border border-line bg-[#FBF4F6] px-2 text-xs font-medium text-ink/70">
@@ -88,7 +106,7 @@ export function ServiceProductSelector({
       <button
         type="button"
         onClick={add}
-        disabled={disabled || value.length >= options.length || options.length === 0}
+        disabled={disabled || !canAdd}
         className="text-sm text-primary hover:underline disabled:opacity-40"
       >
         + Ajouter un produit consommé
@@ -103,7 +121,8 @@ export function ServiceProductSelector({
         </p>
       ) : (
         <p className="text-xs text-ink/45">
-          À la finalisation du RDV, ces quantités génèrent un mouvement SERVICE_CONSUMPTION (idempotent).
+          Catalogue du soin (référence). La déduction du stock se fait
+          manuellement sur chaque rendez-vous.
         </p>
       )}
     </div>

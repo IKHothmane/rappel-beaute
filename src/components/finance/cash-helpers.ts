@@ -152,15 +152,15 @@ export function txnTypeChip(type: CashTxnType) {
   switch (type) {
     case "SALE":
     case "CASH_IN":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-[#E6F6ED] text-[#0F6B3C] ring-[#9FD4B3]/55";
     case "REFUND_OUT":
-      return "bg-[#FFDEA4]/70 text-[#5D4200]";
+      return "bg-[#FFF0D6] text-[#7A4E00] ring-[#E8C56A]/50";
     case "CASH_OUT":
     case "EXPENSE":
-      return "bg-[#FFDAD6] text-[#93000A]";
+      return "bg-[#FFE2E0] text-[#8C1D18] ring-[#F5B5B0]/60";
     case "OPENING":
     case "CLOSING":
-      return "bg-[#F0DDE9] text-ink/60";
+      return "bg-[#FCE9F4] text-[#765E6B] ring-[#E8C9D6]";
   }
 }
 

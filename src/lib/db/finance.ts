@@ -51,6 +51,7 @@ function mapPaymentRow(r: Record<string, unknown>): PaymentItem {
     status: r.status as PaymentItem["status"],
     parentPaymentId: (r.parentPaymentId as string) ?? null,
     giftCardId: (r.giftCardId as string) ?? null,
+    ticketNumber: (r.ticketNumber as string) ?? null,
     notes: (r.notes as string) ?? null,
     userId: (r.userId as string) ?? null,
     userName:
@@ -60,6 +61,38 @@ function mapPaymentRow(r: Record<string, unknown>): PaymentItem {
     paidAt: new Date(r.paidAt as Date).toISOString(),
     createdAt: new Date(r.createdAt as Date).toISOString(),
   };
+}
+
+/** Numéro de passage journalier JJ/MM-NNN (fuseau Africa/Casablanca). */
+export async function nextPaymentTicketNumber(
+  organizationId: string,
+  client: PoolClient,
+): Promise<string> {
+  const { rows: dayRows } = await client.query<{ dayKey: string; dayLabel: string }>(
+    `SELECT
+       to_char((NOW() AT TIME ZONE 'Africa/Casablanca'), 'YYYY-MM-DD') AS "dayKey",
+       to_char((NOW() AT TIME ZONE 'Africa/Casablanca'), 'DD/MM') AS "dayLabel"`,
+  );
+  const dayKey = dayRows[0]?.dayKey ?? new Date().toISOString().slice(0, 10);
+  const dayLabel =
+    dayRows[0]?.dayLabel ??
+    new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+
+  await client.query(
+    `INSERT INTO "PaymentTicketSequence" ("organizationId", "dayKey", "lastValue", "updatedAt")
+     VALUES ($1, $2, 0, NOW())
+     ON CONFLICT ("organizationId", "dayKey") DO NOTHING`,
+    [organizationId, dayKey],
+  );
+  const { rows } = await client.query<{ lastValue: number }>(
+    `UPDATE "PaymentTicketSequence"
+     SET "lastValue" = "lastValue" + 1, "updatedAt" = NOW()
+     WHERE "organizationId" = $1 AND "dayKey" = $2
+     RETURNING "lastValue"`,
+    [organizationId, dayKey],
+  );
+  const seq = rows[0]?.lastValue ?? 1;
+  return `${dayLabel}-${String(seq).padStart(3, "0")}`;
 }
 
 function mapCashTxn(r: Record<string, unknown>): CashTxnItem {
@@ -532,13 +565,25 @@ export async function listPayments(
   const { rows } = await pool.query(
     `SELECT
       p.id, p."appointmentId", p."customerId", p.amount::text, p.method::text,
-      p.kind::text, p.status::text, p."parentPaymentId", p."giftCardId", p.notes, p."userId",
+      p.kind::text, p.status::text, p."parentPaymentId", p."giftCardId", p."ticketNumber",
+      p.notes, p."userId",
       p."paidAt", p."createdAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
       c.phone AS "customerPhone",
       inv."customerNameSnapshot" AS "invoiceCustomerName",
       inv."customerPhoneSnapshot" AS "invoiceCustomerPhone",
       COALESCE(
+        CASE
+          WHEN p.notes ILIKE '%POS%' OR p.notes ILIKE '%vente%' THEN (
+            SELECT NULLIF(string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder"), '')
+            FROM "InvoiceItem" ii
+            WHERE ii."invoiceId" = COALESCE(
+              p."invoiceId",
+              (SELECT s."invoiceId" FROM "PosSale" s WHERE s."paymentId" = p.id LIMIT 1)
+            )
+          )
+          ELSE NULL
+        END,
         NULLIF((
           SELECT trim(both FROM substr(line, 7))
           FROM unnest(string_to_array(COALESCE(a.notes, ''), E'\n')) AS line
@@ -548,7 +593,7 @@ export async function listPayments(
         s.name,
         a."serviceNameSnapshot",
         (
-          SELECT string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder")
+          SELECT NULLIF(string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder"), '')
           FROM "InvoiceItem" ii
           WHERE ii."invoiceId" = p."invoiceId"
         ),
@@ -579,13 +624,25 @@ export async function getPaymentById(
   const { rows } = await pool.query(
     `SELECT
       p.id, p."appointmentId", p."customerId", p.amount::text, p.method::text,
-      p.kind::text, p.status::text, p."parentPaymentId", p."giftCardId", p.notes, p."userId",
+      p.kind::text, p.status::text, p."parentPaymentId", p."giftCardId", p."ticketNumber",
+      p.notes, p."userId",
       p."paidAt", p."createdAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
       c.phone AS "customerPhone",
       inv."customerNameSnapshot" AS "invoiceCustomerName",
       inv."customerPhoneSnapshot" AS "invoiceCustomerPhone",
       COALESCE(
+        CASE
+          WHEN p.notes ILIKE '%POS%' OR p.notes ILIKE '%vente%' THEN (
+            SELECT NULLIF(string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder"), '')
+            FROM "InvoiceItem" ii
+            WHERE ii."invoiceId" = COALESCE(
+              p."invoiceId",
+              (SELECT s."invoiceId" FROM "PosSale" s WHERE s."paymentId" = p.id LIMIT 1)
+            )
+          )
+          ELSE NULL
+        END,
         NULLIF((
           SELECT trim(both FROM substr(line, 7))
           FROM unnest(string_to_array(COALESCE(a.notes, ''), E'\n')) AS line
@@ -595,7 +652,7 @@ export async function getPaymentById(
         s.name,
         a."serviceNameSnapshot",
         (
-          SELECT string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder")
+          SELECT NULLIF(string_agg(ii."nameSnapshot", ' + ' ORDER BY ii."sortOrder"), '')
           FROM "InvoiceItem" ii
           WHERE ii."invoiceId" = p."invoiceId"
         ),
@@ -697,13 +754,14 @@ export async function createPayments(
         }
       }
 
+      const ticketNumber = await nextPaymentTicketNumber(organizationId, client);
       await client.query(
         `INSERT INTO "Payment" (
           id, "organizationId", "appointmentId", "customerId", amount, method, kind,
-          status, "giftCardId", notes, "userId", "idempotencyKey", "paidAt", "updatedAt"
+          status, "giftCardId", "ticketNumber", notes, "userId", "idempotencyKey", "paidAt", "updatedAt"
         ) VALUES (
           $1,$2,$3,$4,$5,$6::"PaymentMethod",$7::"PaymentKind",
-          'COMPLETED'::"PaymentStatus",$8,$9,$10,$11,NOW(),NOW()
+          'COMPLETED'::"PaymentStatus",$8,$9,$10,$11,$12,NOW(),NOW()
         )`,
         [
           id,
@@ -714,6 +772,7 @@ export async function createPayments(
           line.method,
           line.kind ?? "PAYMENT",
           giftCardId,
+          ticketNumber,
           input.notes ?? null,
           userId,
           key,
@@ -863,13 +922,14 @@ export async function refundPayment(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    const ticketNumber = await nextPaymentTicketNumber(organizationId, client);
     await client.query(
       `INSERT INTO "Payment" (
         id, "organizationId", "appointmentId", "customerId", amount, method, kind,
-        status, "parentPaymentId", notes, "userId", "idempotencyKey", "paidAt", "updatedAt"
+        status, "parentPaymentId", "ticketNumber", notes, "userId", "idempotencyKey", "paidAt", "updatedAt"
       ) VALUES (
         $1,$2,$3,$4,$5,$6::"PaymentMethod",'REFUND'::"PaymentKind",
-        'COMPLETED'::"PaymentStatus",$7,$8,$9,$10,NOW(),NOW()
+        'COMPLETED'::"PaymentStatus",$7,$8,$9,$10,$11,NOW(),NOW()
       )`,
       [
         id,
@@ -879,6 +939,7 @@ export async function refundPayment(
         input.amount,
         input.method,
         paymentId,
+        ticketNumber,
         input.reason ?? "Remboursement",
         userId,
         input.idempotencyKey ?? null,
@@ -977,6 +1038,8 @@ export async function listBillableAppointments(
 ): Promise<
   {
     id: string;
+    customerId: string;
+    serviceId: string | null;
     customerName: string;
     serviceName: string;
     price: number;
@@ -996,7 +1059,7 @@ export async function listBillableAppointments(
 
   const { rows } = await pool.query(
     `SELECT
-      a.id, a.status::text, a.price::text, a."startAt", a."createdAt",
+      a.id, a."customerId", a."serviceId", a.status::text, a.price::text, a."startAt", a."createdAt",
       c."firstName" AS "customerFirst", c."lastName" AS "customerLast",
       c.phone AS "customerPhone",
       COALESCE(
@@ -1069,6 +1132,8 @@ export async function listBillableAppointments(
       const remaining = Math.max(0, Math.round((due - netPaid) * 100) / 100);
       return {
         id: r.id as string,
+        customerId: r.customerId as string,
+        serviceId: (r.serviceId as string) ?? null,
         customerName: `${r.customerFirst} ${r.customerLast}`.trim(),
         serviceName: r.serviceName as string,
         price,

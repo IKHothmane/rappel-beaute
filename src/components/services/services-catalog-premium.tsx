@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import { useMemo, useState, type ElementType } from "react";
 import {
@@ -16,7 +17,7 @@ import {
   Search,
   Scissors,
   ShoppingBag,
-  SlidersHorizontal,
+
   Sparkles,
   TrendingUp,
   Users,
@@ -79,27 +80,7 @@ function StatCard({
   icon: ElementType;
   tone: "rose" | "violet" | "green" | "gold";
 }) {
-  const colors = {
-    rose: "bg-[#FCE3EA] text-[#A50D48]",
-    violet: "bg-[#EEE3FA] text-[#793EB0]",
-    green: "bg-[#E1F5E9] text-[#148452]",
-    gold: "bg-[#FFF0DA] text-[#C48822]",
-  };
-
-  return (
-    <div className="min-w-0 rounded-[20px] border border-[#F1DBE3] bg-white/85 p-4 shadow-[0_6px_18px_rgba(72,20,43,0.05)] transition hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="flex items-center gap-3">
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${colors[tone]}`}>
-          <Icon size={22} strokeWidth={1.9} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-[#745364]">{label}</p>
-          <p className="mt-1 break-words text-xl font-extrabold text-[#381327]">{value}</p>
-        </div>
-      </div>
-      {detail ? <p className="mt-3 text-xs text-[#907989]">{detail}</p> : null}
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={<Icon />} hint={detail}></MetricCard>;
 }
 
 function ServicePhoto({
@@ -321,10 +302,10 @@ export default function ServicesCatalogPremium({
 }: Props) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [sort, setSort] = useState("name");
+  const [status] = useState<StatusFilter>("all");
+  const [sort] = useState("name");
   const [page, setPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
+
 
   const categories = useMemo(() => {
     return Array.from(
@@ -362,10 +343,6 @@ export default function ServicesCatalogPremium({
   const currentPage = Math.min(page, totalPages);
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  function changeFilter(next: StatusFilter) {
-    setStatus(next);
-    setPage(1);
-  }
 
   const chips = [
     { id: "all", label: "Tous", count: services.length },
@@ -407,7 +384,7 @@ export default function ServicesCatalogPremium({
         ) : null}
       </header>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5 rb-metric-row">
         <StatCard
           label="Catalogue"
           value={services.length}
@@ -446,8 +423,8 @@ export default function ServicesCatalogPremium({
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex min-w-[220px] flex-1 items-center gap-3 rounded-2xl border border-[#EAD9E1] bg-white px-4 shadow-sm">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        <div className="flex min-w-[220px] items-center gap-3 rounded-2xl border border-[#EAD9E1] bg-white px-4 shadow-sm xl:w-80 xl:shrink-0">
           <Search size={19} className="text-[#A01C50]" />
           <input
             aria-label="Rechercher un service"
@@ -461,62 +438,7 @@ export default function ServicesCatalogPremium({
             className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#AA96A1]"
           />
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowFilters((v) => !v)}
-          aria-expanded={showFilters}
-          className="inline-flex h-12 items-center gap-2 rounded-2xl border border-[#EAD9E1] bg-white px-4 text-sm font-semibold hover:bg-[#FFF0F6]"
-        >
-          <SlidersHorizontal size={17} />
-          Filtres
-        </button>
-      </div>
-
-      {showFilters ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[#EAD9E1] bg-white p-4">
-          <label className="text-xs font-semibold text-[#79566A]">
-            Statut
-            <select
-              value={status}
-              onChange={(e) => changeFilter(e.target.value as StatusFilter)}
-              className="mt-1 block h-10 rounded-xl border border-[#EAD9E1] bg-white px-3 text-sm text-[#351425]"
-            >
-              <option value="all">Tous</option>
-              <option value="active">Actifs</option>
-              <option value="inactive">Inactifs</option>
-            </select>
-          </label>
-
-          <label className="text-xs font-semibold text-[#79566A]">
-            Trier par
-            <select
-              value={sort}
-              onChange={(e) => {
-                setSort(e.target.value);
-                setPage(1);
-              }}
-              className="mt-1 block h-10 rounded-xl border border-[#EAD9E1] bg-white px-3 text-sm text-[#351425]"
-            >
-              <option value="name">Nom (A → Z)</option>
-              <option value="priceAsc">Prix croissant</option>
-              <option value="priceDesc">Prix décroissant</option>
-              <option value="duration">Durée</option>
-            </select>
-          </label>
-
-          <button
-            type="button"
-            onClick={() => void onRefresh?.()}
-            disabled={!onRefresh || loading}
-            className="self-end rounded-xl border border-[#EAD9E1] px-4 py-3 text-xs font-bold hover:bg-[#FFF0F6] disabled:opacity-40"
-          >
-            Actualiser
-          </button>
-        </div>
-      ) : null}
-
-      <nav aria-label="Catégories de services" className="flex gap-2 overflow-x-auto pb-2">
+      <nav aria-label="Catégories de services" className="flex min-w-0 flex-wrap items-center gap-2">
         {chips.map((chip) => (
           <button
             key={chip.id}
@@ -536,6 +458,7 @@ export default function ServicesCatalogPremium({
           </button>
         ))}
       </nav>
+      </div>
 
       <p className="text-sm font-semibold text-[#765567]">
         {filtered.length} prestation{filtered.length > 1 ? "s" : ""}

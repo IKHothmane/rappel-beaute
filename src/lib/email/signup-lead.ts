@@ -24,7 +24,7 @@ export function signupLeadEmail(opts: {
 }): { subject: string; html: string; text: string } {
   const personName = escapeHtml(opts.personName);
   const institut = escapeHtml(opts.institut);
-  const email = escapeHtml(opts.email);
+  const email = escapeHtml(opts.email || "Non renseigné");
   const phone = escapeHtml(opts.phone);
   const city = escapeHtml(opts.city);
   const address = escapeHtml(opts.address);
@@ -36,7 +36,7 @@ export function signupLeadEmail(opts: {
   const rows: Array<[string, string]> = [
     ["Nom", opts.personName],
     ["Institut", opts.institut],
-    ["E-mail", opts.email],
+    ["E-mail", opts.email || "Non renseigné"],
     ["WhatsApp", opts.phone],
     ["Ville", opts.city],
     ["Adresse", opts.address],
@@ -50,7 +50,7 @@ export function signupLeadEmail(opts: {
     ``,
     ...rows.map(([label, value]) => `${label} : ${value}`),
     ``,
-    `Répondez à cet e-mail pour écrire à ${opts.email}.`,
+    opts.email ? `Répondez à cet e-mail pour écrire à ${opts.email}.` : `Contactez cet institut sur WhatsApp : ${opts.phone}.`,
   ].join("\n");
 
   const htmlRows = [
@@ -80,7 +80,7 @@ export function signupLeadEmail(opts: {
           <h1 style="margin:0 0 16px;font-size:22px;">Nouvelle inscription professionnelle</h1>
           <p style="margin:0 0 16px;line-height:1.5;">Un institut vient de remplir le formulaire /professionnel/.</p>
           <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;font-size:15px;line-height:1.45;">${htmlRows}</table>
-          <p style="margin:20px 0 0;font-size:13px;line-height:1.5;color:#6b635e;">Répondez à cet e-mail pour écrire directement à ${email}.</p>
+          <p style="margin:20px 0 0;font-size:13px;line-height:1.5;color:#6b635e;">${opts.email ? `Répondez à cet e-mail pour écrire directement à ${email}.` : `Contactez cet institut sur WhatsApp : ${phone}.`}</p>
         </td>
       </tr>
     </table>

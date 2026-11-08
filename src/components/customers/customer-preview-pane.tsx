@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -216,7 +217,7 @@ export function CustomerPreviewPane({
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 rb-metric-row">
         <MiniKpi label="Visites" value={String(visits)} hint={honorRate != null ? `${honorRate} % honorés` : "—"} />
         <MiniKpi label="Dépensé" value={formatMad(spent)} hint={`Moy. ${formatMad(ticket)}`} />
         <MiniKpi label="Points" value={String(points)} hint={loyalty?.nextReward ? loyalty.nextReward.name : "Fidélité"} gold />
@@ -366,11 +367,5 @@ function MiniKpi({
   hint: string;
   gold?: boolean;
 }) {
-  return (
-    <div className={cn("rounded-xl p-2.5 text-center", gold ? "bg-[#FCCA66]/20" : "bg-[#FCE9F4]")}>
-      <p className={cn("text-[10px] font-semibold uppercase", gold ? "text-[#7B5900]" : "text-ink/45")}>{label}</p>
-      <p className={cn("mt-0.5 truncate text-[18px] font-bold", gold ? "text-[#7B5900]" : "text-ink")}>{value}</p>
-      <p className={cn("truncate text-[10px]", gold ? "text-[#7B5900]" : "text-ink/45")}>{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }

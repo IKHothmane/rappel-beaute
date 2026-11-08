@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -127,7 +128,7 @@ export function ReviewsMobile(props: ReviewsMobileProps) {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiMini
           label="Note moyenne"
           value={kpis?.averageScore != null ? String(kpis.averageScore).replace(".", ",") : "—"}
@@ -435,13 +436,7 @@ function FocusMobile({
 }
 
 function KpiMini({ label, value, hint, danger }: { label: string; value: string; hint: string; danger?: boolean }) {
-  return (
-    <div className="rounded-xl bg-white p-3 shadow-sm">
-      <p className="text-[11px] uppercase tracking-wider text-ink/45">{label}</p>
-      <p className={cn("mt-1 text-[22px] font-bold", danger && "text-[#BA1A1A]")}>{value}</p>
-      <p className="text-[11px] text-ink/45">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint} negative={danger}></MetricCard>;
 }
 
 function StarBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {

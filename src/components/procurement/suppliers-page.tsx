@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Dropdown } from "@/components/ui/dropdown";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Building2,
@@ -181,7 +182,7 @@ export function SuppliersPageView() {
           onCreate={() => void openCreate()}
         />
 
-        <div className="flex flex-col gap-3 rounded-[22px] border border-[#F0DDE4] bg-white p-4 shadow-sm md:flex-row md:items-center">
+        <div className="flex flex-col gap-3 rounded-[22px] border border-[#F0DDE4] bg-white p-4 shadow-sm md:flex-row md:items-end">
           <div className="relative max-w-lg flex-1">
             <Search className="absolute left-3 top-3 h-[18px] w-[18px] text-ink/35" />
             <input
@@ -192,15 +193,14 @@ export function SuppliersPageView() {
               className="h-11 w-full rounded-xl bg-[#FFEFF8] pl-9 pr-4 text-[13px] outline-none placeholder:text-ink/35"
             />
           </div>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as StatusFilter)}
-            className="h-11 rounded-xl bg-[#FFEFF8] px-3 text-[13px] outline-none"
-          >
-            <option value="all">Statut : Tous</option>
-            <option value="active">Actifs</option>
-            <option value="inactive">Archivés</option>
-          </select>
+          <div className="min-w-0 space-y-1.5 md:w-56">
+            <span className="block text-xs font-semibold text-ink/60">Statut</span>
+            <Dropdown ariaLabel="Statut des fournisseurs" value={status} onChange={(value) => setStatus(value as StatusFilter)} options={[
+              { value: "all", label: "Tous les fournisseurs" },
+              { value: "active", label: "Actifs", dotClassName: "bg-emerald-500" },
+              { value: "inactive", label: "Archivés", dotClassName: "bg-gray-400" },
+            ]} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">

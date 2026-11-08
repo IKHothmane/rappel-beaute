@@ -50,7 +50,6 @@ import type {
 } from "@/types/resource";
 import { MAINTENANCE_STATUS_LABEL, MAINTENANCE_TYPE_LABEL, RESOURCE_TYPE_LABEL, RESOURCE_TYPES } from "@/types/resource";
 
-type StatusFilter = "all" | "available" | "occupied" | "soon" | "maintenance" | "inactive";
 
 export function ResourcesPageView() {
   const { toast } = useToast();
@@ -63,8 +62,6 @@ export function ResourcesPageView() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<ResourceType | "">("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [location, setLocation] = useState("");
   const [catalog, setCatalog] = useState<ResourceListItem[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
@@ -169,25 +166,11 @@ export function ResourcesPageView() {
     return RESOURCE_TYPES.filter((t) => map.has(t)).map((t) => [t, map.get(t) ?? 0] as [ResourceType, number]);
   }, [catalog]);
 
-  const locations = useMemo(() => {
-    const set = new Set<string>();
-    for (const r of catalog) {
-      if (r.location?.trim()) set.add(r.location.trim());
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, "fr"));
-  }, [catalog]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return catalog.filter((r) => {
       if (typeFilter && r.type !== typeFilter) return false;
-      if (location && (r.location ?? "") !== location) return false;
-      const st = statusOf(r);
-      if (statusFilter === "available" && st !== "available") return false;
-      if (statusFilter === "occupied" && st !== "occupied") return false;
-      if (statusFilter === "soon" && st !== "soon") return false;
-      if (statusFilter === "maintenance" && st !== "maintenance") return false;
-      if (statusFilter === "inactive" && st !== "inactive") return false;
       if (!q) return true;
       return (
         r.name.toLowerCase().includes(q) ||
@@ -196,7 +179,7 @@ export function ResourcesPageView() {
         r.serviceNames.some((n) => n.toLowerCase().includes(q))
       );
     });
-  }, [catalog, search, typeFilter, location, statusFilter, statusOf]);
+  }, [catalog, search, typeFilter]);
 
   const selected = filtered.find((r) => r.id === selectedId) ?? filtered[0] ?? null;
 
@@ -342,11 +325,6 @@ export function ResourcesPageView() {
         searchRef={searchRef}
         typeFilter={typeFilter}
         onTypeFilter={setTypeFilter}
-        statusFilter={statusFilter}
-        onStatusFilter={setStatusFilter}
-        location={location}
-        onLocation={setLocation}
-        locations={locations}
         typeCounts={typeCounts}
         filtered={filtered}
         loading={loading}
@@ -375,9 +353,8 @@ export function ResourcesPageView() {
           onCreate={() => void openCreate()}
         />
 
-        <div className="flex flex-col gap-3 rounded-xl border border-[#EFDCE4] bg-white p-3 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative min-w-[240px] flex-1">
+        <div className="flex flex-col gap-3 rounded-xl border border-[#EFDCE4] bg-white p-3 shadow-sm xl:flex-row xl:items-center">
+            <div className="relative min-w-[240px] xl:w-80 xl:shrink-0">
               <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/35" />
               <input
                 ref={searchRef}
@@ -390,32 +367,7 @@ export function ResourcesPageView() {
                 ⌘K
               </span>
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="h-11 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink outline-none"
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="available">Libre maintenant</option>
-              <option value="occupied">Occupée en soin</option>
-              <option value="soon">Bientôt libérée</option>
-              <option value="maintenance">En maintenance</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="h-11 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink outline-none"
-            >
-              <option value="">Tous les emplacements</option>
-              {locations.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             <FilterPill active={typeFilter === ""} onClick={() => setTypeFilter("")}>
               Toutes ({catalog.length})
             </FilterPill>

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import type { ReactNode } from "react";
 
@@ -39,17 +40,7 @@ export function Kpi({
   value: string;
   hint?: string;
 }) {
-  return (
-    <div className="surface p-4 md:p-5">
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink/40">
-        {label}
-      </p>
-      <p className="mt-2 font-mono text-xl font-semibold tabular-nums md:text-2xl">
-        {value}
-      </p>
-      {hint ? <p className="mt-1 text-xs text-ink/45">{hint}</p> : null}
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 export function Tabs({

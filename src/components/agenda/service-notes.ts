@@ -40,6 +40,49 @@ export function soinLabelsFromNotes(notes: string | undefined) {
     .filter(Boolean);
 }
 
+export type ConsoProductLine = { productId: string; quantity: number };
+
+/** Produits choisis manuellement sur le RDV — stock déduit seulement via action explicite. */
+export function consoFromNotes(notes: string | undefined): ConsoProductLine[] {
+  const line = notes?.split("\n").find((item) => item.startsWith("conso:"));
+  if (!line) return [];
+  const seen = new Set<string>();
+  return line
+    .slice("conso:".length)
+    .split(",")
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+    .map((chunk) => {
+      const [productId, qtyRaw] = chunk.split(":");
+      const quantity = Math.round(Number(qtyRaw));
+      return {
+        productId: (productId ?? "").trim(),
+        quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+      };
+    })
+    .filter((item) => {
+      if (!item.productId || seen.has(item.productId)) return false;
+      seen.add(item.productId);
+      return true;
+    });
+}
+
+export function notesWithConso(notes: string | undefined, products: ConsoProductLine[]): string {
+  const kept = (notes ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("conso:"));
+  const valid = products
+    .map((p) => ({
+      productId: p.productId,
+      quantity: Math.max(1, Math.round(Number(p.quantity) || 1)),
+    }))
+    .filter((p) => p.productId);
+  if (valid.length === 0) return kept.join("\n");
+  const line = `conso:${valid.map((p) => `${p.productId}:${p.quantity}`).join(",")}`;
+  return [...kept, line].join("\n");
+}
+
 export function notesWithServices(
   notes: string | undefined,
   services: NamedService[],
@@ -50,7 +93,13 @@ export function notesWithServices(
   const kept = (notes ?? "")
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith("Soins:") && !line.startsWith("extras:") && !line.startsWith("Promo:"));
+    .filter(
+      (line) =>
+        line &&
+        !line.startsWith("Soins:") &&
+        !line.startsWith("extras:") &&
+        !line.startsWith("Promo:"),
+    );
   const labels = [mainId, ...extraIds]
     .map((id) => services.find((service) => service.id === id)?.name)
     .filter((name): name is string => Boolean(name));

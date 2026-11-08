@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import {
   CheckCircle2,
@@ -28,7 +29,7 @@ export function PurchasesPremiumHeader({
   monthTotal,
 }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-6 rb-metric-row">
       <StatCard
         label="Total commandes"
         value={String(purchaseCount)}
@@ -91,37 +92,5 @@ function StatCard({
   tone: "pink" | "green" | "orange" | "red" | "purple";
   alert?: boolean;
 }) {
-  const colors = {
-    pink: "bg-[#FFF0F5] text-[#A50F4A]",
-    green: "bg-[#EAF8EF] text-[#16834B]",
-    orange: "bg-[#FFF4E6] text-[#B77612]",
-    red: "bg-[#FFF0F1] text-[#C42B4A]",
-    purple: "bg-[#F4EDFF] text-[#7434B4]",
-  };
-  const accents = {
-    pink: "border-l-[#AD1451]",
-    green: "border-l-[#16834B]",
-    orange: "border-l-[#B77612]",
-    red: "border-l-[#C42B4A]",
-    purple: "border-l-[#7434B4]",
-  };
-
-  return (
-    <div
-      className={cn(
-        "flex min-h-[108px] items-center gap-3 rounded-[20px] border border-[#F0DDE4] border-l-4 bg-white p-4 shadow-[0_6px_20px_rgba(72,20,43,0.05)]",
-        accents[tone],
-        alert && "ring-2 ring-[#C42B4A]/15",
-      )}
-    >
-      <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl", colors[tone])}>
-        <Icon size={20} />
-      </span>
-      <div className="min-w-0">
-        <p className="text-[11px] font-medium text-[#775B6A]">{label}</p>
-        <p className="mt-0.5 break-words text-xl font-extrabold text-[#43182D]">{value}</p>
-        <p className="mt-0.5 text-[10px] text-[#9A7F8C]">{hint}</p>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={<Icon />} hint={hint} alert={alert}></MetricCard>;
 }

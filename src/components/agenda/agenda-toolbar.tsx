@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import {
@@ -148,7 +149,7 @@ export function AgendaChrome({
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 rounded-xl bg-[#FBF4F6] p-3 md:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 rounded-xl bg-[#FBF4F6] p-3 md:grid-cols-4 rb-metric-row">
         <KpiTile
           icon={CalendarDays}
           label="RDV aujourd'hui"
@@ -355,16 +356,5 @@ function KpiTile({
   hint?: string | null;
   tint: string;
 }) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg bg-white p-3">
-      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", tint)}>
-        <Icon size={18} />
-      </div>
-      <div className="min-w-0">
-        <span className="block text-[10px] font-bold uppercase tracking-wider text-ink/45">{label}</span>
-        <p className="truncate text-xl font-bold text-ink">{value}</p>
-        {hint ? <p className="truncate text-[11px] text-ink/45">{hint}</p> : null}
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={<Icon />} hint={hint}></MetricCard>;
 }

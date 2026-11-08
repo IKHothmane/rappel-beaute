@@ -13,6 +13,9 @@ export async function POST(request: NextRequest) {
     phone?: string;
     rating?: number;
     comment?: string;
+    staffId?: string;
+    staffRating?: number;
+    staffRatings?: { staffId: string; rating?: number | null }[];
   } | null;
   if (!body?.token) return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
 
@@ -37,8 +40,11 @@ export async function POST(request: NextRequest) {
     firstName: String(body.firstName ?? ""),
     lastName: String(body.lastName ?? ""),
     phone: String(body.phone ?? ""),
-    rating: Number(body.rating),
+    rating: body.rating == null ? undefined : Number(body.rating),
     comment: String(body.comment ?? ""),
+    staffId: typeof body.staffId === "string" ? body.staffId : undefined,
+    staffRating: body.staffRating == null ? undefined : Number(body.staffRating),
+    staffRatings: body.staffRatings,
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
   return NextResponse.json({ ok: true });

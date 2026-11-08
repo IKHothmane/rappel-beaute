@@ -361,27 +361,31 @@ export async function listStaffReviewScores(organizationId: string): Promise<Sta
     reviewCount: number;
     avgScore: string | null;
   }>(
-    `SELECT st.id AS "staffId", st."firstName", st."lastName",
-            COUNT(*)::int AS "reviewCount",
-            AVG(
-              CASE rr.satisfaction
-                WHEN 'VERY_SATISFIED' THEN 5
-                WHEN 'SATISFIED' THEN 4
-                WHEN 'DISSATISFIED' THEN 1
-              END
-            )::text AS "avgScore"
-     FROM "ReviewRequest" rr
-     JOIN "Appointment" a ON a.id = rr."appointmentId"
-     JOIN "Staff" st ON st.id = a."staffId"
-     WHERE rr."organizationId" = $1 AND rr.satisfaction IS NOT NULL
-     GROUP BY st.id, st."firstName", st."lastName"
-     ORDER BY AVG(
-       CASE rr.satisfaction
+    `WITH scores AS (
+       SELECT a."staffId", CASE rr.satisfaction
          WHEN 'VERY_SATISFIED' THEN 5
          WHEN 'SATISFIED' THEN 4
          WHEN 'DISSATISFIED' THEN 1
-       END
-     ) DESC NULLS LAST, COUNT(*) DESC
+       END AS score
+       FROM "ReviewRequest" rr
+       JOIN "Appointment" a ON a.id = rr."appointmentId" AND a."organizationId" = rr."organizationId"
+       WHERE rr."organizationId" = $1 AND rr.satisfaction IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM "Review" r JOIN "ReviewStaffRating" sr ON sr."reviewId" = r.id
+           WHERE r."appointmentId" = a.id AND sr."staffId" = a."staffId"
+           AND r."organizationId" = $1 AND r.status = 'PUBLISHED' AND sr.rating IS NOT NULL)
+       UNION ALL
+       SELECT sr."staffId", sr.rating AS score
+       FROM "Review" r
+       JOIN "ReviewStaffRating" sr ON sr."reviewId" = r.id
+       WHERE r."organizationId" = $1 AND r.status = 'PUBLISHED'
+         AND sr.rating IS NOT NULL
+     )
+     SELECT st.id AS "staffId", st."firstName", st."lastName",
+            COUNT(*)::int AS "reviewCount", AVG(scores.score)::text AS "avgScore"
+     FROM scores
+     JOIN "Staff" st ON st.id = scores."staffId" AND st."organizationId" = $1 AND st."deletedAt" IS NULL
+     GROUP BY st.id, st."firstName", st."lastName"
+     ORDER BY AVG(scores.score) DESC NULLS LAST, COUNT(*) DESC
      LIMIT 8`,
     [organizationId],
   );

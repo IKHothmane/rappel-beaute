@@ -24,7 +24,12 @@ import {
 type CartLine = { product: PosProductItem; quantity: number };
 
 export type ProductAddonCart = {
-  lines: { productId: string; quantity: number }[];
+  lines: {
+    productId: string;
+    quantity: number;
+    name: string;
+    unitPrice: number;
+  }[];
   total: number;
   discount: number;
   promoCode: string | null;
@@ -36,6 +41,8 @@ type ProductSalePanelProps = {
   cashOpen?: boolean;
   /** Embarqué dans l’encaissement service : panier seul, sans bouton Vendre. */
   embedded?: boolean;
+  /** Ouvre la liste produits dès l’affichage (onglet Produits). */
+  startExpanded?: boolean;
   /** Remet le panier à zéro quand la valeur change (ex. ouverture du tiroir). */
   resetToken?: number | string;
   onCartChange?: (cart: ProductAddonCart) => void;
@@ -72,6 +79,7 @@ export function ProductSalePanel({
   disabled,
   cashOpen = true,
   embedded = false,
+  startExpanded = false,
   resetToken,
   onCartChange,
   onSold,
@@ -86,17 +94,17 @@ export function ProductSalePanel({
   const [promoCode, setPromoCode] = useState("");
   const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [showAllProducts, setShowAllProducts] = useState(false);
-  const [showAllPromos, setShowAllPromos] = useState(false);
+  const [showAllProducts, setShowAllProducts] = useState(startExpanded);
+  const [showAllPromos, setShowAllPromos] = useState(startExpanded);
 
   useEffect(() => {
     setCart([]);
     setSearch("");
     setPromoCode("");
     setSelectedPromoId(null);
-    setShowAllProducts(false);
-    setShowAllPromos(false);
-  }, [resetToken]);
+    setShowAllProducts(startExpanded);
+    setShowAllPromos(startExpanded);
+  }, [resetToken, startExpanded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,6 +163,8 @@ export function ProductSalePanel({
       lines: cart.map((line) => ({
         productId: line.product.id,
         quantity: line.quantity,
+        name: line.product.name,
+        unitPrice: line.product.salePrice,
       })),
       total,
       discount,
@@ -277,19 +287,83 @@ export function ProductSalePanel({
   }
 
   const searching = search.trim().length > 0;
-  const productsCollapsed = embedded && !showAllProducts && !searching;
-  const promosCollapsed = embedded && !showAllPromos && !searching;
+  const keepOpen = startExpanded || !embedded;
+  const productsCollapsed = embedded && !keepOpen && !showAllProducts && !searching;
+  const promosCollapsed = embedded && !keepOpen && !showAllPromos && !searching;
+
+  const cartBlock = (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <p className="text-[12px] font-bold uppercase tracking-wider text-ink/45">
+          Panier{cart.length > 0 ? ` (${cart.length})` : ""}
+        </p>
+        {cart.length > 0 ? (
+          <span className="text-[13px] font-extrabold text-primary">{formatMad(total)}</span>
+        ) : null}
+      </div>
+      {cart.length === 0 ? (
+        <p className="rounded-lg bg-[#F3F4F6] px-3 py-3 text-[12px] text-ink/50">
+          Aucun produit. Cliquez pour ajouter.
+        </p>
+      ) : (
+        <ul className="space-y-1.5">
+          {cart.map((line) => (
+            <li
+              key={line.product.id}
+              className="flex items-center justify-between gap-2 rounded-lg bg-[#FFEFF8] px-2.5 py-2"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold">{line.product.name}</p>
+                <p className="text-[11px] text-ink/45">
+                  {formatMad(line.product.salePrice)} × {line.quantity}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
+                  onClick={() => setQty(line.product.id, line.quantity - 1)}
+                  disabled={disabled}
+                  aria-label="Moins"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="w-6 text-center text-[13px] font-bold">{line.quantity}</span>
+                <button
+                  type="button"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
+                  onClick={() => setQty(line.product.id, line.quantity + 1)}
+                  disabled={disabled}
+                  aria-label="Plus"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {cart.length > 0 && discount > 0 ? (
+        <p className="mt-1.5 text-[12px] text-primary">
+          Promo produits −{formatMad(discount)}
+        </p>
+      ) : null}
+    </div>
+  );
 
   return (
     <div className={cn("space-y-4", embedded && "rounded-xl border border-dashed border-primary/25 bg-white p-3")}>
       {embedded ? (
         <p className="text-[12px] font-bold uppercase tracking-wider text-ink/45">
-          Ajouter des produits (optionnel)
+          Produits & codes promo produits
         </p>
       ) : null}
+
+      {cartBlock}
+
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium">
-          {embedded ? "Produits à vendre avec le service" : "Rechercher un produit ou un code promo"}
+          Rechercher un produit ou un code promo produits
         </span>
         <div className="relative">
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/35" />
@@ -310,15 +384,15 @@ export function ProductSalePanel({
           onClick={() => setShowAllProducts(true)}
           className="flex h-10 w-full items-center justify-center rounded-xl bg-[#FFEFF8] text-[13px] font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-40"
         >
-          {loading ? "Chargement…" : `Afficher tous (${catalog.length})`}
+          {loading ? "Chargement…" : `Afficher tous les produits (${catalog.length})`}
         </button>
       ) : (
-        <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl bg-[#FFEFF8] p-2">
+        <div className="max-h-64 space-y-1 overflow-y-auto rounded-xl bg-[#FFEFF8] p-2">
           <div className="flex items-center justify-between gap-2 px-1 pb-1">
             <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
               Produits ({catalog.length})
             </p>
-            {embedded && !searching ? (
+            {embedded && !keepOpen && !searching ? (
               <button
                 type="button"
                 onClick={() => setShowAllProducts(false)}
@@ -399,17 +473,22 @@ export function ProductSalePanel({
           </div>
         </div>
       ) : (
-        <div className="max-h-36 space-y-1 overflow-y-auto rounded-xl border border-dashed border-primary/25 bg-white p-2">
-          <div className="flex items-center justify-between gap-2 px-1 pb-1">
-            <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-ink/45">
-              <Tag size={12} className="text-primary" />
-              Codes promo
-            </p>
-            {embedded && !searching ? (
+        <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-dashed border-primary/25 bg-white p-2">
+          <div className="flex items-start justify-between gap-2 px-1 pb-1">
+            <div className="min-w-0">
+              <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                <Tag size={12} className="text-primary" />
+                Codes promo produits ({filteredPromos.length})
+              </p>
+              <p className="mt-0.5 text-[11px] text-ink/45">
+                Remise uniquement sur le panier produits, pas sur le service.
+              </p>
+            </div>
+            {embedded && !keepOpen && !searching ? (
               <button
                 type="button"
                 onClick={() => setShowAllPromos(false)}
-                className="text-[12px] font-semibold text-ink/50 hover:text-primary"
+                className="shrink-0 text-[12px] font-semibold text-ink/50 hover:text-primary"
               >
                 Réduire
               </button>
@@ -471,62 +550,7 @@ export function ProductSalePanel({
         </div>
       )}
 
-      <div>
-        <p className="mb-1.5 text-[12px] font-bold uppercase tracking-wider text-ink/45">Panier</p>
-        {cart.length === 0 ? (
-          <p className="rounded-lg bg-[#F3F4F6] px-3 py-3 text-[12px] text-ink/50">
-            Aucun produit. Cliquez pour ajouter.
-          </p>
-        ) : (
-          <ul className="space-y-1.5">
-            {cart.map((line) => (
-              <li
-                key={line.product.id}
-                className="flex items-center justify-between gap-2 rounded-lg bg-[#FFEFF8] px-2.5 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold">{line.product.name}</p>
-                  <p className="text-[11px] text-ink/45">
-                    {formatMad(line.product.salePrice)} × {line.quantity}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
-                    onClick={() => setQty(line.product.id, line.quantity - 1)}
-                    disabled={disabled}
-                    aria-label="Moins"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="w-6 text-center text-[13px] font-bold">{line.quantity}</span>
-                  <button
-                    type="button"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
-                    onClick={() => setQty(line.product.id, line.quantity + 1)}
-                    disabled={disabled}
-                    aria-label="Plus"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {embedded ? (
-        cart.length > 0 ? (
-          <div className="flex items-center justify-between rounded-lg bg-[#FFEFF8] px-3 py-2 text-[13px]">
-            <span className="text-ink/55">
-              Produits{discount > 0 ? ` · promo −${formatMad(discount)}` : ""}
-            </span>
-            <span className="font-extrabold text-primary">{formatMad(total)}</span>
-          </div>
-        ) : null
-      ) : (
+      {embedded ? null : (
         <>
           <PaymentMethodPicker
             value={method}

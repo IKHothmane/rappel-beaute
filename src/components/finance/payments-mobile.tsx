@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
@@ -11,6 +12,7 @@ import {
   Search,
   Wallet,
 } from "lucide-react";
+import { PaymentBreakdownPanel } from "@/components/finance/payment-breakdown-panel";
 import {
   type PaymentPeriod,
   type PaymentTab,
@@ -18,7 +20,7 @@ import {
   formatPaymentServices,
   isUnpaidDue,
   paymentOrigin,
-  paymentShortId,
+  paymentDisplayId,
   paymentStatusChip,
   signedPaymentAmount,
   waMeLink,
@@ -138,7 +140,7 @@ export function PaymentsMobile({
                 Fiche règlement
               </p>
               <div className="mt-0.5 flex items-center gap-2">
-                <h2 className="text-[22px] font-bold">{paymentShortId(selected.id)}</h2>
+                <h2 className="text-[22px] font-bold">{paymentDisplayId(selected)}</h2>
                 <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", chip.className)}>
                   {chip.label}
                 </span>
@@ -154,14 +156,14 @@ export function PaymentsMobile({
           <dl className="space-y-2 rounded-xl bg-[#FFEFF8] p-3 text-[13px]">
             <Row label="Cliente" value={selected.customerName ?? "—"} />
             {selected.customerPhone ? <Row label="Téléphone" value={selected.customerPhone} /> : null}
-            <Row label="Prestation" value={formatPaymentServices(selected.serviceName)} />
             {!isUnpaidDue(selected) ? (
               <Row label="Méthode" value={PAYMENT_METHOD_LABEL[selected.method]} />
             ) : null}
-            <Row label="Date RDV" value={new Date(selected.paidAt).toLocaleString("fr-FR")} />
+            <Row label="Date" value={new Date(selected.paidAt).toLocaleString("fr-FR")} />
             {!isUnpaidDue(selected) ? <Row label="Opérateur" value={selected.userName ?? "—"} /> : null}
             {selected.notes && !isUnpaidDue(selected) ? <Row label="Notes" value={selected.notes} /> : null}
           </dl>
+          <PaymentBreakdownPanel payment={selected} />
           {isUnpaidDue(selected) && canWrite ? (
             <button
               type="button"
@@ -294,7 +296,7 @@ export function PaymentsMobile({
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-[#7B5900]">
-                Solde dû · {paymentShortId(selected.id)}
+                Solde dû · {paymentDisplayId(selected)}
               </p>
               <p className="text-[16px] font-bold">{selected.customerName ?? "Cliente"}</p>
             </div>
@@ -314,11 +316,11 @@ export function PaymentsMobile({
         </section>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiMini label="Encaissé" value={formatMad(kpis.inflow)} hint={`${kpis.count} op.`} />
         <KpiMini label="Net" value={formatMad(kpis.net)} hint={`Remb. ${formatMad(kpis.refunds)}`} accent />
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 rb-metric-row">
         <KpiMini label="Carte" value={formatMad(kpis.byMethod.CARD)} compact />
         <KpiMini label="Espèces" value={formatMad(kpis.byMethod.CASH)} compact />
         <KpiMini label="Virement" value={formatMad(kpis.byMethod.TRANSFER)} compact />
@@ -384,7 +386,7 @@ export function PaymentsMobile({
                           : origin.label}
                       </p>
                       <p className="mt-1 text-[11px] text-ink/45">
-                        {paymentShortId(p.id)} · {formatPaymentDateTime(p.paidAt)}
+                        {paymentDisplayId(p)} · {formatPaymentDateTime(p.paidAt)}
                         {isUnpaidDue(p) ? " · À encaisser" : ` · ${PAYMENT_METHOD_LABEL[p.method]}`}
                       </p>
                     </div>
@@ -434,15 +436,7 @@ function KpiMini({
   accent?: boolean;
   compact?: boolean;
 }) {
-  return (
-    <div className={cn("rounded-xl bg-white p-3 shadow-sm", accent && "bg-ink text-[#FEECF7]")}>
-      <p className={cn("text-[11px] font-bold uppercase tracking-wider", accent ? "text-[#FFDEA4]" : "text-ink/45")}>
-        {label}
-      </p>
-      <p className={cn("mt-1 font-extrabold tracking-tight", compact ? "text-[14px]" : "text-[18px]")}>{value}</p>
-      {hint ? <p className={cn("mt-0.5 text-[11px]", accent ? "text-[#FEECF7]/70" : "text-ink/45")}>{hint}</p> : null}
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function Row({ label, value }: { label: string; value: ReactNode }) {

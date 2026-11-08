@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db/pool";
+import { normalizeLoginIdentifier, normalizeLoginPhone } from "@/lib/auth/login-identifier";
 import {
   generateTemporaryPassword,
   hashPassword,
@@ -10,7 +11,8 @@ import { writeAuditLog } from "@/lib/db/audit";
 
 type UserRow = {
   id: string;
-  email: string;
+  email: string | null;
+  loginPhone: string | null;
   firstName: string;
   lastName: string;
   role: AppRole;
@@ -53,7 +55,8 @@ export async function authenticateUser(
   email: string,
   password: string,
 ): Promise<SessionUser | null> {
-  const normalized = email.trim().toLowerCase();
+  const normalized = normalizeLoginIdentifier(email);
+  const phone = normalizeLoginPhone(email);
 
   const { rows: platformRows } = await pool.query(
     `SELECT id FROM "PlatformUser" WHERE LOWER(email) = $1 LIMIT 1`,
@@ -65,6 +68,7 @@ export async function authenticateUser(
     `SELECT
       u.id,
       u.email,
+      u."loginPhone",
       u."firstName",
       u."lastName",
       u.role,
@@ -78,9 +82,9 @@ export async function authenticateUser(
       o.status AS "orgStatus"
     FROM "User" u
     JOIN "Organization" o ON o.id = u."organizationId"
-    WHERE LOWER(u.email) = $1
+    WHERE LOWER(u.email) = $1 OR ($2::text IS NOT NULL AND u."loginPhone" = $2)
     LIMIT 2`,
-    [normalized],
+    [normalized, phone],
   );
 
   if (rows.length !== 1) return null;
@@ -93,7 +97,8 @@ export async function authenticateUser(
 
   return {
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
+    loginPhone: user.loginPhone ?? undefined,
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
@@ -189,7 +194,8 @@ export async function changeOwnPassword(opts: {
 
   const { rows } = await pool.query<{
     id: string;
-    email: string;
+    email: string | null;
+    loginPhone: string | null;
     firstName: string;
     lastName: string;
     role: AppRole;
@@ -201,7 +207,7 @@ export async function changeOwnPassword(opts: {
     sessionVersion: number;
   }>(
     `SELECT
-      u.id, u.email, u."firstName", u."lastName", u.role, u."passwordHash",
+      u.id, u.email, u."loginPhone", u."firstName", u."lastName", u.role, u."passwordHash",
       u."organizationId", u."mustChangePassword", u."sessionVersion",
       o.name AS "orgName", o.slug AS "orgSlug"
      FROM "User" u
@@ -242,7 +248,8 @@ export async function changeOwnPassword(opts: {
 
   return {
     id: user.id,
-    email: user.email,
+    email: user.email ?? "",
+    loginPhone: user.loginPhone ?? undefined,
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
@@ -303,7 +310,7 @@ export async function listUsersByOrganization(
 
   return rows.map((r) => ({
     id: r.id,
-    email: r.email,
+    email: r.email ?? "",
     firstName: r.firstName,
     lastName: r.lastName,
     phone: r.phone,

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import type { ReactNode } from "react";
 import {
@@ -68,7 +69,7 @@ export function NotificationsDesktop({ vm }: { vm: NotificationsViewModel }) {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 rb-metric-row">
         <CounterCard
           value={vm.counters.urgent}
           label="Urgentes"
@@ -265,53 +266,7 @@ function CounterCard({
   tone: "urgent" | "warn" | "info" | "done";
   icon: ReactNode;
 }) {
-  return (
-    <div className="group relative flex items-center justify-between overflow-hidden rounded-[22px] border border-[#F1E8EC] bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-md">
-      <div className="flex items-center gap-4">
-        <div
-          className={cn(
-            "relative flex h-12 w-12 items-center justify-center rounded-2xl",
-            tone === "urgent" && "bg-red-50 text-red-600",
-            tone === "warn" && "bg-amber-50 text-amber-700",
-            tone === "info" && "bg-sky-50 text-sky-700",
-            tone === "done" && "bg-emerald-50 text-emerald-700",
-          )}
-        >
-          {icon}
-          {tone === "urgent" && value > 0 ? (
-            <span className="absolute -right-1 -top-1 h-3 w-3 animate-pulse rounded-full bg-red-500" />
-          ) : null}
-        </div>
-        <div className="flex flex-col">
-          <div className="flex items-center gap-1.5">
-            <span
-              className={cn(
-                "text-[28px] font-extrabold leading-none",
-                tone === "urgent" && "text-red-600",
-                tone === "warn" && "text-amber-700",
-                tone === "info" && "text-sky-700",
-                tone === "done" && "text-emerald-700",
-              )}
-            >
-              {value}
-            </span>
-            <span className="text-sm font-bold text-[#30202C]">{label}</span>
-          </div>
-          <span
-            className={cn(
-              "mt-1 text-[11px] font-bold uppercase tracking-wider",
-              tone === "urgent" && "text-red-600",
-              tone === "warn" && "text-amber-700",
-              tone === "info" && "text-sky-700",
-              tone === "done" && "text-emerald-700",
-            )}
-          >
-            {hint}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} alert={tone === "urgent" && value > 0}></MetricCard>;
 }
 
 function UrgentCard({

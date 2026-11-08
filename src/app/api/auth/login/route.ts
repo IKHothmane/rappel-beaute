@@ -11,8 +11,10 @@ import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { COOKIE_HOST } from "@/lib/domain";
+import { normalizeLoginIdentifier } from "@/lib/auth/login-identifier";
 
 async function readLoginBody(request: NextRequest): Promise<{
+  identifier?: string;
   email?: string;
   password?: string;
   organizationId?: string;
@@ -22,6 +24,7 @@ async function readLoginBody(request: NextRequest): Promise<{
   if (!raw.trim()) return null;
   try {
     return stripOrganizationId(JSON.parse(raw) as Record<string, unknown>) as {
+      identifier?: string;
       email?: string;
       password?: string;
       organizationId?: string;
@@ -31,8 +34,9 @@ async function readLoginBody(request: NextRequest): Promise<{
     // Fallback si le corps arrive en form-urlencoded (certains clients / proxies).
     try {
       const params = new URLSearchParams(raw);
-      if (!params.has("email") && !params.has("password")) return null;
+      if (!params.has("email") && !params.has("identifier") && !params.has("password")) return null;
       return {
+        identifier: params.get("identifier") ?? undefined,
         email: params.get("email") ?? undefined,
         password: params.get("password") ?? undefined,
         remember: params.get("remember") !== "false",
@@ -51,7 +55,8 @@ export async function POST(request: NextRequest) {
     if (!body) {
       return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
     }
-    const email = body.email?.trim();
+    const rawIdentifier = body.identifier ?? body.email;
+    const email = typeof rawIdentifier === "string" ? normalizeLoginIdentifier(rawIdentifier) : "";
     const password = body.password;
     const remember = body.remember !== false;
     const sessionMaxAge = remember ? SESSION_MAX_AGE_SEC : null;

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -455,7 +456,7 @@ export function MarketingPageView() {
           ) : null}
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
           <KpiCard
             label="Campagnes"
             value={`${kpis?.activeCampaigns ?? 0} / ${kpis?.totalCampaigns ?? 0}`}
@@ -1041,13 +1042,5 @@ function KpiCard({
   hint: string;
   emphasize?: boolean;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-4 shadow-sm">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">{label}</p>
-      <p className={cn("mt-2 text-[28px] font-extrabold leading-none", emphasize && "text-primary")}>
-        {value}
-      </p>
-      <p className="mt-1 text-[11px] text-ink/50">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }

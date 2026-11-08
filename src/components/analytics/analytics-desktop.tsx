@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import {
@@ -159,7 +160,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
       </section>
 
       {/* 5 KPIs mockup */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5 rb-metric-row">
         <MacroCard
           label="Chiffre d'affaires"
           icon={<CircleDollarSign className="h-5 w-5" />}
@@ -657,40 +658,7 @@ function MacroCard({
   spark?: number[];
   valueNegative?: boolean;
 }) {
-  return (
-    <div className="flex flex-col justify-between gap-3 rounded-[22px] border border-[#F1E8EC] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-md">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-[#765E6B]">{label}</span>
-        <div
-          className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-2xl bg-[#FAF4F7]",
-            iconClass,
-          )}
-        >
-          {icon}
-        </div>
-      </div>
-      <div className="flex items-end justify-between gap-2">
-        <div>
-          <div className="flex items-baseline gap-1.5">
-            <span
-              className={cn(
-                "text-[28px] font-bold leading-none tracking-tight xl:text-[32px]",
-                valueNegative ? "text-red-600" : "text-[#30202C]",
-              )}
-            >
-              {value}
-            </span>
-            {unit ? <span className="text-sm font-bold text-[#981C52]">{unit}</span> : null}
-          </div>
-          {delta ? (
-            <p className={cn("mt-1.5 text-[11px] font-bold", deltaClass(tone))}>{delta}</p>
-          ) : null}
-        </div>
-        {spark && spark.length > 1 ? <MiniSpark values={spark} negative={valueNegative} /> : null}
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} unit={unit} delta={delta} deltaNegative={tone != null && tone < 0} negative={valueNegative}>{spark && spark.length > 1 ? <MiniSpark values={spark} negative={valueNegative} /> : null}</MetricCard>;
 }
 
 function PnlRow({

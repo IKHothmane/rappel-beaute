@@ -1,4 +1,5 @@
 "use client";
+import { PurchaseFilters } from "@/components/procurement/purchase-filters";
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -380,7 +381,7 @@ export function PurchasesPageView() {
                     {total} bon{total > 1 ? "s" : ""}
                   </span>
                 </div>
-                <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+                <div className="flex flex-col gap-2 xl:flex-row xl:items-end">
                   <div className="relative min-w-0 flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
                     <input
@@ -391,34 +392,7 @@ export function PurchasesPageView() {
                       className="h-10 w-full rounded-xl border border-[#F0DDE4] bg-white pl-9 pr-4 text-[13px] outline-none"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {tab === "orders" ? (
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value as PurchaseStatus | "")}
-                        className="h-10 rounded-xl border border-[#F0DDE4] bg-white px-3 text-[13px]"
-                      >
-                        <option value="">Statut : Tous</option>
-                        <option value="DRAFT">Brouillon</option>
-                        <option value="ORDERED">Commandée</option>
-                        <option value="PARTIALLY_RECEIVED">Partiellement reçue</option>
-                        <option value="RECEIVED">Reçue</option>
-                        <option value="CANCELLED">Annulée</option>
-                      </select>
-                    ) : null}
-                    <select
-                      value={supplierId}
-                      onChange={(e) => setSupplierId(e.target.value)}
-                      className="h-10 rounded-xl border border-[#F0DDE4] bg-white px-3 text-[13px]"
-                    >
-                      <option value="">Fournisseur : Tous</option>
-                      {suppliers.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <PurchaseFilters status={status} onStatus={setStatus} supplierId={supplierId} onSupplier={setSupplierId} suppliers={suppliers} showStatus={tab === "orders"} />
                 </div>
               </div>
               {loading ? (

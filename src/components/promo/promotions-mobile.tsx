@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -271,7 +272,7 @@ export function PromotionsMobile({
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wider text-ink/45">Performances du mois</span>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5 rb-metric-row">
           <KpiMini
             label="Promos actives"
             value={kpis ? String(kpis.activeCount) : "—"}
@@ -424,14 +425,5 @@ function KpiMini({
   hint: string;
   icon: React.ReactNode;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-[22px] border border-[#F1E8EC] bg-white p-3.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#E7B9CD] hover:shadow-md">
-      <div className="flex items-center justify-between gap-1">
-        <span className="truncate text-[11px] font-bold uppercase tracking-wider text-[#765E6B]">{label}</span>
-        <span className="text-[#981C52]">{icon}</span>
-      </div>
-      <p className="mt-2 text-[22px] font-bold leading-7 text-[#30202C]">{value}</p>
-      <p className="mt-0.5 text-[11px] text-[#765E6B]">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint}></MetricCard>;
 }

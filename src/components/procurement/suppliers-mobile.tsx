@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { type RefObject, useState } from "react";
@@ -155,7 +156,7 @@ export function SuppliersMobile({
             </div>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 rb-metric-row">
             <KpiTile
               label="Fournisseurs"
               value={String(kpis?.supplierCount ?? 0)}
@@ -342,13 +343,7 @@ function KpiTile({
   hint: string;
   accent?: boolean;
 }) {
-  return (
-    <div className="flex flex-col justify-between gap-1 rounded-xl bg-white p-3 shadow-sm">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-ink/45">{label}</span>
-      <span className="text-[22px] font-extrabold leading-none text-ink">{value}</span>
-      <span className={cn("text-[11px] text-ink/45", accent && "font-semibold text-primary")}>{hint}</span>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {

@@ -2,17 +2,21 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { limitPhoneDigits } from "@/lib/validation/customer";
+import { LOYALTY_NAME_MAX_LENGTH, LOYALTY_PHONE_MAX_LENGTH } from "@/lib/loyalty/profile-input";
 
 const input =
   "mt-1 h-11 w-full rounded-xl border border-[#F0DDE7] px-3 text-sm font-normal outline-none focus:border-[#A83E70]";
 
 /** Inscription minimale : nom, prénom, téléphone. Le code de la carte s'affiche ensuite. */
-export function LoyaltyCardProfile({ token, organizationName }: { token: string; organizationName: string }) {
+export function LoyaltyCardProfile({ token, organizationName, initial }: {
+  token: string;
+  organizationName: string;
+  initial?: { firstName: string; lastName: string; phone: string | null };
+}) {
   const router = useRouter();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [firstName, setFirstName] = useState(initial?.firstName ?? "");
+  const [lastName, setLastName] = useState(initial?.lastName ?? "");
+  const [phone, setPhone] = useState(initial?.phone && !initial.phone.startsWith("WL") ? initial.phone : "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -46,20 +50,19 @@ export function LoyaltyCardProfile({ token, organizationName }: { token: string;
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <label className="block text-sm font-semibold text-[#43293A]">
           Prénom
-          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={80} autoComplete="given-name" className={input} />
+          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={LOYALTY_NAME_MAX_LENGTH} autoComplete="given-name" className={input} />
         </label>
         <label className="block text-sm font-semibold text-[#43293A]">
           Nom
-          <input value={lastName} onChange={(e) => setLastName(e.target.value)} required maxLength={80} autoComplete="family-name" className={input} />
+          <input value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={LOYALTY_NAME_MAX_LENGTH} autoComplete="family-name" className={input} />
         </label>
         <label className="block text-sm font-semibold text-[#43293A]">
           Téléphone
           <input
             value={phone}
-            onChange={(e) => setPhone(limitPhoneDigits(e.target.value))}
-            required
+            onChange={(e) => setPhone(e.target.value)}
             inputMode="tel"
-            maxLength={10}
+            maxLength={LOYALTY_PHONE_MAX_LENGTH}
             autoComplete="tel"
             placeholder="06…"
             className={input}

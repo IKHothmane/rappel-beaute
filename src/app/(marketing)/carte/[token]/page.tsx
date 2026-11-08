@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { RememberCard } from "@/components/loyalty/remember-card";
-import { LoyaltyCardProfile } from "@/components/loyalty/loyalty-card-profile";
 import { LoyaltyCardFeedback } from "@/components/loyalty/loyalty-card-feedback";
 import { LoyaltyStampCard } from "@/components/loyalty/loyalty-stamp-card";
 import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
+import { getLoyaltyCardReviewStaff } from "@/lib/loyalty/card-review";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +37,9 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
   });
 
   const anonymous = !card.phone || card.phone.startsWith("WL");
+  const reviewStaff = await getLoyaltyCardReviewStaff(token);
+  const generatedName = anonymous && card.firstName === "Cliente" &&
+    (card.lastName === token.slice(-4) || (card.phone?.startsWith("WL") && card.lastName === card.phone.slice(-4).toUpperCase()));
 
   return (
     <main className="min-h-screen bg-[#F8F3F5] py-6 sm:py-10">
@@ -62,15 +65,35 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
         />
 
         {anonymous ? (
-          <LoyaltyCardProfile token={token} organizationName={card.organizationName} />
+          <LoyaltyCardFeedback token={token} organizationName={card.organizationName}
+            firstName={generatedName ? "" : card.firstName} lastName={generatedName ? "" : card.lastName}
+            phone={card.phone} staffOptions={reviewStaff} collectProfile />
         ) : (
+          <>
+          <section className="rounded-2xl border border-[#F0DDE7] bg-white p-4 sm:p-5">
+            <h2 className="text-lg font-extrabold text-[#43293A]">Mes informations</h2>
+            <dl className="mt-3 space-y-3 text-sm">
+              {[
+                { label: "Prénom", value: card.firstName },
+                { label: "Nom", value: card.lastName },
+                { label: "Téléphone", value: card.phone },
+              ].filter((item) => item.value?.trim()).map((item) => (
+                <div key={item.label} className="flex flex-wrap items-baseline justify-between gap-2">
+                  <dt className="text-[#806B77]">{item.label}</dt>
+                  <dd className="break-words font-semibold text-[#43293A]">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
           <LoyaltyCardFeedback
             token={token}
             organizationName={card.organizationName}
             firstName={card.firstName}
             lastName={card.lastName}
             phone={card.phone}
+            staffOptions={reviewStaff}
           />
+          </>
         )}
 
         <section>

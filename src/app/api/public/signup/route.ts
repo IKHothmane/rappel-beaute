@@ -3,17 +3,15 @@ import type { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
-import { EmailSendError, isEmailConfigured, sendTransactionalEmail } from "@/lib/email/send";
-import { signupPasswordEmail } from "@/lib/email/signup-password";
+import { isEmailConfigured, sendTransactionalEmail } from "@/lib/email/send";
 import { PROFESSIONAL_SIGNUP_NOTIFY_EMAIL, signupLeadEmail } from "@/lib/email/signup-lead";
 import {
   PublicSignupError,
   createPublicSignup,
-  deletePublicSignupOrganization,
 } from "@/lib/db/public-signup";
 import { setOrganizationLogoUrl } from "@/lib/db/organization";
 import { getStorageService } from "@/lib/storage";
-import { absoluteAppLoginUrl, CITIES } from "@/lib/site";
+import { CITIES } from "@/lib/site";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
 
@@ -58,13 +56,6 @@ function validationError(message: string) {
 export async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
-  if (!isEmailConfigured()) {
-    logger.warn("public signup blocked: email not configured", { route: "/api/public/signup" });
-    return NextResponse.json(
-      { error: "L'envoi d'e-mail n'est pas encore configuré. Réessayez plus tard." },
-      { status: 503 },
-    );
-  }
 
   let form: FormData;
   try {
@@ -74,7 +65,8 @@ export async function POST(request: NextRequest) {
   }
 
   const email = str(form, "email").toLowerCase();
-  const account = email ? emailKey(email) : "unknown";
+  const signupPhone = localPhoneDigits(str(form, "phone"));
+  const account = signupPhone ? emailKey(signupPhone) : "unknown";
   const rl = await consumeDimensions([
     { key: `auth:signup:ip:${ip}`, ...RATE_POLICIES.signup.ip, sensitivity: "sensitive" },
     { key: `auth:signup:account:${account}`, ...RATE_POLICIES.signup.account, sensitivity: "sensitive" },
@@ -102,7 +94,7 @@ export async function POST(request: NextRequest) {
   if (institut.length < 2 || institut.length > L.institut) {
     return validationError(`Indiquez le nom de l'institut (2 à ${L.institut} caractères).`);
   }
-  if (!EMAIL_RE.test(email) || email.length > L.email) {
+  if (email && (!EMAIL_RE.test(email) || email.length > L.email)) {
     return validationError("Adresse e-mail invalide.");
   }
   const phoneDigits = localPhoneDigits(phone);
@@ -141,79 +133,11 @@ export async function POST(request: NextRequest) {
       website,
     });
 
-    const tempPassword = created.temporaryPassword;
-    const loginUrl = absoluteAppLoginUrl({
-      email: created.email,
-      password: tempPassword,
-    });
-    const mail = signupPasswordEmail({
-      firstName: created.firstName,
-      institut: created.institut,
-      email: created.email,
-      password: tempPassword,
-      loginUrl,
-    });
-
-    const passwordInText = mail.text.includes(tempPassword);
-    const passwordInHtml = mail.html.includes(tempPassword);
-    const maskedTemp =
-      tempPassword.length >= 4
-        ? `${tempPassword.slice(0, 2)}…${tempPassword.slice(-2)}`
-        : "****";
-
-    logger.info("public signup account ready", {
-      route: "/api/public/signup",
-      organizationId: created.organizationId,
-      email: created.email,
-      mustChangePassword: true,
-      tempPasswordLength: tempPassword.length,
-      tempPasswordMasked: maskedTemp,
-      passwordInEmailText: passwordInText,
-      passwordInEmailHtml: passwordInHtml,
-      loginUrl,
-    });
-
-    if (!passwordInText || !passwordInHtml) {
-      await deletePublicSignupOrganization(created.organizationId);
-      logger.error("public signup email missing temporary password", {
-        route: "/api/public/signup",
-        organizationId: created.organizationId,
-        passwordInEmailText: passwordInText,
-        passwordInEmailHtml: passwordInHtml,
-      });
-      return NextResponse.json(
-        { error: "Impossible de préparer l'e-mail de mot de passe. Réessayez." },
-        { status: 500 },
-      );
-    }
-
-    try {
-      const sent = await sendTransactionalEmail({
-        to: created.email,
-        subject: mail.subject,
-        html: mail.html,
-        text: mail.text,
-      });
-
-      logger.info("public signup password email sent", {
-        route: "/api/public/signup",
-        organizationId: created.organizationId,
-        email: created.email,
-        messageId: sent.messageId,
-        mustChangePassword: true,
-        tempPasswordMasked: maskedTemp,
-        note: "Connexion avec ce MDP temporaire → page changer-mot-de-passe",
-      });
-    } catch (error) {
-      await deletePublicSignupOrganization(created.organizationId);
-      throw error;
-    }
-
-    try {
+    if (isEmailConfigured()) try {
       const lead = signupLeadEmail({
         personName,
         institut: created.institut,
-        email: created.email,
+        email: created.email ?? "",
         phone: phoneDigits,
         city,
         address,
@@ -224,7 +148,7 @@ export async function POST(request: NextRequest) {
       });
       const notified = await sendTransactionalEmail({
         to: PROFESSIONAL_SIGNUP_NOTIFY_EMAIL,
-        replyTo: created.email,
+        replyTo: created.email || undefined,
         subject: lead.subject,
         html: lead.html,
         text: lead.text,
@@ -263,14 +187,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, credentials: { identifier: created.phone, temporaryPassword: created.temporaryPassword } }, { headers: { "Cache-Control": "no-store", Pragma: "no-cache" } });
   } catch (error) {
     if (error instanceof PublicSignupError) {
-      const status = error.code === "EMAIL_TAKEN" ? 409 : 400;
+      const status = (error.code === "EMAIL_TAKEN" || error.code === "PHONE_TAKEN") ? 409 : 400;
       return NextResponse.json({ error: error.message }, { status });
-    }
-    if (error instanceof EmailSendError) {
-      return NextResponse.json({ error: error.userMessage }, { status: 502 });
     }
     logger.error("public signup failed", {
       route: "/api/public/signup",

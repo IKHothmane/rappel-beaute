@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -204,7 +205,7 @@ export function ReactivationMobile({
         ) : null}
       </section>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiMini label="Vivier inactif" value={kpis?.inactiveCount ?? "—"} hint="≥ 30 j" />
         <KpiMini
           label="À relancer"
@@ -569,16 +570,7 @@ function KpiMini({
   hint: string;
   accent?: boolean;
 }) {
-  return (
-    <div className={cn("rounded-xl p-3", accent ? "bg-[#FCE9F4]" : "bg-[#FFEFF8]")}>
-      <div className="mb-1 flex items-center justify-between text-ink/45">
-        <span className="text-[11px] font-semibold">{label}</span>
-        {accent ? <Flame size={14} className="text-primary" /> : <Users size={14} />}
-      </div>
-      <p className={cn("text-[22px] font-semibold leading-7", accent && "text-primary")}>{value}</p>
-      <p className="text-[11px] text-ink/50">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function SegChip({

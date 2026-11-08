@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useMemo } from "react";
@@ -205,7 +206,7 @@ export function GiftCardsMobile(props: Props) {
         )}
       </section>
 
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiCard
           label="Actives en cours"
           value={`${kpiSafe.activeCount}`}
@@ -506,13 +507,7 @@ function KpiCard({
   hint: string;
   danger?: boolean;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-[#FFEFF8] p-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/40">{label}</p>
-      <p className={cn("mt-1 text-[22px] font-extrabold leading-none", danger && "text-[#BA1A1A]")}>{value}</p>
-      <p className={cn("mt-1 text-[12px]", danger ? "font-bold text-[#BA1A1A]" : "text-ink/50")}>{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint} negative={danger}></MetricCard>;
 }
 
 function LuxuryCard({ card, orgName }: { card: GiftCardListItem; orgName: string }) {

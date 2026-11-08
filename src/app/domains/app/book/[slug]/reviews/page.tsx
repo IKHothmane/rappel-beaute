@@ -27,7 +27,7 @@ export default async function PublicReviewsPage({ params }: { params: Promise<{ 
             data.reviews.map((review) => (
               <li key={review.id} className="rounded-2xl bg-white p-5 shadow-sm">
                 <p className="text-sm font-semibold text-ink">
-                  {review.firstName} · {review.rating}/5
+                  {review.firstName}{review.rating != null ? ` · ${review.rating}/5` : ""}
                 </p>
                 <p className="mt-1 text-xs text-ink/50">
                   {review.serviceName} · {new Date(review.createdAt).toLocaleDateString("fr-FR")}

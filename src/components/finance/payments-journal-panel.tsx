@@ -10,10 +10,11 @@ import {
   filterPayments,
   formatPaymentDateTime,
   formatPaymentServices,
+  groupPaymentsByClient,
   isUnpaidDue,
   paymentInitials,
   paymentOrigin,
-  paymentShortId,
+  paymentDisplayId,
   paymentStatusChip,
   periodLabel,
   signedPaymentAmount,
@@ -89,20 +90,24 @@ export function PaymentsJournalPanel({
 
   const filtered = useMemo(
     () =>
-      filterPayments(rows, {
-        period,
-        method: "",
-        staff: "",
-        search,
-        tab: "all",
-      }),
+      groupPaymentsByClient(
+        filterPayments(rows, {
+          period,
+          method: "",
+          staff: "",
+          search,
+          tab: "all",
+        }),
+      ),
     [rows, period, search],
   );
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAYMENT_PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAYMENT_PAGE_SIZE, page * PAYMENT_PAGE_SIZE);
   const selected =
-    (selectedId ? filtered.find((p) => p.id === selectedId) : undefined) ??
+    (selectedId
+      ? filtered.find((p) => p.id === selectedId || p.groupIds?.includes(selectedId))
+      : undefined) ??
     paged[0] ??
     filtered[0] ??
     null;
@@ -160,7 +165,7 @@ export function PaymentsJournalPanel({
               <table className="w-full min-w-[720px] text-left text-[13px]">
                 <thead>
                   <tr className="bg-[#FCE9F4] text-[11px] font-bold uppercase tracking-wider text-ink/50">
-                    <th className="px-3 py-2.5">Id · date et heure</th>
+                    <th className="px-3 py-2.5">N° passage · date</th>
                     <th className="px-3 py-2.5">Cliente</th>
                     <th className="px-3 py-2.5">Origine</th>
                     <th className="px-3 py-2.5">Méthode</th>
@@ -192,7 +197,7 @@ export function PaymentsJournalPanel({
                       >
                         <td className="whitespace-nowrap px-3 py-3">
                           <div className={cn("font-bold", p.kind === "REFUND" && "text-[#BA1A1A]")}>
-                            {paymentShortId(p.id)}
+                            {paymentDisplayId(p)}
                           </div>
                           <div className="text-[11px] text-ink/50">
                             {formatPaymentDateTime(p.paidAt)}
@@ -215,7 +220,17 @@ export function PaymentsJournalPanel({
                           <div className="font-semibold leading-snug">
                             {formatPaymentServices(p.serviceName)}
                           </div>
-                          <div className="text-[11px] text-ink/45">{origin.label}</div>
+                          {p.groupParts && p.groupParts.length > 1 ? (
+                            <div className="mt-0.5 space-y-0.5 text-[11px] text-ink/50">
+                              {p.groupParts.map((part, index) => (
+                                <div key={`${p.id}-part-${index}`}>
+                                  {part.label} · {formatMad(Math.abs(part.amount))}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-ink/45">{origin.label}</div>
+                          )}
                         </td>
                         <td className="px-3 py-3">
                           {isUnpaidDue(p) ? (

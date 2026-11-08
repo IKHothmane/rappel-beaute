@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { Pencil } from "lucide-react";
@@ -129,7 +130,7 @@ export function StaffDetailView({ staffId }: { staffId: string }) {
               Modifier
             </Button>
           ) : null}
-          <div className="flex gap-4 text-sm">
+          <div className="flex gap-4 text-sm rb-metric-row">
             <Kpi label="RDV" value={String(staff.appointmentCount)} />
             {canPerfFull ? (
               <Kpi label="CA" value={formatStaffRevenue(staff.revenue)} />
@@ -194,12 +195,7 @@ export function StaffDetailView({ staffId }: { staffId: string }) {
 }
 
 function Kpi({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-line px-4 py-2 text-center">
-      <p className="font-mono text-lg font-semibold">{value}</p>
-      <p className="text-xs text-ink/45">{label}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value}></MetricCard>;
 }
 
 function StatusBadge({ status }: { status: StaffStatus }) {
@@ -536,7 +532,7 @@ function PerformanceTab({ staff, full }: { staff: StaffDetail; full: boolean }) 
   const p = staff.performance;
   return (
     <div className="space-y-4 text-sm">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 rb-metric-row">
         <Kpi label="Terminés" value={String(p.completedCount)} />
         <Kpi label="Annulés" value={String(p.cancelledCount)} />
         <Kpi label="Absents" value={String(p.noShowCount)} />

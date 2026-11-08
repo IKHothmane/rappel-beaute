@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { type ReactNode, type RefObject, useEffect, useState } from "react";
@@ -146,7 +147,7 @@ export function ProductsMobile({
         <p className="mt-1 text-[13px] leading-relaxed text-ink">{insight}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 rb-metric-row">
         <Kpi label="Valeur stock" value={financeHidden || !kpis ? "—" : formatMad(kpis.totalStockValue)} hint="Valorisation achat" />
         <Kpi
           label="CA revente"
@@ -453,20 +454,7 @@ function Kpi({
   hint: ReactNode;
   tone?: "emerald" | "primary";
 }) {
-  return (
-    <div className="rounded-xl bg-white p-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/40">{label}</p>
-      <p
-        className={cn(
-          "mt-1 font-display text-[20px] font-bold",
-          tone === "emerald" ? "text-emerald-700" : tone === "primary" ? "text-primary" : "text-ink",
-        )}
-      >
-        {value}
-      </p>
-      <p className="mt-0.5 text-[11px] text-ink/45">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function Pill({

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -402,7 +403,7 @@ export function GiftCardsPageView() {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
           <Kpi
             label="Actives en cours"
             value={String(kpiSafe.activeCount)}
@@ -943,16 +944,7 @@ function Kpi({
   icon: ReactNode;
   danger?: boolean;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-4 shadow-sm">
-      <div className="mb-2 flex items-center justify-between text-ink/40">
-        <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        {icon}
-      </div>
-      <p className={cn("text-[28px] font-extrabold leading-none", danger && "text-[#BA1A1A]")}>{value}</p>
-      <p className={cn("mt-2 text-[12px]", danger ? "font-bold text-[#BA1A1A]" : "text-ink/45")}>{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} negative={danger}></MetricCard>;
 }
 
 function LuxuryPreview({ card, orgName }: { card: GiftCardListItem; orgName: string }) {

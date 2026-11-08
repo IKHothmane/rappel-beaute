@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import type { ReactNode, RefObject } from "react";
 import {
@@ -7,7 +8,7 @@ import {
   Pencil,
   Plus,
   Search,
-  SlidersHorizontal,
+
   Star,
   Store,
   TrendingUp,
@@ -76,13 +77,6 @@ export function ServicesMobile({
   onToggle,
   onDelete,
 }: ServicesMobileProps) {
-  function cycleStatusFilter() {
-    const next: ActiveFilter = activeFilter === "all" ? "active" : activeFilter === "active" ? "inactive" : "all";
-    onActiveFilterChange(next);
-  }
-
-  const filterHint =
-    activeFilter === "active" ? "Actifs" : activeFilter === "inactive" ? "Inactifs" : "Tous";
 
   return (
     <div className="flex flex-col gap-3 lg:hidden">
@@ -116,7 +110,7 @@ export function ServicesMobile({
         ) : null}
       </section>
 
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiTile
           label="Catalogue"
           value={String(catalogCount)}
@@ -175,17 +169,6 @@ export function ServicesMobile({
             placeholder="Rechercher un soin, une praticienne…"
             className="h-11 w-full rounded-xl bg-white pl-10 pr-11 text-[13px] text-ink shadow-sm outline-none placeholder:text-ink/35 focus:ring-2 focus:ring-primary/20"
           />
-          <button
-            type="button"
-            aria-label={`Filtrer le statut (${filterHint})`}
-            onClick={cycleStatusFilter}
-            className={cn(
-              "absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg",
-              activeFilter === "all" ? "text-ink/40" : "bg-[#FCE9F4] text-primary",
-            )}
-          >
-            <SlidersHorizontal size={16} />
-          </button>
         </div>
         <div className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 py-0.5">
           <Pill
@@ -247,13 +230,7 @@ function KpiTile({
   value: string;
   hint: ReactNode;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/40">{label}</p>
-      <p className="mt-2 font-display text-[22px] font-bold leading-7 text-ink">{value}</p>
-      <div className="mt-1 flex items-center gap-1 text-[12px] text-ink/50">{hint}</div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function Pill({

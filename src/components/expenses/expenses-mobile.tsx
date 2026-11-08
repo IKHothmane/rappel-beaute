@@ -1,8 +1,10 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
+import { ExpenseBanner, ExpenseFilters } from "@/components/expenses/expense-toolbar";
 
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import {
   type ExpensePeriod,
   type ExpenseTab,
@@ -148,22 +150,7 @@ export function ExpensesMobile({
 
   return (
     <div className="w-full space-y-4 pb-8 lg:hidden">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-primary">{orgName}</p>
-        <h1 className="mt-0.5 text-[22px] font-bold leading-tight text-ink">Dépenses & budgets</h1>
-        <p className="mt-1 text-[13px] text-ink/55">Contrôle des charges, pièces et annulations VOID.</p>
-      </div>
-
-      {canCreate ? (
-        <button
-          type="button"
-          onClick={onNew}
-          className="flex h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-primary text-[14px] font-semibold text-white shadow-sm"
-        >
-          <Plus size={18} />
-          Nouvelle dépense
-        </button>
-      ) : null}
+      <ExpenseBanner orgName={orgName} canCreate={canCreate} onCreate={onNew} />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
@@ -175,39 +162,7 @@ export function ExpensesMobile({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <select
-          value={period}
-          onChange={(e) => onPeriod(e.target.value as ExpensePeriod)}
-          className="h-10 rounded-lg bg-white px-2 text-[13px] font-semibold shadow-sm outline-none"
-        >
-          <option value="month">Ce mois</option>
-          <option value="today">Aujourd’hui</option>
-          <option value="all">Toutes les dates</option>
-        </select>
-        <select
-          value={category}
-          onChange={(e) => onCategory(e.target.value)}
-          className="h-10 rounded-lg bg-white px-2 text-[13px] font-semibold shadow-sm outline-none"
-        >
-          <option value="">Toutes catégories</option>
-          {categories.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <select
-        value={method}
-        onChange={(e) => onMethod(e.target.value as PaymentMethod | "")}
-        className="h-10 w-full rounded-lg bg-white px-2 text-[13px] font-semibold shadow-sm outline-none"
-      >
-        <option value="">Toutes méthodes</option>
-        <option value="CASH">Espèces</option>
-        <option value="CARD">Carte</option>
-        <option value="TRANSFER">Virement</option>
-      </select>
+      <ExpenseFilters period={period} onPeriod={onPeriod} category={category} onCategory={onCategory} method={method} onMethod={onMethod} categories={categories} />
 
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
         <button
@@ -232,7 +187,7 @@ export function ExpensesMobile({
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 rb-metric-row">
         <KpiMini
           label="Ce mois"
           value={formatMad(month)}
@@ -368,15 +323,7 @@ function KpiMini({
   hint?: string;
   accent?: boolean;
 }) {
-  return (
-    <div className={cn("min-w-[140px] flex-1 rounded-xl p-3 shadow-sm", accent ? "bg-ink text-[#FEECF7]" : "bg-white")}>
-      <p className={cn("text-[11px] font-bold uppercase tracking-wider", accent ? "text-[#FFDEA4]" : "text-ink/45")}>
-        {label}
-      </p>
-      <p className="mt-1 text-[16px] font-extrabold">{value}</p>
-      {hint ? <p className={cn("mt-0.5 text-[11px]", accent ? "text-[#FEECF7]/70" : "text-ink/45")}>{hint}</p> : null}
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }
 
 function Row({ label, value }: { label: string; value: ReactNode }) {

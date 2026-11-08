@@ -475,6 +475,7 @@ model Organization {
   cashTransactions   CashRegisterTransaction[]
   invoices           Invoice[]
   invoiceSequences   InvoiceSequence[]
+  paymentTicketSequences PaymentTicketSequence[]
   commissionRecords  CommissionRecord[]
   commissionAdjustments CommissionAdjustment[]
   commissionPeriods  CommissionPeriod[]
@@ -542,7 +543,8 @@ model Organization {
 model User {
   id             String        @id @default(cuid())
   organizationId String
-  email          String
+  email          String?
+  loginPhone     String?       @unique
   firstName      String
   lastName       String
   phone          String?
@@ -670,6 +672,8 @@ model Staff {
   replacementsAsAbsent StaffReplacement[] @relation("ReplacementAbsent")
   replacementsAsSubstitute StaffReplacement[] @relation("ReplacementSubstitute")
   waitingListEntries WaitingListEntry[]
+  customerReviews Review[]
+  reviewRatings ReviewStaffRating[]
 
   @@index([organizationId])
   @@index([organizationId, deletedAt])
@@ -984,6 +988,8 @@ model Payment {
   /// Pour un remboursement : Payment d'origine (jamais modifié)
   parentPaymentId String?
   giftCardId      String?
+  /// Numéro de passage journalier : JJ/MM-NNN (ex. 08/11-001)
+  ticketNumber    String?
   notes           String?
   userId          String?
   idempotencyKey  String?
@@ -1001,6 +1007,7 @@ model Payment {
   cashTxns     CashRegisterTransaction[]
 
   @@unique([organizationId, idempotencyKey])
+  @@unique([organizationId, ticketNumber])
   @@index([organizationId])
   @@index([appointmentId])
   @@index([customerId])
@@ -1008,6 +1015,19 @@ model Payment {
   @@index([giftCardId])
   @@index([parentPaymentId])
   @@index([organizationId, paidAt])
+  @@index([organizationId, ticketNumber])
+}
+
+/// Séquence atomique JJ/MM-NNN par organisation / jour (Africa/Casablanca)
+model PaymentTicketSequence {
+  organizationId String
+  dayKey         String
+  lastValue      Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@id([organizationId, dayKey])
 }
 
 /// Session de caisse journalière (une seule OPEN par organisation)
@@ -2422,7 +2442,9 @@ model Review {
   customerId       String
   appointmentId    String?            @unique
   reviewRequestId  String?            @unique
-  rating           Int
+  rating           Int?
+  staffId          String?
+  staffRating      Int?
   comment          String
   status           PublicReviewStatus @default(PENDING)
   publishedAt      DateTime?
@@ -2437,9 +2459,24 @@ model Review {
   customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   appointment   Appointment?   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   reviewRequest ReviewRequest? @relation(fields: [reviewRequestId], references: [id], onDelete: Cascade)
+  staff         Staff?         @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  staffRatings  ReviewStaffRating[]
 
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
+  @@index([organizationId, staffId])
+}
+
+model ReviewStaffRating {
+  reviewId String
+  staffId  String
+  rating   Int?
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  staff  Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, staffId])
+  @@index([staffId])
 }
 
 // ─── Plateforme (Super Admin) ────────────────────────────────────────────────

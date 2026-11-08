@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -16,7 +17,6 @@ import {
   Phone,
   Search,
   ShieldCheck,
-  SlidersHorizontal,
   Sparkles,
   Star,
   TrendingUp,
@@ -173,14 +173,6 @@ export function CustomersMobile({
             placeholder="Rechercher nom, téléphone, VIP…"
             className="h-12 w-full rounded-xl bg-white pl-11 pr-12 text-sm text-ink shadow-sm outline-none placeholder:text-ink/35 focus:ring-2 focus:ring-primary/20"
           />
-          <button
-            type="button"
-            aria-label="Filtrer les clientes"
-            onClick={() => searchRef.current?.focus()}
-            className="absolute right-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-[#FCE9F4] text-ink/50"
-          >
-            <SlidersHorizontal size={16} />
-          </button>
         </div>
       </section>
 
@@ -189,7 +181,7 @@ export function CustomersMobile({
           <span className="text-[14px] font-semibold text-ink">Indicateurs de rétention</span>
           <span className="text-[11px] font-semibold text-[#7B5900]">Mois en cours</span>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 rb-metric-row">
           <KpiCard
             label="Total clientes"
             value={String(kpis.total)}
@@ -386,31 +378,7 @@ function KpiCard({
   dot?: "emerald" | "amber";
   trend?: boolean;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-3 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-ink/45">{label}</span>
-        {icon ? (
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FCE9F4] text-primary">{icon}</span>
-        ) : null}
-        {gold ? (
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FFDEA4] text-[#7B5900]">
-            <Star size={14} />
-          </span>
-        ) : null}
-        {dot ? (
-          <span className={cn("h-2 w-2 rounded-full", dot === "emerald" ? "bg-emerald-500" : "bg-amber-500")} />
-        ) : null}
-      </div>
-      <div className="mt-2">
-        <p className="font-display text-[22px] font-bold leading-7 text-ink">{value}</p>
-        <p className={cn("mt-0.5 flex items-center gap-1 text-[11px] font-medium", trend ? "text-primary" : "text-ink/45")}>
-          {trend ? <TrendingUp size={12} /> : null}
-          {hint}
-        </p>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint}></MetricCard>;
 }
 
 function CustomerListCard({

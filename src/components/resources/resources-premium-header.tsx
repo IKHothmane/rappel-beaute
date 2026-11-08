@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import {
   CalendarClock,
@@ -83,28 +84,12 @@ export function ResourcesPremiumHeader({
         ) : null}
       </header>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="rb-metric-row">
         {stats.map((stat) => {
           const Icon = stat.icon;
 
           return (
-            <div
-              key={stat.label}
-              className="rounded-[20px] border border-[#F0DDE4] bg-white p-4 shadow-[0_6px_20px_rgba(72,20,43,0.05)] transition hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${stat.color}`}
-                >
-                  <Icon size={22} />
-                </span>
-
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-[#775B6A]">{stat.label}</p>
-                  <p className="mt-1 text-2xl font-extrabold text-[#43182D]">{stat.value}</p>
-                </div>
-              </div>
-            </div>
+            <MetricCard key={stat.label} title={stat.label} value={stat.value} icon={<Icon />} />
           );
         })}
       </div>

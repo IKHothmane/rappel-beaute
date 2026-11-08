@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { APP_LOGIN_HREF, CITIES } from "@/lib/site";
 import { PHONE_MAX_DIGITS, limitPhoneDigits } from "@/lib/validation/customer";
 import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
+import { Dropdown } from "@/components/ui/dropdown";
 
 export function ProfessionnelForm() {
   const [sent, setSent] = useState(false);
@@ -13,21 +14,29 @@ export function ProfessionnelForm() {
   const [website, setWebsite] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [city, setCity] = useState("");
+  const [credentials, setCredentials] = useState<{ identifier: string; temporaryPassword: string } | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (!city) { setError("Sélectionnez votre ville."); return; }
     setLoading(true);
     try {
       const res = await fetch("/api/public/signup/", {
         method: "POST",
         body: new FormData(e.currentTarget),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string; credentials?: { identifier: string; temporaryPassword: string } };
       if (!res.ok) {
         setError(data.error || "Impossible de créer le compte. Réessayez.");
         return;
       }
+      if (!data.credentials?.identifier || !data.credentials.temporaryPassword) {
+        setError("Votre compte a été créé, mais les accès n’ont pas pu être affichés. Contactez notre équipe avant de réessayer.");
+        return;
+      }
+      setCredentials(data.credentials);
       setSent(true);
     } catch {
       setError("Réseau indisponible. Réessayez.");
@@ -41,7 +50,7 @@ export function ProfessionnelForm() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [sent]);
 
-  if (sent) {
+  if (sent && credentials) {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-line bg-primary-light/50 p-5">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -56,16 +65,19 @@ export function ProfessionnelForm() {
         </span>
         <div>
           <p className="font-display text-xl font-semibold text-ink">
-            Votre mot de passe a été envoyé
+            Votre compte est prêt
           </p>
           <p className="mt-1 text-sm leading-relaxed text-ink/60">
-            Vérifiez votre boîte mail (et les spams). Vous y trouverez un mot de passe temporaire
-            pour vous connecter. Votre essai de 7 jours est déjà actif. Vous changerez le mot de
-            passe à la première connexion.
+            Votre essai de 7 jours est actif. Connectez-vous avec votre numéro WhatsApp et ce mot de passe temporaire, à modifier à la première connexion.
           </p>
+          <dl className="mt-4 space-y-3 rounded-xl border border-line bg-white p-4 text-sm">
+            <div><dt className="text-ink/55">Numéro WhatsApp</dt><dd className="mt-1 select-text font-semibold text-ink">{credentials.identifier}</dd></div>
+            <div><dt className="text-ink/55">Mot de passe temporaire</dt><dd className="mt-1 select-text font-mono text-xl font-bold tracking-widest text-primary">{credentials.temporaryPassword}</dd></div>
+          </dl>
+          <p className="mt-3 text-xs text-ink/60">Conservez ces accès avant de quitter cette page.</p>
           <a
             className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white"
-            href={APP_LOGIN_HREF}
+            href={`${APP_LOGIN_HREF}?identifier=${encodeURIComponent(credentials.identifier)}`}
           >
             Se connecter
           </a>
@@ -91,10 +103,9 @@ export function ProfessionnelForm() {
           </svg>
         </div>
         <div>
-          <span className="text-sm font-bold tracking-wide text-ink">Mot de passe par e-mail</span>
+          <span className="text-sm font-bold tracking-wide text-ink">Votre accès avec WhatsApp</span>
           <p className="mt-0.5 text-xs leading-normal text-ink/55">
-            À l&apos;envoi, un mot de passe temporaire part vers l&apos;adresse e-mail saisie. Vous
-            pourrez ensuite vous connecter et le modifier.
+            Votre numéro WhatsApp devient votre identifiant. Vos accès s’affichent dès la création du compte.
           </p>
         </div>
       </div>
@@ -127,19 +138,11 @@ export function ProfessionnelForm() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1.5 text-sm">
+        <div className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-ink">Ville d&apos;implantation</span>
-          <select className={`${field} cursor-pointer appearance-none`} name="ville" required defaultValue="">
-            <option disabled value="">
-              Sélectionner votre ville
-            </option>
-            {CITIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
+          <Dropdown value={city} onChange={setCity} ariaLabel="Ville d’implantation" placeholder="Sélectionner votre ville" options={CITIES.map((name) => ({ value: name, label: name }))} className="[&>button]:h-12 [&>button]:bg-paper [&>button]:focus-visible:ring-2 [&>button]:focus-visible:ring-primary/20" />
+          <input type="hidden" name="ville" value={city} />
+        </div>
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-ink">WhatsApp professionnel</span>
           <input
@@ -156,19 +159,6 @@ export function ProfessionnelForm() {
           />
         </label>
       </div>
-
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-ink">Adresse e-mail professionnelle</span>
-        <input
-          className={field}
-          name="email"
-          placeholder="contact@institut.ma"
-          required
-          type="email"
-          maxLength={L.email}
-          autoComplete="email"
-        />
-      </label>
 
       <div className="flex flex-col gap-1.5 text-sm">
         <div className="flex items-center justify-between gap-3">
@@ -231,7 +221,7 @@ export function ProfessionnelForm() {
           type="submit"
         >
           {loading ? (
-            <>Envoi du mot de passe...</>
+            <>Création du compte…</>
           ) : (
             <>
               Créer mon accès

@@ -1,5 +1,19 @@
 const PUBLIC_SITE = "https://rappelbeauty.com";
 
+/** Local preview only; distributed QR and Wallet links keep their public origin. */
+export function loyaltyPreviewUrl(publicUrl: string, browserOrigin?: string | null): string {
+  if (process.env.NODE_ENV !== "development" || !browserOrigin) return publicUrl;
+  try {
+    const origin = new URL(browserOrigin);
+    if (!["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname) && !origin.hostname.endsWith(".localhost")) return publicUrl;
+    if (origin.protocol !== "http:" && origin.protocol !== "https:") return publicUrl;
+    const target = new URL(publicUrl);
+    return new URL(`${target.pathname}${target.search}${target.hash}`, origin.origin).toString();
+  } catch {
+    return publicUrl;
+  }
+}
+
 /**
  * Origine des liens scannés / QR fidélité.
  * Toujours rappelbeauty.com — jamais localhost ni app.* (les clientes scannent le site public).

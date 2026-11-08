@@ -3,6 +3,7 @@ import { Fraunces, IBM_Plex_Mono, Inter } from "next/font/google";
 import { SITE } from "@/lib/site";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import "./globals.css";
+import "./metric-cards.css";
 import "./rappel-beauty-home-animations.css";
 
 const GTM_ID = "GTM-WZGGKNPG";

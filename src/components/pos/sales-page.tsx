@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -168,17 +169,14 @@ export function SalesPageView() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 rb-metric-row">
         {[
           { label: "CA produits", value: formatMad(kpis.revenue) },
           { label: "Nombre de ventes", value: String(kpis.salesCount) },
           { label: "Produits vendus", value: String(Math.round(kpis.productsSold)) },
           { label: "Panier moyen", value: formatMad(kpis.averageBasket) },
         ].map((kpi) => (
-          <div key={kpi.label} className="rounded-2xl border border-line bg-white p-4 shadow-sm">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">{kpi.label}</p>
-            <p className="mt-2 font-display text-2xl font-semibold text-ink">{kpi.value}</p>
-          </div>
+          <MetricCard key={kpi.label} title={kpi.label} value={kpi.value}  />
         ))}
       </div>
 

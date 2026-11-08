@@ -23,7 +23,7 @@ export function ProfileView() {
         </p>
         <p>
           <span className="text-ink/45">E-mail · </span>
-          {user.email}
+          {user.email || user.loginPhone}
         </p>
         <p>
           <span className="text-ink/45">Institut · </span>

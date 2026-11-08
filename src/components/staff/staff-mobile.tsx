@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode, type RefObject } from "react";
@@ -156,7 +157,7 @@ export function StaffMobile({
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 rb-metric-row">
         <KpiCard
           label="Équipe totale"
           value={String(catalogCount)}
@@ -474,25 +475,7 @@ function KpiCard({
   icon: ReactNode;
   tone?: "emerald" | "gold";
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-white p-3 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-ink/45">{label}</span>
-        <span
-          className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-full",
-            tone === "emerald" ? "bg-emerald-50 text-emerald-700" : tone === "gold" ? "bg-[#FCCA66]/40 text-[#7B5900]" : "bg-[#FCE9F4] text-primary",
-          )}
-        >
-          {icon}
-        </span>
-      </div>
-      <div className="mt-2">
-        <p className="font-display text-[22px] font-bold leading-7 text-ink">{value}</p>
-        <p className="mt-0.5 text-[11px] text-ink/45">{hint}</p>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint}></MetricCard>;
 }
 
 function StripChip({

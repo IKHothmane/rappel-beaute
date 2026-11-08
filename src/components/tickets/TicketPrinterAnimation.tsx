@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { printBeautyTicket } from "@/components/tickets/print-beauty-ticket";
 import "./TicketPrinterAnimation.css";
 
@@ -47,16 +47,25 @@ export default function TicketPrinterAnimation({
   const [printed, setPrinted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [paperKey, setPaperKey] = useState(0);
+  const [paperHeight, setPaperHeight] = useState(245);
+  const contentRef = useRef<HTMLDivElement>(null);
   const currency = ticket.currency ?? "DH";
   const isPayment = mode === "payment";
 
+  const measurePaperHeight = () => {
+    const el = contentRef.current;
+    if (!el) return 245;
+    // Hauteur exacte jusqu’à « À bientôt chez vous. »
+    const next = Math.ceil(el.scrollHeight);
+    return next + 1;
+  };
+
   const startPrintAnimation = () => {
-    // 1) papier à height 0 (sans classe is-printing)
     setPrinted(false);
     setPrinting(false);
     setPaperKey((k) => k + 1);
-    // 2) après un court délai, lancer l’animation d’éjection
     window.setTimeout(() => {
+      setPaperHeight(measurePaperHeight());
       setPrinting(true);
     }, 120);
   };
@@ -64,6 +73,7 @@ export default function TicketPrinterAnimation({
   useEffect(() => {
     if (!printing) return;
     const timer = window.setTimeout(() => {
+      setPaperHeight(measurePaperHeight());
       setPrinting(false);
       setPrinted(true);
     }, 2300);
@@ -76,7 +86,7 @@ export default function TicketPrinterAnimation({
     const boot = window.setTimeout(() => startPrintAnimation(), 80);
     return () => window.clearTimeout(boot);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rejouer à chaque ouverture / ticket
-  }, [isPayment, ticket.ticketNumber]);
+  }, [isPayment, ticket.ticketNumber, ticket.lines.length, ticket.total]);
 
   const finishService = async () => {
     if (busy || printing) return;
@@ -139,10 +149,11 @@ export default function TicketPrinterAnimation({
 
       <div
         className={`rb-printer-stage ${printing ? "is-printing" : ""} ${printed ? "is-printed" : ""}`}
+        style={{ "--rb-paper-height": `${paperHeight}px` } as CSSProperties}
       >
         {!isPayment ? <div className="rb-printer-glow" /> : null}
         <div className="rb-ticket-paper" aria-live="polite" key={`paper-${paperKey}`}>
-          <div className="rb-paper-content" id="payment-ticket-print">
+          <div className="rb-paper-content" id="payment-ticket-print" ref={contentRef}>
             <div className="rb-paper-brand">
               {ticket.instituteName ?? "Institut de beauté"}
             </div>

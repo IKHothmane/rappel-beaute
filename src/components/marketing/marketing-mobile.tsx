@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import {
@@ -172,7 +173,7 @@ export function MarketingMobile(props: Props) {
 
       <section>
         <h2 className="mb-2 text-[18px] font-bold">Performance</h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 rb-metric-row">
           <KpiCard
             label="Campagnes"
             value={`${kpis?.activeCampaigns ?? 0} / ${kpis?.totalCampaigns ?? 0}`}
@@ -345,11 +346,5 @@ export function MarketingMobile(props: Props) {
 }
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <div className="rounded-xl bg-white p-3 shadow-sm">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">{label}</p>
-      <p className="mt-1 text-[22px] font-extrabold leading-none">{value}</p>
-      <p className="mt-1 text-[11px] text-ink/50">{hint}</p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }

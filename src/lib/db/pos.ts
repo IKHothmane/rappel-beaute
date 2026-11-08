@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
+import { nextPaymentTicketNumber } from "@/lib/db/finance";
 import { createInventoryMovement } from "@/lib/db/inventory";
 import type { PaymentMethod } from "@/types/finance";
 import type {
@@ -143,6 +144,7 @@ async function loadSaleDetail(
     invoiceId: string;
     invoiceNumber: string;
     paymentId: string | null;
+    appointmentId: string | null;
     customerId: string | null;
     customerName: string | null;
     status: string;
@@ -155,7 +157,7 @@ async function loadSaleDetail(
     createdAt: Date;
   }>(
     `SELECT s.id, s."invoiceId", i.number AS "invoiceNumber", s."paymentId",
-            s."customerId", i."customerNameSnapshot" AS "customerName",
+            i."appointmentId", s."customerId", i."customerNameSnapshot" AS "customerName",
             s.status::text, s.subtotal::text, s."discountTotal"::text, s.total::text,
             s."paymentMethod"::text, s."soldById", s.notes, s."createdAt"
      FROM "PosSale" s
@@ -199,6 +201,7 @@ async function loadSaleDetail(
     invoiceId: sale.invoiceId,
     invoiceNumber: sale.invoiceNumber,
     paymentId: sale.paymentId,
+    appointmentId: sale.appointmentId,
     customerId: sale.customerId,
     customerName: sale.customerName,
     status: sale.status as PosSaleDetail["status"],
@@ -259,8 +262,28 @@ export async function createPosSale(
     let customerName = "Passage";
     let customerPhone: string | null = null;
     let customerId: string | null = input.customerId?.trim() || null;
+    let appointmentId: string | null = input.appointmentId?.trim() || null;
 
-    if (customerId) {
+    if (appointmentId) {
+      const { rows: apt } = await client.query<{
+        id: string;
+        customerId: string;
+        firstName: string;
+        lastName: string;
+        phone: string | null;
+      }>(
+        `SELECT a.id, a."customerId", c."firstName", c."lastName", c.phone
+         FROM "Appointment" a
+         JOIN "Customer" c ON c.id = a."customerId"
+         WHERE a.id = $1 AND a."organizationId" = $2 AND c."deletedAt" IS NULL
+         FOR SHARE OF a`,
+        [appointmentId, organizationId],
+      );
+      if (!apt[0]) throw new Error("APPOINTMENT_NOT_FOUND");
+      customerId = apt[0].customerId;
+      customerName = `${apt[0].firstName} ${apt[0].lastName}`.trim();
+      customerPhone = apt[0].phone;
+    } else if (customerId) {
       const { rows: cust } = await client.query<{
         firstName: string;
         lastName: string;
@@ -347,15 +370,16 @@ export async function createPosSale(
         subtotal, "discountTotal", total,
         notes, "issuedAt", "createdById", "idempotencyKey", "updatedAt"
       ) VALUES (
-        $1,$2,$3,NULL,$4,'PAID'::"InvoiceStatus",
-        $5,$6,$7,$8,$9,$10,
-        $11,$12,$13,
-        $14,NOW(),$15,$16,NOW()
+        $1,$2,$3,$4,$5,'PAID'::"InvoiceStatus",
+        $6,$7,$8,$9,$10,$11,
+        $12,$13,$14,
+        $15,NOW(),$16,$17,NOW()
       )`,
       [
         invoiceId,
         organizationId,
         number,
+        appointmentId,
         customerId,
         orgRows[0].name,
         orgRows[0].address,
@@ -405,22 +429,25 @@ export async function createPosSale(
       );
     }
 
+    const ticketNumber = await nextPaymentTicketNumber(organizationId, client);
     await client.query(
       `INSERT INTO "Payment" (
         id, "organizationId", "appointmentId", "customerId", "invoiceId",
-        amount, method, kind, status, notes, "userId", "idempotencyKey",
+        amount, method, kind, status, "ticketNumber", notes, "userId", "idempotencyKey",
         "paidAt", "updatedAt"
       ) VALUES (
-        $1,$2,NULL,$3,$4,$5,$6::"PaymentMethod",'PAYMENT'::"PaymentKind",
-        'COMPLETED'::"PaymentStatus",$7,$8,$9,NOW(),NOW()
+        $1,$2,$3,$4,$5,$6,$7::"PaymentMethod",'PAYMENT'::"PaymentKind",
+        'COMPLETED'::"PaymentStatus",$8,$9,$10,$11,NOW(),NOW()
       )`,
       [
         paymentId,
         organizationId,
+        appointmentId,
         customerId,
         invoiceId,
         total,
         method,
+        ticketNumber,
         input.notes ?? `Vente POS ${number}`,
         actor.id,
         `pospay:${input.idempotencyKey}`,
@@ -622,6 +649,8 @@ export type ListPosSalesOpts = {
   paymentMethod?: string;
   status?: string;
   customerId?: string;
+  appointmentId?: string;
+  paymentId?: string;
   search?: string;
 };
 
@@ -669,6 +698,14 @@ export async function listPosSales(
   if (opts?.customerId?.trim()) {
     clauses.push(`s."customerId" = $${i++}`);
     params.push(opts.customerId.trim());
+  }
+  if (opts?.appointmentId?.trim()) {
+    clauses.push(`i."appointmentId" = $${i++}`);
+    params.push(opts.appointmentId.trim());
+  }
+  if (opts?.paymentId?.trim()) {
+    clauses.push(`s."paymentId" = $${i++}`);
+    params.push(opts.paymentId.trim());
   }
   if (opts?.search?.trim()) {
     clauses.push(

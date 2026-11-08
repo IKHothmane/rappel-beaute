@@ -26,6 +26,7 @@ import {
   ProductSalePanel,
   type ProductAddonCart,
 } from "@/components/finance/product-sale-panel";
+import { applyAppointmentPromo } from "@/modules/appointments/service";
 import {
   createPosSaleApi,
   newPosIdempotencyKey,
@@ -181,6 +182,26 @@ export function CashRegisterPageView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  async function applyServicePromo(
+    code: string,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (!aptId) return { ok: false, error: "Choisissez un rendez-vous." };
+    const result = await applyAppointmentPromo(aptId, code);
+    if (!result.ok) return result;
+    try {
+      const list = await listBillableAppointments(aptId);
+      const found = list.find((item) => item.id === aptId) ?? list[0];
+      if (found) {
+        setBillable([found]);
+        setPayAmount(String(found.remaining));
+      }
+    } catch {
+      /* montant mis à jour au prochain rechargement */
+    }
+    toast("Code promo appliqué sur le service.", "success");
+    return { ok: true };
+  }
+
   async function handlePay() {
     const amount = Number(payAmount);
     if (!amount || amount <= 0) {
@@ -215,9 +236,12 @@ export function CashRegisterPageView() {
 
     let productMsg = "";
     if (addonCart.lines.length > 0) {
+      const selectedBillable = billable.find((item) => item.id === aptId);
       const sale = await createPosSaleApi({
         lines: addonCart.lines,
         paymentMethod: payMethod,
+        appointmentId: aptId,
+        customerId: selectedBillable?.customerId || null,
         discountTotal: addonCart.discount > 0 ? addonCart.discount : 0,
         notes: addonCart.promoCode
           ? `Vente POS · avec service · Promo: ${addonCart.promoCode}`
@@ -436,94 +460,107 @@ export function CashRegisterPageView() {
           ) : null}
 
           {tab === "history" ? (
-            <div className="space-y-3 rounded-xl bg-white p-6 shadow-sm">
-              <h2 className="text-[22px] font-semibold">Historique des clôtures</h2>
-              {recentClosed.length === 0 ? (
-                <p className="text-[13px] text-ink/50">Aucune clôture enregistrée.</p>
-              ) : (
-                recentClosed.map((row) => (
-                  <div
-                    key={row.id}
-                    className="flex items-center justify-between rounded-lg bg-[#FFEFF8] p-3"
-                  >
-                    <div>
-                      <p className="text-[14px] font-semibold">{closedHistoryLabel(row)}</p>
-                      <p className="text-[12px] text-ink/50">
-                        {row.closedByName ?? "—"}
-                        {row.expectedBalance != null ? ` · Th. ${formatMad(row.expectedBalance)}` : ""}
-                        {row.closingCounted != null ? ` · Réel ${formatMad(row.closingCounted)}` : ""}
-                      </p>
-                    </div>
-                    <span
+            <div className="space-y-4 overflow-hidden rounded-2xl border border-[#EEDFE7] bg-white shadow-[0_8px_28px_rgba(60,20,40,0.06)]">
+              <div className="border-b border-[#EEDFE7] bg-gradient-to-r from-[#FFF7FB] to-[#FCE9F4] px-5 py-4">
+                <h2 className="text-[20px] font-bold text-[#3A1528]">Historique des clôtures</h2>
+              </div>
+              <div className="space-y-2 px-4 pb-4">
+                {recentClosed.length === 0 ? (
+                  <p className="rounded-xl bg-[#FFF7FB] p-6 text-center text-[13px] text-[#765E6B]">
+                    Aucune clôture enregistrée.
+                  </p>
+                ) : (
+                  recentClosed.map((row, index) => (
+                    <div
+                      key={row.id}
                       className={cn(
-                        "rounded px-2 py-0.5 text-[11px] font-bold",
-                        (row.difference ?? 0) === 0
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-[#FFDAD6] text-[#93000A]",
+                        "flex items-center justify-between rounded-xl border border-[#F3E6EC] px-4 py-3",
+                        index % 2 === 0 ? "bg-white" : "bg-[#FFF9FB]",
                       )}
                     >
-                      {row.difference == null ? "—" : formatMad(row.difference)}
-                    </span>
-                  </div>
-                ))
-              )}
+                      <div>
+                        <p className="text-[14px] font-semibold text-[#3A1528]">{closedHistoryLabel(row)}</p>
+                        <p className="text-[12px] text-[#765E6B]">
+                          {row.closedByName ?? "—"}
+                          {row.expectedBalance != null ? ` · Th. ${formatMad(row.expectedBalance)}` : ""}
+                          {row.closingCounted != null ? ` · Réel ${formatMad(row.closingCounted)}` : ""}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-[11px] font-bold ring-1",
+                          (row.difference ?? 0) === 0
+                            ? "bg-[#E6F6ED] text-[#0F6B3C] ring-[#9FD4B3]/55"
+                            : "bg-[#FFE2E0] text-[#8C1D18] ring-[#F5B5B0]/60",
+                        )}
+                      >
+                        {row.difference == null ? "—" : formatMad(row.difference)}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           ) : tab === "out" || tab === "refunds" ? (
-            <div className="space-y-5 rounded-[24px] border border-[#F1E8EC] bg-white p-6 shadow-[0_8px_30px_rgba(60,20,40,0.06)] sm:p-7">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-5 overflow-hidden rounded-2xl border border-[#EEDFE7] bg-white shadow-[0_8px_28px_rgba(60,20,40,0.06)]">
+              <div className="flex flex-col gap-3 border-b border-[#EEDFE7] bg-gradient-to-r from-[#FFF7FB] to-[#FCE9F4] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-ink">
+                  <h2 className="text-xl font-bold text-[#3A1528]">
                     {tab === "out" ? "Sorties de caisse" : "Remboursements tiroir"}
                   </h2>
-                  <p className="text-[13px] text-ink/50">Mouvements de la session courante.</p>
+                  <p className="text-[13px] text-[#765E6B]">Mouvements de la session courante.</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#765E6B]" />
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Ticket, motif…"
-                      className="h-10 w-56 rounded-xl bg-[#FAF0F5] pl-9 pr-3 text-[13px] outline-none focus:ring-2 focus:ring-primary/20"
+                      className="h-10 w-56 rounded-xl border border-[#EEDFE7] bg-white pl-9 pr-3 text-[13px] text-[#3A1528] outline-none focus:ring-2 focus:ring-[#981C52]/20"
                     />
                   </div>
                   <button
                     type="button"
                     title="Exporter CSV"
                     onClick={() => exportCashCsv(filtered)}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FAF0F5] text-ink hover:bg-[#FCE9F4]"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#EEDFE7] bg-white text-[#981C52] hover:bg-[#FCE9F4]"
                   >
                     <Download size={16} />
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 px-4 pb-4">
                 {filtered.length === 0 ? (
-                  <p className="rounded-2xl bg-[#FAF0F5] p-8 text-center text-[13px] text-ink/50">
+                  <p className="rounded-xl bg-[#FFF7FB] p-8 text-center text-[13px] text-[#765E6B]">
                     Aucun mouvement.
                   </p>
                 ) : (
-                  filtered.map((t) => (
+                  filtered.map((t, index) => (
                     <div
                       key={t.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F1E8EC] bg-[#FFFBFD] px-4 py-3.5 transition hover:border-[#E8C9D6]"
+                      className={cn(
+                        "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#F3E6EC] px-4 py-3.5 transition hover:border-[#E8C9D6] hover:bg-[#FFF0F6]",
+                        index % 2 === 0 ? "bg-white" : "bg-[#FFF9FB]",
+                        t.amount < 0 && "bg-[#FFF5F4]",
+                      )}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate text-[15px] font-bold text-ink">
+                          <p className="truncate text-[15px] font-bold text-[#3A1528]">
                             {CASH_TXN_LABEL[t.type]}
                           </p>
                           <span
                             className={cn(
-                              "inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold",
+                              "inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1",
                               txnTypeChip(t.type),
                             )}
                           >
                             {t.method ? PAYMENT_METHOD_LABEL[t.method] : "Espèces"}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-[12px] text-ink/50">
+                        <p className="mt-0.5 text-[12px] text-[#765E6B]">
                           {formatCashDateTime(t.createdAt)}
                           {t.userName ? ` · ${t.userName}` : ""}
                           {t.reason ? ` · ${t.reason}` : ""}
@@ -532,7 +569,7 @@ export function CashRegisterPageView() {
                       <p
                         className={cn(
                           "text-[16px] font-extrabold tabular-nums",
-                          t.amount < 0 ? "text-[#BA1A1A]" : "text-[#981C52]",
+                          t.amount < 0 ? "text-[#BA1A1A]" : "text-[#0F6B3C]",
                         )}
                       >
                         {t.amount > 0 ? "+" : ""}
@@ -581,7 +618,43 @@ export function CashRegisterPageView() {
             ))}
           </div>
 
-          {payMode === "products" ? (
+          {aptId ? (
+            <div className={cn("space-y-4", payMode !== "products" && "hidden")}>
+              <div className="rounded-xl bg-[#FFEFF8] px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+                  Produits pour
+                </p>
+                <p className="mt-1 text-[15px] font-semibold text-ink">
+                  {selectedApt?.customerName ?? "Cliente"}
+                </p>
+                <p className="mt-0.5 text-[13px] text-ink/55">
+                  {formatPaymentServices(selectedApt?.serviceName)} · service{" "}
+                  {formatMad(Number(payAmount) || 0)}
+                </p>
+              </div>
+              <ProductSalePanel
+                embedded
+                startExpanded
+                resetToken={addonReset}
+                disabled={!canWrite || submitting}
+                cashOpen={isOpen}
+                onError={(message) => toast(message, "error")}
+                onCartChange={setAddonCart}
+              />
+              <Button
+                type="button"
+                variant="primary"
+                className="w-full"
+                onClick={() => setPayMode("service")}
+              >
+                {addonCart.lines.length > 0
+                  ? `Retour au service · ${addonCart.lines.length} produit${addonCart.lines.length > 1 ? "s" : ""}`
+                  : "Retour au service"}
+              </Button>
+            </div>
+          ) : null}
+
+          {payMode === "products" && !aptId ? (
             <ProductSalePanel
               disabled={!canWrite || submitting}
               cashOpen={isOpen}
@@ -593,10 +666,12 @@ export function CashRegisterPageView() {
                 void refresh();
               }}
             />
-          ) : (
+          ) : null}
+
+          {payMode === "service" ? (
             <>
               <p className="text-[13px] text-ink/55">
-                Encaissez le rendez-vous et, si besoin, ajoutez des produits au même encaissement.
+                Encaissez le rendez-vous. Pour ajouter des produits, passez sur l’onglet Produits.
               </p>
               {selectedApt ? (
                 <div className="rounded-xl bg-[#FFEFF8] px-3 py-3">
@@ -620,6 +695,10 @@ export function CashRegisterPageView() {
                 promotionCode={selectedApt?.promotionCode}
                 promotionName={selectedApt?.promotionName}
                 discount={selectedApt?.discount}
+                canApply={Boolean(aptId)}
+                disabled={!canWrite || submitting}
+                serviceId={selectedApt?.serviceId}
+                onApply={applyServicePromo}
               />
               <label className="block text-sm">
                 <span className="mb-1.5 block font-medium">Montant service</span>
@@ -637,23 +716,55 @@ export function CashRegisterPageView() {
                 disabled={submitting}
               />
 
-              <ProductSalePanel
-                embedded
-                resetToken={addonReset}
-                disabled={!canWrite || submitting}
-                cashOpen={isOpen}
-                onError={(message) => toast(message, "error")}
-                onCartChange={setAddonCart}
-              />
+              {aptId ? (
+                <button
+                  type="button"
+                  disabled={!canWrite || submitting}
+                  onClick={() => setPayMode("products")}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/35 bg-white text-[13px] font-semibold text-primary transition hover:bg-primary/5 disabled:opacity-40"
+                >
+                  {addonCart.lines.length > 0
+                    ? `Produits ajoutés (${addonCart.lines.length}) · modifier`
+                    : "Ajouter des produits"}
+                </button>
+              ) : null}
 
               {addonCart.lines.length > 0 ? (
-                <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/60">
-                  Total à encaisser : service {formatMad(Number(payAmount) || 0)} + produits{" "}
-                  {formatMad(addonCart.total)} ={" "}
-                  <strong className="text-ink">
-                    {formatMad((Number(payAmount) || 0) + addonCart.total)}
-                  </strong>
-                </p>
+                <div className="space-y-2 rounded-xl bg-[#FFEFF8] px-3 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                    Produits ajoutés
+                  </p>
+                  <ul className="space-y-1.5">
+                    {addonCart.lines.map((line) => (
+                      <li
+                        key={line.productId}
+                        className="flex items-center justify-between gap-2 text-[13px]"
+                      >
+                        <span className="min-w-0 truncate font-medium text-ink">
+                          {line.name}
+                          <span className="text-ink/45"> × {line.quantity}</span>
+                        </span>
+                        <span className="shrink-0 font-semibold text-ink">
+                          {formatMad(line.unitPrice * line.quantity)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {addonCart.discount > 0 ? (
+                    <p className="text-[12px] text-primary">
+                      Remise
+                      {addonCart.promoCode ? ` (${addonCart.promoCode})` : ""} −
+                      {formatMad(addonCart.discount)}
+                    </p>
+                  ) : null}
+                  <p className="border-t border-primary/10 pt-2 text-[12px] text-ink/60">
+                    Total à encaisser : service {formatMad(Number(payAmount) || 0)} + produits{" "}
+                    {formatMad(addonCart.total)} ={" "}
+                    <strong className="text-ink">
+                      {formatMad((Number(payAmount) || 0) + addonCart.total)}
+                    </strong>
+                  </p>
+                </div>
               ) : null}
 
               <Button
@@ -670,7 +781,7 @@ export function CashRegisterPageView() {
                     : "Encaisser le service"}
               </Button>
             </>
-          )}
+          ) : null}
         </div>
       </PremiumSidePanel>
 

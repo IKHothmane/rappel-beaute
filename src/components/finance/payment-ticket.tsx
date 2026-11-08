@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { soinLabelsFromNotes } from "@/components/agenda/service-notes";
+import {
+  breakdownToTicketLines,
+  fetchPaymentBreakdown,
+  type PaymentBreakdown,
+} from "@/components/finance/payment-breakdown";
 import {
   formatPaymentDateTime,
-  paymentServiceLabels,
   signedPaymentAmount,
 } from "@/components/finance/payment-helpers";
 import TicketPrinterAnimation, {
@@ -16,57 +19,7 @@ import {
   PAYMENT_KIND_LABEL,
   PAYMENT_METHOD_LABEL,
 } from "@/modules/finance/service";
-import type { Appointment } from "@/types/appointment";
 import type { AppointmentPaymentSummary, PaymentItem } from "@/types/finance";
-
-type TicketLine = { name: string; price: number | null; detail?: string };
-
-function clean(value: string) {
-  return value.replace(/\s+/g, " ").trim().toLowerCase();
-}
-
-function buildLines(
-  payment: PaymentItem,
-  appointment: Appointment | null,
-  catalog: { id: string; name: string; price: number }[],
-): TicketLine[] {
-  const fromNotes = soinLabelsFromNotes(appointment?.notes);
-  const fromPayment = paymentServiceLabels(payment.serviceName);
-  const names =
-    fromNotes.length > 1
-      ? fromNotes
-      : fromPayment.length > 1
-        ? fromPayment
-        : fromNotes.length > 0
-          ? fromNotes
-          : fromPayment;
-
-  if (names.length > 0) {
-    return names.map((name) => {
-      const match = catalog.find((service) => clean(service.name) === clean(name));
-      return { name, price: match?.price ?? null };
-    });
-  }
-
-  if (appointment?.serviceName) {
-    const match = catalog.find((service) => service.id === appointment.serviceId);
-    return [
-      {
-        name: appointment.serviceName,
-        price: match?.price ?? appointment.price ?? null,
-      },
-    ];
-  }
-
-  return [
-    {
-      name:
-        payment.serviceName ??
-        (payment.kind === "REFUND" ? "Remboursement" : "Règlement"),
-      price: Math.abs(signedPaymentAmount(payment)),
-    },
-  ];
-}
 
 export function PaymentTicketModal({
   payment,
@@ -79,9 +32,9 @@ export function PaymentTicketModal({
   remaining: AppointmentPaymentSummary | null;
   onClose: () => void;
 }) {
-  const [lines, setLines] = useState<TicketLine[]>([]);
+  const [breakdown, setBreakdown] = useState<PaymentBreakdown | null>(null);
   const [summary, setSummary] = useState<AppointmentPaymentSummary | null>(remaining);
-  const [loading, setLoading] = useState(Boolean(payment?.appointmentId));
+  const [loading, setLoading] = useState(Boolean(payment));
   const signed = payment ? signedPaymentAmount(payment) : 0;
 
   useEffect(() => {
@@ -90,45 +43,27 @@ export function PaymentTicketModal({
 
   useEffect(() => {
     if (!payment) {
-      setLines([]);
+      setBreakdown(null);
       setLoading(false);
       return;
     }
 
     let cancelled = false;
     (async () => {
-      if (!payment.appointmentId) {
-        setLines(buildLines(payment, null, []));
-        setLoading(false);
-        return;
-      }
+      setLoading(true);
       try {
-        const [aptRes, svcRes, summaryRes] = await Promise.all([
-          fetch(`/api/appointments/${payment.appointmentId}/`, { credentials: "include" }),
-          fetch("/api/services/?agenda=1", { credentials: "include" }),
-          remaining ? Promise.resolve(null) : getPaymentSummary(payment.appointmentId),
+        const [detail, summaryRes] = await Promise.all([
+          fetchPaymentBreakdown(payment),
+          payment.appointmentId && !remaining
+            ? getPaymentSummary(payment.appointmentId).catch(() => null)
+            : Promise.resolve(null),
         ]);
-        const appointment = aptRes.ok ? ((await aptRes.json()) as Appointment) : null;
-        const servicesRaw = svcRes.ok ? await svcRes.json() : null;
-        const serviceList = Array.isArray(servicesRaw)
-          ? servicesRaw
-          : Array.isArray(servicesRaw?.data)
-            ? servicesRaw.data
-            : [];
-        const catalog = serviceList.map(
-          (service: { id: string; name: string; price?: number }) => ({
-            id: service.id,
-            name: service.name,
-            price: Number(service.price) || 0,
-          }),
-        );
-        if (!cancelled) {
-          setLines(buildLines(payment, appointment, catalog));
-          if (summaryRes) setSummary(summaryRes);
-        }
+        if (cancelled) return;
+        setBreakdown(detail);
+        if (summaryRes) setSummary(summaryRes);
       } catch {
         if (!cancelled) {
-          setLines(buildLines(payment, null, []));
+          setBreakdown({ services: [], soldProducts: [], usedProducts: [] });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -149,38 +84,51 @@ export function PaymentTicketModal({
 
   const ticket = useMemo<BeautyTicket | null>(() => {
     if (!payment) return null;
-    const priced = lines.map((line) => ({
-      name: line.name,
-      detail: line.detail,
-      price: line.price ?? 0,
-    }));
-    const linesTotal = priced.reduce((sum, line) => sum + line.price, 0);
+    const fromBreakdown = breakdown ? breakdownToTicketLines(breakdown) : [];
+    const priced =
+      fromBreakdown.length > 0
+        ? fromBreakdown
+        : [
+            {
+              name: payment.serviceName ?? "Règlement",
+              price: Math.abs(signed),
+              detail: "Règlement",
+            },
+          ];
+
+    const servicesTotal = (breakdown?.services ?? []).reduce(
+      (sum, line) => sum + (line.price ?? 0),
+      0,
+    );
+    const productsTotal = (breakdown?.soldProducts ?? []).reduce(
+      (sum, line) => sum + line.lineTotal,
+      0,
+    );
+    const chargeable = priced.reduce(
+      (sum, line) => sum + line.price * (line.quantity ?? 1),
+      0,
+    );
+
     const total =
-      summary?.price != null && summary.price > 0
-        ? summary.price
-        : linesTotal > 0
-          ? linesTotal
+      servicesTotal + productsTotal > 0
+        ? Math.round((servicesTotal + productsTotal) * 100) / 100
+        : chargeable > 0
+          ? Math.round(chargeable * 100) / 100
           : Math.abs(signed);
 
     return {
       instituteName: orgName || "Institut",
-      ticketNumber: `RB-${payment.id.slice(-8).toUpperCase()}`,
+      ticketNumber:
+        payment.ticketNumber?.trim() ||
+        `RB-${payment.id.slice(-8).toUpperCase()}`,
       date: formatPaymentDateTime(payment.paidAt),
       clientName: payment.customerName ?? "Cliente",
       paymentMethod: `${PAYMENT_KIND_LABEL[payment.kind]} · ${PAYMENT_METHOD_LABEL[payment.method]}`,
-      lines:
-        priced.length > 0
-          ? priced
-          : [
-              {
-                name: payment.serviceName ?? "Règlement",
-                price: Math.abs(signed),
-              },
-            ],
+      lines: priced,
       total,
       currency: "DH",
     };
-  }, [lines, orgName, payment, signed, summary]);
+  }, [breakdown, orgName, payment, signed, summary]);
 
   if (!payment || !ticket) return null;
 
@@ -191,12 +139,12 @@ export function PaymentTicketModal({
         role="presentation"
         onClick={onClose}
       />
-      <div className="relative z-10 flex max-h-[95dvh] w-full max-w-[560px] items-end justify-center overflow-visible print:max-h-none">
+      <div className="no-scrollbar relative z-10 flex max-h-[95dvh] w-full max-w-[560px] items-center justify-center overflow-y-auto print:max-h-none">
         {loading ? (
           <p className="text-center text-sm text-white/80">Préparation du ticket…</p>
         ) : (
           <TicketPrinterAnimation
-            key={ticket.ticketNumber}
+            key={`${ticket.ticketNumber}-${ticket.lines.length}-${ticket.total}`}
             mode="payment"
             ticket={ticket}
             onPrint={printBeautyTicket}

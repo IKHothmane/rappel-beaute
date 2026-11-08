@@ -11,7 +11,7 @@ import {
   Headphones,
   LayoutGrid,
   Package,
-  ShoppingBasket,
+
   Star,
   Users,
   Wallet,
@@ -287,15 +287,8 @@ export function SaasDashboard() {
   const hasChartData = chartData.some((d) => d.ca > 0);
   const periodRevenue = revenueTotals?.periodNet ?? overview?.revenue.value ?? 0;
   const periodAppointments = appointmentsAnalytics?.total ?? overview?.appointments.value ?? 0;
-  const periodCustomers = customers?.kpis.active ?? overview?.customers.value ?? 0;
-  const periodTicket =
-    periodAppointments > 0 && periodRevenue > 0
-      ? Math.round(periodRevenue / periodAppointments)
-      : Math.round(overview?.averageTicket.value ?? 0);
   const revenueChange = overview?.revenue.changePercent ?? null;
   const appointmentsChange = overview?.appointments.changePercent ?? null;
-  const customersChange = overview?.customers.changePercent ?? null;
-  const ticketChange = overview?.averageTicket.changePercent ?? null;
   const publicCount = reviewKpis?.publicCount ?? 0;
   const internalCount = reviewKpis?.recordedCount ?? reviewsAnalytics?.recordedSatisfaction ?? 0;
   const reviewCount = publicCount > 0 ? publicCount : internalCount;
@@ -390,12 +383,13 @@ export function SaasDashboard() {
         </header>
 
         {/* 2. KPI */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rb-metric-row">
           <PremiumKpiCard
             title="Chiffre d'affaires"
             value={`${periodRevenue.toLocaleString("fr-MA")} MAD`}
             icon={Wallet}
             tone="pink"
+            featured
             change={revenueChange}
             subtitle={periodLabel}
             trend={revenueTrend}
@@ -408,30 +402,37 @@ export function SaasDashboard() {
             tone="purple"
             change={appointmentsChange}
             subtitle={periodLabel}
+            chart="bars"
+            trend={appointmentsAnalytics?.byHour.map((point) => point.count)}
             loading={loading}
           />
           <PremiumKpiCard
-            title="Clientes actives"
-            value={String(periodCustomers)}
+            title="Nouvelles clientes"
+            value={customers ? String(customers.kpis.newInPeriod) : "—"}
             icon={Users}
             tone="green"
-            change={customersChange}
-            subtitle={
-              customers
-                ? `+${customers.kpis.newInPeriod} nouvelle${customers.kpis.newInPeriod > 1 ? "s" : ""}`
-                : periodLabel
-            }
+            subtitle={periodLabel}
+            trend={customers?.newByMonth.map((point) => point.count)}
             loading={loading}
           />
           <PremiumKpiCard
-            title="Panier moyen"
-            value={`${periodTicket.toLocaleString("fr-MA")} MAD`}
-            icon={ShoppingBasket}
+            title="Taux d’occupation"
+            value={(() => {
+              const slots = appointmentsAnalytics?.occupationByWeekday ?? [];
+              const available = slots.reduce((sum, day) => sum + day.availableMinutes, 0);
+              return available > 0 ? `${Math.round(slots.reduce((sum, day) => sum + day.bookedMinutes, 0) / available * 100)} %` : "—";
+            })()}
+            progress={(() => {
+              const slots = appointmentsAnalytics?.occupationByWeekday ?? [];
+              const available = slots.reduce((sum, day) => sum + day.availableMinutes, 0);
+              return available > 0 ? slots.reduce((sum, day) => sum + day.bookedMinutes, 0) / available * 100 : null;
+            })()}
+            icon={Clock3}
             tone="orange"
-            change={ticketChange}
             subtitle={periodLabel}
             loading={loading}
           />
+          <PremiumKpiCard title="Fidélisation" value={customers?.retention.retentionRate != null ? `${Math.round(customers.retention.retentionRate)} %` : "—"} icon={Star} subtitle={periodLabel} loading={loading} />
         </div>
 
         {/* 3. Actions du jour */}

@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import {
@@ -72,7 +73,7 @@ export function SupportMobile({ vm }: { vm: SupportViewModel }) {
         ) : null}
       </section>
 
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 rb-metric-row">
         <MiniKpi label="Total" value={vm.counters.total} hint={`${vm.counters.thisMonth} ce mois`} />
         <MiniKpi
           label="Ouverts"
@@ -315,20 +316,5 @@ function MiniKpi({
   hint: string;
   accent?: boolean;
 }) {
-  return (
-    <div className="flex flex-col justify-between rounded-xl bg-surface-container-lowest p-3.5 shadow-sm">
-      <span
-        className={cn(
-          "text-[11px] font-bold uppercase tracking-wider",
-          accent ? "text-primary" : "text-on-surface-variant",
-        )}
-      >
-        {label}
-      </span>
-      <div className="mt-2">
-        <div className={cn("text-[22px] font-extrabold", accent && "text-primary")}>{value}</div>
-        <p className="mt-0.5 text-[11px] text-on-surface-variant">{hint}</p>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint}></MetricCard>;
 }

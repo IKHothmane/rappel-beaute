@@ -695,7 +695,8 @@ export { createCommissionForAppointment } from "@/lib/db/commissions";
 
 /**
  * Effets secondaires idempotents du passage COMPLETED :
- * stock + facture + commission + consommation forfait
+ * facture + commission + consommation forfait
+ * (le stock produits se déduit manuellement depuis le détail du RDV)
  */
 export async function onAppointmentCompleted(opts: {
   organizationId: string;
@@ -703,16 +704,8 @@ export async function onAppointmentCompleted(opts: {
   serviceId: string;
   userId?: string | null;
 }): Promise<void> {
-  const { consumeProductsForAppointment } = await import("@/lib/db/inventory");
   const { createCommissionForAppointment } = await import("@/lib/db/commissions");
   const { consumePackageSessionForAppointment } = await import("@/lib/db/loyalty");
-
-  await consumeProductsForAppointment({
-    organizationId: opts.organizationId,
-    appointmentId: opts.appointmentId,
-    serviceId: opts.serviceId,
-    userId: opts.userId,
-  });
 
   await issueInvoiceFromAppointment(
     opts.organizationId,

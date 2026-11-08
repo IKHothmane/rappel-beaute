@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import {
@@ -88,7 +89,7 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
         />
       </div>
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 rb-metric-row">
         <KpiCard
           label="Tickets totaux"
           value={vm.counters.total}
@@ -404,30 +405,5 @@ function KpiCard({
   accent?: "primary" | "secondary" | "done";
   bar?: number;
 }) {
-  return (
-    <div className="relative flex flex-col justify-between overflow-hidden rounded-[22px] border border-[#F1E8EC] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-md">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-[#765E6B]">{label}</span>
-      <div className="mt-4 flex items-baseline justify-between gap-2">
-        <div
-          className={cn(
-            "text-[36px] font-extrabold leading-none tracking-tight xl:text-[40px]",
-            accent === "primary" && "text-[#981C52]",
-            accent === "secondary" && "text-amber-700",
-            accent === "done" && "text-emerald-700",
-            !accent && "text-[#30202C]",
-          )}
-        >
-          {value}
-        </div>
-        <span className="rounded-lg bg-[#FCF8FA] px-2 py-0.5 text-[11px] font-semibold text-[#765E6B]">
-          {hint}
-        </span>
-      </div>
-      {bar != null ? (
-        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#F6EAF0]">
-          <div className="h-full rounded-full bg-[#981C52]" style={{ width: `${bar}%` }} />
-        </div>
-      ) : null}
-    </div>
-  );
+  return <MetricCard title={label} value={value} hint={hint} progress={bar}></MetricCard>;
 }

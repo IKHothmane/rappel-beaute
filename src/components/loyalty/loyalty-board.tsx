@@ -1,4 +1,6 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,6 +11,7 @@ import {
   Check,
   CheckCircle2,
   Gift,
+  ExternalLink,
   Percent,
   Plus,
   Target,
@@ -16,7 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
-import { loyaltyJoinUrl } from "@/lib/loyalty/public-origin";
+import { loyaltyCardUrl, loyaltyJoinUrl, loyaltyPreviewUrl } from "@/lib/loyalty/public-origin";
 import type { LoyaltyScanPreview } from "@/components/loyalty/loyalty-scan-page";
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { memberInitials } from "@/components/loyalty/loyalty-helpers";
@@ -107,6 +110,8 @@ export function LoyaltyBoard({
   const router = useRouter();
   const [focusId, setFocusId] = useState<string | null>(null);
   const [joinImage, setJoinImage] = useState<string | null>(null);
+  const [joinUrl, setJoinUrl] = useState<string | null>(null);
+  const [previewOrigin, setPreviewOrigin] = useState<string | null>(null);
   const [joinBusy, setJoinBusy] = useState(false);
   const [passageToken, setPassageToken] = useState("");
   const [passageBusy, setPassageBusy] = useState(false);
@@ -121,6 +126,9 @@ export function LoyaltyBoard({
   const [cfgValue, setCfgValue] = useState("");
   const [cfgDays, setCfgDays] = useState("30");
   const [cfgBusy, setCfgBusy] = useState(false);
+  const [cfgOpen, setCfgOpen] = useState(false);
+
+  useEffect(() => { setPreviewOrigin(window.location.origin); }, []);
 
   useEffect(() => {
     if (!program) return;
@@ -239,7 +247,10 @@ export function LoyaltyBoard({
         if (!res.ok) throw new Error(data.error || "QR indisponible.");
         const token = data.qr?.token;
         if (!token || cancelled) {
-          if (!cancelled) setJoinImage(null);
+          if (!cancelled) {
+            setJoinImage(null);
+            setJoinUrl(null);
+          }
           return;
         }
         const image = await QRCode.toDataURL(loyaltyJoinUrl(token), {
@@ -247,10 +258,14 @@ export function LoyaltyBoard({
           width: 320,
           errorCorrectionLevel: "M",
         });
-        if (!cancelled) setJoinImage(image);
+        if (!cancelled) {
+          setJoinImage(image);
+          setJoinUrl(loyaltyJoinUrl(token));
+        }
       } catch (error) {
         if (!cancelled) {
           setJoinImage(null);
+          setJoinUrl(null);
           toast(error instanceof Error ? error.message : "QR indisponible.", "error");
         }
       } finally {
@@ -412,6 +427,7 @@ export function LoyaltyBoard({
       return;
     }
     toast("Récompense du programme enregistrée.", "success");
+    setCfgOpen(false);
     onRefresh();
   }
 
@@ -440,7 +456,7 @@ export function LoyaltyBoard({
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-5 rb-metric-row">
         {[
           {
             label: "Clientes fidélité",
@@ -485,28 +501,7 @@ export function LoyaltyBoard({
         ].map((stat) => {
           const Icon = stat.icon;
           return (
-            <div
-              key={stat.label}
-              className="rounded-[22px] border border-[#F1E8EC] bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#E7B9CD] hover:shadow-md"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-semibold text-slate-500">{stat.label}</p>
-                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#FFF1F6] text-[#981C52]">
-                  <Icon size={17} aria-hidden />
-                </span>
-              </div>
-              <p className="mt-3 text-2xl font-extrabold tracking-tight text-[#30202C] xl:text-3xl">{stat.value}</p>
-              <p
-                className={cn(
-                  "mt-1 text-xs",
-                  stat.hintTone === "growth" && "font-semibold text-emerald-600",
-                  stat.hintTone === "ok" && "font-medium text-emerald-600",
-                  stat.hintTone === "muted" && "text-slate-400",
-                )}
-              >
-                {stat.hint}
-              </p>
-            </div>
+            <MetricCard key={stat.label} title={stat.label} value={stat.value} icon={<Icon />} hint={stat.hint} />
           );
         })}
       </section>
@@ -550,6 +545,18 @@ export function LoyaltyBoard({
                           : "QR permanent de l’institut — le même pour toutes les clientes"
                       }
                     />
+
+                    {focused?.publicToken || joinUrl ? (
+                      <a
+                        href={loyaltyPreviewUrl(focused?.publicToken ? loyaltyCardUrl(focused.publicToken) : joinUrl!, previewOrigin)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#981C52] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#7d1643]"
+                      >
+                        <ExternalLink size={17} aria-hidden />
+                        Voir la page cliente
+                      </a>
+                    ) : null}
 
                     {stampCount > 0 ? (
                       <div className="rounded-2xl border border-[#F6EAF0] bg-[#FCF7F9] p-4">
@@ -619,19 +626,28 @@ export function LoyaltyBoard({
                     </div>
 
                     {canWrite ? (
+                      <>
+                      <button
+                        type="button"
+                        onClick={() => setCfgOpen(true)}
+                        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#E7B9CD] bg-[#FFF1F7] px-4 py-3 text-sm font-semibold text-[#981C52] transition hover:bg-[#FCE3EE]"
+                      >
+                        <Gift size={18} aria-hidden />
+                        Récompense choisie par l’institut
+                      </button>
+                      <PremiumSidePanel
+                        open={cfgOpen}
+                        onClose={() => { if (!cfgBusy) setCfgOpen(false); }}
+                        title="Récompense choisie par l’institut"
+                        description={`À ${cfgVisits || "5"} prestations, le code de la cliente devient un code promo.`}
+                      >
                       <form
-                        className="space-y-3 rounded-2xl border border-dashed border-[#E7B9CD] bg-[#FFF9FB] p-4"
+                        className="space-y-4 rounded-2xl border border-[#F0DDE6] bg-[#FFF9FB] p-4 sm:p-5"
                         onSubmit={(event) => {
                           event.preventDefault();
                           void saveRewardConfig();
                         }}
                       >
-                        <div>
-                          <p className="text-sm font-bold text-[#30202C]">Récompense choisie par l’institut</p>
-                          <p className="mt-0.5 text-xs text-[#765E6B]">
-                            À {cfgVisits || "5"} prestations, le code de la cliente devient un code promo.
-                          </p>
-                        </div>
                         <div className="grid gap-3 sm:grid-cols-2">
                           <label className="block space-y-1">
                             <span className="text-[11px] font-semibold uppercase tracking-wide text-[#765E6B]">
@@ -701,6 +717,8 @@ export function LoyaltyBoard({
                             />
                           </label>
                         </div>
+                        <div className="flex flex-col-reverse gap-2 border-t border-[#F0DDE6] pt-4 sm:flex-row sm:justify-end">
+                        <button type="button" disabled={cfgBusy} onClick={() => setCfgOpen(false)} className="h-11 rounded-xl border border-[#E7B9CD] bg-white px-5 text-sm font-semibold text-[#765E6B] hover:bg-[#FFF1F7] disabled:opacity-50">Fermer</button>
                         <button
                           type="submit"
                           disabled={cfgBusy}
@@ -708,7 +726,10 @@ export function LoyaltyBoard({
                         >
                           {cfgBusy ? "Enregistrement…" : "Enregistrer la récompense"}
                         </button>
+                        </div>
                       </form>
+                      </PremiumSidePanel>
+                      </>
                     ) : null}
                   </div>
                 </section>

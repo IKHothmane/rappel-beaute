@@ -82,6 +82,8 @@ export type PaymentItem = {
   status: PaymentStatus;
   parentPaymentId: string | null;
   giftCardId: string | null;
+  /** Numéro de passage journalier : JJ/MM-NNN (ex. 08/11-001). */
+  ticketNumber: string | null;
   notes: string | null;
   userId: string | null;
   userName: string | null;

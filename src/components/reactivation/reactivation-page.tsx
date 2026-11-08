@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -423,7 +424,7 @@ export function ReactivationPageView() {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 rb-metric-row">
           <Kpi
             label="Clientes inactives"
             value={kpis ? String(kpis.inactiveCount) : "—"}
@@ -1141,18 +1142,7 @@ function Kpi({
   icon: ReactNode;
   accent?: boolean;
 }) {
-  return (
-    <div className={cn("flex flex-col justify-between rounded-xl p-4 shadow-sm", accent ? "bg-[#FFEFF8]" : "bg-white")}>
-      <div className="flex items-center justify-between text-ink/45">
-        <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        {icon}
-      </div>
-      <div className="mt-3">
-        <div className={cn("text-[22px] font-bold leading-7", accent && "text-primary")}>{value}</div>
-        <div className="text-[13px] text-ink/50">{hint}</div>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint}></MetricCard>;
 }
 
 function SegmentCard({

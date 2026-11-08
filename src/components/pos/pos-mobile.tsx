@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import type { Ref } from "react";
@@ -83,7 +84,7 @@ export function PosMobile({
           </span>
           <span className="shrink-0 rounded-full bg-white px-2 py-0.5 font-bold text-primary">POS Express</span>
         </div>
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-3 gap-1.5 rb-metric-row">
           <KpiMini label="CA Jour" value={formatMad(kpis.revenue)} tone="primary" />
           <KpiMini label="Ventes" value={String(kpis.count)} />
           <KpiMini label="Panier moy." value={kpis.count ? formatMad(kpis.average) : "—"} tone="gold" />
@@ -368,17 +369,5 @@ function CatPill({
 }
 
 function KpiMini({ label, value, tone }: { label: string; value: string; tone?: "primary" | "gold" }) {
-  return (
-    <div className="rounded-lg bg-white p-2 text-center shadow-sm">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">{label}</p>
-      <p
-        className={cn(
-          "mt-0.5 text-[15px] font-bold",
-          tone === "primary" ? "text-primary" : tone === "gold" ? "text-[#7B5900]" : "text-ink",
-        )}
-      >
-        {value}
-      </p>
-    </div>
-  );
+  return <MetricCard title={label} value={value}></MetricCard>;
 }

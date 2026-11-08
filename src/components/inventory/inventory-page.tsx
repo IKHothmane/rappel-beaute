@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -295,7 +296,7 @@ export function InventoryPageView({
 
       <div className="hidden flex-col gap-5 lg:flex">
         {!hideKpis ? (
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
             <KpiCard
               label="Références"
               value={String(kpis?.activeCount ?? products.length)}
@@ -936,41 +937,7 @@ function KpiCard({
   tone?: "emerald" | "warn" | "error" | "gold";
   onClick?: () => void;
 }) {
-  const box = {
-    emerald: "bg-emerald-50 text-emerald-700",
-    warn: "bg-amber-50 text-[#B67B00]",
-    error: "bg-red-50 text-[#D81B43]",
-    gold: "bg-[#FFF7E7] text-[#8C6510]",
-  };
-  const valueColor = {
-    emerald: "text-emerald-700",
-    warn: "text-[#B67B00]",
-    error: "text-[#D81B43]",
-    gold: "text-ink",
-  };
-  const className = "flex flex-col justify-between rounded-2xl bg-white p-4 text-left shadow-sm";
-  const inner = (
-    <>
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-ink/40">{label}</span>
-        <span className={cn("flex h-8 w-8 items-center justify-center rounded-xl", tone ? box[tone] : "bg-[#FFF7F9] text-ink/40")}>
-          {icon}
-        </span>
-      </div>
-      <div className="mt-3">
-        <div className={cn("text-[26px] font-black tracking-tight", tone ? valueColor[tone] : "text-ink")}>{value}</div>
-        <div className="mt-0.5 text-[11px] font-semibold text-ink/45">{hint}</div>
-      </div>
-    </>
-  );
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className={className}>
-        {inner}
-      </button>
-    );
-  }
-  return <div className={className}>{inner}</div>;
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} onClick={onClick}></MetricCard>;
 }
 
 function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {

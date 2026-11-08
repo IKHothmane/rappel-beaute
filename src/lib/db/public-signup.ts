@@ -2,12 +2,13 @@ import { randomBytes } from "crypto";
 import type { PoolClient } from "pg";
 import { generateSignupPin, hashPassword } from "@/lib/auth/crypto";
 import { pool } from "@/lib/db/pool";
+import { normalizeLoginPhone } from "@/lib/auth/login-identifier";
 import { newInstituteTrialEnd } from "@/lib/subscriptions/subscription-service";
 import { getPlanByCode, listPlans } from "@/lib/subscriptions/plans";
 
 export class PublicSignupError extends Error {
   constructor(
-    public code: "EMAIL_TAKEN" | "PLAN_NOT_FOUND" | "INVALID",
+    public code: "EMAIL_TAKEN" | "PHONE_TAKEN" | "PLAN_NOT_FOUND" | "INVALID",
     message: string,
   ) {
     super(message);
@@ -18,7 +19,7 @@ export class PublicSignupError extends Error {
 export type PublicSignupInput = {
   personName: string;
   institut: string;
-  email: string;
+  email?: string;
   phone: string;
   city: string;
   address: string;
@@ -27,7 +28,8 @@ export type PublicSignupInput = {
 
 export type PublicSignupCreated = {
   organizationId: string;
-  email: string;
+  email: string | null;
+  phone: string;
   firstName: string;
   institut: string;
   temporaryPassword: string;
@@ -95,7 +97,9 @@ async function seedOrgDefaults(client: PoolClient, organizationId: string) {
 }
 
 export async function createPublicSignup(input: PublicSignupInput): Promise<PublicSignupCreated> {
-  const email = input.email.trim().toLowerCase();
+  const email = input.email?.trim().toLowerCase() || null;
+  const phone = normalizeLoginPhone(input.phone);
+  if (!phone) throw new PublicSignupError("INVALID", "Indiquez un numéro WhatsApp valide.");
   const institut = input.institut.trim();
   const { firstName, lastName } = splitPersonName(input.personName);
   const temporaryPassword = generateSignupPin();
@@ -111,6 +115,8 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    const phoneCheck = await client.query(`SELECT id FROM "User" WHERE "loginPhone" = $1 LIMIT 1`, [phone]);
+    if (phoneCheck.rows.length) throw new PublicSignupError("PHONE_TAKEN", "Ce numéro WhatsApp possède déjà un compte. Connectez-vous avec ce numéro.");
 
     const { rows: emailCheck } = await client.query(
       `SELECT id FROM "User" WHERE LOWER(email) = $1 LIMIT 1`,
@@ -139,7 +145,7 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
         slug,
         input.address.trim() || null,
         input.city.trim() || null,
-        input.phone.trim(),
+        phone,
         email,
         input.website,
       ],
@@ -147,10 +153,10 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
 
     await client.query(
       `INSERT INTO "User" (
-        id, "organizationId", email, "firstName", "lastName", phone, role, status,
+        id, "organizationId", email, "firstName", "lastName", phone, role, status, "loginPhone",
         "passwordHash", "mustChangePassword", "updatedAt"
-      ) VALUES ($1,$2,$3,$4,$5,$6,'OWNER','ACTIVE',$7,true,NOW())`,
-      [ownerId, orgId, email, firstName, lastName, input.phone.trim() || null, passwordHash],
+      ) VALUES ($1,$2,$3,$4,$5,$6,'OWNER','ACTIVE',$6,$7,true,NOW())`,
+      [ownerId, orgId, email, firstName, lastName, phone, passwordHash],
     );
 
     await client.query(
@@ -167,12 +173,16 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
     return {
       organizationId: orgId,
       email,
+      phone,
       firstName,
       institut,
       temporaryPassword,
     };
   } catch (error) {
     await client.query("ROLLBACK");
+    if (typeof error === "object" && error && "code" in error && error.code === "23505" && "constraint" in error && error.constraint === "User_loginPhone_key") {
+      throw new PublicSignupError("PHONE_TAKEN", "Ce numéro WhatsApp possède déjà un compte.");
+    }
     throw error;
   } finally {
     client.release();

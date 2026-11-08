@@ -12,6 +12,7 @@ import type { AppSessionUser, PublicSession } from "@/lib/auth/types";
 import { isAppSession } from "@/lib/auth/types";
 import type { AppRole } from "@/lib/rbac";
 import { canAccessNav, isAppRole, ROLE_LABEL } from "@/lib/rbac";
+import { logoutDestination } from "@/lib/auth/logout-destination";
 
 type SessionContextValue = {
   user: PublicSession | null;
@@ -48,7 +49,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
     setUser(null);
     // `signed_out=1` évite un 308 en cache sur /connexion/ (boucle login/logout).
-    window.location.replace("/connexion/?signed_out=1");
+    window.location.replace(logoutDestination(window.location.origin));
   }, []);
 
   const value = useMemo(

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http/client-ip";
 import { cardTokenForJoinQr, enrollAnonymousFromJoinQr, previewJoinQr } from "@/lib/loyalty/join-qr";
-import { loyaltyCardUrl } from "@/lib/loyalty/public-origin";
+import { loyaltyCardUrl, loyaltyPreviewUrl } from "@/lib/loyalty/public-origin";
 import { consumeDimensions } from "@/lib/rate-limit";
 
 const COOKIE = "rb_join_card";
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     }
   }
 
-  const response = NextResponse.redirect(loyaltyCardUrl(cardToken));
+  const response = NextResponse.redirect(loyaltyPreviewUrl(loyaltyCardUrl(cardToken), request.nextUrl.origin));
   // Un cookie « secure » n'est jamais enregistré en http (dev local, tunnel http) :
   // chaque re-scan créait alors une nouvelle carte à 0 passage.
   const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");

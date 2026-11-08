@@ -93,7 +93,7 @@ export function SettingsPageView() {
                 label="Nom complet"
                 value={`${user.firstName} ${user.lastName}`.trim()}
               />
-              <ReadonlyField label="E-mail" value={user.email} />
+              <ReadonlyField label={user.email ? "E-mail" : "WhatsApp"} value={user.email || user.loginPhone || "—"} />
               <ReadonlyField label="Rôle" value={ROLE_LABEL[user.role]} />
               <div className="space-y-2">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#887787]">

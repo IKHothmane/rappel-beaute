@@ -182,7 +182,7 @@ export async function submitPublicReview(input: { slug: string; token: string; r
 export async function listPublishedReviews(slug: string) {
   const { rows } = await pool.query<{
     id: string;
-    rating: number;
+    rating: number | null;
     comment: string;
     createdAt: Date;
     firstName: string;
@@ -198,8 +198,7 @@ export async function listPublishedReviews(slug: string) {
      LEFT JOIN "Appointment" a ON a.id = r."appointmentId"
      LEFT JOIN "Service" s ON s.id = a."serviceId"
      WHERE r.status = 'PUBLISHED'
-     ORDER BY r."createdAt" DESC
-     LIMIT 40`,
+     ORDER BY r."createdAt" DESC, r.id DESC`,
     [slug],
   );
   return {
@@ -232,7 +231,7 @@ export async function reportPublishedReview(slug: string, reviewId: string, reas
 export async function listInstituteReviews(organizationId: string) {
   const { rows } = await pool.query<{
     id: string;
-    rating: number;
+    rating: number | null;
     comment: string;
     status: PublicReviewStatus;
     createdAt: Date;
@@ -251,8 +250,7 @@ export async function listInstituteReviews(organizationId: string) {
      LEFT JOIN "Appointment" a ON a.id = r."appointmentId"
      LEFT JOIN "Service" s ON s.id = a."serviceId"
      WHERE r."organizationId" = $1
-     ORDER BY r."createdAt" DESC
-     LIMIT 80`,
+     ORDER BY r."createdAt" DESC, r.id DESC`,
     [organizationId],
   );
   return rows.map((row) => ({

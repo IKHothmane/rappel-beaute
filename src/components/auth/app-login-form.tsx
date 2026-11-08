@@ -61,10 +61,11 @@ export function AppLoginForm() {
         Connexion institut — le serveur détermine votre rôle et votre organisation.
       </p>
       <label className="mt-6 block text-sm">
-        <span className="mb-1.5 block font-medium">E-mail</span>
+        <span className="mb-1.5 block font-medium">WhatsApp ou e-mail</span>
         <input
           name="email"
-          type="email"
+          type="text"
+          maxLength={254}
           required
           autoComplete="username"
           defaultValue="app@beauty.ma"

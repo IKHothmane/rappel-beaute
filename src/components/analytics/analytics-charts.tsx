@@ -25,35 +25,35 @@ import type {
 } from "@/types/analytics";
 
 const COLORS = {
-  primary: "#E31C5F",
-  soft: "#F8B4C4",
-  green: "#2D9F6F",
-  orange: "#D97706",
-  red: "#C44536",
-  blue: "#3B82F6",
-  purple: "#9333EA",
-  slate: "#64748B",
-  muted: "#F0E3E6",
-  ink: "#241A22",
+  primary: "#AC0E4C",
+  soft: "#E8A0BE",
+  green: "#16836B",
+  orange: "#C18416",
+  red: "#C42B4A",
+  blue: "#3977BE",
+  purple: "#8552B5",
+  slate: "#718096",
+  muted: "#EFE5EC",
+  ink: "#54112F",
 };
 
-const PAY_COLORS = [
-  COLORS.green,
-  COLORS.blue,
-  COLORS.orange,
-  COLORS.purple,
-  COLORS.slate,
-  COLORS.primary,
-];
+const PAY_COLORS: Record<string, string> = {
+  CASH: COLORS.green,
+  CARD: COLORS.blue,
+  TRANSFER: COLORS.purple,
+  CHECK: COLORS.orange,
+  ONLINE: COLORS.primary,
+  GIFT_CARD: "#BC668D",
+};
 
 const STATUS_COLORS: Record<string, string> = {
-  COMPLETED: COLORS.green,
-  CANCELLED: COLORS.orange,
-  NO_SHOW: COLORS.red,
-  PENDING: COLORS.blue,
-  CONFIRMED: COLORS.blue,
-  ARRIVED: COLORS.purple,
-  IN_PROGRESS: COLORS.soft,
+  COMPLETED: COLORS.purple,
+  CANCELLED: COLORS.red,
+  NO_SHOW: COLORS.slate,
+  PENDING: COLORS.orange,
+  CONFIRMED: COLORS.green,
+  ARRIVED: COLORS.primary,
+  IN_PROGRESS: COLORS.blue,
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -137,7 +137,7 @@ export function AnalyticsCharts({
   const payments = useMemo(() => {
     return (revenue?.byPaymentMethod ?? [])
       .filter((m) => m.amount > 0)
-      .map((m) => ({ name: m.label, value: m.amount, percent: m.percent }));
+      .map((m) => ({ name: m.label, value: m.amount, percent: m.percent, color: PAY_COLORS[m.method] ?? COLORS.slate }));
   }, [revenue]);
 
   const statusBars = useMemo(() => {
@@ -305,8 +305,8 @@ export function AnalyticsCharts({
                       outerRadius={compact ? 68 : 82}
                       paddingAngle={2}
                     >
-                      {payments.map((entry, i) => (
-                        <Cell key={entry.name} fill={PAY_COLORS[i % PAY_COLORS.length]} />
+                      {payments.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} stroke="#fff" strokeWidth={3} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -317,12 +317,12 @@ export function AnalyticsCharts({
                 </ResponsiveContainer>
               </div>
               <ul className="w-[42%] space-y-1.5 text-xs sm:text-[13px]">
-                {payments.map((p, i) => (
+                {payments.map((p) => (
                   <li key={p.name} className="flex items-center justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-1.5">
                       <span
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ background: PAY_COLORS[i % PAY_COLORS.length] }}
+                        style={{ background: p.color }}
                       />
                       <span className="truncate text-on-surface-variant">{p.name}</span>
                     </span>

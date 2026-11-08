@@ -7,7 +7,7 @@ import {
   reviewTokenExpiry,
 } from "@/lib/reviews/public-review";
 import { shortCardCode } from "@/lib/loyalty/card-code";
-import { limitPhoneDigits } from "@/lib/validation/customer";
+import { LOYALTY_NAME_MAX_LENGTH, LOYALTY_COMMENT_MAX_LENGTH, validLoyaltyPhone, normalizeLoyaltyPhone } from "@/lib/loyalty/profile-input";
 
 export type LoyaltyCardReviewInvite = {
   slug: string;
@@ -157,13 +157,29 @@ export async function getLoyaltyCardReviewInvite(
 
 type CardRow = { customerId: string; organizationId: string };
 
+export async function getLoyaltyCardReviewStaff(cardToken: string): Promise<{ id: string; name: string }[]> {
+  const token = cardToken.trim().toUpperCase();
+  if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(token)) return [];
+  const { rows } = await pool.query<{ id: string; name: string }>(
+    `SELECT st.id, TRIM(CONCAT(st."firstName", ' ', st."lastName")) AS name
+     FROM "Staff" st
+     JOIN "LoyaltyCard" lc ON lc."organizationId" = st."organizationId"
+     JOIN "Organization" o ON o.id = lc."organizationId" AND o.status = 'ACTIVE'
+     WHERE lc."publicToken" = $1 AND lc.status = 'ACTIVE'
+       AND st."deletedAt" IS NULL AND st.status IN ('ACTIVE', 'ON_LEAVE')
+     ORDER BY st."firstName", st."lastName", st.id`,
+    [token],
+  );
+  return rows;
+}
+
 /** Met à jour nom/prénom/téléphone. Un téléphone déjà pris n'empêche pas l'enregistrement. */
 async function updateCardCustomer(row: CardRow, firstName: string, lastName: string, phoneDigits: string) {
   const run = (phone: string | null) =>
     pool.query(
       `UPDATE "Customer"
-       SET "firstName" = $2,
-           "lastName" = $3,
+       SET "firstName" = COALESCE(NULLIF($2, ''), "firstName"),
+           "lastName" = COALESCE(NULLIF($3, ''), "lastName"),
            phone = CASE WHEN $4::text IS NULL THEN phone ELSE $4 END,
            "updatedAt" = NOW()
        WHERE id = $1 AND "organizationId" = $5 AND "deletedAt" IS NULL`,
@@ -188,11 +204,11 @@ export async function saveLoyaltyCardProfile(input: {
   if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(token)) return { ok: false, error: "Carte introuvable." };
   const firstName = input.firstName.replace(/\s+/g, " ").trim();
   const lastName = input.lastName.replace(/\s+/g, " ").trim();
-  if (firstName.length < 1 || firstName.length > 80 || lastName.length < 1 || lastName.length > 80) {
+  if (firstName.length > LOYALTY_NAME_MAX_LENGTH || lastName.length > LOYALTY_NAME_MAX_LENGTH) {
     return { ok: false, error: "Indiquez le prénom et le nom." };
   }
-  const phoneDigits = limitPhoneDigits(input.phone);
-  if (phoneDigits.length < 8) return { ok: false, error: "Le téléphone doit contenir 8 à 10 chiffres." };
+  if (input.phone.trim() && !validLoyaltyPhone(input.phone)) return { ok: false, error: "Indiquez un numéro de téléphone valide." };
+  const phoneDigits = normalizeLoyaltyPhone(input.phone);
   const card = await pool.query<CardRow>(
     `SELECT lc."customerId", lc."organizationId"
      FROM "LoyaltyCard" lc
@@ -212,8 +228,11 @@ export async function submitLoyaltyCardFeedback(input: {
   firstName: string;
   lastName: string;
   phone: string;
-  rating: number;
+  rating?: number | null;
   comment: string;
+  staffId?: string;
+  staffRating?: number;
+  staffRatings?: { staffId: string; rating?: number | null }[];
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const token = input.cardToken.trim().toUpperCase();
   if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(token)) {
@@ -222,22 +241,54 @@ export async function submitLoyaltyCardFeedback(input: {
 
   const firstName = input.firstName.replace(/\s+/g, " ").trim();
   const lastName = input.lastName.replace(/\s+/g, " ").trim();
-  if (firstName.length < 1 || firstName.length > 80 || lastName.length < 1 || lastName.length > 80) {
+  if (firstName.length > LOYALTY_NAME_MAX_LENGTH || lastName.length > LOYALTY_NAME_MAX_LENGTH) {
     return { ok: false, error: "Indiquez le prénom et le nom." };
   }
 
-  const phoneDigits = limitPhoneDigits(input.phone);
-  if (input.phone.trim() && phoneDigits.length < 8) {
-    return { ok: false, error: "Le téléphone doit contenir au moins 8 chiffres." };
+  const phoneDigits = normalizeLoyaltyPhone(input.phone);
+  if (input.phone.trim() && !validLoyaltyPhone(input.phone)) {
+    return { ok: false, error: "Indiquez un numéro de téléphone valide." };
   }
 
-  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
+  const rating = input.rating ?? null;
+  if (rating != null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
     return { ok: false, error: "Choisissez une note de 1 à 5." };
   }
   const comment = normalizeReviewComment(input.comment);
-  if (comment.length > 800) {
+  if (comment.length > LOYALTY_COMMENT_MAX_LENGTH) {
     return { ok: false, error: "Le commentaire ne doit pas dépasser 800 caractères." };
   }
+  if (!input.staffId?.trim() && input.staffRating != null && input.staffRatings == null) {
+    return { ok: false, error: "Sélectionnez l’employé à noter." };
+  }
+  const entries = input.staffRatings ?? (input.staffId?.trim() ? [{ staffId: input.staffId, rating: input.staffRating }] : []);
+  if (!Array.isArray(entries) || entries.length > 200) return { ok: false, error: "La sélection des employés n’est pas valide." };
+  const staffFeedback: { staffId: string; rating: number | null }[] = [];
+  const selectedIds = new Set<string>();
+  for (const entry of entries) {
+    if (!entry || typeof entry.staffId !== "string" || !entry.staffId.trim() || entry.staffId.trim().length > 160) {
+      return { ok: false, error: "La sélection des employés n’est pas valide." };
+    }
+    const id = entry.staffId.trim();
+    const score = entry.rating ?? null;
+    if (selectedIds.has(id) || (score != null && (!Number.isInteger(score) || score < 1 || score > 5))) {
+      return { ok: false, error: "Vérifiez les employés sélectionnés et leurs notes de 1 à 5." };
+    }
+    selectedIds.add(id);
+    staffFeedback.push({ staffId: id, rating: score });
+  }
+  const staffId = staffFeedback.length === 1 ? staffFeedback[0].staffId : null;
+  const staffRating = staffFeedback.length === 1 ? staffFeedback[0].rating : null;
+  const staffJson = JSON.stringify(staffFeedback);
+
+  // A single SQL statement saves the review and every employee score atomically.
+  const withStaffRatings = (sql: string, parameter: number) => `WITH saved_review AS (
+    ${sql} RETURNING id
+  ) INSERT INTO "ReviewStaffRating" ("reviewId", "staffId", rating)
+    SELECT saved_review.id, item."staffId", item.rating
+    FROM saved_review CROSS JOIN jsonb_to_recordset($${parameter}::jsonb) AS item("staffId" text, rating integer)
+    ON CONFLICT ("reviewId", "staffId") DO UPDATE
+    SET rating = COALESCE(EXCLUDED.rating, "ReviewStaffRating".rating)`;
 
   const card = await pool.query<{ customerId: string; organizationId: string }>(
     `SELECT lc."customerId", lc."organizationId"
@@ -250,7 +301,18 @@ export async function submitLoyaltyCardFeedback(input: {
   const row = card.rows[0];
   if (!row) return { ok: false, error: "Carte introuvable." };
 
+  for (const selected of staffFeedback) {
+    const staff = await pool.query<{ id: string }>(
+      `SELECT id FROM "Staff" WHERE id = $1 AND "organizationId" = $2
+       AND "deletedAt" IS NULL AND status IN ('ACTIVE', 'ON_LEAVE')`,
+      [selected.staffId, row.organizationId],
+    );
+    if (staff.rows[0]?.id !== selected.staffId) return { ok: false, error: "Cet employé n’est pas disponible dans cet institut." };
+  }
   await updateCardCustomer(row, firstName, lastName, phoneDigits);
+
+  // An empty form can save the card details without creating an empty review.
+  if (rating == null && !comment && staffFeedback.length === 0) return { ok: true };
 
   const appointment = await pool.query<{ id: string }>(
     `SELECT a.id
@@ -267,59 +329,44 @@ export async function submitLoyaltyCardFeedback(input: {
   if (appointment.rows[0]) {
     try {
       await pool.query(
-        `INSERT INTO "Review" (
+        withStaffRatings(`INSERT INTO "Review" (
            id, "organizationId", "customerId", "appointmentId", "reviewRequestId",
-           rating, comment, status, "updatedAt"
-         ) VALUES ($1,$2,$3,$4,NULL,$5,$6,'PENDING',NOW())`,
+           rating, comment, "staffId", "staffRating", status, "updatedAt"
+         ) VALUES ($1,$2,$3,$4,NULL,$5,$6,$7,$8,'PENDING',NOW())`, 9),
         [
           `prev_${randomBytes(8).toString("hex")}`,
           row.organizationId,
           row.customerId,
           appointment.rows[0].id,
-          input.rating,
+          rating,
           comment,
+          staffId,
+          staffRating,
+          staffJson,
         ],
       );
+      return { ok: true };
     } catch (error) {
       const code = typeof error === "object" && error && "code" in error ? String((error as { code: string }).code) : "";
-      if (code === "23505") {
-        return { ok: false, error: "Un avis existe déjà pour ce rendez-vous." };
-      }
-      throw error;
+      // Another submission may have claimed the appointment; retain this as a card review.
+      if (code !== "23505") throw error;
     }
-    return { ok: true };
-  }
-
-  const existing = await pool.query<{ id: string; status: string }>(
-    `SELECT id, status::text AS status
-     FROM "Review"
-     WHERE "organizationId" = $1 AND "customerId" = $2 AND "appointmentId" IS NULL
-     ORDER BY "createdAt" DESC
-     LIMIT 1`,
-    [row.organizationId, row.customerId],
-  );
-  if (existing.rows[0]?.status === "PENDING") {
-    await pool.query(
-      `UPDATE "Review" SET rating = $2, comment = $3, "updatedAt" = NOW() WHERE id = $1`,
-      [existing.rows[0].id, input.rating, comment],
-    );
-    return { ok: true };
-  }
-  if (existing.rows[0]) {
-    return { ok: false, error: "Un avis a déjà été enregistré pour cette carte." };
   }
 
   await pool.query(
-    `INSERT INTO "Review" (
+    withStaffRatings(`INSERT INTO "Review" (
        id, "organizationId", "customerId", "appointmentId", "reviewRequestId",
-       rating, comment, status, "updatedAt"
-     ) VALUES ($1,$2,$3,NULL,NULL,$4,$5,'PENDING',NOW())`,
+       rating, comment, "staffId", "staffRating", status, "updatedAt"
+     ) VALUES ($1,$2,$3,NULL,NULL,$4,$5,$6,$7,'PENDING',NOW())`, 8),
     [
       `prev_${randomBytes(8).toString("hex")}`,
       row.organizationId,
       row.customerId,
-      input.rating,
+      rating,
       comment,
+      staffId,
+      staffRating,
+      staffJson,
     ],
   );
   return { ok: true };

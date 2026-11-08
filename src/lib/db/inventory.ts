@@ -485,7 +485,12 @@ export async function createInventoryMovement(
 
     const signedQty = movementSign(input.type, input.quantity);
     const currentStock = parseFloat(product.rows[0].stock) || 0;
-    if (signedQty < 0 && currentStock + signedQty < -0.0001) {
+    // La consommation RDV ne doit pas bloquer la finalisation : le stock peut passer négatif.
+    if (
+      input.type !== "SERVICE_CONSUMPTION" &&
+      signedQty < 0 &&
+      currentStock + signedQty < -0.0001
+    ) {
       throw new Error("INSUFFICIENT_STOCK");
     }
     const id = newId("mov");
@@ -811,47 +816,52 @@ export async function applyInventoryCount(
 }
 
 /**
- * Consommation automatique à la finalisation d'un RDV.
+ * Consommation manuelle des produits sélectionnés sur un RDV.
+ * Pas de déduction automatique depuis le catalogue ServiceProduct.
  * Idempotente via clé apt:{id}:product:{productId}
  */
 export async function consumeProductsForAppointment(opts: {
   organizationId: string;
   appointmentId: string;
-  serviceId: string;
+  products: { productId: string; quantity: number }[];
   userId?: string | null;
 }): Promise<{ created: number; skipped: number }> {
-  const { organizationId, appointmentId, serviceId, userId } = opts;
+  const { organizationId, appointmentId, userId } = opts;
+  const byProduct = new Map<string, number>();
+  for (const line of opts.products) {
+    const qty = Math.round(Number(line.quantity));
+    if (!line.productId || !(qty > 0)) continue;
+    byProduct.set(line.productId, (byProduct.get(line.productId) ?? 0) + qty);
+  }
+  if (byProduct.size === 0) return { created: 0, skipped: 0 };
 
-  const { rows: products } = await pool.query<{
-    productId: string;
-    quantity: string;
-    unit: string;
-    productName: string;
+  const productIds = Array.from(byProduct.keys());
+  const { rows: catalog } = await pool.query<{
+    id: string;
+    name: string;
   }>(
-    `SELECT sp."productId", sp.quantity::text, sp.unit, p.name AS "productName"
-     FROM "ServiceProduct" sp
-     JOIN "Product" p ON p.id = sp."productId"
-     WHERE sp."serviceId" = $1 AND p."organizationId" = $2 AND p."deletedAt" IS NULL`,
-    [serviceId, organizationId],
+    `SELECT id, name FROM "Product"
+     WHERE "organizationId" = $1 AND id = ANY($2::text[]) AND "deletedAt" IS NULL`,
+    [organizationId, productIds],
   );
+  const names = new Map(catalog.map((row) => [row.id, row.name]));
 
   let created = 0;
   let skipped = 0;
 
-  for (const p of products) {
-    const qty = parseFloat(p.quantity) || 0;
-    if (qty <= 0) continue;
-
+  for (const [productId, quantity] of byProduct) {
+    const productName = names.get(productId);
+    if (!productName) continue;
     const result = await createInventoryMovement(
       organizationId,
       {
-        productId: p.productId,
+        productId,
         type: "SERVICE_CONSUMPTION",
-        quantity: qty,
-        reason: `Consommation service — ${p.productName}`,
+        quantity,
+        reason: `Consommation RDV — ${productName}`,
         referenceType: "APPOINTMENT",
         referenceId: appointmentId,
-        idempotencyKey: `apt:${appointmentId}:product:${p.productId}`,
+        idempotencyKey: `apt:${appointmentId}:product:${productId}`,
       },
       userId,
     );

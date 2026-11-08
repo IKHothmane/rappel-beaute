@@ -117,6 +117,8 @@ export async function getPaymentById(
 export async function listBillableAppointments(appointmentId?: string): Promise<
   {
     id: string;
+    customerId: string;
+    serviceId: string | null;
     customerName: string;
     serviceName: string;
     price: number;

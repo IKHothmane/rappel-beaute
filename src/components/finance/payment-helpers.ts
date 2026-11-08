@@ -111,6 +111,7 @@ export function billableToDuePayment(b: {
     status: "PENDING",
     parentPaymentId: null,
     giftCardId: null,
+    ticketNumber: null,
     notes: "RDV non payé",
     userId: null,
     userName: null,
@@ -134,16 +135,27 @@ export function paymentShortId(id: string) {
   return raw.slice(-6).toUpperCase() || "—";
 }
 
+/** Affiche le n° de passage JJ/MM-NNN, sinon l’ancien id court. */
+export function paymentDisplayId(p: {
+  id: string;
+  ticketNumber?: string | null;
+}) {
+  const ticket = p.ticketNumber?.trim();
+  if (ticket) return ticket;
+  return paymentShortId(p.id);
+}
+
 /** Découpe « Soin A + Soin B » en libellés individuels. */
 export function paymentServiceLabels(serviceName: string | null | undefined): string[] {
   if (!serviceName?.trim()) return [];
-  if (serviceName.includes("+")) {
-    return serviceName
-      .split("+")
+  const raw = serviceName.trim();
+  if (raw.includes("+") || raw.includes("·")) {
+    return raw
+      .split(/\+|·/)
       .map((part) => part.trim())
       .filter(Boolean);
   }
-  return [serviceName.trim()];
+  return [raw];
 }
 
 export function formatPaymentServices(serviceName: string | null | undefined): string {
@@ -157,39 +169,188 @@ export function paymentInitials(name: string | null) {
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "—";
 }
 
-export function paymentOrigin(p: PaymentItem) {
-  if (isUnpaidDue(p)) return { label: "Agenda · non payé", kind: "agenda" as const };
-  if (p.appointmentId) return { label: "Agenda", kind: "agenda" as const };
+export function isPosPayment(p: PaymentItem) {
   const notes = (p.notes ?? "").toLowerCase();
   const label = (p.serviceName ?? "").toLowerCase();
-  if (
+  return (
     notes.includes("pos") ||
     notes.includes("vente") ||
     label.includes("vente produits") ||
-    label.includes(" + ")
-  ) {
+    label.includes("produits")
+  );
+}
+
+export function paymentOrigin(p: PaymentItem) {
+  if (isUnpaidDue(p)) return { label: "Agenda · non payé", kind: "agenda" as const };
+  if (isPosPayment(p) && p.appointmentId) {
+    return { label: "Agenda + Produits", kind: "mixed" as const };
+  }
+  if (p.appointmentId && !isPosPayment(p)) {
+    return { label: "Agenda", kind: "agenda" as const };
+  }
+  if (isPosPayment(p)) {
     return { label: "Produits", kind: "pos" as const };
   }
   return { label: "Comptoir", kind: "other" as const };
 }
 
+export type GroupedPaymentItem = PaymentItem & {
+  /** Paiements fusionnés (service + produits même cliente / même RDV). */
+  groupIds?: string[];
+  groupParts?: { label: string; amount: number }[];
+};
+
+/**
+ * Rassemble service + produits du même client (même RDV, ou encaissés ensemble).
+ */
+export function groupPaymentsByClient(rows: PaymentItem[]): GroupedPaymentItem[] {
+  const sorted = sortPaymentsNewestFirst(rows);
+  const used = new Set<string>();
+  const out: GroupedPaymentItem[] = [];
+
+  for (const payment of sorted) {
+    if (used.has(payment.id)) continue;
+    if (isUnpaidDue(payment)) {
+      out.push(payment);
+      used.add(payment.id);
+      continue;
+    }
+
+    const siblings = sorted.filter((other) => {
+      if (other.id === payment.id || used.has(other.id) || isUnpaidDue(other)) return false;
+      if (
+        payment.appointmentId &&
+        other.appointmentId &&
+        payment.appointmentId === other.appointmentId
+      ) {
+        return true;
+      }
+      if (
+        payment.customerId &&
+        other.customerId &&
+        payment.customerId === other.customerId
+      ) {
+        const delta = Math.abs(
+          new Date(payment.paidAt).getTime() - new Date(other.paidAt).getTime(),
+        );
+        // Anciens encaissements : service + produits sans appointmentId commun
+        if (delta > 5 * 60 * 1000) return false;
+        return isPosPayment(payment) !== isPosPayment(other);
+      }
+      return false;
+    });
+
+    const group = [payment, ...siblings];
+    if (group.length === 1) {
+      out.push(payment);
+      used.add(payment.id);
+      continue;
+    }
+
+    const hasService = group.some((item) => !isPosPayment(item));
+    const hasProducts = group.some((item) => isPosPayment(item));
+    if (!(hasService && hasProducts) && !group.every((item) => item.appointmentId)) {
+      out.push(payment);
+      used.add(payment.id);
+      continue;
+    }
+
+    const primary =
+      group.find((item) => item.appointmentId && !isPosPayment(item)) ??
+      group.find((item) => item.appointmentId) ??
+      group[0];
+
+    const parts = group.map((item) => {
+      const productLabel = formatPaymentServices(item.serviceName);
+      const isGenericProduct =
+        !productLabel ||
+        productLabel === "—" ||
+        productLabel.toLowerCase().includes("vente produit");
+      return {
+        label: isPosPayment(item)
+          ? isGenericProduct
+            ? "Produits"
+            : productLabel
+          : productLabel || "Service",
+        amount: signedPaymentAmount(item),
+      };
+    });
+    const labels = Array.from(
+      new Set(
+        parts.map((part) => part.label).filter((label) => label && label !== "—"),
+      ),
+    );
+    const total = Math.round(parts.reduce((sum, part) => sum + part.amount, 0) * 100) / 100;
+
+    const serviceLabels = group
+      .filter((item) => !isPosPayment(item))
+      .map((item) => formatPaymentServices(item.serviceName))
+      .filter((label) => label && label !== "—");
+    const productLabels = group
+      .filter((item) => isPosPayment(item))
+      .map((item) => formatPaymentServices(item.serviceName))
+      .filter(
+        (label) =>
+          label &&
+          label !== "—" &&
+          !label.toLowerCase().includes("vente produit"),
+      );
+    const combinedLabel = [...serviceLabels, ...productLabels]
+      .filter((label, index, arr) => arr.indexOf(label) === index)
+      .join(" · ");
+
+    out.push({
+      ...primary,
+      amount: Math.abs(total),
+      serviceName: combinedLabel || labels.join(" · ") || primary.serviceName,
+      notes:
+        hasService && hasProducts
+          ? [primary.notes, "Service + produits"].filter(Boolean).join(" · ")
+          : primary.notes,
+      groupIds: group.map((item) => item.id),
+      groupParts: parts,
+    });
+    for (const item of group) used.add(item.id);
+  }
+
+  return out;
+}
+
 export function paymentStatusChip(p: PaymentItem) {
   if (isUnpaidDue(p)) {
-    return { label: "Non payé", className: "bg-amber-100 text-amber-900" };
+    return { label: "Non payé", className: "bg-[#FFF0D6] text-[#7A4E00] ring-1 ring-[#E8C56A]/50" };
   }
   if (p.kind === "REFUND" || p.status === "REFUNDED") {
-    return { label: "Remboursé", className: "bg-purple-100 text-purple-900" };
+    return { label: "Remboursé", className: "bg-[#F3E8FF] text-[#5B2B9E] ring-1 ring-[#D4B8F5]/60" };
   }
   if (p.status === "PENDING") {
-    return { label: "En attente", className: "bg-amber-100 text-amber-900" };
+    return { label: "En attente", className: "bg-[#FFF0D6] text-[#7A4E00] ring-1 ring-[#E8C56A]/50" };
   }
   if (p.status === "FAILED") {
-    return { label: "Échoué", className: "bg-[#FFDAD6] text-[#93000A]" };
+    return { label: "Échoué", className: "bg-[#FFE2E0] text-[#8C1D18] ring-1 ring-[#F5B5B0]/60" };
   }
   if (p.kind === "DEPOSIT") {
-    return { label: "Acompte", className: "bg-[#FFDEA4]/70 text-[#5D4200]" };
+    return { label: "Acompte", className: "bg-[#FFF3D6] text-[#6B4A00] ring-1 ring-[#E8C56A]/45" };
   }
-  return { label: PAYMENT_STATUS_LABEL[p.status], className: "bg-emerald-100 text-emerald-800" };
+  return {
+    label: PAYMENT_STATUS_LABEL[p.status],
+    className: "bg-[#E6F6ED] text-[#0F6B3C] ring-1 ring-[#9FD4B3]/55",
+  };
+}
+
+export function paymentMethodChipClass(method: PaymentItem["method"]) {
+  switch (method) {
+    case "CASH":
+      return "bg-[#E8F6EE] text-[#0F6B3C]";
+    case "CARD":
+      return "bg-[#E8F0FF] text-[#1E4B99]";
+    case "TRANSFER":
+      return "bg-[#EEF0F6] text-[#3A4560]";
+    case "GIFT_CARD":
+      return "bg-[#FCE9F4] text-[#981C52]";
+    default:
+      return "bg-[#F6E3EF] text-[#5C3A4A]";
+  }
 }
 
 export function matchesPaymentTab(p: PaymentItem, tab: PaymentTab) {
@@ -205,7 +366,8 @@ export function matchesPaymentSearch(p: PaymentItem, q: string) {
   if (!q) return true;
   const hay = [
     p.id,
-    paymentShortId(p.id),
+    paymentDisplayId(p),
+    p.ticketNumber ?? "",
     p.customerName ?? "",
     p.customerPhone ?? "",
     p.serviceName ?? "",
@@ -362,6 +524,7 @@ export function formatPaymentDateTime(iso: string) {
 
 export function exportPaymentsCsv(rows: PaymentItem[]) {
   const header = [
+    "N° passage",
     "Id",
     "Date",
     "Cliente",
@@ -376,6 +539,7 @@ export function exportPaymentsCsv(rows: PaymentItem[]) {
   ];
   const lines = rows.map((p) =>
     [
+      paymentDisplayId(p),
       p.id,
       formatPaymentDateTime(p.paidAt),
       p.customerName ?? "",

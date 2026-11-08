@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import {
@@ -256,7 +257,7 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
                   : "Mois en cours"}
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 rb-metric-row">
           <MobileKpi
             label="CA"
             value={loading ? "…" : periodRevenue.toLocaleString("fr-MA")}
@@ -644,21 +645,7 @@ function MobileActionCard({
 }
 
 function MobileKpi({ label, value, unit, change }: { label: string; value: string; unit: string; change: string }) {
-  return (
-    <div className="flex flex-col gap-2 rounded-xl bg-white p-3.5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] text-ink/45">{label}</span>
-        <ShoppingBag size={14} className="text-primary" />
-      </div>
-      <p className="text-[22px] font-semibold leading-7 text-ink">
-        {value} <span className="text-[11px] font-medium text-ink/45">{unit}</span>
-      </p>
-      <p className="flex items-center gap-1 text-[11px] font-semibold text-primary">
-        <TrendingUp size={12} />
-        {change}
-      </p>
-    </div>
-  );
+  return <MetricCard title={label} value={value} unit={unit} delta={change}></MetricCard>;
 }
 
 function PayChip({ label, value }: { label: string; value: string }) {

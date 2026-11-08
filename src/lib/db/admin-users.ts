@@ -202,7 +202,7 @@ export async function listPlatformWideUsers(opts?: {
     for (const r of rows) {
       orgUsers.push({
         id: r.id,
-        email: r.email,
+        email: r.email ?? "",
         firstName: r.firstName,
         lastName: r.lastName,
         phone: r.phone,
@@ -252,7 +252,7 @@ export async function listPlatformWideUsers(opts?: {
     for (const r of pRows) {
       platformUsers.push({
         id: r.id,
-        email: r.email,
+        email: r.email ?? "",
         firstName: r.firstName,
         lastName: r.lastName,
         phone: null,
@@ -310,7 +310,7 @@ export async function getPlatformWideUser(
   if (r) {
     return {
       id: r.id,
-      email: r.email,
+      email: r.email ?? "",
       firstName: r.firstName,
       lastName: r.lastName,
       phone: r.phone,

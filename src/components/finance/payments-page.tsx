@@ -1,4 +1,5 @@
 "use client";
+import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import { AppointmentPromoNote } from "@/components/finance/appointment-promo-note";
+import { PaymentBreakdownPanel } from "@/components/finance/payment-breakdown-panel";
 import { PaymentMethodPicker } from "@/components/finance/payment-method-picker";
 import {
   PAYMENT_PAGE_SIZE,
@@ -23,12 +25,14 @@ import {
   filterPayments,
   formatPaymentDateTime,
   formatPaymentServices,
+  groupPaymentsByClient,
   isUnpaidDue,
   paymentInitials,
   paymentKpis,
   paymentMix,
+  paymentMethodChipClass,
   paymentOrigin,
-  paymentShortId,
+  paymentDisplayId,
   paymentStatusChip,
   periodLabel,
   signedPaymentAmount,
@@ -43,6 +47,7 @@ import {
   ProductSalePanel,
   type ProductAddonCart,
 } from "@/components/finance/product-sale-panel";
+import { applyAppointmentPromo } from "@/modules/appointments/service";
 import {
   createPosSaleApi,
   newPosIdempotencyKey,
@@ -52,6 +57,10 @@ import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { Select } from "@/components/ui/select";
+import { Dropdown } from "@/components/ui/dropdown";
+import { listStaff } from "@/modules/staff/service";
+import type { StaffListItem } from "@/types/staff";
+import { assignStaffColors, staffColor } from "@/components/agenda/staff-colors";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canCreateRefund, canWriteCashRegister } from "@/lib/rbac";
 import {
@@ -110,6 +119,27 @@ export function PaymentsPageView({
   const [period, setPeriod] = useState<PaymentPeriod>("all");
   const [methodFilter, setMethodFilter] = useState<PaymentMethod | "">("");
   const [staff, setStaff] = useState("");
+  const [team, setTeam] = useState<StaffListItem[]>([]);
+
+  useEffect(() => {
+    if (!embedded) return;
+    let cancelled = false;
+    async function loadTeam() {
+      const members: StaffListItem[] = [];
+      let page = 1;
+      while (!cancelled) {
+        const result = await listStaff({ page, limit: 100 });
+        members.push(...result.data);
+        if (page >= result.pagination.totalPages || result.data.length === 0) break;
+        page += 1;
+      }
+      if (!cancelled) setTeam([...new Map(members.map((member) => [member.id, member])).values()]);
+    }
+    void loadTeam().catch(() => {
+      if (!cancelled) toast("Impossible de charger toute l’équipe.", "error");
+    });
+    return () => { cancelled = true; };
+  }, [embedded, toast]);
   const [tab, setTab] = useState<PaymentTab>("all");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -175,13 +205,31 @@ export function PaymentsPageView({
   const kpis = useMemo(() => paymentKpis(scoped), [scoped]);
   const mix = useMemo(() => paymentMix(kpis), [kpis]);
   const operators = useMemo(() => staffOptions(rows), [rows]);
+  const teamOptions = useMemo(() => {
+    const palette = assignStaffColors(team.map((member) => member.id));
+    const members = team.filter((member) => member.status !== "ARCHIVED").map((member) => {
+      const color = staffColor(member.id, palette);
+      const name = member.displayName || `${member.firstName} ${member.lastName}`.trim();
+      const status = member.status === "INACTIVE" ? " · Inactif" : member.status === "ON_LEAVE" ? " · En congé" : "";
+      return { value: name, label: `${name}${status}`, dotClassName: color.bar, colorClassName: color.text };
+    });
+    return [
+      { value: "", label: `Toute l’équipe (${members.length})` },
+      ...members.sort((a, b) => a.label.localeCompare(b.label, "fr")),
+    ];
+  }, [team]);
 
-  const filtered = useMemo(() => scoped.filter((p) => matchesPaymentTab(p, tab)), [scoped, tab]);
+  const filtered = useMemo(
+    () => groupPaymentsByClient(scoped.filter((p) => matchesPaymentTab(p, tab))),
+    [scoped, tab],
+  );
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAYMENT_PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAYMENT_PAGE_SIZE, page * PAYMENT_PAGE_SIZE);
   const selected =
-    (selectedId ? filtered.find((p) => p.id === selectedId) : undefined) ??
+    (selectedId
+      ? filtered.find((p) => p.id === selectedId || p.groupIds?.includes(selectedId))
+      : undefined) ??
     paged[0] ??
     filtered[0] ??
     null;
@@ -246,6 +294,7 @@ export function PaymentsPageView({
         next = [
           {
             id: preset.appointmentId,
+            customerId: selected.customerId ?? "",
             customerName: selected.customerName ?? "—",
             serviceName: selected.serviceName ?? "Rendez-vous",
             price: remaining?.price ?? preset.amount ?? 0,
@@ -256,6 +305,7 @@ export function PaymentsPageView({
             status: "CONFIRMED",
             startAt: selected.paidAt,
             createdAt: selected.createdAt || selected.paidAt,
+            customerPhone: selected.customerPhone ?? null,
           },
           ...list,
         ];
@@ -281,6 +331,29 @@ export function PaymentsPageView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- signal-driven open from banner
   }, [createSignal]);
+
+  async function applyServicePromo(
+    code: string,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (!aptId) return { ok: false, error: "Choisissez un rendez-vous." };
+    const result = await applyAppointmentPromo(aptId, code);
+    if (!result.ok) return result;
+    try {
+      const list = await listBillableAppointments(aptId);
+      const found = list.find((item) => item.id === aptId) ?? list[0];
+      if (found) {
+        setBillable((prev) => {
+          const others = prev.filter((item) => item.id !== found.id);
+          return [found, ...others];
+        });
+        setPayAmount(String(found.remaining));
+      }
+    } catch {
+      /* montant mis à jour au prochain rechargement */
+    }
+    toast("Code promo appliqué sur le service.", "success");
+    return { ok: true };
+  }
 
   async function handlePay() {
     if (!aptId) return;
@@ -310,6 +383,8 @@ export function PaymentsPageView({
       const sale = await createPosSaleApi({
         lines: addonCart.lines,
         paymentMethod: payMethod,
+        appointmentId: aptId,
+        customerId: selectedBillable?.customerId || selected?.customerId || null,
         discountTotal: addonCart.discount > 0 ? addonCart.discount : 0,
         notes: addonCart.promoCode
           ? `Vente POS · avec service · Promo: ${addonCart.promoCode}`
@@ -454,7 +529,7 @@ export function PaymentsPageView({
 
         <section className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
           <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-2 lg:grid-cols-12">
-            <div className="relative lg:col-span-4">
+            <div className={cn("relative", embedded ? "md:col-span-2 lg:col-span-6" : "lg:col-span-4")}>
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
               <input
                 value={search}
@@ -464,6 +539,12 @@ export function PaymentsPageView({
               />
             </div>
             <div className="lg:col-span-2">
+              {embedded ? (
+                <div className="space-y-1.5">
+                  <span className="block text-xs font-semibold text-ink/60">Période</span>
+                  <Dropdown value={period} onChange={(value) => setPeriod(value as PaymentPeriod)} options={["all", "today", "yesterday", "7d", "month"].map((value) => ({ value, label: periodLabel(value as PaymentPeriod) }))} />
+                </div>
+              ) : (
               <Select
                 className="h-11"
                 value={period}
@@ -475,8 +556,15 @@ export function PaymentsPageView({
                 <option value="7d">{periodLabel("7d")}</option>
                 <option value="month">{periodLabel("month")}</option>
               </Select>
+              )}
             </div>
             <div className="lg:col-span-2">
+              {embedded ? (
+                <div className="space-y-1.5">
+                  <span className="block text-xs font-semibold text-ink/60">Mode de paiement</span>
+                  <Dropdown value={methodFilter} onChange={(value) => setMethodFilter(value as PaymentMethod | "")} options={[{ value: "", label: "Toutes les méthodes" }, ...PAYMENT_METHODS.map((value) => ({ value, label: PAYMENT_METHOD_LABEL[value] }))]} />
+                </div>
+              ) : (
               <Select
                 className="h-11"
                 value={methodFilter}
@@ -489,7 +577,9 @@ export function PaymentsPageView({
                   </option>
                 ))}
               </Select>
+              )}
             </div>
+            {!embedded ? (
             <div className="lg:col-span-2">
               <Select className="h-11" value={tab} onChange={(e) => setTab(e.target.value as PaymentTab)}>
                 <option value="all">Tous les statuts</option>
@@ -500,7 +590,14 @@ export function PaymentsPageView({
                 <option value="failed">Échoué</option>
               </Select>
             </div>
+            ) : null}
             <div className="lg:col-span-2">
+              {embedded ? (
+                <div className="space-y-1.5">
+                  <span className="block text-xs font-semibold text-ink/60">Équipe</span>
+                  <Dropdown value={staff} onChange={setStaff} options={teamOptions} />
+                </div>
+              ) : (
               <Select className="h-11" value={staff} onChange={(e) => setStaff(e.target.value)}>
                 <option value="">Toute l’équipe</option>
                 {operators.map((name) => (
@@ -509,6 +606,7 @@ export function PaymentsPageView({
                   </option>
                 ))}
               </Select>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -531,7 +629,7 @@ export function PaymentsPageView({
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6 rb-metric-row">
           <Kpi
             label="Total encaissé"
             value={formatMad(kpis.inflow)}
@@ -573,15 +671,15 @@ export function PaymentsPageView({
         </section>
 
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
-          <section className="overflow-hidden rounded-xl bg-white shadow-sm lg:col-span-8">
-            <div className="flex items-center justify-between bg-[#FFEFF8] px-4 py-3">
+          <section className="overflow-hidden rounded-2xl border border-[#EEDFE7] bg-white shadow-[0_8px_28px_rgba(60,20,40,0.06)] lg:col-span-8">
+            <div className="flex items-center justify-between border-b border-[#EEDFE7] bg-gradient-to-r from-[#FFF7FB] to-[#FCE9F4] px-4 py-3.5">
               <div className="flex items-center gap-2">
-                <span className="text-[18px] font-semibold">Journal · paiements & RDV non payés</span>
-                <span className="rounded-full bg-[#F0DDE9] px-2 py-0.5 text-[11px] font-bold text-ink/55">
+                <span className="text-[17px] font-bold text-[#3A1528]">Journal · paiements & RDV non payés</span>
+                <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#981C52] ring-1 ring-[#E8C9D6]">
                   {filtered.length} transaction{filtered.length > 1 ? "s" : ""}
                 </span>
               </div>
-              <span className="text-[11px] text-ink/50">Filtre {periodLabel(period)}</span>
+              <span className="text-[11px] font-medium text-[#765E6B]">Filtre {periodLabel(period)}</span>
             </div>
             {loading ? (
               <p className="p-8 text-center text-[13px] text-ink/50">Chargement…</p>
@@ -592,97 +690,119 @@ export function PaymentsPageView({
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[720px] text-left text-[13px]">
                     <thead>
-                      <tr className="bg-[#FCE9F4] text-[11px] font-bold uppercase tracking-wider text-ink/50">
-                        <th className="px-3 py-2.5">Id · date et heure</th>
-                        <th className="px-3 py-2.5">Cliente</th>
-                        <th className="px-3 py-2.5">Origine</th>
-                        <th className="px-3 py-2.5">Méthode</th>
-                        <th className="px-3 py-2.5 text-right">Montant</th>
-                        <th className="px-3 py-2.5 text-center">Statut</th>
-                        <th className="px-3 py-2.5 text-center">Actions</th>
+                      <tr className="bg-[#3A1528] text-[11px] font-bold uppercase tracking-wider text-white/80">
+                        <th className="px-3 py-3 first:pl-4">N° passage · date</th>
+                        <th className="px-3 py-3">Cliente</th>
+                        <th className="px-3 py-3">Origine</th>
+                        <th className="px-3 py-3">Méthode</th>
+                        <th className="px-3 py-3 text-right">Montant</th>
+                        <th className="px-3 py-3 text-center">Statut</th>
+                        <th className="px-3 py-3 text-center last:pr-4">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {paged.map((p) => {
+                      {paged.map((p, index) => {
                         const chip = paymentStatusChip(p);
                         const origin = paymentOrigin(p);
                         const signed = signedPaymentAmount(p);
                         const active = selected?.id === p.id;
+                        const isRefund = p.kind === "REFUND" || p.status === "REFUNDED";
+                        const isDeposit = p.kind === "DEPOSIT";
+                        const unpaid = isUnpaidDue(p);
                         return (
                           <tr
                             key={p.id}
                             onClick={() => setSelectedId(p.id)}
                             className={cn(
-                              "cursor-pointer border-t border-transparent transition-colors",
-                              p.kind === "REFUND" || p.status === "REFUNDED"
-                                ? "bg-[#FFDAD6]/20"
-                                : p.kind === "DEPOSIT"
-                                  ? "bg-amber-500/10"
-                                  : active
-                                    ? "bg-[#FFD9DE]/40"
-                                    : "hover:bg-[#FFEFF8]/70",
+                              "cursor-pointer border-b border-[#F3E6EC] transition-colors",
+                              active && "bg-[#FCE9F4] shadow-[inset_3px_0_0_#981C52]",
+                              !active && isRefund && "bg-[#FFF5F4]",
+                              !active && isDeposit && "bg-[#FFFBF2]",
+                              !active && unpaid && "bg-[#FFFBF0]",
+                              !active && !isRefund && !isDeposit && !unpaid && index % 2 === 1 && "bg-[#FFF9FB]",
+                              !active && "hover:bg-[#FFF0F6]",
                             )}
                           >
-                            <td className="whitespace-nowrap px-3 py-3">
-                              <div className={cn("font-bold", p.kind === "REFUND" && "text-[#BA1A1A]")}>
-                                {paymentShortId(p.id)}
+                            <td className="whitespace-nowrap px-3 py-3 first:pl-4">
+                              <div className={cn("font-bold", isRefund ? "text-[#BA1A1A]" : "text-[#3A1528]")}>
+                                {paymentDisplayId(p)}
                               </div>
-                              <div className="text-[11px] text-ink/50">{formatPaymentDateTime(p.paidAt)}</div>
+                              <div className="text-[11px] text-[#765E6B]">{formatPaymentDateTime(p.paidAt)}</div>
                             </td>
                             <td className="px-3 py-3">
                               <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FFDEA4] text-[12px] font-bold text-[#261900]">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FCE9F4] text-[12px] font-bold text-[#981C52] ring-1 ring-[#E8C9D6]">
                                   {paymentInitials(p.customerName)}
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="truncate font-semibold">{p.customerName ?? "—"}</div>
+                                  <div className="truncate font-semibold text-[#3A1528]">{p.customerName ?? "—"}</div>
                                   {p.customerPhone ? (
-                                    <div className="truncate text-[11px] text-ink/45">{p.customerPhone}</div>
+                                    <div className="truncate text-[11px] text-[#765E6B]">{p.customerPhone}</div>
                                   ) : null}
                                 </div>
                               </div>
                             </td>
                             <td className="px-3 py-3">
-                              <div className="font-semibold leading-snug">
+                              <div className="font-semibold leading-snug text-[#3A1528]">
                                 {formatPaymentServices(p.serviceName)}
                               </div>
-                              <div className="text-[11px] text-ink/45">{origin.label}</div>
+                              {p.groupParts && p.groupParts.length > 1 ? (
+                                <div className="mt-0.5 space-y-0.5 text-[11px] text-[#765E6B]">
+                                  {p.groupParts.map((part, partIndex) => (
+                                    <div key={`${p.id}-part-${partIndex}`}>
+                                      {part.label} · {formatMad(Math.abs(part.amount))}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-[11px] text-[#765E6B]">{origin.label}</div>
+                              )}
                             </td>
                             <td className="px-3 py-3">
-                              {isUnpaidDue(p) ? (
-                                <span className="text-[11px] font-semibold text-ink/40">—</span>
+                              {unpaid ? (
+                                <span className="text-[11px] font-semibold text-[#A08A95]">—</span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 rounded bg-[#F6E3EF] px-2 py-1 text-[11px] font-semibold">
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold",
+                                    paymentMethodChipClass(p.method),
+                                  )}
+                                >
                                   <MethodGlyph method={p.method} />
                                   {PAYMENT_METHOD_LABEL[p.method]}
                                 </span>
                               )}
                             </td>
                             <td className="whitespace-nowrap px-3 py-3 text-right">
-                              <div className={cn("font-bold", signed < 0 && "text-[#BA1A1A]")}>
+                              <div
+                                className={cn(
+                                  "font-bold tabular-nums",
+                                  signed < 0 ? "text-[#BA1A1A]" : "text-[#3A1528]",
+                                )}
+                              >
                                 {signed < 0 ? "−" : ""}
                                 {formatMad(Math.abs(signed))}
                               </div>
-                              <div className="text-[10px] uppercase text-ink/45">
-                                {isUnpaidDue(p) ? "Reste à payer" : PAYMENT_KIND_LABEL[p.kind]}
+                              <div className="text-[10px] uppercase tracking-wide text-[#765E6B]">
+                                {unpaid ? "Reste à payer" : PAYMENT_KIND_LABEL[p.kind]}
                               </div>
                             </td>
                             <td className="px-3 py-3 text-center">
                               <span
                                 className={cn(
-                                  "inline-flex rounded-full px-2 py-1 text-[11px] font-bold",
+                                  "inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold",
                                   chip.className,
                                 )}
                               >
                                 {chip.label}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-3 py-3 text-center last:pr-4" onClick={(e) => e.stopPropagation()}>
                               <div className="flex flex-col items-center gap-1">
-                                {isUnpaidDue(p) && p.appointmentId && canWrite ? (
+                                {unpaid && p.appointmentId && canWrite ? (
                                   <button
                                     type="button"
-                                    className="text-[12px] font-semibold text-primary hover:underline"
+                                    className="rounded-lg bg-[#FCE9F4] px-2.5 py-1 text-[12px] font-semibold text-[#981C52] hover:bg-[#F5D6E8]"
                                     onClick={() =>
                                       void openPay({
                                         appointmentId: p.appointmentId!,
@@ -693,10 +813,10 @@ export function PaymentsPageView({
                                     Encaisser
                                   </button>
                                 ) : null}
-                                {!isUnpaidDue(p) ? (
+                                {!unpaid ? (
                                   <button
                                     type="button"
-                                    className="text-[12px] font-semibold text-primary hover:underline"
+                                    className="rounded-lg bg-[#FFF7FB] px-2.5 py-1 text-[12px] font-semibold text-[#981C52] ring-1 ring-[#E8C9D6] hover:bg-[#FCE9F4]"
                                     onClick={() => setTicketPayment(p)}
                                   >
                                     Ticket
@@ -710,7 +830,7 @@ export function PaymentsPageView({
                     </tbody>
                   </table>
                 </div>
-                <div className="flex flex-col items-center justify-between gap-2 bg-[#FFEFF8] px-3 py-2 text-[13px] text-ink/55 sm:flex-row">
+                <div className="flex flex-col items-center justify-between gap-2 border-t border-[#EEDFE7] bg-[#FFF7FB] px-4 py-2.5 text-[13px] text-[#765E6B] sm:flex-row">
                   <div>
                     Affichage de {(page - 1) * PAYMENT_PAGE_SIZE + 1} à{" "}
                     {Math.min(page * PAYMENT_PAGE_SIZE, filtered.length)} sur {filtered.length}
@@ -721,18 +841,18 @@ export function PaymentsPageView({
                         type="button"
                         disabled={page <= 1}
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        className="h-8 w-8 rounded bg-white disabled:opacity-40"
+                        className="h-8 w-8 rounded-lg bg-white text-[#981C52] ring-1 ring-[#E8C9D6] disabled:opacity-40"
                       >
                         ‹
                       </button>
-                      <span className="px-2 text-[13px] font-semibold">
+                      <span className="px-2 text-[13px] font-semibold text-[#3A1528]">
                         {page}/{pageCount}
                       </span>
                       <button
                         type="button"
                         disabled={page >= pageCount}
                         onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                        className="h-8 w-8 rounded bg-white disabled:opacity-40"
+                        className="h-8 w-8 rounded-lg bg-white text-[#981C52] ring-1 ring-[#E8C9D6] disabled:opacity-40"
                       >
                         ›
                       </button>
@@ -830,7 +950,43 @@ export function PaymentsPageView({
             ))}
           </div>
 
-          {payMode === "products" ? (
+          {aptId ? (
+            <div className={cn("space-y-4", payMode !== "products" && "hidden")}>
+              <div className="rounded-xl bg-[#FFEFF8] px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+                  Produits pour
+                </p>
+                <p className="mt-1 text-[15px] font-semibold text-ink">
+                  {selectedBillable?.customerName ?? "Cliente"}
+                </p>
+                <p className="mt-0.5 text-[13px] text-ink/55">
+                  {formatPaymentServices(selectedBillable?.serviceName)} · service{" "}
+                  {formatMad(Number(payAmount) || 0)}
+                </p>
+              </div>
+              <ProductSalePanel
+                embedded
+                startExpanded
+                resetToken={addonReset}
+                disabled={!canWrite || submitting}
+                cashOpen={cashOpen}
+                onError={(message) => toast(message, "error")}
+                onCartChange={setAddonCart}
+              />
+              <Button
+                type="button"
+                variant="primary"
+                className="w-full"
+                onClick={() => setPayMode("service")}
+              >
+                {addonCart.lines.length > 0
+                  ? `Retour au service · ${addonCart.lines.length} produit${addonCart.lines.length > 1 ? "s" : ""}`
+                  : "Retour au service"}
+              </Button>
+            </div>
+          ) : null}
+
+          {payMode === "products" && !aptId ? (
             <ProductSalePanel
               disabled={!canWrite || submitting}
               cashOpen={cashOpen}
@@ -847,10 +1003,12 @@ export function PaymentsPageView({
                 });
               }}
             />
-          ) : (
+          ) : null}
+
+          {payMode === "service" ? (
             <>
               <p className="text-[13px] text-ink/55">
-                Encaissez le rendez-vous et, si besoin, ajoutez des produits au même encaissement.
+                Encaissez le rendez-vous. Pour ajouter des produits, passez sur l’onglet Produits.
               </p>
               {selectedBillable ? (
                 <div className="rounded-xl bg-[#FFEFF8] px-3 py-3">
@@ -874,6 +1032,10 @@ export function PaymentsPageView({
                 promotionCode={selectedBillable?.promotionCode}
                 promotionName={selectedBillable?.promotionName}
                 discount={selectedBillable?.discount}
+                canApply={Boolean(aptId)}
+                disabled={!canWrite || submitting}
+                serviceId={selectedBillable?.serviceId}
+                onApply={applyServicePromo}
               />
               <label className="block text-sm">
                 <span className="mb-1.5 block font-medium">Montant service</span>
@@ -891,23 +1053,55 @@ export function PaymentsPageView({
                 disabled={submitting}
               />
 
-              <ProductSalePanel
-                embedded
-                resetToken={addonReset}
-                disabled={!canWrite || submitting}
-                cashOpen={cashOpen}
-                onError={(message) => toast(message, "error")}
-                onCartChange={setAddonCart}
-              />
+              {aptId ? (
+                <button
+                  type="button"
+                  disabled={!canWrite || submitting}
+                  onClick={() => setPayMode("products")}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/35 bg-white text-[13px] font-semibold text-primary transition hover:bg-primary/5 disabled:opacity-40"
+                >
+                  {addonCart.lines.length > 0
+                    ? `Produits ajoutés (${addonCart.lines.length}) · modifier`
+                    : "Ajouter des produits"}
+                </button>
+              ) : null}
 
               {addonCart.lines.length > 0 ? (
-                <p className="rounded-lg bg-[#FFEFF8] px-3 py-2 text-[12px] text-ink/60">
-                  Total à encaisser : service {formatMad(Number(payAmount) || 0)} + produits{" "}
-                  {formatMad(addonCart.total)} ={" "}
-                  <strong className="text-ink">
-                    {formatMad((Number(payAmount) || 0) + addonCart.total)}
-                  </strong>
-                </p>
+                <div className="space-y-2 rounded-xl bg-[#FFEFF8] px-3 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                    Produits ajoutés
+                  </p>
+                  <ul className="space-y-1.5">
+                    {addonCart.lines.map((line) => (
+                      <li
+                        key={line.productId}
+                        className="flex items-center justify-between gap-2 text-[13px]"
+                      >
+                        <span className="min-w-0 truncate font-medium text-ink">
+                          {line.name}
+                          <span className="text-ink/45"> × {line.quantity}</span>
+                        </span>
+                        <span className="shrink-0 font-semibold text-ink">
+                          {formatMad(line.unitPrice * line.quantity)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {addonCart.discount > 0 ? (
+                    <p className="text-[12px] text-primary">
+                      Remise
+                      {addonCart.promoCode ? ` (${addonCart.promoCode})` : ""} −
+                      {formatMad(addonCart.discount)}
+                    </p>
+                  ) : null}
+                  <p className="border-t border-primary/10 pt-2 text-[12px] text-ink/60">
+                    Total à encaisser : service {formatMad(Number(payAmount) || 0)} + produits{" "}
+                    {formatMad(addonCart.total)} ={" "}
+                    <strong className="text-ink">
+                      {formatMad((Number(payAmount) || 0) + addonCart.total)}
+                    </strong>
+                  </p>
+                </div>
               ) : null}
 
               <Button
@@ -924,7 +1118,7 @@ export function PaymentsPageView({
                     : "Encaisser le service"}
               </Button>
             </>
-          )}
+          ) : null}
         </div>
       </PremiumSidePanel>
 
@@ -997,23 +1191,7 @@ function Kpi({
   inverse?: boolean;
   negative?: boolean;
 }) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col justify-between rounded-xl p-4 shadow-sm",
-        inverse ? "bg-ink text-[#FEECF7]" : "bg-white",
-      )}
-    >
-      <div className={cn("flex items-center justify-between", inverse ? "text-[#FFDEA4]" : "text-ink/50")}>
-        <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
-        {icon}
-      </div>
-      <div className="mt-2">
-        <div className={cn("text-[22px] font-bold", negative && "text-[#BA1A1A]")}>{value}</div>
-        <div className={cn("mt-1 text-[11px]", inverse ? "text-[#F0BF5C]" : "text-ink/45")}>{hint}</div>
-      </div>
-    </div>
-  );
+  return <MetricCard title={label} value={value} icon={icon} hint={hint} negative={negative}></MetricCard>;
 }
 
 function PaymentInspect({
@@ -1053,7 +1231,7 @@ function PaymentInspect({
             {due ? "Rendez-vous à encaisser" : "Fiche règlement"}
           </p>
           <div className="mt-0.5 flex flex-wrap items-center gap-2">
-            <h3 className="text-[22px] font-bold">{paymentShortId(payment.id)}</h3>
+            <h3 className="text-[22px] font-bold">{paymentDisplayId(payment)}</h3>
             <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", chip.className)}>{chip.label}</span>
           </div>
         </div>
@@ -1080,13 +1258,14 @@ function PaymentInspect({
           }
         />
         {payment.customerPhone ? <InspectRow label="Téléphone" value={payment.customerPhone} /> : null}
-        <InspectRow label="Prestation" value={formatPaymentServices(payment.serviceName)} />
         <InspectRow label="Origine" value={origin.label} />
-        <InspectRow label="Date RDV" value={formatPaymentDateTime(payment.paidAt)} />
+        <InspectRow label="Date" value={formatPaymentDateTime(payment.paidAt)} />
         {!due ? <InspectRow label="Opérateur" value={payment.userName ?? "—"} /> : null}
         {!due ? <InspectRow label="Méthode" value={PAYMENT_METHOD_LABEL[payment.method]} /> : null}
         {payment.notes && !due ? <InspectRow label="Notes" value={payment.notes} /> : null}
       </dl>
+
+      <PaymentBreakdownPanel payment={payment} />
 
       {due && canWrite ? (
         <button

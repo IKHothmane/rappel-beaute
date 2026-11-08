@@ -83,16 +83,21 @@ export function AppointmentPromoNote({
 
   async function submit(nextCode: string) {
     const trimmed = nextCode.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed || busy || disabled || !onApply) return;
     setBusy(true);
     setError("");
-    const result = await onApply(trimmed);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      const result = await onApply(trimmed);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setPromoCode("");
+    } catch {
+      setError("Impossible d’appliquer ce code. Veuillez réessayer.");
+    } finally {
+      setBusy(false);
     }
-    setPromoCode("");
   }
 
   return (

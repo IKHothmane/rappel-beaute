@@ -246,6 +246,8 @@ export function InvoicesPageView() {
         next = [
           {
             id: inv.appointmentId,
+            customerId: inv.customerId,
+            serviceId: null,
             customerName: inv.customerName,
             serviceName: inv.firstItemName ?? "Rendez-vous",
             price: inv.total,

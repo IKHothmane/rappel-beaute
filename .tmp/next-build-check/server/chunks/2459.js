@@ -1,0 +1,3 @@
+"use strict";exports.id=2459,exports.ids=[2459],exports.modules={22459:(e,n,t)=>{t.a(e,async(e,o)=>{try{t.d(n,{recordPublicBookingEvent:()=>a});var i=t(84770),r=t(8678),s=e([r]);let c=new(r=(s.then?(await s)():s)[0]).Pool({connectionString:process.env.DATABASE_URL});async function a(e){let n=e.source?.trim().slice(0,40)||null;await c.query(`INSERT INTO "PublicBookingEvent" (
+      id, "organizationId", "eventType", source, "serviceId", "staffId", "appointmentId"
+    ) VALUES ($1,$2,$3::"PublicBookingEventType",$4,$5,$6,$7)`,[`pbev_${(0,i.randomBytes)(6).toString("hex")}`,e.organizationId,e.eventType,n,e.serviceId??null,e.staffId??null,e.appointmentId??null])}o()}catch(e){o(e)}})}};

@@ -1,0 +1,4 @@
+"use strict";exports.id=2192,exports.ids=[2192],exports.modules={2192:(t,e,n)=>{n.a(t,async(t,o)=>{try{n.d(e,{writeAuditLog:()=>l});var i=n(84770),a=n(8678),r=t([a]);let c=new(a=(r.then?(await r)():r)[0]).Pool({connectionString:process.env.DATABASE_URL});async function l(t){let e=t.client??c;await e.query(`INSERT INTO "AuditLog" (
+      id, "organizationId", "actorId", "actorName", "entityType", "entityId",
+      action, "before", "after"
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb)`,[`aud_${(0,i.randomBytes)(8).toString("hex")}`,t.organizationId,t.actorId??null,t.actorName??null,t.entityType,t.entityId,t.action,null!=t.before?JSON.stringify(t.before):null,null!=t.after?JSON.stringify(t.after):null])}o()}catch(t){o(t)}})}};

@@ -295,6 +295,7 @@ export function PaymentsPageView({
           {
             id: preset.appointmentId,
             customerId: selected.customerId ?? "",
+            serviceId: null,
             customerName: selected.customerName ?? "—",
             serviceName: selected.serviceName ?? "Rendez-vous",
             price: remaining?.price ?? preset.amount ?? 0,

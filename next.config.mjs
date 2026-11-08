@@ -35,6 +35,8 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Keep verification builds separate from a running local development server.
+  distDir: process.env.NEXT_BUILD_DIR || ".next",
   reactStrictMode: true,
   trailingSlash: true,
   skipTrailingSlashRedirect: true,

@@ -1,5 +1,0 @@
-"use strict";exports.id=3409,exports.ids=[3409],exports.modules={73409:(e,t,o)=>{o.d(t,{sendAlert:()=>r});let n={critical:"\uD83D\uDD34",warning:"\uD83D\uDFE0",info:"ℹ️"};async function r(e){let t=process.env.ALERT_WEBHOOK_URL;if(!t)return console.warn("[monitoring] ALERT_WEBHOOK_URL absent — alerte logg\xe9e uniquement",e),!1;let o=t.includes("discord.com/api/webhooks"),r=t.includes("hooks.slack.com"),s=`${n[e.severity]} **${e.title}**`,i=[e.details,`source: ${e.source}`,`env: ${e.env??process.env.APP_ENV??"production"??"unknown"}`,new Date().toISOString()].filter(Boolean).join("\n"),c=o?{content:`${s}
-\`\`\`
-${i}
-\`\`\``}:r?{text:`${s}
-${i}`}:{text:s,severity:e.severity,source:e.source,env:e.env??process.env.APP_ENV??"production",details:e.details,timestamp:new Date().toISOString()};try{let e=await fetch(t,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(c)});if(!e.ok)return console.error("[monitoring] webhook HTTP",e.status),!1;return!0}catch(e){return console.error("[monitoring] webhook error",e),!1}}}};

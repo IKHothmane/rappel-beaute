@@ -57,3 +57,7 @@ next-env.d.ts
 
 # Playwright MCP
 .playwright-mcp/
+
+# artefacts temporaires (captures, builds de vérification) — on garde seulement le CSS lu par scripts/check-*.cjs
+/.tmp/*
+!/.tmp/feedback-preview.css

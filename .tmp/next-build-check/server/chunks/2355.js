@@ -1,1 +1,0 @@
-"use strict";exports.id=2355,exports.ids=[2355],exports.modules={12355:(e,t,s)=>{s.d(t,{PAYMENT_METHOD_LABEL:()=>E});let E={CASH:"Esp\xe8ces",CARD:"Carte",TRANSFER:"Virement",ONLINE:"En ligne",GIFT_CARD:"Carte cadeau",CHECK:"Ch\xe8que",OTHER:"Autre"}}};

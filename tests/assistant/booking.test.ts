@@ -7,6 +7,7 @@ import { ensurePreviewWidget, openWidgetSession } from "@/lib/db/assistant-sessi
 import { getPublicAvailabilitySlots } from "@/lib/db/public-booking";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
 import { ensureSecondOrg, getSeedOrgId, testId, testPool } from "../helpers/db";
+import { upcomingMondays } from "../helpers/open-days";
 
 const run = process.env.DATABASE_URL ? describe : describe.skip;
 
@@ -47,7 +48,7 @@ run("Proposition puis confirmation d'un rendez-vous public", () => {
     });
     otherToken = other.token;
     sessionHashes.push(createHash("sha256").update(otherToken).digest("hex"));
-    for (const candidate of ["2026-11-02", "2026-11-09", "2026-11-16", "2026-11-23"]) {
+    for (const candidate of upcomingMondays(4)) {
       const slots = await getPublicAvailabilitySlots(orgId, { serviceId: "s2", date: candidate });
       const open = slots.find((slot) => slot.available);
       if (open) {

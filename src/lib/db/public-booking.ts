@@ -311,7 +311,7 @@ export async function getPublicStaffForService(
   if (!service) return [];
 
   const staffList = await loadStaffContexts(organizationId, serviceId);
-  const checkDate = date ? new Date(`${date}T12:00:00+01:00`) : null;
+  const checkDate = date ? businessDateTime(date, "12:00") : null;
 
   return staffList.map((s) => ({
     id: s.id,
@@ -324,8 +324,7 @@ export async function getPublicDayClosedStatus(
   organizationId: string,
   date: string,
 ): Promise<{ closed: boolean; reason: string | null }> {
-  const dayStart = new Date(`${date}T00:00:00+01:00`);
-  const dayEnd = new Date(`${date}T23:59:59+01:00`);
+  const { start: dayStart, end: dayEnd } = dayBounds(date);
   const { items } = await listStaff(organizationId, {
     page: 1,
     limit: 500,
@@ -352,7 +351,7 @@ export async function getPublicAvailabilitySlots(
   const service = await getServiceOption(organizationId, opts.serviceId);
   if (!service) throw new Error("SERVICE_NOT_FOUND");
 
-  const dateObj = new Date(`${opts.date}T12:00:00+01:00`);
+  const dateObj = businessDateTime(opts.date, "12:00");
 
   const dayClosed = await getPublicDayClosedStatus(organizationId, opts.date);
   if (dayClosed.closed) return [];
@@ -418,22 +417,27 @@ export async function getPublicAvailableDates(
   organizationId: string,
   opts: { serviceId: string; from: string; to: string; staffId?: string | null },
 ): Promise<string[]> {
-  const from = new Date(`${opts.from}T00:00:00+01:00`);
-  const to = new Date(`${opts.to}T23:59:59+01:00`);
   const dates: string[] = [];
-  const cursor = new Date(from);
+  let iso = opts.from;
 
-  while (cursor <= to) {
-    const iso = cursor.toISOString().slice(0, 10);
+  while (iso <= opts.to) {
     const slots = await getPublicAvailabilitySlots(organizationId, {
       serviceId: opts.serviceId,
       date: iso,
       staffId: opts.staffId,
     });
     if (slots.some((s) => s.available)) dates.push(iso);
-    cursor.setDate(cursor.getDate() + 1);
+    iso = nextCalendarDate(iso);
   }
   return dates;
+}
+
+function nextCalendarDate(iso: string): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  const next = new Date(Date.UTC(year, month - 1, day + 1));
+  const mm = String(next.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(next.getUTCDate()).padStart(2, "0");
+  return `${next.getUTCFullYear()}-${mm}-${dd}`;
 }
 
 export async function planPublicSlot(

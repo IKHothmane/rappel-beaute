@@ -630,7 +630,7 @@ export function PaymentsPageView({
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6 rb-metric-row">
+        <section className={cn("grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6 rb-metric-row", embedded && "rb-metric-row-wrap")}>
           <Kpi
             label="Total encaissé"
             value={formatMad(kpis.inflow)}
@@ -655,6 +655,7 @@ export function PaymentsPageView({
             hint={mixPct(kpis.inflow, kpis.byMethod.TRANSFER)}
             icon={<Landmark size={20} className="text-[#7B5900]" />}
           />
+          {!embedded ? (
           <Kpi
             label="Remboursements"
             value={kpis.refunds ? `−${formatMad(kpis.refunds)}` : formatMad(0)}
@@ -662,6 +663,7 @@ export function PaymentsPageView({
             negative={kpis.refunds > 0}
             icon={<Wallet size={20} className="text-[#BA1A1A]" />}
           />
+          ) : null}
           <Kpi
             label="Net réalisé"
             value={formatMad(kpis.net)}

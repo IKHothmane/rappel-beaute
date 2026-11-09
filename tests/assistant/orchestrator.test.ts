@@ -11,6 +11,7 @@ import { ensurePreviewWidget, openWidgetSession } from "@/lib/db/assistant-sessi
 import { getPublicAvailabilitySlots } from "@/lib/db/public-booking";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
 import { ensureSecondOrg, getSeedOrgId, testId, testPool } from "../helpers/db";
+import { upcomingMondays } from "../helpers/open-days";
 
 describe("Interprétation du visiteur", () => {
   it("reconnaît une demande de soins et ignore une confirmation demandée par le modèle", () => {
@@ -74,7 +75,7 @@ run("Orchestrateur public", () => {
       [hashes[0]],
     );
     session = { id: row.rows[0].id, organizationId: orgId, organizationName: row.rows[0].organizationName };
-    for (const candidate of ["2026-12-07", "2026-12-14", "2026-12-21", "2027-01-04"]) {
+    for (const candidate of upcomingMondays(4)) {
       const slots = await getPublicAvailabilitySlots(orgId, { serviceId: "s2", date: candidate });
       const open = slots.find((slot) => slot.available);
       if (open) {

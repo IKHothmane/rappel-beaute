@@ -480,9 +480,9 @@ run("41.23 — POS PostgreSQL", () => {
       `INSERT INTO "Product" (
         id, "organizationId", name, sku, category, unit,
         "purchasePrice", "salePrice", stock, sellable, active, "updatedAt"
-      ) VALUES ($1,$2,'Race','SKU-R','VENTE'::"ProductCategory",'UNIT'::"ProductUnit",
+      ) VALUES ($1,$2,'Race',$3,'VENTE'::"ProductCategory",'UNIT'::"ProductUnit",
         10,100,1,true,true,NOW())`,
-      [p, orgA],
+      [p, orgA, `SKU-${p.slice(-10)}`],
     );
 
     const results = await Promise.allSettled([

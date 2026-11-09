@@ -21,14 +21,15 @@ import {
   testId,
   testPool,
 } from "../helpers/db";
+import { upcomingWeekday } from "../helpers/open-days";
 
 const run = process.env.DATABASE_URL ? describe : describe.skip;
 
 const SLUG = "institut-royal";
-/** Mercredi — hors congé seed e2 sept 2026 */
-const BOOK_DATE = "2026-10-14";
-/** Jeudi — date auxiliaire pour tests sans collision */
-const BOOK_DATE_ALT = "2026-10-15";
+/** Mercredi à venir — hors congé seed e2 (septembre 2026) et hors créneaux passés. */
+const BOOK_DATE = upcomingWeekday(3);
+/** Jeudi suivant, pour les tests qui ne doivent pas entrer en collision. */
+const BOOK_DATE_ALT = upcomingWeekday(4, 15);
 const BOOK_TIME = "10:00";
 
 beforeAll(async () => {
@@ -102,12 +103,22 @@ run("Public booking — disponibilité", () => {
 
   it("congé staff → pas de créneaux", async () => {
     const orgId = await getSeedOrgId();
-    const slots = await getPublicAvailabilitySlots(orgId, {
-      serviceId: "s1",
-      date: "2026-09-03",
-      staffId: "e2",
-    });
-    expect(slots.filter((s) => s.available).length).toBe(0);
+    const leaveId = testId("lv");
+    await testPool.query(
+      `INSERT INTO "StaffLeave" (id, "staffId", "startAt", "endAt", type, reason, status, "updatedAt")
+       VALUES ($1, 'e2', '2026-09-03T00:00:00.000Z', '2026-09-03T23:59:59.000Z', 'CONGE', 'Congé test', 'APPROVED', NOW())`,
+      [leaveId],
+    );
+    try {
+      const slots = await getPublicAvailabilitySlots(orgId, {
+        serviceId: "s1",
+        date: "2026-09-03",
+        staffId: "e2",
+      });
+      expect(slots.filter((s) => s.available).length).toBe(0);
+    } finally {
+      await testPool.query(`DELETE FROM "StaffLeave" WHERE id = $1`, [leaveId]);
+    }
   });
 
   it("pause déjeuner → créneau indisponible", async () => {

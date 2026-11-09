@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireFeatureRead, requireFeatureWrite } from "@/lib/auth/api-guard";
+import { requireFeatureRead, requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { getOrganizationWebsite, setOrganizationWebsite } from "@/lib/db/organization";
 
 function normalizeWebsite(raw: string): string | null | { error: string } {
@@ -34,7 +34,9 @@ export async function PATCH(request: NextRequest) {
 
   let body: { website?: unknown };
   try {
-    body = (await request.json()) as { website?: unknown };
+    body = stripOrganizationId((await request.json()) as Record<string, unknown>) as {
+      website?: unknown;
+    };
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireFeatureRead, requireFeatureWrite } from "@/lib/auth/api-guard";
+import { requireFeatureRead, requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { getOrganizationAddress, setOrganizationAddress } from "@/lib/db/organization";
 
 export async function GET(request: NextRequest) {
@@ -16,7 +16,9 @@ export async function PATCH(request: NextRequest) {
 
   let body: { address?: unknown };
   try {
-    body = (await request.json()) as { address?: unknown };
+    body = stripOrganizationId((await request.json()) as Record<string, unknown>) as {
+      address?: unknown;
+    };
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }

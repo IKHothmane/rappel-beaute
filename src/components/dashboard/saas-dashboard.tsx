@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useCurrentUser } from "@/components/auth/session-provider";
+import { businessDateTime, businessTodayIso } from "@/lib/time/business-timezone";
 import { PremiumKpiCard } from "@/components/dashboard/premium-kpi-card";
 import { QuickActionsDrawer, useQuickActions } from "@/components/dashboard/quick-actions-drawer";
 import { SaasDashboardMobile } from "@/components/dashboard/saas-dashboard-mobile";
@@ -148,9 +149,11 @@ export function SaasDashboard() {
     const gen = ++loadGen.current;
     setLoading(true);
     setError(null);
-    const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
-    const dayStart = new Date(`${todayKey}T00:00:00+01:00`);
-    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+    const todayKey = businessTodayIso();
+    const dayStart = businessDateTime(todayKey, "00:00");
+    const [year, month, day] = todayKey.split("-").map(Number);
+    const nextDay = new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
+    const dayEnd = businessDateTime(nextDay, "00:00");
 
     try {
       const [ov, revenue, apptsAnalytics, customersData, todayList] = await Promise.all([

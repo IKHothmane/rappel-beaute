@@ -256,7 +256,7 @@ run("Notifications — entity link", () => {
   it("construit les liens de navigation", () => {
     expect(buildNotificationHref("Product", "p1")).toBe("/products/p1/");
     expect(buildNotificationHref("Appointment", "a1")).toBe("/agenda/?appointmentId=a1");
-    expect(buildNotificationHref("Payment", "pay1")).toBe("/payments/?paymentId=pay1");
+    expect(buildNotificationHref("Payment", "pay1")).toBe("/cash-register/?paymentId=pay1");
   });
 });
 

@@ -17,7 +17,6 @@ import {
   opsCount,
   paymentMix,
   saleCount,
-  sumAbsTypes,
   txnTypeChip,
 } from "@/components/finance/cash-helpers";
 import { cn } from "@/lib/utils";
@@ -86,7 +85,6 @@ export function CashRegisterMobile({
   ticketLoadingId = null,
 }: Props) {
   const mix = paymentMix(session);
-  const refunds = sumAbsTypes(txns, ["REFUND_OUT"]);
   const ops = opsCount(txns);
   const sales = saleCount(txns);
   const theoretical = session?.theoreticalBalance ?? 0;
@@ -297,10 +295,9 @@ export function CashRegisterMobile({
       </div>
 
       {tab !== "history" ? (
-        <section className="grid grid-cols-2 gap-2 rb-metric-row">
+        <section className="grid gap-2 rb-metric-row rb-metric-row-wrap">
           <KpiMini label="Espèces encaissées" value={formatMad(session?.cashIn ?? 0)} hint="Session" />
           <KpiMini label="Sorties" value={formatMad(session?.cashOut ?? 0)} hint="Décaissements" />
-          <KpiMini label="Remboursements" value={formatMad(refunds)} hint="REFUND" />
           <KpiMini
             label="Mouvements"
             value={`${ops}`}

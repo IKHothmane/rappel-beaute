@@ -5,6 +5,7 @@ import {
   notifyWaitingListOnCancellation,
   updateWaitingListStatus,
 } from "@/lib/db/waiting-list";
+import { businessDateTime } from "@/lib/time/business-timezone";
 import {
   ensureSecondOrg,
   getSeedOrgId,
@@ -84,14 +85,12 @@ run("41.18 — Liste d'attente", () => {
     const entry = entryIds[0];
     expect(entry).toBeTruthy();
 
-    const { rows: pref } = await testPool.query<{ preferredDate: Date }>(
-      `SELECT "preferredDate" FROM "WaitingListEntry" WHERE id = $1`,
+    const { rows: pref } = await testPool.query<{ preferredDate: string }>(
+      `SELECT to_char("preferredDate", 'YYYY-MM-DD') AS "preferredDate"
+       FROM "WaitingListEntry" WHERE id = $1`,
       [entry],
     );
-    const day = pref[0].preferredDate;
-    const startAt = new Date(
-      `${day.toISOString().slice(0, 10)}T14:00:00+01:00`,
-    );
+    const startAt = businessDateTime(pref[0].preferredDate, "14:00");
     const endAt = new Date(startAt.getTime() + 60 * 60_000);
     const aptId = testId("apt_wl");
     aptIds.push(aptId);

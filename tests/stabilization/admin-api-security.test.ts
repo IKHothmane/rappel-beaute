@@ -22,7 +22,11 @@ describe("Sécurité API — routes admin plateforme", () => {
     expect(routes.length).toBeGreaterThan(0);
     for (const file of routes) {
       const src = fs.readFileSync(file, "utf8");
-      expect(src.includes("requireAdmin") || src.includes("requirePlatformSession")).toBe(true);
+      expect(
+        src.includes("requireAdmin") ||
+          src.includes("requireSuperAdmin") ||
+          src.includes("requirePlatformSession"),
+      ).toBe(true);
     }
   });
 

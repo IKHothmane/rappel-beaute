@@ -50,9 +50,9 @@ run("Super Admin — séparation Platform / Organization", () => {
   });
 
   it("OWNER institut → login app OK, login platform refusé", async () => {
-    const app = await authenticateUser("nadia@institutroyal.ma", "demo1234");
+    const app = await authenticateUser("app@beauty.ma", "demo1234");
     expect(app?.accountType).toBe("ORGANIZATION");
-    const platform = await authenticatePlatformUser("nadia@institutroyal.ma", "demo1234");
+    const platform = await authenticatePlatformUser("app@beauty.ma", "demo1234");
     expect(platform).toBeNull();
   });
 
@@ -125,7 +125,7 @@ run("Super Admin — création institut atomique", () => {
         owner: {
           firstName: "Nadia",
           lastName: "Bennani",
-          email: "nadia@institutroyal.ma",
+          email: "app@beauty.ma",
         },
         plan: "STARTER",
       }),

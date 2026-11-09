@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { Pool } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
+import { businessTodayIso, formatBusinessTime } from "@/lib/time/business-timezone";
 import type {
   CreateWaitingListInput,
   WaitingListEntry,
@@ -214,13 +215,8 @@ export async function notifyWaitingListOnCancellation(input: {
 }): Promise<{ notified: number }> {
   await expireWaitingListEntries(input.organizationId);
 
-  const day = input.startAt.toISOString().slice(0, 10);
-  const time = input.startAt.toLocaleTimeString("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Africa/Casablanca",
-  });
+  const day = businessTodayIso(input.startAt);
+  const time = formatBusinessTime(input.startAt);
 
   const { rows } = await pool.query<{
     id: string;

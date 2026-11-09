@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireFeatureWrite } from "@/lib/auth/api-guard";
+import { requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { EmailSendError, isEmailConfigured, sendTransactionalEmail } from "@/lib/email/send";
 import {
   WEBSITE_REQUEST_NOTIFY_EMAIL,
@@ -27,7 +27,9 @@ export async function POST(request: NextRequest) {
 
   let body: { message?: unknown };
   try {
-    body = (await request.json()) as { message?: unknown };
+    body = stripOrganizationId((await request.json()) as Record<string, unknown>) as {
+      message?: unknown;
+    };
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }

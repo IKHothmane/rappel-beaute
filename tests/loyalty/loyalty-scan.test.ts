@@ -32,9 +32,15 @@ describe("Loyalty Scan — Prévisualisation du scan", () => {
   });
 
   afterAll(async () => {
-    await testPool.query(`DELETE FROM "LoyaltyVisitReward" WHERE "organizationId" = $1`, [orgA]);
-    await testPool.query(`DELETE FROM "LoyaltyEvent" WHERE "organizationId" = $1`, [orgA]);
-    await testPool.query(`DELETE FROM "LoyaltyCard" WHERE "organizationId" = $1`, [orgA]);
+    await testPool.query(`DELETE FROM "LoyaltyVisitReward" WHERE "customerId" = ANY($1::text[])`, [
+      [customerA, customerNoAppt],
+    ]);
+    await testPool.query(`DELETE FROM "LoyaltyEvent" WHERE "customerId" = ANY($1::text[])`, [
+      [customerA, customerNoAppt],
+    ]);
+    await testPool.query(`DELETE FROM "LoyaltyCard" WHERE "customerId" = ANY($1::text[])`, [
+      [customerA, customerNoAppt],
+    ]);
     await testPool.query(`DELETE FROM "Appointment" WHERE "customerId" LIKE $1`, [`${PREFIX}_%`]);
     await cleanupTestPrefix(PREFIX);
   });
@@ -69,9 +75,14 @@ describe("Loyalty Scan — Prévisualisation du scan", () => {
   });
 
   it("scan sans aucun RDV terminé", async () => {
-    await expect(previewLoyaltyScan(orgA, (await issueLoyaltyCard(orgA, customerNoAppt)).publicToken)).rejects.toThrow(
-      "NO_COMPLETED_APPOINTMENT",
+    const preview = await previewLoyaltyScan(
+      orgA,
+      (await issueLoyaltyCard(orgA, customerNoAppt)).publicToken,
     );
+    expect(preview.customerId).toBe(customerNoAppt);
+    expect(preview.appointmentId).toBeNull();
+    expect(preview.serviceName).toBeNull();
+    expect(preview.amount).toBeNull();
   });
 
   it("scan lorsque le programme est désactivé", async () => {

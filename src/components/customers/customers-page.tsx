@@ -128,6 +128,7 @@ export function CustomersPageView() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [reactivationPotential, setReactivationPotential] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [dataRevision, setDataRevision] = useState(0);
   const [profileExtras, setProfileExtras] = useState<Record<string, Partial<Customer>>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<CustomerDetail | null>(null);
@@ -148,6 +149,7 @@ export function CustomersPageView() {
       setKpis({ ...EMPTY_KPIS, ...res.kpis });
       setTotal(res.pagination.total);
       setTotalPages(res.pagination.totalPages);
+      setDataRevision((revision) => revision + 1);
       setSelectedId((current) => {
         if (current && res.data.some((row) => row.id === current)) return current;
         return res.data[0]?.id ?? null;
@@ -160,6 +162,21 @@ export function CustomersPageView() {
   useEffect(() => {
     setLoading(true);
     refresh().finally(() => setLoading(false));
+  }, [refresh]);
+
+  // A visit may be completed in the agenda while this page stays open.
+  useEffect(() => {
+    const refreshVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("focus", refreshVisible);
+    document.addEventListener("visibilitychange", refreshVisible);
+    const interval = window.setInterval(refreshVisible, 60_000);
+    return () => {
+      window.removeEventListener("focus", refreshVisible);
+      document.removeEventListener("visibilitychange", refreshVisible);
+      window.clearInterval(interval);
+    };
   }, [refresh]);
 
   useEffect(() => {
@@ -223,7 +240,7 @@ export function CustomersPageView() {
     return () => {
       cancelled = true;
     };
-  }, [selectedId]);
+  }, [selectedId, dataRevision]);
 
   const selected = useMemo(() => rows.find((r) => r.id === selectedId) ?? null, [rows, selectedId]);
 

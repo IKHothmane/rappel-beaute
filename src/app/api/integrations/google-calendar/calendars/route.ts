@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireAppSession } from "@/lib/auth/api-guard";
+import { requireAppSession, stripOrganizationId } from "@/lib/auth/api-guard";
 import { canManageGoogleCalendar } from "@/lib/rbac";
 import {
   getValidGoogleAccessToken,
@@ -44,7 +44,10 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as { calendarId?: string; calendarName?: string };
+    const body = stripOrganizationId((await request.json()) as Record<string, unknown>) as {
+      calendarId?: string;
+      calendarName?: string;
+    };
     const calendarId = body.calendarId?.trim();
     if (!calendarId) {
       return NextResponse.json({ error: "Calendrier manquant." }, { status: 400 });

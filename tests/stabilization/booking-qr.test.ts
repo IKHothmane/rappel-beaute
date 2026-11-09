@@ -22,11 +22,12 @@ import {
   testId,
   testPool,
 } from "../helpers/db";
+import { upcomingWeekday } from "../helpers/open-days";
 
 const run = process.env.DATABASE_URL ? describe : describe.skip;
 
 const SLUG = "institut-royal";
-const BOOK_DATE = "2026-10-21";
+const BOOK_DATE = upcomingWeekday(3);
 const BOOK_TIME = "11:00";
 
 describe("41.19 — QR URLs (unit)", () => {

@@ -1,3 +1,4 @@
+import { businessDateTime, businessParts } from "@/lib/time/business-timezone";
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
 import { resolvePreset } from "@/lib/analytics/period";
 import type {
@@ -98,10 +99,9 @@ export function weeklyRevenueBars(daily: RevenueDailyPoint[] | undefined): Weekl
   if (!daily?.length) return [];
   const buckets = new Map<string, { label: string; value: number; order: number }>();
   for (const p of daily) {
-    const d = new Date(`${p.date}T12:00:00+01:00`);
-    const weekStart = new Date(d);
-    const dow = (d.getDay() + 6) % 7;
-    weekStart.setDate(d.getDate() - dow);
+    const parts = businessParts(businessDateTime(p.date, "12:00"));
+    const dow = (parts.weekday + 6) % 7;
+    const weekStart = new Date(Date.UTC(parts.year, parts.month - 1, parts.day - dow));
     const key = weekStart.toISOString().slice(0, 10);
     const prev = buckets.get(key);
     const idx = buckets.size;

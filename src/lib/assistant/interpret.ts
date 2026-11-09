@@ -1,4 +1,4 @@
-import { businessParts } from "@/lib/time/business-timezone";
+import { businessDateTime, businessParts } from "@/lib/time/business-timezone";
 
 export type VisitorIntent =
   | { intent: "services" }
@@ -69,7 +69,7 @@ export function resolveVisitorDate(text: string, now: Date): string | undefined 
   if (named) {
     const month = MONTHS.indexOf(named[2]) + 1;
     let year = today.year;
-    const candidate = new Date(`${isoDate(year, month, Number(named[1]))}T12:00:00+01:00`);
+    const candidate = businessDateTime(isoDate(year, month, Number(named[1])), "12:00");
     if (candidate.getTime() < now.getTime() - 24 * 60 * 60 * 1000) year += 1;
     return isoDate(year, month, Number(named[1]));
   }

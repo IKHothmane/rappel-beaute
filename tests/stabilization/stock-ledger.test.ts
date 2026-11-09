@@ -6,18 +6,24 @@ const run = process.env.DATABASE_URL ? describe : describe.skip;
 const PREFIX = "test_stock";
 
 run("Stock — ledger reconstruit le cache Product.stock", () => {
-  const productId = "p1";
+  const productId = testId(PREFIX);
   let orgId: string;
-  let baseline: number;
+  const baseline = 0;
   const keys: string[] = [];
 
   beforeAll(async () => {
     orgId = await getSeedOrgId();
-    const { rows } = await testPool.query<{ stock: string }>(
-      `SELECT stock::text FROM "Product" WHERE id = $1 AND "organizationId" = $2`,
-      [productId, orgId],
+    await testPool.query(
+      `INSERT INTO "Product" (
+        id, "organizationId", name, sku, category, unit,
+        "purchasePrice", "salePrice", stock, "minStock",
+        consumable, sellable, active, "updatedAt"
+      ) VALUES (
+        $1, $2, 'Produit ledger', $3, 'CONSOMMABLE'::"ProductCategory", 'UNIT'::"ProductUnit",
+        10, 20, 0, 0, true, true, true, NOW()
+      )`,
+      [productId, orgId, `SKU-${productId.slice(-8)}`],
     );
-    baseline = parseFloat(rows[0]?.stock ?? "0");
   });
 
   afterAll(async () => {
@@ -26,7 +32,7 @@ run("Stock — ledger reconstruit le cache Product.stock", () => {
         keys,
       ]);
     }
-    await testPool.query(`UPDATE "Product" SET stock = $1 WHERE id = $2`, [baseline, productId]);
+    await testPool.query(`DELETE FROM "Product" WHERE id = $1`, [productId]);
   });
 
   it("Purchase +30, conso -5, vente -2, perte -1, ajustement -2", async () => {

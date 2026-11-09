@@ -10,6 +10,7 @@ import { ensurePreviewWidget, openWidgetSession } from "@/lib/db/assistant-sessi
 import { getPublicAvailabilitySlots } from "@/lib/db/public-booking";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
 import { ensureSecondOrg, getSeedOrgId, testId, testPool } from "../helpers/db";
+import { upcomingMondays } from "../helpers/open-days";
 
 const run = process.env.DATABASE_URL ? describe : describe.skip;
 
@@ -54,7 +55,7 @@ run("Référence et téléphone pour un rendez-vous existant", () => {
       ip: "203.0.113.92",
     });
     otherToken = other.token;
-    for (const candidate of ["2026-12-07", "2026-12-14", "2026-12-21"]) {
+    for (const candidate of upcomingMondays(4)) {
       const slots = await getPublicAvailabilitySlots(orgId, { serviceId: "s2", date: candidate });
       const open = slots.filter((slot) => slot.available).map((slot) => slot.time);
       if (open.length >= 2) {

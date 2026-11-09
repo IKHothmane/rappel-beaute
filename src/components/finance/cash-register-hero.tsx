@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
-  ArrowLeftRight,
   ArrowUpRight,
   CalendarDays,
   Coins,
@@ -28,7 +27,7 @@ type Props = {
   onRefund: () => void;
   onClose: () => void;
   onOpen: () => void;
-  onSelectKpi?: (kpi: "in" | "out" | "refunds" | "movements") => void;
+  onSelectKpi?: (kpi: "in" | "out" | "movements") => void;
   float?: string;
   onFloatChange?: (value: string) => void;
   submitting?: boolean;
@@ -40,7 +39,6 @@ type Props = {
   theoretical?: number;
   /** CA encaissé du jour (toutes méthodes) */
   paymentsToday?: number;
-  refunds?: number;
   movements?: number;
   counted?: string;
   onCountedChange?: (value: string) => void;
@@ -71,7 +69,6 @@ export function CashRegisterHero({
   cashOut = 0,
   theoretical = 0,
   paymentsToday = 0,
-  refunds = 0,
   movements = 0,
   counted = "",
   onCountedChange,
@@ -154,7 +151,7 @@ export function CashRegisterHero({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 rb-metric-row">
+          <div className="grid gap-2.5 rb-metric-row rb-metric-row-wrap">
             <MiniKpi
               icon={<Coins size={14} className="text-[#981C52]" />}
               label="Encaissements"
@@ -168,13 +165,6 @@ export function CashRegisterHero({
               value={formatMad(cashOut)}
               hint="Décaissements"
               onClick={onSelectKpi ? () => onSelectKpi("out") : undefined}
-            />
-            <MiniKpi
-              icon={<ArrowLeftRight size={14} className="text-[#981C52]" />}
-              label="Remboursements"
-              value={formatMad(refunds)}
-              hint="Tiroir"
-              onClick={onSelectKpi ? () => onSelectKpi("refunds") : undefined}
             />
             <MiniKpi
               icon={<Layers size={14} className="text-[#981C52]" />}

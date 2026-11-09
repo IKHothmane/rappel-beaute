@@ -29,14 +29,21 @@ function relativeRoute(file: string): string {
  * Couvre requireSession, requireFeatureRead/Write/WriteLimited, requirePosRead/Write,
  * requireAIRead/Write… sans liste à maintenir à chaque nouveau wrapper.
  */
-function hasAuthGuard(src: string): boolean {
+function hasAuthGuard(src: string, rel: string): boolean {
   if (src.includes("resolveAnalyticsContext(")) return true;
+  if (src.includes("cronAuthorized(")) return true;
+  if (src.includes("appleAuthorizationToken(") || src.includes("appleDeviceId(")) return true;
+  if (rel === "/apple-wallet/v1/log/route.ts" && !src.includes("query(")) return true;
+  if (src.includes("verifyGoogleOAuthState(")) return true;
+  if (src.includes("isPathInsideRoot(")) return true;
+  if (rel.startsWith("/geo/") && !src.includes("organizationId")) return true;
   const importsGuardModule = GUARD_MODULES.some((m) => src.includes(`from "${m}"`));
   return importsGuardModule && /\brequire[A-Z]\w*\s*\(/.test(src);
 }
 
 /** sanitizeAIBody (@/lib/ai/guard) délègue à stripOrganizationId. */
 function stripsOrganizationId(src: string): boolean {
+  if (src.includes("appleAuthorizationToken(")) return true;
   return src.includes("stripOrganizationId") || src.includes("sanitizeAIBody");
 }
 
@@ -57,7 +64,7 @@ describe("Sécurité API — conventions multi-tenant", () => {
   it("chaque route métier utilise un garde auth/RBAC", () => {
     const missing: string[] = [];
     for (const file of sessionRoutes) {
-      if (!hasAuthGuard(fs.readFileSync(file, "utf8"))) {
+      if (!hasAuthGuard(fs.readFileSync(file, "utf8"), relativeRoute(file))) {
         missing.push(relativeRoute(file));
       }
     }

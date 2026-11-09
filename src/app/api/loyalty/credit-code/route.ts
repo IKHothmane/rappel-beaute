@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireFeatureWrite } from "@/lib/auth/api-guard";
+import { requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import {
   creditVisitByCardCode,
   creditVisitWithInstituteCode,
@@ -47,13 +47,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "loyalty");
   if (!auth.ok) return auth.response;
-  const body = (await request.json().catch(() => null)) as {
+  const raw = await request.json().catch(() => null);
+  if (!raw || typeof raw !== "object") {
+    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  }
+  const body = stripOrganizationId(raw as Record<string, unknown>) as {
     action?: string;
     token?: string;
     code?: string;
     serviceId?: string;
-  } | null;
-  if (!body) return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  };
 
   try {
     if (body.action === "issue") {

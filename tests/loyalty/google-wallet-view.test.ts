@@ -64,7 +64,7 @@ describe("aperçu Google Wallet", () => {
     expect(updated.header.defaultValue.value).toBe("2 / 10");
     expect(updated.heroImage?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-hero.png");
     expect(updated.wideLogo).toBeNull();
-    expect(updated.logo?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/fond-bordeaux-logo.png");
+    expect(updated.logo?.sourceUri.uri).toBe("https://rappelbeauty.com/loyalty/brand-logo.png");
     expect(updated.barcode).toEqual(barcode);
   });
 

@@ -4,10 +4,16 @@
  * quel que soit le fuseau du serveur (UTC chez la plupart des hébergeurs) ou du
  * navigateur.
  *
- * Le décalage n'est jamais codé en dur : le Maroc est à UTC+1 mais repasse à
- * UTC+0 pendant le Ramadan, donc il est toujours résolu via la base IANA.
+ * Le décalage n'est jamais une constante : il suit Africa/Casablanca (UTC+1,
+ * UTC+0 pendant le Ramadan, puis GMT en permanence à partir du 20 septembre
+ * 2026 à 02:00). Si l'ICU du runtime est antérieur à ce décret, le décalage
+ * d'après cette date est recalculé pour rester aligné sur la base IANA.
  */
 export const BUSINESS_TZ = process.env.TIMEZONE?.trim() || "Africa/Casablanca";
+
+/** 20 septembre 2026, 02:00 heure alors encore à UTC+1 : premier instant en GMT. */
+const MOROCCO_GMT_RETURN_MS = Date.parse("2026-09-20T01:00:00.000Z");
+const MOROCCO_ZONES = new Set(["Africa/Casablanca", "Africa/El_Aaiun"]);
 
 const PARTS_FORMAT = new Intl.DateTimeFormat("en-US", {
   timeZone: BUSINESS_TZ,
@@ -41,12 +47,42 @@ export type BusinessParts = BusinessDate & {
   weekday: number;
 };
 
+let moroccoTzdataIsStale: boolean | null = null;
+
+/**
+ * Les Node publiés avant tzdata 2026b affichent encore UTC+1 après le
+ * 20 septembre 2026. On le détecte sur un instant connu, sans figer le décalage
+ * des autres dates (Ramadan compris).
+ */
+function moroccoTzdataMissesGmtReturn(): boolean {
+  if (!MOROCCO_ZONES.has(BUSINESS_TZ)) return false;
+  if (moroccoTzdataIsStale !== null) return moroccoTzdataIsStale;
+  const probe = PARTS_FORMAT.formatToParts(new Date("2026-10-14T12:00:00.000Z"));
+  const hour = Number(probe.find((part) => part.type === "hour")?.value ?? "0") % 24;
+  moroccoTzdataIsStale = hour === 13;
+  return moroccoTzdataIsStale;
+}
+
+function shiftWallBackOneHour(parts: BusinessParts): BusinessParts {
+  const utc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second) - 3_600_000;
+  const shifted = new Date(utc);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
+    second: shifted.getUTCSeconds(),
+    weekday: shifted.getUTCDay(),
+  };
+}
+
 /** Décompose un instant en heure murale marocaine. */
 export function businessParts(instant: Date): BusinessParts {
   const parts = PARTS_FORMAT.formatToParts(instant);
   const pick = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((p) => p.type === type)?.value ?? "0";
-  return {
+  const wall: BusinessParts = {
     year: Number(pick("year")),
     month: Number(pick("month")),
     day: Number(pick("day")),
@@ -56,6 +92,10 @@ export function businessParts(instant: Date): BusinessParts {
     second: Number(pick("second")),
     weekday: WEEKDAY_INDEX[pick("weekday")] ?? 0,
   };
+  if (instant.getTime() >= MOROCCO_GMT_RETURN_MS && moroccoTzdataMissesGmtReturn()) {
+    return shiftWallBackOneHour(wall);
+  }
+  return wall;
 }
 
 /**
@@ -129,16 +169,14 @@ export function endOfBusinessDay(instant: Date): Date {
 
 /** « 14:30 » en heure marocaine. */
 export function formatBusinessTime(instant: Date): string {
-  return instant.toLocaleTimeString("fr-FR", {
-    timeZone: BUSINESS_TZ,
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const parts = businessParts(instant);
+  return `${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}`;
 }
 
 /** « 14/10/2026 » en heure marocaine. */
 export function formatBusinessDate(instant: Date): string {
-  return instant.toLocaleDateString("fr-FR", { timeZone: BUSINESS_TZ });
+  const parts = businessParts(instant);
+  return `${String(parts.day).padStart(2, "0")}/${String(parts.month).padStart(2, "0")}/${parts.year}`;
 }
 
 /** « YYYY-MM-DD » du jour calendaire marocain. */

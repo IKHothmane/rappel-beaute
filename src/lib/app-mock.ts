@@ -6,7 +6,7 @@ export const CURRENT_USER = {
   id: "u_owner",
   firstName: "Nadia",
   lastName: "Bennani",
-  email: "nadia@institutroyal.ma",
+  email: "app@beauty.ma",
   phone: "+212 6 61 00 11 22",
   role: "OWNER" as const,
   orgName: "Institut Royal",

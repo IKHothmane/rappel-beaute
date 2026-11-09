@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireFeatureWrite } from "@/lib/auth/api-guard";
+import { requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { getAppointmentById } from "@/lib/db/appointments";
 import { consumeProductsForAppointment } from "@/lib/db/inventory";
 import { consoFromNotes } from "@/components/agenda/service-notes";
@@ -19,7 +19,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Rendez-vous introuvable." }, { status: 404 });
     }
 
-    const body = (await request.json().catch(() => ({}))) as {
+    const body = stripOrganizationId(
+      (await request.json().catch(() => ({}))) as Record<string, unknown>,
+    ) as {
       products?: { productId: string; quantity: number }[];
     };
 

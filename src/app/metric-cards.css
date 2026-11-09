@@ -75,3 +75,12 @@ button.rb-metric-card { cursor: pointer; }
 .rb-metric-card:focus-visible { outline: 3px solid #df0862; outline-offset: 3px; }
 @media (hover: hover) { .rb-metric-card:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgb(255 255 255 / 95%), 0 12px 28px rgb(110 25 65 / 12%); } }
 @media (prefers-reduced-motion: reduce) { .rb-metric-card { transition: none; } }
+
+/* Caisse: keep every KPI visible, including in the narrower hero column. */
+.rb-metric-row.rb-metric-row-wrap {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)) !important;
+  grid-template-rows: none !important;
+  grid-auto-flow: row !important;
+  grid-auto-columns: auto !important;
+  overflow-x: visible;
+}

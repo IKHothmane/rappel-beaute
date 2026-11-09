@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const OWNER = { email: "nadia@institutroyal.ma", password: "demo1234" };
+const OWNER = { email: "app@beauty.ma", password: "demo1234" };
 const PLATFORM = { email: "admin@rappelbeaute.ma", password: "demo1234" };
 
 test.describe("Parcours commercial — seed Institut Royal", () => {

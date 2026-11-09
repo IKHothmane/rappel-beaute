@@ -162,9 +162,9 @@ export function BookingPageView({
   useEffect(() => {
     if (!serviceId || !date) return;
     const from = date.slice(0, 8) + "01";
-    const d = new Date(`${date}T12:00:00+01:00`);
-    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    const to = last.toISOString().slice(0, 10);
+    const [year, month] = date.split("-").map(Number);
+    const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const to = `${date.slice(0, 8)}${String(last).padStart(2, "0")}`;
     getPublicAvailableDates(slug, {
       serviceId,
       from,

@@ -1,4 +1,4 @@
-import { ANALYTICS_TIMEZONE } from "@/lib/analytics/kpi-definitions";
+import { businessDateTime, businessParts, endOfBusinessDay } from "@/lib/time/business-timezone";
 
 export type AnalyticsPeriodPreset =
   | "today"
@@ -16,17 +16,18 @@ export type AnalyticsPeriod = {
   preset?: AnalyticsPeriodPreset;
 };
 
-/** Bornes inclusives en fuseau Casablanca (+01:00, pas de DST) */
+/** Bornes inclusives du jour civil à Casablanca (IANA, y compris le retour à GMT). */
 export function dateToCasablancaStart(isoDate: string): Date {
-  return new Date(`${isoDate}T00:00:00+01:00`);
+  return businessDateTime(isoDate, "00:00");
 }
 
 export function dateToCasablancaEnd(isoDate: string): Date {
-  return new Date(`${isoDate}T23:59:59.999+01:00`);
+  return endOfBusinessDay(businessDateTime(isoDate, "12:00"));
 }
 
 export function formatDateCasablanca(d: Date): string {
-  return d.toLocaleDateString("en-CA", { timeZone: ANALYTICS_TIMEZONE });
+  const parts = businessParts(d);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
 }
 
 export function resolvePreset(preset: AnalyticsPeriodPreset, ref = new Date()): AnalyticsPeriod {
@@ -44,18 +45,17 @@ export function resolvePreset(preset: AnalyticsPeriodPreset, ref = new Date()): 
   }
 
   if (preset === "week") {
-    const day = ref.toLocaleDateString("en-US", { weekday: "short", timeZone: ANALYTICS_TIMEZONE });
-    const dowMap: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
-    const offset = dowMap[day.slice(0, 3)] ?? 0;
-    const monday = new Date(todayStart);
-    monday.setDate(monday.getDate() - offset);
-    const sunday = new Date(monday);
-    sunday.setDate(sunday.getDate() + 6);
+    const parts = businessParts(ref);
+    const offset = (parts.weekday + 6) % 7;
+    const monday = new Date(Date.UTC(parts.year, parts.month - 1, parts.day - offset));
+    const sunday = new Date(Date.UTC(parts.year, parts.month - 1, parts.day - offset + 6));
+    const from = monday.toISOString().slice(0, 10);
+    const to = sunday.toISOString().slice(0, 10);
     return {
-      from: formatDateCasablanca(monday),
-      to: formatDateCasablanca(sunday),
-      startAt: monday,
-      endAt: dateToCasablancaEnd(formatDateCasablanca(sunday)),
+      from,
+      to,
+      startAt: dateToCasablancaStart(from),
+      endAt: dateToCasablancaEnd(to),
       preset,
     };
   }

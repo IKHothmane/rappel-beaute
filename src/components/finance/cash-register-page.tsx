@@ -405,7 +405,6 @@ export function CashRegisterPageView() {
           cashOut={session?.cashOut ?? 0}
           theoretical={theoretical}
           paymentsToday={session?.paymentsToday.total ?? 0}
-          refunds={refunds}
           movements={ops}
           counted={counted}
           onCountedChange={setCounted}
@@ -414,7 +413,6 @@ export function CashRegisterPageView() {
           onSelectKpi={(kpi) => {
             if (kpi === "in" || kpi === "movements") setTab("overview");
             else if (kpi === "out") setTab("out");
-            else setTab("refunds");
           }}
           onPayment={() => void openPayDrawer()}
           onWithdrawal={() => void openOut("out")}

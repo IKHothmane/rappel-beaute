@@ -148,7 +148,7 @@ https://app-staging.rappelbeaute.ma/login/?__host=admin
 Checklist avant production :
 
 - [ ] `GET /api/health/` → 200
-- [ ] Login OWNER seed : `nadia@institutroyal.ma` / `demo1234`
+- [ ] Login OWNER seed : `app@beauty.ma` / `demo1234`
 - [ ] Login Super Admin : `admin@rappelbeaute.ma` / `demo1234`
 - [ ] Booking public : `/book/institut-royal/?__host=app`
 - [ ] `npm run test:e2e` avec `PLAYWRIGHT_BASE_URL=https://app-staging.rappelbeaute.ma`

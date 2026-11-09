@@ -73,12 +73,23 @@ async function main() {
   await seedOrgSubscription(orgId);
 
   const users = [
-    ["u_owner", "nadia@institutroyal.ma", "Nadia", "Bennani", "+212 6 61 00 11 22", "OWNER"],
+    ["u_owner", "app@beauty.ma", "Nadia", "Bennani", "+212 6 61 00 11 22", "OWNER"],
     ["u_manager", "manager@institutroyal.ma", "Karim", "Alaoui", "+212 6 61 00 11 23", "MANAGER"],
     ["u_staff", "sara@institutroyal.ma", "Sara", "Bennani", "+212 6 61 00 11 24", "STAFF"],
     ["u_cashier", "caisse@institutroyal.ma", "Fatima", "Tazi", "+212 6 61 00 11 25", "CASHIER"],
     ["u_accountant", "compta@institutroyal.ma", "Youssef", "Idrissi", "+212 6 61 00 11 26", "ACCOUNTANT"],
   ] as const;
+
+  await pool.query(
+    `UPDATE "User" u
+     SET email = 'app@beauty.ma', "updatedAt" = NOW()
+     WHERE u.id = 'u_owner'
+       AND u.email = 'nadia@institutroyal.ma'
+       AND NOT EXISTS (
+         SELECT 1 FROM "User" o
+         WHERE o."organizationId" = u."organizationId" AND o.email = 'app@beauty.ma'
+       )`,
+  );
 
   for (const [id, email, firstName, lastName, phone, role] of users) {
     await pool.query(

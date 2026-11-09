@@ -78,7 +78,7 @@ const EXPECTED: Record<AppFeature, Record<AppRole, Level>> = {
   loyalty: {
     OWNER: "write",
     MANAGER: "write",
-    STAFF: "read",
+    STAFF: "limited",
     CASHIER: "limited",
     ACCOUNTANT: "read",
   },

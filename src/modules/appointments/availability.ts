@@ -332,6 +332,11 @@ export function isStaffAvailableOnDate(
     if (overlaps(dayStart, dayEnd, lStart, lEnd)) return false;
   }
 
+  const replaced = (staff.replacementsAsAbsent ?? []).some((rep) =>
+    overlaps(dayStart, dayEnd, parseDate(rep.startAt), parseDate(rep.endAt)),
+  );
+  if (replaced) return false;
+
   return true;
 }
 

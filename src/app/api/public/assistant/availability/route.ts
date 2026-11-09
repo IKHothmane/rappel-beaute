@@ -7,6 +7,13 @@ import { RATE_POLICIES } from "@/lib/rate-limit";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+function isCalendarDate(date: string): boolean {
+  if (!DATE_RE.test(date)) return false;
+  const [year, month, day] = date.split("-").map(Number);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  return utc.getUTCFullYear() === year && utc.getUTCMonth() === month - 1 && utc.getUTCDate() === day;
+}
+
 export async function GET(request: NextRequest) {
   const session = await requireWidgetOrganization(request, {
     key: "assistant:availability",
@@ -18,7 +25,7 @@ export async function GET(request: NextRequest) {
   const date = request.nextUrl.searchParams.get("date")?.trim() ?? "";
   const reference = request.nextUrl.searchParams.get("reference")?.trim() ?? "";
   const phone = request.nextUrl.searchParams.get("phone")?.trim() ?? "";
-  if (!DATE_RE.test(date) || Number.isNaN(Date.parse(`${date}T12:00:00+01:00`))) {
+  if (!isCalendarDate(date)) {
     return NextResponse.json({ error: "date requise (AAAA-MM-JJ)." }, { status: 400 });
   }
 

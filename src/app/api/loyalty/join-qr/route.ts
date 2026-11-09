@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireFeatureRead, requireFeatureWrite } from "@/lib/auth/api-guard";
+import { requireFeatureRead, requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { ensureJoinQr, regenerateJoinQr, revokeJoinQr } from "@/lib/loyalty/join-qr";
 
 export async function GET(request: NextRequest) {
@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "loyalty");
   if (!auth.ok) return auth.response;
-  const body = (await request.json().catch(() => ({}))) as { action?: string };
+  const body = stripOrganizationId(
+    (await request.json().catch(() => ({}))) as Record<string, unknown>,
+  ) as { action?: string };
   if (body.action === "revoke") {
     await revokeJoinQr(auth.session.organizationId);
     return NextResponse.json({ qr: null });

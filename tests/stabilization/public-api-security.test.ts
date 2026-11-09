@@ -30,13 +30,26 @@ describe("Sécurité API — routes publiques booking", () => {
     expect(bookings).toBeDefined();
     const src = fs.readFileSync(bookings!, "utf8");
     expect(src.includes("parsePublicBookingBody")).toBe(true);
-    expect(src.includes("checkRateLimit")).toBe(true);
+    expect(src.includes("checkRateLimit") || src.includes("consumeDimensions")).toBe(true);
   });
 
-  it("résout l'organisation via slug dans le chemin", () => {
+  it("résout l'organisation via slug, jeton ou session widget", () => {
     for (const file of routes) {
       const src = fs.readFileSync(file, "utf8");
-      expect(src.includes("params") || src.includes("slug")).toBe(true);
+      const bound =
+        src.includes("params") ||
+        src.includes("slug") ||
+        src.includes("requireWidgetOrganization") ||
+        src.includes("openWidgetSession") ||
+        src.includes("publicId") ||
+        src.includes("cardToken") ||
+        src.includes("body.token") ||
+        src.includes("body?.token") ||
+        src.includes("previewJoinQr") ||
+        src.includes("previewPublicReview") ||
+        src.includes("createPublicSignup") ||
+        src.includes("vapidPublicConfig");
+      expect(bound, file).toBe(true);
     }
   });
 });

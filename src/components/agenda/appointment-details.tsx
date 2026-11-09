@@ -83,8 +83,6 @@ export function AppointmentDetails({
     appointment.status !== "COMPLETED" &&
     appointment.status !== "CANCELLED" &&
     appointment.status !== "NO_SHOW";
-  const depositState = appointment.depositState ?? "NOT_REQUIRED";
-  const awaitingDeposit = depositState === "AWAITING";
   const color = staffColor(appointment.staffId, palette);
   const mins = durationMin(appointment.startAt, appointment.endAt);
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
@@ -336,7 +334,6 @@ export function AppointmentDetails({
         ) : transitions.includes("CONFIRMED") ? (
           <button
             type="button"
-            disabled={awaitingDeposit}
             onClick={() => onStatusChange("CONFIRMED")}
             className="flex items-center justify-center gap-1 rounded-lg bg-[#FBF4F6] py-2.5 text-sm font-semibold text-primary disabled:opacity-50"
           >

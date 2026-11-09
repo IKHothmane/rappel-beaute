@@ -14,8 +14,8 @@ const shots = {
   "/fidelite/": ["screen-fidelite"],
   "/gestion-stock/": ["screen-stock"],
   "/reservation-en-ligne/": ["reservation-en-ligne"],
-  "/": ["screen-agenda", "799"],
-  "/tarifs/": ["799", "7 990", "7990"],
+  "/": ["screen-agenda", "599"],
+  "/tarifs/": ["599", "5 990", "5990"],
 };
 
 let failed = 0;
@@ -44,9 +44,9 @@ console.log("robots blocks connexion", robots.includes("Disallow: /connexion/"))
 
 const home = await (await fetch(`${origin}/`)).text();
 const ld = home.includes('"@type":"SoftwareApplication"') || home.includes('"@type": "SoftwareApplication"');
-const price799 = home.includes('"price":"799"') || home.includes('"price": "799"');
-const price7990 = home.includes('"price":"7990"') || home.includes('"price": "7990"');
-console.log("jsonld software", ld, "price799", price799, "price7990", price7990);
+const price599 = home.includes('"price":"599"') || home.includes('"price": "599"');
+const price5990 = home.includes('"price":"5990"') || home.includes('"price": "5990"');
+console.log("jsonld software", ld, "price599", price599, "price5990", price5990);
 
 for (const path of ["/login/", "/connexion/", "/carte/exemple/", "/dashboard/"]) {
   const res = await fetch(`${origin}${path}`, { redirect: "manual" });

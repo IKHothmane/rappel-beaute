@@ -80,25 +80,24 @@ export default function FidelitePage() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/professionnel/"
-                className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
               >
-                Essayer gratuitement 7 jours
+                Essayer gratuitement 15 jours
               </Link>
               <Link
                 href="/fonctionnalites/"
-                className="inline-flex items-center justify-center rounded-full border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
+                className="inline-flex items-center justify-center rounded-lg border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
               >
                 Voir toutes les fonctionnalités
               </Link>
             </div>
             <p className="mt-4 text-xs text-ink/55 sm:text-sm">
-              Sans engagement · 7 jours gratuits · Sans carte bancaire
+              Sans engagement · 15 jours gratuits · Sans carte bancaire
             </p>
           </Reveal>
         </div>
       </section>
-
-      <ProductShot src="/marketing/screen-fidelite.png" alt="Carte de fidélité Rappel Beauty" width={1536} height={1024} />
+      <ProductShot view="fidelite" />
 
       <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
         {SECTIONS.map((section, index) => (
@@ -162,16 +161,16 @@ export default function FidelitePage() {
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">
-            Essayez Rappel Beauty pendant 7 jours
+            Essayez Rappel Beauty pendant 15 jours
           </h2>
           <p className="mt-4 text-sm text-white/75 sm:text-base">
             Sans engagement et sans carte bancaire.
           </p>
           <Link
             href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
           >
-            Essayer gratuitement 7 jours
+            Essayer gratuitement 15 jours
           </Link>
         </div>
       </section>

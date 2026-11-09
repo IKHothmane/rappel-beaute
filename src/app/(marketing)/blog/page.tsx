@@ -15,8 +15,8 @@ export default function BlogPage() {
     <>
       <PageHero
         eyebrow="Blog"
-        title="Les articles arriveront avec le lancement."
-        text="Placeholder V1. Guides métier, cas d’instituts et notes produit seront publiés ici."
+        title="Les articles arrivent bientôt."
+        text="Guides métier, cas d’instituts et nouveautés seront publiés ici."
       />
       <div className="container-rb py-16">
         <p className="max-w-xl text-sm text-ink/60">

@@ -68,7 +68,7 @@ export function ProfessionnelForm() {
             Votre compte est prêt
           </p>
           <p className="mt-1 text-sm leading-relaxed text-ink/60">
-            Votre essai de 7 jours est actif. Connectez-vous avec votre numéro WhatsApp et ce mot de passe temporaire, à modifier à la première connexion.
+            Votre essai de 15 jours est actif. Connectez-vous avec votre numéro WhatsApp et ce mot de passe temporaire, à modifier à la première connexion.
           </p>
           <dl className="mt-4 space-y-3 rounded-xl border border-line bg-white p-4 text-sm">
             <div><dt className="text-ink/55">Numéro WhatsApp</dt><dd className="mt-1 select-text font-semibold text-ink">{credentials.identifier}</dd></div>

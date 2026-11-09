@@ -42,21 +42,17 @@ export function appEnvironment(): string {
 export const APP_LOGIN_HREF = "/connexion/";
 
 /** URL de connexion — e-mails transactionnels (préremplissage optionnel). */
-export function absoluteAppLoginUrl(opts?: {
-  email?: string;
-  password?: string;
-}): string {
+export function absoluteAppLoginUrl(opts?: { email?: string }): string {
   const base = publicAppOrigin();
   const url = new URL(`${base || "http://localhost:3000"}/connexion/`);
   if (opts?.email?.trim()) url.searchParams.set("email", opts.email.trim().toLowerCase());
-  if (opts?.password) url.searchParams.set("password", opts.password);
   if (!base) return `${url.pathname}${url.search}`;
   return url.toString();
 }
 
 /**
  * Architecture marketing figée — 12 pages.
- * Formule publique unique : 799 DH / mois, ou 7 990 DH / an. Essai 7 jours.
+ * Formule publique unique : 599 DH / mois, ou 5 990 DH / an. Essai 15 jours.
  */
 export const MARKETING_PAGES = [
   { path: "/", group: "nav" },
@@ -134,21 +130,21 @@ export const FEATURES = [
 ] as const;
 
 /** Formule affichée sur la vitrine et dans le SEO. Une seule source. */
-const MONTHLY_PRICE = 799;
-const ANNUAL_PRICE = 7990;
+const MONTHLY_PRICE = 599;
+const ANNUAL_PRICE = 5990;
 
 export const PUBLIC_OFFER = {
   name: "Rappel Beauty",
   monthlyPrice: MONTHLY_PRICE,
   annualPrice: ANNUAL_PRICE,
-  /** 799 × 12 − 7 990 = 1 598 DH */
+  /** 599 × 12 − 5 990 = 1 198 DH */
   annualSavings: MONTHLY_PRICE * 12 - ANNUAL_PRICE,
   /** Alias historique : même valeur que monthlyPrice. */
   price: MONTHLY_PRICE,
   /** Alias historique : même valeur que annualPrice. */
   yearlyPrice: ANNUAL_PRICE,
   currency: "MAD" as const,
-  trialDays: 7,
+  trialDays: 15,
   noCard: true,
   noCommitment: true,
 } as const;
@@ -194,7 +190,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: "Faut-il une carte bancaire pour essayer ?",
-    a: "Non. L'essai gratuit de 7 jours ne nécessite pas de carte bancaire.",
+    a: "Non. L'essai gratuit de 15 jours ne nécessite pas de carte bancaire.",
   },
   {
     q: "Y a-t-il un engagement ?",

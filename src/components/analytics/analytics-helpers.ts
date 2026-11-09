@@ -213,52 +213,6 @@ export function buildHealthScore(opts: {
   return { score, label, pillars };
 }
 
-export type RetentionStep = {
-  step: number;
-  title: string;
-  subtitle: string;
-  percent: number;
-  vip?: boolean;
-};
-
-export function retentionFunnel(customers: CustomerAnalytics | null): RetentionStep[] {
-  if (!customers || customers.kpis.total <= 0) return [];
-  const total = customers.kpis.total;
-  const activePct = Math.round((customers.kpis.active / total) * 100);
-  const retPct =
-    customers.retention.retentionRate != null
-      ? Math.round(customers.retention.retentionRate)
-      : Math.round((customers.retention.returning / total) * 100);
-  const vipPct = Math.round((customers.kpis.vip / total) * 100);
-  return [
-    {
-      step: 1,
-      title: "1ère Visite Découverte",
-      subtitle: `${customers.kpis.total.toLocaleString("fr-MA")} clientes enregistrées`,
-      percent: 100,
-    },
-    {
-      step: 2,
-      title: "Clientes Actives (90 j)",
-      subtitle: `${customers.kpis.active.toLocaleString("fr-MA")} actives`,
-      percent: activePct,
-    },
-    {
-      step: 3,
-      title: "Rétention / Récurrentes",
-      subtitle: `${customers.retention.returning.toLocaleString("fr-MA")} clientes revenues`,
-      percent: Math.min(100, retPct),
-    },
-    {
-      step: 4,
-      title: "Segment VIP",
-      subtitle: `${customers.kpis.vip.toLocaleString("fr-MA")} VIP`,
-      percent: Math.min(100, vipPct),
-      vip: true,
-    },
-  ];
-}
-
 export type AnalyticsInsight = {
   greeting: string;
   performance: string;
@@ -471,7 +425,6 @@ export type AnalyticsViewModel = {
   payments: PaymentMethodBreakdown[];
   insight: AnalyticsInsight;
   health: HealthScore;
-  funnel: RetentionStep[];
   weekly: WeeklyBar[];
   pnl: PnlExpress;
   presence: number | null;

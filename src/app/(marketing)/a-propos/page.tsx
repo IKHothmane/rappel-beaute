@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Reveal } from "@/components/www/Reveal";
 import { marketingPageMetadata } from "@/lib/seo";
-import { formatPrice, PUBLIC_OFFER, SITE } from "@/lib/site";
+import { SITE } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -13,326 +12,123 @@ export const metadata: Metadata = marketingPageMetadata({
   canonical: "/a-propos/",
 });
 
-const IMG_ATELIER =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuBMz86RbBst2uEKW0W6aJCA_J2kvT2tULe700qf0jqyT28soEeagVbEjtrA1w9rWDFCZBkBIc5VV5yHpZvLcIlikKPb5BW58fLp-Q0KwvF6ZMXJvd7kHEIHusLemKkjgT1Nn4czy-KMk7vyjeZ3hTeZcq-1Ubqun9W0JQwmFgWLnmuOaKz4lQEEngJAoyN8g-PNv4T5vvbt1FVXSBFGXDJkLKMKn7W056yAclfaa6q-uWzEyS1pihUsuA";
-
 const WA_HREF = `https://wa.me/${SITE.phoneInternational.replace(/\D/g, "")}`;
 
-const METRICS = [
+const STORY = [
   {
-    value: "Maroc",
-    label: "Logiciel de gestion pour les instituts de beauté",
-    tone: "text-ink",
+    title: "Du cahier au logiciel",
+    paragraphs: [
+      "Trop de gérantes d'instituts au Maroc tiennent encore l'agenda sur des cahiers volants, recalculent leur caisse le soir à la calculette et relancent leurs clientes depuis leur numéro WhatsApp personnel.",
+      "Rappel Beauty réunit ces gestes dans un seul logiciel, avec une caisse en dirhams, utilisable au quotidien dans l'institut.",
+    ],
   },
   {
-    value: "MAD",
-    label: "Caisse, prix et encaissements en dirhams",
-    tone: "text-ink",
+    title: "Une journée lisible",
+    paragraphs: [
+      "La gérante voit les rendez-vous en cours, l'équipe, ce qui a été encaissé et les produits dont le stock baisse.",
+      "Les fiches clientes restent textuelles, sans photo en V1. Le logiciel est conçu pour respecter la Loi 09-08 (CNDP).",
+    ],
   },
   {
-    value: "7 jours",
-    label: "Essai gratuit, sans engagement et sans carte",
-    tone: "text-primary",
-  },
-  {
-    value: "WhatsApp",
-    label: "Message préparé, envoi par l'institut",
-    tone: "text-ink",
-  },
-] as const;
-
-const PILLARS = [
-  {
-    n: "01",
-    badge: "Origine & Quotidien",
-    badgeTone: "text-gold",
-    nBg: "bg-primary-light text-primary border-primary/15",
-    title: "Histoire : Du carnet manuscrit au geste d'excellence",
-    p1: "Trop de patronnes d'instituts au Maroc tiennent encore l'agenda sur des cahiers volants, recalculent leur caisse le soir sur une calculette avec appréhension, et relancent leurs clientes tard le soir depuis leur numéro personnel WhatsApp.",
-    p2: "Rappel Beauty réunit ces gestes dans un logiciel de gestion : caisse en dirhams (MAD), utilisable au quotidien dans l'institut, conçu pour les instituts de beauté au Maroc.",
-  },
-  {
-    n: "02",
-    badge: "Clarté Opérationnelle",
-    badgeTone: "text-primary",
-    nBg: "bg-[#FBF5E9] text-gold border-gold/30",
-    title: "Mission : Rendre la journée limpide et sans friction",
-    p1: "Rendre la journée lisible pour la gérante : les rendez-vous en cours, l'équipe, ce qui a été encaissé à l'institut et les produits dont le stock baisse.",
-    p2: "Pas d'usines à gaz inutiles : zéro robot de discussion artificiel, respect absolu de la vie privée des clientes sans photos en V1, et conformité marocaine conforme aux exigences de la Loi 09-08 (CNDP).",
-  },
-  {
-    n: "03",
-    badge: "Proximité Locale",
-    badgeTone: "text-ink/55",
-    nBg: "bg-primary-light/60 text-ink border-line",
-    title: "Équipe & Engagement : Le produit d'abord, l'accompagnement toujours",
-    p1: "Le produit décrit ce que l'institut peut faire : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne. Pas de promesse de résultat chiffré.",
-    p2: "WhatsApp reste assisté. Le logiciel prépare le message, et une personne de l'institut l'envoie. Les fiches clientes restent textuelles : aucune photo en V1.",
+    title: "Pas de promesse chiffrée",
+    paragraphs: [
+      "Nous décrivons ce que l'institut peut faire : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne.",
+      "WhatsApp reste assisté. Le logiciel prépare le message et une personne de l'institut l'envoie.",
+    ],
   },
 ] as const;
 
-const VALUES = [
+const PRINCIPLES = [
   {
-    title: "Vérité Caisse en Dirhams",
-    text: "Calcul précis de la ventilation espèces, TPE bancaire et acomptes. Aucun flou en fin de mois : chaque prestation effectuée correspond à un flux comptable net et vérifiable.",
-    icon: (
-      <path
-        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.75"
-      />
-    ),
+    title: "Une caisse en dirhams",
+    text: "Espèces, carte et acomptes sont ventilés. Chaque prestation correspond à un encaissement que vous pouvez vérifier.",
   },
   {
-    title: "L'Humain avant le Robot",
-    text: "Les clientes de beauté exigent de la considération. Le logiciel formule et pré-remplit les rappels WhatsApp en un clic, mais c'est vous qui gardez le ton chaleureux propre à votre salon.",
-    icon: (
-      <path
-        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.75"
-      />
-    ),
+    title: "Le ton reste le vôtre",
+    text: "Le logiciel pré-remplit les rappels WhatsApp. Vous les relisez et gardez la façon de parler de votre institut.",
   },
   {
-    title: "Souveraineté & Respect CNDP",
-    text: "Vos fiches clientes, numéros et historiques de prestations restent strictement votre propriété exclusive. Aucune revente de données, hébergement sécurisé conforme aux lois locales.",
-    icon: (
-      <path
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.75"
-      />
-    ),
+    title: "Vos données restent les vôtres",
+    text: "Fiches, numéros et historiques appartiennent à l'institut. Aucune revente de données.",
   },
 ] as const;
 
 export default function AProposPage() {
   return (
     <>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-rose-aurora pb-20 pt-16 sm:pt-24">
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal>
-            <div className="mb-6 inline-flex items-center space-x-2 rounded-full border border-primary/20 bg-white/90 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-primary shadow-sm">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-              <span>Notre histoire &amp; notre vision Maroc</span>
-            </div>
-          </Reveal>
-
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-14">
-            <Reveal className="lg:col-span-7">
-              <h1 className="mb-6 font-display text-4xl font-semibold leading-[1.12] text-ink sm:text-5xl lg:text-6xl">
-                À propos de Rappel Beauty
-                <br />
-                <span className="font-normal italic text-primary">
-                  Pensé pour leur sérénité.
-                </span>
-              </h1>
-              <p className="mb-8 max-w-2xl text-lg font-normal leading-relaxed text-ink/55 sm:text-xl">
-                {SITE.name} est un logiciel de gestion conçu pour les instituts de beauté au
-                Maroc. Il réunit rendez-vous, clientes, équipe, stock, caisse et réservation
-                en ligne, avec une caisse en dirhams et WhatsApp en envoi assisté.
-              </p>
-              <div className="flex flex-wrap items-center gap-4">
-                <Link
-                  href="/professionnel/"
-                  className="rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-white shadow-soft transition-all hover:bg-primary-dark"
-                >
-                  Demander une démo gratuite
-                </Link>
-                <a
-                  href="#notre-histoire"
-                  className="rounded-full border border-line bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-all hover:border-primary/30 hover:bg-primary-light"
-                >
-                  Découvrir nos valeurs
-                </a>
-              </div>
-              <div className="mt-10 flex items-center space-x-4 border-t border-line/80 pt-8">
-                <div className="flex -space-x-2">
-                  {["CA", "RA", "MA"].map((c, i) => (
-                    <span
-                      key={c}
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-ink ring-2 ring-white ${
-                        i === 0 ? "bg-amber-100" : i === 1 ? "bg-rose-100" : "bg-pink-200"
-                      }`}
-                    >
-                      {c}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-xs text-ink/55">
-                  Conçu pour les instituts de beauté au{" "}
-                  <strong className="font-semibold text-ink">Maroc</strong>.
-                </p>
-              </div>
-            </Reveal>
-
-            <Reveal className="lg:col-span-5" delay={0.1} x={20}>
-              <div className="relative">
-                <div className="absolute -inset-2 rounded-[26px] bg-gradient-to-tr from-primary/20 to-gold/15 opacity-70 blur-xl" />
-                <div className="relative rounded-[26px] border border-line bg-white p-3 shadow-soft sm:p-3.5">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-[18px] sm:aspect-auto">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      alt="Ambiance d'un institut de beauté"
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-[1.02] sm:max-h-[320px]"
-                      src={IMG_ATELIER}
-                    />
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl border border-white/60 bg-white/85 p-3 shadow-sm backdrop-blur-md">
-                      <div className="flex items-center space-x-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        <span className="text-xs font-semibold text-ink">
-                          Logiciel pour l&apos;institut
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-medium text-ink/55">
-                        Instituts de beauté au Maroc
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between px-3 pb-1 pt-3 text-[11px] font-medium text-ink/55">
-                    <span>Conçu avec et pour les praticiennes</span>
-                    <span className="font-bold text-gold">Caisse en MAD</span>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
+      <section className="border-b border-ink/15 bg-paper">
+        <div className="container-rb py-14 md:py-24">
+          <h1 className="max-w-4xl font-display text-4xl font-light leading-[1.08] tracking-tight text-ink sm:text-6xl">
+            Rappel Beauty remplace le cahier, la calculette et les messages envoyés le soir.
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink/75">
+            {SITE.name} est un logiciel de gestion conçu pour les instituts de beauté au Maroc :
+            rendez-vous, clientes, équipe, stock, caisse et réservation en ligne.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/professionnel/" className="btn-primary">
+              Demander une démo gratuite
+            </Link>
+            <a href="#notre-histoire" className="btn-ghost">
+              Notre histoire
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Metrics */}
-      <section className="border-y border-line bg-white py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal>
-            <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4 md:divide-x md:divide-line/70">
-              {METRICS.map((m) => (
-                <div key={m.label} className="px-3">
-                  <p className={`mb-1 font-display text-3xl font-semibold sm:text-4xl ${m.tone}`}>
-                    {m.value}
-                  </p>
-                  <p className="text-xs font-medium text-ink/55 sm:text-sm">{m.label}</p>
-                </div>
+      <section id="notre-histoire" className="container-rb scroll-mt-24 py-16 md:py-24">
+        {STORY.map((block) => (
+          <article
+            key={block.title}
+            className="grid gap-4 border-t border-ink/15 py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16"
+          >
+            <h2 className="font-display text-3xl font-light tracking-tight text-ink">{block.title}</h2>
+            <div className="space-y-4 text-lg leading-relaxed text-ink/75">
+              {block.paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
               ))}
             </div>
-          </Reveal>
-        </div>
+          </article>
+        ))}
       </section>
 
-      {/* Pillars */}
-      <section className="relative bg-paper py-24" id="notre-histoire">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="mx-auto mb-20 max-w-2xl text-center">
-            <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-primary">
-              Notre Manifeste
-            </span>
-            <h2 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
-              Les Trois Vérités de {SITE.name}
-            </h2>
-            <div className="mx-auto mt-4 h-0.5 w-16 rounded-full bg-primary" />
-          </Reveal>
-
-          <div className="space-y-16">
-            {PILLARS.map((p, i) => (
-              <Reveal key={p.n} delay={i * 0.06}>
-                <article className="rounded-[18px] border border-line bg-white p-8 shadow-sm transition-shadow duration-300 hover:shadow-soft sm:p-12">
-                  <div className="flex flex-col gap-6 md:flex-row md:items-start">
-                    <div
-                      className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border font-display text-2xl font-semibold ${p.nBg}`}
-                    >
-                      {p.n}
-                    </div>
-                    <div>
-                      <span
-                        className={`mb-1 block text-xs font-bold uppercase tracking-wider ${p.badgeTone}`}
-                      >
-                        {p.badge}
-                      </span>
-                      <h3 className="mb-4 font-display text-2xl font-semibold text-ink sm:text-3xl">
-                        {p.title}
-                      </h3>
-                      <p className="mb-4 text-base font-normal leading-relaxed text-ink/80 sm:text-lg">
-                        {p.p1}
-                      </p>
-                      <p className="text-sm leading-relaxed text-ink/55 sm:text-base">{p.p2}</p>
-                    </div>
-                  </div>
-                </article>
-              </Reveal>
+      <section className="border-y border-ink/15 bg-white">
+        <div className="container-rb py-16 md:py-24">
+          <h2 className="font-display text-3xl font-light tracking-tight text-ink sm:text-[2.75rem]">
+            Ce qui guide le produit
+          </h2>
+          <dl className="mt-10 grid gap-10 md:grid-cols-3">
+            {PRINCIPLES.map((principle) => (
+              <div key={principle.title}>
+                <dt className="font-semibold text-ink">{principle.title}</dt>
+                <dd className="mt-2 leading-relaxed text-ink/70">{principle.text}</dd>
+              </div>
             ))}
-          </div>
+          </dl>
         </div>
       </section>
 
-      {/* Values */}
-      <section className="border-t border-line bg-white py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="mx-auto mb-16 max-w-2xl text-center">
-            <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-gold">
-              Nos Principes Inviolables
-            </span>
-            <h2 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
-              Ce qui guide le produit
-            </h2>
-          </Reveal>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            {VALUES.map((v, i) => (
-              <Reveal key={v.title} delay={i * 0.07}>
-                <div className="rounded-[18px] border border-line/90 bg-paper p-8 transition-colors duration-200 hover:border-primary/40">
-                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-white text-primary shadow-sm">
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {v.icon}
-                    </svg>
-                  </div>
-                  <h4 className="mb-3 font-display text-xl font-semibold text-ink">{v.title}</h4>
-                  <p className="text-sm leading-relaxed text-ink/55">{v.text}</p>
-                </div>
-              </Reveal>
-            ))}
+      <section id="demande-demo" className="bg-primary text-white">
+        <div className="container-rb flex flex-col gap-8 py-16 md:flex-row md:items-end md:justify-between md:py-20">
+          <h2 className="max-w-2xl font-display text-4xl font-light leading-tight tracking-tight sm:text-5xl">
+            Testez-le quinze jours dans votre institut.
+          </h2>
+          <div className="flex shrink-0 flex-wrap gap-3">
+            <Link
+              href="/professionnel/"
+              className="inline-flex items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-ink hover:bg-paper"
+            >
+              Démarrer l&apos;essai
+            </Link>
+            <a
+              href={WA_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-lg border border-white px-5 py-3 text-sm font-semibold text-white"
+            >
+              Échanger sur WhatsApp
+            </a>
           </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="relative overflow-hidden bg-institut py-20 text-white" id="demande-demo">
-        <div className="pointer-events-none absolute right-1/4 top-0 h-96 w-96 rounded-full bg-primary/25 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-1/4 h-72 w-72 rounded-full bg-gold/15 blur-2xl" />
-        <div className="relative z-10 mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
-          <Reveal>
-            <span className="mb-4 inline-block rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-gold">
-              Essai gratuit
-            </span>
-            <h2 className="mb-6 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
-              Prête à offrir à votre institut la clarté qu&apos;il mérite ?
-            </h2>
-            <p className="mx-auto mb-10 max-w-2xl text-base font-light leading-relaxed text-white/70 sm:text-lg">
-              7 jours pour tester le logiciel, sans engagement et sans carte bancaire.
-            </p>
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                href="/professionnel/"
-                className="w-full rounded-full bg-primary px-8 py-4 text-center text-sm font-bold text-white shadow-soft transition-all hover:bg-primary-dark sm:w-auto"
-              >
-                Démarrer l&apos;essai 7 jours sans carte
-              </Link>
-              <a
-                href={WA_HREF}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center space-x-2 rounded-full border border-white/20 bg-white/10 px-8 py-4 text-center text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 sm:w-auto"
-              >
-                <span>Échanger sur WhatsApp</span>
-              </a>
-            </div>
-            <p className="mt-6 text-xs text-white/45">
-              Sans engagement · {PUBLIC_OFFER.trialDays} jours gratuits · Sans carte bancaire · {PUBLIC_OFFER.monthlyPrice} DH / mois ou {formatPrice(PUBLIC_OFFER.annualPrice)} DH / an
-            </p>
-          </Reveal>
         </div>
       </section>
     </>

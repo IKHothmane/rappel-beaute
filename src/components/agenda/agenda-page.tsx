@@ -455,19 +455,27 @@ export function AgendaPage() {
   async function handleStatus(status: AppointmentStatus, id?: string) {
     const target = id ?? selectedId;
     if (!target) return;
-    await updateAppointmentStatus(target, status);
-    await refresh();
-    toast("Statut mis à jour.", "success");
+    try {
+      await updateAppointmentStatus(target, status);
+      await refresh();
+      toast("Statut mis ? jour.", "success");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Impossible de modifier le statut.", "error");
+    }
   }
 
   async function handleCancelConfirm() {
     if (!selectedId) return;
-    await updateAppointmentStatus(selectedId, "CANCELLED");
-    await refresh();
-    setConfirmCancel(false);
-    setDrawer(null);
-    setSelectedId(null);
-    toast("Rendez-vous annulé.", "info");
+    try {
+      await updateAppointmentStatus(selectedId, "CANCELLED");
+      await refresh();
+      setConfirmCancel(false);
+      setDrawer(null);
+      setSelectedId(null);
+      toast("Rendez-vous annul?.", "info");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Impossible d'annuler le rendez-vous.", "error");
+    }
   }
 
   async function moveAppointment(when: Date, hour: number, minute: number, appointmentId: string, extra?: Partial<CreateAppointmentInput>) {

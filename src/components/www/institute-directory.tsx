@@ -46,7 +46,7 @@ export function InstituteDirectory({ institutes }: { institutes: PublicInstitute
 
   return (
     <div className="border-b border-line bg-white">
-      <div className="border-b border-line bg-[#FFF8FB] px-4 py-4 sm:px-6">
+      <div className="border-b border-line bg-paper px-4 py-4 sm:px-6">
         <div className="mx-auto flex max-w-[1400px] flex-col gap-3 lg:flex-row lg:items-center">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">

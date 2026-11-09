@@ -71,7 +71,7 @@ const STEPS = [
   {
     n: "3",
     title: "Testez Rappel Beauty",
-    text: "Utilisez le logiciel pendant 7 jours, sans carte bancaire et sans engagement.",
+    text: "Utilisez le logiciel pendant 15 jours, sans carte bancaire et sans engagement.",
   },
 ] as const;
 
@@ -87,7 +87,7 @@ const FAQS = [
   },
   {
     question: "Dois-je renseigner une carte bancaire pour essayer ?",
-    answer: "Non. L'essai gratuit de 7 jours ne nécessite pas de carte bancaire.",
+    answer: "Non. L'essai gratuit de 15 jours ne nécessite pas de carte bancaire.",
   },
   {
     question: "Que comprend la formule ?",
@@ -119,14 +119,14 @@ export default function TarifsPage() {
           })),
         }}
       />
-      <section className="relative overflow-hidden border-b border-line bg-gradient-to-b from-primary-light/60 via-paper to-paper py-14 sm:py-20">
+      <section className="border-b border-ink/15 bg-paper py-14 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <Reveal className="text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
               Une formule pour les instituts de beauté au Maroc
             </p>
             <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Un seul tarif, <span className="text-primary">tout inclus</span>
+              Un seul tarif, tout inclus
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-ink/70 sm:text-base">
               Toutes les fonctionnalités, en dirhams, sans option cachée. Testez{" "}
@@ -136,7 +136,7 @@ export default function TarifsPage() {
               {TRUST.map(({ icon: Icon, label }) => (
                 <li
                   key={label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5"
                 >
                   <Icon size={14} className="text-primary" aria-hidden="true" />
                   {label}
@@ -145,7 +145,7 @@ export default function TarifsPage() {
             </ul>
           </Reveal>
           <div className="mx-auto mt-12 grid max-w-3xl gap-5 md:grid-cols-2">
-            <article className="flex h-full flex-col rounded-2xl border border-line bg-white p-6 text-left sm:p-8">
+            <article className="flex h-full flex-col rounded-lg border border-line bg-white p-6 text-left sm:p-8">
               <h2 className="font-display text-2xl font-light text-ink">Mensuel</h2>
               <p className="mt-1 text-sm text-ink/60">Réglé chaque mois</p>
               <p className="mt-5 flex items-end gap-1.5">
@@ -162,14 +162,14 @@ export default function TarifsPage() {
               </ul>
               <Link
                 href="/professionnel/"
-                className="mt-7 inline-flex items-center justify-center gap-2 rounded-full border border-primary px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary-light"
+                className="mt-7 inline-flex items-center justify-center gap-2 rounded-lg border border-primary px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary-light"
               >
                 Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
             </article>
-            <article className="relative flex h-full flex-col rounded-2xl border-2 border-primary bg-white p-6 text-left shadow-[0_24px_60px_-34px_rgba(190,24,93,0.6)] sm:p-8">
-              <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-white shadow-sm">
+            <article className="relative flex h-full flex-col rounded-lg border-2 border-primary bg-white p-6 text-left sm:p-8">
+              <span className="absolute -top-3 left-6 rounded bg-primary px-3 py-1 text-[11px] font-semibold text-white">
                 Économisez {savings} DH
               </span>
               <h2 className="font-display text-2xl font-light text-ink">Annuel</h2>
@@ -191,7 +191,7 @@ export default function TarifsPage() {
               </ul>
               <Link
                 href="/professionnel/"
-                className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+                className="mt-7 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
               >
                 Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
                 <ArrowRight size={16} aria-hidden="true" />
@@ -217,7 +217,7 @@ export default function TarifsPage() {
           </Reveal>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {GROUPS.map((group) => (
-              <div key={group.title} className="rounded-2xl border border-line bg-white p-5">
+              <div key={group.title} className="rounded-lg border border-line bg-white p-5">
                 <h3 className="font-display text-xl font-light text-ink">{group.title}</h3>
                 <ul className="mt-4 space-y-2 text-sm text-ink/70">
                   {group.items.map((item) => (
@@ -278,25 +278,25 @@ export default function TarifsPage() {
           <Reveal>
             <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">Essai gratuit</h2>
             <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Testez Rappel Beauty pendant 7 jours. Aucune carte bancaire n&apos;est demandée, et
+              Testez Rappel Beauty pendant 15 jours. Aucune carte bancaire n&apos;est demandée, et
               la formule reste sans engagement.
             </p>
             <ul className="mt-8 grid gap-3 text-left sm:grid-cols-3">
-              <li className="rounded-2xl border border-line bg-paper px-4 py-5 text-sm text-ink">
-                7 jours
+              <li className="rounded-lg border border-line bg-paper px-4 py-5 text-sm text-ink">
+                15 jours
               </li>
-              <li className="rounded-2xl border border-line bg-paper px-4 py-5 text-sm text-ink">
+              <li className="rounded-lg border border-line bg-paper px-4 py-5 text-sm text-ink">
                 Aucune carte
               </li>
-              <li className="rounded-2xl border border-line bg-paper px-4 py-5 text-sm text-ink">
+              <li className="rounded-lg border border-line bg-paper px-4 py-5 text-sm text-ink">
                 Sans engagement
               </li>
             </ul>
             <Link
               href="/professionnel/"
-              className="mt-8 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+              className="mt-8 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
             >
-              Essayer gratuitement 7 jours
+              Essayer gratuitement 15 jours
             </Link>
           </Reveal>
         </div>
@@ -325,7 +325,7 @@ export default function TarifsPage() {
 
       <SeoCloser
         problem="Le prix d'un logiciel d'institut est souvent découpé en options : l'agenda d'un côté, la caisse de l'autre, le stock en supplément."
-        solution="Rappel Beauty a une formule : le logiciel de gestion complet, en dirhams, avec un essai de 7 jours sans carte bancaire."
+        solution="Rappel Beauty a une formule : le logiciel de gestion complet, en dirhams, avec un essai de 15 jours sans carte bancaire."
         useCase="L'institut compare le mois et l'année, démarre l'essai, puis décide sans engagement une fois la journée réelle passée dans l'outil."
       />
       <section className="border-t border-line bg-paper px-4 py-14 sm:px-6 sm:py-20">
@@ -357,16 +357,16 @@ export default function TarifsPage() {
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">
-            Essayez Rappel Beauty pendant 7 jours
+            Essayez Rappel Beauty pendant 15 jours
           </h2>
           <p className="mt-4 text-sm text-white/75 sm:text-base">
             Sans engagement et sans carte bancaire.
           </p>
           <Link
             href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
           >
-            Essayer gratuitement 7 jours
+            Essayer gratuitement 15 jours
           </Link>
         </div>
       </section>

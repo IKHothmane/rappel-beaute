@@ -16,14 +16,9 @@ function LoginFormFields() {
 
   useEffect(() => {
     const fromEmail = searchParams.get("identifier")?.trim() || searchParams.get("email")?.trim() || "";
-    const fromPassword =
-      searchParams.get("password")?.trim() || searchParams.get("pin")?.trim() || "";
     if (fromEmail) setEmail(fromEmail);
-    if (fromPassword) {
-      setPassword(fromPassword);
-      setShowPassword(true);
-    }
-    if (fromEmail || fromPassword) {
+    // Un secret n'est jamais lu depuis l'URL : on efface seulement ceux d'anciens liens.
+    if (searchParams.has("password") || searchParams.has("pin")) {
       const url = new URL(window.location.href);
       url.searchParams.delete("password");
       url.searchParams.delete("pin");

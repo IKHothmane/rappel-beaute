@@ -12,9 +12,8 @@ export const metadata: Metadata = {
 
 const LINKS = [
   { href: "/faq/", title: "FAQ", text: "Essai, WhatsApp, photos, plans, connexion." },
-  { href: "/fonctionnalites/", title: "Fonctionnalités", text: "Les 6 modules, avec ancres." },
+  { href: "/fonctionnalites/", title: "Fonctionnalités", text: "Tout ce que le logiciel fait pour votre institut." },
   { href: "/whatsapp/", title: "WhatsApp", text: "Le message part depuis le numéro de l’institut." },
-  { href: "/blog/", title: "Blog", text: "Articles à venir — placeholder V1." },
   { href: "/contact/", title: "Contact", text: "Une question hors formulaire d’essai." },
 ];
 
@@ -23,8 +22,8 @@ export default function RessourcesPage() {
     <>
       <PageHero
         eyebrow="Ressources"
-        title="Le centre d’aide viendra. Les pages utiles sont déjà là."
-        text="Blog et documentation API : placeholders V1. En attendant, FAQ et pages métier."
+        title="Les réponses à vos questions, au même endroit."
+        text="FAQ, fonctionnalités, WhatsApp : retrouvez ici l’essentiel pour bien démarrer."
       />
       <div className="container-rb grid gap-4 py-16 sm:grid-cols-2">
         {LINKS.map((l) => (

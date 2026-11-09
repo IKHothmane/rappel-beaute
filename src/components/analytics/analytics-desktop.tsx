@@ -15,6 +15,8 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import { AffluenceCard } from "@/components/analytics/affluence-card";
+import { PnlCard } from "@/components/analytics/pnl-card";
 import { AnalyticsCharts } from "@/components/analytics/analytics-charts";
 import {
   ANALYTICS_PRESETS,
@@ -22,9 +24,6 @@ import {
   formatIsoDate,
   initials,
   serviceMarginPct,
-  hourlyAffluence,
-  statusCount,
-  weekdayAffluence,
   type AnalyticsViewModel,
 } from "@/components/analytics/analytics-helpers";
 import { resolvePreset } from "@/lib/analytics/period";
@@ -38,9 +37,6 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
   const ov = vm.overview;
   const topServices = vm.services.slice(0, 4);
   const topStaff = [...vm.staff].sort((a, b) => b.revenue - a.revenue).slice(0, 4);
-  const cancelled = statusCount(vm.appointments, "CANCELLED");
-  const noShowRate = vm.appointments?.noShow.rate ?? null;
-  const noShowCount = vm.appointments?.noShow.count ?? 0;
   const presetLabel = ANALYTICS_PRESETS.find((p) => p.value === vm.preset)?.label ?? vm.periodLabel;
   const periodBounds = resolvePreset(vm.preset);
   const dateRangeLabel = `${formatIsoDate(periodBounds.from)} - ${formatIsoDate(periodBounds.to)}`;
@@ -138,24 +134,6 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-3 xl:grid-cols-7">
-            {vm.health.pillars.map((p) => (
-              <div key={p.key} className="min-w-0 rounded-lg bg-surface-container-low p-3">
-                <p className="text-[11px] font-bold uppercase leading-tight text-on-surface-variant">
-                  {p.label}
-                </p>
-                <p className={cn("mt-1 min-h-7 text-xl font-extrabold leading-none", p.tone)}>
-                  {vm.loading || p.score == null ? "" : p.score}
-                </p>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-container-high">
-                  <div
-                    className={cn("h-full rounded-full", p.bar)}
-                    style={{ width: vm.loading || p.score == null ? "0%" : `${p.score}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -243,162 +221,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
         staff={vm.staff}
       />
 
-      {/* PnL | Funnel */}
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-        <div className="flex flex-col gap-6 xl:col-span-7">
-          <div className="rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 className="text-[22px] font-bold text-on-surface">PnL Express</h3>
-                <p className="text-[13px] text-on-surface-variant">Compte de résultat simplifié — chiffres réels</p>
-              </div>
-              {vm.pnl.marginRate != null ? (
-                <span className="rounded-full bg-primary-container/10 px-3 py-1 text-[11px] font-bold text-primary-container">
-                  Marge {vm.pnl.marginRate.toLocaleString("fr-MA")} %
-                </span>
-              ) : null}
-            </div>
-            {vm.loading ? (
-              <p className="text-sm text-on-surface-variant">Chargement du PnL…</p>
-            ) : (
-              <div className="space-y-2 text-[15px]">
-                <PnlRow
-                  label="CA encaissé"
-                  value={`+ ${formatMad(vm.pnl.net)}`}
-                  bar={Math.min(100, 100)}
-                  barClass="bg-primary-container"
-                  strong
-                />
-                <PnlRow
-                  label="Charges directes"
-                  value={`− ${formatMad(vm.pnl.expenses)}`}
-                  bar={vm.pnl.expenseShare}
-                  barClass="bg-outline"
-                />
-                <PnlRow
-                  label="Commissions praticiennes"
-                  value={`− ${formatMad(vm.pnl.commissions)}`}
-                  bar={vm.pnl.commissionShare}
-                  barClass="bg-secondary"
-                />
-                <div className="mt-2 flex items-center justify-between rounded-xl bg-primary-container p-4 text-on-primary shadow-md">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-on-primary/80">
-                      Résultat opérationnel
-                    </p>
-                    <p className="text-lg font-bold">Marge d&apos;exploitation nette</p>
-                  </div>
-                  <p className="text-[32px] font-extrabold leading-none tracking-tight">
-                    {formatMad(vm.pnl.result)}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="xl:col-span-5">
-          <div className="flex h-full flex-col gap-4 rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-[22px] font-bold text-on-surface">Funnel Rétention &amp; Fidélité</h3>
-                <p className="text-[13px] text-on-surface-variant">
-                  Cycle de vie clientes — données CRM période
-                </p>
-              </div>
-              <span className="rounded-full bg-secondary-fixed px-2.5 py-1 text-[10px] font-bold uppercase text-on-secondary-fixed">
-                Exclusif
-              </span>
-            </div>
-            {vm.loading ? (
-              <p className="text-sm text-on-surface-variant">Chargement du funnel…</p>
-            ) : vm.funnel.length === 0 ? (
-              <p className="text-sm text-on-surface-variant">Pas encore de clientes au fichier.</p>
-            ) : (
-              <div className="flex flex-1 flex-col gap-3">
-                {vm.funnel.map((step) => (
-                  <div
-                    key={step.step}
-                    className={cn(
-                      "relative overflow-hidden rounded-xl bg-surface-container-low p-4",
-                      step.vip && "bg-inverse-surface text-surface-bright shadow-sm",
-                    )}
-                  >
-                    <div className="relative z-10 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={cn(
-                            "flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold",
-                            step.vip
-                              ? "bg-secondary-fixed text-on-secondary-fixed"
-                              : step.step === 2
-                                ? "bg-primary-fixed text-on-primary-fixed-variant"
-                                : step.step === 3
-                                  ? "bg-primary-fixed-dim text-on-primary-fixed-variant"
-                                  : "bg-surface-container-highest text-on-surface",
-                          )}
-                        >
-                          {step.vip ? "★" : step.step}
-                        </span>
-                        <div>
-                          <p
-                            className={cn(
-                              "font-bold",
-                              step.vip ? "text-secondary-fixed" : "text-on-surface",
-                            )}
-                          >
-                            {step.title}
-                          </p>
-                          <p
-                            className={cn(
-                              "text-[12px]",
-                              step.vip ? "text-surface-variant" : "text-on-surface-variant",
-                            )}
-                          >
-                            {step.subtitle}
-                          </p>
-                        </div>
-                      </div>
-                      <span
-                        className={cn(
-                          "text-lg font-extrabold",
-                          step.vip
-                            ? "text-secondary-container"
-                            : step.step >= 2
-                              ? "text-primary-container"
-                              : "text-on-surface",
-                        )}
-                      >
-                        {step.percent} %
-                      </span>
-                    </div>
-                    <div
-                      className={cn(
-                        "absolute inset-y-0 left-0 rounded-xl",
-                        step.vip
-                          ? "bg-secondary-fixed/20"
-                          : step.step === 2
-                            ? "bg-primary-fixed-dim/30"
-                            : step.step === 3
-                              ? "bg-primary-container/20"
-                              : "bg-surface-container/60",
-                      )}
-                      style={{ width: `${Math.min(100, step.percent)}%` }}
-                    />
-                  </div>
-                ))}
-                {vm.customers ? (
-                  <div className="mt-auto grid grid-cols-3 gap-2 pt-2 text-center">
-                    <MiniStat label="Nouvelles" value={String(vm.customers.kpis.newInPeriod)} />
-                    <MiniStat label="Actives" value={String(vm.customers.kpis.active)} />
-                    <MiniStat label="Inactives" value={String(vm.customers.kpis.inactive)} />
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      <PnlCard pnl={vm.pnl} loading={vm.loading} />
 
       {/* Top services / Staff / Affluence */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -504,67 +327,7 @@ export function AnalyticsDesktop({ vm }: { vm: AnalyticsViewModel }) {
           </Link>
         </div>
 
-        <div className="rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-on-surface">Affluence &amp; Remplissage</h3>
-              <p className="text-[12px] text-on-surface-variant">
-                {vm.peakDay ? `Pic ${vm.peakDay}` : "Distribution par jour"}
-                {vm.occupation != null ? ` · moy. ${vm.occupation} %` : ""}
-              </p>
-            </div>
-            <CalendarDays className="h-5 w-5 text-primary" />
-          </div>
-          {vm.loading ? (
-            <p className="text-sm text-on-surface-variant">Chargement…</p>
-          ) : !weekdayAffluence(vm.appointments).some((d) => d.count > 0) ? (
-            <p className="text-sm text-on-surface-variant">Pas de rendez-vous sur la période.</p>
-          ) : (
-            <>
-              <div className="flex h-36 items-end justify-between gap-1.5">
-                {weekdayAffluence(vm.appointments).map((d) => (
-                  <div key={d.weekday} className="flex flex-1 flex-col items-center gap-1">
-                    <span className="text-[10px] font-semibold text-on-surface">
-                      {d.count}
-                    </span>
-                    <div
-                      className={cn(
-                        "w-full max-w-[28px] rounded-t-md bg-primary-container",
-                        d.count === 0 && "bg-transparent",
-                      )}
-                      style={{ height: `${d.heightPct}%` }}
-                    />
-                    <span className="text-[11px] font-bold text-on-surface">{d.label.slice(0, 3)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 flex h-8 items-end gap-0.5">
-                {hourlyAffluence(vm.appointments).map((h) => (
-                  <div key={h.hour} className="flex h-full flex-1 items-end" title={`${h.hour}h · ${h.count} RDV`}>
-                    <div
-                      className="w-full rounded-t-sm bg-secondary"
-                      style={{ height: `${h.heightPct}%` }}
-                    />
-                  </div>
-                ))}
-              </div>
-              <p className="mt-1 text-[10px] text-on-surface-variant">Rendez-vous de 08 h à 23 h</p>
-            </>
-          )}
-          <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
-            <div className="rounded-lg bg-surface-container-low p-2.5">
-              <p className="text-on-surface-variant">Annulations</p>
-              <p className="font-bold text-on-surface">{cancelled}</p>
-            </div>
-            <div className="rounded-lg bg-surface-container-low p-2.5">
-              <p className="text-on-surface-variant">No-shows</p>
-              <p className="font-bold text-on-surface">
-                {noShowCount}
-                {noShowRate != null ? ` (${noShowRate.toLocaleString("fr-MA")} %)` : ""}
-              </p>
-            </div>
-          </div>
-        </div>
+        <AffluenceCard appointments={vm.appointments} occupation={vm.occupation} loading={vm.loading} />
       </section>
 
     </div>
@@ -659,40 +422,5 @@ function MacroCard({
   valueNegative?: boolean;
 }) {
   return <MetricCard title={label} value={value} icon={icon} unit={unit} delta={delta} deltaNegative={tone != null && tone < 0} negative={valueNegative}>{spark && spark.length > 1 ? <MiniSpark values={spark} negative={valueNegative} /> : null}</MetricCard>;
-}
-
-function PnlRow({
-  label,
-  value,
-  bar,
-  barClass,
-  strong,
-}: {
-  label: string;
-  value: string;
-  bar: number;
-  barClass: string;
-  strong?: boolean;
-}) {
-  return (
-    <div className={cn("rounded-lg p-3", strong ? "bg-surface-container-low" : "hover:bg-surface-container-low/60")}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className={cn(strong ? "font-bold text-on-surface" : "text-on-surface-variant")}>{label}</span>
-        <span className={cn("font-bold", strong ? "text-primary-container" : "text-on-surface")}>{value}</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-surface-container">
-        <div className={cn("h-full rounded-full", barClass)} style={{ width: `${Math.min(100, bar)}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-surface-container-low p-2">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{label}</p>
-      <p className="text-sm font-extrabold text-on-surface">{value}</p>
-    </div>
-  );
 }
 

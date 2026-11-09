@@ -41,7 +41,7 @@ export default function ContactPage() {
           </p>
           <div className="flex flex-col items-start gap-3 pt-2">
             <Link href="/professionnel/" className="text-sm font-semibold text-primary hover:text-primary-dark">
-              Essayer gratuitement 7 jours
+              Essayer gratuitement 15 jours
             </Link>
             <Link
               href="/solutions/institut-beaute/"

@@ -141,7 +141,7 @@ export function addMonths(date: Date, months: number): Date {
 }
 
 /** Essai appliqué à chaque institut nouvellement créé. */
-export const NEW_INSTITUTE_TRIAL_DAYS = 7;
+export const NEW_INSTITUTE_TRIAL_DAYS = 15;
 
 export function newInstituteTrialEnd(from = new Date()): Date {
   return new Date(from.getTime() + NEW_INSTITUTE_TRIAL_DAYS * 24 * 60 * 60 * 1000);

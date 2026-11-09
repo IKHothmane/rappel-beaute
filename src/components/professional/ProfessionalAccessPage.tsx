@@ -98,13 +98,13 @@ export default function ProfessionalAccessPage({
   }
 
   return (
-    <section className="salon-backdrop">
-      <div className="flex w-full flex-col justify-center px-5 py-12 sm:px-8 lg:ml-[50%] lg:w-1/2 lg:px-8 lg:py-14 xl:pr-12">
+    <section className="bg-paper">
+      <div className="mx-auto w-full max-w-2xl px-5 py-12 sm:px-8 lg:py-16">
         <div className="login-rise w-full">
-          <h1 className="font-display text-[2.6rem] font-semibold leading-[1.05] tracking-tight text-ink sm:text-5xl">
+          <h1 className="font-display text-[2.6rem] font-light leading-[1.05] tracking-tight text-ink sm:text-5xl">
               Créez votre accès
               <br />
-              <span className="text-primary">professionnel.</span>
+              professionnel.
             </h1>
             <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-ink/60">
               Rejoignez <span className="font-semibold text-ink">Rappel Beauty</span> et simplifiez la gestion de votre institut.
@@ -114,7 +114,7 @@ export default function ProfessionalAccessPage({
             <div className="rounded-2xl border border-[#EEE5E8] bg-white p-6 sm:p-8">
               <h2 className="font-display text-2xl font-semibold text-[#251D22]">Votre compte est prêt</h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#817780]">
-                Votre essai de 7 jours est actif. Connectez-vous avec votre numéro WhatsApp et ce mot de passe temporaire, à modifier à la première connexion.
+                Votre essai de 15 jours est actif. Connectez-vous avec votre numéro WhatsApp et ce mot de passe temporaire, à modifier à la première connexion.
               </p>
               <dl className="mt-5 space-y-3 rounded-xl border border-[#EEE5E8] bg-[#FBF8F7] p-4 text-sm">
                 <div>
@@ -266,7 +266,7 @@ export default function ProfessionalAccessPage({
                     type="submit"
                     disabled={loading}
                     aria-busy={loading}
-                    className="inline-flex h-[3.4rem] w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-[15px] font-semibold text-white shadow-[0_12px_24px_-12px_rgba(180,0,75,0.6)] transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="inline-flex h-[3.4rem] w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-[15px] font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {loading ? "Création du compte…" : "Créer mon accès"}
                     {!loading ? <ArrowRight size={17} aria-hidden /> : null}

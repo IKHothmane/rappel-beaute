@@ -26,15 +26,6 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { whatsappHref } from "@/components/customers/customers-helpers";
 import NouveauCollaborateurModal from "@/components/staff/nouveau-collaborateur-modal";
@@ -56,12 +47,11 @@ import {
   formatMad,
   formatPct,
   getAnalyticsOverview,
-  getAnalyticsRevenue,
   getAnalyticsReviews,
   getAnalyticsStaff,
 } from "@/modules/analytics/service";
 import { createStaff, getStaff, listStaff, updateStaff } from "@/modules/staff/service";
-import type { AnalyticsOverview, ReviewAnalytics, RevenueDailyPoint, StaffAnalyticsRow } from "@/types/analytics";
+import type { AnalyticsOverview, ReviewAnalytics, StaffAnalyticsRow } from "@/types/analytics";
 import type { StaffDetail, StaffListItem, StaffStatus } from "@/types/staff";
 import { STAFF_STATUS_LABEL } from "@/types/staff";
 
@@ -140,8 +130,6 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<StaffDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [chartData, setChartData] = useState<RevenueDailyPoint[]>([]);
-  const [chartLoading, setChartLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<StaffDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -197,12 +185,10 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
   useEffect(() => {
     if (!selectedId) {
       setDetail(null);
-      setChartData([]);
       return;
     }
     let cancelled = false;
     setDetailLoading(true);
-    setChartLoading(showFinance);
     getStaff(selectedId)
       .then((staff) => {
         if (!cancelled) setDetail(staff);
@@ -214,26 +200,10 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
         if (!cancelled) setDetailLoading(false);
       });
 
-    if (showFinance) {
-      getAnalyticsRevenue({ preset: "month", staffId: selectedId })
-        .then((rev) => {
-          if (!cancelled) setChartData(rev.daily);
-        })
-        .catch(() => {
-          if (!cancelled) setChartData([]);
-        })
-        .finally(() => {
-          if (!cancelled) setChartLoading(false);
-        });
-    } else {
-      setChartData([]);
-      setChartLoading(false);
-    }
-
     return () => {
       cancelled = true;
     };
-  }, [selectedId, showFinance]);
+  }, [selectedId]);
 
   const monthlyById = useMemo(() => {
     const map = new Map<string, StaffAnalyticsRow>();
@@ -310,11 +280,6 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
 
   const apptChange = overview?.appointments.changePercent;
   const revChange = overview?.revenue.changePercent;
-  const chartPoints = chartData.map((d) => ({
-    date: d.label || d.date.slice(5),
-    revenue: d.revenue,
-  }));
-  const hasChart = chartPoints.some((d) => d.revenue > 0);
 
   useEffect(() => {
     if (createSignal <= 0 || !canWrite) return;
@@ -740,67 +705,6 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
                 </div>
               </div>
 
-              {showFinance ? (
-                <div className="mt-6">
-                  <h4 className="mb-3 text-sm font-bold">Évolution du chiffre d&apos;affaires</h4>
-                  <div className="h-[220px] w-full">
-                    {chartLoading ? (
-                      <div className="flex h-full items-center justify-center text-xs text-[#a18b95]">
-                        Chargement du graphique…
-                      </div>
-                    ) : !hasChart ? (
-                      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-[#efd7e2] bg-[#fffafb] px-4 text-center text-xs text-[#a18b95]">
-                        Pas encore d’encaissement attribué à cette praticienne sur la période.
-                      </div>
-                    ) : (
-                      <ResponsiveContainer width="100%" height={220}>
-                        <AreaChart
-                          data={chartPoints}
-                          margin={{ top: 10, right: 8, left: -18, bottom: 0 }}
-                        >
-                          <defs>
-                            <linearGradient id="teamRevenueGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#e62978" stopOpacity={0.3} />
-                              <stop offset="100%" stopColor="#e62978" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid stroke="#f3e2e9" strokeDasharray="3 3" vertical={false} />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 10, fill: "#9d7b8b" }}
-                            axisLine={false}
-                            tickLine={false}
-                            interval="preserveStartEnd"
-                            minTickGap={28}
-                          />
-                          <YAxis
-                            tick={{ fontSize: 10, fill: "#9d7b8b" }}
-                            axisLine={false}
-                            tickLine={false}
-                            width={42}
-                          />
-                          <Tooltip
-                            formatter={(value) => [formatMad(Number(value ?? 0)), "CA"]}
-                            contentStyle={{
-                              borderRadius: 12,
-                              border: "1px solid #F0DCE5",
-                              boxShadow: "0 10px 24px rgba(70,20,40,0.08)",
-                            }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="revenue"
-                            stroke="#d60061"
-                            strokeWidth={3}
-                            fill="url(#teamRevenueGradient)"
-                            dot={{ r: 3, fill: "#d60061", stroke: "#fff", strokeWidth: 2 }}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                </div>
-              ) : null}
             </>
           )}
         </aside>

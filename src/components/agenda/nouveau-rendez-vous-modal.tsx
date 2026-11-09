@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { DateCalendar } from "@/components/agenda/date-calendar";
 import { AvailabilitySlots } from "@/components/agenda/availability-slots";
 import { staffColor } from "@/components/agenda/staff-colors";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
@@ -425,7 +426,7 @@ export default function NouveauRendezVousModal({
   }, [service, extraIds, catalogTotal, initial?.price]);
 
   const slots = useMemo(() => {
-    if (!serviceId || !date) return [];
+    if (!date) return [];
     const [y, m, d] = date.split("-").map(Number);
     const day = new Date(y, m - 1, d);
     const ctx = staffId ? staffContexts.find((s) => s.id === staffId) : undefined;
@@ -441,7 +442,6 @@ export default function NouveauRendezVousModal({
   }, [
     appointments,
     staffId,
-    serviceId,
     resourceId,
     date,
     totalDuration,
@@ -1246,11 +1246,12 @@ export default function NouveauRendezVousModal({
                     </div>
                   </div>
 
-                  <label className="block space-y-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
+                  <div className="space-y-1.5">
+                    <label htmlFor="appointment-date" className="block text-xs font-semibold uppercase tracking-wide text-[#887787]">
                       Date <span className="text-[#B60050]">*</span>
-                    </span>
+                    </label>
                     <input
+                      id="appointment-date"
                       type="text"
                       inputMode="numeric"
                       autoComplete="off"
@@ -1282,7 +1283,18 @@ export default function NouveauRendezVousModal({
                       required
                       className="h-11 w-full rounded-xl border border-[#E8D4DE] bg-white px-3 font-mono text-sm outline-none transition focus:border-[#B60050]"
                     />
-                  </label>
+                    <DateCalendar
+                      value={date}
+                      onChange={(iso) => {
+                        setDate(iso);
+                        setDateInput(isoToFr(iso));
+                        setTime("");
+                        const [y, m, d] = iso.split("-").map(Number);
+                        const msg = salonClosedMessage(new Date(y, m - 1, d), staffContexts, closures);
+                        if (msg) showClosedPopup(msg);
+                      }}
+                    />
+                  </div>
 
                   <label className="block space-y-1.5">
                     <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
@@ -1391,10 +1403,17 @@ export default function NouveauRendezVousModal({
                     <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
                       Créneau <span className="text-[#B60050]">*</span>
                     </span>
-                    {serviceId && date ? (
-                      <AvailabilitySlots slots={slots} value={time} onSelect={setTime} loading={busy} />
+                    {date ? (
+                      <>
+                        <AvailabilitySlots slots={slots} value={time} onSelect={setTime} loading={busy} />
+                        {!serviceId ? (
+                          <p className="text-xs text-[#887787]">
+                            Créneaux pour une durée indicative de 60 min. Ils seront actualisés selon le service choisi.
+                          </p>
+                        ) : null}
+                      </>
                     ) : (
-                      <p className="text-sm text-[#887787]">Choisissez un service et une date.</p>
+                      <p className="text-sm text-[#887787]">Choisissez une date.</p>
                     )}
                   </div>
 

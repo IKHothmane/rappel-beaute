@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { marketingPageMetadata } from "@/lib/seo";
 import { Reveal } from "@/components/www/Reveal";
 import { ShowcaseStrip } from "@/components/www/ProductShot";
+import { ServicesView } from "@/components/www/ProductViews";
 import { SeoCloser } from "@/components/www/SeoCloser";
 
 export const dynamic = "force-static";
@@ -80,12 +80,12 @@ export default function FonctionnalitesPage() {
             </p>
             <Link
               href="/professionnel/"
-              className="mt-8 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+              className="mt-8 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
             >
-              Essayer gratuitement 7 jours
+              Essayer gratuitement 15 jours
             </Link>
             <p className="mt-4 text-xs text-ink/55 sm:text-sm">
-              Sans engagement · 7 jours gratuits · Sans carte bancaire
+              Sans engagement · 15 jours gratuits · Sans carte bancaire
             </p>
           </Reveal>
         </div>
@@ -95,7 +95,7 @@ export default function FonctionnalitesPage() {
 
       <nav
         aria-label="Sommaire des fonctionnalités"
-        className="sticky top-[5.5rem] z-40 border-b border-line bg-white/95 backdrop-blur-md md:top-24"
+        className="sticky top-[4.5rem] z-40 border-b border-line bg-white/95 backdrop-blur-md md:top-24"
       >
         <div className="no-scrollbar mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-3 sm:px-6">
           {NAV.map((item) => (
@@ -213,16 +213,7 @@ export default function FonctionnalitesPage() {
               Décrivez vos prestations, vos cabines et vos tarifs, puis reliez-les aux
               disponibilités réelles de l&apos;institut.
             </p>
-            <div className="mt-6 overflow-hidden rounded-2xl border border-pink-100 bg-white">
-              <Image
-                src="/marketing/screen-services.png"
-                alt="Services et prestations Rappel Beauty sur ordinateur"
-                width={1536}
-                height={1024}
-                sizes="(max-width: 768px) 100vw, 720px"
-                className="h-auto w-full object-contain"
-              />
-            </div>
+            <ServicesView className="mt-6" />
             <p className="mt-4">
               <Link
                 href="/tarifs/"
@@ -422,16 +413,16 @@ export default function FonctionnalitesPage() {
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">
-            Essayez Rappel Beauty pendant 7 jours
+            Essayez Rappel Beauty pendant 15 jours
           </h2>
           <p className="mt-4 text-sm text-white/75 sm:text-base">
             Sans engagement et sans carte bancaire.
           </p>
           <Link
             href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
           >
-            Essayer gratuitement 7 jours
+            Essayer gratuitement 15 jours
           </Link>
         </div>
       </section>

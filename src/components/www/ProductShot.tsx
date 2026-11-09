@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 type Shot = {
+  id: "agenda" | "clientes" | "caisse" | "fidelite" | "services" | "stock" | "reservation";
   src: string;
   alt: string;
   width: number;
@@ -12,6 +13,7 @@ type Shot = {
 
 const SHOTS: Shot[] = [
   {
+    id: "agenda",
     src: "/marketing/screen-agenda.png",
     alt: "Agenda Rappel Beauty sur ordinateur",
     width: 612,
@@ -20,6 +22,7 @@ const SHOTS: Shot[] = [
     title: "Agenda intelligent",
   },
   {
+    id: "clientes",
     src: "/marketing/screen-clientes.png",
     alt: "Gestion des clientes Rappel Beauty sur ordinateur",
     width: 1536,
@@ -28,6 +31,7 @@ const SHOTS: Shot[] = [
     title: "Gestion des clientes",
   },
   {
+    id: "caisse",
     src: "/marketing/screen-caisse.png",
     alt: "Caisse Rappel Beauty sur ordinateur",
     width: 1536,
@@ -36,6 +40,7 @@ const SHOTS: Shot[] = [
     title: "Caisse et finances",
   },
   {
+    id: "fidelite",
     src: "/marketing/screen-fidelite.png",
     alt: "Carte de fidélité Rappel Beauty",
     width: 1536,
@@ -44,6 +49,7 @@ const SHOTS: Shot[] = [
     title: "Fidélité",
   },
   {
+    id: "services",
     src: "/marketing/screen-services.png",
     alt: "Services et prestations Rappel Beauty sur ordinateur",
     width: 1536,
@@ -52,6 +58,7 @@ const SHOTS: Shot[] = [
     title: "Services et prestations",
   },
   {
+    id: "stock",
     src: "/marketing/screen-stock.png",
     alt: "Stock et produits Rappel Beauty sur ordinateur",
     width: 1536,
@@ -60,6 +67,7 @@ const SHOTS: Shot[] = [
     title: "Stock et produits",
   },
   {
+    id: "reservation",
     src: "/marketing/reservation-en-ligne.png",
     alt: "Réservation en ligne pour un institut de beauté",
     width: 1536,
@@ -69,17 +77,11 @@ const SHOTS: Shot[] = [
   },
 ];
 
-export function ProductShot({
-  src,
-  alt,
-  width,
-  height,
-}: {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-}) {
+export function ProductShot({ view }: { view: Shot["id"] }) {
+  const shot = SHOTS.find((item) => item.id === view);
+  if (!shot) return null;
+  const { src, alt, width, height } = shot;
+
   return (
     <figure className="bg-[#fff8fb] px-4 pb-2 pt-2 sm:px-6">
       <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-pink-100 bg-white p-1.5 shadow-[0_24px_65px_-30px_rgba(190,24,93,0.32)]">
@@ -93,6 +95,25 @@ export function ProductShot({
         />
       </div>
     </figure>
+  );
+}
+
+export function ModuleIndex({
+  items,
+}: {
+  items: readonly { title: string; text: string; href: string }[];
+}) {
+  return (
+    <ul className="grid border-y border-ink/15 sm:grid-cols-2">
+      {items.map((item) => (
+        <li key={item.href} className="border-b border-ink/15 sm:odd:border-r">
+          <Link href={item.href} className="group block py-6 pr-6 transition hover:text-primary">
+            <span className="font-semibold text-ink group-hover:text-primary">{item.title}</span>
+            <span className="mt-2 block text-sm leading-relaxed text-ink/70">{item.text}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 

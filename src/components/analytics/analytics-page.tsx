@@ -15,7 +15,6 @@ import {
   marketingAttributed,
   peakWeekday,
   presenceRate,
-  retentionFunnel,
   weeklyRevenueBars,
   type AnalyticsViewModel,
 } from "@/components/analytics/analytics-helpers";
@@ -200,7 +199,6 @@ export function AnalyticsPageView() {
     payments: revenue?.byPaymentMethod ?? [],
     insight,
     health,
-    funnel: retentionFunnel(customers),
     weekly: weeklyRevenueBars(revenue?.daily),
     pnl: buildPnlExpress(overview, staff),
     presence: presenceRate(appointments),

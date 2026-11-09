@@ -61,19 +61,18 @@ export async function createAppointment(
 export async function updateAppointmentStatus(
   id: string,
   status: Appointment["status"],
-): Promise<Appointment | null> {
-  try {
-    const res = await fetch(`/api/appointments/${id}/`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as Appointment;
-  } catch {
-    return null;
+): Promise<Appointment> {
+  const res = await fetch(`/api/appointments/${id}/`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error || "Impossible de modifier le statut.");
   }
+  return (await res.json()) as Appointment;
 }
 
 export async function applyAppointmentPromo(

@@ -1,4 +1,7 @@
 "use client";
+import { CustomerReviews } from "@/components/dashboard/customer-reviews";
+import type { ReviewKpis } from "@/types/review";
+import type { ReviewAnalytics } from "@/types/analytics";
 import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
@@ -51,6 +54,8 @@ function aptPhase(apt: Appointment, imminentIds: Set<string>) {
 }
 
 export type SaasDashboardMobileProps = {
+  reviewKpis: ReviewKpis | null;
+  reviewsAnalytics: ReviewAnalytics | null;
   firstName: string;
   orgName: string;
   todayLabel: string;
@@ -550,6 +555,7 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
           </p>
         </div>
       </section>
+      <CustomerReviews kpis={props.reviewKpis} analytics={props.reviewsAnalytics} loading={loading} />
     </div>
   );
 }

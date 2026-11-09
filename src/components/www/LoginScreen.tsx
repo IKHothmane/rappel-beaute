@@ -49,28 +49,25 @@ export function SiteFeatureBar({ showPrices = false }: { showPrices?: boolean })
 
 export function LoginScreen({ children }: { children: React.ReactNode }) {
   return (
-    <section className="salon-backdrop">
-      <div className="relative flex w-full flex-col justify-center px-5 py-12 sm:px-8 lg:ml-[50%] lg:w-1/2 lg:px-8 lg:py-14 xl:pr-12">
-        <div className="flex items-start">{children}</div>
-        <ul className="mt-8 flex w-full max-w-[27.5rem] flex-col gap-3 lg:absolute lg:bottom-14 lg:left-[calc(2rem+27.5rem+1.25rem)] lg:top-auto lg:mt-0 lg:w-[16rem] lg:max-w-none">
-          <li className="flex items-center rounded-2xl border border-[#eadfe3] bg-white px-4 py-3.5 shadow-[0_16px_40px_-28px_rgba(40,20,30,0.45)]">
-            <SitePhone
-              className="text-sm font-semibold text-ink"
-              iconClassName="h-5 w-5 shrink-0 text-primary"
-            />
-          </li>
-          {features.map(({ icon: Icon, title, text }) => (
-            <li
-              key={title}
-              className="flex items-center gap-2.5 rounded-2xl border border-[#eadfe3] bg-white px-4 py-3.5 shadow-[0_16px_40px_-28px_rgba(40,20,30,0.45)]"
-            >
-              <Icon aria-hidden className="shrink-0 text-primary" size={20} strokeWidth={1.6} />
-              <p className="text-sm leading-snug text-ink/65">
-                <span className="font-semibold text-ink">{title}</span> {text}
-              </p>
+    <section className="container-rb grid gap-12 py-12 md:py-20 lg:grid-cols-2 lg:gap-16">
+      <div className="flex justify-center lg:justify-start">{children}</div>
+      <div className="lg:border-l lg:border-ink/15 lg:pl-16">
+        <p className="font-display text-3xl font-light leading-tight tracking-tight text-ink">
+          Votre journée vous attend.
+        </p>
+        <ul className="mt-6 border-t border-ink/15">
+          {features.map(({ title, text }) => (
+            <li key={title} className="border-b border-ink/15 py-3 text-ink/70">
+              <span className="font-semibold text-ink">{title}</span> {text}
             </li>
           ))}
         </ul>
+        <div className="mt-6">
+          <SitePhone
+            className="text-sm font-semibold text-ink"
+            iconClassName="h-5 w-5 shrink-0 text-primary"
+          />
+        </div>
       </div>
     </section>
   );

@@ -20,6 +20,7 @@ import {
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { businessDateTime, businessTodayIso } from "@/lib/time/business-timezone";
+import { CustomerReviews } from "@/components/dashboard/customer-reviews";
 import { PremiumKpiCard } from "@/components/dashboard/premium-kpi-card";
 import { QuickActionsDrawer, useQuickActions } from "@/components/dashboard/quick-actions-drawer";
 import { SaasDashboardMobile } from "@/components/dashboard/saas-dashboard-mobile";
@@ -292,13 +293,6 @@ export function SaasDashboard() {
   const periodAppointments = appointmentsAnalytics?.total ?? overview?.appointments.value ?? 0;
   const revenueChange = overview?.revenue.changePercent ?? null;
   const appointmentsChange = overview?.appointments.changePercent ?? null;
-  const publicCount = reviewKpis?.publicCount ?? 0;
-  const internalCount = reviewKpis?.recordedCount ?? reviewsAnalytics?.recordedSatisfaction ?? 0;
-  const reviewCount = publicCount > 0 ? publicCount : internalCount;
-  const reviewScore =
-    publicCount > 0
-      ? (reviewKpis?.publicAverageScore ?? null)
-      : (reviewKpis?.averageScore ?? reviewsAnalytics?.averageInternalScore ?? null);
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "période";
 
   return (
@@ -327,6 +321,8 @@ export function SaasDashboard() {
         stock={stock}
         appointmentsAnalytics={appointmentsAnalytics}
         revenueTotals={revenueTotals}
+        reviewKpis={reviewKpis}
+        reviewsAnalytics={reviewsAnalytics}
       />
 
       <div className="hidden flex-col gap-5 lg:flex">
@@ -988,62 +984,7 @@ export function SaasDashboard() {
             )}
           </section>
 
-          <section className="rb-card flex flex-col gap-3 p-5" aria-labelledby="dash-reviews-title">
-            <div className="flex items-center justify-between">
-              <h3 id="dash-reviews-title" className="text-base font-bold">
-                Avis clientes
-              </h3>
-              <Star size={16} className="fill-[#B60050] text-[#B60050]" aria-hidden />
-            </div>
-            {loading ? (
-              <SkeletonBlock className="h-32 w-full" />
-            ) : reviewCount <= 0 ? (
-              <EmptyState
-                title="Aucun avis pour le moment"
-                hint="Les notes clientes s’afficheront dès le premier retour enregistré."
-              />
-            ) : (
-              <div className="flex flex-1 flex-col justify-center gap-3">
-                <div>
-                  <p className="font-serif text-4xl font-extrabold text-[#301625]">
-                    {reviewScore != null ? reviewScore.toFixed(1) : "—"}
-                    <span className="ml-1 text-base font-medium text-[#8D7382]">/ 5</span>
-                  </p>
-                  <p className="mt-1 text-sm text-[#8D7382]">
-                    {reviewCount} avis enregistré{reviewCount > 1 ? "s" : ""}
-                  </p>
-                </div>
-                {publicCount > 0 && reviewKpis?.publicPendingCount ? (
-                  <p className="text-sm font-semibold text-[#B77612]">
-                    {reviewKpis.publicPendingCount} à modérer
-                  </p>
-                ) : reviewKpis?.satisfiedPercent != null ? (
-                  <p className="text-sm font-semibold text-[#16834B]">
-                    {reviewKpis.satisfiedPercent} % satisfaites
-                  </p>
-                ) : null}
-                {publicCount === 0 &&
-                reviewKpis &&
-                (reviewKpis.pendingToSend > 0 || reviewKpis.awaitingRecord > 0) ? (
-                  <p className="text-xs text-[#8D7382]">
-                    {reviewKpis.pendingToSend > 0
-                      ? `${reviewKpis.pendingToSend} demande${reviewKpis.pendingToSend > 1 ? "s" : ""} à envoyer`
-                      : null}
-                    {reviewKpis.pendingToSend > 0 && reviewKpis.awaitingRecord > 0 ? " · " : null}
-                    {reviewKpis.awaitingRecord > 0
-                      ? `${reviewKpis.awaitingRecord} en attente de réponse`
-                      : null}
-                  </p>
-                ) : null}
-              </div>
-            )}
-            <Link
-              href="/reviews/"
-              className="mt-auto rounded-xl bg-[#F8F0F4] py-2 text-center text-xs font-semibold text-[#4A2F3E] hover:bg-[#FCE7F1]"
-            >
-              Voir les avis
-            </Link>
-          </section>
+          <CustomerReviews kpis={reviewKpis} analytics={reviewsAnalytics} loading={loading} />
         </div>
       </div>
 

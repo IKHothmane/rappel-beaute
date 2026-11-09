@@ -5,7 +5,7 @@ import { newPlatformId } from "@/lib/db/platform-users";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 import { getPlanByCode } from "@/lib/subscriptions/plans";
 import { changeSubscriptionPlan } from "@/lib/db/admin-subscriptions";
-import { newInstituteTrialEnd } from "@/lib/subscriptions/subscription-service";
+import { NEW_INSTITUTE_TRIAL_DAYS, newInstituteTrialEnd } from "@/lib/subscriptions/subscription-service";
 import { publicAppOrigin } from "@/lib/site";
 import type { PlanCode } from "@/types/subscription";
 import {
@@ -401,7 +401,7 @@ export async function createOrganization(
         plan: input.plan,
         ownerEmail,
         subscriptionStatus: "TRIAL",
-        trialDays: 7,
+        trialDays: NEW_INSTITUTE_TRIAL_DAYS,
       },
       client,
     });

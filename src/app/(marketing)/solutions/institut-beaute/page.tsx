@@ -97,19 +97,19 @@ export default function InstitutBeautePage() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/professionnel/"
-                className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
               >
-                Essayer gratuitement 7 jours
+                Essayer gratuitement 15 jours
               </Link>
               <Link
                 href="/tarifs/"
-                className="inline-flex items-center justify-center rounded-full border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
+                className="inline-flex items-center justify-center rounded-lg border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
               >
                 Voir les tarifs
               </Link>
             </div>
             <p className="mt-4 text-xs text-ink/55 sm:text-sm">
-              Sans engagement · 7 jours gratuits · Sans carte bancaire
+              Sans engagement · 15 jours gratuits · Sans carte bancaire
             </p>
           </Reveal>
         </div>
@@ -270,7 +270,7 @@ export default function InstitutBeautePage() {
       <section className="bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
           <h2 className="font-display text-2xl font-light sm:text-4xl">
-            Essayez Rappel Beauty pendant 7 jours
+            Essayez Rappel Beauty pendant 15 jours
           </h2>
           <p className="mt-4 text-sm text-white/75 sm:text-base">
             Sans engagement et sans carte bancaire.
@@ -278,9 +278,9 @@ export default function InstitutBeautePage() {
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/professionnel/"
-              className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
             >
-              Essayer gratuitement 7 jours
+              Essayer gratuitement 15 jours
             </Link>
             <Link
               href="/tarifs/"

@@ -16,6 +16,10 @@
 html {
   scroll-behavior: smooth;
   zoom: 0.8;
+  /* Compense le zoom : sans ça la page n'occupe que 80 % de la fenêtre (vide à droite et en bas) */
+  width: calc(100vw / 0.8);
+  min-height: calc(100dvh / 0.8);
+  overflow-x: clip;
 }
 
 .app-sidebar,
@@ -54,6 +58,29 @@ html {
 
 body {
   @apply bg-paper font-sans text-ink antialiased;
+}
+
+/* L'image garde son format (1778×885). Elle ne s'étire pas sur la hauteur du body. */
+.salon-backdrop {
+  position: relative;
+  overflow: hidden;
+  background-color: #fbf8f7;
+}
+
+.salon-backdrop::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 1778 / 885;
+  background: url("/site/rappelbeauty-background-salon.webp") center top / contain no-repeat;
+  pointer-events: none;
+}
+
+.salon-backdrop > * {
+  position: relative;
+  z-index: 1;
 }
 
 ::selection {
@@ -262,4 +289,14 @@ body {
 .app-sidebar button:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
+}
+
+/* Page de connexion : animations discrètes */
+@keyframes login-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.login-rise { animation: login-rise 0.7s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .login-rise { animation: none; }
 }

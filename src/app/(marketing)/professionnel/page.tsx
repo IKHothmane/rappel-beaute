@@ -1,4 +1,4 @@
-import { ProfessionnelSignup } from "@/components/www/professionnel-signup";
+import { ProfessionnelRequest } from "@/components/professional/ProfessionnelRequest";
 import { marketingPageMetadata } from "@/lib/seo";
 import { PUBLIC_OFFER } from "@/lib/site";
 
@@ -11,5 +11,5 @@ export const metadata = marketingPageMetadata({
 });
 
 export default function ProfessionnelPage() {
-  return <ProfessionnelSignup />;
+  return <ProfessionnelRequest />;
 }

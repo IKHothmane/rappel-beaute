@@ -47,10 +47,10 @@ const COLS = [
 export function SiteFooter() {
   return (
     <footer
-      className="mt-8 border-t border-line bg-[#FFF8FB] bg-[url('/brand/footer.webp')] bg-cover bg-center bg-no-repeat"
+      className="border-t border-line bg-[#FFF8FB] bg-[url('/brand/footer.webp')] bg-cover bg-center bg-no-repeat"
     >
-      <div className="container-rb grid gap-10 py-14 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-        <div className="lg:col-span-1">
+      <div className="container-rb grid justify-items-center gap-10 py-14 text-center sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <div className="flex flex-col items-center lg:col-span-1">
           <BrandLogo height={72} />
           <p className="mt-4 max-w-[16rem] text-sm leading-relaxed text-ink/65">
             Rappel Beauty est un logiciel de gestion pour les instituts de beauté au
@@ -79,7 +79,7 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="border-t border-line/80">
-        <div className="container-rb flex flex-col gap-2 py-5 text-xs text-ink/45 sm:flex-row sm:justify-between">
+        <div className="container-rb flex flex-col items-center gap-2 py-5 text-center text-xs text-ink/45 sm:flex-row sm:justify-center sm:gap-8">
           <p>© 2026 {SITE.name}. Tous droits réservés.</p>
           <p>Conçu pour les instituts au Maroc · MAD · FR</p>
         </div>

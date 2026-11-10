@@ -7,10 +7,11 @@ import {
 import { refundPayment } from "@/lib/db/finance";
 import { canCreateRefund } from "@/lib/rbac";
 import { validateRefund } from "@/lib/validation/finance";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = tenantRoute(async function POST(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "cash-register");
   if (!auth.ok) return auth.response;
 
@@ -57,4 +58,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
     console.error("[POST /api/payments/:id/refund]", error);
     return NextResponse.json({ error: "Impossible de rembourser." }, { status: 500 });
   }
-}
+});

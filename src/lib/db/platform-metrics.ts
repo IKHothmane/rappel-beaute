@@ -3,11 +3,12 @@
  * Pas de paiements SaaS séparés : le MRR vient des abonnements actifs.
  */
 import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import type { PlanCode } from "@/types/subscription";
 import type { PlatformAnalytics, PlatformBillingSnapshot } from "@/types/platform";
 import { getPlatformDashboardStats } from "@/lib/db/admin-organizations";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 /** Dernière subscription par organisation (même règle que le dashboard) */
 const LATEST_SUB_FILTER = `s.id = (

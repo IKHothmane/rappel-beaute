@@ -36,10 +36,12 @@
     "ops:dr-test": "tsx scripts/ops/dr-test.ts",
     "ops:monitor": "tsx scripts/ops/monitor-health.ts",
     "ops:test-alert": "tsx scripts/ops/test-alert.ts",
+    "ops:rls-grants": "tsx scripts/ops/rls-restore-grants.ts",
     "test:ops": "vitest run tests/ops"
   },
   "dependencies": {
     "@prisma/client": "^7.10.0",
+    "@sentry/nextjs": "8.55.2",
     "agent-base": "^7.1.4",
     "barcode-detector": "^3.2.3",
     "bullmq": "^5.81.5",

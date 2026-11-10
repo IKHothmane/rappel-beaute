@@ -14,8 +14,9 @@ import {
   parseSupplierListQuery,
   validateCreateSupplier,
 } from "@/lib/validation/procurement";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
   if (
@@ -45,9 +46,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/suppliers]", error);
     return NextResponse.json({ error: "Impossible de charger les fournisseurs." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "stock");
   if (!auth.ok) return auth.response;
 
@@ -66,4 +67,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/suppliers]", error);
     return NextResponse.json({ error: "Impossible de créer le fournisseur." }, { status: 500 });
   }
-}
+});

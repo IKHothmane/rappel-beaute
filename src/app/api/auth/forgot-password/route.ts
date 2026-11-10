@@ -6,6 +6,7 @@ import { getClientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { publicAppOrigin, SITE } from "@/lib/site";
+import { publicRoute } from "@/lib/http/route-scope";
 
 const GENERIC = {
   message: "Si ce compte existe, un lien de réinitialisation a été envoyé.",
@@ -15,7 +16,7 @@ function appBase(requestOrigin: string): string {
   return publicAppOrigin() || requestOrigin.replace(/\/$/, "");
 }
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = getClientIp(request);
   let email = "";
   try {
@@ -64,4 +65,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json(GENERIC);
-}
+});

@@ -7,10 +7,11 @@ import {
 } from "@/lib/auth/api-guard";
 import { deleteResource, getResourceById, updateResource } from "@/lib/db/resources";
 import { validateUpdateResource } from "@/lib/validation/resource";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -25,9 +26,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/resources/:id]", error);
     return NextResponse.json({ error: "Impossible de charger la ressource." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -50,9 +51,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     console.error("[PATCH /api/resources/:id]", error);
     return NextResponse.json({ error: "Impossible de mettre à jour la ressource." }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export const DELETE = tenantRoute(async function DELETE(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -67,4 +68,4 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     console.error("[DELETE /api/resources/:id]", error);
     return NextResponse.json({ error: "Impossible de supprimer la ressource." }, { status: 500 });
   }
-}
+});

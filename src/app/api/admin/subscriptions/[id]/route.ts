@@ -14,10 +14,11 @@ import {
 } from "@/lib/db/admin-subscriptions";
 import { getPlanByCode, getPlanById, listPlans } from "@/lib/subscriptions/plans";
 import type { SubscriptionStatus } from "@/types/subscription";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, ctx: Ctx) {
+export const GET = platformRoute(async function GET(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -31,9 +32,9 @@ export async function GET(request: NextRequest, ctx: Ctx) {
   ]);
 
   return adminJson({ item, history, plans });
-}
+});
 
-export async function PATCH(request: NextRequest, ctx: Ctx) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -53,9 +54,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
   } catch {
     return adminError("Mise à jour impossible.", 500);
   }
-}
+});
 
-export async function POST(request: NextRequest, ctx: Ctx) {
+export const POST = platformRoute(async function POST(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -178,4 +179,4 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     console.error("[POST /api/admin/subscriptions/:id]", e);
     return adminError("Action impossible.", 500);
   }
-}
+});

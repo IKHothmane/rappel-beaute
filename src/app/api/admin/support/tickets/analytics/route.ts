@@ -1,8 +1,9 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { adminSupportAnalytics } from "@/lib/db/support-tickets";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -13,4 +14,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/admin/support/tickets/analytics]", error);
     return adminError("Impossible de charger les analytics support.", 500);
   }
-}
+});

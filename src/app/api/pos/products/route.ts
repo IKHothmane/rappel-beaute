@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requirePosRead } from "@/lib/auth/api-guard";
 import { listPosProducts } from "@/lib/db/pos";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requirePosRead(request);
   if (!auth.ok) return auth.response;
 
@@ -18,4 +19,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/pos/products]", error);
     return NextResponse.json({ error: "Erreur produits." }, { status: 500 });
   }
-}
+});

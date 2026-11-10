@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead } from "@/lib/auth/api-guard";
 import { getResourceAvailability } from "@/lib/db/resources";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -24,4 +25,4 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/resources/:id/availability]", error);
     return NextResponse.json({ error: "Impossible de charger la disponibilité." }, { status: 500 });
   }
-}
+});

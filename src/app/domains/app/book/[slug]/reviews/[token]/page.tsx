@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { previewPublicReview } from "@/lib/reviews/public-review";
 import { PublicReviewForm } from "@/components/reviews/public-review-form";
+import { scopedPage } from "@/lib/http/route-scope";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Donner mon avis", robots: { index: false, follow: false } };
 
-export default async function PublicReviewTokenPage({
+export default scopedPage("public", async function PublicReviewTokenPage({
   params,
 }: {
   params: Promise<{ slug: string; token: string }>;
@@ -42,4 +43,4 @@ export default async function PublicReviewTokenPage({
       </div>
     </section>
   );
-}
+});

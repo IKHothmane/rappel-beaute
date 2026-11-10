@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { listWidgetFrameAncestors, normalizeWidgetOrigin } from "@/lib/db/assistant-session";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const publicId = request.nextUrl.searchParams.get("publicId")?.trim() ?? "";
   const ancestors = publicId ? await listWidgetFrameAncestors(publicId) : [];
   const frameAncestors = ancestors
@@ -450,4 +451,4 @@ export async function GET(request: NextRequest) {
       "Cache-Control": "no-store",
     },
   });
-}
+});

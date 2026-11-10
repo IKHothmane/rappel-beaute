@@ -7,6 +7,7 @@ import { LoyaltyStampCard } from "@/components/loyalty/loyalty-stamp-card";
 import { shortCardCode } from "@/lib/loyalty/card-code";
 import { getPublicCardByToken } from "@/lib/loyalty/cards";
 import { getLoyaltyCardReviewStaff } from "@/lib/loyalty/card-review";
+import { scopedPage } from "@/lib/http/route-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ function day(iso: string) {
   });
 }
 
-export default async function LoyaltyCardPage({ params }: { params: { token: string } }) {
+export default scopedPage("public", async function LoyaltyCardPage({ params }: { params: { token: string } }) {
   const card = await getPublicCardByToken(params.token);
   if (!card) notFound();
 
@@ -122,4 +123,4 @@ export default async function LoyaltyCardPage({ params }: { params: { token: str
       </div>
     </main>
   );
-}
+});

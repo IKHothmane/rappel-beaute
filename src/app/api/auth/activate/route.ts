@@ -4,8 +4,9 @@ import { activateAccount } from "@/lib/db/activation";
 import { clientIp } from "@/lib/http/client-ip";
 import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
   let tokenHint = "unknown";
@@ -45,4 +46,4 @@ export async function POST(request: NextRequest) {
     logger.error("activate error", { error: String(e) });
     return NextResponse.json({ error: "Activation impossible." }, { status: 500 });
   }
-}
+});

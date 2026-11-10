@@ -7,8 +7,9 @@ import { setGrantCookie } from "@/lib/push/grant";
 import { limitCustomerPush, tooMany } from "@/lib/push/guard";
 import { consumeDimensions } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/http/client-ip";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const raw = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const body = publicPushBody(raw);
   const phone = typeof raw?.phone === "string" ? raw.phone : "";
@@ -33,4 +34,4 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.json({ ok: true });
   setGrantCookie(response, result.grantToken);
   return response;
-}
+});

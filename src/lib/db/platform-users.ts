@@ -1,9 +1,10 @@
 import { randomBytes } from "crypto";
 import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { verifyPassword } from "@/lib/auth/crypto";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 type PlatformUserRow = {
   id: string;

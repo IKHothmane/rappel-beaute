@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { resolveOrganizationBySlug } from "@/lib/db/public-booking";
+import { publicRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export const GET = publicRoute(async function GET(_request: NextRequest, context: RouteContext) {
   const { slug } = await context.params;
   try {
     const org = await resolveOrganizationBySlug(slug);
@@ -16,4 +17,4 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     console.error("[GET /api/public/[slug]]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

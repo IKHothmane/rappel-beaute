@@ -4,6 +4,7 @@ import { clientIp } from "@/lib/http/client-ip";
 import { cardTokenForJoinQr, enrollAnonymousFromJoinQr, previewJoinQr } from "@/lib/loyalty/join-qr";
 import { loyaltyCardUrl, loyaltyPreviewUrl } from "@/lib/loyalty/public-origin";
 import { consumeDimensions } from "@/lib/rate-limit";
+import { publicRoute } from "@/lib/http/route-scope";
 
 const COOKIE = "rb_join_card";
 
@@ -41,7 +42,7 @@ function remember(response: NextResponse, cardToken: string, secure: boolean) {
  * customer-facing card page. Wallet installation is deliberately an explicit
  * action on that page, instead of skipping directly to a wallet app.
  */
-export async function GET(request: NextRequest, { params }: { params: { token: string } }) {
+export const GET = publicRoute(async function GET(request: NextRequest, { params }: { params: { token: string } }) {
   const joinToken = params.token.trim().toUpperCase();
   const preview = await previewJoinQr(joinToken);
   if (!preview) {
@@ -103,4 +104,4 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
   // chaque re-scan créait alors une nouvelle carte à 0 passage.
   const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
   return remember(response, cardToken, proto === "https");
-}
+});

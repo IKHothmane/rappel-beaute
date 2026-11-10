@@ -16,10 +16,11 @@ import {
   validateLinkProductSupplier,
   validateUpdateSupplier,
 } from "@/lib/validation/procurement";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "stock");
   if (!auth.ok) return auth.response;
 
@@ -34,9 +35,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/suppliers/:id]", error);
     return NextResponse.json({ error: "Impossible de charger le fournisseur." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "stock");
   if (!auth.ok) return auth.response;
 
@@ -100,9 +101,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     console.error("[PATCH /api/suppliers/:id]", error);
     return NextResponse.json({ error: "Impossible de mettre à jour." }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export const DELETE = tenantRoute(async function DELETE(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "stock");
   if (!auth.ok) return auth.response;
 
@@ -117,4 +118,4 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     console.error("[DELETE /api/suppliers/:id]", error);
     return NextResponse.json({ error: "Impossible d'archiver." }, { status: 500 });
   }
-}
+});

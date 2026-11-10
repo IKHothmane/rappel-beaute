@@ -1,8 +1,9 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { changePlatformPassword } from "@/lib/db/platform-settings";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -30,4 +31,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/admin/settings/password]", error);
     return adminError("Impossible de changer le mot de passe.", 500);
   }
-}
+});

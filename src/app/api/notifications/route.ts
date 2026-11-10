@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { requireAppSession } from "@/lib/auth/api-guard";
 import { listNotifications } from "@/lib/db/notifications";
 import { parseNotificationListParams } from "@/lib/validation/notifications";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
@@ -22,4 +23,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/notifications]", error);
     return NextResponse.json({ error: "Erreur notifications." }, { status: 500 });
   }
-}
+});

@@ -11,6 +11,7 @@ import {
 } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { clientIp, parsePublicBookingBody } from "@/lib/public-booking/validation";
+import { publicRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
@@ -46,7 +47,7 @@ function bookingError(error: unknown): { status: number; message: string } {
   return map[error.message] ?? { status: 500, message: "Impossible de confirmer le rendez-vous." };
 }
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = publicRoute(async function POST(request: NextRequest, context: RouteContext) {
   const { slug } = await context.params;
   const ip = clientIp(request);
   const ipRl = await consumeDimensions([
@@ -115,4 +116,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
-}
+});

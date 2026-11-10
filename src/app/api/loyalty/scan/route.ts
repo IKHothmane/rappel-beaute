@@ -12,6 +12,7 @@ import {
   previewLoyaltyScan,
   validateLoyaltyVisit,
 } from "@/lib/loyalty/validation";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 function scanError(error: unknown) {
   const code = error instanceof Error ? error.message : "";
@@ -72,7 +73,7 @@ function scanError(error: unknown) {
   return null;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "loyalty");
   if (!auth.ok) return auth.response;
   const token = new URL(request.url).searchParams.get("token") ?? "";
@@ -85,9 +86,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/loyalty/scan]", error);
     return NextResponse.json({ error: "Impossible de lire la carte." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "loyalty");
   if (!auth.ok) return auth.response;
   try {
@@ -140,4 +141,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/loyalty/scan]", error);
     return NextResponse.json({ error: "Impossible de valider le passage." }, { status: 500 });
   }
-}
+});

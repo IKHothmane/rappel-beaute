@@ -15,6 +15,7 @@ import {
   pickDefaultGoogleCalendar,
   verifyGoogleOAuthState,
 } from "@/lib/google/calendar";
+import { publicRoute } from "@/lib/http/route-scope";
 
 function agendaRedirect(
   origin: string,
@@ -47,7 +48,7 @@ function returnOrigin(request: NextRequest, callbackUri?: string): string {
   return (process.env.NEXT_PUBLIC_APP_URL || here).replace(/\/$/, "");
 }
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const error = sp.get("error");
   const code = sp.get("code");
@@ -135,4 +136,4 @@ export async function GET(request: NextRequest) {
           : "oauth";
     return agendaRedirect(origin, "error", { reason });
   }
-}
+});

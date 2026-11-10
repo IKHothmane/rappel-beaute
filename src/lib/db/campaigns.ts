@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writeAuditLog } from "@/lib/db/audit";
 import { getOrCreateReactivationSettings, MARKETING_WA_TYPES } from "@/lib/db/reactivation";
 import { renderTemplateBody } from "@/lib/db/whatsapp";
@@ -16,7 +17,7 @@ import type {
   UpdateCampaignInput,
 } from "@/types/campaign";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;

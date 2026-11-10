@@ -15,8 +15,9 @@ import {
   serializeTicket,
   type AdminSupportFilters,
 } from "@/lib/db/support-tickets";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -58,9 +59,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/admin/support/tickets]", error);
     return adminError("Impossible de charger les tickets.", 500);
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -104,4 +105,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/admin/support/tickets]", error);
     return adminError("Impossible de créer le ticket.", 500);
   }
-}
+});

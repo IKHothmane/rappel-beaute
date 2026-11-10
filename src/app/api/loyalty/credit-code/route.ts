@@ -7,6 +7,7 @@ import {
   issueLoyaltyCreditCode,
   listCreditServices,
 } from "@/lib/loyalty/validation";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 function creditError(error: unknown) {
   const code = error instanceof Error ? error.message : "";
@@ -37,14 +38,14 @@ function creditError(error: unknown) {
   return null;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "loyalty");
   if (!auth.ok) return auth.response;
   const services = await listCreditServices(auth.session.organizationId);
   return NextResponse.json({ services });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "loyalty");
   if (!auth.ok) return auth.response;
   const raw = await request.json().catch(() => null);
@@ -107,4 +108,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/loyalty/credit-code]", error);
     return NextResponse.json({ error: "Impossible d'ajouter le passage." }, { status: 500 });
   }
-}
+});

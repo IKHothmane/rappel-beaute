@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { pool } from "@/lib/db/pool";
 import { logger } from "@/lib/logger";
+import { runAsJob } from "@/lib/db/tenant-context";
 import { cardSiteOrigin } from "@/lib/loyalty/public-origin";
 import { googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { addGoogleWalletTextMessage, googleWalletClassReviewStatus } from "@/lib/loyalty/google-wallet";
@@ -310,7 +311,7 @@ export function startGoogleWalletNotifier() {
   if (globalState.googleWalletTimer) return;
   if (process.env.NEXT_PHASE === "phase-production-build") return;
   const tick = () => {
-    void deliverDueWalletMessages().catch(() => {
+    void runAsJob("messages Google Wallet", () => deliverDueWalletMessages()).catch(() => {
       logger.warn("google wallet tick failed");
     });
   };

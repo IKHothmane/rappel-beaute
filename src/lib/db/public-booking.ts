@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { getOrgIdBySlug, isExclusionViolation, rowToDto, type AppointmentRow } from "@/lib/db/appointments";
 import { findOrCreateCustomerByPhone } from "@/lib/db/customers";
 import { assertResourceBookable, listResources } from "@/lib/db/resources";
@@ -26,7 +27,7 @@ import type { ResourceAgendaContext } from "@/types/resource";
 import type { ServiceAgendaOption } from "@/types/service";
 import type { StaffAgendaContext } from "@/types/staff";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;

@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { clearSessionCookie, getSessionFromRequest } from "@/lib/auth/session";
 import { writeAuditLog } from "@/lib/db/audit";
 import { COOKIE_HOST } from "@/lib/domain";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const session = getSessionFromRequest(request);
   const res = NextResponse.json({ ok: true });
   // Purge le cache navigateur (308 stockés) pour casser ERR_TOO_MANY_REDIRECTS.
@@ -31,4 +32,4 @@ export async function POST(request: NextRequest) {
   }
 
   return res;
-}
+});

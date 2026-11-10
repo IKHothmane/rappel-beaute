@@ -11,10 +11,11 @@ import {
   releaseIdempotency,
 } from "@/lib/rate-limit";
 import type { PublicProductOrderInput } from "@/types/public-booking";
+import { publicRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = publicRoute(async function POST(request: NextRequest, context: RouteContext) {
   const { slug } = await context.params;
   const ip = getClientIp(request);
 
@@ -94,4 +95,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
     return NextResponse.json({ error: message }, { status });
   }
-}
+});

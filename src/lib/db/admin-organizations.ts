@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { newPlatformId } from "@/lib/db/platform-users";
 import type { PlatformSessionUser } from "@/lib/auth/types";
@@ -17,7 +18,7 @@ import {
 } from "@/types/platform";
 import type { SubscriptionStatus } from "@/types/subscription";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;

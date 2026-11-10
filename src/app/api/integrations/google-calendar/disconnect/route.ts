@@ -5,8 +5,9 @@ import { canManageGoogleCalendar } from "@/lib/rbac";
 import { writeAuditLog } from "@/lib/db/audit";
 import { deleteGoogleCalendarConnection } from "@/lib/db/google-calendar";
 import { revokeGoogleToken } from "@/lib/google/calendar";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
@@ -39,4 +40,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

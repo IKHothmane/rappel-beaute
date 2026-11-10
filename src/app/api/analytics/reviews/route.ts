@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getReviewAnalytics } from "@/lib/db/analytics";
 import { resolveAnalyticsContext, withScope } from "@/app/api/analytics/_shared";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const resolved = await resolveAnalyticsContext(request);
   if (!resolved.ok) return resolved.response;
   if (resolved.ctx.scope !== "full") {
@@ -20,4 +21,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/analytics/reviews]", error);
     return NextResponse.json({ error: "Erreur analytics." }, { status: 500 });
   }
-}
+});

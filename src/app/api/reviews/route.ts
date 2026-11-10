@@ -17,8 +17,9 @@ import {
 import { canManageReviewSettings, canSendReviews } from "@/lib/rbac";
 import { parseReviewAction } from "@/lib/validation/review";
 import type { ReviewRequestStatus } from "@/types/review";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "reviews");
   if (!auth.ok) return auth.response;
   try {
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/reviews]", error);
     return NextResponse.json({ error: "Impossible de charger les avis." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "reviews");
   if (!auth.ok) return auth.response;
 
@@ -93,4 +94,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/reviews]", error);
     return NextResponse.json({ error: "Action impossible." }, { status: 500 });
   }
-}
+});

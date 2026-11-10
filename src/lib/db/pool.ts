@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 
 const globalForPg = globalThis as unknown as { pgPool?: Pool };
 
@@ -8,13 +9,15 @@ const globalForPg = globalThis as unknown as { pgPool?: Pool };
  */
 export const pool =
   globalForPg.pgPool ??
-  new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // Instance Railway unique : 5 connexions suffisent et coûtent moins de RAM.
-    max: Number(process.env.PG_POOL_MAX ?? 5),
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 8_000,
-  });
+  withTenantIsolation(
+    new Pool({
+      connectionString: process.env.DATABASE_URL,
+      // Instance Railway unique : 5 connexions suffisent et coûtent moins de RAM.
+      max: Number(process.env.PG_POOL_MAX ?? 5),
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 8_000,
+    }),
+  );
 
 // Toujours réutiliser le pool (HMR local + multi-chargements Next).
 globalForPg.pgPool = pool;

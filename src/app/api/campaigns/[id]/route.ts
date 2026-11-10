@@ -8,10 +8,11 @@ import {
 import { getCampaignById, updateCampaign } from "@/lib/db/campaigns";
 import { canWriteCampaigns } from "@/lib/rbac";
 import { validateUpdateCampaign } from "@/lib/validation/campaign";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, ctx: RouteCtx) {
+export const GET = tenantRoute(async function GET(request: NextRequest, ctx: RouteCtx) {
   const auth = await requireFeatureRead(request, "marketing");
   if (!auth.ok) return auth.response;
   const { id } = await ctx.params;
@@ -25,9 +26,9 @@ export async function GET(request: NextRequest, ctx: RouteCtx) {
     console.error("[GET /api/campaigns/:id]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest, ctx: RouteCtx) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, ctx: RouteCtx) {
   const auth = await requireFeatureWrite(request, "marketing");
   if (!auth.ok) return auth.response;
   if (!canWriteCampaigns(auth.session.role)) {
@@ -55,4 +56,4 @@ export async function PATCH(request: NextRequest, ctx: RouteCtx) {
     const msg = error instanceof Error ? error.message : "Erreur serveur.";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
-}
+});

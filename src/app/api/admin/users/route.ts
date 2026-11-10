@@ -8,8 +8,9 @@ import {
   listOrganizationsForFilter,
   listPlatformWideUsers,
 } from "@/lib/db/admin-users";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -27,9 +28,9 @@ export async function GET(request: NextRequest) {
   ]);
 
   return adminJson({ items, kpis, organizations });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -60,4 +61,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/admin/users]", e);
     return adminError("Création impossible.", 500);
   }
-}
+});

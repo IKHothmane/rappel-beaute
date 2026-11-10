@@ -4,8 +4,9 @@ import { assistantBookingError } from "@/lib/assistant/booking-http";
 import { requireWidgetOrganization } from "@/lib/assistant/widget-request";
 import { clientAuthorityKey, proposeAssistantCancel } from "@/lib/db/assistant-booking";
 import { RATE_POLICIES } from "@/lib/rate-limit";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   let body: unknown;
   try {
     body = await request.json();
@@ -31,4 +32,4 @@ export async function POST(request: NextRequest) {
     const mapped = assistantBookingError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
-}
+});

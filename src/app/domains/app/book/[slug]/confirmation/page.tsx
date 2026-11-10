@@ -2,13 +2,14 @@ import Link from "next/link";
 import { resolveOrganizationBySlug } from "@/lib/db/public-booking";
 import { getAppointmentById } from "@/lib/db/appointments";
 import { formatBookingDate, formatBookingTime, formatMad } from "@/modules/public-booking/service";
+import { scopedPage } from "@/lib/http/route-scope";
 
 type Props = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ id?: string }>;
 };
 
-export default async function BookingConfirmationPage({ params, searchParams }: Props) {
+export default scopedPage("public", async function BookingConfirmationPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { id } = await searchParams;
   const org = await resolveOrganizationBySlug(slug);
@@ -65,4 +66,4 @@ export default async function BookingConfirmationPage({ params, searchParams }: 
       </div>
     </div>
   );
-}
+});

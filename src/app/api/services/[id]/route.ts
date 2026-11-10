@@ -9,10 +9,11 @@ import { canEditServicePrice } from "@/lib/rbac";
 import { writeAuditLog } from "@/lib/db/audit";
 import { deleteService, getServiceById, updateService } from "@/lib/db/services";
 import { validateUpdateService } from "@/lib/validation/service";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "services");
   if (!auth.ok) return auth.response;
 
@@ -30,9 +31,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "services");
   if (!auth.ok) return auth.response;
 
@@ -90,9 +91,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export const DELETE = tenantRoute(async function DELETE(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "services");
   if (!auth.ok) return auth.response;
 
@@ -122,4 +123,4 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
-}
+});

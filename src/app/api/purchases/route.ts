@@ -10,8 +10,9 @@ import {
   parsePurchaseListQuery,
   validateCreatePurchase,
 } from "@/lib/validation/procurement";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "stock", "purchases");
   if (!auth.ok) return auth.response;
 
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/purchases]", error);
     return NextResponse.json({ error: "Impossible de charger les achats." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "stock", "purchases");
   if (!auth.ok) return auth.response;
 
@@ -68,4 +69,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/purchases]", error);
     return NextResponse.json({ error: "Impossible de créer la commande." }, { status: 500 });
   }
-}
+});

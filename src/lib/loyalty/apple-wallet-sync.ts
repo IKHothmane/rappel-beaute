@@ -1,5 +1,6 @@
 import { pool } from "@/lib/db/pool";
 import { logger } from "@/lib/logger";
+import { runAsJob } from "@/lib/db/tenant-context";
 import { apnsDeviceResult } from "@/lib/loyalty/apple-passkit";
 import { pushTokensForPass, removeAppleDevice } from "@/lib/loyalty/apple-wallet-store";
 import { signalApplePassUpdate } from "@/lib/loyalty/apple-wallet-updates";
@@ -52,7 +53,7 @@ export function startAppleWalletUpdates() {
   if (globalForApple.appleWalletUpdates) return;
   globalForApple.appleWalletUpdates = true;
   const tick = () => {
-    void publishApplePassUpdates().catch((error) => {
+    void runAsJob("mises à jour Apple Wallet", () => publishApplePassUpdates()).catch((error) => {
       logger.warn("apple wallet update scan failed", {
         error: error instanceof Error ? error.message : "scan",
       });

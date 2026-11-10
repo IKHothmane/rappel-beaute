@@ -3,10 +3,11 @@ import type { NextRequest } from "next/server";
 import { requireFeatureWrite } from "@/lib/auth/api-guard";
 import { getCampaignById, prepareCampaign } from "@/lib/db/campaigns";
 import { canPrepareCampaigns } from "@/lib/rbac";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, ctx: RouteCtx) {
+export const POST = tenantRoute(async function POST(request: NextRequest, ctx: RouteCtx) {
   const auth = await requireFeatureWrite(request, "marketing");
   if (!auth.ok) return auth.response;
   if (!canPrepareCampaigns(auth.session.role)) {
@@ -27,4 +28,4 @@ export async function POST(request: NextRequest, ctx: RouteCtx) {
     const msg = error instanceof Error ? error.message : "Erreur serveur.";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
-}
+});

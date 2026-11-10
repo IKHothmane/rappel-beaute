@@ -4,10 +4,11 @@ import {
   getOrganizationById,
   updateOrganization,
 } from "@/lib/db/admin-organizations";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, ctx: Ctx) {
+export const GET = platformRoute(async function GET(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -15,9 +16,9 @@ export async function GET(request: NextRequest, ctx: Ctx) {
   const org = await getOrganizationById(id);
   if (!org) return adminError("Institut introuvable.", 404);
   return adminJson({ organization: org });
-}
+});
 
-export async function PATCH(request: NextRequest, ctx: Ctx) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -41,4 +42,4 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     }
     return adminError("Mise à jour impossible.", 500);
   }
-}
+});

@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from "crypto";
 import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { consumeDimensions, RATE_POLICIES } from "@/lib/rate-limit";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 const WIDGET_SESSION_MS = 30 * 60 * 1000;
 const CUSTOMER_SESSION_MS = 2 * 60 * 60 * 1000;

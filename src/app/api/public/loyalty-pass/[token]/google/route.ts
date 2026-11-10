@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { createGoogleWalletSaveUrl } from "@/lib/loyalty/google-wallet";
 import { requestCardOrigin } from "@/lib/loyalty/public-origin";
 import { googleWalletConfigured, readCardToken, walletUnavailable } from "@/lib/loyalty/wallet-config";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest, { params }: { params: { token: string } }) {
+export const GET = publicRoute(async function GET(request: NextRequest, { params }: { params: { token: string } }) {
   const token = readCardToken(request, params.token);
   if (!token.ok) return token.response;
   if (!googleWalletConfigured()) return walletUnavailable("google");
@@ -19,4 +20,4 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
       { status: 503 },
     );
   }
-}
+});

@@ -4,6 +4,7 @@ import { getOrganizationName } from "@/lib/db/analytics";
 import { resolveAnalyticsContext, withScope } from "@/lib/reports/permissions";
 import { buildReportByType, canAccessReportType } from "@/lib/reports/service";
 import type { ReportType } from "@/types/reports";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 const TYPES = new Set<ReportType>([
   "global",
@@ -25,7 +26,7 @@ function parseType(sp: URLSearchParams): ReportType {
   return "global";
 }
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const resolved = await resolveAnalyticsContext(request);
   if (!resolved.ok) return resolved.response;
   const { session, filters, scope } = resolved.ctx;
@@ -51,4 +52,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/reports]", error);
     return NextResponse.json({ error: "Erreur lors du chargement du rapport." }, { status: 500 });
   }
-}
+});

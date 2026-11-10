@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { runAsJob } from "@/lib/db/tenant-context";
 
 const globalState = globalThis as { customerPushTimer?: ReturnType<typeof setInterval> };
 
@@ -6,8 +7,7 @@ export function startCustomerPushScheduler() {
   if (globalState.customerPushTimer) return;
   if (process.env.NEXT_PHASE === "phase-production-build") return;
   const tick = () => {
-    void import("@/lib/push/customer-push")
-      .then((mod) => mod.dispatchAllDueCustomerPushes())
+    void runAsJob("relances push clientes", () => import("@/lib/push/customer-push").then((mod) => mod.dispatchAllDueCustomerPushes()))
       .catch(() => {
         logger.warn("customer push tick failed");
       });

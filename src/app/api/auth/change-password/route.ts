@@ -7,12 +7,13 @@ import { changeOwnPassword, getUserSessionState } from "@/lib/db/users";
 import { clientIp } from "@/lib/http/client-ip";
 import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { publicRoute } from "@/lib/http/route-scope";
 
 /**
  * POST /api/auth/change-password
  * Accessible même si mustChangePassword = true.
  */
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const auth = requireSession(request);
   if (!auth.ok) return auth.response;
   if (!isAppSession(auth.session)) {
@@ -105,4 +106,4 @@ export async function POST(request: NextRequest) {
     logger.error("change-password error", { error: String(error) });
     return NextResponse.json({ error: "Impossible de changer le mot de passe." }, { status: 500 });
   }
-}
+});

@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 import { requireAppSession } from "@/lib/auth/api-guard";
 import { getOrganizationSubscription } from "@/lib/subscriptions/subscription-service";
 import { PLAN_FEATURE_LABELS, type PlanFeatureKey } from "@/types/subscription";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
@@ -20,4 +21,4 @@ export async function GET(request: NextRequest) {
   }));
 
   return NextResponse.json({ features, planCode: sub.planCode, planName: sub.planName });
-}
+});

@@ -6,13 +6,14 @@ import {
   verifyMetaWebhookChallenge,
   type WhatsAppWebhookPayload,
 } from "@/lib/whatsapp/webhook";
+import { publicRoute } from "@/lib/http/route-scope";
 
 /**
  * GET /api/whatsapp/webhook
  * Vérification du webhook par Meta (WhatsApp Cloud API).
  * Paramètres query : hub.mode, hub.verify_token, hub.challenge
  */
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const result = verifyMetaWebhookChallenge(request.nextUrl.searchParams);
   if (!result.ok) {
     return new Response(result.message ?? "Forbidden", {
@@ -26,13 +27,13 @@ export async function GET(request: NextRequest) {
     status: 200,
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
-}
+});
 
 /**
  * POST /api/whatsapp/webhook
  * Réception des événements WhatsApp (messages entrants, statuts delivered/read/failed).
  */
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
 
@@ -74,4 +75,4 @@ export async function POST(request: NextRequest) {
       headers: { "Content-Type": "text/plain" },
     });
   }
-}
+});

@@ -1,5 +1,11 @@
 export async function register() {
+  // Suivi des erreurs : sans SENTRY_DSN, ces fichiers n'initialisent rien.
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("../sentry.edge.config");
+  }
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("../sentry.server.config");
+
     // Sharp/libvips : cache interne inutile sur un serveur (variantes uniques)
     // et concurrency 1 = moins de buffers natifs en parallèle.
     try {

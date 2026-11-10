@@ -19,8 +19,9 @@ import {
 } from "@/lib/whatsapp/send";
 import { canSendWhatsapp } from "@/lib/rbac";
 import { parseWhatsAppAction, parseWhatsAppListQuery } from "@/lib/validation/whatsapp";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "whatsapp");
   if (!auth.ok) return auth.response;
   try {
@@ -41,9 +42,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/whatsapp]", error);
     return NextResponse.json({ error: "Impossible de charger WhatsApp." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "whatsapp");
   if (!auth.ok) return auth.response;
   if (!canSendWhatsapp(auth.session.role)) {
@@ -127,4 +128,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/whatsapp]", error);
     return NextResponse.json({ error: "Action WhatsApp impossible." }, { status: 500 });
   }
-}
+});

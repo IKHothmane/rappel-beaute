@@ -14,6 +14,7 @@ import { assertAppointmentBookable } from "@/lib/db/planning";
 import { assertResourceBookable } from "@/lib/db/resources";
 import { onAppointmentCompleted } from "@/lib/db/invoices";
 import type { AppointmentStatus, CreateAppointmentInput } from "@/types/appointment";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 function resourceBookingError(error: unknown) {
   if (!(error instanceof Error)) return null;
@@ -36,7 +37,7 @@ function availabilityError(error: unknown) {
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -55,9 +56,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -230,6 +231,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
-}
+});
 
 /** Pas de DELETE — annulation via PATCH { status: "CANCELLED" } */

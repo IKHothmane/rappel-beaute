@@ -4,6 +4,7 @@ import { requireWidgetOrganization } from "@/lib/assistant/widget-request";
 import { assistantAppointmentContext } from "@/lib/db/assistant-booking";
 import { getPublicAvailabilitySlots } from "@/lib/db/public-booking";
 import { RATE_POLICIES } from "@/lib/rate-limit";
+import { publicRoute } from "@/lib/http/route-scope";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -14,7 +15,7 @@ function isCalendarDate(date: string): boolean {
   return utc.getUTCFullYear() === year && utc.getUTCMonth() === month - 1 && utc.getUTCDate() === day;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const session = await requireWidgetOrganization(request, {
     key: "assistant:availability",
     ...RATE_POLICIES.availability,
@@ -71,4 +72,4 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json({ error: "Créneaux indisponibles." }, { status: 500 });
   }
-}
+});

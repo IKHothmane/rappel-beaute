@@ -3,13 +3,14 @@ import type { NextRequest } from "next/server";
 import { requireFeatureWrite } from "@/lib/auth/api-guard";
 import { adminResetTemporaryPassword } from "@/lib/db/users";
 import { publicAppOrigin } from "@/lib/site";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 /**
  * POST /api/users/[id]/reset-password
  * Génère un mot de passe temporaire (hashé en DB). OWNER uniquement.
  * Le clair n'est renvoyé qu'une fois dans la réponse JSON.
  */
-export async function POST(
+export const POST = tenantRoute(async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -69,4 +70,4 @@ export async function POST(
     console.error("[POST /api/users/:id/reset-password]", error);
     return NextResponse.json({ error: "Réinitialisation impossible." }, { status: 500 });
   }
-}
+});

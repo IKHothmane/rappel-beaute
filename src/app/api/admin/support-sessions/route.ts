@@ -6,8 +6,9 @@ import {
   listSupportSessions,
   startSupportSession,
 } from "@/lib/db/admin-organizations";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -28,9 +29,9 @@ export async function GET(request: NextRequest) {
     items,
     openCount: openOnly.length,
   });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -70,4 +71,4 @@ export async function POST(request: NextRequest) {
   }
 
   return adminError("Requête invalide.", 400);
-}
+});

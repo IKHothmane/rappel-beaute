@@ -1,10 +1,11 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { setOrganizationUserStatus } from "@/lib/db/admin-organizations";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string; userId: string }> };
 
-export async function PATCH(request: NextRequest, ctx: Ctx) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -23,4 +24,4 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     }
     return adminError("Mise à jour impossible.", 500);
   }
-}
+});

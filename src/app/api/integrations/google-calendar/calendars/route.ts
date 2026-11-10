@@ -8,8 +8,9 @@ import {
 } from "@/lib/db/google-calendar";
 import { listGoogleCalendars, googleReconnectMessage } from "@/lib/google/calendar";
 import type { GoogleCalendarOption } from "@/types/google-calendar";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
   if (!canManageGoogleCalendar(auth.session.role)) {
@@ -34,9 +35,9 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
   if (!canManageGoogleCalendar(auth.session.role)) {
@@ -101,4 +102,4 @@ export async function PATCH(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

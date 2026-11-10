@@ -4,8 +4,9 @@ import { preferencesOnEnable, publicPushBody } from "@/lib/push/eligibility";
 import { updateCustomerPushPreferences } from "@/lib/push/customer-push";
 import { grantFromRequest } from "@/lib/push/grant";
 import { limitCustomerPush, tooMany } from "@/lib/push/guard";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const body = publicPushBody(await request.json().catch(() => null));
   if (!body.cardToken) return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
   const limited = await limitCustomerPush(request, body.cardToken);
@@ -21,4 +22,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Activez d'abord les notifications." }, { status: 409 });
   }
   return NextResponse.json({ ok: true });
-}
+});

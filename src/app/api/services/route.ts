@@ -14,8 +14,9 @@ import {
   parseServiceListQuery,
   validateCreateService,
 } from "@/lib/validation/service";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "services");
   if (!auth.ok) return auth.response;
 
@@ -55,9 +56,9 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "services");
   if (!auth.ok) return auth.response;
 
@@ -85,4 +86,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -89,6 +89,12 @@ jobs:
         env:
           DATABASE_URL: ${{ env.RESTORE_DATABASE_URL }}
 
+      - name: Rétablir et vérifier rôle et isolation RLS
+        # pg_dump --no-acl n'embarque ni rôles ni GRANT
+        run: npm run ops:rls-grants
+        env:
+          DATABASE_URL: ${{ env.RESTORE_DATABASE_URL }}
+
       - name: Vérifier intégrité
         run: npm run ops:verify-restore
         env:
@@ -98,6 +104,7 @@ jobs:
         run: npm run test:security && npm run test:subscriptions
         env:
           DATABASE_URL: ${{ env.RESTORE_DATABASE_URL }}
+          RLS_TEST_DATABASE_URL: ${{ env.RESTORE_DATABASE_URL }}
 
       - name: Preuve restore (artifact)
         if: success()

@@ -6,15 +6,16 @@ import {
   setOrganizationWhatsappFrom,
 } from "@/lib/db/organization";
 import { parseInstituteWhatsappNumber } from "@/lib/whatsapp/twilio";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "settings");
   if (!auth.ok) return auth.response;
   const whatsappFrom = await getOrganizationWhatsappFrom(auth.session.organizationId);
   return NextResponse.json({ whatsappFrom });
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "settings");
   if (!auth.ok) return auth.response;
 
@@ -38,4 +39,4 @@ export async function PATCH(request: NextRequest) {
 
   await setOrganizationWhatsappFrom(auth.session.organizationId, parsed.value);
   return NextResponse.json({ whatsappFrom: parsed.value });
-}
+});

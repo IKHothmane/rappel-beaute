@@ -15,8 +15,9 @@ import {
   parseMovementListQuery,
   validateCreateMovement,
 } from "@/lib/validation/inventory";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "stock");
   if (!auth.ok) return auth.response;
 
@@ -45,9 +46,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/stock]", error);
     return NextResponse.json({ error: "Impossible de charger le stock." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "stock");
   if (!auth.ok) return auth.response;
 
@@ -103,4 +104,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/stock]", error);
     return NextResponse.json({ error: "Impossible d'enregistrer le mouvement." }, { status: 500 });
   }
-}
+});

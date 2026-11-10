@@ -9,6 +9,7 @@ import {
   submitPublicReview,
   type ReviewGateCode,
 } from "@/lib/reviews/public-review";
+import { publicRoute } from "@/lib/http/route-scope";
 
 function gateResponse(code: ReviewGateCode) {
   if (code === "TOKEN_EXPIRED") {
@@ -29,7 +30,7 @@ function gateResponse(code: ReviewGateCode) {
   return NextResponse.json({ error: "Lien d'avis invalide." }, { status: 404 });
 }
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const slug = url.searchParams.get("slug")?.trim() ?? "";
   const token = url.searchParams.get("token")?.trim() ?? "";
@@ -41,9 +42,9 @@ export async function GET(request: NextRequest) {
   const preview = await previewPublicReview(slug, token);
   if (!preview.ok) return gateResponse(preview.code);
   return NextResponse.json(preview);
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
   const body = (await request.json().catch(() => null)) as {
     slug?: string;
@@ -87,4 +88,4 @@ export async function POST(request: NextRequest) {
   });
   if (!result.ok) return gateResponse(result.code);
   return NextResponse.json({ ok: true });
-}
+});

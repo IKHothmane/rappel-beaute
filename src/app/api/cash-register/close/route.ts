@@ -6,8 +6,9 @@ import {
 } from "@/lib/auth/api-guard";
 import { closeCashRegister } from "@/lib/db/finance";
 import { validateCloseCash } from "@/lib/validation/finance";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "cash-register");
   if (!auth.ok) return auth.response;
 
@@ -38,4 +39,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/cash-register/close]", error);
     return NextResponse.json({ error: "Impossible de fermer la caisse." }, { status: 500 });
   }
-}
+});

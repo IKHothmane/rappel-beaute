@@ -2,10 +2,11 @@ import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { platformResetUserPassword } from "@/lib/db/admin-users";
 import { publicAppOrigin } from "@/lib/site";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, ctx: Ctx) {
+export const POST = platformRoute(async function POST(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -42,4 +43,4 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     console.error("[POST /api/admin/users/:id/reset-password]", e);
     return adminError("Réinitialisation impossible.", 500);
   }
-}
+});

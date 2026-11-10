@@ -7,10 +7,11 @@ import {
 } from "@/lib/db/public-booking";
 import { consumeDimensions, RATE_POLICIES } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/public-booking/validation";
+import { publicRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = publicRoute(async function GET(request: NextRequest, context: RouteContext) {
   const { slug } = await context.params;
   const ip = clientIp(request);
   const rl = await consumeDimensions([
@@ -65,4 +66,4 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/public/[slug]/availability]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

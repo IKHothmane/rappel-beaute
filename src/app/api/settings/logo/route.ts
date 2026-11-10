@@ -3,18 +3,19 @@ import type { NextRequest } from "next/server";
 import { requireFeatureRead, requireFeatureWrite } from "@/lib/auth/api-guard";
 import { getOrganizationLogoUrl, setOrganizationLogoUrl } from "@/lib/db/organization";
 import { getStorageService } from "@/lib/storage";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
 const MAX_BYTES = 2 * 1024 * 1024;
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "settings");
   if (!auth.ok) return auth.response;
   const logoUrl = await getOrganizationLogoUrl(auth.session.organizationId);
   return NextResponse.json({ logoUrl });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "settings");
   if (!auth.ok) return auth.response;
 
@@ -49,4 +50,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/settings/logo]", error);
     return NextResponse.json({ error: "Impossible d'enregistrer le logo." }, { status: 500 });
   }
-}
+});

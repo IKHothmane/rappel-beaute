@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { buildAIContext, requireAIRead, requireAIWrite } from "@/lib/ai/guard";
 import { deleteAIConversation, getAIConversation } from "@/lib/ai/service";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: Ctx) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: Ctx) {
   const auth = await requireAIRead(request);
   if (!auth.ok) return auth.response;
   const { id } = await context.params;
@@ -21,9 +22,9 @@ export async function GET(request: NextRequest, context: Ctx) {
     console.error("[GET /api/ai/conversations/[id]]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: NextRequest, context: Ctx) {
+export const DELETE = tenantRoute(async function DELETE(request: NextRequest, context: Ctx) {
   const auth = await requireAIWrite(request);
   if (!auth.ok) return auth.response;
   const { id } = await context.params;
@@ -40,4 +41,4 @@ export async function DELETE(request: NextRequest, context: Ctx) {
     console.error("[DELETE /api/ai/conversations/[id]]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

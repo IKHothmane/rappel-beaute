@@ -3,10 +3,11 @@ import type { NextRequest } from "next/server";
 import { requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { updateResourceMaintenance } from "@/lib/db/resources";
 import { validateUpdateMaintenance } from "@/lib/validation/resource";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string; maintenanceId: string }> };
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -34,4 +35,4 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     console.error("[PATCH /api/resources/:id/maintenance/:maintenanceId]", error);
     return NextResponse.json({ error: "Impossible de mettre à jour." }, { status: 500 });
   }
-}
+});

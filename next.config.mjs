@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === "production";
 
@@ -124,4 +126,11 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Suivi des erreurs. Sans SENTRY_DSN rien n'est envoyé ; sans SENTRY_AUTH_TOKEN aucune source map n'est téléversée.
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  telemetry: false,
+  disableLogger: true,
+  widenClientFileUpload: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+});

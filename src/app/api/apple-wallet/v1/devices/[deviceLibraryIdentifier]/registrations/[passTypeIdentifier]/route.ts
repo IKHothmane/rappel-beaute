@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { appleDeviceId } from "@/lib/loyalty/apple-passkit";
 import { listUpdatedSerials } from "@/lib/loyalty/apple-wallet-store";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function GET(
+export const GET = publicRoute(async function GET(
   request: NextRequest,
   { params }: { params: { deviceLibraryIdentifier: string; passTypeIdentifier: string } },
 ) {
@@ -16,4 +17,4 @@ export async function GET(
   );
   if (!found || found.serialNumbers.length === 0) return new NextResponse(null, { status: 204 });
   return NextResponse.json({ serialNumbers: found.serialNumbers, lastUpdated: found.lastUpdated });
-}
+});

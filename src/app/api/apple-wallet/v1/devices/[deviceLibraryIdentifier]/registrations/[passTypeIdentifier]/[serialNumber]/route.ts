@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { appleAuthorizationToken, appleDeviceId } from "@/lib/loyalty/apple-passkit";
 import { registerAppleDevice, unregisterAppleDevice } from "@/lib/loyalty/apple-wallet-store";
+import { publicRoute } from "@/lib/http/route-scope";
 
 type Params = {
   params: {
@@ -11,7 +12,7 @@ type Params = {
   };
 };
 
-export async function POST(request: NextRequest, { params }: Params) {
+export const POST = publicRoute(async function POST(request: NextRequest, { params }: Params) {
   const device = appleDeviceId(params.deviceLibraryIdentifier);
   const token = appleAuthorizationToken(request.headers.get("authorization"));
   if (!device || !token) return new NextResponse(null, { status: 401 });
@@ -30,9 +31,9 @@ export async function POST(request: NextRequest, { params }: Params) {
     pushToken: body.pushToken,
   });
   return new NextResponse(null, { status });
-}
+});
 
-export async function DELETE(request: NextRequest, { params }: Params) {
+export const DELETE = publicRoute(async function DELETE(request: NextRequest, { params }: Params) {
   const device = appleDeviceId(params.deviceLibraryIdentifier);
   const token = appleAuthorizationToken(request.headers.get("authorization"));
   if (!device || !token) return new NextResponse(null, { status: 401 });
@@ -43,4 +44,4 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     authenticationToken: token,
   });
   return new NextResponse(null, { status });
-}
+});

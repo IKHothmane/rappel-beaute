@@ -4,8 +4,9 @@ import { cardTokenFromClient } from "@/lib/push/eligibility";
 import { customerPushStatus } from "@/lib/push/customer-push";
 import { grantFromRequest } from "@/lib/push/grant";
 import { limitCustomerPush, tooMany } from "@/lib/push/guard";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const token = cardTokenFromClient({
     cardToken: new URL(request.url).searchParams.get("cardToken") ?? "",
   });
@@ -15,4 +16,4 @@ export async function GET(request: NextRequest) {
   const status = await customerPushStatus(token, await grantFromRequest(request));
   if (!status) return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
   return NextResponse.json(status);
-}
+});

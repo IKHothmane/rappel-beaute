@@ -5,6 +5,7 @@ import { createGoogleWalletSaveUrl } from "@/lib/loyalty/google-wallet";
 import { requestCardOrigin } from "@/lib/loyalty/public-origin";
 import { enrollFromJoinQr, previewJoinQr } from "@/lib/loyalty/join-qr";
 import { consumeDimensions } from "@/lib/rate-limit";
+import { publicRoute } from "@/lib/http/route-scope";
 
 function publicError(error: unknown) {
   const code = error instanceof Error ? error.message : "";
@@ -23,7 +24,7 @@ function publicError(error: unknown) {
   return null;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const token = new URL(request.url).searchParams.get("token") ?? "";
   const qr = await previewJoinQr(token);
   if (!qr) return NextResponse.json({ error: "Ce QR n'est plus valable." }, { status: 404 });
@@ -34,9 +35,9 @@ export async function GET(request: NextRequest) {
     rewardLabel: qr.rewardLabel,
     active: qr.active,
   });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
   const limited = await consumeDimensions([
     { key: `loyalty:join:ip:${ip}`, limit: 20, windowMs: 60 * 60 * 1000, sensitivity: "sensitive" },
@@ -82,4 +83,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/public/loyalty-join]", error);
     return NextResponse.json({ error: "Impossible de créer la carte." }, { status: 500 });
   }
-}
+});

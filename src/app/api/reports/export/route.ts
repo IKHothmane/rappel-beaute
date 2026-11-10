@@ -6,8 +6,9 @@ import { buildReportExport } from "@/lib/reports/export";
 import { resolveAnalyticsContext } from "@/lib/reports/permissions";
 import { canAccessReportType } from "@/lib/reports/service";
 import { parseReportExportParams } from "@/lib/validation/reports";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const resolved = await resolveAnalyticsContext(request);
   if (!resolved.ok) return resolved.response;
   const { session, filters, scope } = resolved.ctx;
@@ -63,4 +64,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/reports/export]", error);
     return NextResponse.json({ error: "Erreur lors de l'export." }, { status: 500 });
   }
-}
+});

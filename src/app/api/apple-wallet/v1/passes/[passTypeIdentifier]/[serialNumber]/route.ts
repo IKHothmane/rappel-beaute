@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { appleAuthorizationToken, passChangedSince } from "@/lib/loyalty/apple-passkit";
 import { authorizedPassUpdatedAt } from "@/lib/loyalty/apple-wallet-store";
 import { createAppleWalletPass } from "@/lib/loyalty/apple-wallet";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function GET(
+export const GET = publicRoute(async function GET(
   request: NextRequest,
   { params }: { params: { passTypeIdentifier: string; serialNumber: string } },
 ) {
@@ -24,4 +25,4 @@ export async function GET(
       "Cache-Control": "no-store",
     },
   });
-}
+});

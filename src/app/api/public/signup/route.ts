@@ -14,6 +14,7 @@ import { getStorageService } from "@/lib/storage";
 import { CITIES } from "@/lib/site";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
+import { publicRoute } from "@/lib/http/route-scope";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
@@ -53,7 +54,7 @@ function validationError(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
 }
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
 
@@ -202,4 +203,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

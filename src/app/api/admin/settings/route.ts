@@ -9,8 +9,9 @@ import {
 } from "@/lib/db/platform-settings";
 import { getPlatformAnalytics, getPlatformBilling } from "@/lib/db/platform-metrics";
 import { adminSupportKpis } from "@/lib/db/support-tickets";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -51,9 +52,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/admin/settings]", error);
     return adminError("Impossible de charger les paramètres.", 500);
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -72,4 +73,4 @@ export async function PATCH(request: NextRequest) {
     console.error("[PATCH /api/admin/settings]", error);
     return adminError("Impossible d'enregistrer.", 500);
   }
-}
+});

@@ -56,9 +56,26 @@ function emit(level: LogLevel, message: string, ctx?: LogContext) {
     ...(ctx ? (sanitize(ctx) as LogContext) : {}),
   };
   const line = JSON.stringify(payload);
-  if (level === "error") console.error(line);
-  else if (level === "warn") console.warn(line);
+  if (level === "error") {
+    console.error(line);
+    forwardToSentry(message, payload as Record<string, unknown>);
+  } else if (level === "warn") console.warn(line);
   else console.log(line);
+}
+
+/**
+ * La plupart des routes interceptent leurs erreurs puis appellent `logger.error` : sans ce relais,
+ * elles n'atteindraient jamais Sentry. No-op sans DSN ; le contexte est déjà expurgé par `sanitize`
+ * et `scrubEvent` masque encore téléphones et e-mails.
+ */
+function forwardToSentry(message: string, payload: Record<string, unknown>) {
+  if (!process.env.SENTRY_DSN && !process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+  import("@sentry/nextjs")
+    .then((Sentry) => {
+      const { ts: _ts, level: _level, message: _message, ...extra } = payload;
+      Sentry.captureMessage(message, { level: "error", extra, tags: { route: String(extra.route ?? "") || undefined } });
+    })
+    .catch(() => undefined);
 }
 
 export const logger = {

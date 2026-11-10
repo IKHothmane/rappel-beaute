@@ -3,6 +3,7 @@ import { pool } from "@/lib/db/pool";
 import { getMemorySnapshot, memoryDiagnosticsEnabled } from "@/lib/ops/memory";
 import { appEnvironment } from "@/lib/site";
 import { pingRedis } from "@/lib/redis/client";
+import { publicRoute } from "@/lib/http/route-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ async function checkDatabase(): Promise<boolean> {
   }
 }
 
-export async function GET() {
+export const GET = publicRoute(async function GET() {
   const [database, redis] = await Promise.all([checkDatabase(), pingRedis()]);
 
   const redisRequired = Boolean(process.env.REDIS_URL);
@@ -46,4 +47,4 @@ export async function GET() {
   }
 
   return NextResponse.json(payload, { status: ok ? 200 : 503 });
-}
+});

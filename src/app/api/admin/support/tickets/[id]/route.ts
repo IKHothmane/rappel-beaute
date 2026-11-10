@@ -11,10 +11,11 @@ import {
   serializeMessage,
   serializeTicket,
 } from "@/lib/db/support-tickets";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: Ctx) {
+export const GET = platformRoute(async function GET(request: NextRequest, context: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -40,9 +41,9 @@ export async function GET(request: NextRequest, context: Ctx) {
     console.error("[GET /api/admin/support/tickets/:id]", error);
     return adminError("Impossible de charger le ticket.", 500);
   }
-}
+});
 
-export async function PATCH(request: NextRequest, context: Ctx) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest, context: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -80,4 +81,4 @@ export async function PATCH(request: NextRequest, context: Ctx) {
     console.error("[PATCH /api/admin/support/tickets/:id]", error);
     return adminError("Impossible de mettre à jour le ticket.", 500);
   }
-}
+});

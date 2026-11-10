@@ -4,10 +4,11 @@ import { requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { getAppointmentById } from "@/lib/db/appointments";
 import { consumeProductsForAppointment } from "@/lib/db/inventory";
 import { consoFromNotes } from "@/components/agenda/service-notes";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = tenantRoute(async function POST(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -79,4 +80,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
-}
+});

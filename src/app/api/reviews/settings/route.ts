@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead, requireFeatureWrite } from "@/lib/auth/api-guard";
 import { getOrCreateReviewSettings } from "@/lib/db/reviews";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "reviews");
   if (!auth.ok) return auth.response;
   try {
@@ -13,9 +14,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/reviews/settings]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "reviews");
   if (!auth.ok) return auth.response;
   const { updateReviewSettings } = await import("@/lib/db/reviews");
@@ -47,4 +48,4 @@ export async function PATCH(request: NextRequest) {
     console.error("[PATCH /api/reviews/settings]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});

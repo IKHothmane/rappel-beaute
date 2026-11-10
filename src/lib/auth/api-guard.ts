@@ -18,6 +18,7 @@ import { canUseFeature } from "@/lib/subscriptions/limits";
 import { planFeatureForAppFeature } from "@/lib/subscriptions/features";
 import type { PlanFeatureKey } from "@/types/subscription";
 import { getUserSessionState } from "@/lib/db/users";
+import { bindOrganization } from "@/lib/db/tenant-context";
 
 export type AuthResult =
   | { ok: true; session: SessionUser }
@@ -63,6 +64,9 @@ export async function requireAppSession(request: NextRequest): Promise<AppAuthRe
       response: NextResponse.json({ error: "Accès réservé aux instituts." }, { status: 403 }),
     };
   }
+
+  // Avant toute lecture en base : l'institut vient du jeton signé.
+  bindOrganization(auth.session.organizationId);
 
   const state = await getUserSessionState(auth.session.id);
   if (!state || state.status !== "ACTIVE") {

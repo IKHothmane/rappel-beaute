@@ -9,13 +9,14 @@ import {
 } from "@/lib/whatsapp/send";
 import { createAIWhatsAppTask } from "@/lib/db/whatsapp";
 import { WHATSAPP_TASK_TYPES, type WhatsAppTaskType } from "@/types/whatsapp";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 /**
  * POST /api/whatsapp/send
  * Envoi via Meta Cloud API — désactivé par défaut (V1 manuel).
  * Réactivation : WHATSAPP_DIRECT_SEND_ENABLED=true + token Meta.
  */
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "whatsapp");
   if (!auth.ok) return auth.response;
   if (!canSendWhatsapp(auth.session.role)) {
@@ -103,4 +104,4 @@ export async function POST(request: NextRequest) {
     const msg = code && !code.startsWith("CUSTOMER_") ? code : "Échec d'envoi du message WhatsApp";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
-}
+});

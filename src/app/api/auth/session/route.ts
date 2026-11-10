@@ -5,8 +5,9 @@ import { COOKIE_HOST } from "@/lib/domain";
 import { getUserSessionState } from "@/lib/db/users";
 import { getOrganizationLogoUrl } from "@/lib/db/organization";
 import type { NextRequest } from "next/server";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request);
   if (!session) {
     return NextResponse.json({ user: null }, { status: 401 });
@@ -52,4 +53,4 @@ export async function GET(request: NextRequest) {
     maxAge: SESSION_MAX_AGE_SEC,
   });
   return res;
-}
+});

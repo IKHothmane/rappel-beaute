@@ -8,10 +8,11 @@ import {
 import { canEditStaffLeaves } from "@/lib/rbac";
 import { createStaffLeave, getStaffById } from "@/lib/db/staff";
 import { validateCreateLeave } from "@/lib/validation/staff";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "staff");
   if (!auth.ok) return auth.response;
 
@@ -26,9 +27,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/staff/:id/leaves]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = tenantRoute(async function POST(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "staff");
   if (!auth.ok) return auth.response;
 
@@ -58,4 +59,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
     console.error("[POST /api/staff/:id/leaves]", error);
     return NextResponse.json({ error: "Impossible de créer le congé." }, { status: 500 });
   }
-}
+});

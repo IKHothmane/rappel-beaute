@@ -8,6 +8,7 @@ import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
+import { publicRoute } from "@/lib/http/route-scope";
 
 function errorDetails(error: unknown) {
   if (error instanceof Error) {
@@ -20,7 +21,7 @@ function errorDetails(error: unknown) {
   return { message: String(error) };
 }
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
   try {
@@ -104,9 +105,9 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = publicRoute(async function DELETE(request: NextRequest) {
   const session = getSessionFromRequest(request);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(clearSessionCookie());
@@ -124,4 +125,4 @@ export async function DELETE(request: NextRequest) {
   }
 
   return res;
-}
+});

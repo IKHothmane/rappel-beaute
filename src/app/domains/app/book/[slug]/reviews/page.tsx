@@ -4,12 +4,13 @@ import { notFound } from "next/navigation";
 import { PublicReviewReport } from "@/components/reviews/public-review-report";
 import { listPublishedReviews } from "@/lib/reviews/public-review";
 import { resolveOrganizationBySlug } from "@/lib/db/public-booking";
+import { scopedPage } from "@/lib/http/route-scope";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Avis", robots: { index: false, follow: false } };
 
-export default async function PublicReviewsPage({ params }: { params: Promise<{ slug: string }> }) {
+export default scopedPage("public", async function PublicReviewsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const org = await resolveOrganizationBySlug(slug);
   if (!org) notFound();
@@ -46,4 +47,4 @@ export default async function PublicReviewsPage({ params }: { params: Promise<{ 
       </div>
     </section>
   );
-}
+});

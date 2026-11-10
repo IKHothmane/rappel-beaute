@@ -7,8 +7,9 @@ import {
 } from "@/lib/auth/api-guard";
 import { createResource, listResources } from "@/lib/db/resources";
 import { parseResourceListQuery, validateCreateResource } from "@/lib/validation/resource";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -43,9 +44,9 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -67,4 +68,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

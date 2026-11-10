@@ -1,8 +1,9 @@
 import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { getPublicProducts } from "@/lib/db/public-shop";
 import { getPublicServices } from "@/lib/db/public-booking";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 export type PublicCatalogService = {
   id: string;

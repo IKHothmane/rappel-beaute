@@ -7,10 +7,11 @@ import {
 } from "@/lib/auth/api-guard";
 import { getExpenseById, updateExpense, voidExpense } from "@/lib/db/expenses";
 import { validateUpdateExpense } from "@/lib/validation/expense";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "expenses");
   if (!auth.ok) return auth.response;
 
@@ -25,9 +26,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/expenses/:id]", error);
     return NextResponse.json({ error: "Impossible de charger la dépense." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "expenses");
   if (!auth.ok) return auth.response;
 
@@ -75,4 +76,4 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     console.error("[PATCH /api/expenses/:id]", error);
     return NextResponse.json({ error: "Impossible de mettre à jour." }, { status: 500 });
   }
-}
+});

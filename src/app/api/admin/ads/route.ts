@@ -5,8 +5,9 @@ import { recordAdsDecision } from "@/modules/ads/ads-audit.service";
 import { getAdsDashboard, journalMetrics } from "@/modules/ads/ads-agent.service";
 import { getAdsConfig, saveAdsConfig, type AdsConfigRow } from "@/modules/ads/ads-store";
 import type { AdsAgentMode } from "@/modules/ads/ads-rules.service";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
   try {
@@ -15,9 +16,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/admin/ads]", error);
     return adminError("Impossible de charger l'agent Ads.", 500);
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest) {
   const auth = requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
   try {
@@ -65,7 +66,7 @@ export async function PATCH(request: NextRequest) {
     console.error("[PATCH /api/admin/ads]", error);
     return adminError("Impossible d'enregistrer les règles.", 500);
   }
-}
+});
 
 function actorName(session?: { firstName?: string; lastName?: string } | null) {
   return `${session?.firstName ?? ""} ${session?.lastName ?? ""}`.trim();

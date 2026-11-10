@@ -7,6 +7,7 @@ import {
   openWidgetSession,
   readWidgetSession,
 } from "@/lib/db/assistant-session";
+import { publicRoute } from "@/lib/http/route-scope";
 
 function cors(response: NextResponse, origin: string | null) {
   if (!origin) return response;
@@ -24,12 +25,12 @@ function statusFor(code: AssistantSessionError["code"]) {
   return 400;
 }
 
-export async function OPTIONS(request: NextRequest) {
+export const OPTIONS = publicRoute(async function OPTIONS(request: NextRequest) {
   const origin = normalizeWidgetOrigin(request.headers.get("origin") ?? "");
   return cors(new NextResponse(null, { status: 204 }), origin);
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const originHeader = request.headers.get("origin");
   const origin = normalizeWidgetOrigin(originHeader ?? "");
   const reply = (body: Record<string, unknown>, status: number) =>
@@ -61,13 +62,13 @@ export async function POST(request: NextRequest) {
     }
     return reply({ error: "Session impossible." }, 500);
   }
-}
+});
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!token) return NextResponse.json({ error: "Session absente." }, { status: 401 });
   const session = await readWidgetSession(token);
   if (!session) return NextResponse.json({ error: "Session expirée." }, { status: 401 });
   return NextResponse.json({ organizationName: session.organizationName });
-}
+});

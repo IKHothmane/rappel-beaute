@@ -5,10 +5,11 @@ import {
   getNotificationForUser,
   markNotificationRead,
 } from "@/lib/db/notifications";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = tenantRoute(async function POST(request: NextRequest, context: RouteContext) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
@@ -35,4 +36,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
     console.error("[POST /api/notifications/:id/read]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

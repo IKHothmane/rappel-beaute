@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { publicRoute } from "@/lib/http/route-scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
+export const GET = publicRoute(async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   const lat = Number(searchParams.get("lat"));
@@ -79,4 +80,4 @@ export async function GET(request: Request) {
     console.error("[geo/reverse]", error);
     return NextResponse.json({ error: "Impossible de récupérer l'adresse." }, { status: 502 });
   }
-}
+});

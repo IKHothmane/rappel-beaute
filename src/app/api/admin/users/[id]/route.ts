@@ -8,10 +8,11 @@ import {
   setPlatformWideUserStatus,
   updatePlatformWideUserProfile,
 } from "@/lib/db/admin-users";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, ctx: Ctx) {
+export const GET = platformRoute(async function GET(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -26,9 +27,9 @@ export async function GET(request: NextRequest, ctx: Ctx) {
   });
 
   return adminJson({ user, activity });
-}
+});
 
-export async function PATCH(request: NextRequest, ctx: Ctx) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -78,4 +79,4 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     console.error("[PATCH /api/admin/users/:id]", e);
     return adminError("Mise à jour impossible.", 500);
   }
-}
+});

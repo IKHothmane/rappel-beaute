@@ -6,8 +6,9 @@ import {
   WEBSITE_REQUEST_NOTIFY_EMAIL,
   websiteRequestEmail,
 } from "@/lib/email/website-request";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "settings");
   if (!auth.ok) return auth.response;
 
@@ -73,4 +74,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ ok: true });
-}
+});

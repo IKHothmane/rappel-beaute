@@ -12,8 +12,9 @@ import {
 } from "@/lib/db/whatsapp";
 import { canWriteWhatsappTemplates } from "@/lib/rbac";
 import { parseWhatsAppAction } from "@/lib/validation/whatsapp";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "whatsapp");
   if (!auth.ok) return auth.response;
   try {
@@ -23,9 +24,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/whatsapp/templates]", error);
     return NextResponse.json({ error: "Impossible de charger les modèles." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "whatsapp");
   if (!auth.ok) return auth.response;
   if (!canWriteWhatsappTemplates(auth.session.role)) {
@@ -66,4 +67,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/whatsapp/templates]", error);
     return NextResponse.json({ error: "Impossible de sauvegarder le modèle." }, { status: 500 });
   }
-}
+});

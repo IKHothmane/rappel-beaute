@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createAppleWalletPass } from "@/lib/loyalty/apple-wallet";
 import { appleWalletConfigured, readCardToken, walletUnavailable } from "@/lib/loyalty/wallet-config";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest, { params }: { params: { token: string } }) {
+export const GET = publicRoute(async function GET(request: NextRequest, { params }: { params: { token: string } }) {
   const token = readCardToken(request, params.token);
   if (!token.ok) return token.response;
   if (!appleWalletConfigured()) return walletUnavailable("apple");
@@ -24,4 +25,4 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
       { status: 503 },
     );
   }
-}
+});

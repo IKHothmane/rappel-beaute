@@ -2,10 +2,11 @@ import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { getOrganizationById, updateSubscription } from "@/lib/db/admin-organizations";
 import type { SubscriptionPlan } from "@/types/platform";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, ctx: Ctx) {
+export const GET = platformRoute(async function GET(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -13,9 +14,9 @@ export async function GET(request: NextRequest, ctx: Ctx) {
   const org = await getOrganizationById(id);
   if (!org) return adminError("Institut introuvable.", 404);
   return adminJson({ subscription: org.subscription });
-}
+});
 
-export async function PATCH(request: NextRequest, ctx: Ctx) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -36,4 +37,4 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     }
     return adminError("Mise à jour impossible.", 500);
   }
-}
+});

@@ -1,8 +1,9 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireSuperAdmin } from "@/lib/admin/api-helpers";
 import { runAdsAgent } from "@/modules/ads/ads-agent.service";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
   try {
@@ -19,4 +20,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/admin/ads/analyze]", error);
     return adminError(error instanceof Error ? error.message : "Analyse impossible.", 500);
   }
-}
+});

@@ -2,15 +2,16 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead, requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { ensureJoinQr, regenerateJoinQr, revokeJoinQr } from "@/lib/loyalty/join-qr";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "loyalty");
   if (!auth.ok) return auth.response;
   const qr = await ensureJoinQr(auth.session.organizationId);
   return NextResponse.json({ qr });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "loyalty");
   if (!auth.ok) return auth.response;
   const body = stripOrganizationId(
@@ -22,4 +23,4 @@ export async function POST(request: NextRequest) {
   }
   const qr = await regenerateJoinQr(auth.session.organizationId);
   return NextResponse.json({ qr });
-}
+});

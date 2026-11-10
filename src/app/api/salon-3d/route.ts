@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { requireFeatureRead } from "@/lib/auth/api-guard";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
 import { getSalon3dSnapshot } from "@/lib/salon-3d/snapshot";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -27,4 +28,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

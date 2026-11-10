@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { requireFeatureWriteLimited, stripOrganizationId } from "@/lib/auth/api-guard";
 import { issueLoyaltyCard } from "@/lib/loyalty/cards";
 import { loyaltyCardUrl } from "@/lib/loyalty/public-origin";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "loyalty");
   if (!auth.ok) return auth.response;
 
@@ -26,4 +27,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/loyalty/cards]", error);
     return NextResponse.json({ error: "Impossible de créer la carte." }, { status: 500 });
   }
-}
+});

@@ -19,12 +19,13 @@ import {
   updateStaffOvertime,
   updateStaffReplacement,
 } from "@/lib/db/planning";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 function actor(session: { id: string; firstName: string; lastName: string }) {
   return { id: session.id, name: `${session.firstName} ${session.lastName}`.trim() };
 }
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -48,9 +49,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/planning]", error);
     return NextResponse.json({ error: "Erreur planning." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -123,9 +124,9 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/planning]", error);
     return NextResponse.json({ error: "Erreur création." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -190,9 +191,9 @@ export async function PATCH(request: NextRequest) {
     console.error("[PATCH /api/planning]", error);
     return NextResponse.json({ error: "Erreur mise à jour." }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = tenantRoute(async function DELETE(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -219,4 +220,4 @@ export async function DELETE(request: NextRequest) {
     console.error("[DELETE /api/planning]", error);
     return NextResponse.json({ error: "Erreur suppression." }, { status: 500 });
   }
-}
+});

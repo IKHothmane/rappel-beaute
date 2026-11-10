@@ -676,9 +676,9 @@ async function stage2() {
   log("Statuts clientes + tâches WhatsApp…");
   const { ensureDefaultTemplates, syncWhatsAppTasks } = await import("../src/lib/db/whatsapp");
   const { syncReviewRequests } = await import("../src/lib/db/reviews");
-  await ensureDefaultTemplates(ORG);
-  await syncWhatsAppTasks(ORG);
-  await syncReviewRequests(ORG);
+  await retry(() => ensureDefaultTemplates(ORG));
+  await retry(() => syncWhatsAppTasks(ORG));
+  await retry(() => syncReviewRequests(ORG));
 }
 
 async function report() {
@@ -705,6 +705,46 @@ async function report() {
     // Reprend après une coupure : saute sauvegarde, suppression et première moitié du remplissage.
     if (process.env.CONFIRM_RESET_ROYAL !== "yes") throw new Error("Définir CONFIRM_RESET_ROYAL=yes pour exécuter.");
     await stage2();
+    await report();
+  } else if (MODE === "settle") {
+    // L'app termine automatiquement les RDV dont l'heure est passée : on encaisse ceux du jour restés sans paiement.
+    const { issueInvoiceFromAppointment } = await import("../src/lib/db/invoices");
+    const { earnPointsFromPayment } = await import("../src/lib/db/loyalty");
+    const rows = (await q(
+      `SELECT a.id, a."customerId", a.price::float8 AS price FROM "Appointment" a
+       WHERE a."organizationId"=$1 AND a.status='COMPLETED' AND a."startAt"::date=$2::date
+         AND NOT EXISTS (SELECT 1 FROM "Payment" p WHERE p."appointmentId"=a.id) ORDER BY a."endAt"`, [ORG, todayStr])).rows;
+    let n = (await q(`SELECT "lastValue" FROM "PaymentTicketSequence" WHERE "organizationId"=$1 AND "dayKey"=$2`, [ORG, todayStr])).rows[0]?.lastValue ?? 0;
+    const sid = `crs_${todayStr.replace(/-/g, "")}`;
+    for (const r of rows) {
+      n++;
+      const method = pick(["CASH", "CARD", "CARD", "CASH"]); const id = `pay_settle_${r.id}`;
+      const ticket = `${todayStr.slice(8, 10)}/${todayStr.slice(5, 7)}-${String(n).padStart(3, "0")}`;
+      await q(`INSERT INTO "Payment" (id,"organizationId","appointmentId","customerId",amount,method,kind,status,"userId","idempotencyKey","ticketNumber","paidAt","createdAt","updatedAt")
+               SELECT $2,a."organizationId",a.id,a."customerId",a.price,$3::"PaymentMethod",'PAYMENT'::"PaymentKind",'COMPLETED'::"PaymentStatus",'u_cashier',$4,$5,
+                      a."endAt"+INTERVAL '3 minutes',a."endAt"+INTERVAL '3 minutes',a."endAt"+INTERVAL '3 minutes'
+               FROM "Appointment" a WHERE a.id=$1`, [r.id, id, method, `seed:${r.id}:p1`, ticket]);
+      if (method === "CASH") {
+        await q(`INSERT INTO "CashRegisterTransaction" (id,"organizationId","sessionId",type,amount,method,reason,"paymentId","userId","idempotencyKey","createdAt")
+                 SELECT $1,$2,$3,'SALE'::"CashTxnType",p.amount,'CASH'::"PaymentMethod",'Encaissement RDV',p.id,'u_cashier',$4,p."paidAt" FROM "Payment" p WHERE p.id=$5`,
+          [`ctx_${id}`, ORG, sid, `cashpay:${id}`, id]);
+      }
+      await retry(() => issueInvoiceFromAppointment(ORG, { appointmentId: r.id }, "u_owner"));
+      await retry(() => earnPointsFromPayment({ organizationId: ORG, customerId: r.customerId, paymentId: id, amountMad: r.price, appointmentId: r.id, userId: "u_owner" }));
+    }
+    await q(`UPDATE "PaymentTicketSequence" SET "lastValue"=$3,"updatedAt"=NOW() WHERE "organizationId"=$1 AND "dayKey"=$2`, [ORG, todayStr, n]);
+    await q(`UPDATE "Invoice" i SET "issuedAt"=a."endAt","createdAt"=a."endAt","updatedAt"=a."endAt" FROM "Appointment" a WHERE a.id=i."appointmentId" AND i."organizationId"=$1 AND a."startAt"::date=$2::date`, [ORG, todayStr]);
+    await q(`UPDATE "CommissionRecord" c SET "createdAt"=a."endAt","updatedAt"=a."endAt" FROM "Appointment" a WHERE a.id=c."appointmentId" AND c."organizationId"=$1 AND a."startAt"::date=$2::date`, [ORG, todayStr]);
+    await q(`UPDATE "LoyaltyTransaction" t SET "createdAt"=p."paidAt" FROM "Payment" p WHERE p.id=t."paymentId" AND t."organizationId"=$1 AND p."paidAt"::date=$2::date`, [ORG, todayStr]);
+    log(`${rows.length} rendez-vous du jour encaissés`);
+    await report();
+  } else if (MODE === "sync") {
+    // Dernière étape seule (tâches WhatsApp + demandes d'avis), rejouable sans risque.
+    const { ensureDefaultTemplates, syncWhatsAppTasks } = await import("../src/lib/db/whatsapp");
+    const { syncReviewRequests } = await import("../src/lib/db/reviews");
+    await retry(() => ensureDefaultTemplates(ORG));
+    await retry(() => syncWhatsAppTasks(ORG));
+    await retry(() => syncReviewRequests(ORG));
     await report();
   } else if (MODE === "report") { await report(); }
   else throw new Error("Usage : backup | run | resume | report");

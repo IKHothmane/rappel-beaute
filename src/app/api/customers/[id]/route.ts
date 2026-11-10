@@ -13,10 +13,11 @@ import {
   updateCustomer,
 } from "@/lib/db/customers";
 import { validateUpdateCustomer } from "@/lib/validation/customer";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "customers");
   if (!auth.ok) return auth.response;
 
@@ -43,9 +44,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWriteLimited(request, "customers");
   if (!auth.ok) return auth.response;
 
@@ -86,6 +87,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
-}
+});
 
 /** Pas de DELETE — archivage via PATCH { archived: true } */

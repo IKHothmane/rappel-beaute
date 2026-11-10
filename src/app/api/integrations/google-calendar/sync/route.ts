@@ -5,8 +5,9 @@ import { canManageGoogleCalendar } from "@/lib/rbac";
 import { getGoogleCalendarConnection } from "@/lib/db/google-calendar";
 import { pushUpcomingAppointmentsToGoogle } from "@/lib/integrations/google-calendar-sync";
 import { googleReconnectMessage } from "@/lib/google/calendar";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
   if (!canManageGoogleCalendar(auth.session.role)) {
@@ -36,4 +37,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

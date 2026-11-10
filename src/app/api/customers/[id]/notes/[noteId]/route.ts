@@ -5,10 +5,11 @@ import {
   stripOrganizationId,
 } from "@/lib/auth/api-guard";
 import { deleteCustomerNote, updateCustomerNote } from "@/lib/db/customer-360";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string; noteId: string }> };
 
-export async function PATCH(request: NextRequest, context: Ctx) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: Ctx) {
   const auth = await requireFeatureWriteLimited(request, "customers");
   if (!auth.ok) return auth.response;
 
@@ -38,9 +39,9 @@ export async function PATCH(request: NextRequest, context: Ctx) {
     console.error("[PATCH /api/customers/[id]/notes/[noteId]]", error);
     return NextResponse.json({ error: "Erreur mise à jour." }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: NextRequest, context: Ctx) {
+export const DELETE = tenantRoute(async function DELETE(request: NextRequest, context: Ctx) {
   const auth = await requireFeatureWriteLimited(request, "customers");
   if (!auth.ok) return auth.response;
 
@@ -58,4 +59,4 @@ export async function DELETE(request: NextRequest, context: Ctx) {
     console.error("[DELETE /api/customers/[id]/notes/[noteId]]", error);
     return NextResponse.json({ error: "Erreur suppression." }, { status: 500 });
   }
-}
+});

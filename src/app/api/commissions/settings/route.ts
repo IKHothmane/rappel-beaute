@@ -6,8 +6,9 @@ import {
   updateCommissionSettings,
 } from "@/lib/db/commissions";
 import { canWriteCommissions } from "@/lib/rbac";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "commissions");
   if (!auth.ok) return auth.response;
   try {
@@ -17,9 +18,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/commissions/settings]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "commissions");
   if (!auth.ok) return auth.response;
 
@@ -59,4 +60,4 @@ export async function PATCH(request: NextRequest) {
     console.error("[PATCH /api/commissions/settings]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});

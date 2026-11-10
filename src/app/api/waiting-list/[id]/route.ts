@@ -6,6 +6,7 @@ import {
 } from "@/lib/auth/api-guard";
 import { updateWaitingListStatus } from "@/lib/db/waiting-list";
 import type { WaitingListStatus } from "@/types/waiting-list";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 const STATUSES = new Set<WaitingListStatus>([
   "WAITING",
@@ -17,7 +18,7 @@ const STATUSES = new Set<WaitingListStatus>([
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function PATCH(request: NextRequest, context: Ctx) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: Ctx) {
   const auth = await requireFeatureWriteLimited(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -49,4 +50,4 @@ export async function PATCH(request: NextRequest, context: Ctx) {
     console.error("[PATCH /api/waiting-list/:id]", error);
     return NextResponse.json({ error: "Mise à jour impossible." }, { status: 500 });
   }
-}
+});

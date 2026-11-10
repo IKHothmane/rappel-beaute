@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { publicRoute } from "@/lib/http/route-scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ function formatLabel(item: NominatimItem): string {
  * GET /api/geo/search?q=avenue+anfa+casablanca
  * Suggestions OpenStreetMap (Nominatim)
  */
-export async function GET(req: Request) {
+export const GET = publicRoute(async function GET(req: Request) {
   try {
     const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
     if (q.length < 3) {
@@ -86,4 +87,4 @@ export async function GET(req: Request) {
   } catch {
     return NextResponse.json({ error: "Recherche indisponible" }, { status: 502 });
   }
-}
+});

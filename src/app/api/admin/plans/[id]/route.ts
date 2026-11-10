@@ -7,10 +7,11 @@ import {
   updatePlan,
 } from "@/lib/subscriptions/plans";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, ctx: Ctx) {
+export const GET = platformRoute(async function GET(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -19,9 +20,9 @@ export async function GET(request: NextRequest, ctx: Ctx) {
   if (!plan) return adminError("Plan introuvable.", 404);
   const usedBy = await countSubscriptionsUsingPlan(id);
   return adminJson({ plan, usedBy });
-}
+});
 
-export async function PATCH(request: NextRequest, ctx: Ctx) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -61,9 +62,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
   });
 
   return adminJson({ plan });
-}
+});
 
-export async function DELETE(request: NextRequest, ctx: Ctx) {
+export const DELETE = platformRoute(async function DELETE(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -75,4 +76,4 @@ export async function DELETE(request: NextRequest, ctx: Ctx) {
   }
   await updatePlan(id, { active: false });
   return adminJson({ ok: true, deactivated: true });
-}
+});

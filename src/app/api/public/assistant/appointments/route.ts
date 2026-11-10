@@ -4,8 +4,9 @@ import { assistantBookingError } from "@/lib/assistant/booking-http";
 import { requireWidgetOrganization } from "@/lib/assistant/widget-request";
 import { lookupAssistantAppointment } from "@/lib/db/assistant-booking";
 import { RATE_POLICIES } from "@/lib/rate-limit";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = publicRoute(async function GET(request: NextRequest) {
   const session = await requireWidgetOrganization(request, {
     key: "assistant:appointments",
     ...RATE_POLICIES.availability,
@@ -29,4 +30,4 @@ export async function GET(request: NextRequest) {
     const mapped = assistantBookingError(error);
     return NextResponse.json({ error: mapped.message }, { status: mapped.status });
   }
-}
+});

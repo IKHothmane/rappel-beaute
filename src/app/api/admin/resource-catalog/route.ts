@@ -12,6 +12,7 @@ import {
 } from "@/lib/images/service-image";
 import { storeOptimizedServiceImages } from "@/lib/images/store-service-image";
 import { RESOURCE_TYPES, type ResourceType } from "@/types/resource";
+import { platformRoute } from "@/lib/http/route-scope";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,7 @@ function parseType(raw: unknown): ResourceType | null {
   return (RESOURCE_TYPES as readonly string[]).includes(value) ? (value as ResourceType) : null;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
   try {
@@ -32,9 +33,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/admin/resource-catalog]", error);
     return adminError("Impossible de charger le catalogue ressources.", 500);
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok || !auth.session) return auth.ok ? adminError("Session invalide.", 401) : auth.response;
 
@@ -80,9 +81,9 @@ export async function POST(request: NextRequest) {
     }
     return adminError("Impossible d'enregistrer l'image.", 500);
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = platformRoute(async function DELETE(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -95,4 +96,4 @@ export async function DELETE(request: NextRequest) {
     console.error("[DELETE /api/admin/resource-catalog]", error);
     return adminError("Impossible de retirer l'image.", 500);
   }
-}
+});

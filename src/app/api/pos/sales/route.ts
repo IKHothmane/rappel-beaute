@@ -8,6 +8,7 @@ import {
 import { createPosSale, getPosSalesKpis, listPosSales } from "@/lib/db/pos";
 import type { PaymentMethod } from "@/types/finance";
 import { isSelectablePaymentMethod } from "@/types/finance";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 const ERROR_MAP: Record<string, { status: number; message: string }> = {
   EMPTY_CART: { status: 400, message: "Panier vide." },
@@ -23,7 +24,7 @@ const ERROR_MAP: Record<string, { status: number; message: string }> = {
   INVALID_TOTAL: { status: 400, message: "Total invalide." },
 };
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requirePosRead(request);
   if (!auth.ok) return auth.response;
   try {
@@ -49,9 +50,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/pos/sales]", error);
     return NextResponse.json({ error: "Erreur liste." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requirePosWrite(request);
   if (!auth.ok) return auth.response;
 
@@ -98,4 +99,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/pos/sales]", error);
     return NextResponse.json({ error: "Erreur vente POS." }, { status: 500 });
   }
-}
+});

@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { COOKIE_HOST } from "@/lib/domain";
 import { normalizeLoginIdentifier } from "@/lib/auth/login-identifier";
+import { publicRoute } from "@/lib/http/route-scope";
 
 async function readLoginBody(request: NextRequest): Promise<{
   identifier?: string;
@@ -47,7 +48,7 @@ async function readLoginBody(request: NextRequest): Promise<{
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
 
   try {
@@ -170,4 +171,4 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
   }
-}
+});

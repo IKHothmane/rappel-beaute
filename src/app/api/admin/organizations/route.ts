@@ -5,8 +5,9 @@ import {
   listOrganizations,
 } from "@/lib/db/admin-organizations";
 import type { OrganizationStatus, SubscriptionPlan } from "@/types/platform";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -21,9 +22,9 @@ export async function GET(request: NextRequest) {
     plan: plan ?? undefined,
   });
   return adminJson({ items });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -59,11 +60,11 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/admin/organizations]", e);
     return adminError("Impossible de créer l'institut.", 500);
   }
-}
+});
 
-export async function HEAD(request: NextRequest) {
+export const HEAD = platformRoute(async function HEAD(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
   const stats = await getPlatformDashboardStats();
   return adminJson({ stats });
-}
+});

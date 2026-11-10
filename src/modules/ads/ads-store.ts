@@ -1,8 +1,9 @@
 import { randomBytes } from "crypto";
 import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import type { AdsAgentMode, AdsDecisionKind } from "@/modules/ads/ads-rules.service";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 function id(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;

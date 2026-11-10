@@ -10,8 +10,9 @@ import {
   updateBookingPolicy,
 } from "@/lib/db/booking-policy";
 import { validateUpdateBookingPolicy } from "@/lib/validation/booking-policy";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "settings");
   if (!auth.ok) return auth.response;
   try {
@@ -21,9 +22,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/settings/booking-policy]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "settings");
   if (!auth.ok) return auth.response;
 
@@ -46,4 +47,4 @@ export async function PATCH(request: NextRequest) {
     console.error("[PATCH /api/settings/booking-policy]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});

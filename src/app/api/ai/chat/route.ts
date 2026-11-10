@@ -4,8 +4,9 @@ import { buildAIContext, requireAIWrite, sanitizeAIBody } from "@/lib/ai/guard";
 import { runAIChat } from "@/lib/ai/service";
 import { getClientIp } from "@/lib/http/client-ip";
 import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireAIWrite(request);
   if (!auth.ok) return auth.response;
 
@@ -56,4 +57,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/ai/chat]", error);
     return NextResponse.json({ error: "Erreur assistant IA." }, { status: 500 });
   }
-}
+});

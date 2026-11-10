@@ -3,6 +3,7 @@ import path from "path";
 import { NextResponse } from "next/server";
 import { getLocalUploadsRoot } from "@/lib/storage/local-root";
 import { isPathInsideRoot } from "@/lib/storage/path-guard";
+import { publicRoute } from "@/lib/http/route-scope";
 
 export const runtime = "nodejs";
 
@@ -20,7 +21,7 @@ const KEY_RE =
 
 type RouteContext = { params: Promise<{ key: string[] }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export const GET = publicRoute(async function GET(_request: Request, context: RouteContext) {
   const { key: parts } = await context.params;
   const key = (parts ?? [])
     .map((p) => decodeURIComponent(p))
@@ -49,4 +50,4 @@ export async function GET(_request: Request, context: RouteContext) {
   } catch {
     return NextResponse.json({ error: "Fichier introuvable." }, { status: 404 });
   }
-}
+});

@@ -13,8 +13,9 @@ import {
 } from "@/lib/db/post-visit";
 import { canWriteFeature } from "@/lib/rbac";
 import { parsePostVisitAction } from "@/lib/validation/post-visit";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "marketing");
   if (!auth.ok) return auth.response;
   try {
@@ -28,9 +29,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/post-visit]", error);
     return NextResponse.json({ error: "Impossible de charger les relances." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "marketing");
   if (!auth.ok) return auth.response;
 
@@ -73,4 +74,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/post-visit]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});

@@ -26,8 +26,9 @@ import {
   validateRedeem,
   validateUpdateProgram,
 } from "@/lib/validation/loyalty";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "loyalty");
   if (!auth.ok) return auth.response;
 
@@ -58,9 +59,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/loyalty]", error);
     return NextResponse.json({ error: "Impossible de charger la fidélité." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "loyalty");
   if (!auth.ok) return auth.response;
 
@@ -185,4 +186,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/loyalty]", error);
     return NextResponse.json({ error: "Impossible d'exécuter l'action." }, { status: 500 });
   }
-}
+});

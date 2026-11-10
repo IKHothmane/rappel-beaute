@@ -10,6 +10,7 @@ import {
   listWaitingListEntries,
 } from "@/lib/db/waiting-list";
 import type { WaitingListStatus } from "@/types/waiting-list";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 const STATUSES = new Set<WaitingListStatus>([
   "WAITING",
@@ -19,7 +20,7 @@ const STATUSES = new Set<WaitingListStatus>([
   "CANCELLED",
 ]);
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -39,9 +40,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/waiting-list]", error);
     return NextResponse.json({ error: "Impossible de charger la liste." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -93,4 +94,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/waiting-list]", error);
     return NextResponse.json({ error: "Impossible d'ajouter l'entrée." }, { status: 500 });
   }
-}
+});

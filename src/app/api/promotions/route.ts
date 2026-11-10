@@ -16,8 +16,9 @@ import {
   validateCreatePromotion,
 } from "@/lib/validation/promo";
 import type { PromotionStatus } from "@/types/promo";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "promotions");
   if (!auth.ok) return auth.response;
   try {
@@ -40,9 +41,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/promotions]", error);
     return NextResponse.json({ error: "Impossible de charger les promotions." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "promotions");
   if (!auth.ok) return auth.response;
   if (!canWritePromotions(auth.session.role)) {
@@ -79,4 +80,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/promotions]", error);
     return NextResponse.json({ error: "Impossible de créer la promotion." }, { status: 500 });
   }
-}
+});

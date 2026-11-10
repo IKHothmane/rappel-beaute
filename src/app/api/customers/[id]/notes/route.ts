@@ -9,10 +9,11 @@ import {
   createCustomerNote,
   listCustomerNotes,
 } from "@/lib/db/customer-360";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: Ctx) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: Ctx) {
   const auth = await requireFeatureRead(request, "customers");
   if (!auth.ok) return auth.response;
 
@@ -27,9 +28,9 @@ export async function GET(request: NextRequest, context: Ctx) {
     console.error("[GET /api/customers/[id]/notes]", error);
     return NextResponse.json({ error: "Erreur notes." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest, context: Ctx) {
+export const POST = tenantRoute(async function POST(request: NextRequest, context: Ctx) {
   const auth = await requireFeatureWriteLimited(request, "customers");
   if (!auth.ok) return auth.response;
 
@@ -64,4 +65,4 @@ export async function POST(request: NextRequest, context: Ctx) {
     console.error("[POST /api/customers/[id]/notes]", error);
     return NextResponse.json({ error: "Erreur création note." }, { status: 500 });
   }
-}
+});

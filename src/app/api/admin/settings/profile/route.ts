@@ -4,8 +4,9 @@ import {
   changePlatformPassword,
   updatePlatformProfile,
 } from "@/lib/db/platform-settings";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -40,4 +41,4 @@ export async function PATCH(request: NextRequest) {
     console.error("[PATCH /api/admin/settings/profile]", error);
     return adminError("Impossible de mettre à jour le profil.", 500);
   }
-}
+});

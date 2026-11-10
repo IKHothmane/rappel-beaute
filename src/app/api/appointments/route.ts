@@ -14,6 +14,7 @@ import {
 import { assertAppointmentBookable } from "@/lib/db/planning";
 import { assertResourceBookable } from "@/lib/db/resources";
 import type { CreateAppointmentInput } from "@/types/appointment";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 function resourceBookingError(error: unknown) {
   if (!(error instanceof Error)) return null;
@@ -34,7 +35,7 @@ function availabilityError(error: unknown) {
     : "Créneau hors disponibilité (horaires, pause, congé ou fermeture).";
 }
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -57,9 +58,9 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -115,4 +116,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

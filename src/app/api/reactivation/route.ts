@@ -13,8 +13,9 @@ import {
 } from "@/lib/db/reactivation";
 import { canSendReactivation, canWriteReactivationSettings } from "@/lib/rbac";
 import { parseReactivationAction, parseReactivationListQuery } from "@/lib/validation/reactivation";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "reactivation");
   if (!auth.ok) return auth.response;
   try {
@@ -32,9 +33,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/reactivation]", error);
     return NextResponse.json({ error: "Impossible de charger la réactivation." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "reactivation");
   if (!auth.ok) return auth.response;
 
@@ -93,4 +94,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/reactivation]", error);
     return NextResponse.json({ error: "Action réactivation impossible." }, { status: 500 });
   }
-}
+});

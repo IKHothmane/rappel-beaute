@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead } from "@/lib/auth/api-guard";
 import { getPaymentById } from "@/lib/db/finance";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "cash-register");
   if (!auth.ok) return auth.response;
 
@@ -20,4 +21,4 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/payments/:id]", error);
     return NextResponse.json({ error: "Impossible de charger le paiement." }, { status: 500 });
   }
-}
+});

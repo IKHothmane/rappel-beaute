@@ -9,8 +9,9 @@ import {
 import { listOrganizationsForFilter } from "@/lib/db/admin-users";
 import { getShowcaseMonthlyPrice } from "@/lib/subscriptions/plans";
 import type { PlanCode, SubscriptionStatus } from "@/types/subscription";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -30,9 +31,9 @@ export async function GET(request: NextRequest) {
   ]);
 
   return adminJson({ items, kpis, plans, organizations, showcasePrice });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -55,4 +56,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/admin/subscriptions]", e);
     return adminError("Création impossible.", 500);
   }
-}
+});

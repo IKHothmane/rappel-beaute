@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead, requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { getOrganizationWebsite, setOrganizationWebsite } from "@/lib/db/organization";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 function normalizeWebsite(raw: string): string | null | { error: string } {
   const trimmed = raw.trim();
@@ -21,14 +22,14 @@ function normalizeWebsite(raw: string): string | null | { error: string } {
   }
 }
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "settings");
   if (!auth.ok) return auth.response;
   const website = await getOrganizationWebsite(auth.session.organizationId);
   return NextResponse.json({ website });
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "settings");
   if (!auth.ok) return auth.response;
 
@@ -55,4 +56,4 @@ export async function PATCH(request: NextRequest) {
 
   await setOrganizationWebsite(auth.session.organizationId, website);
   return NextResponse.json({ website });
-}
+});

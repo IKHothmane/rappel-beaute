@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead, stripOrganizationId } from "@/lib/auth/api-guard";
 import { getCampaignById, previewCampaignAudience } from "@/lib/db/campaigns";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, ctx: RouteCtx) {
+export const POST = tenantRoute(async function POST(request: NextRequest, ctx: RouteCtx) {
   const auth = await requireFeatureRead(request, "marketing");
   if (!auth.ok) return auth.response;
 
@@ -39,4 +40,4 @@ export async function POST(request: NextRequest, ctx: RouteCtx) {
     console.error("[POST /api/campaigns/:id/preview]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});

@@ -3,10 +3,11 @@ import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import {
   reactivateOrganization,
 } from "@/lib/db/admin-organizations";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, ctx: Ctx) {
+export const POST = platformRoute(async function POST(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -20,4 +21,4 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     }
     return adminError("Réactivation impossible.", 500);
   }
-}
+});

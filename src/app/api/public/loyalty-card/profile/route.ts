@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http/client-ip";
 import { saveLoyaltyCardProfile } from "@/lib/loyalty/card-review";
 import { consumeDimensions } from "@/lib/rate-limit";
+import { publicRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
   const body = (await request.json().catch(() => null)) as {
     token?: string;
@@ -38,4 +39,4 @@ export async function POST(request: NextRequest) {
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
   return NextResponse.json({ ok: true, code: result.code });
-}
+});

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead, requireFeatureWrite } from "@/lib/auth/api-guard";
 import { getCashRegisterState, listCashTransactions } from "@/lib/db/finance";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "cash-register");
   if (!auth.ok) return auth.response;
 
@@ -24,4 +25,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/cash-register]", error);
     return NextResponse.json({ error: "Impossible de charger la caisse." }, { status: 500 });
   }
-}
+});

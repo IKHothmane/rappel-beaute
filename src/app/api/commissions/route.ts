@@ -17,8 +17,9 @@ import {
   validateClosePeriod,
   validateMarkPaidBulk,
 } from "@/lib/validation/commission";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
@@ -91,10 +92,10 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /** POST { action: "closePeriod" | "markPaidBulk", ... } */
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "commissions");
   if (!auth.ok) return auth.response;
   if (!canWriteCommissions(auth.session.role)) {
@@ -153,4 +154,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

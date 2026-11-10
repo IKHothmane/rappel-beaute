@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead } from "@/lib/auth/api-guard";
 import { getCustomer360Stats } from "@/lib/db/customer-360";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: Ctx) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: Ctx) {
   const auth = await requireFeatureRead(request, "customers");
   if (!auth.ok) return auth.response;
 
@@ -20,4 +21,4 @@ export async function GET(request: NextRequest, context: Ctx) {
     console.error("[GET /api/customers/[id]/stats]", error);
     return NextResponse.json({ error: "Erreur stats." }, { status: 500 });
   }
-}
+});

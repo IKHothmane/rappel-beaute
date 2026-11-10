@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAppSession } from "@/lib/auth/api-guard";
 import { getUnreadNotificationCount } from "@/lib/db/notifications";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
@@ -17,4 +18,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/notifications/unread-count]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

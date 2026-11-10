@@ -3,8 +3,9 @@ import { adminError, adminJson, requireSuperAdmin } from "@/lib/admin/api-helper
 import { recordAdsDecision } from "@/modules/ads/ads-audit.service";
 import { activateMetaCampaign, pauseMetaCampaign } from "@/modules/ads/ads-actions.service";
 import { listAdsCampaigns } from "@/modules/ads/ads-store";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
   try {
@@ -33,4 +34,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/admin/ads/campaigns]", error);
     return adminError(error instanceof Error ? error.message : "Action Meta Ads impossible.", 500);
   }
-}
+});

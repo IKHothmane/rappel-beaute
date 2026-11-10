@@ -4,6 +4,7 @@ import { createAppleWalletPass } from "@/lib/loyalty/apple-wallet";
 import { createGoogleWalletSaveUrl } from "@/lib/loyalty/google-wallet";
 import { appleWalletConfigured, googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { loyaltyCardUrl, requestCardOrigin } from "@/lib/loyalty/public-origin";
+import { publicRoute } from "@/lib/http/route-scope";
 
 const TOKEN = /^RBLOY_[A-Z2-9]{8,32}$/;
 
@@ -12,7 +13,7 @@ function isApplePhone(request: NextRequest) {
 }
 
 /** Scan du QR : iPhone reçoit le .pkpass, les autres téléphones ouvrent Google Wallet. */
-export async function GET(request: NextRequest, { params }: { params: { token: string } }) {
+export const GET = publicRoute(async function GET(request: NextRequest, { params }: { params: { token: string } }) {
   const token = params.token.trim().toUpperCase();
   const fallback = loyaltyCardUrl(token);
   if (!TOKEN.test(token)) return NextResponse.redirect(fallback);
@@ -44,4 +45,4 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     console.error("[GET /carte/google]", error instanceof Error ? error.message : "wallet");
   }
   return NextResponse.redirect(fallback);
-}
+});

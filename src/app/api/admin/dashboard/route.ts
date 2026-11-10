@@ -2,8 +2,9 @@ import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { listPlatformAuditLogs } from "@/lib/db/platform-audit";
 import { getPlatformDashboardHome } from "@/lib/db/platform-metrics";
+import { platformRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -26,4 +27,4 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/admin/dashboard]", error);
     return adminError("Impossible de charger le tableau de bord.", 500);
   }
-}
+});

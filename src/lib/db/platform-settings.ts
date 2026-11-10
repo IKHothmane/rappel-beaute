@@ -1,9 +1,10 @@
 import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { hashPassword, verifyPassword } from "@/lib/auth/crypto";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { isAutomaticWhatsAppEnabled, getMetaWhatsAppConfig } from "@/lib/whatsapp/send";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 export type PlatformSettingsData = {
   platform: {

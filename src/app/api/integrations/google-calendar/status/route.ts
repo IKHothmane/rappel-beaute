@@ -5,8 +5,9 @@ import { canManageGoogleCalendar } from "@/lib/rbac";
 import { getGoogleCalendarConnection, googleConnectionNeedsReconnect } from "@/lib/db/google-calendar";
 import { isGoogleCalendarConfigured } from "@/lib/google/calendar";
 import type { GoogleCalendarStatus } from "@/types/google-calendar";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "agenda");
   if (!auth.ok) return auth.response;
 
@@ -31,4 +32,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

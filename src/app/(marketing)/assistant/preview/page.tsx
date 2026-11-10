@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { ensurePreviewWidget } from "@/lib/db/assistant-session";
+import { scopedPage } from "@/lib/http/route-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AssistantPreviewPage() {
+export default scopedPage("public", async function AssistantPreviewPage() {
   await ensurePreviewWidget();
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
@@ -23,4 +24,4 @@ export default async function AssistantPreviewPage() {
       <Script data-public-id="pub_preview" src="/assistant.js" strategy="afterInteractive" />
     </main>
   );
-}
+});

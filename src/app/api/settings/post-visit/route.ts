@@ -10,8 +10,9 @@ import {
   updatePostVisitSettings,
 } from "@/lib/db/post-visit";
 import { parsePostVisitSettingsBody } from "@/lib/validation/post-visit";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "settings");
   if (!auth.ok) return auth.response;
   try {
@@ -21,9 +22,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/settings/post-visit]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "settings");
   if (!auth.ok) return auth.response;
   try {
@@ -45,4 +46,4 @@ export async function PATCH(request: NextRequest) {
     console.error("[PATCH /api/settings/post-visit]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

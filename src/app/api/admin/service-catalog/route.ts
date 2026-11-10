@@ -12,12 +12,13 @@ import {
 } from "@/lib/images/service-image";
 import { storeOptimizedServiceImages } from "@/lib/images/store-service-image";
 import { SERVICE_NAME_SUGGESTIONS } from "@/lib/services/catalog-names";
+import { platformRoute } from "@/lib/http/route-scope";
 
 export const runtime = "nodejs";
 
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-export async function GET(request: NextRequest) {
+export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
   try {
@@ -27,9 +28,9 @@ export async function GET(request: NextRequest) {
     console.error("[GET /api/admin/service-catalog]", error);
     return adminError("Impossible de charger le catalogue.", 500);
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok || !auth.session) return auth.ok ? adminError("Session invalide.", 401) : auth.response;
 
@@ -77,9 +78,9 @@ export async function POST(request: NextRequest) {
     }
     return adminError("Impossible d'enregistrer l'image.", 500);
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = platformRoute(async function DELETE(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -94,4 +95,4 @@ export async function DELETE(request: NextRequest) {
     console.error("[DELETE /api/admin/service-catalog]", error);
     return adminError("Impossible de retirer l'image.", 500);
   }
-}
+});

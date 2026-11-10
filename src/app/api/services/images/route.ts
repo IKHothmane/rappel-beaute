@@ -7,6 +7,7 @@ import {
   sniffServiceImage,
 } from "@/lib/images/service-image";
 import { storeOptimizedServiceImages } from "@/lib/images/store-service-image";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,7 @@ function optimizeErrorMessage(error: unknown): { message: string; status: number
   return { message: "Impossible d'enregistrer l'image.", status: 500 };
 }
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "services");
   if (!auth.ok) return auth.response;
 
@@ -65,4 +66,4 @@ export async function POST(request: NextRequest) {
     const { message, status } = optimizeErrorMessage(error);
     return NextResponse.json({ error: message }, { status });
   }
-}
+});

@@ -4,21 +4,22 @@ import {
   listOrganizationUsers,
   setOrganizationUserStatus,
 } from "@/lib/db/admin-organizations";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, ctx: Ctx) {
+export const GET = platformRoute(async function GET(request: NextRequest, ctx: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const { id } = await ctx.params;
   const users = await listOrganizationUsers(id);
   return adminJson({ users });
-}
+});
 
 type UserCtx = { params: Promise<{ id: string; userId: string }> };
 
-export async function PATCH(request: NextRequest, ctx: UserCtx) {
+export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: UserCtx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -37,4 +38,4 @@ export async function PATCH(request: NextRequest, ctx: UserCtx) {
     }
     return adminError("Mise à jour impossible.", 500);
   }
-}
+});

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { publicRoute } from "@/lib/http/route-scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -119,7 +120,7 @@ async function reverse(lat: number, lon: number): Promise<string | null> {
  * ?lat=&lon= → reverse uniquement
  * sans params → approx IP + reverse
  */
-export async function GET(req: Request) {
+export const GET = publicRoute(async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const latParam = searchParams.get("lat");
@@ -168,4 +169,4 @@ export async function GET(req: Request) {
   } catch {
     return NextResponse.json({ error: "Service de localisation indisponible" }, { status: 502 });
   }
-}
+});

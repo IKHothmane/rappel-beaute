@@ -3,10 +3,11 @@ import type { NextRequest } from "next/server";
 import { getPublicServices, resolveOrganizationBySlug } from "@/lib/db/public-booking";
 import { getClientIp } from "@/lib/http/client-ip";
 import { consumeDimensions, RATE_POLICIES } from "@/lib/rate-limit";
+import { publicRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = publicRoute(async function GET(request: NextRequest, context: RouteContext) {
   const { slug } = await context.params;
   const ip = getClientIp(request);
   const rl = await consumeDimensions([
@@ -29,4 +30,4 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/public/[slug]/services]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

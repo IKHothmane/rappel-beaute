@@ -3,10 +3,11 @@ import type { NextRequest } from "next/server";
 import { requirePosWrite } from "@/lib/auth/api-guard";
 import { getPosSaleById, refundPosSale } from "@/lib/db/pos";
 import { canCreateRefund } from "@/lib/rbac";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, context: Ctx) {
+export const POST = tenantRoute(async function POST(request: NextRequest, context: Ctx) {
   const auth = await requirePosWrite(request);
   if (!auth.ok) return auth.response;
 
@@ -42,4 +43,4 @@ export async function POST(request: NextRequest, context: Ctx) {
     console.error("[POST /api/pos/sales/[id]/refund]", error);
     return NextResponse.json({ error: "Erreur remboursement." }, { status: 500 });
   }
-}
+});

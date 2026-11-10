@@ -5,10 +5,11 @@ import {
   parseStatus,
   serializeMessage,
 } from "@/lib/db/support-tickets";
+import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, context: Ctx) {
+export const POST = platformRoute(async function POST(request: NextRequest, context: Ctx) {
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -44,4 +45,4 @@ export async function POST(request: NextRequest, context: Ctx) {
     console.error("[POST /api/admin/support/tickets/:id/messages]", error);
     return adminError("Impossible d'envoyer le message.", 500);
   }
-}
+});

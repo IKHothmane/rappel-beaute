@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { Pool, type PoolClient } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writeAuditLog } from "@/lib/db/audit";
 import type {
   BookingPolicySettings,
@@ -11,7 +12,7 @@ import type {
   UpdateBookingPolicyInput,
 } from "@/types/booking-policy";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;

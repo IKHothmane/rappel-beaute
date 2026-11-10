@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAppSession } from "@/lib/auth/api-guard";
 import { markAllNotificationsRead } from "@/lib/db/notifications";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
@@ -17,4 +18,4 @@ export async function POST(request: NextRequest) {
     console.error("[POST /api/notifications/read-all]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

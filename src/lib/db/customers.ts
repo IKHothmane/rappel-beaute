@@ -1,4 +1,5 @@
 import { Pool, type PoolClient } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import type {
   CreateCustomerInput,
   CustomerAppointmentHistory,
@@ -17,7 +18,7 @@ import {
 } from "@/types/customer";
 import { normalizePhone } from "@/lib/validation/customer";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 type DbClient = Pool | PoolClient;
 

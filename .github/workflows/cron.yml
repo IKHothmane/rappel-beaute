@@ -1,0 +1,54 @@
+name: Cron applicatif
+
+# Déclenche les routes /api/cron/* de l'application (secret CRON_SECRET).
+# Configuration : environnement GitHub « staging » → variable HEALTH_BASE_URL (déjà utilisée par Monitor Health)
+# et secret CRON_SECRET (le même que sur Railway). Sans eux, les tâches sont ignorées avec un avertissement.
+# GitHub peut retarder une exécution planifiée de quelques minutes : ces tâches n'ont pas besoin de précision à la minute.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Relances de fin d'essai : chaque jour à 08:00 UTC (09:00 au Maroc)
+    - cron: "0 8 * * *"
+    # Rappels de rendez-vous : 3 passages par jour (09:30, 13:30, 16:30 au Maroc)
+    - cron: "30 8,12,15 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  trial-reminders:
+    name: Relances de fin d'essai
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Appeler la route cron
+        env:
+          BASE_URL: ${{ vars.HEALTH_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::warning::HEALTH_BASE_URL ou CRON_SECRET non défini sur l'environnement « staging ». Tâche ignorée."
+            exit 0
+          fi
+          curl -fsS --max-time 120 -X POST -H "Authorization: Bearer $CRON_SECRET" "${BASE_URL%/}/api/cron/trial-reminders/"
+          echo
+
+  appointment-reminders:
+    name: Rappels de rendez-vous
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '30 8,12,15 * * *'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Appeler la route cron
+        env:
+          BASE_URL: ${{ vars.HEALTH_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::warning::HEALTH_BASE_URL ou CRON_SECRET non défini sur l'environnement « staging ». Tâche ignorée."
+            exit 0
+          fi
+          curl -fsS --max-time 290 -X POST -H "Authorization: Bearer $CRON_SECRET" "${BASE_URL%/}/api/cron/appointment-reminders/"
+          echo

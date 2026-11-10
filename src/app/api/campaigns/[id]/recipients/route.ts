@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead } from "@/lib/auth/api-guard";
 import { listCampaignRecipients } from "@/lib/db/campaigns";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, ctx: RouteCtx) {
+export const GET = tenantRoute(async function GET(request: NextRequest, ctx: RouteCtx) {
   const auth = await requireFeatureRead(request, "marketing");
   if (!auth.ok) return auth.response;
   const { id } = await ctx.params;
@@ -16,4 +17,4 @@ export async function GET(request: NextRequest, ctx: RouteCtx) {
     console.error("[GET /api/campaigns/:id/recipients]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});

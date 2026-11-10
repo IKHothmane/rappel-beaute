@@ -7,10 +7,11 @@ import {
 } from "@/lib/auth/api-guard";
 import { createResourceMaintenance, getResourceById } from "@/lib/db/resources";
 import { validateCreateMaintenance } from "@/lib/validation/resource";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -25,9 +26,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/resources/:id/maintenance]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = tenantRoute(async function POST(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "resources");
   if (!auth.ok) return auth.response;
 
@@ -54,4 +55,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
     console.error("[POST /api/resources/:id/maintenance]", error);
     return NextResponse.json({ error: "Impossible de créer la maintenance." }, { status: 500 });
   }
-}
+});

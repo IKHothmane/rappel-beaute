@@ -4,6 +4,7 @@ import { AppPageHeader } from "@/components/app/AppUi";
 import { getSession } from "@/lib/auth/session";
 import { isAppSession } from "@/lib/auth/types";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
+import { scopedPage } from "@/lib/http/route-scope";
 
 export const metadata: Metadata = { title: "Menu" };
 
@@ -51,7 +52,7 @@ const GROUPS = [
   },
 ];
 
-export default async function MorePage() {
+export default scopedPage("public", async function MorePage() {
   const session = await getSession();
   const orgSlug = session && isAppSession(session) ? session.orgSlug : null;
   const salon3dOk = isSalon3dEnabledForOrg(orgSlug);
@@ -91,4 +92,4 @@ export default async function MorePage() {
       </div>
     </>
   );
-}
+});

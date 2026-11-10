@@ -7,10 +7,11 @@ import {
 import { canEditStaffLeaves } from "@/lib/rbac";
 import { updateStaffLeave } from "@/lib/db/staff";
 import { validateUpdateLeave } from "@/lib/validation/staff";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string; leaveId: string }> };
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "staff");
   if (!auth.ok) return auth.response;
 
@@ -45,4 +46,4 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     console.error("[PATCH /api/staff/:id/leaves/:leaveId]", error);
     return NextResponse.json({ error: "Impossible de mettre à jour le congé." }, { status: 500 });
   }
-}
+});

@@ -8,6 +8,7 @@ import {
   isGoogleCalendarConfigured,
   signGoogleOAuthState,
 } from "@/lib/google/calendar";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 function agendaError(request: NextRequest, reason: string) {
   const here = request.nextUrl.origin.replace(/\/$/, "");
@@ -23,7 +24,7 @@ function agendaError(request: NextRequest, reason: string) {
   return NextResponse.redirect(url);
 }
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireAppSession(request);
   if (!auth.ok) return auth.response;
 
@@ -44,4 +45,4 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.redirect(googleAuthorizeUrl({ redirectUri, state }));
-}
+});

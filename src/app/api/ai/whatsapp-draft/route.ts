@@ -14,12 +14,13 @@ import {
 import { canSendWhatsapp } from "@/lib/rbac";
 import { AI_MARKETING_ATTRIBUTION } from "@/types/ai";
 import { parseCommitWhatsAppBody } from "@/lib/validation/ai-message";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 /**
  * Valide un brouillon IA et crée une WhatsAppTask (PENDING).
  * L'envoi Meta (sendDirect) est désactivé par défaut — réactivation via WHATSAPP_DIRECT_SEND_ENABLED.
  */
-export async function POST(request: NextRequest) {
+export const POST = tenantRoute(async function POST(request: NextRequest) {
   const aiAuth = await requireAIWrite(request);
   if (!aiAuth.ok) return aiAuth.response;
 
@@ -113,4 +114,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

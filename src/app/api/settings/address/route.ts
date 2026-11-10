@@ -2,15 +2,16 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireFeatureRead, requireFeatureWrite, stripOrganizationId } from "@/lib/auth/api-guard";
 import { getOrganizationAddress, setOrganizationAddress } from "@/lib/db/organization";
+import { tenantRoute } from "@/lib/http/route-scope";
 
-export async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "settings");
   if (!auth.ok) return auth.response;
   const address = await getOrganizationAddress(auth.session.organizationId);
   return NextResponse.json({ address });
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest) {
   const auth = await requireFeatureWrite(request, "settings");
   if (!auth.ok) return auth.response;
 
@@ -34,4 +35,4 @@ export async function PATCH(request: NextRequest) {
   const address = trimmed || null;
   await setOrganizationAddress(auth.session.organizationId, address);
   return NextResponse.json({ address });
-}
+});

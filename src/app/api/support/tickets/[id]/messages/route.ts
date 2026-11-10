@@ -5,10 +5,11 @@ import {
   stripOrganizationId,
 } from "@/lib/auth/api-guard";
 import { addOrgSupportMessage } from "@/lib/db/support-tickets";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function POST(request: NextRequest, context: Ctx) {
+export const POST = tenantRoute(async function POST(request: NextRequest, context: Ctx) {
   const auth = await requireFeatureWriteLimited(request, "support");
   if (!auth.ok) return auth.response;
 
@@ -50,4 +51,4 @@ export async function POST(request: NextRequest, context: Ctx) {
     console.error("[POST /api/support/tickets/:id/messages]", error);
     return NextResponse.json({ error: "Impossible d'envoyer le message." }, { status: 500 });
   }
-}
+});

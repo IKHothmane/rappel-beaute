@@ -5,10 +5,11 @@ import {
   getOrgSupportTicket,
   listTicketMessages,
 } from "@/lib/db/support-tickets";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: Ctx) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: Ctx) {
   const auth = await requireFeatureRead(request, "support");
   if (!auth.ok) return auth.response;
 
@@ -37,4 +38,4 @@ export async function GET(request: NextRequest, context: Ctx) {
     console.error("[GET /api/support/tickets/:id]", error);
     return NextResponse.json({ error: "Impossible de charger le ticket." }, { status: 500 });
   }
-}
+});

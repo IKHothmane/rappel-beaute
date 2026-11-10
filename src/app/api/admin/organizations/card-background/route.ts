@@ -4,6 +4,7 @@ import { getOrganizationById } from "@/lib/db/admin-organizations";
 import { setLoyaltyCardBackground } from "@/lib/db/loyalty";
 import { cardColorFromImage } from "@/lib/loyalty/card-color";
 import { getStorageService } from "@/lib/storage";
+import { platformRoute } from "@/lib/http/route-scope";
 
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -12,7 +13,7 @@ function actorName(session: { firstName: string; lastName: string }) {
   return `${session.firstName} ${session.lastName}`.trim();
 }
 
-export async function POST(request: NextRequest) {
+export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok || !auth.session) return auth.ok ? adminError("Session invalide.", 401) : auth.response;
 
@@ -57,9 +58,9 @@ export async function POST(request: NextRequest) {
     console.error("[POST admin card-background]", error instanceof Error ? error.message : "upload");
     return adminError("Impossible d'enregistrer l'image.", 500);
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = platformRoute(async function DELETE(request: NextRequest) {
   const auth = requireAdmin(request);
   if (!auth.ok || !auth.session) return auth.ok ? adminError("Session invalide.", 401) : auth.response;
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
@@ -71,4 +72,4 @@ export async function DELETE(request: NextRequest) {
     name: actorName(auth.session),
   });
   return adminJson({ cardBackgroundUrl: null });
-}
+});

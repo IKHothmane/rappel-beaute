@@ -7,10 +7,11 @@ import {
 } from "@/lib/auth/api-guard";
 import { getStaffById, updateStaffSchedule } from "@/lib/db/staff";
 import { validateUpdateSchedule } from "@/lib/validation/staff";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = tenantRoute(async function GET(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureRead(request, "staff");
   if (!auth.ok) return auth.response;
 
@@ -28,9 +29,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.error("[GET /api/staff/:id/schedule]", error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = tenantRoute(async function PATCH(request: NextRequest, context: RouteContext) {
   const auth = await requireFeatureWrite(request, "staff");
   if (!auth.ok) return auth.response;
 
@@ -63,4 +64,4 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     console.error("[PATCH /api/staff/:id/schedule]", error);
     return NextResponse.json({ error: "Impossible de mettre à jour le planning." }, { status: 500 });
   }
-}
+});

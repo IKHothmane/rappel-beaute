@@ -8,10 +8,11 @@ import {
 import { recordPublicBookingEvent } from "@/lib/db/public-booking-events";
 import { consumeDimensions, RATE_POLICIES } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/public-booking/validation";
+import { publicRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ slug: string }> };
 
-export async function POST(request: NextRequest, context: Ctx) {
+export const POST = publicRoute(async function POST(request: NextRequest, context: Ctx) {
   const { slug } = await context.params;
   const ip = clientIp(request);
   const rl = await consumeDimensions([
@@ -73,4 +74,4 @@ export async function POST(request: NextRequest, context: Ctx) {
     console.error("[POST /api/public/[slug]/events]", error);
     return NextResponse.json({ error: "Erreur." }, { status: 500 });
   }
-}
+});

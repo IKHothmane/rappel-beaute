@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { hashPassword } from "@/lib/auth/crypto";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 import { writeAuditLog } from "@/lib/db/audit";
@@ -9,7 +10,7 @@ import type {
   PlatformUsersKpis,
 } from "@/types/platform";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 const ORG_ROLES = ["OWNER", "MANAGER", "STAFF", "CASHIER", "ACCOUNTANT"] as const;
 export type OrgUserRole = (typeof ORG_ROLES)[number];

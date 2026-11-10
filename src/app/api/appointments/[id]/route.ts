@@ -225,6 +225,12 @@ export const PATCH = tenantRoute(async function PATCH(request: NextRequest, cont
     if (resourceMsg) {
       return NextResponse.json({ error: resourceMsg }, { status: 409 });
     }
+    if (error instanceof Error && error.message === "REFERENCE_NOT_FOUND") {
+      return NextResponse.json(
+        { error: "Cliente, service, employée ou ressource introuvable." },
+        { status: 400 },
+      );
+    }
     console.error(`[PATCH /api/appointments/${id}]`, error);
     return NextResponse.json(
       { error: "Impossible de mettre à jour le rendez-vous." },

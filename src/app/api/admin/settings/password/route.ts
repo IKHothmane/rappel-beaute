@@ -4,7 +4,7 @@ import { changePlatformPassword } from "@/lib/db/platform-settings";
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const POST = platformRoute(async function POST(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {

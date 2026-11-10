@@ -31,6 +31,8 @@ type Props = {
   onPrint?: (ticket: BeautyTicket) => void | Promise<void>;
   onShare?: (ticket: BeautyTicket) => void | Promise<void>;
   onClose?: () => void;
+  /** Mode payment : n'affiche ni le message d'impression ni les boutons (ex. démo sur la vitrine). */
+  hideActions?: boolean;
 };
 
 const money = (value: number, currency: string) =>
@@ -42,6 +44,7 @@ export default function TicketPrinterAnimation({
   onComplete,
   onPrint,
   onShare,
+  hideActions = false,
 }: Props) {
   const [printing, setPrinting] = useState(false);
   const [printed, setPrinted] = useState(false);
@@ -243,7 +246,7 @@ export default function TicketPrinterAnimation({
         </div>
       ) : null}
 
-      {isPayment ? (
+      {isPayment && hideActions ? null : isPayment ? (
         printing ? (
           <p className="rb-print-hint print:hidden">Le ticket sort de la machine…</p>
         ) : printed ? (

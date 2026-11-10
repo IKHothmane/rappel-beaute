@@ -14,37 +14,37 @@ type Shot = {
 const SHOTS: Shot[] = [
   {
     id: "agenda",
-    src: "/marketing/screen-agenda.png",
+    src: "/site/rappelbeauty-agenda-pc-complet-2200x1270.webp",
     alt: "Agenda Rappel Beauty sur ordinateur",
-    width: 612,
-    height: 408,
+    width: 2200,
+    height: 1270,
     href: "/gestion-rendez-vous/",
     title: "Agenda intelligent",
   },
   {
     id: "clientes",
-    src: "/marketing/screen-clientes.png",
+    src: "/site/rappelbeauty-clientes-pc-reel.webp",
     alt: "Gestion des clientes Rappel Beauty sur ordinateur",
-    width: 1536,
-    height: 1024,
+    width: 2200,
+    height: 1230,
     href: "/gestion-clientes/",
     title: "Gestion des clientes",
   },
   {
     id: "caisse",
-    src: "/marketing/screen-caisse.png",
+    src: "/site/rappelbeauty-caisse-pc-reel.webp",
     alt: "Caisse Rappel Beauty sur ordinateur",
-    width: 1536,
-    height: 1024,
+    width: 2200,
+    height: 1250,
     href: "/caisse/",
     title: "Caisse et finances",
   },
   {
     id: "fidelite",
-    src: "/marketing/screen-fidelite.png",
+    src: "/site/rappelbeauty-fidelite-pc-reel.webp",
     alt: "Carte de fidélité Rappel Beauty",
-    width: 1536,
-    height: 1024,
+    width: 2200,
+    height: 1250,
     href: "/fidelite/",
     title: "Fidélité",
   },
@@ -59,10 +59,10 @@ const SHOTS: Shot[] = [
   },
   {
     id: "stock",
-    src: "/marketing/screen-stock.png",
+    src: "/site/rappelbeauty-produits-stock-pc-reel.webp",
     alt: "Stock et produits Rappel Beauty sur ordinateur",
-    width: 1536,
-    height: 1024,
+    width: 2200,
+    height: 1200,
     href: "/gestion-stock/",
     title: "Stock et produits",
   },
@@ -83,8 +83,8 @@ export function ProductShot({ view }: { view: Shot["id"] }) {
   const { src, alt, width, height } = shot;
 
   return (
-    <figure className="bg-[#fff8fb] px-4 pb-2 pt-2 sm:px-6">
-      <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-pink-100 bg-white p-1.5 shadow-[0_24px_65px_-30px_rgba(190,24,93,0.32)]">
+    <figure className="px-4 pb-2 pt-2 sm:px-6">
+      <div className="mx-auto max-w-5xl">
         <Image
           src={src}
           alt={alt}

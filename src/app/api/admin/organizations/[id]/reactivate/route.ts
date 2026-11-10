@@ -8,7 +8,7 @@ import { platformRoute } from "@/lib/http/route-scope";
 type Ctx = { params: Promise<{ id: string }> };
 
 export const POST = platformRoute(async function POST(request: NextRequest, ctx: Ctx) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const { id } = await ctx.params;

@@ -18,15 +18,14 @@ export function SiteHeader() {
   }, []);
 
   return (
-    <header
-      className={`sticky top-0 z-50 border-b backdrop-blur-md transition-all duration-300 ${
-        scrolled
-          ? "border-line bg-paper/95 shadow-soft"
-          : "border-line/80 bg-paper/90"
-      }`}
-    >
-      <div className="container-rb flex h-[5.5rem] items-center justify-between gap-3 md:h-24">
-        <BrandLogo height={72} className="max-h-16 md:max-h-[4.5rem]" priority />
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5 md:pt-4">
+      <div
+        className={`pointer-events-auto mx-auto max-w-[1180px] rounded-[1.6rem] border border-white/80 shadow-[0_16px_40px_rgb(186_0_73/14%)] backdrop-blur-md transition-all duration-300 ${
+          scrolled ? "bg-white/95" : "bg-white/75"
+        }`}
+      >
+      <div className="flex h-16 items-center justify-between gap-3 px-4 md:h-[4.5rem] md:px-6">
+        <BrandLogo height={52} className="max-h-11 md:max-h-14" priority />
 
         <nav
           className="hidden items-center gap-7 lg:flex"
@@ -94,7 +93,7 @@ export function SiteHeader() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden border-t border-line bg-paper lg:hidden"
+            className="overflow-hidden border-t border-line/70 lg:hidden"
           >
             <nav className="container-rb flex flex-col gap-3 py-4">
               {NAV.map((item, i) => (
@@ -131,6 +130,7 @@ export function SiteHeader() {
           </motion.div>
         ) : null}
       </AnimatePresence>
+      </div>
     </header>
   );
 }

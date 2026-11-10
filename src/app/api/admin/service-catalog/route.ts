@@ -19,7 +19,7 @@ export const runtime = "nodejs";
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export const GET = platformRoute(async function GET(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
   try {
     const items = await listServiceCatalogDefaults();
@@ -31,7 +31,7 @@ export const GET = platformRoute(async function GET(request: NextRequest) {
 });
 
 export const POST = platformRoute(async function POST(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok || !auth.session) return auth.ok ? adminError("Session invalide.", 401) : auth.response;
 
   try {
@@ -81,7 +81,7 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
 });
 
 export const DELETE = platformRoute(async function DELETE(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {

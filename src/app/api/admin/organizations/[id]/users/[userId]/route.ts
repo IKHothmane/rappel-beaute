@@ -6,7 +6,7 @@ import { platformRoute } from "@/lib/http/route-scope";
 type Ctx = { params: Promise<{ id: string; userId: string }> };
 
 export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const { id, userId } = await ctx.params;

@@ -7,7 +7,7 @@ import {
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const PATCH = platformRoute(async function PATCH(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {

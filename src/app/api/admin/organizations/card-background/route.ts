@@ -14,7 +14,7 @@ function actorName(session: { firstName: string; lastName: string }) {
 }
 
 export const POST = platformRoute(async function POST(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok || !auth.session) return auth.ok ? adminError("Session invalide.", 401) : auth.response;
 
   try {
@@ -61,7 +61,7 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
 });
 
 export const DELETE = platformRoute(async function DELETE(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok || !auth.session) return auth.ok ? adminError("Session invalide.", 401) : auth.response;
   const organizationId = new URL(request.url).searchParams.get("organizationId") ?? "";
   if (!organizationId) return adminError("Institut manquant.", 400);

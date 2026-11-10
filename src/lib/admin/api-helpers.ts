@@ -13,12 +13,12 @@ export function adminError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-export function requireAdmin(request: NextRequest) {
+export async function requireAdmin(request: NextRequest) {
   return requirePlatformSession(request);
 }
 
-export function requireSuperAdmin(request: NextRequest) {
-  const auth = requireAdmin(request);
+export async function requireSuperAdmin(request: NextRequest) {
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth;
   if (auth.session?.role !== "SUPER_ADMIN") {
     return {

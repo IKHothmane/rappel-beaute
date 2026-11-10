@@ -240,10 +240,41 @@ export async function listAppointmentsByOrg(
   return rows.map(rowToDto);
 }
 
+/**
+ * Les clés étrangères PostgreSQL ne vérifient pas l'institut (les contrôles de référence ignorent RLS) :
+ * sans cette garde, un rendez-vous pourrait pointer vers la cliente, l'employée, le service ou la ressource
+ * d'un autre institut. Audit RLS, risque R4.
+ */
+export async function assertAppointmentReferences(
+  organizationId: string,
+  refs: {
+    customerId?: string | null;
+    serviceId?: string | null;
+    staffId?: string | null;
+    resourceId?: string | null;
+  },
+): Promise<void> {
+  const checks: Array<["Customer" | "Service" | "Staff" | "Resource", string | null | undefined]> = [
+    ["Customer", refs.customerId],
+    ["Service", refs.serviceId],
+    ["Staff", refs.staffId],
+    ["Resource", refs.resourceId],
+  ];
+  for (const [table, id] of checks) {
+    if (!id) continue;
+    const { rowCount } = await pool.query(
+      `SELECT 1 FROM "${table}" WHERE id = $1 AND "organizationId" = $2`,
+      [id, organizationId],
+    );
+    if (!rowCount) throw new Error("REFERENCE_NOT_FOUND");
+  }
+}
+
 export async function createAppointmentRow(
   organizationId: string,
   input: CreateAppointmentInput,
 ): Promise<Appointment> {
+  await assertAppointmentReferences(organizationId, input);
   const id = `apt-${Date.now()}`;
 
   let depositAmount = input.deposit ?? null;
@@ -348,6 +379,12 @@ export async function updateAppointmentRow(
     cancelledByInstitute?: boolean;
   },
 ): Promise<Appointment | null> {
+  await assertAppointmentReferences(organizationId, {
+    customerId: patch.customerId,
+    serviceId: patch.serviceId,
+    staffId: patch.staffId,
+    resourceId: patch.resourceId,
+  });
   const previous = await getAppointmentById(id, organizationId);
 
   const fields: string[] = [];

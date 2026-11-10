@@ -110,6 +110,12 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
     if (resourceMsg) {
       return NextResponse.json({ error: resourceMsg }, { status: 409 });
     }
+    if (error instanceof Error && error.message === "REFERENCE_NOT_FOUND") {
+      return NextResponse.json(
+        { error: "Cliente, service, employée ou ressource introuvable." },
+        { status: 400 },
+      );
+    }
     console.error("[POST /api/appointments]", error);
     return NextResponse.json(
       { error: "Impossible de créer le rendez-vous." },

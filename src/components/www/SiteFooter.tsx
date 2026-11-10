@@ -46,9 +46,7 @@ const COLS = [
 
 export function SiteFooter() {
   return (
-    <footer
-      className="border-t border-line bg-[#FFF8FB] bg-[url('/brand/footer.webp')] bg-cover bg-center bg-no-repeat"
-    >
+    <footer className="border-t border-line">
       <div className="container-rb grid justify-items-center gap-10 py-14 text-center sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <div className="flex flex-col items-center lg:col-span-1">
           <BrandLogo height={72} />

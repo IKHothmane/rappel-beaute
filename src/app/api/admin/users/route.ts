@@ -11,7 +11,7 @@ import {
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const GET = platformRoute(async function GET(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const sp = request.nextUrl.searchParams;
@@ -31,7 +31,7 @@ export const GET = platformRoute(async function GET(request: NextRequest) {
 });
 
 export const POST = platformRoute(async function POST(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const body = (await request.json().catch(() => null)) as {

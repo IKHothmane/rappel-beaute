@@ -8,7 +8,7 @@ import type { AdsAgentMode } from "@/modules/ads/ads-rules.service";
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const GET = platformRoute(async function GET(request: NextRequest) {
-  const auth = requireSuperAdmin(request);
+  const auth = await requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
   try {
     return adminJson(await getAdsDashboard());
@@ -19,7 +19,7 @@ export const GET = platformRoute(async function GET(request: NextRequest) {
 });
 
 export const PATCH = platformRoute(async function PATCH(request: NextRequest) {
-  const auth = requireSuperAdmin(request);
+  const auth = await requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
   try {
     const body = (await request.json()) as { patch?: Partial<AdsConfigRow>; emergency?: boolean };

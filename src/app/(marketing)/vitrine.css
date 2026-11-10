@@ -1,0 +1,53 @@
+/* Visual identity scoped to the public website. */
+.marketing-site {
+  background: #fff;
+  color: #3a2533;
+  line-height: 1.6;
+}
+.marketing-site > header {
+  background: transparent;
+  border: 0;
+}
+.marketing-site > main { padding-top: 5.75rem; }
+@media (min-width: 768px) {
+  .marketing-site > main { padding-top: 6.5rem; }
+}
+.marketing-site > footer {
+  background: #fbf6f7 url("/brand/footer.webp") center / cover no-repeat;
+}
+body:has(.fn) { position: relative; z-index: 0; background: transparent; }
+body:has(.fn)::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: #fff5f8 url("/site/rappel_beauty_accueil_background.webp") center / contain no-repeat;
+}
+.marketing-site:has(.fn),
+.marketing-site:has(.fn) > main { background: transparent; }
+.marketing-site:has(.fn) > footer {
+  background: rgb(255 248 251 / 78%);
+  border-color: rgb(255 255 255 / 45%);
+  backdrop-filter: blur(8px);
+}
+.marketing-site h1,
+.marketing-site h2 {
+  font-weight: 500;
+  letter-spacing: -.035em;
+  color: #3a2533;
+}
+.marketing-site .btn-primary,
+.marketing-site .btn-ghost {
+  min-height: 50px;
+  border-radius: 12px;
+}
+.marketing-site .btn-primary {
+  box-shadow: 0 4px 12px rgb(144 0 55 / 12%);
+}
+.marketing-site a:focus-visible,
+.marketing-site button:focus-visible,
+.marketing-site summary:focus-visible {
+  outline: 3px solid #ba004966;
+  outline-offset: 4px;
+}

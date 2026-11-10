@@ -4,7 +4,7 @@ import { listPlans, updatePlan } from "@/lib/subscriptions/plans";
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const GET = platformRoute(async function GET(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const activeOnly = request.nextUrl.searchParams.get("all") !== "1";
@@ -13,5 +13,7 @@ export const GET = platformRoute(async function GET(request: NextRequest) {
 });
 
 export const POST = platformRoute(async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) return auth.response;
   return adminError("Création de plan via seed/migration uniquement en V1.", 501);
 });

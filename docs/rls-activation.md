@@ -64,5 +64,6 @@ Le niveau 3 n'est nécessaire que pour retirer définitivement la fonctionnalit�
 - **Nouvelle route :** l'exporter avec `tenantRoute`, `publicRoute`, `platformRoute` ou `jobRoute`. Un test échoue sinon.
 - **Nouvelle table avec `organizationId` :** ajouter sa politique dans la migration. Un test échoue sinon.
 - **Accès volontairement inter-instituts depuis une route métier :** l'encadrer avec `runAsJob("motif", ...)`, et le faire relire.
-- **Limites connues :** l'isolation ne protège pas d'une injection SQL (le rôle peut changer son propre contexte). Elle n'empêche pas non plus une ligne de référencer une ligne d'un autre institut.
+- **Limites connues :** l'isolation ne protège pas d'une injection SQL (le rôle peut changer son propre contexte). Elle n'empêche pas non plus une ligne de référencer une ligne d'un autre institut (risque R4) : le code vérifie l'institut des références d'un rendez-vous (`assertAppointmentReferences`), et la protection de fond par contraintes composites est proposée, non appliquée, dans `docs/rls-r4/`.
+- **Sessions :** une session institut est refusée (403) dès que l'institut n'est plus `ACTIVE`, et une session back-office est relue en base à chaque appel (administrateur désactivé = accès coupé, rôle pris en base).
 - **Pooler externe :** en mode « transaction », le contexte reste correct puisqu'il est lié à la transaction.

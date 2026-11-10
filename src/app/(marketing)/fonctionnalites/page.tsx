@@ -1,9 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { marketingPageMetadata } from "@/lib/seo";
-import { Reveal } from "@/components/www/Reveal";
-import { ShowcaseStrip } from "@/components/www/ProductShot";
-import { ServicesView } from "@/components/www/ProductViews";
 import { SeoCloser } from "@/components/www/SeoCloser";
+import { PUBLIC_OFFER } from "@/lib/site";
+import "./fonctionnalites.css";
 
 export const dynamic = "force-static";
 
@@ -14,16 +14,75 @@ export const metadata = marketingPageMetadata({
   canonical: "/fonctionnalites/",
 });
 
-const NAV = [
-  { id: "rdv", label: "Rendez-vous" },
-  { id: "clientes", label: "Clientes" },
-  { id: "equipe", label: "Équipe" },
-  { id: "services", label: "Services" },
-  { id: "stock", label: "Stock" },
-  { id: "caisse", label: "Caisse" },
-  { id: "croissance", label: "Croissance" },
-  { id: "reservation", label: "Réservation" },
-  { id: "analytics", label: "Pilotage" },
+const PROMISES = ["Tout-en-un", "Simple à utiliser", "Pensé pour le Maroc"] as const;
+
+const MODULES = [
+  {
+    id: "rdv",
+    title: "Agenda & réservations",
+    text: "Un planning clair et intelligent pour organiser vos rendez-vous et vos cabines.",
+    points: ["Vue jour, semaine et mois", "Rendez-vous simultanés", "Gestion des cabines et des disponibilités"],
+    src: "/site/rappelbeauty-agenda-pc-complet-2200x1270.webp",
+    alt: "Agenda de la semaine dans Rappel Beauty",
+    width: 2200,
+    height: 1270,
+    icon: "cal",
+  },
+  {
+    id: "clientes",
+    title: "Clientes & fidélité",
+    text: "Une relation client durable et plus de clientes fidèles.",
+    points: ["Fiches clientes complètes", "Carte de fidélité QR (Google Wallet)", "Historique des soins et des achats"],
+    src: "/site/rappelbeauty-clientes-pc-reel.webp",
+    alt: "Fiche cliente dans Rappel Beauty",
+    width: 2200,
+    height: 1230,
+    icon: "users",
+  },
+  {
+    id: "caisse",
+    title: "Caisse, paiements & dépenses",
+    text: "Encaissez, suivez vos revenus et gardez le contrôle de votre rentabilité.",
+    points: ["Encaissements (espèces, carte, virement)", "Tickets de caisse et clôture du jour", "Suivi des dépenses et bénéfice net"],
+    src: "/site/rappelbeauty-caisse-pc-reel.webp",
+    alt: "Caisse et ticket dans Rappel Beauty",
+    width: 2200,
+    height: 1250,
+    icon: "card",
+  },
+  {
+    id: "stock",
+    title: "Produits, stock & achats",
+    text: "Gérez vos produits, vos commandes et évitez les ruptures.",
+    points: ["Catalogue produits et consommables", "Alertes de stock en temps réel", "Fournisseurs, bons de commande et réceptions"],
+    src: "/site/rappelbeauty-produits-stock-pc-reel.webp",
+    alt: "Produits et stock dans Rappel Beauty",
+    width: 2200,
+    height: 1200,
+    icon: "box",
+  },
+  {
+    id: "equipe",
+    title: "Équipe & ressources",
+    text: "Organisez votre équipe et vos ressources (cabines, fauteuils, machines, etc.).",
+    points: ["Planning et horaires de l'équipe", "Commissions automatiques", "Gestion des cabines, machines et équipements"],
+    src: "/site/rappelbeauty-planning-pc-reel.webp",
+    alt: "Planning de l'équipe dans Rappel Beauty",
+    width: 2000,
+    height: 1150,
+    icon: "team",
+  },
+  {
+    id: "analytics",
+    title: "Analytics, promotions & assistant IA",
+    text: "Des indicateurs clairs, des campagnes efficaces et un assistant intelligent à vos côtés.",
+    points: ["Tableaux de bord et performances", "Promotions et campagnes clientes (WhatsApp)", "Assistant IA pour vos questions métier"],
+    src: "/site/rappelbeauty-analytics-pc-reel.webp",
+    alt: "Analyses et statistiques dans Rappel Beauty",
+    width: 2200,
+    height: 1260,
+    icon: "chart",
+  },
 ] as const;
 
 const FAQ = [
@@ -45,387 +104,130 @@ const FAQ = [
   },
 ] as const;
 
-function Items({ items }: { items: { id?: string; label: string }[] }) {
+function Glyph({ name }: { name: (typeof MODULES)[number]["icon"] | "check" }) {
+  const paths: Record<string, string> = {
+    check: "M5 12.5l4.5 4.5L19 7.5",
+    cal: "M7 3v3M17 3v3M4 9h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z",
+    users: "M9 11a3 3 0 100-6 3 3 0 000 6zM16 11a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM4 19a5 5 0 0110 0M14.5 19a4 4 0 015-3.8",
+    card: "M3 8h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8zM3 11h18M7 15h4",
+    box: "M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5",
+    team: "M8 11a3 3 0 100-6 3 3 0 000 6zM16 12a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM3.5 19a4.5 4.5 0 019 0M13 19a4 4 0 016.5-3.2",
+    chart: "M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-2",
+  };
   return (
-    <ul className="mt-6 grid gap-2 sm:grid-cols-2">
-      {items.map((item) => (
-        <li
-          key={item.label}
-          id={item.id}
-          className="scroll-mt-36 rounded-xl border border-line bg-white px-4 py-3 text-sm font-medium text-ink"
-        >
-          {item.label}
-        </li>
-      ))}
-    </ul>
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d={paths[name]} />
+    </svg>
   );
 }
 
 export default function FonctionnalitesPage() {
+  const trial = PUBLIC_OFFER.trialDays;
+
   return (
-    <>
-      <section className="border-b border-line bg-paper py-14 sm:py-20">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <Reveal>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
-              Logiciel pour instituts de beauté au Maroc
-            </p>
-            <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Logiciel de gestion pour institut de beauté
-            </h1>
-            <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
-              Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc.
-              Cette page décrit ce qu&apos;il permet de faire : rendez-vous, clientes, équipe,
-              services, stock, caisse, fidélité et réservation en ligne.
-            </p>
-            <Link
-              href="/professionnel/"
-              className="mt-8 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
-            >
-              Essayer gratuitement 15 jours
+    <div className="fn">
+      <section className="fn-wrap fn-hero">
+        <div>
+          <p className="fn-badge">
+            <Glyph name="cal" />
+            Fonctionnalités
+          </p>
+          <h1>
+            Toutes les fonctions pour gérer <span>votre institut</span>
+          </h1>
+          <p className="fn-lead">
+            Une solution complète et simple pour les instituts de beauté : réservations, clientes, caisse, stock, équipe, fidélité, promotions et bien plus encore.
+          </p>
+          <ul className="fn-promises">
+            {PROMISES.map((item) => (
+              <li key={item}>
+                <span className="fn-mark">
+                  <Glyph name="check" />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <div className="fn-actions">
+            <Link href="/professionnel/">
+              Essayer gratuitement {trial} jours
+              <span aria-hidden>→</span>
             </Link>
-            <p className="mt-4 text-xs text-ink/55 sm:text-sm">
-              Sans engagement · 15 jours gratuits · Sans carte bancaire
-            </p>
-          </Reveal>
+            <Link href="/demo/">Voir la démo</Link>
+          </div>
+        </div>
+
+        <div className="fn-shot">
+          <Image
+            src="/site/rappelbeauty-dashboard-pc-reel.webp"
+            alt="Tableau de bord Rappel Beauty sur ordinateur"
+            width={2200}
+            height={1270}
+            priority
+          />
         </div>
       </section>
 
-      <ShowcaseStrip />
-
-      <nav
-        aria-label="Sommaire des fonctionnalités"
-        className="sticky top-[4.5rem] z-40 border-b border-line bg-white/95 backdrop-blur-md md:top-24"
-      >
-        <div className="no-scrollbar mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-3 sm:px-6">
-          {NAV.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              className="whitespace-nowrap rounded-full border border-line bg-paper px-3.5 py-1.5 text-xs font-medium text-ink/70 transition hover:border-primary/40 hover:text-primary"
-            >
-              {item.label}
-            </a>
-          ))}
+      <section className="fn-wrap fn-modules">
+        <div className="fn-modules-head">
+          <p className="fn-kicker">Les modules principaux</p>
+          <h2>
+            Des fonctionnalités complètes pour un institut <span>plus performant</span>
+          </h2>
         </div>
-      </nav>
 
-      <div className="mx-auto max-w-3xl space-y-16 px-4 py-14 sm:px-6 sm:py-20">
-        <Reveal>
-          <section id="rdv" className="scroll-mt-36">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Rendez-vous
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">
-              Agenda &amp; rendez-vous
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Organisez les rendez-vous de votre institut, visualisez les disponibilités de votre
-              équipe et gérez votre planning depuis un seul agenda.
-            </p>
-            <Items
-              items={[
-                { label: "Agenda" },
-                { label: "Rendez-vous" },
-                { label: "Planning équipe" },
-                { label: "Liste d'attente" },
-                { label: "Disponibilités" },
-              ]}
-            />
-            <p className="mt-4">
-              <Link
-                href="/gestion-rendez-vous/"
-                className="text-sm font-semibold text-primary hover:text-primary-dark"
-              >
-                Découvrir la gestion des rendez-vous
-              </Link>
-            </p>
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section id="clientes" className="scroll-mt-36 border-t border-line pt-16">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Clientes
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">Clientes</h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Gardez la fiche de chaque cliente, son historique de soins et les leviers pour la
-              faire revenir, sans photo cliente en V1.
-            </p>
-            <Items
-              items={[
-                { label: "Fiches clientes" },
-                { label: "Historique" },
-                { id: "fidelite", label: "Fidélité" },
-                { label: "Réactivation" },
-              ]}
-            />
-            <p className="mt-4">
-              <Link
-                href="/gestion-clientes/"
-                className="text-sm font-semibold text-primary hover:text-primary-dark"
-              >
-                Découvrir la gestion des clientes
-              </Link>
-            </p>
-            <p className="mt-2">
-              <Link
-                href="/fidelite/"
-                className="text-sm font-semibold text-primary hover:text-primary-dark"
-              >
-                Découvrir la fidélité
-              </Link>
-            </p>
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section id="equipe" className="scroll-mt-36 border-t border-line pt-16">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Équipe
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">Équipe</h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Organisez les employées, leur planning, leurs commissions et les droits d&apos;accès
-              selon le rôle de chacune.
-            </p>
-            <Items
-              items={[
-                { label: "Employées" },
-                { label: "Planning" },
-                { label: "Commissions" },
-                { label: "Permissions" },
-              ]}
-            />
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section id="services" className="scroll-mt-36 border-t border-line pt-16">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Services &amp; ressources
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">
-              Services &amp; ressources
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Décrivez vos prestations, vos cabines et vos tarifs, puis reliez-les aux
-              disponibilités réelles de l&apos;institut.
-            </p>
-            <ServicesView className="mt-6" />
-            <p className="mt-4">
-              <Link
-                href="/tarifs/"
-                className="text-sm font-semibold text-primary hover:text-primary-dark"
-              >
-                Voir les tarifs
-              </Link>
-            </p>
-            <Items
-              items={[
-                { label: "Services" },
-                { label: "Cabines / ressources" },
-                { label: "Tarifs" },
-                { label: "Disponibilités" },
-              ]}
-            />
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section id="stock" className="scroll-mt-36 border-t border-line pt-16">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Produits &amp; stock
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">
-              Produits &amp; stock
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Suivez les produits utilisés en cabine et vendus au comptoir, les fournisseurs, les
-              achats et les alertes de stock.
-            </p>
-            <Items
-              items={[
-                { label: "Produits" },
-                { label: "Stock" },
-                { label: "Fournisseurs" },
-                { label: "Achats" },
-                { label: "Alertes" },
-              ]}
-            />
-            <p className="mt-4">
-              <Link
-                href="/gestion-stock/"
-                className="text-sm font-semibold text-primary hover:text-primary-dark"
-              >
-                Découvrir la gestion du stock
-              </Link>
-            </p>
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section id="caisse" className="scroll-mt-36 border-t border-line pt-16">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Caisse &amp; finances
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">
-              Caisse &amp; finances
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Encaissez les soins et les produits, suivez les paiements et les dépenses, et
-              émettez les factures depuis la même caisse.
-            </p>
-            <Items
-              items={[
-                { label: "Caisse" },
-                { label: "Point de vente" },
-                { label: "Paiements" },
-                { label: "Dépenses" },
-                { label: "Facturation" },
-              ]}
-            />
-            <p className="mt-4">
-              <Link
-                href="/caisse/"
-                className="text-sm font-semibold text-primary hover:text-primary-dark"
-              >
-                Découvrir la gestion de la caisse
-              </Link>
-            </p>
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section id="croissance" className="scroll-mt-36 border-t border-line pt-16">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Croissance
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">
-              Croissance
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Préparez vos offres, vos cartes cadeaux et vos messages. WhatsApp reste assisté :
-              une personne de l&apos;institut envoie le message.
-            </p>
-            <Items
-              items={[
-                { id: "promotions", label: "Promotions" },
-                { label: "Cartes cadeaux" },
-                { label: "Marketing" },
-                { id: "whatsapp", label: "WhatsApp assisté" },
-                { id: "avis", label: "Avis" },
-              ]}
-            />
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section id="reservation" className="scroll-mt-36 border-t border-line pt-16">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Réservation en ligne
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">
-              Réservation en ligne
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Donnez à votre institut une page publique pour présenter vos services, afficher vos
-              disponibilités et permettre aux clientes de prendre rendez-vous. Les clientes paient
-              directement à l&apos;institut.
-            </p>
-            <Items
-              items={[
-                { label: "Page publique de l'institut" },
-                { label: "Services" },
-                { label: "Disponibilités" },
-                { label: "Rendez-vous" },
-                { label: "Produits" },
-                { label: "Retrait à l'institut" },
-              ]}
-            />
-            <p className="mt-4">
-              <Link
-                href="/reservation-en-ligne/"
-                className="text-sm font-semibold text-primary hover:text-primary-dark"
-              >
-                Découvrir la réservation en ligne
-              </Link>
-            </p>
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section id="analytics" className="scroll-mt-36 border-t border-line pt-16">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Pilotage
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-light text-ink sm:text-4xl">Pilotage</h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Consultez l&apos;activité de l&apos;institut, les rapports et les notifications, avec
-              un assistant IA dans l&apos;application.
-            </p>
-            <Items
-              items={[
-                { label: "Analytics" },
-                { label: "Rapports" },
-                { label: "Notifications" },
-                { label: "Assistant IA" },
-              ]}
-            />
-          </section>
-        </Reveal>
-      </div>
+        {MODULES.map((item, index) => (
+          <article key={item.id} id={item.id} className={index % 2 === 1 ? "fn-module is-reverse" : "fn-module"}>
+            <div className="fn-copy">
+              <span className="fn-icon">
+                <Glyph name={item.icon} />
+              </span>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+              <ul className="fn-points">
+                {item.points.map((point) => (
+                  <li key={point}>
+                    <span className="fn-mark">
+                      <Glyph name="check" />
+                    </span>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="fn-shot">
+              <Image src={item.src} alt={item.alt} width={item.width} height={item.height} />
+            </div>
+          </article>
+        ))}
+      </section>
 
       <SeoCloser
         problem="L'agenda est dans un cahier, les clientes dans WhatsApp, le stock dans un fichier et la caisse dans un autre outil. Le soir, personne ne retrouve la même journée."
         solution="Rappel Beauty réunit rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne. C'est le logiciel de l'institut, pas une place de marché."
         useCase="Une patronne à Casablanca ouvre le planning du matin, voit la cabine déjà prise, encaisse le soin à la fin et retrouve la fiche de la cliente sans changer d'application."
       />
-      <section className="border-t border-line bg-primary-light/20 py-14 sm:py-20">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h2 className="text-center font-display text-2xl font-light text-ink sm:text-3xl">
-            Questions fréquentes
-          </h2>
-          <div className="mt-8 space-y-3">
-            {FAQ.map((item) => (
-              <details
-                key={item.q}
-                className="group rounded-xl border border-line bg-paper p-4 sm:p-5"
-              >
-                <summary className="cursor-pointer text-sm font-medium text-ink sm:text-base">
-                  {item.q}
-                </summary>
-                <p className="mt-3 text-sm leading-relaxed text-ink/60">{item.a}</p>
-              </details>
-            ))}
-          </div>
-          <p className="mt-6 text-center text-sm text-ink/55">
-            Le détail des prix est sur la{" "}
-            <Link href="/tarifs/" className="font-semibold text-primary hover:text-primary-dark">
-              page tarifs
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
 
-      <section className="bg-institut py-14 text-center text-white sm:py-20">
-        <div className="mx-auto max-w-2xl px-4">
-          <h2 className="font-display text-2xl font-light sm:text-4xl">
-            Essayez Rappel Beauty pendant 15 jours
-          </h2>
-          <p className="mt-4 text-sm text-white/75 sm:text-base">
-            Sans engagement et sans carte bancaire.
-          </p>
-          <Link
-            href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
-          >
-            Essayer gratuitement 15 jours
+      <section className="fn-wrap fn-faq">
+        <div className="fn-faq-inner">
+        <h2>Questions fréquentes</h2>
+        <div className="mt-8 space-y-3">
+          {FAQ.map((item) => (
+            <details key={item.q} className="rounded-2xl border border-white/70 bg-white/80 p-4 sm:p-5">
+              <summary className="cursor-pointer text-sm font-medium text-[#3a2533] sm:text-base">{item.q}</summary>
+              <p className="mt-3 text-sm leading-relaxed text-[#6b5763]">{item.a}</p>
+            </details>
+          ))}
+        </div>
+        <p className="mt-6 text-center text-sm text-[#6b5763]">
+          Le détail des prix est sur la{" "}
+          <Link href="/tarifs/" className="font-semibold text-[#ba0049]">
+            page tarifs
           </Link>
+          .
+        </p>
         </div>
       </section>
-    </>
+    </div>
   );
 }

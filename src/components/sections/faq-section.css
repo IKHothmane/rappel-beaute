@@ -1,0 +1,25 @@
+.hm section.faq-section { padding-block: clamp(64px, 7vw, 112px); }
+.faq-section > div:last-child > * { min-width: 0; }
+.marketing-site .hm .faq-section h2 { font-size: clamp(38px, 4.5vw, 60px); line-height: 1.1; letter-spacing: -.035em; color: #430b2b; }
+.hm .faq-section h2 + p { margin-top: 40px; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.8; }
+.hm .faq-section h3 { margin: 0; font-family: var(--f-body); font-size: 18px; line-height: 1.5; text-wrap: initial; }
+.hm .faq-section button { color: #430b2b; }
+.faq-section h3 button { min-height: 80px; }
+.faq-section .faq-answer { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows .25s, visibility .25s; }
+.faq-section .faq-answer[data-open="true"] { grid-template-rows: 1fr; visibility: visible; }
+.faq-answer-inner { min-height: 0; overflow: hidden; }
+.hm .faq-answer p { padding: 0 24px 24px 84px; font-size: 16px; line-height: 1.8; color: #725365; }
+@media (max-width: 639px) {
+  .faq-section h3 button { gap: 10px; padding: 14px 12px; }
+  .faq-section h3 button > span:first-child { width: 40px; height: 40px; border-radius: 12px; }
+  .faq-section h3 button > span:last-child { width: 28px; height: 28px; }
+  .faq-section h3 button > span:nth-child(2) { font-size: 15px; line-height: 1.5; }
+  .hm .faq-answer p { padding: 0 18px 22px; font-size: 15px; }
+}
+@media (max-width: 400px) {
+  .faq-section > div:last-child > div:first-child > div:first-child { padding-inline: 14px; font-size: 12px; }
+  .faq-section a[class*="min-h-"] { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .faq-section *, .faq-section .faq-answer { transition: none !important; transform: none !important; }
+}

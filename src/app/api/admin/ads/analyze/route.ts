@@ -4,7 +4,7 @@ import { runAdsAgent } from "@/modules/ads/ads-agent.service";
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const POST = platformRoute(async function POST(request: NextRequest) {
-  const auth = requireSuperAdmin(request);
+  const auth = await requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
   try {
     const body = (await request.json().catch(() => ({}))) as { sync?: boolean };

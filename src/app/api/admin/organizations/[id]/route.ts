@@ -9,7 +9,7 @@ import { platformRoute } from "@/lib/http/route-scope";
 type Ctx = { params: Promise<{ id: string }> };
 
 export const GET = platformRoute(async function GET(request: NextRequest, ctx: Ctx) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const { id } = await ctx.params;
@@ -19,7 +19,7 @@ export const GET = platformRoute(async function GET(request: NextRequest, ctx: C
 });
 
 export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const { id } = await ctx.params;

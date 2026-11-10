@@ -18,6 +18,7 @@ import { canUseFeature } from "@/lib/subscriptions/limits";
 import { planFeatureForAppFeature } from "@/lib/subscriptions/features";
 import type { PlanFeatureKey } from "@/types/subscription";
 import { getUserSessionState } from "@/lib/db/users";
+import { getPlatformUserById } from "@/lib/db/platform-users";
 import { bindOrganization } from "@/lib/db/tenant-context";
 
 export type AuthResult =
@@ -76,6 +77,17 @@ export async function requireAppSession(request: NextRequest): Promise<AppAuthRe
     };
   }
 
+  // Institut suspendu ou archivé : les jetons déjà émis cessent de fonctionner.
+  if (state.orgStatus && state.orgStatus !== "ACTIVE") {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Institut suspendu.", code: "ORGANIZATION_INACTIVE" },
+        { status: 403 },
+      ),
+    };
+  }
+
   const jwtVersion = auth.session.sessionVersion ?? 0;
   if (jwtVersion !== state.sessionVersion) {
     return {
@@ -109,9 +121,13 @@ export async function requireAppSession(request: NextRequest): Promise<AppAuthRe
   return { ok: true, session };
 }
 
-export function requirePlatformSession(
+/**
+ * Session back-office relue en base : un administrateur désactivé ou supprimé perd l'accès immédiatement
+ * (le jeton signé reste valable 30 jours), et le rôle appliqué est celui de la base, pas celui du jeton.
+ */
+export async function requirePlatformSession(
   request: NextRequest,
-): AuthResult & { session?: PlatformSessionUser } {
+): Promise<AuthResult & { session?: PlatformSessionUser }> {
   const auth = requireSession(request);
   if (!auth.ok) return auth;
   if (!isPlatformSession(auth.session)) {
@@ -120,7 +136,14 @@ export function requirePlatformSession(
       response: NextResponse.json({ error: "Accès réservé à la plateforme." }, { status: 403 }),
     };
   }
-  return { ok: true, session: auth.session };
+  const current = await getPlatformUserById(auth.session.id);
+  if (!current) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Session expirée." }, { status: 401 }),
+    };
+  }
+  return { ok: true, session: current };
 }
 
 async function enforcePlanForAppFeature(

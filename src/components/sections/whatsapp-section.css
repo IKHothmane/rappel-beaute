@@ -1,0 +1,26 @@
+.hm section.whatsapp-section { padding-block: clamp(64px, 7vw, 112px); }
+.whatsapp-legacy-anchor { position: absolute; top: 0; scroll-margin-top: 104px; }
+.whatsapp-section > div:last-child > * { min-width: 0; }
+.marketing-site .hm .whatsapp-section h2 { font-size: clamp(36px, 4.2vw, 60px); line-height: 1.12; letter-spacing: -.035em; color: #391429; }
+.hm .whatsapp-section h2 + p { margin-top: 32px; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.8; color: #755767; }
+.hm .whatsapp-section button { color: #391429; }
+.whatsapp-step-title { font-size: 17px; line-height: 1.45; }
+.hm .whatsapp-section button p { margin-top: 8px; font-size: 15px; line-height: 1.75; color: #795f6c; }
+.hm .whatsapp-section button[aria-pressed="true"] { border-color: #d00058; }
+.hm .whatsapp-section p.flex { margin-top: 24px; font-size: 14px; line-height: 1.7; }
+.whatsapp-section .whatsapp-preview { min-height: 780px; padding-block: 32px 80px; }
+.whatsapp-section .whatsapp-phone { flex-shrink: 0; }
+.hm .whatsapp-phone-screen p { font-size: 15px; line-height: 1.65; color: #17302a; }
+.whatsapp-section button:focus-visible { outline: 3px solid #c0005266; outline-offset: 4px; }
+@media (max-width: 639px) {
+  .whatsapp-section button { padding: 18px; gap: 12px; }
+  .whatsapp-section button > div:first-child { width: 42px; height: 42px; border-radius: 12px; }
+  .whatsapp-step-title { font-size: 16px; }
+  .whatsapp-section .whatsapp-preview { min-height: 740px; }
+  .whatsapp-section .whatsapp-phone { width: min(100%, 340px); }
+  .whatsapp-section .whatsapp-phone-screen { height: 620px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-section *, .whatsapp-section *:hover { transition: none !important; }
+  .whatsapp-section button:hover, .whatsapp-section .whatsapp-phone { transform: none; }
+}

@@ -8,7 +8,7 @@ import type { OrganizationStatus, SubscriptionPlan } from "@/types/platform";
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const GET = platformRoute(async function GET(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const sp = request.nextUrl.searchParams;
@@ -25,7 +25,7 @@ export const GET = platformRoute(async function GET(request: NextRequest) {
 });
 
 export const POST = platformRoute(async function POST(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {
@@ -63,7 +63,7 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
 });
 
 export const HEAD = platformRoute(async function HEAD(request: NextRequest) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
   const stats = await getPlatformDashboardStats();
   return adminJson({ stats });

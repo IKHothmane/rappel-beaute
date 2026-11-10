@@ -6,7 +6,7 @@ import { platformRoute } from "@/lib/http/route-scope";
 type Ctx = { params: Promise<{ orgId: string }> };
 
 export const GET = platformRoute(async function GET(request: NextRequest, context: Ctx) {
-  const auth = requireAdmin(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const { orgId } = await context.params;

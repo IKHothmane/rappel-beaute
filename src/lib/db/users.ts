@@ -30,6 +30,7 @@ export type UserSessionState = {
   status: "ACTIVE" | "DISABLED";
   mustChangePassword: boolean;
   sessionVersion: number;
+  orgStatus?: "ACTIVE" | "SUSPENDED" | "ARCHIVED";
 };
 
 export async function getUserSessionState(userId: string): Promise<UserSessionState | null> {
@@ -37,9 +38,11 @@ export async function getUserSessionState(userId: string): Promise<UserSessionSt
     status: "ACTIVE" | "DISABLED";
     mustChangePassword: boolean;
     sessionVersion: number;
+    orgStatus: "ACTIVE" | "SUSPENDED" | "ARCHIVED";
   }>(
-    `SELECT status, "mustChangePassword", "sessionVersion"
-     FROM "User" WHERE id = $1`,
+    `SELECT u.status, u."mustChangePassword", u."sessionVersion", o.status AS "orgStatus"
+     FROM "User" u JOIN "Organization" o ON o.id = u."organizationId"
+     WHERE u.id = $1`,
     [userId],
   );
   const row = rows[0];
@@ -48,6 +51,7 @@ export async function getUserSessionState(userId: string): Promise<UserSessionSt
     status: row.status,
     mustChangePassword: Boolean(row.mustChangePassword),
     sessionVersion: Number(row.sessionVersion) || 0,
+    orgStatus: row.orgStatus,
   };
 }
 

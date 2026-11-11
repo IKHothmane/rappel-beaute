@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { AdminOrganizationsView } from "@/components/admin/admin-organizations";
+import { OrganizationsView } from "@/components/admin/OrganizationsView";
 
 export const metadata: Metadata = { title: "Instituts" };
 
 export default function OrganizationsPage() {
-  return <AdminOrganizationsView />;
+  return <OrganizationsView />;
 }

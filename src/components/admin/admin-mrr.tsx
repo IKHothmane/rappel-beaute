@@ -222,7 +222,7 @@ export function AdminMrrView() {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[28px] font-black tracking-tight text-ink lg:text-[32px]">
+              <h1 className="text-2xl font-bold sm:text-3xl tracking-tight text-ink">
                 MRR &amp; Revenus de la plateforme
               </h1>
               <span className="rounded-full bg-[#F0DDE9] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink/60">

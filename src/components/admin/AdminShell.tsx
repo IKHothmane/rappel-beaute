@@ -10,7 +10,6 @@ import {
   Gift,
   LayoutDashboard,
   LifeBuoy,
-  Megaphone,
   MonitorDot,
   PanelLeftClose,
   PanelLeftOpen,
@@ -59,10 +58,6 @@ const NAV: NavGroup[] = [
       { href: "/services/", label: "Images services", icon: Scissors },
       { href: "/resources/", label: "Images ressources", icon: Armchair },
     ],
-  },
-  {
-    title: "Marketing",
-    items: [{ href: "/marketing/ads/", label: "Agent Ads IA", icon: Megaphone }],
   },
   {
     title: "Opérations",
@@ -122,9 +117,6 @@ function isActive(pathname: string, href: string) {
   if (href === "/billing/") {
     return path.startsWith("/billing");
   }
-  if (href === "/marketing/ads/") {
-    return path.startsWith("/marketing");
-  }
   if (href === "/subscriptions/") {
     return path.startsWith("/subscriptions");
   }
@@ -146,7 +138,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<string | null>(null);
   const [recentCount, setRecentCount] = useState(0);
   const [openTickets, setOpenTickets] = useState(0);
   const href = adminHref;
@@ -164,7 +155,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     fetchAdminSession().then((u) => {
       if (!u) return;
       setDisplayName(`${u.firstName ?? ""} ${u.lastName ?? ""}`.trim());
-      setRole(u.role ?? null);
     });
     fetchAdminAudit(20)
       .then((res) => setRecentCount(res.items.length))
@@ -192,7 +182,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     });
   }
 
-  const visibleNav = NAV.filter((group) => group.title !== "Marketing" || role === "SUPER_ADMIN");
+  const visibleNav = NAV;
 
   if (path.startsWith("/login")) {
     return <>{children}</>;

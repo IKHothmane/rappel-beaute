@@ -75,16 +75,6 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: "/blog",
-        destination: "/faq/",
-        permanent: true,
-      },
-      {
-        source: "/blog/",
-        destination: "/faq/",
-        permanent: true,
-      },
-      {
         source: "/instituts",
         destination: "/",
         permanent: true,

@@ -13,7 +13,7 @@
   .marketing-site > main { padding-top: 6.5rem; }
 }
 .marketing-site > footer {
-  background: #fbf6f7 url("/brand/footer.webp") center / cover no-repeat;
+  background: #fbf6f7;
 }
 body:has(.fn) { position: relative; z-index: 0; background: transparent; }
 body:has(.fn)::before {
@@ -22,7 +22,7 @@ body:has(.fn)::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: #fff5f8 url("/site/rappel_beauty_accueil_background.webp") center / contain no-repeat;
+  background: #fff5f8;
 }
 .marketing-site:has(.fn),
 .marketing-site:has(.fn) > main { background: transparent; }

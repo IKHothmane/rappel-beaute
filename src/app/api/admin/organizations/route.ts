@@ -4,6 +4,7 @@ import {
   getPlatformDashboardStats,
   listOrganizations,
 } from "@/lib/db/admin-organizations";
+import { listOrganizationCardExtras } from "@/lib/db/admin-org-cards";
 import type { OrganizationStatus, SubscriptionPlan } from "@/types/platform";
 import { platformRoute } from "@/lib/http/route-scope";
 
@@ -16,12 +17,24 @@ export const GET = platformRoute(async function GET(request: NextRequest) {
   const status = sp.get("status") as OrganizationStatus | null;
   const plan = sp.get("plan") as SubscriptionPlan | null;
 
-  const items = await listOrganizations({
-    search,
-    status: status ?? undefined,
-    plan: plan ?? undefined,
+  const [items, extras] = await Promise.all([
+    listOrganizations({
+      search,
+      status: status ?? undefined,
+      plan: plan ?? undefined,
+    }),
+    listOrganizationCardExtras(),
+  ]);
+  return adminJson({
+    items: items.map((org) => ({
+      ...org,
+      coverUrl: extras[org.id]?.coverUrl ?? null,
+      cardBackgroundUrl: extras[org.id]?.cardBackgroundUrl ?? null,
+      staffCount: extras[org.id]?.staffCount ?? 0,
+      rating: extras[org.id]?.rating ?? null,
+      reviewCount: extras[org.id]?.reviewCount ?? 0,
+    })),
   });
-  return adminJson({ items });
 });
 
 export const POST = platformRoute(async function POST(request: NextRequest) {

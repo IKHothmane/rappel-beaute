@@ -258,7 +258,7 @@ export function AdminPlatformSettingsView() {
             </span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-ink">
+            <h1 className="text-2xl font-bold sm:text-3xl tracking-tight text-ink">
               Configuration Plateforme SaaS
             </h1>
             <span className="rounded-full bg-[#FFDEA4] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5D4200]">

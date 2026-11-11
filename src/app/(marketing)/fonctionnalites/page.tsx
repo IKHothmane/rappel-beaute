@@ -157,14 +157,18 @@ export default function FonctionnalitesPage() {
           </div>
         </div>
 
-        <div className="fn-shot">
-          <Image
-            src="/site/rappelbeauty-dashboard-pc-reel.webp"
-            alt="Tableau de bord Rappel Beauty sur ordinateur"
-            width={2200}
-            height={1270}
-            priority
-          />
+        <div className="fn-hero-visual">
+          <Image className="fn-hero-art" src="/brand/footer-spa-cutout.png" alt="" width={1774} height={887} sizes="180px" />
+          <div className="fn-shot">
+            <Image
+              src="/site/rappelbeauty-dashboard-pc-reel.webp"
+              alt="Tableau de bord Rappel Beauty sur ordinateur"
+              width={2200}
+              height={1270}
+              sizes="(max-width: 1000px) 100vw, 58vw"
+              priority
+            />
+          </div>
         </div>
       </section>
 
@@ -196,26 +200,28 @@ export default function FonctionnalitesPage() {
               </ul>
             </div>
             <div className="fn-shot">
-              <Image src={item.src} alt={item.alt} width={item.width} height={item.height} />
+              <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="(max-width: 767px) 100vw, 600px" />
             </div>
           </article>
         ))}
       </section>
 
+      <div className="fn-context">
       <SeoCloser
         problem="L'agenda est dans un cahier, les clientes dans WhatsApp, le stock dans un fichier et la caisse dans un autre outil. Le soir, personne ne retrouve la même journée."
         solution="Rappel Beauty réunit rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne. C'est le logiciel de l'institut, pas une place de marché."
         useCase="Une patronne à Casablanca ouvre le planning du matin, voit la cabine déjà prise, encaisse le soin à la fin et retrouve la fiche de la cliente sans changer d'application."
       />
+      </div>
 
       <section className="fn-wrap fn-faq">
         <div className="fn-faq-inner">
         <h2>Questions fréquentes</h2>
-        <div className="mt-8 space-y-3">
+        <div className="fn-faq-list">
           {FAQ.map((item) => (
-            <details key={item.q} className="rounded-2xl border border-white/70 bg-white/80 p-4 sm:p-5">
-              <summary className="cursor-pointer text-sm font-medium text-[#3a2533] sm:text-base">{item.q}</summary>
-              <p className="mt-3 text-sm leading-relaxed text-[#6b5763]">{item.a}</p>
+            <details key={item.q} className="fn-faq-item">
+              <summary>{item.q}</summary>
+              <p>{item.a}</p>
             </details>
           ))}
         </div>

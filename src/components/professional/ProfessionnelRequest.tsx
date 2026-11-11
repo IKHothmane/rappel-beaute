@@ -6,6 +6,7 @@ import ProfessionalAccessPage, {
   type ProfessionalFormData,
 } from "@/components/professional/ProfessionalAccessPage";
 import { CITIES } from "@/lib/site";
+import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
 
 export function ProfessionnelRequest() {
   const [loading, setLoading] = useState(false);
@@ -31,9 +32,11 @@ export function ProfessionnelRequest() {
       body.set("institut", data.instituteName);
       body.set("ville", data.city);
       body.set("phone", data.whatsapp);
+      body.set("email", data.email);
       if (data.noWebsite) body.set("no_website", "1");
       else if (data.website) body.set("website", data.website);
-      if (data.needs) body.set("message", data.needs);
+      const message = [data.needs, data.noWebsite ? "Demande de site web pour l’institut." : ""].filter(Boolean).join("\n").slice(0, L.message);
+      if (message) body.set("message", message);
 
       const res = await fetch("/api/public/signup/", { method: "POST", body });
       const payload = (await res.json().catch(() => ({}))) as {

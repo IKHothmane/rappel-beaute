@@ -124,7 +124,7 @@ export function AdminDashboardView() {
               Production
             </span>
           </div>
-          <h1 className="text-[28px] font-bold tracking-tight text-ink lg:text-[28px]">
+          <h1 className="text-2xl font-bold sm:text-3xl tracking-tight text-ink">
             Bonjour, {firstName || "Super Admin"} 👋
           </h1>
           <p className="max-w-2xl text-[15px] text-ink/55">

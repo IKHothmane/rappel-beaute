@@ -1,30 +1,25 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-} from "lucide-react";
-import { APP_LOGIN_HREF } from "@/lib/site";
-import { SiteFeatureBar } from "@/components/www/LoginScreen";
+import { ArrowRight, CalendarDays, ChartNoAxesCombined, Check, CreditCard, Gift, Globe, Mail, MapPin, Monitor, Package, Phone, ShieldCheck, Store, UserRound, Users, Wallet } from "lucide-react";
+import { APP_LOGIN_HREF, PUBLIC_OFFER } from "@/lib/site";
 import { PHONE_MAX_DIGITS, limitPhoneDigits } from "@/lib/validation/customer";
 import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
+import "./professional-access.css";
 
 export type ProfessionalFormData = {
   fullName: string;
   instituteName: string;
   city: string;
   whatsapp: string;
+  email: string;
   website: string;
   needs: string;
   noWebsite: boolean;
 };
-
-export type ProfessionalCredentials = {
-  identifier: string;
-  temporaryPassword: string;
-};
-
+export type ProfessionalCredentials = { identifier: string; temporaryPassword: string };
 type Props = {
   onSubmit: (data: ProfessionalFormData) => Promise<void>;
   cities: readonly string[];
@@ -32,260 +27,76 @@ type Props = {
   error?: string | null;
   credentials?: ProfessionalCredentials | null;
 };
+const initialValues: ProfessionalFormData = { fullName: "", instituteName: "", city: "", whatsapp: "", email: "", website: "", needs: "", noWebsite: false };
+const MODULES = [
+  { icon: CalendarDays, label: "Agenda & rendez-vous" },
+  { icon: Users, label: "Clientes & fidélité" },
+  { icon: Wallet, label: "Caisse & paiements" },
+  { icon: Package, label: "Stock & produits" },
+  { icon: ChartNoAxesCombined, label: "Statistiques" },
+];
 
-const initialValues: ProfessionalFormData = {
-  fullName: "",
-  instituteName: "",
-  city: "",
-  whatsapp: "",
-  website: "",
-  needs: "",
-  noWebsite: false,
-};
-
-const fieldClass =
-  "h-[3.4rem] w-full rounded-xl border border-[#eadfe3] bg-white/90 px-4 text-sm text-ink outline-none transition placeholder:text-ink/35 focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:bg-[#F7F3F2] disabled:text-ink/35";
-
-function Field({
-  id,
-  label,
-  required,
-  hint,
-  children,
-}: {
-  id: string;
-  label: string;
-  required?: boolean;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="min-w-0 space-y-2">
-      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-ink">
-        {label}
-        {required ? <span className="ml-1 text-primary">*</span> : null}
-        {hint ? <span className="ml-1 font-normal text-[#817780]">{hint}</span> : null}
-      </label>
-      {children}
-    </div>
-  );
+function Field({ id, label, required, children }: { id: string; label: string; required?: boolean; children: ReactNode }) {
+  return <div className="pro-field"><label htmlFor={id}>{label}{required && <span aria-hidden="true"> *</span>}</label>{children}</div>;
 }
 
-export default function ProfessionalAccessPage({
-  onSubmit,
-  cities,
-  loading = false,
-  error = null,
-  credentials = null,
-}: Props) {
+export default function ProfessionalAccessPage({ onSubmit, cities, loading = false, error = null, credentials = null }: Props) {
   const [form, setForm] = useState(initialValues);
-
   function update(key: keyof ProfessionalFormData, value: string | boolean) {
-    setForm((previous) => ({ ...previous, [key]: value }));
+    setForm(previous => ({ ...previous, [key]: value }));
   }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading) return;
-    await onSubmit({
-      ...form,
-      fullName: form.fullName.trim(),
-      instituteName: form.instituteName.trim(),
-      whatsapp: limitPhoneDigits(form.whatsapp),
-      website: form.noWebsite ? "" : form.website.trim(),
-      needs: form.needs.trim(),
-    });
+    await onSubmit({ ...form, fullName: form.fullName.trim(), instituteName: form.instituteName.trim(), whatsapp: limitPhoneDigits(form.whatsapp), email: form.email.trim(), website: form.noWebsite ? "" : form.website.trim(), needs: form.needs.trim() });
   }
 
   return (
-    <section className="bg-paper">
-      <div className="mx-auto w-full max-w-2xl px-5 py-12 sm:px-8 lg:py-16">
-        <div className="login-rise w-full">
-          <h1 className="font-display text-[2.6rem] font-light leading-[1.05] tracking-tight text-ink sm:text-5xl">
-              Créez votre accès
-              <br />
-              professionnel.
-            </h1>
-            <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-ink/60">
-              Rejoignez <span className="font-semibold text-ink">Rappel Beauty</span> et simplifiez la gestion de votre institut.
-            </p>
+    <section className="pro-access">
+      <Image src="/brand/about-reception.webp" alt="" fill sizes="100vw" className="pro-background" priority />
+      <div className="pro-layout">
+        <aside className="pro-story" aria-label="Rappel Beauty pour votre institut">
+          <Link href="/" className="pro-logo" aria-label="Rappel Beauty — Accueil"><Image src="/brand/logo.png" alt="Rappel Beauty" width={220} height={100} sizes="180px" /></Link>
+          <h2>Inscrivez votre institut sur <em>Rappel Beauty</em></h2>
+          <p>Créez votre espace en quelques minutes et gérez votre institut en toute simplicité.</p>
+          <ul>{MODULES.map(({ icon: Icon, label }) => <li key={label}><span><Icon aria-hidden="true" /></span>{label}</li>)}</ul>
+          <Image className="pro-spa" src="/brand/footer-spa-cutout.png" alt="" width={1774} height={887} sizes="(max-width: 800px) 180px, 440px" />
+        </aside>
+
+        <div className="pro-panel">
+          <header className="pro-heading"><h1>{credentials ? <>Bienvenue dans <em>votre institut</em></> : <>Créer <em>votre institut</em></>}</h1><p>{credentials ? "Votre espace Rappel Beauty est prêt." : <>Inscrivez votre institut et profitez de <strong>{PUBLIC_OFFER.trialDays} jours d’essai gratuit,</strong><br className="pro-desktop-break" /> sans carte bancaire et sans engagement.</>}</p></header>
 
           {credentials ? (
-            <div className="rounded-2xl border border-[#EEE5E8] bg-white p-6 sm:p-8">
-              <h2 className="font-display text-2xl font-semibold text-[#251D22]">Votre compte est prêt</h2>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#817780]">
-                Votre essai de 15 jours est actif. Connectez-vous avec votre numéro WhatsApp et ce mot de passe temporaire, à modifier à la première connexion.
-              </p>
-              <dl className="mt-5 space-y-3 rounded-xl border border-[#EEE5E8] bg-[#FBF8F7] p-4 text-sm">
-                <div>
-                  <dt className="text-[#817780]">Numéro WhatsApp</dt>
-                  <dd className="mt-1 select-text font-semibold text-[#251D22]">{credentials.identifier}</dd>
-                </div>
-                <div>
-                  <dt className="text-[#817780]">Mot de passe temporaire</dt>
-                  <dd className="mt-1 select-text font-mono text-xl font-bold tracking-widest text-[#B5004C]">
-                    {credentials.temporaryPassword}
-                  </dd>
-                </div>
-              </dl>
-              <p className="mt-3 text-xs text-[#817780]">Conservez ces accès avant de quitter cette page.</p>
-              <a
-                className="mt-5 inline-flex h-12 items-center justify-center rounded-lg bg-[#B5004C] px-5 text-sm font-semibold text-white hover:bg-[#93003E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B5004C]"
-                href={`${APP_LOGIN_HREF}?identifier=${encodeURIComponent(credentials.identifier)}`}
-              >
-                Se connecter
-              </a>
+            <div className="pro-success" role="status">
+              <span className="pro-success-icon"><Check aria-hidden="true" /></span><h2>Votre compte est prêt</h2>
+              <p>Votre essai de {PUBLIC_OFFER.trialDays} jours est actif. Utilisez votre numéro WhatsApp et ce mot de passe temporaire, à modifier à la première connexion.</p>
+              <dl><div><dt>Numéro WhatsApp</dt><dd>{credentials.identifier}</dd></div><div><dt>Mot de passe temporaire</dt><dd className="pro-password">{credentials.temporaryPassword}</dd></div></dl>
+              <p>Conservez ces accès avant de quitter cette page.</p>
+              <a className="pro-primary" href={`${APP_LOGIN_HREF}?identifier=${encodeURIComponent(credentials.identifier)}`}>Se connecter<ArrowRight aria-hidden="true" /></a>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate={false}>
-              <div className="space-y-5">
-                    <div className="grid gap-5 sm:grid-cols-2">
-                    <Field id="pro-name" label="Votre prénom & nom" required>
-                      <input
-                        id="pro-name"
-                        className={fieldClass}
-                        name="name"
-                        placeholder="Ex. Kenza Berrada"
-                        autoComplete="name"
-                        required
-                        maxLength={L.name}
-                        value={form.fullName}
-                        aria-invalid={Boolean(error)}
-                        onChange={(e) => update("fullName", e.target.value)}
-                      />
-                    </Field>
-
-                    <Field id="pro-institut" label="Nom de l'institut ou spa" required>
-                      <input
-                        id="pro-institut"
-                        className={fieldClass}
-                        name="institut"
-                        placeholder="Ex. Maison de Beauté"
-                        autoComplete="organization"
-                        required
-                        maxLength={L.institut}
-                        value={form.instituteName}
-                        aria-invalid={Boolean(error)}
-                        onChange={(e) => update("instituteName", e.target.value)}
-                      />
-                    </Field>
-                    </div>
-
-                    <div className="grid gap-5 sm:grid-cols-2">
-                    <Field id="pro-city" label="Ville d'implantation" required>
-                      <select
-                        id="pro-city"
-                        className={fieldClass}
-                        name="ville"
-                        required
-                        value={form.city}
-                        aria-invalid={Boolean(error)}
-                        onChange={(e) => update("city", e.target.value)}
-                      >
-                        <option value="">Sélectionner votre ville</option>
-                        {cities.map((city) => (
-                          <option key={city} value={city}>
-                            {city}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-
-                    <Field id="pro-phone" label="WhatsApp professionnel" required>
-                      <input
-                        id="pro-phone"
-                        className={fieldClass}
-                        name="phone"
-                        type="tel"
-                        autoComplete="tel"
-                        inputMode="numeric"
-                        placeholder="06 12 34 56 78"
-                        required
-                        maxLength={PHONE_MAX_DIGITS}
-                        value={form.whatsapp}
-                        aria-invalid={Boolean(error)}
-                        onChange={(e) => update("whatsapp", limitPhoneDigits(e.target.value))}
-                      />
-                    </Field>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <label htmlFor="pro-website" className="text-sm font-semibold text-ink">
-                        Site web de l&apos;institut
-                        <span className="ml-1 font-normal text-[#817780]">(optionnel)</span>
-                      </label>
-                      <label className="flex cursor-pointer items-center gap-2 text-xs text-[#817780]">
-                        <input
-                          type="checkbox"
-                          checked={form.noWebsite}
-                          onChange={(e) => update("noWebsite", e.target.checked)}
-                          className="accent-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                        />
-                        Pas de site
-                      </label>
-                    </div>
-                    <input
-                      id="pro-website"
-                      className={fieldClass}
-                      name={form.noWebsite ? undefined : "website"}
-                      type="text"
-                      inputMode="url"
-                      autoComplete="url"
-                      placeholder={form.noWebsite ? "Pas de site web" : "www.moninstitut.ma"}
-                      disabled={form.noWebsite}
-                      maxLength={L.website}
-                      value={form.noWebsite ? "" : form.website}
-                      onChange={(e) => update("website", e.target.value.slice(0, L.website))}
-                    />
-                  </div>
-
-                  <Field id="pro-needs" label="Précisions & besoins spécifiques" hint="(optionnel)">
-                    <textarea
-                      id="pro-needs"
-                      className="min-h-[108px] w-full resize-y rounded-xl border border-[#eadfe3] bg-white/90 px-4 py-3 text-sm text-ink outline-none transition placeholder:text-ink/35 focus:border-primary focus:ring-2 focus:ring-primary/15"
-                      name="message"
-                      placeholder="Parlez-nous de votre institut, de vos prestations et de vos besoins..."
-                      maxLength={L.message}
-                      value={form.needs}
-                      onChange={(e) => update("needs", e.target.value.slice(0, L.message))}
-                    />
-                    <p className="mt-1 text-right text-[11px] text-[#9D9298]">
-                      {form.needs.length}/{L.message}
-                    </p>
-                  </Field>
-
-                  {error ? (
-                    <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                      {error}
-                    </p>
-                  ) : null}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    aria-busy={loading}
-                    className="inline-flex h-[3.4rem] w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-[15px] font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {loading ? "Création du compte…" : "Créer mon accès"}
-                    {!loading ? <ArrowRight size={17} aria-hidden /> : null}
-                  </button>
-
-                  <p className="text-center text-sm text-ink/60">
-                    Déjà un compte ?{" "}
-                    <Link
-                      href={APP_LOGIN_HREF}
-                      className="font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                    >
-                      Se connecter
-                    </Link>
-                  </p>
-                </form>
+            <>
+              <form onSubmit={handleSubmit} className="pro-form" aria-label="Inscription de votre institut">
+                <fieldset disabled={loading}><legend className="sr-only">Informations de votre institut et de votre compte</legend>
+                    <Field id="pro-name" label="Votre prénom et nom" required><div className="pro-input"><UserRound aria-hidden="true" /><input id="pro-name" name="name" autoComplete="name" placeholder="Ex. : Kenza Berrada" required minLength={2} maxLength={L.name} value={form.fullName} onChange={e => update("fullName", e.target.value)} /></div></Field>
+                    <Field id="pro-institut" label="Nom de l’institut" required><div className="pro-input"><Store aria-hidden="true" /><input id="pro-institut" name="institut" placeholder="Ex. : Institut Belle Femme" autoComplete="organization" required minLength={2} maxLength={L.institut} value={form.instituteName} onChange={e => update("instituteName", e.target.value)} /></div></Field>
+                    <div className="pro-row"><Field id="pro-city" label="Ville" required><div className="pro-input"><MapPin aria-hidden="true" /><select id="pro-city" name="ville" required value={form.city} onChange={e => update("city", e.target.value)}><option value="">Choisissez votre ville</option>{cities.map(city => <option key={city} value={city}>{city}</option>)}</select></div></Field>
+                      <Field id="pro-phone" label="Téléphone WhatsApp" required><div className="pro-input"><Phone aria-hidden="true" /><input id="pro-phone" name="phone" type="tel" autoComplete="tel" inputMode="numeric" placeholder="06 12 34 56 78" required pattern="[0-9]{8,10}" title="Saisissez entre 8 et 10 chiffres." maxLength={PHONE_MAX_DIGITS} value={form.whatsapp} onChange={e => update("whatsapp", limitPhoneDigits(e.target.value))} /></div></Field></div>
+                    <Field id="pro-email" label="E-mail professionnel" required><div className="pro-input"><Mail aria-hidden="true" /><input id="pro-email" name="email" type="email" autoComplete="email" placeholder="contact@moninstitut.ma" required maxLength={L.email} value={form.email} onChange={e => update("email", e.target.value)} /></div></Field>
+                    <div className="pro-website"><Field id="pro-website" label="Site web (facultatif)"><div className="pro-input"><Globe aria-hidden="true" /><input id="pro-website" name="website" type="text" inputMode="url" autoComplete="url" placeholder={form.noWebsite ? "Pas de site web" : "https://www.moninstitut.ma"} disabled={form.noWebsite} maxLength={L.website} value={form.noWebsite ? "" : form.website} onChange={e => update("website", e.target.value)} /></div></Field><div className="pro-website-choice"><span>Vous n’avez pas de site web ?</span><button type="button" aria-pressed={form.noWebsite} onClick={() => update("noWebsite", !form.noWebsite)}><Monitor aria-hidden="true" />{form.noWebsite ? "Demande ajoutée" : "Demander un site web"}</button></div></div>
+                    <Field id="pro-needs" label="Précisions et besoins (facultatif)"><textarea id="pro-needs" name="message" placeholder="Parlez-nous de votre institut et de vos besoins…" maxLength={L.message} value={form.needs} onChange={e => update("needs", e.target.value)} /><span className="pro-counter">{form.needs.length}/{L.message}</span></Field>
+                    <p className="pro-help">Votre numéro WhatsApp servira d’identifiant. Un mot de passe temporaire s’affichera une fois votre compte créé.</p>
+                  {error && <p role="alert" className="pro-error">{error}</p>}
+                  <div className="pro-actions"><button className="pro-primary" type="submit" aria-busy={loading}>{loading ? "Création du compte…" : "Créer mon institut"}{!loading && <ArrowRight aria-hidden="true" />}</button></div>
+                </fieldset>
+              </form>
+              <div className="pro-trust"><div><Gift aria-hidden="true" /><p>Essai gratuit<br />{PUBLIC_OFFER.trialDays} jours</p></div><div><CreditCard aria-hidden="true" /><p>Sans carte<br />bancaire</p></div><div><ShieldCheck aria-hidden="true" /><p>Sans<br />engagement</p></div></div>
+              <p className="pro-login">Déjà un compte ? <Link href={APP_LOGIN_HREF}>Se connecter</Link></p>
+            </>
           )}
+          <nav className="pro-legal" aria-label="Informations légales"><Link href="/">Accueil</Link><Link href="/confidentialite/">Confidentialité</Link><Link href="/contact/">Besoin d’aide ?</Link></nav>
         </div>
       </div>
-      <SiteFeatureBar showPrices />
     </section>
   );
 }

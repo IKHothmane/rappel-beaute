@@ -1,10 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Check, ChevronDown, CreditCard, ShieldCheck } from "lucide-react";
+import { ArrowRight, CalendarDays, Crown, CreditCard, Headphones, ShieldCheck } from "lucide-react";
+import { CheckList, FaqAccordion, SpaCutout } from "@/components/www/blocks";
 import { JsonLd } from "@/components/www/JsonLd";
-import { Reveal } from "@/components/www/Reveal";
-import { SeoCloser } from "@/components/www/SeoCloser";
-import { marketingPageMetadata } from "@/lib/seo";
+import { faqPageJsonLd, marketingPageMetadata } from "@/lib/seo";
 import { formatPrice, PUBLIC_OFFER } from "@/lib/site";
+import "./tarifs.css";
 
 export const dynamic = "force-static";
 
@@ -14,362 +15,82 @@ export const metadata = marketingPageMetadata({
   canonical: "/tarifs/",
 });
 
+const FEATURES = ["Accès complet à toutes les fonctionnalités", "Gestion de votre équipe", "Support en français", "Mises à jour incluses"];
 const TRUST = [
-  { icon: CalendarDays, label: `${PUBLIC_OFFER.trialDays} jours gratuits` },
-  { icon: CreditCard, label: "Sans carte bancaire" },
-  { icon: ShieldCheck, label: "Sans engagement" },
-] as const;
-
-const PLAN_FEATURES = [
-  "Toutes les fonctionnalités",
-  "Support en français",
-  "Mises à jour incluses",
-] as const;
-
-const GROUPS = [
-  {
-    title: "Gestion",
-    items: ["Rendez-vous", "Clientes", "Planning équipe", "Services", "Ressources / cabines"],
-  },
-  {
-    title: "Approvisionnement",
-    items: ["Produits", "Stock", "Fournisseurs", "Achats"],
-  },
-  {
-    title: "Finance",
-    items: ["Caisse", "POS produits", "Paiements", "Dépenses", "Facturation", "Commissions"],
-  },
-  {
-    title: "Croissance",
-    items: [
-      "Fidélité",
-      "Promotions",
-      "Cartes cadeaux",
-      "Marketing",
-      "Réactivation",
-      "Avis",
-      "WhatsApp assisté",
-    ],
-  },
-  {
-    title: "Développement",
-    items: ["Réservation en ligne", "Analytics", "Rapports", "Notifications", "Assistant IA"],
-  },
-] as const;
-
-const STEPS = [
-  {
-    n: "1",
-    title: "Créez votre compte",
-    text: "Ouvrez l'essai et créez l'espace de votre institut.",
-  },
-  {
-    n: "2",
-    title: "Configurez votre institut",
-    text: "Ajoutez vos services, votre équipe et les informations de l'institut.",
-  },
-  {
-    n: "3",
-    title: "Testez Rappel Beauty",
-    text: "Utilisez le logiciel pendant 15 jours, sans carte bancaire et sans engagement.",
-  },
-] as const;
-
+  { icon: CalendarDays, title: "Essai gratuit", text: `${PUBLIC_OFFER.trialDays} jours` },
+  { icon: CreditCard, title: "Sans carte", text: "bancaire" },
+  { icon: ShieldCheck, title: "Sans", text: "engagement" },
+  { icon: Headphones, title: "Support", text: "en français" },
+];
 const FAQS = [
   {
-    question: "Combien coûte Rappel Beauty ?",
-    answer:
-      `Rappel Beauty coûte ${PUBLIC_OFFER.monthlyPrice} DH par mois ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH par an. L'essai gratuit dure ${PUBLIC_OFFER.trialDays} jours.`,
+    question: `L’essai gratuit de ${PUBLIC_OFFER.trialDays} jours est-il vraiment sans engagement ?`,
+    answer: `Oui, vous pouvez tester les fonctionnalités pendant ${PUBLIC_OFFER.trialDays} jours, sans carte bancaire et sans obligation de continuer.`,
   },
   {
-    question: "Y a-t-il un engagement ?",
-    answer: "Non. La formule est sans engagement.",
+    question: "Quelle est la différence entre la formule mensuelle et annuelle ?",
+    answer: `Les deux formules incluent les mêmes fonctionnalités. La formule mensuelle coûte ${formatPrice(PUBLIC_OFFER.monthlyPrice)} DH par mois. La formule annuelle coûte ${formatPrice(PUBLIC_OFFER.annualPrice)} DH par an, soit ${formatPrice(PUBLIC_OFFER.annualSavings)} DH d’économie par rapport à douze mensualités.`,
   },
   {
-    question: "Dois-je renseigner une carte bancaire pour essayer ?",
-    answer: "Non. L'essai gratuit de 15 jours ne nécessite pas de carte bancaire.",
+    question: "Puis-je changer de formule plus tard ?",
+    answer: "Contactez notre équipe pour organiser un changement de formule et connaître les modalités applicables à votre abonnement.",
   },
   {
-    question: "Que comprend la formule ?",
-    answer:
-      "La formule donne accès aux fonctionnalités de gestion proposées par Rappel Beauty pour les instituts de beauté : rendez-vous, clientes, équipe, services, stock, caisse, fidélité, réservation en ligne et outils de pilotage.",
+    question: "Le support est-il inclus ?",
+    answer: "Oui, le support en français et les mises à jour sont inclus dans les deux formules. Notre équipe vous accompagne dans l’utilisation de Rappel Beauty.",
   },
   {
-    question: "Les clientes paient-elles Rappel Beauty ?",
-    answer:
-      "Non. Rappel Beauty est le logiciel utilisé par l'institut. Les clientes règlent directement leurs prestations auprès de l'institut.",
+    question: "Que comprend mon abonnement ?",
+    answer: "Vous retrouvez les rendez-vous, les fiches clientes, la caisse, les paiements, les produits et stocks, le planning de l’équipe, la fidélité et les outils de pilotage dans un seul logiciel.",
   },
-] as const;
+];
 
 export default function TarifsPage() {
-  const price = PUBLIC_OFFER.monthlyPrice;
-  const yearly = formatPrice(PUBLIC_OFFER.annualPrice);
-  const savings = formatPrice(PUBLIC_OFFER.annualSavings);
+  const annualEquivalent = PUBLIC_OFFER.monthlyPrice * 12;
+  const discount = Math.round((PUBLIC_OFFER.annualSavings / annualEquivalent) * 100);
 
   return (
-    <>
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          mainEntity: FAQS.map((faq) => ({
-            "@type": "Question",
-            name: faq.question,
-            acceptedAnswer: { "@type": "Answer", text: faq.answer },
-          })),
-        }}
-      />
-      <section className="border-b border-ink/15 bg-paper py-14 sm:py-20">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <Reveal className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
-              Une formule pour les instituts de beauté au Maroc
-            </p>
-            <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Un seul tarif, tout inclus
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-ink/70 sm:text-base">
-              Toutes les fonctionnalités, en dirhams, sans option cachée. Testez{" "}
-              {PUBLIC_OFFER.trialDays} jours gratuitement, sans carte bancaire et sans engagement.
-            </p>
-            <ul className="mt-6 flex flex-wrap justify-center gap-2 text-xs font-medium text-ink/75">
-              {TRUST.map(({ icon: Icon, label }) => (
-                <li
-                  key={label}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5"
-                >
-                  <Icon size={14} className="text-primary" aria-hidden="true" />
-                  {label}
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-          <div className="mx-auto mt-12 grid max-w-3xl gap-5 md:grid-cols-2">
-            <article className="flex h-full flex-col rounded-lg border border-line bg-white p-6 text-left sm:p-8">
-              <h2 className="font-display text-2xl font-light text-ink">Mensuel</h2>
-              <p className="mt-1 text-sm text-ink/60">Réglé chaque mois</p>
-              <p className="mt-5 flex items-end gap-1.5">
-                <span className="font-display text-5xl font-light text-ink">{price}</span>
-                <span className="mb-1.5 text-sm text-ink/60">DH / mois</span>
-              </p>
-              <ul className="mt-6 flex-1 space-y-2.5">
-                {PLAN_FEATURES.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-ink/75">
-                    <Check size={16} strokeWidth={2.5} className="shrink-0 text-primary" aria-hidden="true" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/professionnel/"
-                className="mt-7 inline-flex items-center justify-center gap-2 rounded-lg border border-primary px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary-light"
-              >
-                Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            </article>
-            <article className="relative flex h-full flex-col rounded-lg border-2 border-primary bg-white p-6 text-left sm:p-8">
-              <span className="absolute -top-3 left-6 rounded bg-primary px-3 py-1 text-[11px] font-semibold text-white">
-                Économisez {savings} DH
-              </span>
-              <h2 className="font-display text-2xl font-light text-ink">Annuel</h2>
-              <p className="mt-1 text-sm text-ink/60">Réglé une fois par an</p>
-              <p className="mt-5 flex items-end gap-1.5">
-                <span className="font-display text-5xl font-light text-primary">{yearly}</span>
-                <span className="mb-1.5 text-sm text-ink/60">DH / an</span>
-              </p>
-              <p className="mt-2 text-xs text-ink/60">
-                au lieu de {formatPrice(price * 12)} DH en 12 mensualités
-              </p>
-              <ul className="mt-5 flex-1 space-y-2.5">
-                {PLAN_FEATURES.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-ink/75">
-                    <Check size={16} strokeWidth={2.5} className="shrink-0 text-primary" aria-hidden="true" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/professionnel/"
-                className="mt-7 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
-              >
-                Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            </article>
+    <div className="tp">
+      <JsonLd data={faqPageJsonLd(FAQS)} />
+      <div className="tp-wrap">
+        <section className="tp-hero" aria-labelledby="tarifs-title">
+          <div className="tp-hero-copy">
+            <span className="tp-badge">Tarifs</span>
+            <h1 id="tarifs-title">Nos formules<br /><em>Tarifaires</em></h1>
+            <p className="tp-lead">Un logiciel complet, simple et sans engagement pour gérer votre institut de beauté au Maroc.</p>
+            <CheckList className="tp-promises" items={["Toutes les fonctionnalités incluses", "Support en français", "Sans engagement"]} />
           </div>
-          <p className="mt-6 text-center text-xs text-ink/55">
-            Les deux formules donnent accès exactement aux mêmes fonctionnalités.
-          </p>
-        </div>
-      </section>
+          <div className="tp-visual">
+            <SpaCutout className="tp-spa" sizes="(max-width: 700px) 140px, 280px" />
+            <Image className="tp-laptop" src="/site/rappelbeauty-dashboard-pc-reel.webp" alt="Tableau de bord Rappel Beauty affiché sur un ordinateur portable" width={2200} height={1270} sizes="(max-width: 700px) 100vw, 60vw" priority />
+          </div>
+        </section>
 
-      <section className="px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-5xl">
-          <Reveal>
-            <h2 className="text-center font-display text-2xl font-light text-ink sm:text-3xl">
-              Ce qui est inclus
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-ink/70 sm:text-base">
-              Une seule formule donne accès aux fonctions de gestion de l&apos;institut. Pas de
-              niveaux d&apos;offre à comparer.
-            </p>
-          </Reveal>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {GROUPS.map((group) => (
-              <div key={group.title} className="rounded-lg border border-line bg-white p-5">
-                <h3 className="font-display text-xl font-light text-ink">{group.title}</h3>
-                <ul className="mt-4 space-y-2 text-sm text-ink/70">
-                  {group.items.map((item) => (
-                    <li key={item} className="flex items-center gap-2">
-                      <Check size={14} strokeWidth={2.5} className="shrink-0 text-primary" aria-hidden="true" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+        <section className="tp-plans" aria-label="Choisissez votre formule">
+          {[false, true].map((annual) => (
+            <article className={`tp-plan${annual ? " tp-plan-annual" : ""}`} key={annual ? "annual" : "monthly"}>
+              {annual && <><span className="tp-best"><Crown aria-hidden="true" />Le plus avantageux</span><span className="tp-ribbon"><Crown aria-hidden="true" /></span></>}
+              <div className="tp-plan-heading">
+                <span className="tp-icon"><CalendarDays aria-hidden="true" /></span>
+                <div><h2>Formule {annual ? "Annuelle" : "Mensuelle"}</h2><p>{annual ? `Économisez ${formatPrice(PUBLIC_OFFER.annualSavings)} DH par an` : "Idéale pour démarrer en toute flexibilité"}</p></div>
               </div>
-            ))}
-          </div>
-          <p className="mt-8 text-center">
-            <Link
-              href="/fonctionnalites/"
-              className="text-sm font-semibold text-primary hover:text-primary-dark"
-            >
-              Voir toutes les fonctionnalités
-            </Link>
-          </p>
-          <ul className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-ink/70">
-            <li>
-              <Link href="/gestion-rendez-vous/" className="hover:text-primary">
-                Agenda
-              </Link>
-            </li>
-            <li>
-              <Link href="/gestion-clientes/" className="hover:text-primary">
-                Clientes
-              </Link>
-            </li>
-            <li>
-              <Link href="/gestion-stock/" className="hover:text-primary">
-                Stock
-              </Link>
-            </li>
-            <li>
-              <Link href="/caisse/" className="hover:text-primary">
-                Caisse
-              </Link>
-            </li>
-            <li>
-              <Link href="/fidelite/" className="hover:text-primary">
-                Fidélité
-              </Link>
-            </li>
-            <li>
-              <Link href="/reservation-en-ligne/" className="hover:text-primary">
-                Réservation en ligne
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </section>
+              <p className="tp-price"><strong>{formatPrice(annual ? PUBLIC_OFFER.annualPrice : PUBLIC_OFFER.monthlyPrice)} <span>DH</span></strong><span>/ {annual ? "an" : "mois"}</span>{annual && <span className="tp-discount"><s>{formatPrice(annualEquivalent)} DH</s><b>−{discount} %</b></span>}</p>
+              <CheckList className="tp-feature-list" items={FEATURES} />
+              <Link className="tp-button" href="/professionnel/">{annual ? "Essayer la formule annuelle" : "Commencer maintenant"}<ArrowRight aria-hidden="true" /></Link>
+            </article>
+          ))}
+        </section>
 
-      <section className="border-y border-line bg-white px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-3xl text-center">
-          <Reveal>
-            <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">Essai gratuit</h2>
-            <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
-              Testez Rappel Beauty pendant 15 jours. Aucune carte bancaire n&apos;est demandée, et
-              la formule reste sans engagement.
-            </p>
-            <ul className="mt-8 grid gap-3 text-left sm:grid-cols-3">
-              <li className="rounded-lg border border-line bg-paper px-4 py-5 text-sm text-ink">
-                15 jours
-              </li>
-              <li className="rounded-lg border border-line bg-paper px-4 py-5 text-sm text-ink">
-                Aucune carte
-              </li>
-              <li className="rounded-lg border border-line bg-paper px-4 py-5 text-sm text-ink">
-                Sans engagement
-              </li>
-            </ul>
-            <Link
-              href="/professionnel/"
-              className="mt-8 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
-            >
-              Essayer gratuitement 15 jours
-            </Link>
-          </Reveal>
-        </div>
-      </section>
+        <div className="tp-trust">{TRUST.map(({ icon: Icon, title, text }) => <div className="tp-trust-item" key={title}><span className="tp-icon"><Icon aria-hidden="true" /></span><p>{title}<br />{text}</p></div>)}</div>
+        <p className="tp-included">Un seul abonnement pour tout votre institut. <Link href="/fonctionnalites/">Découvrir les fonctionnalités <ArrowRight aria-hidden="true" /></Link></p>
 
-      <section className="px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-center font-display text-2xl font-light text-ink sm:text-3xl">
-            Comment ça marche
-          </h2>
-          <ol className="mt-10 space-y-8">
-            {STEPS.map((step) => (
-              <li key={step.n} className="flex gap-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-                  {step.n}
-                </span>
-                <div>
-                  <h3 className="font-display text-xl font-light text-ink">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-ink/70 sm:text-base">{step.text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+        <section className="tp-faq" aria-labelledby="tarifs-faq-title">
+          <div className="tp-faq-intro"><span className="tp-badge">FAQ Tarifs</span><h2 id="tarifs-faq-title">Questions<br />fréquentes</h2><p>Tout ce que vous devez savoir sur nos tarifs et notre offre.</p><SpaCutout className="tp-faq-spa" sizes="240px" /></div>
+          <div className="tp-questions"><FaqAccordion faqs={FAQS} openFirst /><Link className="tp-contact" href="/contact/">Une autre question ? Contactez-nous <ArrowRight aria-hidden="true" /></Link></div>
+        </section>
 
-      <SeoCloser
-        problem="Le prix d'un logiciel d'institut est souvent découpé en options : l'agenda d'un côté, la caisse de l'autre, le stock en supplément."
-        solution="Rappel Beauty a une formule : le logiciel de gestion complet, en dirhams, avec un essai de 15 jours sans carte bancaire."
-        useCase="L'institut compare le mois et l'année, démarre l'essai, puis décide sans engagement une fois la journée réelle passée dans l'outil."
-      />
-      <section className="border-t border-line bg-paper px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-center font-display text-2xl font-light text-ink sm:text-3xl">
-            Questions sur le tarif
-          </h2>
-          <div className="mt-9 space-y-3">
-            {FAQS.map((faq) => (
-              <details
-                key={faq.question}
-                className="group rounded-xl border border-line bg-white px-5 py-4 transition open:border-primary/30 open:shadow-sm"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden">
-                  {faq.question}
-                  <ChevronDown
-                    size={18}
-                    className="shrink-0 text-primary transition-transform group-open:rotate-180"
-                    aria-hidden="true"
-                  />
-                </summary>
-                <p className="mt-3 text-sm leading-6 text-ink/70">{faq.answer}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-institut py-14 text-center text-white sm:py-20">
-        <div className="mx-auto max-w-2xl px-4">
-          <h2 className="font-display text-2xl font-light sm:text-4xl">
-            Essayez Rappel Beauty pendant 15 jours
-          </h2>
-          <p className="mt-4 text-sm text-white/75 sm:text-base">
-            Sans engagement et sans carte bancaire.
-          </p>
-          <Link
-            href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
-          >
-            Essayer gratuitement 15 jours
-          </Link>
-        </div>
-      </section>
-    </>
+        <section className="tp-cta" aria-labelledby="tarifs-cta-title"><CalendarDays className="tp-cta-icon" aria-hidden="true" /><div><h2 id="tarifs-cta-title">Prêt(e) à simplifier la gestion de votre institut ?</h2><p>Lancez votre essai gratuit dès aujourd’hui et découvrez Rappel Beauty.</p></div><Link className="tp-button" href="/professionnel/">Essayer {PUBLIC_OFFER.trialDays} jours<ArrowRight aria-hidden="true" /></Link></section>
+      </div>
+    </div>
   );
 }

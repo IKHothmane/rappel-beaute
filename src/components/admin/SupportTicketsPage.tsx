@@ -387,7 +387,7 @@ export function SupportTicketsPageView() {
             <span className="font-bold text-primary">Support &amp; Tickets</span>
           </nav>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h1 className="text-[28px] font-black tracking-tight text-ink lg:text-[32px]">
+            <h1 className="text-2xl font-bold sm:text-3xl tracking-tight text-ink">
               Support &amp; Tickets
             </h1>
             <span className="rounded-full bg-[#F0DDE9] px-2.5 py-1 text-[11px] font-semibold text-ink/60">

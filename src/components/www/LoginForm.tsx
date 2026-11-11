@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Store } from "lucide-react";
 
 function LoginFormFields() {
   const searchParams = useSearchParams();
@@ -29,6 +29,7 @@ function LoginFormFields() {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setLoading(true);
 
@@ -37,7 +38,7 @@ function LoginFormFields() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, remember }),
+        body: JSON.stringify({ email: email.trim(), password, remember }),
       });
 
       if (res.ok) {
@@ -64,140 +65,40 @@ function LoginFormFields() {
       }
 
       if (res.status === 503) {
-        const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError(
-          data?.error ??
-            "Base de données indisponible. Démarrez PostgreSQL (port 5432) puis réessayez.",
-        );
+        setError("Le service de connexion est temporairement indisponible. Réessayez dans quelques instants.");
         return;
       }
 
       setError("Identifiants invalides.");
     } catch {
-      setError("Identifiants invalides.");
+      setError("Connexion impossible. Vérifiez votre connexion et réessayez.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="login-rise w-full max-w-[27.5rem]">
-      <h1 className="font-display text-[2.6rem] font-semibold leading-[1.05] tracking-tight text-ink sm:text-5xl">
-        Heureux de vous
-        <br />
-        <span className="text-primary">retrouver.</span>
-      </h1>
-      <p className="mt-4 text-[17px] leading-relaxed text-ink/60">
-        Connectez-vous à votre espace <span className="font-semibold text-ink">Rappel Beauty</span>.
-      </p>
-
-      <form className="mt-8 space-y-5" onSubmit={onSubmit}>
+    <div className="rb-login-content">
+      <h1>Connectez-<em>vous</em></h1>
+      <p className="rb-login-intro">Accédez à votre espace et gérez votre institut en toute simplicité.</p>
+      <form className="rb-login-form" onSubmit={onSubmit}>
         <div>
-          <label className="mb-2 block text-sm font-semibold text-ink" htmlFor="email">
-            Adresse e-mail
-          </label>
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-ink/35">
-              <Mail size={18} />
-            </div>
-            <input
-              autoComplete="email"
-              className="w-full rounded-xl border border-[#eadfe3] bg-white/90 h-[3.4rem] pl-11 pr-4 text-sm text-ink outline-none transition placeholder:text-ink/35 focus:border-primary focus:ring-2 focus:ring-primary/15"
-              id="email"
-              name="email"
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Ex. : contact@moninstitut.ma"
-              required
-              type="email"
-              maxLength={254}
-              value={email}
-            />
-          </div>
+          <label className="sr-only" htmlFor="email">Numéro WhatsApp ou e-mail professionnel</label>
+          <div className="rb-login-input"><Mail aria-hidden="true" /><input autoComplete="username" id="email" name="email" onChange={e => setEmail(e.target.value)} placeholder="WhatsApp ou e-mail professionnel" required type="text" maxLength={254} value={email} disabled={loading} aria-invalid={Boolean(error)} aria-describedby={error ? "login-error" : undefined} autoCapitalize="none" spellCheck={false} /></div>
         </div>
-
         <div>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <label className="block text-sm font-semibold text-ink" htmlFor="password">
-              Mot de passe
-            </label>
-            <Link href="/forgot-password/" className="text-sm font-medium text-primary hover:underline">
-              Mot de passe oublié ?
-            </Link>
-          </div>
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-ink/35">
-              <LockKeyhole size={18} />
-            </div>
-            <input
-              autoComplete="current-password"
-              className="w-full rounded-xl border border-[#eadfe3] bg-white/90 h-[3.4rem] pl-11 pr-11 text-sm text-ink outline-none transition placeholder:text-ink/35 focus:border-primary focus:ring-2 focus:ring-primary/15"
-              id="password"
-              name="password"
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Votre mot de passe"
-              required
-              type={showPassword ? "text" : "password"}
-              value={password}
-            />
-            <button
-              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-ink/35 hover:text-ink/70"
-              onClick={() => setShowPassword((v) => !v)}
-              type="button"
-            >
-              {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-            </button>
-          </div>
+          <label className="sr-only" htmlFor="password">Mot de passe</label>
+          <div className="rb-login-input"><LockKeyhole aria-hidden="true" /><input autoComplete="current-password" id="password" name="password" onChange={e => setPassword(e.target.value)} placeholder="Mot de passe" required type={showPassword ? "text" : "password"} value={password} disabled={loading} aria-invalid={Boolean(error)} aria-describedby={error ? "login-error" : undefined} /><button className="rb-login-eye" aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"} aria-pressed={showPassword} onClick={() => setShowPassword(v => !v)} type="button" disabled={loading}>{showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}</button></div>
         </div>
-
-        <div className="flex items-center">
-          <input
-            checked={remember}
-              className="h-4 w-4 cursor-pointer rounded border-[#eadfe3] text-primary accent-primary focus:ring-primary/30"
-            id="remember-me"
-            name="remember-me"
-            onChange={(e) => setRemember(e.target.checked)}
-            type="checkbox"
-          />
-          <label className="ml-2.5 cursor-pointer select-none text-sm text-ink/75" htmlFor="remember-me">
-            Se souvenir de moi
-          </label>
-        </div>
-
-        <button
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 h-[3.4rem] shadow-[0_12px_24px_-12px_rgba(180,0,75,0.6)] text-[15px] font-semibold text-white transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-70"
-          disabled={loading}
-          type="submit"
-        >
-          <span>{loading ? "Connexion…" : "Se connecter"}</span>
-          {!loading ? <ArrowRight aria-hidden size={17} /> : null}
-        </button>
-
-        {error ? (
-          <p className="rounded-lg border border-line bg-paper px-3 py-2 text-center text-sm text-ink/70" role="status">
-            {error}
-          </p>
-        ) : null}
+        <div className="rb-login-options"><label htmlFor="remember-me"><input checked={remember} id="remember-me" name="remember-me" onChange={e => setRemember(e.target.checked)} type="checkbox" disabled={loading} />Se souvenir de moi</label><Link href="/forgot-password/">Mot de passe oublié ?</Link></div>
+        <button className="rb-login-submit" disabled={loading} type="submit" aria-busy={loading}>{loading ? "Connexion…" : "Se connecter"}{!loading && <ArrowRight aria-hidden="true" />}</button>
+        {error && <p id="login-error" className="rb-login-error" role="alert">{error}</p>}
       </form>
-
-      <p className="mt-7 text-center text-sm text-ink/60">
-        Vous n&apos;avez pas encore de compte ?{" "}
-        <Link className="font-semibold text-primary hover:underline" href="/demo/">
-          Demander une démo
-        </Link>
-      </p>
+      <div className="rb-login-signup"><p>Vous n’avez pas encore de compte ?</p><Link href="/professionnel/"><Store aria-hidden="true" />Inscrire votre institut<ArrowRight aria-hidden="true" /></Link></div>
     </div>
   );
 }
 
 export function LoginForm() {
-  return (
-    <Suspense
-      fallback={
-        <div className="h-96 w-full max-w-[26rem] animate-pulse rounded-lg bg-paper" />
-      }
-    >
-      <LoginFormFields />
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="rb-login-loading" role="status">Chargement du formulaire…</div>}><LoginFormFields /></Suspense>;
 }

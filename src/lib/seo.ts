@@ -112,14 +112,19 @@ export function marketingJsonLd() {
   return getOrganizationStructuredData();
 }
 
-export function faqJsonLd() {
+/** JSON-LD FAQPage à partir d'entrées `{ question, answer }`. */
+export function faqPageJsonLd(faqs: readonly { question: string; answer: string }[]) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: FAQ_ITEMS.map((item) => ({
+    mainEntity: faqs.map(({ question, answer }) => ({
       "@type": "Question",
-      name: item.q,
-      acceptedAnswer: { "@type": "Answer", text: item.a },
+      name: question,
+      acceptedAnswer: { "@type": "Answer", text: answer },
     })),
   };
+}
+
+export function faqJsonLd() {
+  return faqPageJsonLd(FAQ_ITEMS.map((item) => ({ question: item.q, answer: item.a })));
 }

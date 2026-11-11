@@ -8,7 +8,8 @@ import ApplicationShowcase from "@/components/sections/ApplicationShowcase";
 import MoroccoPaymentsSection from "@/components/sections/MoroccoPaymentsSection";
 import WhatsAppSection from "@/components/sections/WhatsAppSection";
 import { Ico, type IcoName } from "@/components/www/home/Ico";
-import { marketingPageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/www/JsonLd";
+import { faqPageJsonLd, marketingPageMetadata } from "@/lib/seo";
 import { PUBLIC_OFFER } from "@/lib/site";
 import { HOME_FAQS } from "@/lib/home-faq";
 import FaqSection from "@/components/sections/FaqSection";
@@ -41,20 +42,10 @@ const BENEFITS: readonly { icon: IcoName; title: string; text: string }[] = [
   { icon: "gift", title: "Fidélité QR", text: "Sans application à installer" },
 ];
 
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: HOME_FAQS.map((item) => ({
-    "@type": "Question",
-    name: item.question,
-    acceptedAnswer: { "@type": "Answer", text: item.answer },
-  })),
-};
-
 export default function HomePage() {
   return (
     <div className="hm">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <JsonLd data={faqPageJsonLd(HOME_FAQS)} />
 
       <PanoramicSpreadHero
         className="hm-pano"

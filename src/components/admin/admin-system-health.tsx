@@ -462,7 +462,7 @@ export function AdminSystemHealthView() {
               RLS Multi-Tenant
             </span>
           </div>
-          <h1 className="mt-2 text-[28px] font-black tracking-tight text-ink lg:text-[32px]">
+          <h1 className="text-2xl font-bold sm:text-3xl mt-2 tracking-tight text-ink">
             Santé Système &amp; Monitoring
           </h1>
           <p className="mt-1 max-w-3xl text-[15px] text-ink/55">

@@ -4,6 +4,7 @@ import {
   getOrganizationById,
   updateOrganization,
 } from "@/lib/db/admin-organizations";
+import { getOrganizationInsights } from "@/lib/db/admin-org-cards";
 import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -13,9 +14,9 @@ export const GET = platformRoute(async function GET(request: NextRequest, ctx: C
   if (!auth.ok) return auth.response;
 
   const { id } = await ctx.params;
-  const org = await getOrganizationById(id);
+  const [org, insights] = await Promise.all([getOrganizationById(id), getOrganizationInsights(id)]);
   if (!org) return adminError("Institut introuvable.", 404);
-  return adminJson({ organization: org });
+  return adminJson({ organization: org, insights });
 });
 
 export const PATCH = platformRoute(async function PATCH(request: NextRequest, ctx: Ctx) {

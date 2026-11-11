@@ -1,5 +1,5 @@
 /** Fond par défaut des cartes fidélité (public/). */
-export const DEFAULT_LOYALTY_CARD_BACKGROUND = "/loyalty/institut-royal.png";
+export const DEFAULT_LOYALTY_CARD_BACKGROUND = "/loyalty/fond-bordeaux.png";
 
 export function resolveLoyaltyCardBackground(url?: string | null): string {
   const trimmed = url?.trim();

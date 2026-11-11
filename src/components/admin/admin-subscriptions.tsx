@@ -443,7 +443,7 @@ export function AdminSubscriptionsView() {
       {/* Header */}
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="max-w-3xl space-y-1">
-          <h1 className="text-[28px] font-black tracking-tight text-ink lg:text-[32px]">
+          <h1 className="text-2xl font-bold sm:text-3xl tracking-tight text-ink">
             Abonnements & Facturation
           </h1>
           <p className="text-[15px] text-ink/55">

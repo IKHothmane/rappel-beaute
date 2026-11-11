@@ -24,6 +24,7 @@ function isMarketingPath(path: string): boolean {
   if (path === "/" || path === "") return true;
   const prefixes = [
     "/fonctionnalites",
+    "/creation-site-web",
     "/tarifs",
     "/instituts",
     "/a-propos",
@@ -39,7 +40,7 @@ function isMarketingPath(path: string): boolean {
     "/fidelite",
     "/carte",
     "/demo",
-    "/essai",
+    "/essai", // Ancienne page : redirection vers /professionnel/.
     "/faq",
     "/whatsapp",
     "/blog",
@@ -394,9 +395,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (domain === "www") {
-    if (path === "/login" || path === "/login/") {
+    if (path === "/login" || path === "/login/" || path === "/essai" || path === "/essai/") {
       const local = request.nextUrl.clone();
-      local.pathname = "/connexion/";
+      local.pathname = path.startsWith("/essai") ? "/professionnel/" : "/connexion/";
       local.search = "";
       return withFrameDeny(NextResponse.redirect(local, 307));
     }

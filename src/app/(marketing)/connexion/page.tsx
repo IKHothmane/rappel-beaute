@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Connexion Espace Pro",
   description:
-    "Connexion à votre espace institut Rappel Beauté. Un e-mail, un mot de passe.",
+    "Connectez-vous à votre espace institut Rappel Beauty avec votre numéro WhatsApp ou votre e-mail et votre mot de passe.",
   robots: { index: false, follow: false },
 };
 

@@ -372,7 +372,7 @@ export function AdminAuditSecurityView() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-black tracking-tight text-ink">
+            <h1 className="text-2xl font-bold sm:text-3xl tracking-tight text-ink">
               Sécurité &amp; Audit
             </h1>
             <span className="rounded-full bg-[#FFEFF8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">

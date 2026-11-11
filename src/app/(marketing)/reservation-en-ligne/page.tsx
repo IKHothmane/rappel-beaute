@@ -1,8 +1,13 @@
-import { marketingPageMetadata } from "@/lib/seo";
+import Image from "next/image";
 import Link from "next/link";
-import { Reveal } from "@/components/www/Reveal";
-import { ProductShot } from "@/components/www/ProductShot";
-import { SeoCloser } from "@/components/www/SeoCloser";
+import { ArrowRight, CalendarCheck, CalendarDays, CheckCircle2, Clock3, LayoutGrid, MapPin, MessageCircle, Monitor, Play, QrCode, RefreshCw, UserRound, Users } from "lucide-react";
+import { Accordion, AccordionSection, CheckList, FaqAccordion, IconCards, IconFacts, SpaCutout } from "@/components/www/blocks";
+import { JsonLd } from "@/components/www/JsonLd";
+import { BookingPreview } from "@/components/booking/BookingPreview";
+import { WebsitePreview } from "@/components/website-creation/WebsitePreview";
+import { faqPageJsonLd, marketingPageMetadata } from "@/lib/seo";
+import { PUBLIC_OFFER } from "@/lib/site";
+import "./reservation-en-ligne.css";
 
 export const dynamic = "force-static";
 
@@ -38,6 +43,8 @@ const SECTIONS = [
     id: "agenda",
     title: "Gestion côté institut",
     text: "La réservation en ligne rejoint le même agenda que les rendez-vous pris à l'accueil. Vous la suivez depuis l'espace de gestion, avec les mêmes statuts.",
+    href: "/gestion-rendez-vous/",
+    link: "Découvrir la gestion des rendez-vous",
   },
   {
     id: "produits",
@@ -61,106 +68,44 @@ const SECTIONS = [
   },
 ] as const;
 
+const STEPS = [
+  { icon: CalendarDays, text: "La cliente choisit un service" },
+  { icon: CalendarCheck, text: "Sélectionne une date et une heure" },
+  { icon: UserRound, text: "Renseigne ses coordonnées" },
+  { icon: CheckCircle2, text: "Confirme sa réservation" },
+  { icon: CalendarCheck, text: "Le rendez-vous rejoint votre agenda Rappel Beauty" },
+];
+const BENEFITS = [
+  { icon: CalendarDays, title: "Accessible 24h/24", text: "Vos clientes consultent vos soins et choisissent leur créneau à toute heure." },
+  { icon: Clock3, title: "Gain de temps", text: "Les réservations rejoignent votre agenda, sans recopier les demandes." },
+  { icon: Users, title: "Relation directe", text: "Votre institut garde le lien avec ses clientes et prépare ses rappels WhatsApp." },
+  { icon: RefreshCw, title: "Un agenda partagé", text: "Accueil, équipe et réservation utilisent les mêmes disponibilités." },
+];
+const CHANNELS = [
+  { icon: Monitor, title: "Sur votre site web", text: "Ajoutez un lien vers votre page de réservation." },
+  { icon: MapPin, title: "Depuis votre fiche établissement", text: "Partagez le lien dans les coordonnées de votre fiche." },
+  { icon: MessageCircle, title: "Sur vos réseaux sociaux", text: "Placez-le dans votre biographie ou vos publications." },
+  { icon: QrCode, title: "Via un QR code", text: "Un lien à partager sur vos supports imprimés et à l’accueil." },
+];
+const FAQS = [
+  { question: "Est-ce une marketplace de salons ?", answer: "Non. La page publique appartient à l’institut. Vos clientes réservent auprès de vous, dans les créneaux de votre propre agenda." },
+  { question: "Peut-on payer le rendez-vous en ligne ?", answer: "Non. Dans le fonctionnement actuel de Rappel Beauty, les clientes règlent directement leurs prestations à l’institut." },
+];
+
 export default function ReservationEnLignePage() {
   return (
-    <>
-      <section className="border-b border-line bg-paper py-14 sm:py-20">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <Reveal>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
-              Réservation en ligne pour votre institut
-            </p>
-            <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
-              Réservation en ligne pour institut de beauté
-            </h1>
-            <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
-              Une page publique pour votre institut : services, tarifs, disponibilités et prise de
-              rendez-vous. Les clientes paient directement à l&apos;institut.
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/professionnel/"
-                className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
-              >
-                Essayer gratuitement 15 jours
-              </Link>
-              <Link
-                href="/fonctionnalites/"
-                className="inline-flex items-center justify-center rounded-lg border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
-              >
-                Voir toutes les fonctionnalités
-              </Link>
-            </div>
-            <p className="mt-4 text-xs text-ink/55 sm:text-sm">
-              Sans engagement · 15 jours gratuits · Sans carte bancaire
-            </p>
-          </Reveal>
-        </div>
-      </section>
-      <ProductShot view="reservation" />
+    <div className="bk"><JsonLd data={faqPageJsonLd(FAQS)} /><div className="bk-wrap">
+      <section className="bk-hero" aria-labelledby="booking-title"><div><span className="bk-badge"><CalendarDays aria-hidden="true" />Réservation en ligne</span><h1 id="booking-title">La réservation en ligne pour votre <em>institut de beauté</em></h1><p className="bk-lead">Offrez à vos clientes une expérience de réservation simple, disponible 24h/24, depuis votre site web ou un lien partagé sur vos réseaux.</p><div className="bk-actions"><Link href="/professionnel/">Activer la réservation en ligne<ArrowRight aria-hidden="true" /></Link><Link href="/demo/"><Play aria-hidden="true" />Voir la démo</Link></div><CheckList className="bk-promises" items={["Simple et rapide", "Relié à votre agenda", "Votre propre page"]} /></div><div className="bk-hero-art"><div className="bk-treatment-frame"><Image src="/brand/institut-beaute-soin.webp" alt="Illustration d’un soin du visage dans un institut de beauté" width={1536} height={1024} sizes="(max-width: 760px) 100vw, 56vw" priority /></div><div className="bk-hero-phone"><WebsitePreview variant="rendez-vous" phone /></div><SpaCutout className="bk-hero-spa" sizes="(max-width: 760px) 120px, 220px" /><p>Aperçu illustratif d’une page de réservation</p></div></section>
 
-      <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
-        {SECTIONS.map((section, index) => (
-          <Reveal key={section.id}>
-            <section
-              id={section.id}
-              className={`scroll-mt-28 ${index === 0 ? "" : "border-t border-line pt-14"}`}
-            >
-              <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">{section.title}</h2>
-              <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{section.text}</p>
-              {section.id === "agenda" ? (
-                <p className="mt-4">
-                  <Link
-                    href="/gestion-rendez-vous/"
-                    className="text-sm font-semibold text-primary hover:text-primary-dark"
-                  >
-                    Découvrir la gestion des rendez-vous
-                  </Link>
-                </p>
-              ) : null}
-            </section>
-          </Reveal>
-        ))}
-        <p className="text-sm text-ink/60">
-          La formule est présentée sur la{" "}
-          <Link href="/tarifs/" className="font-semibold text-primary hover:text-primary-dark">
-            page tarifs
-          </Link>
-          .
-        </p>
-      </div>
+      <section className="bk-process" aria-labelledby="booking-process-title"><h2 id="booking-process-title">Comment fonctionne <em>la réservation en ligne ?</em></h2><ol>{STEPS.map(({ icon: Icon, text }, index) => <li key={text}>{index < 4 && <span className="bk-step-number" aria-hidden="true">{index + 1}</span>}<Icon aria-hidden="true" /><p>{text}</p>{index < STEPS.length - 1 && <ArrowRight className="bk-step-arrow" aria-hidden="true" />}</li>)}</ol></section>
 
-      <SeoCloser
-        problem="Les demandes arrivent par WhatsApp le soir, les créneaux se recouvrent, et la cliente ne sait pas si le rendez-vous est vraiment noté."
-        solution="Chaque institut a sa page : services, durées et créneaux issus du planning. La réservation rejoint le même agenda. Ce n'est pas une place de marché, et le paiement reste à l'institut."
-        useCase="Une cliente choisit un soin et un horaire libre le dimanche soir. Le lundi, le rendez-vous est déjà dans l'agenda de l'employée, et le créneau n'est plus proposé."
-        faqs={[
-          {
-            q: "Est-ce une marketplace de salons ?",
-            a: "Non. La page publique appartient à l'institut. Les clientes réservent auprès de lui.",
-          },
-          {
-            q: "Peut-on payer le rendez-vous en ligne ?",
-            a: "Non. Les clientes paient directement à l'institut.",
-          },
-        ]}
-      />
-      <section className="bg-institut py-14 text-center text-white sm:py-20">
-        <div className="mx-auto max-w-2xl px-4">
-          <h2 className="font-display text-2xl font-light sm:text-4xl">
-            Essayez Rappel Beauty pendant 15 jours
-          </h2>
-          <p className="mt-4 text-sm text-white/75 sm:text-base">
-            Sans engagement et sans carte bancaire.
-          </p>
-          <Link
-            href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
-          >
-            Essayer gratuitement 15 jours
-          </Link>
-        </div>
-      </section>
-    </>
+      <div className="bk-benefit-layout"><BookingPreview /><section className="bk-benefits" aria-labelledby="booking-benefits-title"><h2 id="booking-benefits-title">Les avantages <em>pour votre institut</em></h2><div><IconCards items={BENEFITS} /></div></section></div>
+
+      <section className="bk-channels" aria-labelledby="booking-channels-title"><div className="bk-website-art"><WebsitePreview variant="vitrine" /><div><WebsitePreview variant="rendez-vous" phone /></div></div><div><h2 id="booking-channels-title">Où partager <em>la réservation ?</em></h2><ul><IconFacts items={CHANNELS} /></ul><Link href="/creation-site-web/">Vous souhaitez créer votre site ?<ArrowRight aria-hidden="true" /></Link></div><aside className="bk-integration"><LayoutGrid aria-hidden="true" /><h3>Intégrée à <em>Rappel Beauty</em></h3><CheckList items={["Rendez-vous dans votre agenda", "Disponibilités de votre équipe", "Créneaux et cabines pris en compte", "Messages WhatsApp préparés"]} /></aside></section>
+
+      <AccordionSection className="bk-details" id="booking-details-title" title={<>Votre réservation, <em>en détail</em></>}><Accordion items={SECTIONS} /></AccordionSection>
+      <AccordionSection className="bk-faq" id="booking-faq-title" title={<>Vos questions <em>avant de commencer</em></>}><FaqAccordion faqs={FAQS} /></AccordionSection>
+      <section className="bk-cta" aria-labelledby="booking-cta-title"><div><h2 id="booking-cta-title">Vos clientes réservent, votre institut s’organise.</h2><p>Essayez Rappel Beauty {PUBLIC_OFFER.trialDays} jours, sans carte bancaire et sans engagement.</p></div><Link href="/professionnel/">Essayer gratuitement<ArrowRight aria-hidden="true" /></Link><Link href="/tarifs/">Voir les tarifs</Link></section>
+    </div></div>
   );
 }

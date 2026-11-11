@@ -22,10 +22,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  AdminActionsMenu,
-  adminMenuItemClass,
-} from "@/components/admin/AdminActionsMenu";
-import {
   SensitiveConfirmDialog,
   type SensitiveActionKind,
 } from "@/components/admin/SensitiveConfirmDialog";
@@ -140,12 +136,12 @@ function matchesSegment(u: PlatformOrgUser, tab: SegmentTab) {
 
 function roleBadgeClass(role: string) {
   if (role === "OWNER" || role === "SUPER_ADMIN") {
-    return "bg-[#FFD9DE] text-[#400014]";
+    return "bg-indigo-100 text-indigo-800";
   }
   if (role === "MANAGER") {
-    return "bg-[#FFDEA4] text-[#5D4200]";
+    return "bg-amber-100 text-amber-800";
   }
-  return "bg-[#F0DDE9] text-ink";
+  return "bg-slate-100 text-slate-900";
 }
 
 function UserStatusPill({ user }: { user: PlatformOrgUser }) {
@@ -167,7 +163,7 @@ function UserStatusPill({ user }: { user: PlatformOrgUser }) {
   }
   if (isInactive(user)) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F0DDE9] px-2.5 py-1 text-[11px] font-bold text-[#7B5900]">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-[#7B5900]">
         <span className="h-1.5 w-1.5 rounded-full bg-[#7B5900]" />
         Inactif ({Math.floor(daysSince(user.lastLoginAt))}j)
       </span>
@@ -175,15 +171,15 @@ function UserStatusPill({ user }: { user: PlatformOrgUser }) {
   }
   if (isLiveSession(user)) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFEFF8] px-2.5 py-1 text-[11px] font-bold text-primary">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-[#3B63D6]">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3B63D6]" />
         Actif (Session live)
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFEFF8] px-2.5 py-1 text-[11px] font-bold text-primary">
-      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-[#3B63D6]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[#3B63D6]" />
       Actif
     </span>
   );
@@ -201,57 +197,57 @@ function TempPasswordModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/50 p-4 backdrop-blur-sm">
       <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl bg-white p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFDEA4] text-[#5D4200]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
               <KeyRound className="h-4 w-4" />
             </div>
             <div>
-              <h4 className="text-lg font-bold text-ink">Réinitialiser l&apos;accès</h4>
-              <p className="text-xs text-ink/50">{userLabel}</p>
+              <h4 className="text-lg font-bold text-slate-900">Réinitialiser l&apos;accès</h4>
+              <p className="text-xs text-slate-500">{userLabel}</p>
             </div>
           </div>
           <button
             type="button"
-            className="text-ink/40 hover:text-ink"
+            className="text-slate-400 hover:text-slate-900"
             onClick={onClose}
             aria-label="Fermer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="flex flex-col gap-2 rounded-xl bg-[#FFEFF8] p-4">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+        <div className="flex flex-col gap-2 rounded-xl bg-slate-100 p-4">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
             Nouveau mot de passe temporaire
           </span>
-          <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 font-mono text-base font-bold text-primary">
+          <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 font-mono text-base font-bold text-[#3B63D6]">
             <span>{password}</span>
             <button
               type="button"
-              className="text-ink/40 hover:text-primary"
+              className="text-slate-400 hover:text-[#3B63D6]"
               onClick={() => void navigator.clipboard?.writeText(password)}
               title="Copier"
             >
               Copier
             </button>
           </div>
-          <p className="text-[11px] text-ink/55">
+          <p className="text-[11px] text-slate-500">
             L&apos;utilisateur devra modifier son mot de passe à la prochaine connexion.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
-            className="rounded-xl bg-[#F0DDE9] px-4 py-2 text-sm font-bold text-ink hover:bg-[#E4BDC2]/60"
+            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-900 hover:bg-[#E4BDC2]/60"
             onClick={() => void navigator.clipboard?.writeText(message)}
           >
             Copier le message
           </button>
           <button
             type="button"
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm"
+            className="rounded-xl bg-[#3B63D6] px-4 py-2 text-sm font-bold text-white shadow-sm"
             onClick={onClose}
           >
             Fermer
@@ -496,7 +492,7 @@ export function AdminUsersView() {
       setPending(null);
       load(true);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Action impossible.");
+      setError(e instanceof Error ? e.message : "Action impossible.");
     } finally {
       setBusy(false);
     }
@@ -540,7 +536,7 @@ export function AdminUsersView() {
       );
       load(true);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Enregistrement impossible.");
+      setError(e instanceof Error ? e.message : "Enregistrement impossible.");
     } finally {
       setBusy(false);
     }
@@ -615,214 +611,179 @@ export function AdminUsersView() {
   return (
     <div className="flex w-full min-w-0 max-w-none flex-col gap-5 pb-8 lg:gap-6">
       {/* Header */}
-      <header className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[28px] font-black tracking-tight text-ink lg:text-[32px]">
-                Utilisateurs globaux
-              </h1>
-              <span className="rounded-full bg-[#FFD9DE] px-2.5 py-1 text-[11px] font-bold text-[#400014]">
-                {kpis.total} Comptes
-              </span>
-              <span className="hidden items-center gap-1 rounded-full bg-[#F0DDE9] px-2.5 py-0.5 text-[11px] text-ink/60 sm:inline-flex">
-                <span className="h-1.5 w-1.5 animate-ping rounded-full bg-primary" />
-                {kpis.orgsCount} Instituts actifs
-              </span>
-            </div>
-            <p className="mt-1 max-w-3xl text-[15px] text-ink/55">
-              Supervision, sécurité des accès et gouvernance des sessions actives sur
-              l&apos;ensemble des instituts de beauté au Maroc.
-            </p>
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold sm:text-3xl tracking-tight text-[#0F172A]">Utilisateurs</h1>
+          <p className="mt-1.5 max-w-xl text-sm text-slate-500">
+            Supervisez les comptes, la sécurité des accès et les sessions de tous les instituts
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[240px] flex-1 lg:w-80 lg:flex-none">
+            <Search
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden
+            />
+            <input
+              id="users-omni-search"
+              type="search"
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+              placeholder="Nom, e-mail, téléphone…"
+              aria-label="Rechercher un utilisateur"
+              className="h-11 w-full rounded-xl border-0 bg-white pl-10 pr-12 text-sm text-slate-900 shadow-sm outline-none ring-1 ring-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-[#3B63D6]/40"
+            />
+            <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 sm:block">
+              ⌘K
+            </kbd>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex min-w-[240px] flex-1 items-center sm:min-w-[300px]">
-              <Search className="pointer-events-none absolute left-3.5 h-[18px] w-[18px] text-ink/35" />
-              <input
-                id="users-omni-search"
-                value={qInput}
-                onChange={(e) => setQInput(e.target.value)}
-                placeholder="Recherche nom, email, tél, #USR-…"
-                className="h-11 w-full rounded-xl bg-white pl-10 pr-12 text-sm text-ink shadow-sm placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              <kbd className="absolute right-3 rounded bg-[#FFEFF8] px-1.5 py-0.5 font-mono text-[10px] font-bold text-ink/45">
-                ⌘K
-              </kbd>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setCreateError(null);
-                setCreateOpen(true);
-              }}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-sm hover:opacity-90"
-            >
-              <UserPlus className="h-4 w-4" />
-              Ajouter un admin
-            </button>
-            <button
-              type="button"
-              onClick={exportCsv}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-ink shadow-sm hover:bg-[#FFEFF8]"
-            >
-              <Download className="h-4 w-4 text-primary" />
-              Exporter CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => setSegment("watchlist")}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#7B5900] px-4 text-sm font-bold text-white shadow-sm hover:opacity-90"
-            >
-              <AlertTriangle className="h-4 w-4" />
-              À surveiller
-              <span className="rounded-full bg-[#FFDEA4] px-1.5 py-0.5 text-[10px] font-bold text-[#5D4200]">
-                {kpis.watchlist}
-              </span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={exportCsv}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50"
+          >
+            <Download className="h-4 w-4 text-[#3B63D6]" aria-hidden />
+            <span className="hidden sm:inline">Exporter CSV</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCreateError(null);
+              setCreateOpen(true);
+            }}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#3B63D6] px-4 text-sm font-semibold text-white shadow-lg shadow-[#3B63D6]/25 transition hover:bg-[#2F52B8] sm:px-5"
+          >
+            <UserPlus className="h-4 w-4" aria-hidden />
+            Ajouter un admin
+          </button>
         </div>
       </header>
 
       {/* KPIs */}
-      <section className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
-        <div className="flex flex-col justify-between rounded-2xl bg-white p-3.5 shadow-sm sm:p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
-              Total comptes
-            </span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFEFF8] text-ink/60">
-              <UsersRound className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black tracking-tight text-ink">{kpis.total}</span>
-            <span className="text-[11px] font-bold text-primary">+{kpis.thisMonth}/m</span>
-          </div>
-          <p className="truncate text-[11px] text-ink/50">
-            sur {kpis.orgsCount} salons au Maroc
-          </p>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-2xl bg-white p-3.5 shadow-sm sm:p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
-              Actifs
-            </span>
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-ink">{kpis.active}</span>
-            <span className="text-[11px] font-bold text-primary">{activePct}%</span>
-          </div>
-          <p className="truncate text-[11px] text-ink/50">Comptes engagés</p>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-2xl bg-white p-3.5 shadow-sm sm:p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
-              Inactifs
-            </span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFDEA4] text-[#5D4200]">
-              <Hourglass className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-ink">{kpis.inactive}</span>
-            <span className="text-[11px] font-bold text-[#7B5900]">{inactivePct}%</span>
-          </div>
-          <p className="truncate text-[11px] text-ink/50">&gt; 30j sans connexion</p>
-        </div>
-
-        <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-ink p-3.5 text-white shadow-sm sm:p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#FFDEA4]">
-              En ligne aujourd&apos;hui
-            </span>
-            <Bolt className="h-4 w-4 text-primary" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black">{kpis.onlineToday}</span>
-            <span className="text-[11px] font-bold text-primary">Live</span>
-          </div>
-          <p className="truncate text-[11px] text-white/60">Sessions du jour</p>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-2xl bg-white p-3.5 shadow-sm sm:p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
-              Bloqués
-            </span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-700">
-              <Lock className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-red-600">{kpis.disabled}</span>
-            <span className="text-[11px] font-bold text-red-600">Sécurité</span>
-          </div>
-          <p className="truncate text-[11px] text-ink/50">Comptes désactivés</p>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-2xl bg-white p-3.5 shadow-sm sm:p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-ink/45">
-              À surveiller
-            </span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F0BF5C]/50 text-[#5D4200]">
-              <AlertTriangle className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-[#7B5900]">{kpis.watchlist}</span>
-            <span className="text-[11px] font-bold text-[#7B5900]">Mdp expiré</span>
-          </div>
-          <p className="truncate text-[11px] text-ink/50">Audit de mot de passe</p>
-        </div>
+      <section aria-label="Indicateurs" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {[
+          {
+            key: "total",
+            label: "Total comptes",
+            value: kpis.total,
+            hint: `+${kpis.thisMonth} ce mois · ${kpis.orgsCount} instituts`,
+            icon: UsersRound,
+            tone: "bg-[#3B63D6]/10 text-[#3B63D6]",
+            onClick: () => setSegment("all"),
+          },
+          {
+            key: "active",
+            label: "Actifs",
+            value: kpis.active,
+            hint: `${activePct}% des comptes`,
+            icon: CheckCircle2,
+            tone: "bg-emerald-100 text-emerald-700",
+            onClick: () => setSegment("active"),
+          },
+          {
+            key: "inactive",
+            label: "Inactifs",
+            value: kpis.inactive,
+            hint: `${inactivePct}% · +30 j sans connexion`,
+            icon: Hourglass,
+            tone: "bg-amber-100 text-amber-700",
+            onClick: () => setSegment("inactive"),
+          },
+          {
+            key: "online",
+            label: "En ligne aujourd’hui",
+            value: kpis.onlineToday,
+            hint: "Sessions du jour",
+            icon: Bolt,
+            tone: "bg-violet-100 text-violet-700",
+            onClick: undefined,
+          },
+          {
+            key: "blocked",
+            label: "Bloqués",
+            value: kpis.disabled,
+            hint: "Comptes désactivés",
+            icon: Lock,
+            tone: "bg-red-100 text-red-700",
+            onClick: () => setSegment("blocked"),
+          },
+          {
+            key: "watch",
+            label: "À surveiller",
+            value: kpis.watchlist,
+            hint: "Mot de passe temporaire",
+            icon: AlertTriangle,
+            tone: "bg-orange-100 text-orange-700",
+            onClick: () => setSegment("watchlist"),
+          },
+        ].map((k) => {
+          const Icon = k.icon;
+          const body = (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-slate-500">{k.label}</span>
+                <span className={cn("flex h-8 w-8 items-center justify-center rounded-xl", k.tone)}>
+                  <Icon className="h-4 w-4" aria-hidden />
+                </span>
+              </div>
+              <p className="mt-3 text-2xl font-bold tracking-tight text-[#0F172A]">{k.value}</p>
+              <p className="mt-0.5 truncate text-xs text-slate-400">{k.hint}</p>
+            </>
+          );
+          const cls = "rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-100 transition";
+          return k.onClick ? (
+            <button
+              key={k.key}
+              type="button"
+              onClick={k.onClick}
+              className={cn(
+                cls,
+                "hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3B63D6]",
+              )}
+            >
+              {body}
+            </button>
+          ) : (
+            <div key={k.key} className={cls}>
+              {body}
+            </div>
+          );
+        })}
       </section>
 
       {/* Filters */}
       <section className="flex flex-col gap-3 rounded-2xl bg-white p-3 shadow-sm sm:p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar" role="tablist" aria-label="Filtrer par segment">
             {tabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
+                role="tab"
+                aria-selected={segment === t.id}
                 onClick={() => setSegment(t.id)}
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs transition-all",
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-4 py-1.5 text-sm font-semibold transition",
                   segment === t.id
-                    ? "bg-white font-bold text-ink shadow-sm ring-1 ring-ink/5"
-                    : "text-ink/55 hover:text-ink",
-                  segment === t.id ? "bg-[#FFF7F9]" : "bg-transparent",
-                  t.accent && segment !== t.id ? t.accent : null,
+                    ? "border-[#3B63D6] bg-[#3B63D6] text-white shadow-sm"
+                    : "border-slate-300 bg-white text-slate-600 hover:border-slate-400",
                 )}
               >
                 <span>{t.label}</span>
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    t.id === "blocked"
-                      ? "bg-red-100 text-red-700"
-                      : t.id === "watchlist"
-                        ? "bg-[#FFDEA4] text-[#5D4200]"
-                        : "bg-[#F0DDE9] text-ink/60",
-                  )}
-                >
+                <span className={cn("text-xs", segment === t.id ? "text-white/80" : "text-slate-400")}>
                   {t.count}
                 </span>
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 text-xs text-ink/45">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
             <span className="hidden md:inline">
               Affichage {from} à {to} sur {filtered.length}
             </span>
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="rounded-lg bg-[#FFEFF8] px-2 py-1 text-[12px] font-bold text-ink focus:outline-none"
+              className="rounded-lg bg-slate-100 px-2 py-1 text-[12px] font-bold text-slate-900 focus:outline-none"
             >
               <option value={20}>20 par page</option>
               <option value={50}>50 par page</option>
@@ -835,7 +796,7 @@ export function AdminUsersView() {
           <select
             value={organizationId}
             onChange={(e) => setOrganizationId(e.target.value)}
-            className="h-10 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink focus:outline-none"
+            className="h-10 rounded-lg bg-slate-100 px-3 text-sm text-slate-900 focus:outline-none"
           >
             <option value="ALL">Tous les instituts</option>
             {orgs.map((o) => (
@@ -847,7 +808,7 @@ export function AdminUsersView() {
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="h-10 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink focus:outline-none"
+            className="h-10 rounded-lg bg-slate-100 px-3 text-sm text-slate-900 focus:outline-none"
           >
             <option value="ALL">Tous les rôles</option>
             <option value="OWNER">OWNER</option>
@@ -860,7 +821,7 @@ export function AdminUsersView() {
           <select
             value={accountKind}
             onChange={(e) => setAccountKind(e.target.value as AccountKindFilter)}
-            className="h-10 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink focus:outline-none"
+            className="h-10 rounded-lg bg-slate-100 px-3 text-sm text-slate-900 focus:outline-none"
           >
             <option value="ALL">Cloisonnement type</option>
             <option value="ORG">Salons abonnés</option>
@@ -869,7 +830,7 @@ export function AdminUsersView() {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="h-10 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink focus:outline-none"
+            className="h-10 rounded-lg bg-slate-100 px-3 text-sm text-slate-900 focus:outline-none"
           >
             <option value="ALL">Statut compte</option>
             <option value="ACTIVE">Actif</option>
@@ -878,7 +839,7 @@ export function AdminUsersView() {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
-            className="col-span-2 h-10 rounded-lg bg-[#FFEFF8] px-3 text-sm text-ink focus:outline-none md:col-span-1"
+            className="col-span-2 h-10 rounded-lg bg-slate-100 px-3 text-sm text-slate-900 focus:outline-none md:col-span-1"
           >
             <option value="ALL">Période : toutes</option>
             <option value="30">Derniers 30 jours</option>
@@ -889,9 +850,28 @@ export function AdminUsersView() {
       </section>
 
       {error ? (
-        <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-700">{error}</p>
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-2xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-100"
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => load(true)}
+            className="shrink-0 rounded-lg bg-white px-3 py-1.5 font-semibold shadow-sm"
+          >
+            Réessayer
+          </button>
+        </div>
       ) : null}
-      {loading ? <p className="text-sm text-ink/45">Chargement…</p> : null}
+      {loading ? (
+        <div role="status" aria-busy="true" className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+          <span className="sr-only">Chargement…</span>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-11 animate-pulse rounded-xl bg-slate-100 motion-reduce:animate-none" />
+          ))}
+        </div>
+      ) : null}
 
       {/* Table + drawer */}
       <div className="relative flex flex-col items-start gap-5 xl:flex-row">
@@ -907,13 +887,13 @@ export function AdminUsersView() {
                     onClick={() => setSelectedId(u.id)}
                     className={cn(
                       "relative flex w-full items-center justify-between gap-3 overflow-hidden rounded-xl bg-white p-3.5 text-left shadow-sm",
-                      featured && "ring-1 ring-primary/30",
+                      featured && "ring-1 ring-[#3B63D6]/30",
                       u.status === "DISABLED" && "bg-red-50/60",
                       u.mustChangePassword && "bg-[#FFDEA4]/15",
                     )}
                   >
                     {featured ? (
-                      <span className="absolute bottom-0 left-0 top-0 w-1 bg-primary" />
+                      <span className="absolute bottom-0 left-0 top-0 w-1 bg-[#3B63D6]" />
                     ) : null}
                     <div className="flex min-w-0 items-center gap-3 pl-1">
                       <div
@@ -923,7 +903,7 @@ export function AdminUsersView() {
                             ? "bg-red-100 text-red-700"
                             : u.mustChangePassword
                               ? "bg-[#FFDEA4]/60 text-[#5D4200]"
-                              : "bg-[#FFEFF8] text-primary",
+                              : "bg-slate-100 text-[#3B63D6]",
                         )}
                       >
                         {initials(u.firstName, u.lastName)}
@@ -933,7 +913,7 @@ export function AdminUsersView() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="truncate text-sm font-bold text-ink">
+                          <span className="truncate text-sm font-bold text-slate-900">
                             {fullName(u)}
                           </span>
                           <span
@@ -945,7 +925,7 @@ export function AdminUsersView() {
                             {ROLE_ICON_HINT[u.role] ?? u.role}
                           </span>
                         </div>
-                        <p className="truncate text-[11px] text-ink/50">
+                        <p className="truncate text-[11px] text-slate-500">
                           {u.organizationName ?? "Plateforme"}
                           {u.organizationCity ? ` · ${u.organizationCity}` : ""}
                         </p>
@@ -965,11 +945,11 @@ export function AdminUsersView() {
                           En ligne
                         </span>
                       ) : (
-                        <span className="text-[11px] text-ink/45">
+                        <span className="text-[11px] text-slate-500">
                           {formatRelative(u.lastLoginAt)}
                         </span>
                       )}
-                      <ChevronRight className="h-[18px] w-[18px] text-ink/35" />
+                      <ChevronRight className="h-[18px] w-[18px] text-slate-400" />
                     </div>
                   </button>
                 </li>
@@ -982,14 +962,13 @@ export function AdminUsersView() {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-sm">
                 <thead>
-                  <tr className="bg-[#FFEFF8] text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                  <tr className="bg-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     <th className="px-4 py-3.5">Utilisateur & contact</th>
                     <th className="px-4 py-3.5">Institut rattaché</th>
                     <th className="px-4 py-3.5">Rôle</th>
                     <th className="px-4 py-3.5">Statut & sécurité</th>
                     <th className="px-4 py-3.5">Dernière connexion</th>
                     <th className="px-4 py-3.5">Créé le</th>
-                    <th className="px-4 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1000,8 +979,8 @@ export function AdminUsersView() {
                         key={u.id}
                         onClick={() => setSelectedId(u.id)}
                         className={cn(
-                          "cursor-pointer border-t border-[#FFEFF8] transition-colors hover:bg-[#FFF7F9]",
-                          featured && "bg-[#FCE9F4]/40",
+                          "cursor-pointer border-t border-slate-100 transition-colors hover:bg-slate-50",
+                          featured && "bg-[#3B63D6]/5",
                           u.status === "DISABLED" && "bg-red-50/40",
                           u.mustChangePassword && "bg-[#FFDEA4]/10",
                         )}
@@ -1013,37 +992,37 @@ export function AdminUsersView() {
                                 "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold shadow-sm",
                                 u.status === "DISABLED"
                                   ? "bg-red-100 text-red-700"
-                                  : "bg-[#FFEFF8] text-primary",
+                                  : "bg-slate-100 text-[#3B63D6]",
                               )}
                             >
                               {initials(u.firstName, u.lastName)}
                               {isLiveSession(u) ? (
-                                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-primary" />
+                                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#3B63D6]" />
                               ) : null}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <span className="truncate font-bold text-ink">
+                                <span className="truncate font-bold text-slate-900">
                                   {fullName(u)}
                                 </span>
-                                <span className="rounded bg-[#F0DDE9] px-1.5 py-0.5 text-[10px] font-bold text-ink/60">
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
                                   {u.accountKind === "PLATFORM" ? "Admin" : "Salon"}
                                 </span>
                               </div>
-                              <p className="truncate text-[12px] text-ink/45">{u.email}</p>
+                              <p className="truncate text-[12px] text-slate-500">{u.email}</p>
                               {u.phone ? (
-                                <p className="font-mono text-[11px] text-ink/50">{u.phone}</p>
+                                <p className="font-mono text-[11px] text-slate-500">{u.phone}</p>
                               ) : null}
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex flex-col">
-                            <span className="font-bold text-ink">
+                            <span className="font-bold text-slate-900">
                               {u.organizationName ?? "— Plateforme —"}
                             </span>
                             {u.organizationCity ? (
-                              <span className="text-[12px] text-ink/45">
+                              <span className="text-[12px] text-slate-500">
                                 {u.organizationCity}
                               </span>
                             ) : null}
@@ -1069,132 +1048,12 @@ export function AdminUsersView() {
                           <UserStatusPill user={u} />
                         </td>
                         <td className="px-4 py-3.5">
-                          <span className="font-bold text-ink">
+                          <span className="font-bold text-slate-900">
                             {formatRelative(u.lastLoginAt)}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 font-mono text-[12px] text-ink/50">
+                        <td className="px-4 py-3.5 font-mono text-[12px] text-slate-500">
                           {fmtDate(u.createdAt)}
-                        </td>
-                        <td
-                          className="px-4 py-3.5 text-right"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <AdminActionsMenu triggerLabel="⋯">
-                            {(close) => (
-                              <>
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  className={adminMenuItemClass}
-                                  onClick={() => {
-                                    setSelectedId(u.id);
-                                    close();
-                                  }}
-                                >
-                                  Voir la fiche
-                                </button>
-                                {u.accountKind === "ORG" ? (
-                                  <button
-                                    type="button"
-                                    role="menuitem"
-                                    className={adminMenuItemClass}
-                                    onClick={() => {
-                                      close();
-                                      openProfileEditor(u);
-                                    }}
-                                  >
-                                    Modifier les informations
-                                  </button>
-                                ) : null}
-                                {u.organizationId ? (
-                                  <Link
-                                    href={adminHref(
-                                      `/organizations/${u.organizationId}/`,
-                                    )}
-                                    className={adminMenuItemClass}
-                                    role="menuitem"
-                                    onClick={close}
-                                  >
-                                    Voir l&apos;institut
-                                  </Link>
-                                ) : null}
-                                {u.accountKind === "ORG" ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      role="menuitem"
-                                      className={`${adminMenuItemClass} font-bold text-[#7B5900]`}
-                                      onClick={() => {
-                                        close();
-                                        setPending({ kind: "reset_password", user: u });
-                                      }}
-                                    >
-                                      Réinitialiser le mot de passe
-                                    </button>
-                                    <button
-                                      type="button"
-                                      role="menuitem"
-                                      className={`${adminMenuItemClass} font-bold text-primary`}
-                                      onClick={() => {
-                                        close();
-                                        setPending({
-                                          kind: "invalidate_sessions",
-                                          user: u,
-                                        });
-                                      }}
-                                    >
-                                      Révoquer sessions
-                                    </button>
-                                    {u.status === "ACTIVE" ? (
-                                      <>
-                                        <button
-                                          type="button"
-                                          role="menuitem"
-                                          className={`${adminMenuItemClass} font-bold text-red-700`}
-                                          onClick={() => {
-                                            close();
-                                            setPending({ kind: "disable", user: u });
-                                          }}
-                                        >
-                                          Bloquer le compte
-                                        </button>
-                                        <button
-                                          type="button"
-                                          role="menuitem"
-                                          className={`${adminMenuItemClass} font-bold text-red-700`}
-                                          onClick={() => {
-                                            close();
-                                            setPending({ kind: "delete", user: u });
-                                          }}
-                                        >
-                                          Supprimer le compte
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        role="menuitem"
-                                        className={adminMenuItemClass}
-                                        onClick={() => {
-                                          close();
-                                          void patchAdminUser(u.id, {
-                                            status: "ACTIVE",
-                                          }).then(() => load());
-                                        }}
-                                      >
-                                        Réactiver
-                                      </button>
-                                    )}
-                                  </>
-                                ) : (
-                                  <p className="px-3 py-2 text-xs text-ink/45">
-                                    Compte plateforme — actions limitées.
-                                  </p>
-                                )}
-                              </>
-                            )}
-                          </AdminActionsMenu>
                         </td>
                       </tr>
                     );
@@ -1203,31 +1062,31 @@ export function AdminUsersView() {
               </table>
             </div>
 
-            <div className="flex items-center justify-between bg-[#FFEFF8] px-4 py-3">
-              <p className="text-xs text-ink/55">
-                Affichage de <span className="font-bold text-ink">{from}</span> à{" "}
-                <span className="font-bold text-ink">{to}</span> sur{" "}
-                <span className="font-bold text-ink">{filtered.length}</span> utilisateurs
+            <div className="flex items-center justify-between bg-slate-100 px-4 py-3">
+              <p className="text-xs text-slate-500">
+                Affichage de <span className="font-bold text-slate-900">{from}</span> à{" "}
+                <span className="font-bold text-slate-900">{to}</span> sur{" "}
+                <span className="font-bold text-slate-900">{filtered.length}</span> utilisateurs
               </p>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   disabled={pageSafe <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-lg bg-white px-2.5 py-1 text-xs font-bold text-ink shadow-sm disabled:opacity-40"
+                  className="rounded-lg bg-white px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm disabled:opacity-40"
                 >
                   Précédent
                 </button>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-xs font-bold text-white shadow-sm">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#3B63D6] text-xs font-bold text-white shadow-sm">
                   {pageSafe}
                 </span>
-                <span className="px-1 text-ink/40">/</span>
-                <span className="text-xs font-bold text-ink">{totalPages}</span>
+                <span className="px-1 text-slate-400">/</span>
+                <span className="text-xs font-bold text-slate-900">{totalPages}</span>
                 <button
                   type="button"
                   disabled={pageSafe >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="rounded-lg bg-white px-2.5 py-1 text-xs font-bold text-ink shadow-sm disabled:opacity-40"
+                  className="rounded-lg bg-white px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm disabled:opacity-40"
                 >
                   Suivant
                 </button>
@@ -1241,17 +1100,17 @@ export function AdminUsersView() {
               type="button"
               disabled={pageSafe <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="inline-flex h-10 items-center gap-1 rounded-xl bg-white px-3.5 text-sm font-bold text-ink shadow-sm disabled:opacity-40"
+              className="inline-flex h-10 items-center gap-1 rounded-xl bg-white px-3.5 text-sm font-bold text-slate-900 shadow-sm disabled:opacity-40"
             >
               <ChevronLeft className="h-4 w-4" />
               Préc.
             </button>
             <div className="flex items-center gap-1 text-sm font-bold">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#3B63D6] text-white">
                 {pageSafe}
               </span>
-              <span className="text-ink/40">…</span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-ink shadow-sm">
+              <span className="text-slate-400">…</span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-900 shadow-sm">
                 {totalPages}
               </span>
             </div>
@@ -1259,7 +1118,7 @@ export function AdminUsersView() {
               type="button"
               disabled={pageSafe >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="inline-flex h-10 items-center gap-1 rounded-xl bg-white px-3.5 text-sm font-bold text-ink shadow-sm disabled:opacity-40"
+              className="inline-flex h-10 items-center gap-1 rounded-xl bg-white px-3.5 text-sm font-bold text-slate-900 shadow-sm disabled:opacity-40"
             >
               Suiv.
               <ChevronRight className="h-4 w-4" />
@@ -1267,32 +1126,32 @@ export function AdminUsersView() {
           </div>
 
           {!loading && filtered.length === 0 ? (
-            <p className="rounded-2xl bg-white p-8 text-center text-sm text-ink/45 shadow-sm">
+            <p className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
               Aucun utilisateur trouvé.
             </p>
           ) : null}
         </div>
 
         {/* Drawer */}
-        <aside className="sticky top-20 w-full shrink-0 xl:w-96">
+        <aside className="sticky top-20 w-full shrink-0 xl:w-[30rem]">
           {selected ? (
-            <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-5 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#FFEFF8] text-lg font-bold text-primary ring-2 ring-primary/20">
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-[#3B63D6] ring-2 ring-[#3B63D6]/20">
                     {initials(selected.firstName, selected.lastName)}
                     {isLiveSession(selected) ? (
-                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-primary" />
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#3B63D6]" />
                     ) : null}
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-ink">{fullName(selected)}</h3>
+                    <h3 className="text-xl font-bold text-slate-900">{fullName(selected)}</h3>
                     <p className="text-[11px] font-bold text-[#7B5900]">
                       {ORG_USER_ROLE_LABEL[selected.role] ?? selected.role}
                     </p>
                     {isLiveSession(selected) ? (
-                      <p className="mt-0.5 flex items-center gap-1 text-[11px] font-bold text-primary">
-                        <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                      <p className="mt-0.5 flex items-center gap-1 text-[11px] font-bold text-[#3B63D6]">
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-[#3B63D6]" />
                         Session active maintenant
                       </p>
                     ) : null}
@@ -1300,7 +1159,7 @@ export function AdminUsersView() {
                 </div>
                 <button
                   type="button"
-                  className="text-ink/35 hover:text-ink"
+                  className="text-slate-400 hover:text-slate-900"
                   onClick={() => setSelectedId(null)}
                   aria-label="Fermer"
                 >
@@ -1313,7 +1172,7 @@ export function AdminUsersView() {
                   <button
                     type="button"
                     onClick={() => openProfileEditor(selected)}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#FFEFF8] px-2 text-[12px] font-bold text-ink"
+                    className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-2 text-[12px] font-bold text-slate-900"
                   >
                     <Pencil className="h-4 w-4" />
                     Modifier
@@ -1323,7 +1182,7 @@ export function AdminUsersView() {
                     onClick={() =>
                       setPending({ kind: "reset_password", user: selected })
                     }
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-2 text-[12px] font-bold text-white shadow-sm"
+                    className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#3B63D6] px-2 text-[12px] font-bold text-white shadow-sm"
                   >
                     <KeyRound className="h-4 w-4" />
                     Reset mdp
@@ -1333,7 +1192,7 @@ export function AdminUsersView() {
                     onClick={() =>
                       setPending({ kind: "invalidate_sessions", user: selected })
                     }
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#FFEFF8] px-2 text-[12px] font-bold text-ink"
+                    className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-2 text-[12px] font-bold text-slate-900"
                   >
                     <Power className="h-4 w-4" />
                     Révoquer
@@ -1342,7 +1201,7 @@ export function AdminUsersView() {
                     <button
                       type="button"
                       onClick={() => setPending({ kind: "delete", user: selected })}
-                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-red-50 px-2 text-[12px] font-bold text-red-800"
+                      className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-red-50 px-2 text-[12px] font-bold text-red-800"
                     >
                       Supprimer
                     </button>
@@ -1351,11 +1210,11 @@ export function AdminUsersView() {
               ) : null}
 
               {profileOpen && selected.accountKind === "ORG" ? (
-                <form onSubmit={(event) => void saveProfile(event)} className="space-y-2 rounded-xl bg-[#FFF7F9] p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                <form onSubmit={(event) => void saveProfile(event)} className="space-y-2 rounded-xl bg-slate-50 p-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Modifier les informations
                   </p>
-                  <label className="block text-[12px] font-bold text-ink/55">
+                  <label className="block text-[12px] font-bold text-slate-500">
                     Prénom
                     <input
                       required
@@ -1363,10 +1222,10 @@ export function AdminUsersView() {
                       onChange={(event) =>
                         setProfile((current) => ({ ...current, firstName: event.target.value }))
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-ink"
+                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-slate-900"
                     />
                   </label>
-                  <label className="block text-[12px] font-bold text-ink/55">
+                  <label className="block text-[12px] font-bold text-slate-500">
                     Nom
                     <input
                       required
@@ -1374,10 +1233,10 @@ export function AdminUsersView() {
                       onChange={(event) =>
                         setProfile((current) => ({ ...current, lastName: event.target.value }))
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-ink"
+                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-slate-900"
                     />
                   </label>
-                  <label className="block text-[12px] font-bold text-ink/55">
+                  <label className="block text-[12px] font-bold text-slate-500">
                     E-mail
                     <input
                       required
@@ -1386,30 +1245,30 @@ export function AdminUsersView() {
                       onChange={(event) =>
                         setProfile((current) => ({ ...current, email: event.target.value }))
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-ink"
+                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-slate-900"
                     />
                   </label>
-                  <label className="block text-[12px] font-bold text-ink/55">
+                  <label className="block text-[12px] font-bold text-slate-500">
                     Téléphone
                     <input
                       value={profile.phone}
                       onChange={(event) =>
                         setProfile((current) => ({ ...current, phone: event.target.value }))
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-ink"
+                      className="mt-1 h-9 w-full rounded-lg border border-[#F0DDE9] bg-white px-2 text-sm font-medium text-slate-900"
                     />
                   </label>
                   <div className="flex gap-2 pt-1">
                     <button
                       type="submit"
                       disabled={busy}
-                      className="h-9 flex-1 rounded-lg bg-primary text-[12px] font-bold text-white disabled:opacity-50"
+                      className="h-9 flex-1 rounded-lg bg-[#3B63D6] text-[12px] font-bold text-white disabled:opacity-50"
                     >
                       Enregistrer
                     </button>
                     <button
                       type="button"
-                      className="h-9 flex-1 rounded-lg bg-white text-[12px] font-bold text-ink"
+                      className="h-9 flex-1 rounded-lg bg-white text-[12px] font-bold text-slate-900"
                       onClick={() => setProfileOpen(false)}
                     >
                       Annuler
@@ -1418,34 +1277,34 @@ export function AdminUsersView() {
                 </form>
               ) : null}
 
-              <div className="space-y-2 rounded-xl bg-[#FFF7F9] p-3">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+              <div className="space-y-2 rounded-xl bg-slate-50 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Informations générales
                 </p>
                 <div className="space-y-1.5 text-[13px]">
                   <div className="flex justify-between gap-2">
-                    <span className="text-ink/45">Email</span>
-                    <span className="select-all font-bold text-ink">{selected.email}</span>
+                    <span className="text-slate-500">Email</span>
+                    <span className="select-all font-bold text-slate-900">{selected.email}</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-ink/45">Téléphone</span>
-                    <span className="font-mono font-bold text-ink">
+                    <span className="text-slate-500">Téléphone</span>
+                    <span className="font-mono font-bold text-slate-900">
                       {selected.phone ?? "—"}
                     </span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-ink/45">Identifiant</span>
+                    <span className="text-slate-500">Identifiant</span>
                     <span className="font-mono text-[11px] text-[#7B5900]">
                       #{selected.id.slice(-8).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-ink/45">Créé le</span>
-                    <span className="font-mono text-ink">{fmtDate(selected.createdAt)}</span>
+                    <span className="text-slate-500">Créé le</span>
+                    <span className="font-mono text-slate-900">{fmtDate(selected.createdAt)}</span>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-ink/45">sessionVersion</span>
-                    <span className="font-mono font-bold text-primary">
+                    <span className="text-slate-500">sessionVersion</span>
+                    <span className="font-mono font-bold text-[#3B63D6]">
                       v{selected.sessionVersion}
                     </span>
                   </div>
@@ -1453,18 +1312,18 @@ export function AdminUsersView() {
               </div>
 
               {selected.organizationName ? (
-                <div className="space-y-2 rounded-xl bg-[#FFF7F9] p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                <div className="space-y-2 rounded-xl bg-slate-50 p-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Tenant rattaché
                   </p>
-                  <p className="font-bold text-ink">{selected.organizationName}</p>
+                  <p className="font-bold text-slate-900">{selected.organizationName}</p>
                   {selected.organizationCity ? (
-                    <p className="text-[12px] text-ink/55">{selected.organizationCity}</p>
+                    <p className="text-[12px] text-slate-500">{selected.organizationCity}</p>
                   ) : null}
                   {selected.organizationId ? (
                     <Link
                       href={adminHref(`/organizations/${selected.organizationId}/`)}
-                      className="inline-flex text-[12px] font-bold text-primary hover:underline"
+                      className="inline-flex text-[12px] font-bold text-[#3B63D6] hover:underline"
                     >
                       Ouvrir l&apos;institut →
                     </Link>
@@ -1474,20 +1333,20 @@ export function AdminUsersView() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink/45">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Audit de sécurité
                   </p>
                   {activityLoading ? (
-                    <span className="text-[10px] text-ink/40">…</span>
+                    <span className="text-[10px] text-slate-400">…</span>
                   ) : null}
                 </div>
                 <div className="max-h-48 space-y-2 overflow-y-auto font-mono text-[11px]">
                   {activity.length === 0 && !activityLoading ? (
-                    <p className="text-ink/40">Aucune activité récente.</p>
+                    <p className="text-slate-400">Aucune activité récente.</p>
                   ) : null}
                   {activity.slice(0, 8).map((a) => (
-                    <div key={a.id} className="flex items-start gap-2 text-ink">
-                      <span className="shrink-0 text-ink/40">
+                    <div key={a.id} className="flex items-start gap-2 text-slate-900">
+                      <span className="shrink-0 text-slate-400">
                         {new Date(a.createdAt).toLocaleTimeString("fr-MA", {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -1497,7 +1356,7 @@ export function AdminUsersView() {
                         <span className="font-bold">
                           {platformAuditActionLabel(a.action)}
                         </span>
-                        <p className="font-sans text-[10px] text-ink/45">
+                        <p className="font-sans text-[10px] text-slate-500">
                           {a.entityType} · {a.entityId.slice(0, 8)}
                         </p>
                       </div>
@@ -1510,7 +1369,7 @@ export function AdminUsersView() {
                 <button
                   type="button"
                   onClick={() => setPending({ kind: "disable", user: selected })}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#FFEFF8] py-2 text-[12px] font-bold text-ink/50 transition-colors hover:bg-red-100 hover:text-red-700"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2 text-[12px] font-bold text-slate-500 transition-colors hover:bg-red-100 hover:text-red-700"
                 >
                   <Lock className="h-4 w-4" />
                   Verrouiller temporairement ce compte
@@ -1518,7 +1377,7 @@ export function AdminUsersView() {
               ) : null}
             </div>
           ) : (
-            <div className="rounded-2xl bg-white p-8 text-center text-sm text-ink/45 shadow-sm">
+            <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
               Sélectionnez un utilisateur pour inspecter sa fiche.
             </div>
           )}
@@ -1530,10 +1389,10 @@ export function AdminUsersView() {
         <div className="flex flex-col justify-between gap-4 rounded-2xl bg-white p-5 shadow-sm">
           <div>
             <div className="flex items-center justify-between pb-1">
-              <h4 className="text-lg font-bold text-ink">Répartition des rôles</h4>
-              <span className="text-[11px] text-ink/45">{kpis.total} utilisateurs</span>
+              <h4 className="text-lg font-bold text-slate-900">Répartition des rôles</h4>
+              <span className="text-[11px] text-slate-500">{kpis.total} utilisateurs</span>
             </div>
-            <p className="text-[13px] text-ink/55">
+            <p className="text-[13px] text-slate-500">
               Pyramide des privilèges sur l&apos;ensemble du réseau.
             </p>
           </div>
@@ -1541,19 +1400,19 @@ export function AdminUsersView() {
             {roleBars.map((r) => (
               <div key={r.role}>
                 <div className="flex justify-between pb-1 text-[12px]">
-                  <span className="font-bold text-ink">
+                  <span className="font-bold text-slate-900">
                     {r.role} ({r.label})
                   </span>
                   <span className="font-mono">
                     {r.count} ({r.pct}%)
                   </span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-[#FFEFF8]">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                   <div
                     className={cn(
                       "h-full rounded-full",
                       r.role === "STAFF"
-                        ? "bg-primary"
+                        ? "bg-[#3B63D6]"
                         : r.role === "OWNER"
                           ? "bg-[#BA0049]"
                           : r.role === "MANAGER"
@@ -1566,7 +1425,7 @@ export function AdminUsersView() {
               </div>
             ))}
             {roleBars.length === 0 ? (
-              <p className="text-sm text-ink/40">Pas encore de données.</p>
+              <p className="text-sm text-slate-400">Pas encore de données.</p>
             ) : null}
           </div>
         </div>
@@ -1574,35 +1433,35 @@ export function AdminUsersView() {
         <div className="flex flex-col justify-between gap-4 rounded-2xl bg-white p-5 shadow-sm">
           <div>
             <div className="flex items-center justify-between pb-1">
-              <h4 className="text-lg font-bold text-ink">Activité des connexions</h4>
-              <span className="text-[11px] font-bold text-primary">Live</span>
+              <h4 className="text-lg font-bold text-slate-900">Activité des connexions</h4>
+              <span className="text-[11px] font-bold text-[#3B63D6]">Live</span>
             </div>
-            <p className="text-[13px] text-ink/55">
+            <p className="text-[13px] text-slate-500">
               Fréquentation journalière et comptes à risque.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl bg-[#FFEFF8] p-3">
-              <div className="text-xl font-black text-ink">{kpis.onlineToday}</div>
-              <span className="text-[10px] font-bold uppercase text-ink/45">
+            <div className="rounded-xl bg-slate-100 p-3">
+              <div className="text-xl font-black text-slate-900">{kpis.onlineToday}</div>
+              <span className="text-[10px] font-bold uppercase text-slate-500">
                 Aujourd&apos;hui
               </span>
             </div>
-            <div className="rounded-xl bg-[#FFEFF8] p-3">
-              <div className="text-xl font-black text-ink">{kpis.active}</div>
-              <span className="text-[10px] font-bold uppercase text-ink/45">Actifs</span>
+            <div className="rounded-xl bg-slate-100 p-3">
+              <div className="text-xl font-black text-slate-900">{kpis.active}</div>
+              <span className="text-[10px] font-bold uppercase text-slate-500">Actifs</span>
             </div>
-            <div className="rounded-xl bg-[#FFEFF8] p-3">
-              <div className="text-xl font-black text-primary">{kpis.thisMonth}</div>
-              <span className="text-[10px] font-bold uppercase text-ink/45">Ce mois</span>
+            <div className="rounded-xl bg-slate-100 p-3">
+              <div className="text-xl font-black text-[#3B63D6]">{kpis.thisMonth}</div>
+              <span className="text-[10px] font-bold uppercase text-slate-500">Ce mois</span>
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-xl bg-[#FFF7F9] p-3">
+          <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-[#7B5900]" />
               <div>
-                <p className="text-[12px] font-bold text-ink">Incidents d&apos;auth</p>
-                <p className="text-[12px] text-ink/45">
+                <p className="text-[12px] font-bold text-slate-900">Incidents d&apos;auth</p>
+                <p className="text-[12px] text-slate-500">
                   {kpis.disabled} comptes séquestrés · {kpis.watchlist} watchlist
                 </p>
               </div>
@@ -1614,38 +1473,38 @@ export function AdminUsersView() {
           <div>
             <div className="flex items-center gap-2 pb-1">
               <ShieldCheck className="h-5 w-5 text-[#7B5900]" />
-              <h4 className="text-lg font-bold text-ink">Conformité CNDP & RLS</h4>
+              <h4 className="text-lg font-bold text-slate-900">Conformité CNDP & RLS</h4>
             </div>
-            <p className="text-[13px] text-ink/55">
+            <p className="text-[13px] text-slate-500">
               Cadre légal marocain n° 09-08 & isolation PostgreSQL.
             </p>
           </div>
-          <div className="space-y-2 text-[12px] text-ink">
+          <div className="space-y-2 text-[12px] text-slate-900">
             <div className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#3B63D6]" />
               <span>Sessions invalidables via sessionVersion (révocation globale).</span>
             </div>
             <div className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#3B63D6]" />
               <span>Isolation hermétique des données par tenant (RLS).</span>
             </div>
             <div className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#3B63D6]" />
               <span>Traçabilité des actions Super Admin dans l&apos;audit plateforme.</span>
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-xl bg-[#FFEFF8] p-2.5">
-            <div className="flex items-center gap-1.5 text-[12px] font-bold text-ink">
-              <span className="h-2 w-2 rounded-full bg-primary" />
+          <div className="flex items-center justify-between rounded-xl bg-slate-100 p-2.5">
+            <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-900">
+              <span className="h-2 w-2 rounded-full bg-[#3B63D6]" />
               Hub Casablanca
             </div>
-            <span className="font-mono text-[11px] text-ink/45">Cluster MA-CAS</span>
+            <span className="font-mono text-[11px] text-slate-500">Cluster MA-CAS</span>
           </div>
         </div>
       </section>
 
       {createOpen ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/45 p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0F172A]/45 p-4">
           <form
             className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
             onSubmit={(e) => {
@@ -1674,14 +1533,14 @@ export function AdminUsersView() {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-xl font-bold text-ink">Ajouter un admin</h2>
-                <p className="mt-1 text-sm text-ink/50">
+                <h2 className="text-xl font-bold text-slate-900">Ajouter un admin</h2>
+                <p className="mt-1 text-sm text-slate-500">
                   Compte Super Admin. Connexion avec cet e-mail et ce mot de passe.
                 </p>
               </div>
               <button
                 type="button"
-                className="rounded-lg p-1 text-ink/40 hover:bg-[#FFEFF8]"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-50"
                 onClick={() => setCreateOpen(false)}
                 aria-label="Fermer"
               >
@@ -1695,7 +1554,7 @@ export function AdminUsersView() {
                   required
                   value={createFirst}
                   onChange={(e) => setCreateFirst(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-primary"
+                  className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-[#3B63D6]"
                 />
               </label>
               <label className="block text-sm">
@@ -1704,7 +1563,7 @@ export function AdminUsersView() {
                   required
                   value={createLast}
                   onChange={(e) => setCreateLast(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-primary"
+                  className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-[#3B63D6]"
                 />
               </label>
             </div>
@@ -1716,7 +1575,7 @@ export function AdminUsersView() {
                 autoComplete="off"
                 value={createEmail}
                 onChange={(e) => setCreateEmail(e.target.value)}
-                className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-primary"
+                className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-[#3B63D6]"
               />
             </label>
             <label className="mt-3 block text-sm">
@@ -1728,9 +1587,9 @@ export function AdminUsersView() {
                 autoComplete="new-password"
                 value={createPassword}
                 onChange={(e) => setCreatePassword(e.target.value)}
-                className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-primary"
+                className="h-11 w-full rounded-xl border border-line px-3 outline-none focus:border-[#3B63D6]"
               />
-              <span className="mt-1 block text-xs text-ink/45">8 caractères minimum.</span>
+              <span className="mt-1 block text-xs text-slate-500">8 caractères minimum.</span>
             </label>
             {createError ? (
               <p className="mt-3 text-sm font-medium text-red-600">{createError}</p>
@@ -1738,7 +1597,7 @@ export function AdminUsersView() {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-ink/60"
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500"
                 onClick={() => setCreateOpen(false)}
               >
                 Annuler
@@ -1746,7 +1605,7 @@ export function AdminUsersView() {
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+                className="rounded-xl bg-[#3B63D6] px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
               >
                 {busy ? "…" : "Créer le compte"}
               </button>

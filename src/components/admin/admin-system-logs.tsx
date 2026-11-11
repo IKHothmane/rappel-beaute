@@ -421,7 +421,7 @@ export function AdminSystemLogsView() {
                 Cluster Casa-01 · RLS
               </span>
             </div>
-            <h1 className="text-[28px] font-black tracking-tight text-ink lg:text-[32px]">
+            <h1 className="text-2xl font-bold sm:text-3xl tracking-tight text-ink">
               Activité &amp; Logs Plateforme
             </h1>
             <p className="mt-1 max-w-3xl text-[15px] text-ink/55">

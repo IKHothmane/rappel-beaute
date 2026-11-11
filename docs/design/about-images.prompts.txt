@@ -1,0 +1,10 @@
+Page: /a-propos/
+Tool: built-in image_gen, two new illustrative photographs generated from text.
+These images portray a fictional institute and a fictional model, not actual company premises or team members.
+Original PNG outputs remain in the Codex generated_images directory. Project copies are optimized WebP files, without compositional edits.
+
+public/brand/about-reception.webp
+Create a photorealistic editorial website illustration, landscape 4:3. An elegant Moroccan beauty institute reception, blush pink and ivory interior, curved marble reception counter, brushed brass pendant lights, soft daylight, bouquet of pink flowers, a blush armchair, green plant on the edge. An understated dark pink wall wordmark reading exactly 'Rappel Beauty', no other text. Premium but believable boutique beauty salon. Eye level interior photography, warm natural textures. No people, no UI, no collage, no border. Entire frame is the photo, to be placed inside a curved CSS frame. This is illustrative, not documentary.
+
+public/brand/about-professional.webp
+Create a photorealistic editorial website illustration, landscape 4:3. A fictional Moroccan beauty professional, adult woman in a tidy blush-pink salon uniform, dark hair in a neat bun, smiling naturally while looking down at a tablet held in both hands. Waist-up portrait, positioned center, hands and tablet fully visible. Warm softly blurred elegant beauty salon in background, pink and cream palette, realistic skin and fabric texture, soft daylight. No text, no logo, no statistics, no overlay cards, no UI, no border. Entire frame is the photo, to be placed inside a curved CSS frame. This is an illustrative fictional model, not a real team member.

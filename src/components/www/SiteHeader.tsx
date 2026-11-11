@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BrandLogo } from "@/components/www/BrandLogo";
 import { NAV } from "@/lib/site";
 
 export function SiteHeader() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -28,13 +30,14 @@ export function SiteHeader() {
         <BrandLogo height={52} className="max-h-11 md:max-h-14" priority />
 
         <nav
-          className="hidden items-center gap-7 lg:flex"
+          className="hidden items-center gap-4 lg:flex xl:gap-6"
           aria-label="Navigation principale"
         >
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={pathname?.replace(/\/$/, "") === item.href.replace(/\/$/, "") ? "page" : undefined}
               className="relative text-[13px] font-medium text-ink/70 transition hover:text-ink after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
             >
               {item.label}
@@ -105,6 +108,7 @@ export function SiteHeader() {
                 >
                   <Link
                     href={item.href}
+                    aria-current={pathname?.replace(/\/$/, "") === item.href.replace(/\/$/, "") ? "page" : undefined}
                     className="block text-sm font-medium"
                     onClick={() => setOpen(false)}
                   >

@@ -1,136 +1,67 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight, CalendarDays, ChartNoAxesCombined, Check, Diamond, Eye, Heart, Info, ShieldCheck, Target, Users } from "lucide-react";
+import { IconCards, SpaCutout } from "@/components/www/blocks";
 import { marketingPageMetadata } from "@/lib/seo";
-import { SITE } from "@/lib/site";
+import { PUBLIC_OFFER } from "@/lib/site";
+import "./a-propos.css";
 
 export const dynamic = "force-static";
 
 export const metadata: Metadata = marketingPageMetadata({
   title: "À propos de Rappel Beauty · Logiciel institut de beauté au Maroc",
-  description:
-    "Rappel Beauty est le logiciel SaaS de gestion pour les instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse et réservation en ligne.",
+  description: "Découvrez Rappel Beauty : un logiciel pensé pour simplifier le quotidien des instituts de beauté au Maroc. Notre mission, notre vision et les valeurs qui guident le produit.",
   canonical: "/a-propos/",
 });
 
-const WA_HREF = `https://wa.me/${SITE.phoneInternational.replace(/\D/g, "")}`;
-
-const STORY = [
-  {
-    title: "Du cahier au logiciel",
-    paragraphs: [
-      "Trop de gérantes d'instituts au Maroc tiennent encore l'agenda sur des cahiers volants, recalculent leur caisse le soir à la calculette et relancent leurs clientes depuis leur numéro WhatsApp personnel.",
-      "Rappel Beauty réunit ces gestes dans un seul logiciel, avec une caisse en dirhams, utilisable au quotidien dans l'institut.",
-    ],
-  },
-  {
-    title: "Une journée lisible",
-    paragraphs: [
-      "La gérante voit les rendez-vous en cours, l'équipe, ce qui a été encaissé et les produits dont le stock baisse.",
-      "Les fiches clientes restent textuelles, sans photo en V1. Le logiciel est conçu pour respecter la Loi 09-08 (CNDP).",
-    ],
-  },
-  {
-    title: "Pas de promesse chiffrée",
-    paragraphs: [
-      "Nous décrivons ce que l'institut peut faire : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne.",
-      "WhatsApp reste assisté. Le logiciel prépare le message et une personne de l'institut l'envoie.",
-    ],
-  },
-] as const;
-
-const PRINCIPLES = [
-  {
-    title: "Une caisse en dirhams",
-    text: "Espèces, carte et acomptes sont ventilés. Chaque prestation correspond à un encaissement que vous pouvez vérifier.",
-  },
-  {
-    title: "Le ton reste le vôtre",
-    text: "Le logiciel pré-remplit les rappels WhatsApp. Vous les relisez et gardez la façon de parler de votre institut.",
-  },
-  {
-    title: "Vos données restent les vôtres",
-    text: "Fiches, numéros et historiques appartiennent à l'institut. Aucune revente de données.",
-  },
-] as const;
+const PILLARS = [
+  { icon: CalendarDays, title: "Pensé pour", text: "le Maroc" },
+  { icon: Heart, title: "Adapté", text: "aux instituts" },
+  { icon: Users, title: "Une équipe", text: "à votre écoute" },
+];
+const VALUES = [
+  { icon: Diamond, title: "Simplicité", text: "Une solution intuitive, facile à prendre en main." },
+  { icon: ShieldCheck, title: "Fiabilité", text: "Des informations claires pour suivre votre activité." },
+  { icon: Users, title: "Proximité", text: "Un accompagnement en français, à votre écoute." },
+  { icon: ChartNoAxesCombined, title: "Performance", text: "Des fonctionnalités concrètes pour piloter votre croissance." },
+];
 
 export default function AProposPage() {
   return (
-    <>
-      <section className="border-b border-ink/15 bg-paper">
-        <div className="container-rb py-14 md:py-24">
-          <h1 className="max-w-4xl font-display text-4xl font-light leading-[1.08] tracking-tight text-ink sm:text-6xl">
-            Rappel Beauty remplace le cahier, la calculette et les messages envoyés le soir.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink/75">
-            {SITE.name} est un logiciel de gestion conçu pour les instituts de beauté au Maroc :
-            rendez-vous, clientes, équipe, stock, caisse et réservation en ligne.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/professionnel/" className="btn-primary">
-              Demander une démo gratuite
-            </Link>
-            <a href="#notre-histoire" className="btn-ghost">
-              Notre histoire
-            </a>
+    <div className="ap">
+      <div className="ap-wrap">
+        <section className="ap-hero" aria-labelledby="about-title">
+          <div className="ap-hero-copy">
+            <span className="ap-badge"><Info aria-hidden="true" />À propos</span>
+            <h1 id="about-title">L’histoire de<br />Rappel <em>Beauty</em></h1>
+            <p className="ap-lead">Un logiciel pensé pour les instituts de beauté, salons et centres d’esthétique au Maroc, afin de simplifier la gestion quotidienne et d’offrir une meilleure expérience à vos clientes.</p>
+            <div className="ap-pillars">{PILLARS.map(({ icon: Icon, title, text }) => <div className="ap-pillar" key={title}><span className="ap-icon"><Icon aria-hidden="true" /></span><p><strong>{title}</strong><br />{text}</p></div>)}</div>
           </div>
-        </div>
-      </section>
+          <div className="ap-reception-frame"><Image src="/brand/Réception de salon Rappel Beauty en 3D.png" alt="Réception de salon Rappel Beauty en 3D" width={1568} height={1003} sizes="(max-width: 760px) 100vw, 55vw" className="ap-reception" priority /></div>
+        </section>
 
-      <section id="notre-histoire" className="container-rb scroll-mt-24 py-16 md:py-24">
-        {STORY.map((block) => (
-          <article
-            key={block.title}
-            className="grid gap-4 border-t border-ink/15 py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16"
-          >
-            <h2 className="font-display text-3xl font-light tracking-tight text-ink">{block.title}</h2>
-            <div className="space-y-4 text-lg leading-relaxed text-ink/75">
-              {block.paragraphs.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section className="border-y border-ink/15 bg-white">
-        <div className="container-rb py-16 md:py-24">
-          <h2 className="font-display text-3xl font-light tracking-tight text-ink sm:text-[2.75rem]">
-            Ce qui guide le produit
-          </h2>
-          <dl className="mt-10 grid gap-10 md:grid-cols-3">
-            {PRINCIPLES.map((principle) => (
-              <div key={principle.title}>
-                <dt className="font-semibold text-ink">{principle.title}</dt>
-                <dd className="mt-2 leading-relaxed text-ink/70">{principle.text}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      <section id="demande-demo" className="bg-primary text-white">
-        <div className="container-rb flex flex-col gap-8 py-16 md:flex-row md:items-end md:justify-between md:py-20">
-          <h2 className="max-w-2xl font-display text-4xl font-light leading-tight tracking-tight sm:text-5xl">
-            Testez-le quinze jours dans votre institut.
-          </h2>
-          <div className="flex shrink-0 flex-wrap gap-3">
-            <Link
-              href="/professionnel/"
-              className="inline-flex items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-ink hover:bg-paper"
-            >
-              Démarrer l&apos;essai
-            </Link>
-            <a
-              href={WA_HREF}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-lg border border-white px-5 py-3 text-sm font-semibold text-white"
-            >
-              Échanger sur WhatsApp
-            </a>
+        <section id="notre-histoire" className="ap-purpose" aria-label="Notre mission et notre vision">
+          <div className="ap-professional">
+            <div className="ap-portrait-frame"><Image src="/brand/Rappels beauté et rendez-vous en hausse.png" alt="Professionnelle Rappel Beauty sur tablette, avec des illustrations de rappels et de rendez-vous" width={1536} height={1024} sizes="(max-width: 760px) 100vw, 45vw" /></div>
           </div>
-        </div>
-      </section>
-    </>
+          <div className="ap-purpose-copy">
+            <article><span className="ap-icon"><Target aria-hidden="true" /></span><div><h2>Notre <em>mission</em></h2><p>Aider les professionnels de la beauté à gagner du temps, organiser leur activité et développer leur clientèle grâce à une solution simple, complète et accessible.</p></div></article>
+            <article><span className="ap-icon"><Eye aria-hidden="true" /></span><div><h2>Notre <em>vision</em></h2><p>Faire de Rappel Beauty une référence de la gestion des instituts de beauté au Maroc, avec des outils modernes, fiables et adaptés à votre quotidien.</p></div></article>
+          </div>
+        </section>
+
+        <section className="ap-values" aria-labelledby="about-values-title">
+          <div className="ap-values-heading"><span className="ap-eyebrow">Nos valeurs</span><h2 id="about-values-title">Ce qui nous guide <em>au quotidien</em></h2></div>
+          <div className="ap-values-grid"><IconCards items={VALUES} /></div>
+        </section>
+
+        <section id="demande-demo" className="ap-cta" aria-labelledby="about-cta-title">
+          <SpaCutout className="ap-cta-spa" sizes="220px" />
+          <div><h2 id="about-cta-title">Rejoignez les instituts qui font confiance à Rappel Beauty</h2><p><Check aria-hidden="true" />Sans carte bancaire, sans engagement.</p></div>
+          <Link href="/professionnel/">Essai gratuit {PUBLIC_OFFER.trialDays} jours<ArrowRight aria-hidden="true" /></Link>
+        </section>
+      </div>
+    </div>
   );
 }

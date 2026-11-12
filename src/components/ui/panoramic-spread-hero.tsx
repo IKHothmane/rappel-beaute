@@ -35,7 +35,8 @@ function generatePanoramicCards(images: readonly PanoramicImage[]): Card[] {
     return {
       item,
       z: Math.round(10 - absOffset),
-      priority: absOffset < 1,
+      // The outer planning card is also an LCP candidate on mobile (PageSpeed trace).
+      priority: absOffset < 1 || i === images.length - 1,
       desktop: {
         stacked: { x: offset * 2, y: offset * -2, rotateZ: offset * 2.5, rotateY: 0 },
         panoramic: {
@@ -133,7 +134,9 @@ function GalleryCard({
             alt={item.alt}
             fill
             priority={priority}
-            fetchPriority={priority ? "high" : "low"}
+            fetchPriority={priority ? "high" : "auto"}
+            // Every card is visible above the fold, even while the gallery is stacked.
+            loading={priority ? undefined : "eager"}
             draggable={false}
             sizes="(max-width: 390px) 82vw, (max-width: 1023px) 320px, (max-width: 1538px) 20.8vw, 320px"
             className="bg-transparent object-contain transition-transform duration-700 group-hover:scale-105"

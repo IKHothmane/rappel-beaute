@@ -37,8 +37,7 @@
     ".next-audit/types/**/*.ts",
     ".next-verify/types/**/*.ts",
     ".next-typography-audit/types/**/*.ts",
-    ".next-test/types/**/*.ts",
-    ".tmp/next-perf-check/types/**/*.ts"
+    ".next-test/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

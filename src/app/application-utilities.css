@@ -1,0 +1,3 @@
+/* The application retains the complete utility set; the public site uses its own subset. */
+@config "../../tailwind.config.ts";
+@tailwind utilities;

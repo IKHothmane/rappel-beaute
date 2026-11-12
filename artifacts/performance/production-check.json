@@ -1,0 +1,15 @@
+{
+  "initial": {
+    "overflow": false,
+    "printer": "waiting",
+    "planning": [
+      {
+        "complete": true,
+        "loading": "auto",
+        "priority": "high"
+      }
+    ]
+  },
+  "printerAfterScroll": "ready",
+  "errors": []
+}

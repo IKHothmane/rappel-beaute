@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AppShell } from "@/components/app/AppShell";
 import { AppProviders } from "@/components/app/AppProviders";
 import "../../metric-cards.css";
+import "../../application-utilities.css";
 
 export const metadata: Metadata = {
   title: {

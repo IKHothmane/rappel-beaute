@@ -1,0 +1,74 @@
+[
+  {
+    "route": "/",
+    "width": 390,
+    "title": "Le logiciel des instituts de beauté qui veulent grandir",
+    "overflow": false
+  },
+  {
+    "route": "/tarifs/",
+    "width": 390,
+    "title": "Nos formulesTarifaires",
+    "overflow": false
+  },
+  {
+    "route": "/professionnel/",
+    "width": 390,
+    "title": "Créer votre institut",
+    "overflow": false
+  },
+  {
+    "route": "/connexion/",
+    "width": 390,
+    "title": "Connectez-vous",
+    "overflow": false
+  },
+  {
+    "route": "/reservation-en-ligne/",
+    "width": 390,
+    "title": "La réservation en ligne pour votre institut de beauté",
+    "overflow": false
+  },
+  {
+    "route": "/fonctionnalites/",
+    "width": 390,
+    "title": "Toutes les fonctions pour gérer votre institut",
+    "overflow": false
+  },
+  {
+    "route": "/",
+    "width": 1440,
+    "title": "Le logiciel des instituts de beauté qui veulent grandir",
+    "overflow": false
+  },
+  {
+    "route": "/tarifs/",
+    "width": 1440,
+    "title": "Nos formulesTarifaires",
+    "overflow": false
+  },
+  {
+    "route": "/professionnel/",
+    "width": 1440,
+    "title": "Créer votre institut",
+    "overflow": false
+  },
+  {
+    "route": "/connexion/",
+    "width": 1440,
+    "title": "Connectez-vous",
+    "overflow": false
+  },
+  {
+    "route": "/reservation-en-ligne/",
+    "width": 1440,
+    "title": "La réservation en ligne pour votre institut de beauté",
+    "overflow": false
+  },
+  {
+    "route": "/fonctionnalites/",
+    "width": 1440,
+    "title": "Toutes les fonctions pour gérer votre institut",
+    "overflow": false
+  }
+]

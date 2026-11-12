@@ -2,14 +2,16 @@
   padding-block: clamp(2.75rem, 4vw, 4.5rem);
 }
 
-.morocco-payments > div:last-child > * { min-width: 0; }
+.morocco-layout > * {
+  min-width: 0;
+}
 
 .marketing-site .hm .morocco-payments h2 {
   margin-top: 24px;
   font-size: var(--vt-fs-h2);
   line-height: var(--vt-lh-h2);
-  letter-spacing: -.035em;
-  color: #400b28;
+  letter-spacing: -0.035em;
+  color: var(--vt-ink-deep);
 }
 
 .hm .morocco-payments h2 + p {
@@ -23,16 +25,21 @@
   line-height: var(--vt-lh-h3);
 }
 
-.hm .morocco-payments h3 + p { margin-top: 6px; }
-.hm .morocco-payments .text-center h3 {
+.hm .morocco-payments h3 + p {
+  margin-top: 6px;
+}
+.hm .morocco-payments .morocco-receipt-head h3 {
   font-family: var(--f-display);
   font-size: var(--vt-fs-h3);
-  color: #b60051;
+  color: var(--vt-primary-rich);
 }
 
-.morocco-payments strong { font-variant-numeric: tabular-nums; }
+.morocco-payments strong {
+  font-variant-numeric: tabular-nums;
+}
 
 @media (max-width: 480px) {
-  .marketing-site .hm .morocco-payments h2 { font-size: 2.125rem; }
-  .hm .morocco-payments h3 { font-size: 1.0625rem; }
+  .hm .morocco-payments h3 {
+    font-size: 1.0625rem;
+  }
 }

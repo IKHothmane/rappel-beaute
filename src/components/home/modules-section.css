@@ -1,33 +1,69 @@
-.hm section.modules-section { padding-block: var(--vt-section-y); }
+.hm section.modules-section {
+  padding-block: var(--vt-section-y);
+}
 .marketing-site .hm .modules-section h2 {
   font-size: var(--vt-fs-h2);
   line-height: var(--vt-lh-h2);
-  letter-spacing: -.035em;
-  color: #351226;
+  letter-spacing: -0.035em;
+  color: var(--vt-ink-plum);
 }
-.hm .modules-section h2 + p { margin-top: 32px; font-size: var(--vt-fs-lead); line-height: var(--vt-lh-lead); color: #715a68; }
-.modules-section .module-card { min-width: 0; text-decoration: none; }
+.hm .modules-section h2 + p {
+  margin-top: 32px;
+  font-size: var(--vt-fs-lead);
+  line-height: var(--vt-lh-lead);
+  color: var(--vt-muted);
+}
+.modules-section .module-card {
+  min-width: 0;
+  text-decoration: none;
+}
 .hm .modules-section .module-card h3 {
   font-family: var(--f-display);
   font-size: var(--vt-fs-h3);
   font-weight: 500;
   line-height: var(--vt-lh-h3);
-  letter-spacing: -.02em;
-  color: #351226;
+  letter-spacing: -0.02em;
+  color: var(--vt-ink-plum);
 }
-.hm .modules-section .module-card p { font-size: var(--vt-fs-sm); line-height: var(--vt-lh-body); color: #695564; }
-.module-card:focus-visible > div:first-child { opacity: 1; }
-.module-card:focus-visible h3 + svg { opacity: 1; }
+.hm .modules-section .module-card p {
+  font-size: var(--vt-fs-sm);
+  line-height: var(--vt-lh-body);
+  color: var(--vt-muted);
+}
+.module-card:focus-visible .module-card-glow {
+  opacity: 1;
+}
+.module-card:focus-visible h3 + svg {
+  opacity: 1;
+}
 @media (hover: none) {
-  .module-card h3 + svg { opacity: 1; }
+  .module-card h3 + svg {
+    opacity: 1;
+  }
 }
 @media (max-width: 639px) {
-  .modules-section .module-card { min-height: 0; padding: 26px; }
-  .modules-section .module-card .mb-7 { margin-bottom: 22px; }
+  .modules-section .module-card {
+    min-height: 0;
+    padding: 20px;
+  }
+  .modules-section .module-card .module-card-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+  }
+  .modules-section .module-card .module-card-foot {
+    padding-top: 14px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .modules-section *, .modules-section *:hover { transition: none !important; }
+  .modules-section *,
+  .modules-section *:hover {
+    transition: none !important;
+  }
   .modules-section .module-card:hover,
   .modules-section .module-card:hover svg,
-  .modules-section .module-card:hover .h-16 { transform: none; }
+  .modules-section .module-card:hover .module-card-icon {
+    transform: none;
+  }
 }

@@ -13,5 +13,10 @@ export const metadata: Metadata = marketingPageMetadata({
 });
 
 export default function FaqPage() {
-  return <><JsonLd data={faqJsonLd()} /><FaqExplorer /></>;
+  return (
+    <>
+      <JsonLd data={faqJsonLd()} />
+      <FaqExplorer />
+    </>
+  );
 }

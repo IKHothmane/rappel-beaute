@@ -5,7 +5,8 @@ export const dynamic = "force-static";
 
 export const metadata = marketingPageMetadata({
   title: "Démo interactive du logiciel · Rappel Beauty",
-  description: "Explorez les modules de Rappel Beauty à travers les captures du logiciel et demandez une démonstration guidée pour votre institut.",
+  description:
+    "Explorez les modules de Rappel Beauty à travers les captures du logiciel et demandez une démonstration guidée pour votre institut.",
   canonical: "/demo/",
 });
 

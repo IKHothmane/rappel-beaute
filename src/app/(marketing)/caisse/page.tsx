@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Reveal } from "@/components/www/Reveal";
 import { ReceiptView } from "@/components/www/ProductViews";
 import { SeoCloser } from "@/components/www/SeoCloser";
+import { PUBLIC_OFFER } from "@/lib/site";
 
 export const dynamic = "force-static";
 
@@ -70,10 +71,10 @@ export default function CaissePage() {
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
               Caisse pour instituts de beauté au Maroc
             </p>
-            <h1 className="mt-3 font-display text-3xl font-light leading-tight tracking-tight text-ink sm:text-5xl">
+            <h1 className="mt-3 font-display text-[length:var(--vt-fs-h1)] leading-[var(--vt-lh-h1)] tracking-tight text-ink">
               Caisse pour institut de beauté
             </h1>
-            <p className="mt-5 text-sm leading-relaxed text-ink/70 sm:text-lg">
+            <p className="mt-5 text-[length:var(--vt-fs-lead)] leading-[var(--vt-lh-lead)] text-ink/70">
               Encaissements, paiements, dépenses, factures et ventes de produits, dans le logiciel
               de l&apos;institut.
             </p>
@@ -82,7 +83,7 @@ export default function CaissePage() {
                 href="/professionnel/"
                 className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
               >
-                Essayer gratuitement 15 jours
+                Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
               </Link>
               <Link
                 href="/fonctionnalites/"
@@ -92,7 +93,7 @@ export default function CaissePage() {
               </Link>
             </div>
             <p className="mt-4 text-xs text-ink/55 sm:text-sm">
-              Sans engagement · 15 jours gratuits · Sans carte bancaire
+              Sans engagement · {PUBLIC_OFFER.trialDays} jours gratuits · Sans carte bancaire
             </p>
           </Reveal>
         </div>
@@ -101,15 +102,19 @@ export default function CaissePage() {
         <ReceiptView />
       </section>
 
-      <div className="mx-auto max-w-3xl space-y-14 px-4 py-14 sm:px-6 sm:py-20">
+      <div className="mx-auto max-w-3xl space-y-8 px-4 py-12 sm:space-y-12 sm:px-6 sm:py-16">
         {SECTIONS.map((section, index) => (
           <Reveal key={section.id}>
             <section
               id={section.id}
-              className={`scroll-mt-28 ${index === 0 ? "" : "border-t border-line pt-14"}`}
+              className={`scroll-mt-28 ${index === 0 ? "" : "border-t border-line pt-8 sm:pt-12"}`}
             >
-              <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">{section.title}</h2>
-              <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{section.text}</p>
+              <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
+                {section.title}
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
+                {section.text}
+              </p>
               {section.id === "pos" ? (
                 <p className="mt-4">
                   <Link
@@ -140,10 +145,10 @@ export default function CaissePage() {
           },
         ]}
       />
-      <section className="bg-institut py-14 text-center text-white sm:py-20">
+      <section className="vt-on-dark bg-institut py-14 text-center text-white sm:py-20">
         <div className="mx-auto max-w-2xl px-4">
-          <h2 className="font-display text-2xl font-light sm:text-4xl">
-            Essayez Rappel Beauty pendant 15 jours
+          <h2 className="font-display text-[length:var(--vt-fs-h2)] leading-[var(--vt-lh-h2)]">
+            Essayez Rappel Beauty pendant {PUBLIC_OFFER.trialDays} jours
           </h2>
           <p className="mt-4 text-sm text-white/75 sm:text-base">
             Sans engagement et sans carte bancaire.
@@ -152,7 +157,7 @@ export default function CaissePage() {
             href="/professionnel/"
             className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
           >
-            Essayer gratuitement 15 jours
+            Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
           </Link>
         </div>
       </section>

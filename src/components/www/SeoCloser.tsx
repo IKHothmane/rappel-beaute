@@ -14,7 +14,7 @@ export function SeoCloser({
 }) {
   return (
     <section className="border-t border-line bg-white">
-      <div className="mx-auto max-w-3xl space-y-12 px-4 py-14 sm:px-6 sm:py-20">
+      <div className="mx-auto max-w-3xl space-y-8 px-4 py-12 sm:space-y-12 sm:px-6 sm:py-16">
         <div>
           <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
             Le problème dans l&apos;institut
@@ -46,7 +46,9 @@ export function SeoCloser({
                 </details>
               ))}
             </div>
-            <JsonLd data={faqPageJsonLd(faqs.map((item) => ({ question: item.q, answer: item.a })))} />
+            <JsonLd
+              data={faqPageJsonLd(faqs.map((item) => ({ question: item.q, answer: item.a })))}
+            />
           </div>
         ) : null}
       </div>

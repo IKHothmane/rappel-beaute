@@ -20,11 +20,17 @@ import { faqPageJsonLd } from "@/lib/seo";
 /* Gabarit « sp- » (showcase-landing.css) partagé par les pages Clientes,
    Stock et WhatsApp. Chaque page importe elle-même la feuille de style. */
 
-export function ShowcaseShell({ faqs, children }: { faqs: readonly FaqEntry[]; children: ReactNode }) {
+export function ShowcaseShell({
+  faqs,
+  children,
+}: {
+  faqs: readonly FaqEntry[];
+  children: ReactNode;
+}) {
   return (
     <div className="sp">
       <JsonLd data={faqPageJsonLd(faqs)} />
-      <div className="sp-wrap">{children}</div>
+      <div className="vt-wrap sp-wrap">{children}</div>
     </div>
   );
 }
@@ -32,7 +38,7 @@ export function ShowcaseShell({ faqs, children }: { faqs: readonly FaqEntry[]; c
 export function ShowcaseHero({
   titleId,
   badge,
-  badgeClassName = "sp-badge",
+  badgeClassName = "vt-badge sp-badge",
   title,
   lead,
   cta,
@@ -73,7 +79,15 @@ export function ShowcaseHero({
   );
 }
 
-export function ShowcaseDetails({ id, title, items }: { id: string; title: ReactNode; items: readonly AccordionItem[] }) {
+export function ShowcaseDetails({
+  id,
+  title,
+  items,
+}: {
+  id: string;
+  title: ReactNode;
+  items: readonly AccordionItem[];
+}) {
   return (
     <AccordionSection className="sp-details" titleClassName="sp-title" id={id} title={title}>
       <Accordion items={items} />
@@ -173,7 +187,11 @@ export function ShowcaseLanding({
           {featuresTitle}
         </h2>
         <div className="sp-features">
-          <IconCards items={features} articleClassName="sp-feature" iconClassName="sp-feature-icon" />
+          <IconCards
+            items={features}
+            articleClassName="sp-feature"
+            iconClassName="sp-feature-icon"
+          />
         </div>
       </section>
 

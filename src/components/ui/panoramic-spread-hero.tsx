@@ -16,7 +16,12 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 export type PanoramicImage = { src: string; alt: string };
 
 type Pose = { x: number; y: number; rotateZ: number; rotateY: number; scale: number };
-type Layout = { stacked: Omit<Pose, "scale">; panoramic: Pose; size: { w: string; h: string; ml: string; mt: string } };
+type Layout = { stacked: Omit<Pose, "scale">; panoramic: Pose };
+
+// Taille des cartes : pilotée en CSS (variables --pano-w / --pano-h posées sur la section,
+// bascule à md = 768px) pour que le rendu serveur ait déjà la bonne taille sur mobile.
+const CARD_SIZE_CLASSES =
+  "[--pano-w:min(82vw,320px)] [--pano-h:min(47vw,184px)] md:[--pano-w:clamp(240px,26vw,400px)] md:[--pano-h:clamp(138px,15vw,230px)]";
 type Card = { item: PanoramicImage; z: number; desktop: Layout; mobile: Layout; priority: boolean };
 
 // Arc 3D autour du centre, pour le mobile et le desktop.
@@ -33,22 +38,22 @@ function generatePanoramicCards(images: readonly PanoramicImage[]): Card[] {
       priority: absOffset < 1,
       desktop: {
         stacked: { x: offset * 2, y: offset * -2, rotateZ: offset * 2.5, rotateY: 0 },
-        panoramic: { x: offset * 18, y: absOffset * 3, rotateZ: offset * 1.5, rotateY: offset * -12, scale: 1 - absOffset * 0.05 },
-        size: {
-          w: "clamp(148px, 14vw, 210px)",
-          h: "clamp(96px, 12vh, 128px)",
-          ml: "calc(clamp(148px, 14vw, 210px) / -2)",
-          mt: "calc(clamp(96px, 12vh, 128px) / -2)",
+        panoramic: {
+          x: offset * 26,
+          y: absOffset * 2,
+          rotateZ: offset * 1.1,
+          rotateY: offset * -8,
+          scale: 1 - absOffset * 0.035,
         },
       },
       mobile: {
         stacked: { x: offset * 1.5, y: offset * -1.5, rotateZ: offset * 3, rotateY: 0 },
-        panoramic: { x: offset * 16, y: absOffset * 5, rotateZ: offset * 2, rotateY: offset * -15, scale: 1 - absOffset * 0.04 },
-        size: {
-          w: "min(52vw, 200px)",
-          h: "min(22vh, 140px)",
-          ml: "calc(min(52vw, 200px) / -2)",
-          mt: "calc(min(22vh, 140px) / -2)",
+        panoramic: {
+          x: offset * 24,
+          y: absOffset * 3,
+          rotateZ: offset * 1.4,
+          rotateY: offset * -10,
+          scale: 1 - absOffset * 0.03,
         },
       },
     };
@@ -91,7 +96,7 @@ function GalleryCard({
   isMobile: boolean;
 }) {
   const { item, desktop, mobile, z, priority } = card;
-  const { stacked, panoramic, size } = isMobile ? mobile : desktop;
+  const { stacked, panoramic } = isMobile ? mobile : desktop;
 
   const ease = useTransform(progress, (p: number) =>
     p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2,
@@ -106,14 +111,14 @@ function GalleryCard({
   const scale = useTransform(ease, [0, 1], [0.75, panoramic.scale]);
 
   return (
-    <div className="pointer-events-none absolute left-1/2 top-[min(72%,_20rem)]" style={{ zIndex: z }}>
+    <div className="pointer-events-none absolute left-1/2 top-[70%]" style={{ zIndex: z }}>
       <motion.div
         className="pointer-events-auto bg-transparent will-change-transform"
         style={{
-          width: size.w,
-          height: size.h,
-          marginLeft: size.ml,
-          marginTop: size.mt,
+          width: "var(--pano-w)",
+          height: "var(--pano-h)",
+          marginLeft: "calc(var(--pano-w) / -2)",
+          marginTop: "calc(var(--pano-h) / -2)",
           x,
           y,
           rotateZ,
@@ -125,12 +130,11 @@ function GalleryCard({
         <div className="group relative h-full w-full bg-transparent">
           <Image
             src={item.src}
-            unoptimized
             alt={item.alt}
             fill
             priority={priority}
             draggable={false}
-            sizes="(max-width: 768px) 200px, 210px"
+            sizes="(max-width: 768px) 320px, 400px"
             className="bg-transparent object-contain transition-transform duration-700 group-hover:scale-105"
           />
         </div>
@@ -182,10 +186,13 @@ export default function PanoramicSpreadHero({
   const { tiltX, tiltY } = usePointerTilt(spread, !reduce);
 
   return (
-    <section ref={wrapRef} className={`relative w-full bg-transparent text-ink ${reduce ? "hm-pano-static" : "hm-pano-scroll"} ${className}`}>
+    <section
+      ref={wrapRef}
+      className={`relative w-full bg-transparent text-ink ${CARD_SIZE_CLASSES} ${reduce ? "hm-pano-static" : "hm-pano-scroll"} ${className}`}
+    >
       {/* Collé sous le header du site (h-[5.5rem], md:h-24). */}
       <div
-        className={`sticky top-[4.75rem] flex h-[clamp(32.5rem,_52svh,_36rem)] w-full justify-center overflow-hidden md:top-[5.5rem] ${stageClassName}`}
+        className={`sticky top-[4.75rem] flex h-[min(52rem,calc(100svh-4.75rem))] w-full justify-center overflow-hidden md:top-[5.5rem] md:h-[min(52rem,calc(100svh-5.5rem))] ${stageClassName}`}
         style={{ perspective: "1200px" }}
       >
         <motion.div
@@ -197,8 +204,10 @@ export default function PanoramicSpreadHero({
           ))}
         </motion.div>
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center px-6 pt-5 text-center md:pt-7">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary md:text-xs">{eyebrow}</span>
+        <div className="panoramic-hero-copy pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center px-6 pt-5 text-center md:pt-7">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary md:text-xs">
+            {eyebrow}
+          </span>
           <h1 className="mt-3 max-w-[min(18em,100%)]">{title}</h1>
           {description ? (
             <p className="mt-3 hidden max-w-[62ch] text-base leading-relaxed text-ink/70 md:block [@media(max-height:700px)]:hidden">

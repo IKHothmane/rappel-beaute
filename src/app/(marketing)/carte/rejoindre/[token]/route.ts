@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http/client-ip";
-import { cardTokenForJoinQr, enrollAnonymousFromJoinQr, previewJoinQr } from "@/lib/loyalty/join-qr";
+import {
+  cardTokenForJoinQr,
+  enrollAnonymousFromJoinQr,
+  previewJoinQr,
+} from "@/lib/loyalty/join-qr";
 import { loyaltyCardUrl, loyaltyPreviewUrl } from "@/lib/loyalty/public-origin";
 import { consumeDimensions } from "@/lib/rate-limit";
 import { publicRoute } from "@/lib/http/route-scope";
@@ -42,7 +46,10 @@ function remember(response: NextResponse, cardToken: string, secure: boolean) {
  * customer-facing card page. Wallet installation is deliberately an explicit
  * action on that page, instead of skipping directly to a wallet app.
  */
-export const GET = publicRoute(async function GET(request: NextRequest, { params }: { params: { token: string } }) {
+export const GET = publicRoute(async function GET(
+  request: NextRequest,
+  { params }: { params: { token: string } },
+) {
   const joinToken = params.token.trim().toUpperCase();
   const preview = await previewJoinQr(joinToken);
   if (!preview) {
@@ -74,7 +81,12 @@ export const GET = publicRoute(async function GET(request: NextRequest, { params
   if (!cardToken) {
     const ip = clientIp(request);
     const limited = await consumeDimensions([
-      { key: `loyalty:join:ip:${ip}`, limit: 20, windowMs: 60 * 60 * 1000, sensitivity: "sensitive" },
+      {
+        key: `loyalty:join:ip:${ip}`,
+        limit: 20,
+        windowMs: 60 * 60 * 1000,
+        sensitivity: "sensitive",
+      },
     ]);
     if (!limited.allowed) {
       return NextResponse.json(
@@ -92,16 +104,22 @@ export const GET = publicRoute(async function GET(request: NextRequest, { params
         return NextResponse.json({ error: "Ce QR n'est plus valable." }, { status: 404 });
       }
       if (code === "PROGRAM_DISABLED") {
-        return NextResponse.json({ error: "Le programme de fidélité est désactivé." }, { status: 400 });
+        return NextResponse.json(
+          { error: "Le programme de fidélité est désactivé." },
+          { status: 400 },
+        );
       }
       console.error("[GET /carte/rejoindre]", error);
       return NextResponse.json({ error: "Impossible de créer la carte." }, { status: 500 });
     }
   }
 
-  const response = NextResponse.redirect(loyaltyPreviewUrl(loyaltyCardUrl(cardToken), request.nextUrl.origin));
+  const response = NextResponse.redirect(
+    loyaltyPreviewUrl(loyaltyCardUrl(cardToken), request.nextUrl.origin),
+  );
   // Un cookie « secure » n'est jamais enregistré en http (dev local, tunnel http) :
   // chaque re-scan créait alors une nouvelle carte à 0 passage.
-  const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  const proto =
+    request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
   return remember(response, cardToken, proto === "https");
 });

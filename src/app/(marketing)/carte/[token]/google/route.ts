@@ -13,7 +13,10 @@ function isApplePhone(request: NextRequest) {
 }
 
 /** Scan du QR : iPhone reçoit le .pkpass, les autres téléphones ouvrent Google Wallet. */
-export const GET = publicRoute(async function GET(request: NextRequest, { params }: { params: { token: string } }) {
+export const GET = publicRoute(async function GET(
+  request: NextRequest,
+  { params }: { params: { token: string } },
+) {
   const token = params.token.trim().toUpperCase();
   const fallback = loyaltyCardUrl(token);
   if (!TOKEN.test(token)) return NextResponse.redirect(fallback);
@@ -30,7 +33,10 @@ export const GET = publicRoute(async function GET(request: NextRequest, { params
         });
       }
     } catch (error) {
-      console.error("[GET /carte/google] apple", error instanceof Error ? error.message : "signature");
+      console.error(
+        "[GET /carte/google] apple",
+        error instanceof Error ? error.message : "signature",
+      );
     }
     return NextResponse.redirect(fallback);
   }

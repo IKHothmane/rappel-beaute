@@ -12,8 +12,16 @@ export const metadata: Metadata = {
 
 const LINKS = [
   { href: "/faq/", title: "FAQ", text: "Essai, WhatsApp, photos, plans, connexion." },
-  { href: "/fonctionnalites/", title: "Fonctionnalités", text: "Tout ce que le logiciel fait pour votre institut." },
-  { href: "/whatsapp/", title: "WhatsApp", text: "Le message part depuis le numéro de l’institut." },
+  {
+    href: "/fonctionnalites/",
+    title: "Fonctionnalités",
+    text: "Tout ce que le logiciel fait pour votre institut.",
+  },
+  {
+    href: "/whatsapp/",
+    title: "WhatsApp",
+    text: "Le message part depuis le numéro de l’institut.",
+  },
   { href: "/contact/", title: "Contact", text: "Une question hors formulaire d’essai." },
 ];
 
@@ -27,7 +35,11 @@ export default function RessourcesPage() {
       />
       <div className="container-rb grid gap-4 py-16 sm:grid-cols-2">
         {LINKS.map((l) => (
-          <Link key={l.href} href={l.href} className="surface p-6 transition hover:border-primary/30">
+          <Link
+            key={l.href}
+            href={l.href}
+            className="surface p-6 transition hover:border-primary/30"
+          >
             <h2 className="font-display text-xl font-semibold">{l.title}</h2>
             <p className="mt-2 text-sm text-ink/65">{l.text}</p>
           </Link>

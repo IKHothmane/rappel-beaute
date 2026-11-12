@@ -1,11 +1,15 @@
 @import "./vitrine-tokens.css";
 
 /* La vitrine reste à l'échelle 1. Le zoom 0.8 du document ne s'applique qu'à l'application. */
-html:has(.marketing-site) { zoom: 1; width: 100%; min-height: 100%; }
+html:has(.marketing-site) {
+  zoom: 1;
+  width: 100%;
+  min-height: 100%;
+}
 
 .marketing-site {
   background: #fff;
-  color: #3a2533;
+  color: var(--vt-ink);
   line-height: 1.6;
   font-size: 1rem;
 }
@@ -13,19 +17,25 @@ html:has(.marketing-site) { zoom: 1; width: 100%; min-height: 100%; }
   background: transparent;
   border: 0;
 }
-.marketing-site > main { padding-top: 4.75rem; }
+.marketing-site > main {
+  padding-top: 4.75rem;
+}
 @media (min-width: 768px) {
-  .marketing-site > main { padding-top: 5.5rem; }
+  .marketing-site > main {
+    padding-top: 5.5rem;
+  }
 }
 .marketing-site > footer {
-  background: #fbf6f7;
-}body:has(.fn),
+  background: var(--vt-surface);
+}
+body:has(.fn),
 body:has(.hm),
 body:has(.sp) {
   position: relative;
   z-index: 0;
   background: transparent;
-}body:has(.fn)::before,
+}
+body:has(.fn)::before,
 body:has(.hm)::before,
 body:has(.sp)::before {
   content: "";
@@ -33,10 +43,13 @@ body:has(.sp)::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: #fff5f8;
+  background: var(--vt-surface);
 }
 .marketing-site:has(.fn),
-.marketing-site:has(.fn) > main { background: transparent; }.marketing-site:has(.fn) > footer,
+.marketing-site:has(.fn) > main {
+  background: transparent;
+}
+.marketing-site:has(.fn) > footer,
 .marketing-site:has(.hm) > footer,
 .marketing-site:has(.sp) > footer {
   background: rgb(255 248 251 / 78%);
@@ -46,8 +59,8 @@ body:has(.sp)::before {
 .marketing-site h1,
 .marketing-site h2 {
   font-weight: 500;
-  letter-spacing: -.035em;
-  color: #3a2533;
+  letter-spacing: -0.035em;
+  color: var(--vt-ink);
 }
 .marketing-site .btn-primary,
 .marketing-site .btn-ghost {
@@ -56,7 +69,8 @@ body:has(.sp)::before {
 }
 .marketing-site .btn-primary {
   box-shadow: 0 4px 12px rgb(144 0 55 / 12%);
-}.fn a:focus-visible,
+}
+.fn a:focus-visible,
 .fn summary:focus-visible,
 .marketing-site a:focus-visible,
 .marketing-site button:focus-visible,
@@ -65,21 +79,36 @@ body:has(.sp)::before {
   outline-offset: 4px;
 }
 
-/* Règles communes aux pages de la vitrine */
-.ib-wrap,
-.pv-wrap,
-.fn-wrap,
-.rdv-wrap,
-.bk-wrap {
+/* Composants partagés par les pages de la vitrine */
+.vt-wrap {
   max-width: var(--vt-container);
   margin-inline: auto;
   padding-inline: var(--vt-gutter);
 }
 
+.vt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--vt-surface-pink);
+  color: var(--vt-primary-strong);
+  font-size: var(--vt-fs-caption);
+  font-weight: 700;
+}
+
+/* Titres posés sur un fond sombre : ils suivent la couleur claire du bloc. */
+.marketing-site .vt-on-dark h1,
+.marketing-site .vt-on-dark h2 {
+  color: inherit;
+}
+
+/* Règles communes aux pages de la vitrine */
 .ib-hero,
 .bk-hero {
   display: grid;
-  grid-template-columns: minmax(0, .44fr) minmax(0, .56fr);
+  grid-template-columns: minmax(0, 0.44fr) minmax(0, 0.56fr);
   gap: 32px;
   align-items: center;
   padding-block: var(--vt-hero-y);
@@ -168,13 +197,6 @@ body:has(.sp)::before {
   flex-shrink: 0;
 }
 
-.ap-wrap,
-.fq-wrap {
-  max-width: var(--vt-container);
-  padding-inline: var(--vt-gutter);
-  margin-inline: auto;
-}
-
 .ap-reception,
 .ap-portrait-frame img,
 .fn-shot img {
@@ -184,34 +206,26 @@ body:has(.sp)::before {
   object-fit: contain;
 }
 
-.fl-wrap,
-.ml-wrap,
-.eng-wrap {
-  max-width: var(--vt-container);
-  margin-inline: auto;
-  padding-inline: var(--vt-gutter);
-}
-
 .marketing-site .fl h1,
 .marketing-site .ml h1,
 .marketing-site .eng h1 {
   margin-top: var(--vt-gap-badge-title);
-  font-family: var(--font-fraunces),Georgia,serif;
+  font-family: var(--font-fraunces), Georgia, serif;
   font-size: var(--vt-fs-h1);
   font-weight: 500;
   font-style: italic;
   line-height: var(--vt-lh-h1);
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
 .marketing-site .fl h2,
 .marketing-site .eng h2 {
-  font-family: var(--font-fraunces),Georgia,serif;
+  font-family: var(--font-fraunces), Georgia, serif;
   font-size: var(--vt-fs-h2);
   font-weight: 500;
   line-height: var(--vt-lh-h2);
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
 }
 
 .fl-process > h2,
@@ -232,7 +246,7 @@ body:has(.sp)::before {
 .fl a:focus-visible,
 .fl summary:focus-visible,
 .ml a:focus-visible {
-  outline: 3px solid #b8004d;
+  outline: 3px solid var(--vt-primary);
   outline-offset: 4px;
 }
 
@@ -257,7 +271,7 @@ body:has(.sp)::before {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: #d6005b;
+  color: var(--vt-primary-bright);
   margin-top: 2px;
 }
 

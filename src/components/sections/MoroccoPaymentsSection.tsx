@@ -15,20 +15,17 @@ import {
 const features = [
   {
     title: "Montants en dirhams",
-    description:
-      "Prix, caisse, commissions et rapports en MAD, sans conversion.",
+    description: "Prix, caisse, commissions et rapports en MAD, sans conversion.",
     icon: Coins,
   },
   {
     title: "Espèces, carte et virement",
-    description:
-      "Fond de caisse, sorties et clôture avec rapprochement des espèces comptées.",
+    description: "Fond de caisse, sorties et clôture avec rapprochement des espèces comptées.",
     icon: CreditCard,
   },
   {
     title: "WhatsApp d'abord",
-    description:
-      "Rappels, confirmations et promotions sur le canal que vos clientes lisent.",
+    description: "Rappels, confirmations et promotions sur le canal que vos clientes lisent.",
     icon: MessageCircle,
   },
 ];
@@ -54,7 +51,7 @@ export default function MoroccoPaymentsSection() {
           observer.disconnect();
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.15 },
     );
 
     observer.observe(element);
@@ -66,29 +63,28 @@ export default function MoroccoPaymentsSection() {
       ref={sectionRef}
       id="maroc"
       aria-labelledby="morocco-payments-heading"
-      className="morocco-payments relative isolate overflow-hidden bg-[#fff8fa] py-14 lg:py-16"
+      className="morocco-payments relative isolate overflow-hidden bg-vt-surface py-14 lg:py-16"
     >
-      <div className="mx-auto grid max-w-[1200px] items-center gap-8 px-6 lg:grid-cols-2 lg:gap-10 lg:px-8">
+      <div className="morocco-layout mx-auto grid max-w-[1200px] items-center gap-8 px-6 lg:grid-cols-2 lg:gap-10 lg:px-8">
         {/* Texte et fonctionnalités */}
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-white/80 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#bd0055]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-white/80 px-4 py-2 text-xs font-bold uppercase tracking-widest text-vt-primary-rich">
             <Wallet aria-hidden="true" size={16} />
             Conçu au Maroc
           </span>
 
-          <h2 id="morocco-payments-heading" className="mt-6 font-serif font-semibold leading-[1.12] tracking-tight text-[#400b28]">
+          <h2
+            id="morocco-payments-heading"
+            className="mt-6 font-serif font-semibold leading-[1.12] tracking-tight text-vt-ink-deep"
+          >
             Pensé pour la façon
             <br />
-            dont{" "}
-            <span className="italic text-[#c00058]">
-              vous encaissez
-            </span>
+            dont <span className="italic text-vt-primary-rich">vous encaissez</span>
           </h2>
 
           <p className="mt-6 max-w-[550px] text-base leading-8 text-[#765569] sm:text-lg">
-            Rappel Beauty part de la réalité d’un institut
-            marocain, pas d’un logiciel européen traduit
-            à la hâte.
+            Rappel Beauty part de la réalité d’un institut marocain, pas d’un logiciel européen
+            traduit à la hâte.
           </p>
 
           <div className="mt-9 space-y-4">
@@ -103,20 +99,16 @@ export default function MoroccoPaymentsSection() {
                     transitionDelay: `${index * 60}ms`,
                   }}
                 >
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#fce6ef] text-[#bd0055]">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-vt-surface-soft text-vt-primary-rich">
                     <Icon size={25} strokeWidth={1.8} aria-hidden="true" />
                   </div>
 
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-[#42152b]">
-                      {feature.title}
-                    </h3>
-                    <p className="mt-1 text-sm leading-6 text-[#7b596b]">
-                      {feature.description}
-                    </p>
+                    <h3 className="text-lg font-bold text-vt-ink-deep">{feature.title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-[#7b596b]">{feature.description}</p>
                   </div>
 
-                  <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fce6ef] text-[#bd0055] sm:flex">
+                  <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-vt-surface-soft text-vt-primary-rich sm:flex">
                     <Check aria-hidden="true" size={19} />
                   </span>
                 </div>
@@ -136,19 +128,15 @@ export default function MoroccoPaymentsSection() {
             {/* Ticket animé */}
             <div
               className={[
-                "relative z-0 w-[min(78%,330px)] rounded-t-xl border border-[#ead4dc] bg-white px-5 pb-16 pt-7 shadow-[0_8px_35px_rgba(70,20,40,0.12)] transition-transform duration-[1600ms] ease-out motion-reduce:transition-none",
-                visible
-                  ? "translate-y-0"
-                  : "translate-y-[150px]",
+                "relative z-0 w-[min(78%,330px)] rounded-t-xl border border-vt-line-neutral bg-white px-5 pb-16 pt-7 shadow-[0_8px_35px_rgba(70,20,40,0.12)] transition-transform duration-[1600ms] ease-out motion-reduce:transition-none",
+                visible ? "translate-y-0" : "translate-y-[150px]",
               ].join(" ")}
             >
-              <div className="text-center">
-                <h3 className="font-serif text-2xl font-bold text-[#b60051]">
+              <div className="morocco-receipt-head text-center">
+                <h3 className="font-serif text-2xl font-bold text-vt-primary-rich">
                   Institut Royal
                 </h3>
-                <p className="mt-1 text-[11px] font-semibold text-[#6b4254]">
-                  Ticket de caisse
-                </p>
+                <p className="mt-1 text-[11px] font-semibold text-[#6b4254]">Ticket de caisse</p>
               </div>
 
               <div className="my-5 border-t border-dashed border-pink-200" />
@@ -172,19 +160,14 @@ export default function MoroccoPaymentsSection() {
 
               <div className="space-y-3">
                 {services.map(([name, price]) => (
-                  <div
-                    key={name}
-                    className="flex justify-between gap-3 text-[11px] text-[#442236]"
-                  >
+                  <div key={name} className="flex justify-between gap-3 text-[11px] text-[#442236]">
                     <span>{name}</span>
-                    <span className="shrink-0 font-semibold">
-                      {price}
-                    </span>
+                    <span className="shrink-0 font-semibold">{price}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-5 flex items-center justify-between rounded-lg bg-[#fff0f5] px-3 py-3 font-bold text-[#b90053]">
+              <div className="mt-5 flex items-center justify-between rounded-lg bg-vt-surface-soft px-3 py-3 font-bold text-vt-primary-rich">
                 <span>TOTAL</span>
                 <span>470,00 MAD</span>
               </div>
@@ -195,9 +178,9 @@ export default function MoroccoPaymentsSection() {
             </div>
 
             {/* Boîtier de l'imprimante */}
-            <div className="relative z-20 -mt-12 w-[min(92%,410px)] rounded-[30px] border border-[#e7bccc] bg-gradient-to-br from-white via-[#fff2f6] to-[#e8d4dd] p-5 shadow-[0_24px_50px_rgba(95,20,57,0.22)]">
+            <div className="relative z-20 -mt-12 w-[min(92%,410px)] rounded-[30px] border border-[#e7bccc] bg-gradient-to-br from-white via-vt-surface to-vt-line-neutral p-5 shadow-[0_24px_50px_rgba(95,20,57,0.22)]">
               <div className="flex items-center justify-between">
-                <span className="font-serif text-xl font-bold italic text-[#b60051]">
+                <span className="font-serif text-xl font-bold italic text-vt-primary-rich">
                   Rappel Beauty
                 </span>
                 <span className="h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_12px_#34d399]" />
@@ -214,13 +197,11 @@ export default function MoroccoPaymentsSection() {
                     <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7a5265]">
                       Beauty Receipt
                     </p>
-                    <p className="mt-1 text-[10px] text-[#a17c8d]">
-                      Ticket généré avec succès
-                    </p>
+                    <p className="mt-1 text-[10px] text-[#a17c8d]">Ticket généré avec succès</p>
                   </div>
                 </div>
 
-                <div className="rounded-full border border-pink-200 bg-white p-3 text-[#bd0055]">
+                <div className="rounded-full border border-pink-200 bg-white p-3 text-vt-primary-rich">
                   <ReceiptText aria-hidden="true" size={20} />
                 </div>
               </div>
@@ -234,15 +215,14 @@ export default function MoroccoPaymentsSection() {
 
             {/* Informations */}
             <div className="relative z-10 mt-8 flex max-w-full items-center gap-3 rounded-2xl border border-pink-200 bg-white/90 px-5 py-4 text-sm text-[#60384c] shadow-sm">
-              <span className="rounded-full bg-[#fff0f5] p-2 text-[#b90053]">
+              <span className="rounded-full bg-vt-surface-soft p-2 text-vt-primary-rich">
                 <Banknote aria-hidden="true" size={20} />
               </span>
               <span>
                 Praticienne : <strong>Nadia B.</strong>
                 <br />
-                Commission{" "}
-                <strong className="text-[#c00058]">12 %</strong>
-                {" "}calculée automatiquement
+                Commission <strong className="text-vt-primary-rich">12 %</strong> calculée
+                automatiquement
               </span>
             </div>
           </div>

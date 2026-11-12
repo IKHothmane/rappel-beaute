@@ -1,26 +1,59 @@
-.hm section.free-trial-section { padding-block: var(--vt-section-y); }
-.free-trial-section > div > div > div.relative > * { min-width: 0; }
+.hm section.free-trial-section {
+  padding-block: var(--vt-section-y);
+}
+.free-trial-grid > * {
+  min-width: 0;
+}
 .marketing-site .hm .free-trial-section h2 {
   max-width: 650px;
   font-size: var(--vt-fs-h2);
   line-height: var(--vt-lh-h2);
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
   color: #fff;
 }
-.hm .free-trial-section h2 + p { margin-top: 14px; font-size: var(--vt-fs-lead); line-height: var(--vt-lh-lead); color: rgb(255 255 255 / 90%); }
-.hm .free-trial-section ul { margin-top: 18px; }
-.hm .free-trial-section h3 { margin-top: 4px; font-size: var(--vt-fs-h3); line-height: var(--vt-lh-h3); color: #351327; }
-.hm .free-trial-section p.mb-8 { margin-bottom: 32px; font-size: var(--vt-fs-body); line-height: var(--vt-lh-body); color: #675262; }
-.free-trial-section a { min-height: 44px; }
-.free-trial-section a.group { min-height: var(--vt-btn-h); }
+.hm .free-trial-section h2 + p {
+  margin-top: 14px;
+  font-size: var(--vt-fs-lead);
+  line-height: var(--vt-lh-lead);
+  color: rgb(255 255 255 / 90%);
+}
+.hm .free-trial-section ul {
+  margin-top: 18px;
+}
+.hm .free-trial-section h3 {
+  margin-top: 4px;
+  font-size: var(--vt-fs-h3);
+  line-height: var(--vt-lh-h3);
+  color: var(--vt-ink-plum);
+}
+.hm .free-trial-section .free-trial-card-text {
+  margin-bottom: 32px;
+  font-size: var(--vt-fs-body);
+  line-height: var(--vt-lh-body);
+  color: var(--vt-muted);
+}
+.free-trial-section a {
+  min-height: 44px;
+}
+.free-trial-section .free-trial-cta {
+  min-height: var(--vt-btn-h);
+}
 @media (max-width: 480px) {
-  .marketing-site .hm .free-trial-section h2 { font-size: 2.125rem; }
-  .hm .free-trial-section h3 { font-size: 1.375rem; }
-  .free-trial-section .mb-6.gap-4 { flex-wrap: wrap; gap: 12px; }
-  .free-trial-section a.group { padding-inline: 14px; }
+  .free-trial-section .free-trial-card-head {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .free-trial-section .free-trial-cta {
+    padding-inline: 14px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .free-trial-section *, .free-trial-section *:hover { transition: none !important; }
+  .free-trial-section *,
+  .free-trial-section *:hover {
+    transition: none !important;
+  }
   .free-trial-section .hover\:-translate-y-1:hover,
-  .free-trial-section .group:hover svg { transform: none; }
+  .free-trial-section .free-trial-cta:hover svg {
+    transform: none;
+  }
 }

@@ -10,7 +10,6 @@ export const metadata = marketingPageMetadata({
   canonical: "/contact/",
 });
 
-
 export default function ContactPage() {
   return <ContactLanding />;
 }

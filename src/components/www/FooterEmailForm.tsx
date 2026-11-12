@@ -19,12 +19,26 @@ export function FooterEmailForm() {
   return (
     <>
       <form className="footer-email-form" onSubmit={onSubmit}>
-        <label className="sr-only" htmlFor="footer-email">Votre adresse e-mail</label>
-        <input id="footer-email" name="email" type="email" autoComplete="email" required maxLength={254} placeholder="Votre adresse e-mail" />
-        <button type="submit" aria-label="Demander les nouveautés par e-mail"><Send size={22} aria-hidden="true" /></button>
+        <label className="sr-only" htmlFor="footer-email">
+          Votre adresse e-mail
+        </label>
+        <input
+          id="footer-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          maxLength={254}
+          placeholder="Votre adresse e-mail"
+        />
+        <button type="submit" aria-label="Demander les nouveautés par e-mail">
+          <Send size={22} aria-hidden="true" />
+        </button>
       </form>
       <p className="footer-form-note" role="status">
-        {opened ? "Votre messagerie s’ouvre pour envoyer votre demande." : "Demande via votre application e-mail."}
+        {opened
+          ? "Votre messagerie s’ouvre pour envoyer votre demande."
+          : "Demande via votre application e-mail."}
       </p>
     </>
   );

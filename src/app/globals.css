@@ -13,6 +13,48 @@
   --color-gold: #c79a3b;
 }
 
+/*
+ * Palette du site vitrine (préfixe --vt-).
+ * Déclarée sur :root car le header, le footer et certains blocs vitrine
+ * sont aussi rendus hors du layout marketing (page 404, carte fidélité).
+ * Utilisable en CSS via var(--vt-…) et en Tailwind via les classes *-vt-… .
+ */
+:root {
+  /* Marque */
+  --vt-primary: #ba0049;
+  --vt-primary-strong: #a80045;
+  --vt-primary-deep: #900037;
+  --vt-primary-bright: #d6005b;
+  --vt-primary-vivid: #ed0064;
+  --vt-primary-rich: #bd0054;
+  --vt-pink: #e64c8b;
+  --vt-pink-vivid: #f43288;
+  --vt-rose-shadow: #b43868;
+  /* Texte */
+  --vt-ink: #3a2533;
+  --vt-ink-deep: #410c27;
+  --vt-ink-plum: #351226;
+  --vt-ink-dark: #30232e;
+  --vt-ink-soft: #4e3443;
+  --vt-muted: #6b5763;
+  --vt-muted-soft: #7d6676;
+  --vt-muted-light: #947184;
+  /* Bordures */
+  --vt-line: #efc9db;
+  --vt-line-strong: #e9b7ce;
+  --vt-line-neutral: #e3d3d8;
+  /* Surfaces */
+  --vt-surface: #fff8fc;
+  --vt-surface-soft: #ffedf5;
+  --vt-surface-pink: #ffe0ee;
+  --vt-surface-deep: #ffd0e6;
+  /* États */
+  --vt-success: #14804a;
+  --vt-success-bg: #e8f8ef;
+  --vt-whatsapp: #25d366;
+  --vt-whatsapp-dark: #075e54;
+}
+
 html {
   scroll-behavior: smooth;
   zoom: 0.8;

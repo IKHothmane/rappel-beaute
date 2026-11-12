@@ -35,7 +35,11 @@ export function BrandLogo({
   if (href == null || href === "") return img;
 
   return (
-    <Link href={href} className="inline-flex shrink-0 items-center" aria-label="Rappel Beauty — Accueil">
+    <Link
+      href={href}
+      className="inline-flex shrink-0 items-center"
+      aria-label="Rappel Beauty — Accueil"
+    >
       {img}
     </Link>
   );

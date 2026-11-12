@@ -26,13 +26,31 @@ export const metadata: Metadata = marketingPageMetadata({
 // Les deux entrées centrales (index 3 et 4) sont au sommet de la pile au chargement.
 const HERO_IMAGES = [
   { src: "/site/rappelbeauty-clientes-pc-reel.webp", alt: "Fiches clientes dans Rappel Beauty" },
-  { src: "/site/rappelbeauty-produits-stock-pc-reel.webp", alt: "Produits et stock dans Rappel Beauty" },
+  {
+    src: "/site/rappelbeauty-produits-stock-pc-reel.webp",
+    alt: "Produits et stock dans Rappel Beauty",
+  },
   { src: "/site/rappelbeauty-caisse-pc-reel.webp", alt: "Caisse et paiements dans Rappel Beauty" },
-  { src: "/site/rappelbeauty-agenda-pc-complet-2200x1270.webp", alt: "Agenda de la semaine dans Rappel Beauty" },
-  { src: "/site/rappelbeauty-dashboard-pc-reel.webp", alt: "Tableau de bord Rappel Beauty : chiffre d’affaires, rendez-vous et caisse" },
-  { src: "/site/rappelbeauty-fidelite-pc-reel.webp", alt: "Programme de fidélité dans Rappel Beauty" },
-  { src: "/site/rappelbeauty-analytics-pc-reel.webp", alt: "Analyses et statistiques dans Rappel Beauty" },
-  { src: "/site/rappelbeauty-planning-pc-reel.webp", alt: "Planning de l’équipe dans Rappel Beauty" },
+  {
+    src: "/site/rappelbeauty-agenda-pc-complet-2200x1270.webp",
+    alt: "Agenda de la semaine dans Rappel Beauty",
+  },
+  {
+    src: "/site/rappelbeauty-dashboard-pc-reel.webp",
+    alt: "Tableau de bord Rappel Beauty : chiffre d’affaires, rendez-vous et caisse",
+  },
+  {
+    src: "/site/rappelbeauty-fidelite-pc-reel.webp",
+    alt: "Programme de fidélité dans Rappel Beauty",
+  },
+  {
+    src: "/site/rappelbeauty-analytics-pc-reel.webp",
+    alt: "Analyses et statistiques dans Rappel Beauty",
+  },
+  {
+    src: "/site/rappelbeauty-planning-pc-reel.webp",
+    alt: "Planning de l’équipe dans Rappel Beauty",
+  },
 ] as const;
 
 const BENEFITS: readonly { icon: IcoName; title: string; text: string }[] = [
@@ -61,6 +79,7 @@ export default function HomePage() {
       />
 
       <div className="benefits">
+        <h2 className="sr-only">Les points forts de Rappel Beauty</h2>
         <div className="wrap">
           {BENEFITS.map((b) => (
             <div className="benefit" key={b.title}>

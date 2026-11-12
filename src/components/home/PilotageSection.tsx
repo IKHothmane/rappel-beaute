@@ -25,13 +25,18 @@ export default function PilotageSection() {
     <section id="pilotage" className="pilotage-section" aria-labelledby="pilotage-heading">
       <div className="pilotage-container">
         <div className="pilotage-heading">
-          <span className="pilotage-eyebrow"><span aria-hidden="true" />Pilotage</span>
+          <span className="pilotage-eyebrow">
+            <span aria-hidden="true" />
+            Pilotage
+          </span>
           <h2 id="pilotage-heading">
-            Sachez exactement<br />où en est <em>votre institut.</em>
+            Sachez exactement
+            <br />
+            où en est <em>votre institut.</em>
           </h2>
           <p>
-            Le score de santé de l’établissement, le chiffre d’affaires et la caisse du jour
-            au même endroit. Vous voyez ce qui fonctionne et ce qui coûte, mois après mois.
+            Le score de santé de l’établissement, le chiffre d’affaires et la caisse du jour au même
+            endroit. Vous voyez ce qui fonctionne et ce qui coûte, mois après mois.
           </p>
         </div>
 
@@ -47,7 +52,9 @@ export default function PilotageSection() {
             />
           </div>
           <figcaption className="pilotage-caption">
-            <span><ArrowUpRight size={18} aria-hidden="true" /></span>
+            <span>
+              <ArrowUpRight size={18} aria-hidden="true" />
+            </span>
             Vos indicateurs en un coup d’œil
           </figcaption>
         </figure>
@@ -55,7 +62,9 @@ export default function PilotageSection() {
         <div className="pilotage-features">
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <div key={title} className="pilotage-feature">
-              <span className="pilotage-feature-icon"><Icon size={22} aria-hidden="true" /></span>
+              <span className="pilotage-feature-icon">
+                <Icon size={22} aria-hidden="true" />
+              </span>
               <h3>{title}</h3>
               <p>{description}</p>
             </div>

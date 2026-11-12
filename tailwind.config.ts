@@ -20,6 +20,38 @@ const config: Config = {
         institut: "#171018",
         gold: "#C79A3B",
 
+        // Palette du site vitrine (variables --vt-* déclarées dans globals.css)
+        vt: {
+          "primary": "var(--vt-primary)",
+          "primary-strong": "var(--vt-primary-strong)",
+          "primary-deep": "var(--vt-primary-deep)",
+          "primary-bright": "var(--vt-primary-bright)",
+          "primary-vivid": "var(--vt-primary-vivid)",
+          "primary-rich": "var(--vt-primary-rich)",
+          "pink": "var(--vt-pink)",
+          "pink-vivid": "var(--vt-pink-vivid)",
+          "rose-shadow": "var(--vt-rose-shadow)",
+          "ink": "var(--vt-ink)",
+          "ink-deep": "var(--vt-ink-deep)",
+          "ink-plum": "var(--vt-ink-plum)",
+          "ink-dark": "var(--vt-ink-dark)",
+          "ink-soft": "var(--vt-ink-soft)",
+          "muted": "var(--vt-muted)",
+          "muted-soft": "var(--vt-muted-soft)",
+          "muted-light": "var(--vt-muted-light)",
+          "line": "var(--vt-line)",
+          "line-strong": "var(--vt-line-strong)",
+          "line-neutral": "var(--vt-line-neutral)",
+          "surface": "var(--vt-surface)",
+          "surface-soft": "var(--vt-surface-soft)",
+          "surface-pink": "var(--vt-surface-pink)",
+          "surface-deep": "var(--vt-surface-deep)",
+          "success": "var(--vt-success)",
+          "success-bg": "var(--vt-success-bg)",
+          "whatsapp": "var(--vt-whatsapp)",
+          "whatsapp-dark": "var(--vt-whatsapp-dark)",
+        },
+
         // Material Design 3 — Rappel Beauté Prestige (Stitch)
         primary: {
           DEFAULT: "#ba0049",

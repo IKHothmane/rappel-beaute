@@ -6,7 +6,13 @@ import type { ReactNode } from "react";
 /* Briques partagées par les pages de la vitrine : chaque page garde ses
    propres classes CSS, mais le balisage commun n'existe qu'ici. */
 
-export type AccordionItem = { id?: string; title: string; text: string; href?: string; link?: string };
+export type AccordionItem = {
+  id?: string;
+  title: string;
+  text: string;
+  href?: string;
+  link?: string;
+};
 export type FaqEntry = { question: string; answer: string };
 
 /** Liste de `<details>` : titre, texte et lien optionnel vers une autre page. */
@@ -162,6 +168,13 @@ export function IconFacts({
 /** Illustration « spa » détourée, réutilisée dans les héros et les bandeaux. */
 export function SpaCutout({ className, sizes }: { className?: string; sizes: string }) {
   return (
-    <Image className={className} src="/brand/footer-spa-cutout.png" alt="" width={1774} height={887} sizes={sizes} />
+    <Image
+      className={className}
+      src="/brand/footer-spa-cutout.png"
+      alt=""
+      width={1774}
+      height={887}
+      sizes={sizes}
+    />
   );
 }

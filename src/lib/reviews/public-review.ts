@@ -3,7 +3,7 @@ import { pool } from "@/lib/db/pool";
 import { writeAuditLog } from "@/lib/db/audit";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-export const REVIEW_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const REVIEW_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const PUBLIC_REVIEW_TOKEN = /^RBREV_[A-Z2-9]{16,32}$/;
 
 export type PublicReviewStatus = "PENDING" | "PUBLISHED" | "REJECTED" | "REPORTED";

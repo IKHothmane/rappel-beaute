@@ -15,7 +15,7 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim());
 }
 
-export function mailFromAddress(): string {
+function mailFromAddress(): string {
   return process.env.MAIL_FROM?.trim() || `Rappel Beauty <${SITE.email}>`;
 }
 

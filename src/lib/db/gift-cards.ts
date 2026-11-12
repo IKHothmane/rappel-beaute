@@ -77,7 +77,7 @@ function money(v: string | null | undefined) {
   return Math.round((parseFloat(v ?? "0") || 0) * 100) / 100;
 }
 
-export async function getGiftCardKpis(organizationId: string): Promise<GiftCardKpis> {
+async function getGiftCardKpis(organizationId: string): Promise<GiftCardKpis> {
   const { rows } = await pool.query<{
     soldCount: number;
     soldValue: string;

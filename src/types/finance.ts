@@ -21,7 +21,7 @@ export function isSelectablePaymentMethod(m: string): m is SelectablePaymentMeth
 }
 
 /** Toutes les méthodes connues (affichage historique / filtres). */
-export const ALL_PAYMENT_METHODS = [
+const ALL_PAYMENT_METHODS = [
   "CASH",
   "CARD",
   "TRANSFER",
@@ -101,7 +101,7 @@ export type AppointmentPaymentSummary = {
   payments: PaymentItem[];
 };
 
-export type CreatePaymentLineInput = {
+type CreatePaymentLineInput = {
   amount: number;
   method: PaymentMethod;
   kind?: PaymentKind;

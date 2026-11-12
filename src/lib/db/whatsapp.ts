@@ -484,7 +484,7 @@ export async function syncWhatsAppTasks(organizationId: string): Promise<void> {
   );
 }
 
-export async function getWhatsAppKpis(organizationId: string): Promise<WhatsAppKpis> {
+async function getWhatsAppKpis(organizationId: string): Promise<WhatsAppKpis> {
   const { rows } = await pool.query<{
     pendingToday: number;
     sentToday: number;
@@ -953,7 +953,7 @@ export async function enqueueWaitingListOffer(input: {
   });
 }
 
-export function isMarketingWhatsAppType(type: WhatsAppTaskType): boolean {
+function isMarketingWhatsAppType(type: WhatsAppTaskType): boolean {
   return WHATSAPP_MARKETING_TYPES.has(type);
 }
 

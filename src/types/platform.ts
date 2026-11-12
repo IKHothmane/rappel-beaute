@@ -80,7 +80,7 @@ export type PlatformBillingLine = {
   status: string;
 };
 
-export type PlatformBillingUnpaid = {
+type PlatformBillingUnpaid = {
   id: string;
   organizationId: string;
   organizationName: string;
@@ -181,11 +181,6 @@ export type SupportSessionListItem = {
   open: boolean;
 };
 
-export const PLATFORM_ROLE_LABEL: Record<PlatformRole, string> = {
-  SUPER_ADMIN: "Super administrateur",
-  SUPPORT: "Support",
-};
-
 export const ORG_USER_ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: "Super administrateur",
   OWNER: "Propriétaire",
@@ -195,7 +190,7 @@ export const ORG_USER_ROLE_LABEL: Record<string, string> = {
   ACCOUNTANT: "Comptable",
 };
 
-export const PLATFORM_AUDIT_ACTION_LABEL: Record<string, string> = {
+const PLATFORM_AUDIT_ACTION_LABEL: Record<string, string> = {
   ORGANIZATION_CREATED: "Institut créé",
   ORGANIZATION_SUSPENDED: "Institut suspendu",
   ORGANIZATION_REACTIVATED: "Institut réactivé",

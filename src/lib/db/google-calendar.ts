@@ -10,7 +10,7 @@ function newId() {
   return `gcal_${randomBytes(8).toString("hex")}`;
 }
 
-export type GoogleCalendarConnectionRow = {
+type GoogleCalendarConnectionRow = {
   id: string;
   organizationId: string;
   googleEmail: string;

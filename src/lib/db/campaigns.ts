@@ -383,7 +383,7 @@ function mapCampaignList(r: Record<string, unknown>): CampaignListItem {
   };
 }
 
-export async function getCampaignKpis(organizationId: string): Promise<CampaignKpis> {
+async function getCampaignKpis(organizationId: string): Promise<CampaignKpis> {
   const { rows } = await pool.query<{
     activeCampaigns: number;
     draftCampaigns: number;
@@ -800,16 +800,3 @@ export async function listCampaignRecipients(
   }));
 }
 
-/** Sync statut destinataire quand tâche WhatsApp marquée envoyée */
-export async function syncCampaignRecipientOnWhatsAppSent(
-  whatsappTaskId: string,
-  client?: PoolClient,
-): Promise<void> {
-  const c = client ?? pool;
-  await c.query(
-    `UPDATE "CampaignRecipient"
-     SET status = 'SENT'::"CampaignRecipientStatus", "updatedAt" = NOW()
-     WHERE "whatsappTaskId" = $1 AND status = 'PENDING'::"CampaignRecipientStatus"`,
-    [whatsappTaskId],
-  );
-}

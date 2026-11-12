@@ -44,11 +44,6 @@ export async function getReviewsDashboard(params?: {
   return parseJson(res);
 }
 
-export async function getReviewSettings(): Promise<ReviewSettings> {
-  const res = await fetch("/api/reviews/settings/", fetchOpts);
-  return parseJson(res);
-}
-
 export async function updateReviewSettings(input: UpdateReviewSettingsInput) {
   const res = await fetch("/api/reviews/settings/", {
     method: "PATCH",
@@ -89,36 +84,6 @@ export async function recordReviewSatisfaction(
     ok: true as const,
     alert: (data.alert as ReviewAlertItem | null) ?? null,
   };
-}
-
-export function formatCompletedWhen(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString("fr-FR", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Africa/Casablanca",
-  });
-}
-
-export function formatHoursSince(hours: number): string {
-  if (hours < 1) return "Il y a moins d'une heure";
-  if (hours === 1) return "Il y a 1 h";
-  if (hours < 24) return `Il y a ${hours} h`;
-  const days = Math.floor(hours / 24);
-  return days === 1 ? "Il y a 1 jour" : `Il y a ${days} jours`;
-}
-
-export function formatAverageScore(score: number | null): string {
-  if (score == null) return "—";
-  return `${score.toFixed(1)} ⭐`;
-}
-
-export function formatSatisfiedPercent(pct: number | null): string {
-  if (pct == null) return "—";
-  return `${pct} %`;
 }
 
 export {

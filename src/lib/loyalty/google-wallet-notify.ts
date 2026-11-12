@@ -263,7 +263,7 @@ export async function deliverWalletMessagesForToken(token: string) {
   return { sent };
 }
 
-export async function deliverDueWalletMessages() {
+async function deliverDueWalletMessages() {
   if (!googleWalletConfigured()) return { sent: 0, cards: 0 };
   const { rows } = await pool.query<{ publicToken: string }>(
     `SELECT lc."publicToken"

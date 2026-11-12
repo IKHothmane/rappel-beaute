@@ -41,36 +41,6 @@ export function appEnvironment(): string {
 /** Connexion sur l’hôte courant (Railway staging inclus), pas le domaine public. */
 export const APP_LOGIN_HREF = "/connexion/";
 
-/** URL de connexion — e-mails transactionnels (préremplissage optionnel). */
-export function absoluteAppLoginUrl(opts?: { email?: string }): string {
-  const base = publicAppOrigin();
-  const url = new URL(`${base || "http://localhost:3000"}/connexion/`);
-  if (opts?.email?.trim()) url.searchParams.set("email", opts.email.trim().toLowerCase());
-  if (!base) return `${url.pathname}${url.search}`;
-  return url.toString();
-}
-
-/**
- * Pages de la vitrine publique.
- * Formule publique unique : 599 DH / mois, ou 5 990 DH / an. Essai 15 jours.
- */
-export const MARKETING_PAGES = [
-  { path: "/", group: "nav" },
-  { path: "/fonctionnalites/", group: "nav" },
-  { path: "/creation-site-web/", group: "nav" },
-  { path: "/tarifs/", group: "nav" },
-  { path: "/a-propos/", group: "nav" },
-  { path: "/professionnel/", group: "conversion" },
-  { path: "/connexion/", group: "conversion" },
-  { path: "/demo/", group: "conversion" },
-  { path: "/contact/", group: "conversion" },
-  { path: "/faq/", group: "seo" },
-  { path: "/whatsapp/", group: "seo" },
-  { path: "/solutions/institut-beaute/", group: "seo" },
-  { path: "/mentions-legales/", group: "legal" },
-  { path: "/confidentialite/", group: "legal" },
-] as const;
-
 export const NAV = [
   { href: "/", label: "Accueil" },
   { href: "/fonctionnalites/", label: "Fonctionnalités" },

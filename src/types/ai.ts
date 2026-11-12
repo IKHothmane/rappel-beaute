@@ -35,7 +35,7 @@ export type AIToolResult = {
   requiresConfirmation?: boolean;
 };
 
-export type AIChatMessage = {
+type AIChatMessage = {
   role: AIMessageRole;
   content: string;
   metadata?: Record<string, unknown> | null;

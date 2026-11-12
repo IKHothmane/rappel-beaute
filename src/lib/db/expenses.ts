@@ -61,7 +61,7 @@ const SELECT = `
   LEFT JOIN "User" u ON u.id = e."createdById"
 `;
 
-export async function getExpenseKpis(organizationId: string): Promise<ExpenseKpis> {
+async function getExpenseKpis(organizationId: string): Promise<ExpenseKpis> {
   const [aggRes, mixRes, todayRes] = await Promise.all([
     pool.query<{
       monthTotal: string;

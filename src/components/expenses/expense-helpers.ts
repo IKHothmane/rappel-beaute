@@ -1,10 +1,5 @@
-import {
-  EXPENSE_CATEGORY_LABEL,
-  EXPENSE_STATUS_LABEL,
-  formatMad,
-} from "@/modules/expenses/service";
-import type { ExpenseCategory, ExpenseKpis, ExpenseListItem } from "@/types/expense";
-import { PAYMENT_METHOD_LABEL } from "@/types/finance";
+import { EXPENSE_STATUS_LABEL } from "@/modules/expenses/service";
+import type { ExpenseCategory, ExpenseListItem } from "@/types/expense";
 
 export type ExpenseTab = "recorded" | "void";
 export type ExpensePeriod = "all" | "today" | "month";
@@ -118,78 +113,9 @@ export function categoryBarClass(category: ExpenseCategory) {
   }
 }
 
-export function expenseInsight(kpis: ExpenseKpis | null) {
-  if (!kpis) return "Chargement des totaux…";
-  if (kpis.monthCount === 0 && kpis.todayCount === 0) {
-    return "Aucune dépense enregistrée ce mois. Les totaux restent à zéro tant qu’aucune charge n’est saisie.";
-  }
-  const evo =
-    kpis.evolutionPct == null
-      ? kpis.monthTotal > 0 && kpis.prevMonthTotal === 0
-        ? "pas de mois précédent comparable"
-        : "évolution indisponible"
-      : `${kpis.evolutionPct > 0 ? "+" : ""}${kpis.evolutionPct} % vs mois précédent`;
-  const mix =
-    kpis.byCategory.length > 0
-      ? kpis.byCategory
-          .slice(0, 3)
-          .map((c) => {
-            const pct =
-              kpis.monthTotal > 0 ? Math.round((c.amount / kpis.monthTotal) * 100) : 0;
-            return `${EXPENSE_CATEGORY_LABEL[c.category]} ${pct} %`;
-          })
-          .join(" · ")
-      : "mix indisponible";
-  const voids =
-    kpis.voidMonthCount > 0
-      ? ` ${kpis.voidMonthCount} annulation${kpis.voidMonthCount > 1 ? "s" : ""} (${formatMad(kpis.voidMonthTotal)}).`
-      : "";
-  return `${kpis.monthCount} écriture${kpis.monthCount > 1 ? "s" : ""} ce mois · ${formatMad(kpis.monthTotal)} · aujourd’hui ${formatMad(kpis.todayTotal)} (${kpis.todayCount}). ${evo}. ${mix}.${voids}`;
-}
-
 export function staffOptions(rows: ExpenseListItem[]) {
   return [...new Set(rows.map((e) => e.createdByName).filter((n): n is string => Boolean(n)))].sort(
     (a, b) => a.localeCompare(b, "fr"),
   );
 }
 
-export function exportExpensesCsv(rows: ExpenseListItem[]) {
-  const header = [
-    "Id",
-    "Date",
-    "Catégorie",
-    "Description",
-    "Fournisseur",
-    "Méthode",
-    "Montant",
-    "Référence",
-    "Statut",
-    "Auteur",
-  ];
-  const lines = rows.map((e) =>
-    [
-      e.id,
-      formatExpenseDateTime(e.expenseDate),
-      EXPENSE_CATEGORY_LABEL[e.category],
-      e.description ?? "",
-      e.supplierName ?? "",
-      PAYMENT_METHOD_LABEL[e.paymentMethod],
-      String(e.amount),
-      e.reference ?? "",
-      EXPENSE_STATUS_LABEL[e.status],
-      e.createdByName ?? "",
-    ]
-      .map((cell) => `"${cell.replaceAll('"', '""')}"`)
-      .join(";"),
-  );
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const d = new Date();
-  const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const csv = `\uFEFF${[header.join(";"), ...lines].join("\n")}`;
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `depenses-${stamp}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}

@@ -1,9 +1,4 @@
-import type {
-  CreateInvoiceFromAppointmentInput,
-  InvoiceDetail,
-  InvoiceListResponse,
-  VoidInvoiceInput,
-} from "@/types/invoice";
+import type { InvoiceDetail, InvoiceListResponse, VoidInvoiceInput } from "@/types/invoice";
 import { INVOICE_STATUS_LABEL } from "@/types/invoice";
 
 const fetchOpts = { credentials: "include" as const, cache: "no-store" as const };
@@ -41,33 +36,6 @@ export async function listInvoices(params: {
   if (params.to) q.set("to", params.to);
   const res = await fetch(`/api/invoices/?${q}`, fetchOpts);
   return parseJson(res);
-}
-
-export async function getInvoice(id: string): Promise<InvoiceDetail> {
-  const res = await fetch(`/api/invoices/${id}/`, fetchOpts);
-  return parseJson(res);
-}
-
-export async function createInvoiceFromAppointment(
-  input: CreateInvoiceFromAppointmentInput,
-): Promise<{ ok: true; invoice: InvoiceDetail; created: boolean } | { ok: false; error: string }> {
-  try {
-    const res = await fetch("/api/invoices/", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
-    return {
-      ok: true,
-      invoice: data.invoice as InvoiceDetail,
-      created: Boolean(data.created),
-    };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
 }
 
 export async function voidInvoice(

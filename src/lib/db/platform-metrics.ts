@@ -17,7 +17,7 @@ const LATEST_SUB_FILTER = `s.id = (
   ORDER BY s2."createdAt" DESC LIMIT 1
 )`;
 
-export async function getPlanShare(): Promise<Record<PlanCode, number>> {
+async function getPlanShare(): Promise<Record<PlanCode, number>> {
   const { rows } = await pool.query<{ plan: PlanCode; cnt: string }>(
     `SELECT p.code AS plan, COUNT(*)::text AS cnt
      FROM "Subscription" s
@@ -38,7 +38,7 @@ export async function getPlanShare(): Promise<Record<PlanCode, number>> {
 }
 
 /** MRR estimé fin de mois pour les N derniers mois */
-export async function getMrrSeries(months = 6): Promise<{ label: string; value: number }[]> {
+async function getMrrSeries(months = 6): Promise<{ label: string; value: number }[]> {
   const series: { label: string; value: number }[] = [];
   const now = new Date();
 
@@ -391,7 +391,7 @@ export async function getPlatformBilling(): Promise<PlatformBillingSnapshot> {
   };
 }
 
-export type PlatformDashboardAlert = {
+type PlatformDashboardAlert = {
   id: string;
   severity: "critical" | "high" | "medium" | "low";
   label: string;
@@ -399,7 +399,7 @@ export type PlatformDashboardAlert = {
   href: string;
 };
 
-export type PlatformDashboardHome = {
+type PlatformDashboardHome = {
   stats: Awaited<ReturnType<typeof getPlatformDashboardStats>> & {
     mrrGrowthPercent: number;
     suspendedOrgs: number;

@@ -21,7 +21,7 @@ import type { NotificationItem, NotificationSeverity, NotificationType } from "@
 
 export type StatusFilter = "all" | "unread" | "urgent" | "today" | "week";
 
-export type CategoryChip = {
+type CategoryChip = {
   value: NotificationFilterCategory;
   label: string;
   short: string;
@@ -123,7 +123,7 @@ export function saveChannelRules(rules: ChannelRule[]): void {
   window.localStorage.setItem(CHANNELS_STORAGE_KEY, JSON.stringify(rules));
 }
 
-export type NotificationCounters = {
+type NotificationCounters = {
   urgent: number;
   important: number;
   info: number;
@@ -144,7 +144,7 @@ export function buildCounters(items: NotificationItem[], unreadCount: number): N
   };
 }
 
-export type DayGroup = {
+type DayGroup = {
   key: string;
   label: string;
   items: NotificationItem[];
@@ -223,7 +223,7 @@ export function searchNotifications(items: NotificationItem[], q: string): Notif
   );
 }
 
-export type CopilotInsight = {
+type CopilotInsight = {
   id: string;
   title: string;
   badge: string;

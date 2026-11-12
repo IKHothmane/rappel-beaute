@@ -61,8 +61,6 @@ export type ReactivationKpis = {
   firstVisitCount: number;
 };
 
-export const REACTIVATION_HIGH_SPEND = 3000;
-
 export type ReactivationCustomerItem = {
   id: string;
   firstName: string;

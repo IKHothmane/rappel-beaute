@@ -3,7 +3,7 @@
  */
 type LogLevel = "debug" | "info" | "warn" | "error";
 
-export type LogContext = {
+type LogContext = {
   requestId?: string;
   organizationId?: string;
   userId?: string;

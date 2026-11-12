@@ -3,7 +3,7 @@ import { canReadFeature, getFeatureAccess } from "@/lib/rbac";
 import type { AIToolName } from "@/types/ai";
 
 /** Feature métier minimale pour exécuter un tool */
-export const AI_TOOL_FEATURE: Record<AIToolName, AppFeature> = {
+const AI_TOOL_FEATURE: Record<AIToolName, AppFeature> = {
   getRevenue: "analytics",
   getDashboard: "analytics",
   getCustomers: "customers",

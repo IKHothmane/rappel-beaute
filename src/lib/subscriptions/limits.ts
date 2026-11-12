@@ -19,7 +19,7 @@ export type LimitCheckResult =
       planName?: string;
     };
 
-export async function assertSubscriptionActive(
+async function assertSubscriptionActive(
   organizationId: string,
 ): Promise<LimitCheckResult> {
   const sub = await getOrganizationSubscription(organizationId);
@@ -129,13 +129,3 @@ export async function canCreateAppointment(organizationId: string): Promise<Limi
   return checkLimit(organizationId, "appointments");
 }
 
-export async function canCreateResource(organizationId: string): Promise<LimitCheckResult> {
-  return checkLimit(organizationId, "resources");
-}
-
-export async function canUseFeatureByLimit(
-  organizationId: string,
-  limit: PlanLimitKey,
-): Promise<LimitCheckResult> {
-  return checkLimit(organizationId, limit);
-}

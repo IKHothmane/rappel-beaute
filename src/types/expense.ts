@@ -68,7 +68,7 @@ export type ExpenseDetail = ExpenseListItem & {
   updatedAt: string;
 };
 
-export type ExpenseCategoryMix = {
+type ExpenseCategoryMix = {
   category: ExpenseCategory;
   amount: number;
   count: number;

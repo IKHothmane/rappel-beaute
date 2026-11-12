@@ -3,7 +3,7 @@ import type { PlanFeatureKey, PlanFeatures } from "@/types/subscription";
 
 export type { PlanFeatureKey };
 
-export const DEFAULT_PLAN_FEATURES: PlanFeatures = {
+const DEFAULT_PLAN_FEATURES: PlanFeatures = {
   agenda: false,
   customers: false,
   services: false,
@@ -38,7 +38,7 @@ export function parsePlanFeatures(raw: unknown): PlanFeatures {
 }
 
 /** Mapping feature app (RBAC) → feature plan (abonnement) */
-export const APP_FEATURE_TO_PLAN: Partial<Record<AppFeature, PlanFeatureKey>> = {
+const APP_FEATURE_TO_PLAN: Partial<Record<AppFeature, PlanFeatureKey>> = {
   agenda: "agenda",
   customers: "customers",
   services: "services",
@@ -66,32 +66,3 @@ export function isFeatureEnabled(features: PlanFeatures, key: PlanFeatureKey): b
   return features[key] === true;
 }
 
-export const STARTER_INCLUDED_FEATURES: PlanFeatureKey[] = [
-  "agenda",
-  "customers",
-  "services",
-  "staff",
-  "booking",
-  "whatsappManual",
-];
-
-export const INSTITUT_EXTRA_FEATURES: PlanFeatureKey[] = [
-  "inventory",
-  "purchases",
-  "cashRegister",
-  "invoices",
-  "expenses",
-  "commissions",
-  "loyalty",
-  "marketing",
-  "reviews",
-  "analytics",
-  "ai",
-];
-
-/** PREMIUM = Institut + multi-sites / API / automation (analyses IA avancées = même flag ai V1) */
-export const PREMIUM_EXTRA_FEATURES: PlanFeatureKey[] = [
-  "multiSite",
-  "api",
-  "automation",
-];

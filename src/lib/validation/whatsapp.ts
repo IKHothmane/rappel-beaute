@@ -24,7 +24,7 @@ export function parseWhatsAppListQuery(sp: URLSearchParams) {
   };
 }
 
-export function validateCreateWhatsAppTemplate(
+function validateCreateWhatsAppTemplate(
   raw: Record<string, unknown>,
 ): { ok: true; data: CreateWhatsAppTemplateInput } | { ok: false; errors: string[] } {
   const errors: string[] = [];
@@ -47,7 +47,7 @@ export function validateCreateWhatsAppTemplate(
   };
 }
 
-export function validateUpdateWhatsAppTemplate(
+function validateUpdateWhatsAppTemplate(
   raw: Record<string, unknown>,
 ): { ok: true; data: UpdateWhatsAppTemplateInput } | { ok: false; errors: string[] } {
   const id = str(raw.id);

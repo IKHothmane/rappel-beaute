@@ -1,7 +1,7 @@
 /** Fond par défaut des cartes fidélité (public/). */
-export const DEFAULT_LOYALTY_CARD_BACKGROUND = "/loyalty/fond-bordeaux.png";
+const DEFAULT_LOYALTY_CARD_BACKGROUND = "/loyalty/fond-bordeaux.png";
 
-export function resolveLoyaltyCardBackground(url?: string | null): string {
+function resolveLoyaltyCardBackground(url?: string | null): string {
   const trimmed = url?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : DEFAULT_LOYALTY_CARD_BACKGROUND;
 }

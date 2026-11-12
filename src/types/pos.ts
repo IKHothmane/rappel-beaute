@@ -3,7 +3,7 @@ import type { ProductCategory } from "@/types/inventory";
 
 export type PosSaleStatus = "COMPLETED" | "REFUNDED" | "CANCELLED";
 
-export type PosCartLineInput = {
+type PosCartLineInput = {
   productId: string;
   quantity: number;
 };
@@ -60,19 +60,6 @@ export type PosProductItem = {
   brand: string | null;
 };
 
-export type PosSalesListFilters = {
-  from?: string;
-  to?: string;
-  soldById?: string;
-  paymentMethod?: PaymentMethod;
-  status?: PosSaleStatus | "all";
-  customerId?: string;
-  appointmentId?: string;
-  paymentId?: string;
-  search?: string;
-  limit?: number;
-};
-
 export type PosSalesKpis = {
   revenue: number;
   salesCount: number;
@@ -80,8 +67,3 @@ export type PosSalesKpis = {
   averageBasket: number;
 };
 
-export const POS_SALE_STATUS_LABEL: Record<PosSaleStatus, string> = {
-  COMPLETED: "Encaissée",
-  REFUNDED: "Remboursée",
-  CANCELLED: "Annulée",
-};

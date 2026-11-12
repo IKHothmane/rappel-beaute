@@ -24,7 +24,7 @@ const AUTHORITY_KEYS = [
   "appointmentId",
 ];
 
-export type AssistantProposalView = {
+type AssistantProposalView = {
   actionId: string;
   status: string;
   expiresAt: string;
@@ -422,7 +422,7 @@ type OwnedAppointment = {
 
 const MANAGEABLE = new Set(["PENDING", "CONFIRMED"]);
 
-export function normalizeBookingReference(value: string): string {
+function normalizeBookingReference(value: string): string {
   return value.replace(/[\s-]/g, "").toUpperCase();
 }
 
@@ -488,7 +488,7 @@ async function findOwnedAppointment(
   };
 }
 
-export type AssistantAppointmentView = {
+type AssistantAppointmentView = {
   reference: string;
   serviceName: string;
   date: string;

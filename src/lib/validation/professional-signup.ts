@@ -10,4 +10,3 @@ export const PROFESSIONAL_SIGNUP_LIMITS = {
   city: 80,
 } as const;
 
-export type ProfessionalSignupLimits = typeof PROFESSIONAL_SIGNUP_LIMITS;

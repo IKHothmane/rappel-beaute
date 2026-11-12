@@ -64,7 +64,7 @@ export type PlatformSettingsData = {
   };
 };
 
-export const DEFAULT_PLATFORM_SETTINGS: PlatformSettingsData = {
+const DEFAULT_PLATFORM_SETTINGS: PlatformSettingsData = {
   platform: {
     name: "Rappel Beauty",
     url: "app.rappelbeauty.com",
@@ -197,7 +197,7 @@ export async function updatePlatformSettings(input: {
   return next;
 }
 
-export type PlatformProfile = {
+type PlatformProfile = {
   id: string;
   email: string;
   firstName: string;

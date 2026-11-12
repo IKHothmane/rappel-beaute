@@ -9,23 +9,23 @@ import {
 export const AGENDA_EMPTY_SLOT_HEIGHT_PX = 40;
 
 /** 4 créneaux de 30 min = 2 h vides d’affilée → un seul bandeau, plus de long trou. */
-export const AGENDA_LONG_GAP_MIN_SLOTS = 4;
+const AGENDA_LONG_GAP_MIN_SLOTS = 4;
 
 export const AGENDA_LONG_GAP_HEIGHT_PX = 56;
 
-export type AgendaLayoutOptions = {
+type AgendaLayoutOptions = {
   slotHeight?: number;
   emptyHeight?: number;
   gapHeight?: number;
 };
 
-export type AgendaTimeSlot = {
+type AgendaTimeSlot = {
   h: number;
   m: number;
   label: string;
 };
 
-export type AgendaTimeInterval = {
+type AgendaTimeInterval = {
   start: Date;
   end: Date;
 };
@@ -50,7 +50,7 @@ type AgendaGapRow = {
   label: string;
 };
 
-export type AgendaTimeRow = AgendaSlotRow | AgendaGapRow;
+type AgendaTimeRow = AgendaSlotRow | AgendaGapRow;
 
 export type AgendaTimeLayout = {
   slots: AgendaTimeSlot[];
@@ -103,11 +103,11 @@ function overlapsClockSlot(slot: AgendaTimeSlot, interval: AgendaTimeInterval) {
 }
 
 /** Un créneau est occupé dès qu’un rendez-vous le croise, quel que soit le jour ou la colonne. */
-export function occupyAgendaSlots(slots: AgendaTimeSlot[], intervals: AgendaTimeInterval[]) {
+function occupyAgendaSlots(slots: AgendaTimeSlot[], intervals: AgendaTimeInterval[]) {
   return slots.map((slot) => intervals.some((interval) => overlapsClockSlot(slot, interval)));
 }
 
-export function layoutAgendaTime(
+function layoutAgendaTime(
   occupied: boolean[],
   options: AgendaLayoutOptions = {},
 ): AgendaTimeLayout {

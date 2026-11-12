@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { Pool, type PoolClient } from "pg";
+import { Pool } from "pg";
 import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writeAuditLog } from "@/lib/db/audit";
 import {
@@ -53,7 +53,7 @@ export async function resolveStaffIdForUser(
   return byName.rows[0]?.id ?? null;
 }
 
-export function resolvePeriodRange(
+function resolvePeriodRange(
   preset: CommissionPeriodPreset,
   from?: string | null,
   to?: string | null,

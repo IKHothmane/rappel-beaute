@@ -160,11 +160,3 @@ export async function updatePlan(
   return rows[0] ? mapPlan(rows[0]) : null;
 }
 
-export async function deactivatePlan(id: string): Promise<void> {
-  const used = await countSubscriptionsUsingPlan(id);
-  if (used > 0) {
-    await pool.query(`UPDATE "Plan" SET active = false, "updatedAt" = NOW() WHERE id = $1`, [id]);
-    return;
-  }
-  await pool.query(`UPDATE "Plan" SET active = false, "updatedAt" = NOW() WHERE id = $1`, [id]);
-}

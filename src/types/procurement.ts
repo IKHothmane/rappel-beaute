@@ -174,7 +174,7 @@ export type UpdatePurchaseInput = {
   status?: Extract<PurchaseStatus, "DRAFT" | "ORDERED" | "CANCELLED">;
 };
 
-export type ReceivePurchaseItemInput = {
+type ReceivePurchaseItemInput = {
   purchaseItemId: string;
   quantity: number;
   lotNumber?: string;

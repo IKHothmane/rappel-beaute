@@ -8,18 +8,9 @@ import type {
 
 export type CashTab = "overview" | "journal" | "out" | "refunds" | "history";
 
-export function formatCashTime(iso: string | null | undefined) {
+function formatCashTime(iso: string | null | undefined) {
   if (!iso) return "—";
   return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
-
-export function formatCashDate(iso: string | null | undefined) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("fr-MA", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-  });
 }
 
 export function formatCashDateTime(iso: string | null | undefined) {
@@ -47,7 +38,7 @@ export function saleCount(txns: CashTxnItem[]) {
   return txns.filter((t) => t.type === "SALE").length;
 }
 
-export function matchesTxnSearch(t: CashTxnItem, q: string) {
+function matchesTxnSearch(t: CashTxnItem, q: string) {
   if (!q) return true;
   const hay = [
     t.id,

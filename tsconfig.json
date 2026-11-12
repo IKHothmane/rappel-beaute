@@ -34,7 +34,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".tmp/next-payments/types/**/*.ts",
-    ".next-audit/types/**/*.ts"
+    ".next-audit/types/**/*.ts",
+    ".next-verify/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -13,7 +13,7 @@ import type {
 const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 const ORG_ROLES = ["OWNER", "MANAGER", "STAFF", "CASHIER", "ACCOUNTANT"] as const;
-export type OrgUserRole = (typeof ORG_ROLES)[number];
+type OrgUserRole = (typeof ORG_ROLES)[number];
 
 function actorName(actor: PlatformSessionUser) {
   return `${actor.firstName} ${actor.lastName}`.trim();

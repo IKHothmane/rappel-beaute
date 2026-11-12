@@ -30,11 +30,6 @@ export async function listAppointments(params?: {
   return parseJson<Appointment[]>(res);
 }
 
-export async function getAppointment(id: string): Promise<Appointment | undefined> {
-  const list = await listAppointments();
-  return list.find((a) => a.id === id);
-}
-
 export async function createAppointment(
   input: CreateAppointmentInput,
 ): Promise<{ ok: true; appointment: Appointment } | { ok: false; error: string }> {

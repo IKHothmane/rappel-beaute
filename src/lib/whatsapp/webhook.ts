@@ -5,7 +5,7 @@ import { writeAuditLog } from "@/lib/db/audit";
 
 const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
-export type WhatsAppWebhookMessage = {
+type WhatsAppWebhookMessage = {
   from: string;
   id: string;
   timestamp: string;
@@ -15,7 +15,7 @@ export type WhatsAppWebhookMessage = {
   [key: string]: unknown;
 };
 
-export type WhatsAppWebhookStatus = {
+type WhatsAppWebhookStatus = {
   id: string;
   status: "sent" | "delivered" | "read" | "failed";
   timestamp: string;
@@ -25,7 +25,7 @@ export type WhatsAppWebhookStatus = {
   errors?: unknown[];
 };
 
-export type WhatsAppWebhookEntry = {
+type WhatsAppWebhookEntry = {
   id: string;
   changes: {
     value: {
@@ -120,7 +120,7 @@ export function verifyMetaSignature(
 /**
  * Recherche des clientes correspondant au numéro de téléphone Meta (ex. 212612345678).
  */
-export async function findCustomersByIncomingPhone(rawPhone: string): Promise<
+async function findCustomersByIncomingPhone(rawPhone: string): Promise<
   {
     id: string;
     organizationId: string;
@@ -158,7 +158,7 @@ export async function findCustomersByIncomingPhone(rawPhone: string): Promise<
   return rows;
 }
 
-export type ProcessedWhatsAppEvent = {
+type ProcessedWhatsAppEvent = {
   type: "message" | "status";
   messageId: string;
   customer?: { id: string; organizationId: string; name: string };

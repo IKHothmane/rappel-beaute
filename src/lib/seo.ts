@@ -7,7 +7,7 @@ export function absoluteUrl(path: string): string {
 }
 
 /** Identité publique : une seule Organization, un seul WebSite, un seul SoftwareApplication. */
-export function getOrganizationStructuredData() {
+function getOrganizationStructuredData() {
   const telephone = SITE.phoneInternational;
   return {
     "@context": "https://schema.org",

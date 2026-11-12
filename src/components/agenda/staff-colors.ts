@@ -10,7 +10,7 @@ export type StaffColor = {
 };
 
 /** Une couleur par employée, dans l'ordre de la liste. */
-export const STAFF_COLOR_LIST: StaffColor[] = [
+const STAFF_COLOR_LIST: StaffColor[] = [
   { name: "Rose", bar: "bg-primary", text: "text-primary", soft: "bg-primary/10", ring: "ring-primary/25", fill: "bg-[#F8C9D8]", border: "border-[#E31C5F]/40" },
   { name: "Or", bar: "bg-gold", text: "text-gold", soft: "bg-[#FFF1D6]", ring: "ring-gold/30", fill: "bg-[#F6E3B0]", border: "border-[#C79A3B]/55" },
   { name: "Violet", bar: "bg-violet-600", text: "text-violet-700", soft: "bg-violet-50", ring: "ring-violet-200", fill: "bg-violet-200", border: "border-violet-400" },

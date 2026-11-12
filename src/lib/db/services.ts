@@ -449,7 +449,7 @@ export async function createService(
   return detail;
 }
 
-export type PriceChangeAudit = {
+type PriceChangeAudit = {
   serviceId: string;
   serviceName: string;
   oldPrice: number;
@@ -622,18 +622,3 @@ export async function getServiceFormOptions(organizationId: string): Promise<Ser
   };
 }
 
-export async function verifyStaffBelongsToService(
-  organizationId: string,
-  serviceId: string,
-  staffId: string,
-): Promise<boolean> {
-  const { rows } = await pool.query<{ ok: boolean }>(
-    `SELECT EXISTS (
-      SELECT 1 FROM "ServiceStaff" ss
-      JOIN "Service" s ON s.id = ss."serviceId"
-      WHERE ss."serviceId" = $1 AND ss."staffId" = $2 AND s."organizationId" = $3
-    ) AS ok`,
-    [serviceId, staffId, organizationId],
-  );
-  return rows[0]?.ok ?? false;
-}

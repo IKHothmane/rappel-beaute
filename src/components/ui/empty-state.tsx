@@ -36,7 +36,7 @@ export function EmptyState({
   );
 }
 
-export function Skeleton({ className }: { className?: string }) {
+function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(

@@ -1,11 +1,4 @@
-import type {
-  CommissionDetail,
-  CommissionListResponse,
-  CommissionPeriodInfo,
-  CommissionPeriodPreset,
-  CreateCommissionAdjustmentInput,
-  StaffCommissionSummary,
-} from "@/types/commission";
+import type { CommissionListResponse, CommissionPeriodInfo, CommissionPeriodPreset, StaffCommissionSummary } from "@/types/commission";
 
 const fetchOpts = { credentials: "include" as const, cache: "no-store" as const };
 
@@ -44,67 +37,6 @@ export async function listCommissions(params: {
   if (params.search) q.set("search", params.search);
   const res = await fetch(`/api/commissions/?${q}`, fetchOpts);
   return parseJson(res);
-}
-
-export async function getCommission(id: string): Promise<CommissionDetail> {
-  const res = await fetch(`/api/commissions/${id}/`, fetchOpts);
-  return parseJson(res);
-}
-
-export async function adjustCommission(
-  id: string,
-  input: CreateCommissionAdjustmentInput,
-): Promise<{ ok: true; commission: CommissionDetail } | { ok: false; error: string }> {
-  try {
-    const res = await fetch(`/api/commissions/${id}/`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "adjust", ...input }),
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
-    return { ok: true, commission: data as CommissionDetail };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
-}
-
-export async function markCommissionPaid(
-  id: string,
-  paid: boolean,
-): Promise<{ ok: true; commission: CommissionDetail } | { ok: false; error: string }> {
-  try {
-    const res = await fetch(`/api/commissions/${id}/`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: paid ? "markPaid" : "markUnpaid" }),
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
-    return { ok: true, commission: data as CommissionDetail };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
-}
-
-export async function markCommissionsPaidBulk(
-  ids: string[],
-): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
-  try {
-    const res = await fetch("/api/commissions/", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "markPaidBulk", ids }),
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
-    return { ok: true, updated: Number(data.updated) || 0 };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
 }
 
 export async function closeCommissionPeriod(
@@ -168,40 +100,3 @@ export function formatRate(item: {
   return `${item.fixedSnapshot ?? 0} MAD`;
 }
 
-export async function getCommissionSettings() {
-  const res = await fetch("/api/commissions/settings/", fetchOpts);
-  return parseJson<import("@/types/commission").CommissionSettings>(res);
-}
-
-export async function updateCommissionSettingsApi(input: {
-  productCommissionEnabled?: boolean;
-  productCommissionRate?: number;
-}): Promise<
-  | { ok: true; settings: import("@/types/commission").CommissionSettings }
-  | { ok: false; error: string }
-> {
-  try {
-    const res = await fetch("/api/commissions/settings/", {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return {
-        ok: false,
-        error:
-          typeof data === "object" && data && "error" in data
-            ? String((data as { error: string }).error)
-            : "Erreur",
-      };
-    }
-    return {
-      ok: true,
-      settings: data as import("@/types/commission").CommissionSettings,
-    };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
-}

@@ -25,7 +25,7 @@ export function dateToCasablancaEnd(isoDate: string): Date {
   return endOfBusinessDay(businessDateTime(isoDate, "12:00"));
 }
 
-export function formatDateCasablanca(d: Date): string {
+function formatDateCasablanca(d: Date): string {
   const parts = businessParts(d);
   return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
 }

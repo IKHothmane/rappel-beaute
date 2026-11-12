@@ -19,7 +19,7 @@ export function newPublicToken() {
   return token;
 }
 
-export type VisitRewardKind = "FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE";
+type VisitRewardKind = "FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE";
 
 export type VisitProgram = {
   visitsPerReward: number;
@@ -74,7 +74,7 @@ export async function getVisitProgram(organizationId: string): Promise<VisitProg
   };
 }
 
-export type IssuedCard = {
+type IssuedCard = {
   id: string;
   publicToken: string;
   customerId: string;
@@ -155,7 +155,7 @@ async function ensureLoyaltyAccount(organizationId: string, customerId: string) 
   );
 }
 
-export type VisitCardListItem = {
+type VisitCardListItem = {
   id: string;
   customerId: string;
   customerName: string;
@@ -233,13 +233,13 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
   }));
 }
 
-export type CardAppointment = {
+type CardAppointment = {
   at: string;
   service: string;
   staff: string;
 };
 
-export type CardSession = {
+type CardSession = {
   name: string;
   used: number;
   total: number;

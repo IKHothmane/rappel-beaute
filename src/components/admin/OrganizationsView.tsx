@@ -45,7 +45,7 @@ export function StatusPill({
   );
 }
 
-export function OrganizationCover({
+function OrganizationCover({
   src,
   name,
   className,

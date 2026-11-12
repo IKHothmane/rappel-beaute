@@ -511,7 +511,7 @@ export async function deactivateStaffReplacement(
   });
 }
 
-export async function isOrganizationClosed(
+async function isOrganizationClosed(
   organizationId: string,
   start: Date,
   end: Date,

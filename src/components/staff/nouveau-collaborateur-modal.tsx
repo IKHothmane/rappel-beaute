@@ -45,7 +45,7 @@ function formatDateDigits(raw: string): string {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
-export type NouveauCollaborateurModalProps = {
+type NouveauCollaborateurModalProps = {
   open: boolean;
   onClose: () => void;
   initial?: Partial<StaffDetail>;

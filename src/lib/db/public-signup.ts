@@ -16,7 +16,7 @@ export class PublicSignupError extends Error {
   }
 }
 
-export type PublicSignupInput = {
+type PublicSignupInput = {
   personName: string;
   institut: string;
   email?: string;
@@ -26,7 +26,7 @@ export type PublicSignupInput = {
   website: string | null;
 };
 
-export type PublicSignupCreated = {
+type PublicSignupCreated = {
   organizationId: string;
   email: string | null;
   phone: string;
@@ -189,6 +189,3 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
   }
 }
 
-export async function deletePublicSignupOrganization(organizationId: string): Promise<void> {
-  await pool.query(`DELETE FROM "Organization" WHERE id = $1`, [organizationId]);
-}

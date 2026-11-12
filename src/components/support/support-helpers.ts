@@ -1,17 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  Bug,
-  CalendarDays,
-  CreditCard,
-  Headphones,
-  Lightbulb,
-  MessageSquare,
-  Package,
-  Sparkles,
-  Users,
-  Wallet,
-  Wrench,
-} from "lucide-react";
+import { Bug, CalendarDays, CreditCard, Headphones, Lightbulb, MessageSquare, Package, Sparkles, Users, Wrench } from "lucide-react";
 import type { SupportTicketCategory } from "@/lib/db/support-tickets";
 import {
   SUPPORT_CATEGORY_LABEL,
@@ -45,7 +33,7 @@ export const TICKET_FILTERS: { value: TicketFilter; label: string }[] = [
   { value: "resolved", label: "Résolus" },
 ];
 
-export type SupportCounters = {
+type SupportCounters = {
   total: number;
   open: number;
   waiting: number;
@@ -241,7 +229,7 @@ export const CREATE_CATEGORIES: SupportTicketCategory[] = [
   "OTHER",
 ];
 
-export type KnowledgeGuide = {
+type KnowledgeGuide = {
   id: string;
   eyebrow: string;
   title: string;
@@ -251,57 +239,11 @@ export type KnowledgeGuide = {
   icon: LucideIcon;
 };
 
-export const KNOWLEDGE_GUIDES: KnowledgeGuide[] = [
-  {
-    id: "agenda",
-    eyebrow: "Agenda & Cabines",
-    title: "Chevauchements & nettoyage cabine",
-    body: "Configurer les délais automatiques entre deux prestations.",
-    href: "/agenda/",
-    tone: "primary",
-    icon: CalendarDays,
-  },
-  {
-    id: "caisse",
-    eyebrow: "Caisse & Clôtures",
-    title: "Clôture X/Z & écarts de caisse",
-    body: "Sceller le tiroir caisse et rapprocher les tickets TPE.",
-    href: "/cash-register/",
-    tone: "secondary",
-    icon: Wallet,
-  },
-  {
-    id: "stock",
-    eyebrow: "Stocks & Matières",
-    title: "Inventaire physique",
-    body: "Compter les produits sans interrompre l’activité cabine.",
-    href: "/products/",
-    tone: "primary",
-    icon: Package,
-  },
-  {
-    id: "cndp",
-    eyebrow: "Conformité CNDP",
-    title: "Import clientes & consentements",
-    body: "Recueil de consentement pour SMS et WhatsApp.",
-    href: "/settings/",
-    tone: "neutral",
-    icon: Users,
-  },
-];
-
-export type DiagnosticAction = {
+type DiagnosticAction = {
   id: string;
   label: string;
   href: string;
 };
-
-export const DIAGNOSTIC_ACTIONS: DiagnosticAction[] = [
-  { id: "cabine", label: "Comment débloquer une cabine en conflit ?", href: "/agenda/" },
-  { id: "cmi", label: "Résoudre un refus de transaction CMI / TPE", href: "/cash-register/" },
-  { id: "wa", label: "Rétablir la passerelle WhatsApp", href: "/whatsapp/" },
-  { id: "access", label: "Ajouter un droit d’accès collaboratrice", href: "/staff/" },
-];
 
 export type CreateModalMode = "ticket" | "bug" | "feature";
 

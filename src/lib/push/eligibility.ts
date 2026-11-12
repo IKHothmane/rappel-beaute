@@ -1,6 +1,6 @@
 import { localPhoneDigits } from "@/lib/validation/customer";
 
-export const PUSH_CATEGORIES = [
+const PUSH_CATEGORIES = [
   "LOYALTY_REWARD",
   "LOYALTY_PROGRESS",
   "REVIEW_REQUEST",
@@ -8,7 +8,7 @@ export const PUSH_CATEGORIES = [
   "OFFER",
 ] as const;
 
-export type PushCategory = (typeof PUSH_CATEGORIES)[number];
+type PushCategory = (typeof PUSH_CATEGORIES)[number];
 
 export type PushPreferences = {
   loyaltyReward: boolean;
@@ -89,7 +89,7 @@ export function subscriptionExpiration(value: unknown, now: Date): Date | null |
   return date;
 }
 
-export type BrowserPermission = "default" | "granted" | "denied" | "unsupported";
+type BrowserPermission = "default" | "granted" | "denied" | "unsupported";
 
 export function permissionDecision(
   permission: BrowserPermission,
@@ -101,7 +101,7 @@ export function permissionDecision(
   return "prompt";
 }
 
-export function categoryEnabled(consent: PushConsent | null, category: PushCategory): boolean {
+function categoryEnabled(consent: PushConsent | null, category: PushCategory): boolean {
   if (!consent?.consentedAt || consent.revokedAt) return false;
   if (category === "LOYALTY_REWARD") return consent.loyaltyReward;
   if (category === "LOYALTY_PROGRESS") return consent.loyaltyProgress;
@@ -110,7 +110,7 @@ export function categoryEnabled(consent: PushConsent | null, category: PushCateg
   return consent.offers;
 }
 
-export type DeliveryDecision =
+type DeliveryDecision =
   | "send"
   | "no_consent"
   | "category_off"
@@ -157,7 +157,7 @@ export function deliveryAfterAttempts(
 }
 
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000];
-export const PUSH_MAX_ATTEMPTS = 5;
+const PUSH_MAX_ATTEMPTS = 5;
 
 export function phonesMatch(stored: string, given: string): boolean {
   const left = localPhoneDigits(stored);

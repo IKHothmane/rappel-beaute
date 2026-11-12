@@ -1,12 +1,4 @@
-import type {
-  CreateOrganizationClosureInput,
-  CreateStaffOvertimeInput,
-  CreateStaffReplacementInput,
-  OrganizationClosureItem,
-  PlanningLeaveHistoryItem,
-  StaffOvertimeItem,
-  StaffReplacementItem,
-} from "@/types/planning";
+import type { CreateStaffOvertimeInput, CreateStaffReplacementInput, OrganizationClosureItem, PlanningLeaveHistoryItem, StaffOvertimeItem, StaffReplacementItem } from "@/types/planning";
 
 const fetchOpts = { credentials: "include" as const, cache: "no-store" as const };
 
@@ -29,16 +21,6 @@ export async function loadPlanningApi() {
     overtimes: StaffOvertimeItem[];
     replacements: StaffReplacementItem[];
   }>(res);
-}
-
-export async function createClosureApi(input: CreateOrganizationClosureInput) {
-  const res = await fetch("/api/planning/", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ kind: "closure", ...input }),
-  });
-  return parseJson<OrganizationClosureItem>(res);
 }
 
 export async function createOvertimeApi(input: CreateStaffOvertimeInput) {

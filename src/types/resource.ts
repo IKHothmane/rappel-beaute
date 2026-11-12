@@ -60,7 +60,7 @@ export type ResourceListItem = {
   appointmentCount: number;
 };
 
-export type ResourceServiceLink = {
+type ResourceServiceLink = {
   serviceId: string;
   serviceName: string;
   category: string | null;
@@ -78,7 +78,7 @@ export type ResourceMaintenanceItem = {
   createdAt: string;
 };
 
-export type ResourceReservation = {
+type ResourceReservation = {
   id: string;
   startAt: string;
   endAt: string;

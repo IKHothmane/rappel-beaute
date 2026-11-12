@@ -115,7 +115,7 @@ export type ProductLotItem = {
   notes: string | null;
 };
 
-export type ProductServiceLink = {
+type ProductServiceLink = {
   serviceId: string;
   serviceName: string;
   quantity: number;

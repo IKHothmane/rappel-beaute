@@ -58,4 +58,3 @@ export type CreateOrganizationClosureInput = {
   reason?: string | null;
 };
 
-export type AgendaColumnMode = "staff" | "resource";

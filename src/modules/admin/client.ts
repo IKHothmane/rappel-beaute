@@ -1,15 +1,4 @@
-import type {
-  CreateOrganizationInput,
-  OrganizationDetail,
-  OrganizationListItem,
-  PlatformAnalytics,
-  PlatformBillingSnapshot,
-  PlatformDashboardStats,
-  PlatformOrgUser,
-  PlatformUsersKpis,
-  SubscriptionPlan,
-  SupportSessionListItem,
-} from "@/types/platform";
+import type { CreateOrganizationInput, OrganizationDetail, OrganizationListItem, PlatformAnalytics, PlatformBillingSnapshot, PlatformDashboardStats, PlatformOrgUser, PlatformUsersKpis, SubscriptionPlan } from "@/types/platform";
 
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -216,19 +205,6 @@ export async function fetchAdminAudit(limit = 100) {
   }>(`/api/admin/audit/?limit=${limit}`);
 }
 
-export async function fetchSupportSessions(opts?: { openOnly?: boolean }) {
-  const q = opts?.openOnly ? "?open=1" : "";
-  return adminFetch<{ items: SupportSessionListItem[]; openCount: number }>(
-    `/api/admin/support-sessions/${q}`,
-  );
-}
-
-export async function fetchSupportSession(id: string) {
-  return adminFetch<{ item: SupportSessionListItem }>(
-    `/api/admin/support-sessions/?id=${encodeURIComponent(id)}`,
-  );
-}
-
 export async function startSupportSessionApi(organizationId: string, reason: string) {
   return adminFetch<{ sessionId: string }>("/api/admin/support-sessions/", {
     method: "POST",
@@ -379,34 +355,6 @@ export type AdminSubscriptionRow = {
   paymentLabel: string;
 };
 
-export async function fetchAdminSubscriptions(params?: {
-  search?: string;
-  plan?: string;
-  status?: string;
-}) {
-  const sp = new URLSearchParams();
-  if (params?.search) sp.set("search", params.search);
-  if (params?.plan) sp.set("plan", params.plan);
-  if (params?.status) sp.set("status", params.status);
-  const q = sp.toString();
-  return adminFetch<{
-    items: AdminSubscriptionRow[];
-    kpis: {
-      total: number;
-      active: number;
-      trial: number;
-      pastDue: number;
-      suspended: number;
-      expiringSoon: number;
-      expired: number;
-      mrr: number;
-    };
-    plans: { id: string; code: string; name: string; price: number; annualPrice: number }[];
-    organizations: { id: string; name: string }[];
-    showcasePrice: number;
-  }>(`/api/admin/subscriptions/${q ? `?${q}` : ""}`);
-}
-
 export async function fetchAdminSubscription(id: string) {
   return adminFetch<{
     item: AdminSubscriptionRow;
@@ -422,13 +370,6 @@ export async function fetchAdminSubscription(id: string) {
   }>(`/api/admin/subscriptions/${id}/`);
 }
 
-export async function updateAdminPlanPrice(id: string, price: number) {
-  return adminFetch<{ plan: { id: string; price: number } }>(`/api/admin/plans/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify({ price }),
-  });
-}
-
 export async function adminSubscriptionAction(
   id: string,
   body: Record<string, unknown>,
@@ -437,16 +378,6 @@ export async function adminSubscriptionAction(
     `/api/admin/subscriptions/${id}/`,
     { method: "POST", body: JSON.stringify(body) },
   );
-}
-
-export async function createAdminSubscriptionApi(input: {
-  organizationId: string;
-  planCode: SubscriptionPlan;
-}) {
-  return adminFetch<{ ok: boolean; id: string }>("/api/admin/subscriptions/", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
 }
 
 export async function fetchAdminSession() {

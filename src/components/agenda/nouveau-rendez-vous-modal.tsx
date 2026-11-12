@@ -56,9 +56,9 @@ import type { ServiceAgendaOption, ServiceFormOptions } from "@/types/service";
 import type { StaffAgendaContext } from "@/types/staff";
 
 /** Payload envoyé à `onCreate` — aligné sur l’API agenda. */
-export type BookingPayload = CreateAppointmentInput;
+type BookingPayload = CreateAppointmentInput;
 
-export type NouveauRendezVousModalProps = {
+type NouveauRendezVousModalProps = {
   open: boolean;
   onClose: () => void;
   appointments: Appointment[];

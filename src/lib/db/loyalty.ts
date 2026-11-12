@@ -953,7 +953,7 @@ export async function getCustomerLoyalty(
   };
 }
 
-export async function listRewards(
+async function listRewards(
   organizationId: string,
   activeOnly = false,
 ): Promise<LoyaltyRewardItem[]> {
@@ -1137,7 +1137,7 @@ export async function listPackages(
   return rows.map((r) => mapPackage(r as Record<string, unknown>));
 }
 
-export async function getPackageById(
+async function getPackageById(
   organizationId: string,
   packageId: string,
 ): Promise<PackageListItem | null> {

@@ -1,5 +1,5 @@
 import { formatMad } from "@/lib/utils";
-import type { PromotionKpis, PromotionListItem, PromotionStatus, PromotionType } from "@/types/promo";
+import type { PromotionKpis, PromotionListItem, PromotionType } from "@/types/promo";
 
 export const PROMO_PAGE_SIZE = 5;
 export const TZ = "Africa/Casablanca";
@@ -7,17 +7,7 @@ export const TZ = "Africa/Casablanca";
 export type PromoTab = "all" | "codes" | "auto" | "calendar" | "audit";
 export type PromoStatusFilter = "all" | "active" | "scheduled" | "archived";
 export type PromoTypeFilter = "all" | PromotionType;
-export type PromoTargetFilter = "all" | "vip" | "new" | "targeted";
-
-export const WEEKDAY_OPTIONS = [
-  { id: 1, label: "Lun" },
-  { id: 2, label: "Mar" },
-  { id: 3, label: "Mer" },
-  { id: 4, label: "Jeu" },
-  { id: 5, label: "Ven" },
-  { id: 6, label: "Sam" },
-  { id: 0, label: "Dim" },
-] as const;
+type PromoTargetFilter = "all" | "vip" | "new" | "targeted";
 
 const WEEKDAY_FULL: Record<number, string> = {
   0: "Dim",
@@ -29,11 +19,11 @@ const WEEKDAY_FULL: Record<number, string> = {
   6: "Sam",
 };
 
-export function casablancaNow(): Date {
+function casablancaNow(): Date {
   return new Date(new Date().toLocaleString("en-US", { timeZone: TZ }));
 }
 
-export function formatPromoDate(iso: string | null): string {
+function formatPromoDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("fr-FR", {
     timeZone: TZ,
@@ -43,7 +33,7 @@ export function formatPromoDate(iso: string | null): string {
   });
 }
 
-export function formatPromoShortDate(iso: string | null): string {
+function formatPromoShortDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("fr-FR", {
     timeZone: TZ,
@@ -52,31 +42,26 @@ export function formatPromoShortDate(iso: string | null): string {
   });
 }
 
-export function monthTitle(d = casablancaNow()): string {
-  const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
 export function promoShortId(id: string): string {
   const tail = id.replace(/^promo_?/i, "").slice(-6).toUpperCase();
   return `#PR-${tail || id.slice(-6).toUpperCase()}`;
 }
 
-export function isScheduled(p: PromotionListItem, now = casablancaNow()): boolean {
+function isScheduled(p: PromotionListItem, now = casablancaNow()): boolean {
   if (p.status === "DRAFT") return true;
   if (p.status === "ACTIVE" && p.startsAt && new Date(p.startsAt) > now) return true;
   return false;
 }
 
-export function isCodePromo(p: PromotionListItem): boolean {
+function isCodePromo(p: PromotionListItem): boolean {
   return Boolean(p.code?.trim());
 }
 
-export function isAutoPromo(p: PromotionListItem): boolean {
+function isAutoPromo(p: PromotionListItem): boolean {
   return !p.code || p.type === "PACKAGE" || p.type === "HAPPY_HOUR" || p.type === "FREE_SERVICE";
 }
 
-export function isArchived(p: PromotionListItem): boolean {
+function isArchived(p: PromotionListItem): boolean {
   return p.status === "INACTIVE" || p.status === "EXPIRED";
 }
 
@@ -105,7 +90,7 @@ export function statusChip(p: PromotionListItem): { label: string; className: st
   return { label: "Inactive", className: "bg-[#F6E3EF] text-ink/55" };
 }
 
-export function weekdayLabel(weekdays: string | null): string | null {
+function weekdayLabel(weekdays: string | null): string | null {
   if (!weekdays?.trim()) return null;
   const ids = weekdays
     .split(",")
@@ -118,7 +103,7 @@ export function weekdayLabel(weekdays: string | null): string | null {
   return ids.map((d) => WEEKDAY_FULL[d]).join("–");
 }
 
-export function hoursLabel(p: PromotionListItem): string | null {
+function hoursLabel(p: PromotionListItem): string | null {
   if (p.timeStart && p.timeEnd) return `${p.timeStart}–${p.timeEnd}`;
   return null;
 }
@@ -195,7 +180,7 @@ export function tabCounts(items: PromotionListItem[]): Record<PromoTab, number> 
   };
 }
 
-export function matchesTarget(p: PromotionListItem, target: PromoTargetFilter): boolean {
+function matchesTarget(p: PromotionListItem, target: PromoTargetFilter): boolean {
   if (target === "all") return true;
   if (target === "targeted") return Boolean(p.customerId);
   const blob = `${p.name} ${p.code ?? ""} ${p.description ?? ""}`.toLowerCase();
@@ -235,7 +220,7 @@ export function filterPromotions(
   });
 }
 
-export function bestPromo(items: PromotionListItem[]): PromotionListItem | null {
+function bestPromo(items: PromotionListItem[]): PromotionListItem | null {
   const pool = items.filter((p) => p.status === "ACTIVE" || p.monthRevenue > 0 || p.monthUses > 0);
   if (!pool.length) return items[0] ?? null;
   return [...pool].sort((a, b) => {
@@ -245,9 +230,9 @@ export function bestPromo(items: PromotionListItem[]): PromotionListItem | null 
   })[0];
 }
 
-export type OverlapPair = { a: PromotionListItem; b: PromotionListItem };
+type OverlapPair = { a: PromotionListItem; b: PromotionListItem };
 
-export function overlappingPromos(items: PromotionListItem[]): OverlapPair[] {
+function overlappingPromos(items: PromotionListItem[]): OverlapPair[] {
   const live = items.filter((p) => p.status === "ACTIVE" || isScheduled(p));
   const pairs: OverlapPair[] = [];
   for (let i = 0; i < live.length; i++) {
@@ -269,30 +254,7 @@ function rangesOverlap(a: PromotionListItem, b: PromotionListItem): boolean {
   return rangeStart(a) <= rangeEnd(b) && rangeStart(b) <= rangeEnd(a);
 }
 
-export type GanttWeek = { label: string; start: Date; end: Date; current: boolean };
-
-export function ganttWeeks(now = casablancaNow()): GanttWeek[] {
-  const start = startOfWeekMonday(now);
-  start.setDate(start.getDate() - 14);
-  const weeks: GanttWeek[] = [];
-  for (let i = 0; i < 6; i++) {
-    const s = new Date(start);
-    s.setDate(start.getDate() + i * 7);
-    const e = new Date(s);
-    e.setDate(s.getDate() + 6);
-    const weekNo = isoWeek(s);
-    const current = now >= s && now <= e;
-    weeks.push({
-      label: current
-        ? `Sem ${weekNo} (actuelle)`
-        : `Sem ${weekNo} (${pad(s.getDate())}–${pad(e.getDate())})`,
-      start: s,
-      end: e,
-      current,
-    });
-  }
-  return weeks;
-}
+type GanttWeek = { label: string; start: Date; end: Date; current: boolean };
 
 function startOfWeekMonday(d: Date): Date {
   const x = new Date(d);
@@ -315,18 +277,7 @@ function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-export function ganttOffset(p: PromotionListItem, weeks: GanttWeek[]): { left: number; width: number } {
-  const axisStart = weeks[0].start.getTime();
-  const axisEnd = weeks[weeks.length - 1].end.getTime() + 86400000;
-  const span = axisEnd - axisStart;
-  const from = Math.max(axisStart, rangeStart(p) || axisStart);
-  const to = Math.min(axisEnd, rangeEnd(p) === Number.MAX_SAFE_INTEGER ? axisEnd : rangeEnd(p) + 86400000);
-  const left = ((from - axisStart) / span) * 100;
-  const width = Math.max(4, ((to - from) / span) * 100);
-  return { left: Math.max(0, Math.min(96, left)), width: Math.min(100 - left, width) };
-}
-
-export type SimCheck = { ok: boolean; label: string };
+type SimCheck = { ok: boolean; label: string };
 
 export type PromoSimulation = {
   subtotal: number;
@@ -406,22 +357,6 @@ export function simulatePromo(
   return { subtotal: amount, discount, net: Math.round((amount - discount) * 100) / 100, checks, eligible };
 }
 
-export function promoWhatsappText(p: PromotionListItem, firstName: string, orgName: string): string {
-  const code = p.code ? ` avec le code privilège ${p.code}` : "";
-  const until = p.endsAt ? ` valable jusqu’au ${formatPromoDate(p.endsAt)}` : "";
-  return `Bonjour ${firstName} 👋 Nous avons une délicate attention pour vous ✨ Profitez de ${discountLabel(p)} sur votre prochain soin à l’institut${code}${until}. Au plaisir de vous accueillir ❤️ — ${orgName}`;
-}
-
-export function promoWhatsappHref(phone: string, text: string): string {
-  const digits = phone.replace(/\D/g, "");
-  const normalized = digits.startsWith("212")
-    ? digits
-    : digits.startsWith("0")
-      ? `212${digits.slice(1)}`
-      : digits;
-  return `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`;
-}
-
 export function insightCopy(
   kpis: PromotionKpis | null,
   items: PromotionListItem[],
@@ -474,29 +409,6 @@ export function kpiHints(kpis: PromotionKpis | null): {
     revenue: rev == null ? "CA facturé avec promo" : `${rev > 0 ? "+" : ""}${String(rev).replace(".", ",")} % ce mois`,
     conversion: "Usages / plafond",
   };
-}
-
-export function parseWeekdays(value: string | null | undefined): number[] {
-  if (!value) return [];
-  return value
-    .split(",")
-    .map((d) => Number(d.trim()))
-    .filter((n) => n >= 0 && n <= 6);
-}
-
-export function serializeWeekdays(ids: number[]): string | undefined {
-  if (!ids.length) return undefined;
-  return [...new Set(ids)].sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b)).join(",");
-}
-
-export function dateInputValue(iso: string | null | undefined): string {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-CA", { timeZone: TZ });
-}
-
-export function toApiDate(value: string): string | undefined {
-  if (!value) return undefined;
-  return `${value}T12:00:00`;
 }
 
 export function perimeterLabel(p: PromotionListItem, serviceName?: string | null): { primary: string; secondary: string } {

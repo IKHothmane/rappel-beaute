@@ -11,7 +11,7 @@ export function slugifyLabel(input: string): string {
     .slice(0, 80);
 }
 
-export type BookingQrQuery = {
+type BookingQrQuery = {
   service?: string | null;
   staff?: string | null;
   source?: string | null;

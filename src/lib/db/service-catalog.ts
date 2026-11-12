@@ -9,7 +9,7 @@ function newId() {
   return `scd_${randomBytes(8).toString("hex")}`;
 }
 
-export type ServiceCatalogDefaultItem = {
+type ServiceCatalogDefaultItem = {
   name: string;
   imageUrl: string | null;
   updatedAt: string | null;

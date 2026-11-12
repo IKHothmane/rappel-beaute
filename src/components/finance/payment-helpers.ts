@@ -1,9 +1,4 @@
-import {
-  PAYMENT_KIND_LABEL,
-  PAYMENT_METHOD_LABEL,
-  PAYMENT_STATUS_LABEL,
-  formatMad,
-} from "@/modules/finance/service";
+import { PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL } from "@/modules/finance/service";
 import type { PaymentItem, PaymentMethod } from "@/types/finance";
 
 export type PaymentTab = "all" | "paid" | "pending" | "deposit" | "refunded" | "failed";
@@ -11,7 +6,7 @@ export type PaymentPeriod = "all" | "today" | "yesterday" | "7d" | "month";
 
 export const PAYMENT_PAGE_SIZE = 8;
 
-export type PaymentKpis = {
+type PaymentKpis = {
   inflow: number;
   refunds: number;
   net: number;
@@ -24,7 +19,7 @@ export type PaymentKpis = {
   byMethod: Record<PaymentMethod, number>;
 };
 
-export type PaymentMixSlice = {
+type PaymentMixSlice = {
   key: PaymentMethod | "other";
   label: string;
   amount: number;
@@ -37,7 +32,7 @@ function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-export function inPaymentPeriod(iso: string, period: PaymentPeriod) {
+function inPaymentPeriod(iso: string, period: PaymentPeriod) {
   if (period === "all") return true;
   const paid = new Date(iso);
   const today = startOfDay(new Date());
@@ -83,7 +78,7 @@ export function isUnpaidDue(p: PaymentItem) {
   return p.id.startsWith("due:") || p.notes === "RDV non payé";
 }
 
-export function unpaidDueId(appointmentId: string) {
+function unpaidDueId(appointmentId: string) {
   return `due:${appointmentId}`;
 }
 
@@ -130,7 +125,7 @@ export function sortPaymentsNewestFirst(rows: PaymentItem[]): PaymentItem[] {
   });
 }
 
-export function paymentShortId(id: string) {
+function paymentShortId(id: string) {
   const raw = id.startsWith("due:") ? id.slice("due:".length) : id;
   return raw.slice(-6).toUpperCase() || "—";
 }
@@ -362,7 +357,7 @@ export function matchesPaymentTab(p: PaymentItem, tab: PaymentTab) {
   return p.status === "FAILED";
 }
 
-export function matchesPaymentSearch(p: PaymentItem, q: string) {
+function matchesPaymentSearch(p: PaymentItem, q: string) {
   if (!q) return true;
   const hay = [
     p.id,
@@ -482,18 +477,6 @@ export function paymentMix(kpis: PaymentKpis): PaymentMixSlice[] {
   }));
 }
 
-export function paymentInsight(kpis: PaymentKpis, period: PaymentPeriod) {
-  if (kpis.count === 0) {
-    return `Aucun paiement sur « ${periodLabel(period)} ». Les totaux restent à zéro tant qu’aucun encaissement n’est enregistré.`;
-  }
-  const mix = paymentMix(kpis);
-  const mixTxt =
-    mix.length > 0
-      ? mix.map((m) => `${m.label} ${m.pct} %`).join(" · ")
-      : "mix indisponible";
-  return `${kpis.count} opération${kpis.count > 1 ? "s" : ""} · encaissé ${formatMad(kpis.inflow)} · remboursements ${formatMad(kpis.refunds)} · net ${formatMad(kpis.net)}. ${mixTxt}.`;
-}
-
 export function staffOptions(rows: PaymentItem[]) {
   return [...new Set(rows.map((p) => p.userName).filter((n): n is string => Boolean(n)))].sort(
     (a, b) => a.localeCompare(b, "fr"),
@@ -508,10 +491,6 @@ export function waMeLink(phone: string | null) {
   return `https://wa.me/${intl}`;
 }
 
-export function formatPaymentTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
-
 export function formatPaymentDateTime(iso: string) {
   return new Date(iso).toLocaleString("fr-FR", {
     day: "2-digit",
@@ -522,47 +501,3 @@ export function formatPaymentDateTime(iso: string) {
   });
 }
 
-export function exportPaymentsCsv(rows: PaymentItem[]) {
-  const header = [
-    "N° passage",
-    "Id",
-    "Date",
-    "Cliente",
-    "Téléphone",
-    "Prestation",
-    "Type",
-    "Méthode",
-    "Statut",
-    "Montant",
-    "Opérateur",
-    "Notes",
-  ];
-  const lines = rows.map((p) =>
-    [
-      paymentDisplayId(p),
-      p.id,
-      formatPaymentDateTime(p.paidAt),
-      p.customerName ?? "",
-      p.customerPhone ?? "",
-      p.serviceName ?? "",
-      PAYMENT_KIND_LABEL[p.kind],
-      PAYMENT_METHOD_LABEL[p.method],
-      PAYMENT_STATUS_LABEL[p.status],
-      String(signedPaymentAmount(p)),
-      p.userName ?? "",
-      p.notes ?? "",
-    ]
-      .map((cell) => `"${cell.replaceAll('"', '""')}"`)
-      .join(";"),
-  );
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const d = new Date();
-  const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const csv = `\uFEFF${[header.join(";"), ...lines].join("\n")}`;
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `paiements-${stamp}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}

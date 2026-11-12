@@ -19,16 +19,16 @@ export type ServiceListItem = {
   productCount: number;
 };
 
-export type ServiceStaffLink = { staffId: string; staffName: string };
+type ServiceStaffLink = { staffId: string; staffName: string };
 
-export type ServiceResourceLink = {
+type ServiceResourceLink = {
   resourceId: string;
   resourceName: string;
   resourceType: string;
   quantity: number;
 };
 
-export type ServiceProductLink = {
+type ServiceProductLink = {
   productId: string;
   productName: string;
   productSku: string;
@@ -36,7 +36,7 @@ export type ServiceProductLink = {
   unit: string;
 };
 
-export type ServiceCommissionLink = {
+type ServiceCommissionLink = {
   id: string;
   staffId: string;
   staffName: string;
@@ -104,15 +104,6 @@ export type ServiceListResponse = {
   };
   categories: string[];
 };
-
-export const SERVICE_CATEGORIES = [
-  "Soins visage",
-  "Corps & massage",
-  "Mains & pieds",
-  "Épilation",
-  "Maquillage",
-  "Autre",
-] as const;
 
 export type ServiceFormOptions = {
   staff: { id: string; name: string; role: string | null; status: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "ARCHIVED" }[];

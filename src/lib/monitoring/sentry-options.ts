@@ -35,6 +35,7 @@ export function scrubEvent<E extends ScrubbableEvent>(event: E): E {
   return event;
 }
 
+
 export const baseSentryOptions = {
   environment: process.env.APP_ENV || process.env.NODE_ENV,
   release: process.env.SENTRY_RELEASE || process.env.RAILWAY_GIT_COMMIT_SHA || undefined,

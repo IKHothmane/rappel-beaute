@@ -22,7 +22,7 @@ export function autoReminderOrgIds(): string[] {
     .filter((s) => s && s !== "*");
 }
 
-export type AutoReminderOrgResult = {
+type AutoReminderOrgResult = {
   organizationId: string;
   skipped?: string;
   eligible: number;
@@ -30,7 +30,7 @@ export type AutoReminderOrgResult = {
   failed: number;
 };
 
-export type AutoReminderResult = {
+type AutoReminderResult = {
   dryRun: boolean;
   enabled: boolean;
   reason?: string;

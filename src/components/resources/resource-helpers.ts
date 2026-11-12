@@ -1,17 +1,7 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  Armchair,
-  Bath,
-  Box,
-  Building2,
-  Cpu,
-  Scissors,
-  Table2,
-  Wrench,
-} from "lucide-react";
+import { Armchair, Bath, Box, Building2, Cpu, Table2, Wrench } from "lucide-react";
 import type { Appointment } from "@/types/appointment";
 import type { ResourceAvailabilitySlot, ResourceListItem, ResourceType } from "@/types/resource";
-import { RESOURCE_TYPE_LABEL } from "@/types/resource";
 
 export type LiveStatus = "occupied" | "available" | "maintenance" | "inactive" | "soon";
 
@@ -53,11 +43,7 @@ export function resourceTypeIcon(type: ResourceType): LucideIcon {
   return Box;
 }
 
-export function typeShortLabel(type: ResourceType) {
-  return RESOURCE_TYPE_LABEL[type];
-}
-
-export function activeAppointments(list: Appointment[]) {
+function activeAppointments(list: Appointment[]) {
   return list.filter((a) => BUSY.includes(a.status) && a.resourceId);
 }
 
@@ -114,31 +100,7 @@ export function liveDotClass(status: LiveStatus) {
   return "bg-emerald-500";
 }
 
-export function exportResourcesCsv(rows: ResourceListItem[]) {
-  const header = ["Nom", "Type", "Emplacement", "Capacité", "Active", "Services", "Maintenance"];
-  const lines = rows.map((r) =>
-    [
-      r.name,
-      RESOURCE_TYPE_LABEL[r.type],
-      r.location ?? "",
-      String(r.capacity),
-      r.active ? "oui" : "non",
-      r.serviceNames.join(" | "),
-      r.upcomingMaintenance ? "oui" : "non",
-    ]
-      .map((cell) => `"${cell.replaceAll('"', '""')}"`)
-      .join(";"),
-  );
-  const csv = `\uFEFF${[header.join(";"), ...lines].join("\n")}`;
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `ressources-${todayISO()}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-export type TimelineBlock = {
+type TimelineBlock = {
   left: number;
   width: number;
   label: string;
@@ -180,7 +142,3 @@ export function timelineBlocks(
     .filter((b) => b.left < 100 && b.left + b.width > 0);
 }
 
-export function hairIconForType(type: ResourceType): LucideIcon {
-  if (type === "FAUTEUIL") return Scissors;
-  return resourceTypeIcon(type);
-}

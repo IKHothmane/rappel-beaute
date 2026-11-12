@@ -32,7 +32,7 @@ const MARKETING_WA_TYPES = [
 
 export { MARKETING_WA_TYPES };
 
-export function bucketFromDays(
+function bucketFromDays(
   days: number,
   customerStatus?: string,
 ): ReactivationBucket {
@@ -340,7 +340,7 @@ function bucketFilterSql(bucket: ReactivationBucket | null): string {
   return ` AND cs."daysSince" < 30`;
 }
 
-export async function getReactivationKpis(organizationId: string): Promise<ReactivationKpis> {
+async function getReactivationKpis(organizationId: string): Promise<ReactivationKpis> {
   const [agg, recovered] = await Promise.all([
     pool.query<{
       toRelance: number;
@@ -494,7 +494,7 @@ async function getDefaultReactivationTemplate(organizationId: string) {
   return rows[0] ?? null;
 }
 
-export async function buildReactivationMessage(
+async function buildReactivationMessage(
   organizationId: string,
   customerId: string,
 ): Promise<{ message: string; templateId: string | null; phone: string } | null> {

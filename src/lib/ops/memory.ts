@@ -5,7 +5,7 @@
 
 import v8 from "node:v8";
 
-export type MemorySnapshot = {
+type MemorySnapshot = {
   rssMb: number;
   heapUsedMb: number;
   heapTotalMb: number;

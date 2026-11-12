@@ -54,11 +54,6 @@ export function formatPct(n: number | null): string {
   return `${sign}${n.toFixed(1)} %`;
 }
 
-export function formatCompareHint(current: number, previous: number | null): string | undefined {
-  if (previous == null) return undefined;
-  return `vs ${formatMad(previous)}`;
-}
-
 export async function getAnalyticsOverview(
   filters: Partial<AnalyticsFilters> & { preset?: AnalyticsPeriodPreset },
 ): Promise<AnalyticsOverview & { scope: AnalyticsScope }> {

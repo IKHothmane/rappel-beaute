@@ -41,7 +41,7 @@ export { isUniqueViolation };
 
 // ─── Suppliers ───────────────────────────────────────────────────────────────
 
-export async function getSupplierKpis(organizationId: string): Promise<SupplierKpis> {
+async function getSupplierKpis(organizationId: string): Promise<SupplierKpis> {
   const { rows } = await pool.query<{
     supplierCount: string;
     activeCount: string;
@@ -397,29 +397,9 @@ export async function removeProductSupplier(
   if (!rowCount) throw new Error("NOT_FOUND");
 }
 
-export async function listProductSuppliersForProduct(
-  organizationId: string,
-  productId: string,
-): Promise<ProductSupplierLink[]> {
-  const { rows } = await pool.query(
-    `SELECT
-      ps.id, ps."productId", p.name AS "productName", p.sku AS "productSku",
-      p.unit::text AS unit, ps."supplierId", s.name AS "supplierName",
-      ps."supplierSku", ps."purchasePrice"::text, ps."minimumOrderQuantity"::text,
-      ps."leadTimeDays", ps.preferred
-     FROM "ProductSupplier" ps
-     JOIN "Product" p ON p.id = ps."productId"
-     JOIN "Supplier" s ON s.id = ps."supplierId"
-     WHERE ps."productId" = $1 AND p."organizationId" = $2 AND s."deletedAt" IS NULL
-     ORDER BY ps.preferred DESC, ps."purchasePrice" ASC`,
-    [productId, organizationId],
-  );
-  return rows.map(mapProductSupplierRow);
-}
-
 // ─── Purchases ───────────────────────────────────────────────────────────────
 
-export async function getPurchaseKpis(organizationId: string): Promise<PurchaseKpis> {
+async function getPurchaseKpis(organizationId: string): Promise<PurchaseKpis> {
   const { rows } = await pool.query<{
     purchaseCount: string;
     draftCount: string;

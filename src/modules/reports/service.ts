@@ -1,5 +1,5 @@
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
-import type { AnalyticsFilters, AnalyticsScope } from "@/types/analytics";
+import type { AnalyticsFilters } from "@/types/analytics";
 import type { ExportFormat, ReportType } from "@/types/reports";
 import { formatMad } from "@/modules/analytics/service";
 
@@ -32,14 +32,6 @@ async function parseJson<T>(res: Response): Promise<T> {
     );
   }
   return data as T;
-}
-
-export async function getReport<T>(
-  type: ReportType,
-  filters: Partial<AnalyticsFilters> & { preset?: AnalyticsPeriodPreset },
-): Promise<T & { scope: AnalyticsScope }> {
-  const res = await fetch(`/api/reports/?${queryString({ ...filters, type })}`, fetchOpts);
-  return parseJson(res);
 }
 
 export function openReportExport(

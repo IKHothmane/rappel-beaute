@@ -9,7 +9,7 @@ const SCOPES = `${CALENDAR_SCOPE} ${CALENDAR_LIST_SCOPE} ${EMAIL_SCOPE}`;
 
 const TIMEZONE = BUSINESS_TZ;
 
-export type GoogleOAuthState = {
+type GoogleOAuthState = {
   purpose: "gcal";
   orgId: string;
   userId: string;
@@ -22,7 +22,7 @@ export type GoogleTokenSet = {
   expiresAt: Date;
 };
 
-export type GoogleCalendarEventInput = {
+type GoogleCalendarEventInput = {
   summary: string;
   description?: string;
   startAt: Date;
@@ -35,7 +35,7 @@ export function isGoogleCalendarConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
-export const GOOGLE_RECONNECT_MESSAGE =
+const GOOGLE_RECONNECT_MESSAGE =
   "La connexion Google n'est plus valide. Reconnectez le calendrier pour y afficher les rendez-vous.";
 
 export function googleReconnectMessage(error: unknown): string | null {
@@ -238,7 +238,7 @@ async function calendarFetch(
   });
 }
 
-export type GoogleCalendarListItem = {
+type GoogleCalendarListItem = {
   id: string;
   name: string;
   primary: boolean;

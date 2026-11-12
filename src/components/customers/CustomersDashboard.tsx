@@ -35,7 +35,7 @@ export type CustomerStatus =
   | "followup"
   | "vip";
 
-export type CustomerAppointment = {
+type CustomerAppointment = {
   id: string;
   service: string;
   date: string;

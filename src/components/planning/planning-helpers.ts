@@ -4,7 +4,7 @@ import type { OrganizationClosureItem } from "@/types/planning";
 import type { LeaveType, StaffAgendaContext, StaffBreakSlot, StaffScheduleSlot } from "@/types/staff";
 import { DAY_LABELS, LEAVE_TYPE_LABEL } from "@/types/staff";
 
-export const DAY_SHORT = ["DIM", "LUN", "MAR", "MER", "JEU", "VEN", "SAM"] as const;
+const DAY_SHORT = ["DIM", "LUN", "MAR", "MER", "JEU", "VEN", "SAM"] as const;
 
 export type PlanningView = "day" | "week" | "month";
 
@@ -15,13 +15,13 @@ export type DayCell =
   | { kind: "replaced"; substituteName: string }
   | { kind: "off" };
 
-export type PlanningConflict = {
+type PlanningConflict = {
   kind: "leave_rdv" | "off_rdv" | "closure_rdv";
   title: string;
   detail: string;
 };
 
-export type AiSuggestion = {
+type AiSuggestion = {
   dayLabel: string;
   appointmentCount: number;
   staffOnDuty: number;
@@ -34,12 +34,12 @@ export function toHHMM(raw: string): string {
   return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 
-export function minutesFromTime(raw: string): number {
+function minutesFromTime(raw: string): number {
   const [h, m] = toHHMM(raw).split(":").map(Number);
   return (h ?? 0) * 60 + (m ?? 0);
 }
 
-export function hoursBetween(start: string, end: string): number {
+function hoursBetween(start: string, end: string): number {
   return Math.max(0, (minutesFromTime(end) - minutesFromTime(start)) / 60);
 }
 
@@ -75,18 +75,6 @@ export function isThisWeek(anchor: Date): boolean {
   const now = new Date();
   const week = getWeekDates(anchor);
   return now >= startOfDay(week[0]) && now <= endOfDay(week[6]);
-}
-
-export function formatWeekTitle(dates: Date[]): string {
-  const a = dates[0];
-  const b = dates[6];
-  if (!a || !b) return "";
-  const monthYear = b.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }).toUpperCase();
-  if (a.getMonth() === b.getMonth()) {
-    return `SEMAINE DU ${a.getDate()} → ${b.getDate()} ${monthYear}`;
-  }
-  const startMonth = a.toLocaleDateString("fr-FR", { month: "short" }).toUpperCase();
-  return `SEMAINE DU ${a.getDate()} ${startMonth} → ${b.getDate()} ${monthYear}`;
 }
 
 export function formatDayHead(date: Date): string {
@@ -232,7 +220,7 @@ export function isOnDutyToday(staff: StaffAgendaContext, today = new Date()): bo
   return cell.kind === "work" || cell.kind === "overtime";
 }
 
-export function liveAppointments(appointments: Appointment[]): Appointment[] {
+function liveAppointments(appointments: Appointment[]): Appointment[] {
   return appointments.filter((item) => item.status !== "CANCELLED");
 }
 

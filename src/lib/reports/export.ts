@@ -16,7 +16,7 @@ import {
 import type { AnalyticsFilters } from "@/types/analytics";
 import type { AnalyticsScope } from "@/lib/rbac";
 
-export type ExportResult = {
+type ExportResult = {
   buffer: Buffer;
   contentType: string;
   filename: string;

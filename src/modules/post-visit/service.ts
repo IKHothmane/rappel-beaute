@@ -1,9 +1,4 @@
-import type {
-  PostVisitKpis,
-  PostVisitListItem,
-  PostVisitSettings,
-  UpdatePostVisitSettingsInput,
-} from "@/types/post-visit";
+import type { PostVisitKpis, PostVisitListItem, PostVisitSettings } from "@/types/post-visit";
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -33,18 +28,6 @@ export async function listPostVisit() {
   }>("/api/post-visit/");
 }
 
-export async function updatePostVisitSettingsApi(input: UpdatePostVisitSettingsInput) {
-  try {
-    const settings = await api<PostVisitSettings>("/api/post-visit/", {
-      method: "POST",
-      body: JSON.stringify({ action: "updateSettings", ...input }),
-    });
-    return { ok: true as const, settings };
-  } catch (e) {
-    return { ok: false as const, error: e instanceof Error ? e.message : "Erreur" };
-  }
-}
-
 export async function skipPostVisit(appointmentId: string) {
   try {
     await api("/api/post-visit/", {
@@ -69,19 +52,3 @@ export async function syncPostVisitApi() {
   }
 }
 
-export async function getPostVisitSettings() {
-  const res = await api<{ settings: PostVisitSettings }>("/api/settings/post-visit/");
-  return res.settings;
-}
-
-export async function updatePostVisitSettingsSettingsApi(input: UpdatePostVisitSettingsInput) {
-  try {
-    const settings = await api<PostVisitSettings>("/api/settings/post-visit/", {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    });
-    return { ok: true as const, settings };
-  } catch (e) {
-    return { ok: false as const, error: e instanceof Error ? e.message : "Erreur" };
-  }
-}

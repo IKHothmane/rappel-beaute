@@ -1106,13 +1106,6 @@ export function AdminPlatformSettingsView() {
               </button>
               <button
                 type="button"
-                onClick={() => setToast("Purge BullMQ : soft — non exposée")}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#FFEFF8] px-3 py-2.5 text-[12px] font-bold text-ink"
-              >
-                Purger files BullMQ
-              </button>
-              <button
-                type="button"
                 onClick={() => setToast("Backup immédiat : soft — non branché")}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-[12px] font-bold text-white"
               >

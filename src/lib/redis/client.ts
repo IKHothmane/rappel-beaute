@@ -50,11 +50,3 @@ export async function pingRedis(): Promise<boolean> {
   }
 }
 
-/** Fermeture propre (tests) */
-export async function closeRedis(): Promise<void> {
-  if (client?.isOpen) {
-    await client.quit();
-  }
-  client = null;
-  connectPromise = null;
-}

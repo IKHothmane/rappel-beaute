@@ -1,10 +1,5 @@
 import { PRODUCT_CATEGORY_LABEL, type ProductCategory } from "@/types/inventory";
-import type { PosProductItem, PosSaleDetail } from "@/types/pos";
-
-export function formatPosTime(iso: string | null | undefined) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
+import type { PosProductItem } from "@/types/pos";
 
 export function isSameLocalDay(iso: string) {
   const d = new Date(iso);
@@ -14,17 +9,6 @@ export function isSameLocalDay(iso: string) {
     d.getMonth() === n.getMonth() &&
     d.getDate() === n.getDate()
   );
-}
-
-export function posDayKpis(sales: PosSaleDetail[]) {
-  const today = sales.filter((s) => s.status === "COMPLETED" && isSameLocalDay(s.createdAt));
-  const revenue = today.reduce((sum, s) => sum + s.total, 0);
-  const count = today.length;
-  return {
-    revenue,
-    count,
-    average: count > 0 ? Math.round((revenue / count) * 100) / 100 : 0,
-  };
 }
 
 export function productStockState(p: PosProductItem): "ok" | "low" | "out" {
@@ -62,8 +46,3 @@ export function filterPosCatalog(
   });
 }
 
-export function findBySku(products: PosProductItem[], raw: string) {
-  const q = raw.trim().toLowerCase();
-  if (!q) return null;
-  return products.find((p) => p.sku.toLowerCase() === q) ?? null;
-}

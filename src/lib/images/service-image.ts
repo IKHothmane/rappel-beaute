@@ -1,20 +1,20 @@
 /** Optimisation des photos de prestations — 2 variantes WebP, sans original. */
 
 export const SERVICE_IMAGE_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-export const SERVICE_IMAGE_WIDTH = 800;
-export const SERVICE_IMAGE_HEIGHT = 600;
-export const SERVICE_IMAGE_CARD_WIDTH = 400;
-export const SERVICE_IMAGE_CARD_HEIGHT = 300;
-export const SERVICE_IMAGE_QUALITY = 75;
-export const SERVICE_IMAGE_MIN_QUALITY = 50;
+const SERVICE_IMAGE_WIDTH = 800;
+const SERVICE_IMAGE_HEIGHT = 600;
+const SERVICE_IMAGE_CARD_WIDTH = 400;
+const SERVICE_IMAGE_CARD_HEIGHT = 300;
+const SERVICE_IMAGE_QUALITY = 75;
+const SERVICE_IMAGE_MIN_QUALITY = 50;
 /** Objectif performance : image principale ≤ 120 Ko. */
-export const SERVICE_IMAGE_MAIN_MAX_BYTES = 120 * 1024;
+const SERVICE_IMAGE_MAIN_MAX_BYTES = 120 * 1024;
 /** Objectif performance : miniature ≤ 50 Ko. */
-export const SERVICE_IMAGE_THUMB_MAX_BYTES = 50 * 1024;
+const SERVICE_IMAGE_THUMB_MAX_BYTES = 50 * 1024;
 
-export type SniffedImageType = "image/jpeg" | "image/png" | "image/webp";
+type SniffedImageType = "image/jpeg" | "image/png" | "image/webp";
 
-export type ServiceImageVariant = {
+type ServiceImageVariant = {
   data: Buffer;
   contentType: "image/webp";
   filename: string;

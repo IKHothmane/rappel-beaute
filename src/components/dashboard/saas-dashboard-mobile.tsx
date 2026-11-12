@@ -5,22 +5,7 @@ import type { ReviewAnalytics } from "@/types/analytics";
 import { MetricCard } from "@/components/ui/metric-card";
 
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarCheck,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  Headphones,
-  MessageCircle,
-  Package,
-  ShoppingBag,
-  Sparkles,
-  Star,
-  Store,
-  TrendingUp,
-  Wallet,
-} from "lucide-react";
+import { ArrowRight, CalendarCheck, CalendarDays, CheckCircle2, Clock3, Headphones, MessageCircle, Package, Sparkles, Star, Store, TrendingUp, Wallet } from "lucide-react";
 import { formatMad, formatPct } from "@/modules/analytics/service";
 import { APPOINTMENT_STATUS_LABEL } from "@/modules/appointments/constants";
 import { cn } from "@/lib/utils";
@@ -37,7 +22,7 @@ import type {
 import type { CashRegisterState } from "@/types/finance";
 import type { StockKpis } from "@/types/inventory";
 
-export type DashboardPeriodKey = Extract<AnalyticsPeriodPreset, "today" | "week" | "month" | "year">;
+type DashboardPeriodKey = Extract<AnalyticsPeriodPreset, "today" | "week" | "month" | "year">;
 
 const PERIODS: { key: DashboardPeriodKey; label: string }[] = [
   { key: "today", label: "Aujourd'hui" },
@@ -53,7 +38,7 @@ function aptPhase(apt: Appointment, imminentIds: Set<string>) {
   return { time: "Prévu", badge: APPOINTMENT_STATUS_LABEL[apt.status] };
 }
 
-export type SaasDashboardMobileProps = {
+type SaasDashboardMobileProps = {
   reviewKpis: ReviewKpis | null;
   reviewsAnalytics: ReviewAnalytics | null;
   firstName: string;

@@ -36,10 +36,3 @@ export type CreateWaitingListInput = {
   expiresAt?: string | null;
 };
 
-export const WAITING_LIST_STATUS_LABEL: Record<WaitingListStatus, string> = {
-  WAITING: "En attente",
-  NOTIFIED: "Notifiée",
-  BOOKED: "Réservée",
-  EXPIRED: "Expirée",
-  CANCELLED: "Annulée",
-};

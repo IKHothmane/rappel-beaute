@@ -30,14 +30,14 @@ export function formatDateDigits(raw: string): string {
 }
 
 /** `YYYY-MM-DDTHH:mm` → `JJ/MM/AAAA HH:MM` */
-export function datetimeLocalToFr(value: string): string {
+function datetimeLocalToFr(value: string): string {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (!match) return "";
   return `${match[3]}/${match[2]}/${match[1]} ${match[4]}:${match[5]}`;
 }
 
 /** `JJ/MM/AAAA HH:MM` → `YYYY-MM-DDTHH:mm` */
-export function frToDatetimeLocal(fr: string): string | null {
+function frToDatetimeLocal(fr: string): string | null {
   const match = fr
     .trim()
     .match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2}))?$/);
@@ -50,7 +50,7 @@ export function frToDatetimeLocal(fr: string): string | null {
   return `${iso}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-export function formatDatetimeDigits(raw: string): string {
+function formatDatetimeDigits(raw: string): string {
   const digits = raw.replace(/\D/g, "").slice(0, 12);
   const d = digits.slice(0, 2);
   const m = digits.slice(2, 4);

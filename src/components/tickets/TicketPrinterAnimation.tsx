@@ -5,7 +5,7 @@ import { ReceiptPrinter } from "@/components/ui/receipt-printer";
 import { printBeautyTicket } from "@/components/tickets/print-beauty-ticket";
 import "./TicketPrinterAnimation.css";
 
-export type TicketLine = {
+type TicketLine = {
   name: string;
   detail?: string;
   quantity?: number;

@@ -4,8 +4,6 @@ const MIN_10 = 10 * MIN;
 const MIN_15 = 15 * MIN;
 const HOUR = 60 * MIN;
 
-export type LimitWindow = { limit: number; windowMs: number };
-
 export const RATE_POLICIES = {
   login: {
     ip: { limit: 10, windowMs: MIN_15 },

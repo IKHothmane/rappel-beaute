@@ -13,7 +13,7 @@ import {
 } from "@/lib/validation/input-limits";
 import type { CreateCustomerInput, CustomerDetail } from "@/types/customer";
 
-export type NouvelleClienteModalProps = {
+type NouvelleClienteModalProps = {
   open: boolean;
   onClose: () => void;
   initial?: Partial<CustomerDetail>;

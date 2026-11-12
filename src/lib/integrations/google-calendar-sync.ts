@@ -23,7 +23,7 @@ function eventDescription(appointment: Appointment, orgName: string): string {
   return lines.filter(Boolean).join("\n");
 }
 
-export async function pushAppointmentToGoogle(
+async function pushAppointmentToGoogle(
   organizationId: string,
   appointment: Appointment,
 ): Promise<void> {

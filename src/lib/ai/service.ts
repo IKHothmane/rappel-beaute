@@ -163,7 +163,7 @@ export async function getAIUsage(
   };
 }
 
-export async function assertAIQuota(
+async function assertAIQuota(
   organizationId: string,
   planCode: string | null,
 ): Promise<void> {

@@ -2,7 +2,6 @@ import { randomBytes } from "crypto";
 import { Pool } from "pg";
 import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writeAuditLog } from "@/lib/db/audit";
-import { getCustomerById } from "@/lib/db/customers";
 import type {
   CreateCustomerNoteInput,
   Customer360Stats,
@@ -537,17 +536,3 @@ export async function deleteCustomerNote(
   return true;
 }
 
-/** Enrichit le détail cliente avec stats 360 (sans casser l'API existante). */
-export async function getCustomer360Bundle(
-  customerId: string,
-  organizationId: string,
-): Promise<{
-  customer: NonNullable<Awaited<ReturnType<typeof getCustomerById>>>;
-  stats: Customer360Stats;
-} | null> {
-  const customer = await getCustomerById(customerId, organizationId);
-  if (!customer) return null;
-  const stats = await getCustomer360Stats(customerId, organizationId);
-  if (!stats) return null;
-  return { customer, stats };
-}

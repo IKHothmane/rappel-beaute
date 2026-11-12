@@ -59,7 +59,7 @@ function mapRow(row: {
   };
 }
 
-export async function listUsersByRoles(
+async function listUsersByRoles(
   organizationId: string,
   roles: AppRole[],
   client?: PoolClient,
@@ -74,7 +74,7 @@ export async function listUsersByRoles(
   return rows;
 }
 
-export async function resolveUserIdForStaff(
+async function resolveUserIdForStaff(
   organizationId: string,
   staffId: string,
   client?: PoolClient,
@@ -112,7 +112,7 @@ export async function resolveUserIdForStaff(
   return byName.rows[0]?.id ?? null;
 }
 
-export type EmitNotificationInput = {
+type EmitNotificationInput = {
   organizationId: string;
   type: NotificationType;
   title: string;

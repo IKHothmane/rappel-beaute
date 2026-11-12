@@ -1,6 +1,6 @@
 export type AlertSeverity = "critical" | "warning" | "info";
 
-export type AlertPayload = {
+type AlertPayload = {
   severity: AlertSeverity;
   title: string;
   source: string;

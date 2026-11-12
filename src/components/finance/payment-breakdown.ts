@@ -10,19 +10,19 @@ import type { Appointment } from "@/types/appointment";
 import type { PaymentItem } from "@/types/finance";
 import type { PosSaleDetail } from "@/types/pos";
 
-export type PaymentServiceLine = {
+type PaymentServiceLine = {
   name: string;
   price: number | null;
 };
 
-export type PaymentSoldProductLine = {
+type PaymentSoldProductLine = {
   name: string;
   quantity: number;
   unitPrice: number;
   lineTotal: number;
 };
 
-export type PaymentUsedProductLine = {
+type PaymentUsedProductLine = {
   name: string;
   quantity: number;
 };

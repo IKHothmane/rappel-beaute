@@ -259,7 +259,7 @@ export async function syncReviewRequests(organizationId: string): Promise<void> 
   );
 }
 
-export async function getReviewKpis(organizationId: string): Promise<ReviewKpis> {
+async function getReviewKpis(organizationId: string): Promise<ReviewKpis> {
   const [{ rows }, publicRes] = await Promise.all([
     pool.query<{
       pendingToSend: number;
@@ -353,7 +353,7 @@ export async function getReviewKpis(organizationId: string): Promise<ReviewKpis>
   };
 }
 
-export async function listStaffReviewScores(organizationId: string): Promise<StaffReviewScore[]> {
+async function listStaffReviewScores(organizationId: string): Promise<StaffReviewScore[]> {
   const { rows } = await pool.query<{
     staffId: string;
     firstName: string;

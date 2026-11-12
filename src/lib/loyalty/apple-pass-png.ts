@@ -24,7 +24,7 @@ function chunk(type: string, data: Buffer) {
 }
 
 /** PNG RVB opaque. Apple refuse une icône transparente. */
-export function rgbPng(width: number, height: number, paint: (x: number, y: number) => [number, number, number]) {
+function rgbPng(width: number, height: number, paint: (x: number, y: number) => [number, number, number]) {
   const rows: Buffer[] = [];
   for (let y = 0; y < height; y += 1) {
     const row = Buffer.alloc(1 + width * 3);

@@ -79,7 +79,7 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export type SupportListParams = {
+type SupportListParams = {
   status?: string;
   priority?: string;
   category?: string;

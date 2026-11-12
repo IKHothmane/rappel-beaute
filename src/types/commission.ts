@@ -1,6 +1,3 @@
-/** Legacy flag — préférer CommissionSettings.productCommissionEnabled */
-export const PRODUCT_COMMISSIONS_ENABLED = false;
-
 export type CommissionType = "PERCENTAGE" | "FIXED";
 export type CommissionPeriodStatus = "OPEN" | "CLOSED";
 export type CommissionPaidFilter = "all" | "paid" | "unpaid";
@@ -10,11 +7,6 @@ export type CommissionPeriodPreset =
   | "month"
   | "prev_month"
   | "custom";
-
-export const COMMISSION_TYPE_LABEL: Record<CommissionType, string> = {
-  PERCENTAGE: "%",
-  FIXED: "Fixe",
-};
 
 export type CommissionSettings = {
   id: string;
@@ -47,7 +39,7 @@ export type CommissionListItem = {
   createdAt: string;
 };
 
-export type CommissionAdjustmentItem = {
+type CommissionAdjustmentItem = {
   id: string;
   amount: number;
   reason: string;
@@ -60,7 +52,7 @@ export type CommissionDetail = CommissionListItem & {
   adjustments: CommissionAdjustmentItem[];
 };
 
-export type CommissionStaffAgg = {
+type CommissionStaffAgg = {
   staffId: string;
   staffName: string;
   commissionTotal: number;

@@ -122,10 +122,6 @@ export function formatSegmentLabel(segment: CustomerSegment): string {
   return map[segment];
 }
 
-export function formatStatusLabel(segment: CustomerSegment): string {
-  return formatSegmentLabel(segment);
-}
-
 export async function getCustomerStats(id: string): Promise<Customer360Stats> {
   const res = await fetch(`/api/customers/${id}/stats/`, fetchOpts);
   return parseJson(res);
@@ -143,58 +139,3 @@ export async function listCustomerNotes(id: string): Promise<CustomerNoteItem[]>
   return data.data;
 }
 
-export async function createCustomerNoteApi(
-  id: string,
-  content: string,
-): Promise<{ ok: true; note: CustomerNoteItem } | { ok: false; error: string }> {
-  try {
-    const res = await fetch(`/api/customers/${id}/notes/`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
-    return { ok: true, note: data as CustomerNoteItem };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
-}
-
-export async function updateCustomerNoteApi(
-  customerId: string,
-  noteId: string,
-  content: string,
-): Promise<{ ok: true; note: CustomerNoteItem } | { ok: false; error: string }> {
-  try {
-    const res = await fetch(`/api/customers/${customerId}/notes/${noteId}/`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
-    return { ok: true, note: data as CustomerNoteItem };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
-}
-
-export async function deleteCustomerNoteApi(
-  customerId: string,
-  noteId: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  try {
-    const res = await fetch(`/api/customers/${customerId}/notes/${noteId}/`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error ?? "Erreur" };
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
-}

@@ -2,15 +2,7 @@ import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { getSessionSecret, signJwt, verifyJwt } from "@/lib/auth/crypto";
 import { payloadToSession } from "@/lib/auth/session-payload";
-import {
-  SESSION_COOKIE,
-  SESSION_MAX_AGE_SEC,
-  type AppSessionUser,
-  type PlatformSessionUser,
-  type SessionPayload,
-  type SessionUser,
-  toPublicSession,
-} from "@/lib/auth/types";
+import { SESSION_COOKIE, SESSION_MAX_AGE_SEC, type AppSessionUser, type PlatformSessionUser, type SessionPayload, type SessionUser } from "@/lib/auth/types";
 
 function buildToken(user: SessionUser, maxAgeSec: number): string {
   return signJwt(user, getSessionSecret(), maxAgeSec);
@@ -42,7 +34,7 @@ function cookieSecure(): boolean {
   return process.env.NODE_ENV === "production";
 }
 
-export function sessionCookieOptions(token: string, maxAgeSec: number | null = SESSION_MAX_AGE_SEC) {
+function sessionCookieOptions(token: string, maxAgeSec: number | null = SESSION_MAX_AGE_SEC) {
   return {
     name: SESSION_COOKIE,
     value: token,
@@ -70,11 +62,6 @@ export function clearSessionCookie() {
     path: "/",
     maxAge: 0,
   };
-}
-
-export async function getPublicSession() {
-  const session = await getSession();
-  return session ? toPublicSession(session) : null;
 }
 
 export type { AppSessionUser, PlatformSessionUser };

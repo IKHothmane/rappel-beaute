@@ -248,7 +248,7 @@ export async function checkStockAndNotify(
   }
 }
 
-export async function notifyReviewPending(
+async function notifyReviewPending(
   organizationId: string,
   opts: { reviewRequestId: string; customerName: string },
 ): Promise<void> {

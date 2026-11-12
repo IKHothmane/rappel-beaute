@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type PublicCartLine = {
+type PublicCartLine = {
   productId: string;
   name: string;
   slug: string;

@@ -1,15 +1,10 @@
-import type { StaffCommissionItem, StaffLeaveItem, StaffScheduleSlot, StaffStatus } from "@/types/staff";
+import type { StaffCommissionItem, StaffStatus } from "@/types/staff";
 
 export function staffInitials(firstName: string, lastName: string) {
   const a = firstName.trim().charAt(0);
   const b = lastName.trim().charAt(0);
   const initials = `${a}${b}`.toUpperCase();
   return initials || "?";
-}
-
-export function shortStaffRef(id: string) {
-  const tail = id.replace(/[^a-zA-Z0-9]/g, "").slice(-6).toUpperCase();
-  return `#${tail || id.slice(-4).toUpperCase()}`;
 }
 
 export function formatHireLabel(iso: string | null): string | null {
@@ -55,21 +50,3 @@ export function commissionRuleLabel(rules: StaffCommissionItem[]): string {
   return `${rules.length} règle${rules.length > 1 ? "s" : ""}`;
 }
 
-export function todayScheduleLabel(schedules: StaffScheduleSlot[]): string {
-  const dow = new Date().getDay();
-  const slots = schedules.filter((s) => s.dayOfWeek === dow && s.active);
-  if (!slots.length) return "Pas de créneau aujourd’hui";
-  return slots.map((s) => `${s.startTime}–${s.endTime}`).join(" · ");
-}
-
-export function currentApprovedLeave(leaves: StaffLeaveItem[]): StaffLeaveItem | null {
-  const now = Date.now();
-  return (
-    leaves.find(
-      (l) =>
-        l.status === "APPROVED" &&
-        new Date(l.startAt).getTime() <= now &&
-        new Date(l.endAt).getTime() >= now,
-    ) ?? null
-  );
-}

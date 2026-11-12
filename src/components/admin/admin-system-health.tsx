@@ -20,7 +20,6 @@ import {
   Rocket,
   Save,
   Server,
-  Settings2,
   Shield,
   ShieldCheck,
   Terminal,
@@ -113,33 +112,6 @@ async function probeEndpoint(path: string): Promise<{
   }
 }
 
-function jobCountMap(body?: Record<string, unknown>) {
-  const counts = body?.counts;
-  if (!counts || typeof counts !== "object") return null;
-  const row = counts as Record<string, unknown>;
-  return {
-    waiting: Number(row.waiting ?? 0),
-    active: Number(row.active ?? 0),
-    completed: Number(row.completed ?? 0),
-    failed: Number(row.failed ?? 0),
-    delayed: Number(row.delayed ?? 0),
-  };
-}
-
-function jobCardStatus(probe?: Probe) {
-  const raw = String(probe?.body?.status ?? probe?.status ?? "unknown");
-  if (raw === "ok") return "ok";
-  if (raw === "degraded") return "degraded";
-  if (raw === "skipped") return "skipped";
-  if (raw === "error") return "down";
-  return "unknown";
-}
-
-function countText(value: number | undefined, status: string) {
-  if (status === "skipped" || status === "unknown" || value == null || Number.isNaN(value)) return "—";
-  return String(value);
-}
-
 function relativeAgo(iso: string | null, tick: number) {
   if (!iso) return "—";
   void tick;
@@ -176,12 +148,11 @@ export function AdminSystemHealthView() {
     setChecking(true);
     const pipelineStart = performance.now();
     try {
-      const [dash, healthRoot, db, redis, jobs] = await Promise.all([
+      const [dash, healthRoot, db, redis] = await Promise.all([
         fetchAdminDashboard().catch(() => null),
         probeEndpoint("/api/health/"),
         probeEndpoint("/api/health/db/"),
         probeEndpoint("/api/health/redis/"),
-        probeEndpoint("/api/health/jobs/"),
       ]);
 
       if (dash?.health) setHealth(dash.health);
@@ -226,15 +197,6 @@ export function AdminSystemHealthView() {
           latencyMs: null,
           detail: "Sonde dédiée non exposée — statut dashboard",
         },
-        {
-          path: "/api/health/jobs/",
-          label: "/api/health/jobs/",
-          protocol: "GET BullMQ",
-          status: jobs.status,
-          latencyMs: jobs.latencyMs,
-          detail: String(jobs.body?.status ?? ""),
-          body: jobs.body,
-        },
       ];
       setProbes(nextProbes);
       setPipelineMs(Math.round(performance.now() - pipelineStart));
@@ -262,10 +224,7 @@ export function AdminSystemHealthView() {
     const h = health;
     const dbProbe = probes.find((p) => p.path.includes("/db/"));
     const redisProbe = probes.find((p) => p.path.includes("/redis/"));
-    const jobsProbe = probes.find((p) => p.path.includes("/jobs/"));
     const rootProbe = probes.find((p) => p.path === "/api/health/");
-    const jobCounts = jobCountMap(jobsProbe?.body);
-    const jobStatus = jobCardStatus(jobsProbe);
 
     return [
       {
@@ -328,29 +287,6 @@ export function AdminSystemHealthView() {
           redisProbe?.status === "skipped"
             ? "Redis non configuré (skipped)"
             : "Ping TTL validé",
-      },
-      {
-        id: "jobs",
-        title: "Background Jobs",
-        subtitle: "Surveillance BullMQ / workers",
-        note: "Files surveillées : emails, notifications, reminders, reports",
-        icon: Settings2,
-        status: jobStatus,
-        statusText: jobStatus === "ok" ? "Surveillance opérationnelle" : undefined,
-        rows: [
-          ["WAIT", countText(jobCounts?.waiting, jobStatus)],
-          ["ACTIVE", countText(jobCounts?.active, jobStatus)],
-          ["DONE", countText(jobCounts?.completed, jobStatus)],
-          ["FAIL", countText(jobCounts?.failed, jobStatus)],
-          ["DELAYED", countText(jobCounts?.delayed, jobStatus)],
-        ],
-        action: {
-          label: "Vérifier les files",
-          onClick: (): void => {
-            void runChecks();
-          },
-        },
-        footer: lastCheck ? `Dernière vérification : ${relativeAgo(lastCheck, tick)}` : "En attente de sonde",
       },
       {
         id: "email",
@@ -423,7 +359,7 @@ export function AdminSystemHealthView() {
         footer: "API Cloud Meta volontairement limitée",
       },
     ];
-  }, [health, probes, runChecks, lastCheck, tick]);
+  }, [health, probes, runChecks]);
 
   const coreOk = useMemo(() => {
     const statuses = [
@@ -766,11 +702,7 @@ export function AdminSystemHealthView() {
                 <code className="font-mono font-semibold text-primary">
                   /api/health/*
                 </code>{" "}
-                + agrégat dashboard admin. Les files BullMQ sont lues par{" "}
-                <code className="font-mono font-semibold text-primary">
-                  /api/health/jobs/
-                </code>
-                .
+                + agrégat dashboard admin.
               </p>
             </div>
           </div>

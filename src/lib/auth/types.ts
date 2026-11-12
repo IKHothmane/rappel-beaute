@@ -1,9 +1,6 @@
 import type { AppRole } from "@/lib/rbac";
 import type { PlatformRole } from "@/types/platform";
 
-export type SessionScope = "app" | "platform";
-export type AccountType = "ORGANIZATION" | "PLATFORM";
-
 export type AppSessionUser = {
   id: string;
   email: string;

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { AppFeature } from "@/lib/rbac";
 import { requireAppSession, type AuthResult } from "@/lib/auth/api-guard";
-import { isAppSession } from "@/lib/auth/types";
 import {
   canCreateAppointment,
   canCreateCustomer,
@@ -10,7 +8,6 @@ import {
   canUseFeature,
   type LimitCheckResult,
 } from "@/lib/subscriptions/limits";
-import { planFeatureForAppFeature, type PlanFeatureKey } from "@/lib/subscriptions/features";
 import type { PlanLimitKey } from "@/types/subscription";
 
 type LimitDenied = Extract<LimitCheckResult, { ok: false }>;
@@ -30,53 +27,7 @@ function limitResponse(check: LimitDenied) {
   );
 }
 
-export async function requirePlanFeature(
-  request: NextRequest,
-  feature: PlanFeatureKey,
-): Promise<AuthResult | { ok: false; response: NextResponse }> {
-  const auth = await requireAppSession(request);
-  if (!auth.ok) return auth;
-  return { ok: true, session: auth.session, _feature: feature } as AuthResult & {
-    _feature: PlanFeatureKey;
-  };
-}
-
-export async function enforcePlanFeature(
-  request: NextRequest,
-  feature: PlanFeatureKey,
-): Promise<AuthResult> {
-  const auth = await requireAppSession(request);
-  if (!auth.ok) return auth;
-
-  const check = await canUseFeature(auth.session.organizationId, feature);
-  if (!check.ok) {
-    return { ok: false, response: limitResponse(check) };
-  }
-  return auth;
-}
-
-export async function enforceAppFeatureWithPlan(
-  request: NextRequest,
-  appFeature: AppFeature,
-  rbacAuth: AuthResult,
-): Promise<AuthResult> {
-  if (!rbacAuth.ok) return rbacAuth;
-  if (!isAppSession(rbacAuth.session)) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "Accès réservé aux instituts." }, { status: 403 }),
-    };
-  }
-  const planFeature = planFeatureForAppFeature(appFeature);
-  if (!planFeature) return rbacAuth;
-  const check = await canUseFeature(rbacAuth.session.organizationId, planFeature);
-  if (!check.ok) {
-    return { ok: false, response: limitResponse(check) };
-  }
-  return rbacAuth;
-}
-
-export async function enforcePlanLimit(
+async function enforcePlanLimit(
   request: NextRequest,
   limit: PlanLimitKey,
 ): Promise<AuthResult> {

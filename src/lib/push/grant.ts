@@ -3,7 +3,7 @@ import type { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db/pool";
 import { grantAllowsCard, type PushGrant } from "@/lib/push/eligibility";
 
-export const PUSH_GRANT_COOKIE = "rb_push_grant";
+const PUSH_GRANT_COOKIE = "rb_push_grant";
 const GRANT_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 
 export function newGrantToken() {
@@ -14,7 +14,7 @@ export function hashGrantToken(raw: string) {
   return createHash("sha256").update(raw).digest("hex");
 }
 
-export async function loadPushGrant(raw: string | undefined, now = new Date()): Promise<PushGrant | null> {
+async function loadPushGrant(raw: string | undefined, now = new Date()): Promise<PushGrant | null> {
   if (!raw || raw.length < 20) return null;
   const { rows } = await pool.query<PushGrant>(
     `SELECT "organizationId", "customerId", "expiresAt", "revokedAt"

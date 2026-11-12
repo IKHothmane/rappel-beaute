@@ -33,11 +33,6 @@ export function loyaltyCardUrl(token: string): string {
   return `${PUBLIC_SITE}/carte/${t}/`;
 }
 
-/** QR « ajouter au Wallet » (Google / Apple via /google/). */
-export function loyaltyCardWalletUrl(token: string): string {
-  return `${loyaltyCardUrl(token)}google/`;
-}
-
 export function requestCardOrigin(_request?: { url: string; headers: Headers }): string {
   return PUBLIC_SITE;
 }

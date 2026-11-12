@@ -9,7 +9,7 @@ import { runWidgetTool, type WidgetToolResult } from "@/lib/assistant/widget-too
 const CONFIRM = /^(oui|yes|ok|okay|d'accord|dac|je confirme|confirmer|c'est bon)\.?!?$/i;
 const REJECT = /^(non|je ne confirme pas|annuler la proposition)\.?!?$/i;
 
-export type OrchestratorReply = {
+type OrchestratorReply = {
   reply: string;
   reference?: string;
 };

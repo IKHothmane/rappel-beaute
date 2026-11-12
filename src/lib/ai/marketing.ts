@@ -53,7 +53,7 @@ function formatTimeFr(d: Date): string {
   });
 }
 
-export type AIMessageDbContext = {
+type AIMessageDbContext = {
   customer: {
     id: string;
     firstName: string;
@@ -594,7 +594,7 @@ export function buildMockVariants(
   return unique.slice(0, count).map((v) => (t === "short" ? v.replace(/\n\n/g, "\n").slice(0, 320) : v));
 }
 
-export function buildMarketingSystemPrompt(facts: AIMessageLlmFacts, count: number): string {
+function buildMarketingSystemPrompt(facts: AIMessageLlmFacts, count: number): string {
   const langLabel =
     facts.language === "ar"
       ? "arabe (الفصحى المبسطة، مناسب لواتساب المغرب)"

@@ -63,15 +63,3 @@ export type StockLedgerReportRow = {
   ledgerBalance: number;
 };
 
-export const REPORT_TYPE_LABEL: Record<ReportType, string> = {
-  global: "Vue globale",
-  finance: "Finance",
-  agenda: "Agenda",
-  customers: "Clientes",
-  services: "Services",
-  staff: "Employées",
-  inventory: "Stock",
-  marketing: "Marketing",
-  reviews: "Avis",
-  loyalty: "Fidélité",
-};

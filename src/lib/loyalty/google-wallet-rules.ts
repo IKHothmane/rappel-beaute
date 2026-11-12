@@ -1,7 +1,7 @@
 import { publicReviewPath } from "@/lib/reviews/public-review";
 
 export const WALLET_NOTIFY_LIMIT = 3;
-export const WALLET_MESSAGE_KINDS = [
+const WALLET_MESSAGE_KINDS = [
   "REWARD_AVAILABLE",
   "REWARD_EXPIRY",
   "LOYALTY_PROGRESS",
@@ -10,7 +10,7 @@ export const WALLET_MESSAGE_KINDS = [
 
 export type WalletMessageKind = (typeof WALLET_MESSAGE_KINDS)[number];
 
-export type WalletNotifyDecision =
+type WalletNotifyDecision =
   | "send"
   | "no_consent"
   | "category_off"

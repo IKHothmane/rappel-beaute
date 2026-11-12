@@ -5,7 +5,7 @@ import { PRODUCT_CATEGORY_LABEL, PRODUCT_UNIT_LABEL } from "@/types/inventory";
 import type { ProductCategory } from "@/types/inventory";
 import type { StaffListItem } from "@/types/staff";
 
-export type Salon3dChair = {
+type Salon3dChair = {
   id: string;
   name: string;
   status: "occupied" | "free";
@@ -18,7 +18,7 @@ export type Salon3dChair = {
   appointmentId: string | null;
 };
 
-export type Salon3dStaff = {
+type Salon3dStaff = {
   id: string;
   name: string;
   firstName: string;
@@ -28,7 +28,7 @@ export type Salon3dStaff = {
   color: string;
 };
 
-export type Salon3dWaiting = {
+type Salon3dWaiting = {
   id: string;
   name: string;
   arrivalTime: string;
@@ -37,13 +37,13 @@ export type Salon3dWaiting = {
   status: string;
 };
 
-export type Salon3dWaitingRoom = {
+type Salon3dWaitingRoom = {
   id: string;
   name: string;
   capacity: number;
 };
 
-export type Salon3dStockItem = {
+type Salon3dStockItem = {
   id: string;
   name: string;
   qty: number;
@@ -56,7 +56,7 @@ export type Salon3dStockItem = {
   brand: string | null;
 };
 
-export type Salon3dSnapshot = {
+type Salon3dSnapshot = {
   organizationName: string;
   refreshedAt: string;
   chairs: Salon3dChair[];

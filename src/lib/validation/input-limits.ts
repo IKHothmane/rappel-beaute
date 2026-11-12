@@ -10,7 +10,7 @@ export const PRICE_MAX_DIGITS = 8;
 export const NOTES_MAX = 200;
 export const DESCRIPTION_MAX = 500;
 export const ADDRESS_MAX = 200;
-export const DURATION_MAX_DIGITS = 4;
+const DURATION_MAX_DIGITS = 4;
 export const QTY_MAX_DIGITS = 6;
 
 /** Lettres, espaces, tirets, apostrophes. */

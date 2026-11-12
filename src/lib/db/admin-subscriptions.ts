@@ -13,7 +13,7 @@ function actorName(actor: PlatformSessionUser) {
   return `${actor.firstName} ${actor.lastName}`.trim();
 }
 
-export type AdminSubscriptionListItem = {
+type AdminSubscriptionListItem = {
   id: string;
   organizationId: string;
   organizationName: string;
@@ -34,7 +34,7 @@ export type AdminSubscriptionListItem = {
   paymentLabel: string;
 };
 
-export type AdminSubscriptionsKpis = {
+type AdminSubscriptionsKpis = {
   total: number;
   active: number;
   trial: number;
@@ -691,7 +691,7 @@ export async function createAdminSubscription(
   return id;
 }
 
-export async function startTrialSubscription(
+async function startTrialSubscription(
   organizationId: string,
   planId: string,
   client?: PoolClient,

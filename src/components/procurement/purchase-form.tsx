@@ -25,7 +25,7 @@ function wholeNumber(raw: string, maxDigits = QTY_MAX_DIGITS) {
   return Number(digits);
 }
 
-export type PurchaseFormInitial = {
+type PurchaseFormInitial = {
   supplierId?: string | null;
   supplierName?: string | null;
   notes?: string | null;

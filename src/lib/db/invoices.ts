@@ -118,7 +118,7 @@ function mapListRow(
   };
 }
 
-export async function getInvoiceKpis(organizationId: string): Promise<InvoiceKpis> {
+async function getInvoiceKpis(organizationId: string): Promise<InvoiceKpis> {
   const { rows } = await pool.query<{
     billedTotal: string;
     paidTotal: string;

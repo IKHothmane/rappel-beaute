@@ -54,7 +54,7 @@ function isoDate(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-export function resolveVisitorDate(text: string, now: Date): string | undefined {
+function resolveVisitorDate(text: string, now: Date): string | undefined {
   const folded = fold(text);
   const today = businessParts(now);
   const iso = folded.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
@@ -83,7 +83,7 @@ export function resolveVisitorDate(text: string, now: Date): string | undefined 
   return undefined;
 }
 
-export function resolveVisitorTime(text: string): string | undefined {
+function resolveVisitorTime(text: string): string | undefined {
   const folded = fold(text);
   const clock = folded.match(/\b([01]?\d|2[0-3])\s*h\s*([0-5]\d)?\b/);
   if (clock) {

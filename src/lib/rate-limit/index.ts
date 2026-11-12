@@ -7,7 +7,7 @@ type MemoryBucket = { count: number; resetAt: number };
 const memoryBuckets = new Map<string, MemoryBucket>();
 const memoryIdempotency = new Map<string, number>();
 
-export type RateLimitConfig = {
+type RateLimitConfig = {
   key: string;
   limit: number;
   windowMs: number;
@@ -15,7 +15,7 @@ export type RateLimitConfig = {
   sensitivity?: "sensitive" | "standard";
 };
 
-export type RateLimitResult = {
+type RateLimitResult = {
   allowed: boolean;
   retryAfterSec?: number;
 };

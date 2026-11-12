@@ -188,7 +188,7 @@ export async function updateWaitingListStatus(
   return rows[0] ? mapRow(rows[0] as Record<string, unknown>) : null;
 }
 
-export async function expireWaitingListEntries(organizationId: string): Promise<number> {
+async function expireWaitingListEntries(organizationId: string): Promise<number> {
   const { rows } = await pool.query<{ id: string }>(
     `UPDATE "WaitingListEntry"
      SET status = 'EXPIRED'::"WaitingListStatus", "updatedAt" = NOW()
@@ -269,13 +269,3 @@ export async function notifyWaitingListOnCancellation(input: {
   return { notified };
 }
 
-export async function getWaitingListEntry(
-  organizationId: string,
-  entryId: string,
-): Promise<WaitingListEntry | null> {
-  const { rows } = await pool.query(
-    `${SELECT} WHERE w.id = $1 AND w."organizationId" = $2`,
-    [entryId, organizationId],
-  );
-  return rows[0] ? mapRow(rows[0] as Record<string, unknown>) : null;
-}

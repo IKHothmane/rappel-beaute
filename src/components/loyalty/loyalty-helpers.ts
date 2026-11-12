@@ -1,13 +1,4 @@
-import type {
-  LoyaltyAccountSummary,
-  LoyaltyBirthdayItem,
-  LoyaltyJournalItem,
-  LoyaltyKpis,
-  LoyaltyLevel,
-  LoyaltyProgramConfig,
-  LoyaltyRewardItem,
-  LoyaltyTxnType,
-} from "@/types/loyalty";
+import type { LoyaltyAccountSummary, LoyaltyBirthdayItem, LoyaltyKpis, LoyaltyLevel, LoyaltyProgramConfig, LoyaltyRewardItem, LoyaltyTxnType } from "@/types/loyalty";
 import { LOYALTY_LEVEL_LABEL, LOYALTY_TXN_LABEL } from "@/types/loyalty";
 
 export const BIRTHDAY_BONUS_PTS = 200;
@@ -81,17 +72,6 @@ export function formatShortDate(iso: string | null | undefined) {
   });
 }
 
-export function formatJournalStamp(iso: string) {
-  return new Date(iso).toLocaleString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZone: "Africa/Casablanca",
-  });
-}
-
 export function formatRelativeVisit(iso: string | null | undefined) {
   if (!iso) return "Aucune visite enregistrée";
   const day = new Date(iso).toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
@@ -105,14 +85,8 @@ export function formatRelativeVisit(iso: string | null | undefined) {
   return formatShortDate(iso);
 }
 
-export function txnLabel(type: LoyaltyTxnType) {
+function txnLabel(type: LoyaltyTxnType) {
   return LOYALTY_TXN_LABEL[type] ?? type;
-}
-
-export function rewardTypeLabel(type: LoyaltyRewardItem["type"]) {
-  if (type === "DISCOUNT_FIXED") return "Remise MAD";
-  if (type === "DISCOUNT_PERCENT") return "Remise %";
-  return "Soin offert";
 }
 
 export function rewardChip(reward: LoyaltyRewardItem) {
@@ -136,14 +110,6 @@ export function readyReward(member: LoyaltyAccountSummary, rewards: LoyaltyRewar
   return (
     rewards
       .filter((r) => r.active && r.pointsCost <= member.balance)
-      .sort((a, b) => a.pointsCost - b.pointsCost)[0] ?? null
-  );
-}
-
-export function nextUnlock(member: LoyaltyAccountSummary, rewards: LoyaltyRewardItem[]) {
-  return (
-    rewards
-      .filter((r) => r.active && r.pointsCost > member.balance)
       .sort((a, b) => a.pointsCost - b.pointsCost)[0] ?? null
   );
 }
@@ -322,12 +288,6 @@ export function exportLoyaltyCsv(rows: LoyaltyAccountSummary[]) {
   a.download = `fidelite-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-export function journalKind(row: LoyaltyJournalItem) {
-  if (row.reason) return row.reason;
-  if (row.paymentId) return `Encaissement ${row.paymentId.slice(-6)}`;
-  return txnLabel(row.type);
 }
 
 export { LOYALTY_LEVEL_LABEL };

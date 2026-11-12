@@ -1,6 +1,6 @@
 import { SITE } from "@/lib/site";
 
-export type ContactMessage = { name: string; email: string; phone: string; institute: string; subject: string; message: string };
+type ContactMessage = { name: string; email: string; phone: string; institute: string; subject: string; message: string };
 
 export function contactEmailHref(data: ContactMessage): string {
   const details = [

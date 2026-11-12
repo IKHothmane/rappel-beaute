@@ -291,9 +291,3 @@ export function stripOrganizationId<T extends Record<string, unknown>>(body: T):
   return rest;
 }
 
-export function stripAdminForbiddenKeys<T extends Record<string, unknown>>(
-  body: T,
-): Omit<T, "organizationId" | "id" | "status" | "price" | "plan"> {
-  const { organizationId: _o, id: _i, status: _s, price: _p, plan: _pl, ...rest } = body;
-  return rest;
-}

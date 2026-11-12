@@ -35,10 +35,3 @@ export type DepositRequirement = {
   forcedByNoShow: boolean;
 };
 
-export const DEPOSIT_STATE_LABEL: Record<DepositState, string> = {
-  NOT_REQUIRED: "Pas d'acompte",
-  AWAITING: "Acompte en attente",
-  PAID: "Acompte payé",
-  FORFEITED: "Acompte conservé",
-  REFUNDED: "Acompte remboursé",
-};

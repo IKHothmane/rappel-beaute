@@ -13,7 +13,7 @@ import {
 } from "framer-motion";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-export type PanoramicImage = { src: string; alt: string };
+type PanoramicImage = { src: string; alt: string };
 
 type Pose = { x: number; y: number; rotateZ: number; rotateY: number; scale: number };
 type Layout = { stacked: Omit<Pose, "scale">; panoramic: Pose };

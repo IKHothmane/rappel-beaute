@@ -294,50 +294,6 @@ export function AgendaGrid({
   );
 }
 
-export function AgendaWeekStrip({
-  dates,
-  selected,
-  onSelect,
-  appointmentCounts,
-}: {
-  dates: Date[];
-  selected: Date;
-  onSelect: (d: Date) => void;
-  appointmentCounts: Record<string, number>;
-}) {
-  return (
-    <div className="hidden gap-2 md:grid md:grid-cols-7">
-      {dates.map((d) => {
-        const key = d.toISOString().slice(0, 10);
-        const isSelected =
-          d.getDate() === selected.getDate() &&
-          d.getMonth() === selected.getMonth();
-        return (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onSelect(d)}
-            className={cn(
-              "rounded-xl border p-3 text-center transition",
-              isSelected
-                ? "border-primary bg-primary-light"
-                : "border-line bg-white hover:border-primary/30",
-            )}
-          >
-            <p className="font-mono text-[10px] uppercase text-ink/40">
-              {d.toLocaleDateString("fr-FR", { weekday: "short" })}
-            </p>
-            <p className="mt-1 font-display text-xl font-semibold">{d.getDate()}</p>
-            <p className="mt-0.5 text-[10px] text-ink/45">
-              {appointmentCounts[key] ?? 0} RDV
-            </p>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 export function AgendaMonthGrid({
   dates,
   anchor,

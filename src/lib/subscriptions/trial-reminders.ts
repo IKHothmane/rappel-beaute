@@ -6,7 +6,7 @@ import { formatPrice, PUBLIC_OFFER, publicAppOrigin, SITE } from "@/lib/site";
 
 const DAY_MS = 86_400_000;
 
-export type TrialReminderStage = "D5" | "D1" | "EXPIRED";
+type TrialReminderStage = "D5" | "D1" | "EXPIRED";
 
 /**
  * Étape de relance selon le temps restant avant la fin de l'essai.
@@ -33,7 +33,7 @@ function esc(s: string): string {
 const frDate = (d: Date) =>
   d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Casablanca" });
 
-export type TrialReminderContent = {
+type TrialReminderContent = {
   subject: string;
   title: string;
   message: string;
@@ -127,7 +127,7 @@ function maskEmail(email: string): string {
   return `${(user ?? "").slice(0, 1)}***@${domain ?? "?"}`;
 }
 
-export type TrialReminderResult = {
+type TrialReminderResult = {
   dryRun: boolean;
   emailConfigured: boolean;
   considered: number;

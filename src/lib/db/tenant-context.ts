@@ -15,7 +15,7 @@ export type TenantScope =
   | { kind: "tenant"; organizationId: string | null }
   | { kind: "public" | "platform" | "job"; reason: string };
 
-export type RlsSetting = { kind: "off" } | { kind: "all" } | { kind: "list"; ids: Set<string> };
+type RlsSetting = { kind: "off" } | { kind: "all" } | { kind: "list"; ids: Set<string> };
 
 export type QueryDecision =
   | { action: "passthrough"; warn?: string }

@@ -642,7 +642,7 @@ export async function createPosSale(
   return detail;
 }
 
-export type ListPosSalesOpts = {
+type ListPosSalesOpts = {
   limit?: number;
   from?: Date | string;
   to?: Date | string;

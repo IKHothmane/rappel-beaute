@@ -11,7 +11,7 @@ export function isAppRole(role: string | undefined | null): role is AppRole {
   return Boolean(role && APP_ROLES.includes(role as AppRole));
 }
 
-export type AccessLevel = "write" | "read" | "limited" | "none";
+type AccessLevel = "write" | "read" | "limited" | "none";
 
 export type AppFeature =
   | "agenda"
@@ -152,7 +152,7 @@ export const ROLE_LABEL: Record<AppRole, string> = {
 };
 
 /** Visibilité sidebar — dérivée de la matrice + modules transverses */
-export const ROLE_NAV: Record<AppRole, string[]> = {
+const ROLE_NAV: Record<AppRole, string[]> = {
   OWNER: ["*"],
   MANAGER: ["*"],
   STAFF: [
@@ -318,11 +318,6 @@ export function canCreateRefund(role: AppRole, amount: number): boolean {
   return false;
 }
 
-/** Commissions employées — édition OWNER uniquement ; MANAGER lecture */
-export function canEditStaffCommissions(role: AppRole): boolean {
-  return role === "OWNER";
-}
-
 export function canViewStaffCommissions(role: AppRole): boolean {
   return canReadFeature(role, "commissions");
 }
@@ -358,10 +353,6 @@ export function canWritePromotions(role: AppRole): boolean {
   return getFeatureAccess(role, "promotions") === "write";
 }
 
-export function canReadWhatsapp(role: AppRole): boolean {
-  return canReadFeature(role, "whatsapp");
-}
-
 /** Envoi / marquer envoyé — OWNER, MANAGER, STAFF */
 export function canSendWhatsapp(role: AppRole): boolean {
   const level = getFeatureAccess(role, "whatsapp");
@@ -373,10 +364,6 @@ export function canWriteWhatsappTemplates(role: AppRole): boolean {
   return getFeatureAccess(role, "whatsapp") === "write";
 }
 
-export function canReadReactivation(role: AppRole): boolean {
-  return canReadFeature(role, "reactivation");
-}
-
 export function canSendReactivation(role: AppRole): boolean {
   const level = getFeatureAccess(role, "reactivation");
   return level === "write" || level === "limited";
@@ -386,10 +373,6 @@ export function canWriteReactivationSettings(role: AppRole): boolean {
   return getFeatureAccess(role, "reactivation") === "write";
 }
 
-export function canReadMarketing(role: AppRole): boolean {
-  return canReadFeature(role, "marketing");
-}
-
 export function canWriteCampaigns(role: AppRole): boolean {
   return getFeatureAccess(role, "marketing") === "write";
 }
@@ -397,10 +380,6 @@ export function canWriteCampaigns(role: AppRole): boolean {
 export function canPrepareCampaigns(role: AppRole): boolean {
   const level = getFeatureAccess(role, "marketing");
   return level === "write" || level === "limited";
-}
-
-export function canReadReviews(role: AppRole): boolean {
-  return canReadFeature(role, "reviews");
 }
 
 export function canSendReviews(role: AppRole): boolean {
@@ -453,7 +432,3 @@ export function canAccessNav(role: AppRole | string | undefined, navKey: string)
   return canReadFeature(role, feature);
 }
 
-/** @deprecated Utiliser canAccessNav — conservé pour compatibilité temporaire */
-export function canAccess(role: AppRole, key: string) {
-  return canAccessNav(role, key);
-}

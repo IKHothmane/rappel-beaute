@@ -8,7 +8,7 @@ export type SubscriptionStatus =
   | "CANCELLED"
   | "EXPIRED";
 
-export type BillingInterval = "MONTHLY" | "YEARLY";
+type BillingInterval = "MONTHLY" | "YEARLY";
 
 /** Clés de fonctionnalités configurables par plan (JSONB) */
 export type PlanFeatureKey =
@@ -85,8 +85,6 @@ export type UsageDto = {
   appointments: { used: number; max: number | null; periodStart: string; periodEnd: string };
   resources: { used: number; max: number | null };
 };
-
-export const TRIAL_DAYS_DEFAULT = 14;
 
 export const PLAN_LABEL: Record<PlanCode, string> = {
   STARTER: "Starter",

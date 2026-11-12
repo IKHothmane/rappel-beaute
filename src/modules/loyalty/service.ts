@@ -87,23 +87,6 @@ export async function getCustomerLoyalty(customerId: string): Promise<CustomerLo
   return parseJson(res);
 }
 
-export async function getCustomerPackages(customerId: string): Promise<PackageListItem[]> {
-  const res = await fetch(
-    `/api/customers/${customerId}/loyalty/?section=packages`,
-    fetchOpts,
-  );
-  const data = await parseJson<{ data: PackageListItem[] }>(res);
-  return data.data;
-}
-
-export async function getCustomerPayments(customerId: string) {
-  const res = await fetch(
-    `/api/customers/${customerId}/loyalty/?section=payments`,
-    fetchOpts,
-  );
-  return parseJson<{ data: unknown[] }>(res);
-}
-
 export async function updateProgram(input: UpdateLoyaltyProgramInput) {
   const res = await fetch("/api/loyalty/", {
     method: "POST",

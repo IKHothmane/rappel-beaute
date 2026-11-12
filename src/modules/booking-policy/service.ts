@@ -1,4 +1,3 @@
-import type { BookingPolicySettings, UpdateBookingPolicyInput } from "@/types/booking-policy";
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -11,21 +10,3 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
-export async function getBookingPolicy() {
-  return api<BookingPolicySettings>("/api/settings/booking-policy/");
-}
-
-export async function updateBookingPolicyApi(input: UpdateBookingPolicyInput) {
-  try {
-    const settings = await api<BookingPolicySettings>("/api/settings/booking-policy/", {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    });
-    return { ok: true as const, settings };
-  } catch (e) {
-    return {
-      ok: false as const,
-      error: e instanceof Error ? e.message : "Erreur",
-    };
-  }
-}

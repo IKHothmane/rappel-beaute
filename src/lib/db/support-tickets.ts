@@ -30,9 +30,9 @@ export type SupportTicketCategory =
 
 export type SupportTicketPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
-export type SupportMessageSenderType = "INSTITUT" | "PLATFORM";
+type SupportMessageSenderType = "INSTITUT" | "PLATFORM";
 
-export type SupportTicketRow = {
+type SupportTicketRow = {
   id: string;
   ticketNumber: number;
   organizationId: string;
@@ -59,7 +59,7 @@ export type SupportTicketRow = {
   lastSenderType?: SupportMessageSenderType | null;
 };
 
-export type SupportMessageRow = {
+type SupportMessageRow = {
   id: string;
   ticketId: string;
   senderType: SupportMessageSenderType;
@@ -71,7 +71,7 @@ export type SupportMessageRow = {
   senderName?: string | null;
 };
 
-export type PlatformAssignee = {
+type PlatformAssignee = {
   id: string;
   name: string;
   email: string;
@@ -129,7 +129,7 @@ export function parsePriority(raw: unknown): SupportTicketPriority | null {
     : null;
 }
 
-export function formatTicketRef(ticketNumber: number | null | undefined, id?: string) {
+function formatTicketRef(ticketNumber: number | null | undefined, id?: string) {
   if (ticketNumber != null && ticketNumber > 0) return `#RB-${ticketNumber}`;
   if (id) return `#${id.slice(-6).toUpperCase()}`;
   return "#RB-????";
@@ -775,28 +775,7 @@ export async function adminCreateSupportTicket(input: {
   return (await adminGetSupportTicket(ticketId))!;
 }
 
-export async function adminSetSatisfaction(input: {
-  ticketId: string;
-  rating: number;
-  comment?: string;
-}): Promise<SupportTicketRow> {
-  if (input.rating < 1 || input.rating > 5) throw new Error("INVALID_INPUT");
-  const existing = await adminGetSupportTicket(input.ticketId);
-  if (!existing) throw new Error("NOT_FOUND");
-
-  await pool.query(
-    `UPDATE "SupportTicket"
-     SET "satisfactionRating" = $1,
-         "satisfactionComment" = $2,
-         "satisfactionAt" = NOW(),
-         "updatedAt" = NOW()
-     WHERE id = $3`,
-    [input.rating, input.comment?.trim().slice(0, 1000) ?? null, input.ticketId],
-  );
-  return (await adminGetSupportTicket(input.ticketId))!;
-}
-
-export type SupportAnalytics = {
+type SupportAnalytics = {
   byDay: { date: string; label: string; count: number }[];
   byCategory: { category: SupportTicketCategory; count: number }[];
   byPriority: { priority: SupportTicketPriority; count: number; percent: number }[];

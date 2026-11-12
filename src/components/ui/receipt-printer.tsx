@@ -21,9 +21,9 @@ import {
 import { Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ReceiptItem = { name: string; qty: number; price: number };
+type ReceiptItem = { name: string; qty: number; price: number };
 
-export type ReceiptPrinterProps = {
+type ReceiptPrinterProps = {
   store?: string;
   address?: string;
   items?: ReceiptItem[];

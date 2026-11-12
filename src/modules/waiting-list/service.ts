@@ -1,8 +1,4 @@
-import type {
-  CreateWaitingListInput,
-  WaitingListEntry,
-  WaitingListStatus,
-} from "@/types/waiting-list";
+import type { WaitingListEntry, WaitingListStatus } from "@/types/waiting-list";
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -28,19 +24,3 @@ export async function listWaitingList(params?: {
   );
 }
 
-export async function createWaitingList(input: CreateWaitingListInput) {
-  return api<{ entry: WaitingListEntry }>("/api/waiting-list/", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-}
-
-export async function updateWaitingListEntryStatus(
-  id: string,
-  status: WaitingListStatus,
-) {
-  return api<{ entry: WaitingListEntry }>(`/api/waiting-list/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
-  });
-}

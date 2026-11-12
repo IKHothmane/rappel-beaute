@@ -21,10 +21,6 @@ export function verifyPassword(plain: string, stored: string): boolean {
   return timingSafeEqual(hash, expectedBuf);
 }
 
-export function demoPasswordHash(): string {
-  return hashPassword("demo1234");
-}
-
 /**
  * Mot de passe temporaire lisible (jamais stocké en clair — uniquement renvoyé une fois à l'admin).
  * Ex. : Rb-84Kp!29Xm

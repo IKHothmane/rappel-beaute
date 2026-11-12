@@ -164,7 +164,7 @@ export function validateUpdateCustomer(body: unknown): ValidationResult<UpdateCu
   return { ok: true, data };
 }
 
-export function parseCustomerSegment(value: string | null): CustomerSegment {
+function parseCustomerSegment(value: string | null): CustomerSegment {
   const allowed: CustomerSegment[] = ["ALL", "ACTIVE", "VIP", "NEW", "INACTIVE", "AT_RISK"];
   if (value && allowed.includes(value as CustomerSegment)) {
     return value as CustomerSegment;

@@ -1,13 +1,4 @@
-import type {
-  AIChatResult,
-  AIConversationDetail,
-  AIConversationSummary,
-  AIDashboardInsight,
-  AIGenerateMessageInput,
-  AIGenerateMessageResult,
-  AIRecommendation,
-  AIUsageSnapshot,
-} from "@/types/ai";
+import type { AIChatResult, AIGenerateMessageInput, AIGenerateMessageResult, AIUsageSnapshot } from "@/types/ai";
 import type { WhatsAppTaskItem } from "@/types/whatsapp";
 
 const fetchOpts = { credentials: "include" as const, cache: "no-store" as const };
@@ -29,25 +20,6 @@ export async function fetchAIUsage(): Promise<AIUsageSnapshot> {
   return parseJson(res);
 }
 
-export async function fetchAIConversations(): Promise<AIConversationSummary[]> {
-  const res = await fetch("/api/ai/conversations/", fetchOpts);
-  const data = await parseJson<{ data: AIConversationSummary[] }>(res);
-  return data.data;
-}
-
-export async function fetchAIConversation(id: string): Promise<AIConversationDetail> {
-  const res = await fetch(`/api/ai/conversations/${id}/`, fetchOpts);
-  return parseJson(res);
-}
-
-export async function deleteAIConversationApi(id: string): Promise<void> {
-  const res = await fetch(`/api/ai/conversations/${id}/`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-  await parseJson(res);
-}
-
 export async function sendAIChat(input: {
   message: string;
   conversationId?: string | null;
@@ -59,40 +31,6 @@ export async function sendAIChat(input: {
     body: JSON.stringify(input),
   });
   return parseJson(res);
-}
-
-/** Révèle progressivement le texte (simule le streaming côté client) */
-export async function streamReveal(
-  text: string,
-  onDelta: (chunk: string, full: string) => void,
-  opts?: { chunkSize?: number; delayMs?: number },
-): Promise<void> {
-  const size = opts?.chunkSize ?? 12;
-  const delay = opts?.delayMs ?? 16;
-  let full = "";
-  for (let i = 0; i < text.length; i += size) {
-    const chunk = text.slice(i, i + size);
-    full += chunk;
-    onDelta(chunk, full);
-    await new Promise((r) => setTimeout(r, delay));
-  }
-}
-
-export async function fetchDashboardAIInsight(): Promise<AIDashboardInsight> {
-  const res = await fetch("/api/ai/analyze-dashboard/", {
-    method: "POST",
-    credentials: "include",
-  });
-  return parseJson(res);
-}
-
-export async function fetchAIRecommendations(): Promise<AIRecommendation[]> {
-  const res = await fetch("/api/ai/recommendations/", {
-    method: "POST",
-    credentials: "include",
-  });
-  const data = await parseJson<{ data: AIRecommendation[] }>(res);
-  return data.data;
 }
 
 export async function generateAIMessage(

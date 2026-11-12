@@ -37,9 +37,9 @@ const WEEKDAY_INDEX: Record<string, number> = {
   Sat: 6,
 };
 
-export type BusinessDate = { year: number; month: number; day: number };
+type BusinessDate = { year: number; month: number; day: number };
 
-export type BusinessParts = BusinessDate & {
+type BusinessParts = BusinessDate & {
   hour: number;
   minute: number;
   second: number;

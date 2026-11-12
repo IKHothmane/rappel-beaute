@@ -237,25 +237,6 @@ export function getAvailableSlots(
   return slots;
 }
 
-export function appointmentDurationMinutes(apt: Appointment) {
-  const start = parseDate(apt.startAt);
-  const end = parseDate(apt.endAt);
-  return Math.round((end.getTime() - start.getTime()) / 60_000);
-}
-
-export function filterAppointmentsForDay(
-  appointments: Appointment[],
-  date: Date,
-  filters: {
-    staffId?: string;
-    serviceId?: string;
-    resourceId?: string;
-    status?: Appointment["status"] | "ALL";
-  },
-) {
-  return filterAppointmentsForDates(appointments, [date], filters);
-}
-
 export function filterAppointmentsForDates(
   appointments: Appointment[],
   dates: Date[],

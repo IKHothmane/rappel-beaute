@@ -1,21 +1,7 @@
 import { businessDateTime, businessParts } from "@/lib/time/business-timezone";
 import type { AnalyticsPeriodPreset } from "@/lib/analytics/period";
 import { resolvePreset } from "@/lib/analytics/period";
-import type {
-  AnalyticsOverview,
-  AppointmentAnalytics,
-  CustomerAnalytics,
-  InventoryAnalytics,
-  KpiWithCompare,
-  LoyaltyAnalytics,
-  MarketingAnalyticsRow,
-  PaymentMethodBreakdown,
-  RevenueAnalytics,
-  RevenueDailyPoint,
-  ReviewAnalytics,
-  ServiceAnalyticsRow,
-  StaffAnalyticsRow,
-} from "@/types/analytics";
+import type { AnalyticsOverview, AppointmentAnalytics, CustomerAnalytics, InventoryAnalytics, LoyaltyAnalytics, MarketingAnalyticsRow, PaymentMethodBreakdown, RevenueAnalytics, RevenueDailyPoint, ReviewAnalytics, ServiceAnalyticsRow, StaffAnalyticsRow } from "@/types/analytics";
 
 export const ANALYTICS_PRESETS: { value: AnalyticsPeriodPreset; label: string; short: string }[] = [
   { value: "today", label: "Aujourd'hui", short: "Aujourd'hui" },
@@ -93,7 +79,7 @@ export function deltaClass(pct: number | null): string {
   return pct > 0 ? "text-primary" : "text-error";
 }
 
-export type WeeklyBar = { key: string; label: string; value: number; heightPct: number };
+type WeeklyBar = { key: string; label: string; value: number; heightPct: number };
 
 export function weeklyRevenueBars(daily: RevenueDailyPoint[] | undefined): WeeklyBar[] {
   if (!daily?.length) return [];
@@ -121,7 +107,7 @@ export function weeklyRevenueBars(daily: RevenueDailyPoint[] | undefined): Weekl
   }));
 }
 
-export type HealthPillar = {
+type HealthPillar = {
   key: string;
   label: string;
   /** Pourcentage mesuré. Null s'il n'y a pas de donnée réelle. */
@@ -130,7 +116,7 @@ export type HealthPillar = {
   bar: string;
 };
 
-export type HealthScore = {
+type HealthScore = {
   score: number | null;
   label: string;
   pillars: HealthPillar[];
@@ -213,7 +199,7 @@ export function buildHealthScore(opts: {
   return { score, label, pillars };
 }
 
-export type AnalyticsInsight = {
+type AnalyticsInsight = {
   greeting: string;
   performance: string;
   alert: string | null;
@@ -346,7 +332,7 @@ export function marketingAttributed(rows: MarketingAnalyticsRow[]): number {
   return rows.reduce((s, r) => s + r.associatedRevenue, 0);
 }
 
-export type WeekdayAffluence = {
+type WeekdayAffluence = {
   weekday: number;
   label: string;
   count: number;
@@ -373,7 +359,7 @@ export function weekdayAffluence(data: AppointmentAnalytics | null): WeekdayAffl
   }));
 }
 
-export const AFFLUENCE_HOURS = Array.from({ length: 16 }, (_, i) => i + 8);
+const AFFLUENCE_HOURS = Array.from({ length: 16 }, (_, i) => i + 8);
 
 export function hourlyAffluence(
   data: AppointmentAnalytics | null,

@@ -24,7 +24,7 @@ export function parseReactivationListQuery(sp: URLSearchParams) {
   };
 }
 
-export function validateUpdateReactivationSettings(
+function validateUpdateReactivationSettings(
   raw: Record<string, unknown>,
 ): { ok: true; data: UpdateReactivationSettingsInput } | { ok: false; errors: string[] } {
   const data: UpdateReactivationSettingsInput = {};

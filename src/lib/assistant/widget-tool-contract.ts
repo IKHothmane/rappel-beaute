@@ -25,7 +25,7 @@ export const WIDGET_TOOL_NAMES = [
 
 export type WidgetToolName = (typeof WIDGET_TOOL_NAMES)[number];
 
-export type WidgetToolEffect = "read" | "propose" | "mutate";
+type WidgetToolEffect = "read" | "propose" | "mutate";
 
 export const CLIENT_AUTHORITY_ARGS = [
   "organizationId",
@@ -88,7 +88,7 @@ export const WIDGET_TOOLS: Record<WidgetToolName, ToolSpec> = {
   CONFIRM_CANCEL: { effect: "mutate", modelCallable: false, params: [actionParam] },
 };
 
-export type WidgetCallDenial =
+type WidgetCallDenial =
   | "unknown_tool"
   | "model_cannot_mutate"
   | "client_authority"
@@ -100,7 +100,7 @@ export type PreparedWidgetCall =
   | { ok: true; ready: false; tool: WidgetToolName; effect: WidgetToolEffect; missing: string[] }
   | { ok: true; ready: true; tool: WidgetToolName; effect: WidgetToolEffect; args: Record<string, string> };
 
-export function isWidgetToolName(value: string): value is WidgetToolName {
+function isWidgetToolName(value: string): value is WidgetToolName {
   return Object.prototype.hasOwnProperty.call(WIDGET_TOOLS, value);
 }
 
@@ -157,7 +157,7 @@ const TOOL_TO_INTENT: Partial<Record<WidgetToolName, VisitorIntent["intent"]>> =
   PROPOSE_CANCEL: "cancel",
 };
 
-export type ModelChoice =
+type ModelChoice =
   | { accepted: true; intent: VisitorIntent }
   | { accepted: false; reason: "model_cannot_mutate" };
 

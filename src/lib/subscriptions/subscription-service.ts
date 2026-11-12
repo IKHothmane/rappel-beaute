@@ -1,5 +1,3 @@
-import { randomBytes } from "crypto";
-import type { PoolClient } from "pg";
 import { pool } from "@/lib/db/pool";
 import {
   APPOINTMENT_COUNT_STATUSES,
@@ -147,38 +145,3 @@ export function newInstituteTrialEnd(from = new Date()): Date {
   return new Date(from.getTime() + NEW_INSTITUTE_TRIAL_DAYS * 24 * 60 * 60 * 1000);
 }
 
-export async function createSubscriptionForOrg(opts: {
-  organizationId: string;
-  planId: string;
-  priceSnapshot: number;
-  currencySnapshot?: string;
-  status?: SubscriptionStatus;
-  trialDays?: number;
-  client?: import("pg").PoolClient;
-}): Promise<string> {
-  const c = opts.client ?? pool;
-  const now = new Date();
-  const periodEnd = addMonths(now, 1);
-  const trialDays = opts.trialDays ?? 14;
-  const trialEnds = opts.status === "TRIAL" ? new Date(now.getTime() + trialDays * 86400000) : null;
-  const id = `sub_${randomBytes(6).toString("hex")}`;
-
-  await c.query(
-    `INSERT INTO "Subscription" (
-      id, "organizationId", "planId", status, "priceSnapshot", "currencySnapshot",
-      "startedAt", "currentPeriodStart", "currentPeriodEnd", "trialEndsAt", "updatedAt"
-    ) VALUES ($1,$2,$3,$4::"SubscriptionStatus",$5,$6,$7,$7,$8,$9,NOW())`,
-    [
-      id,
-      opts.organizationId,
-      opts.planId,
-      opts.status ?? "ACTIVE",
-      opts.priceSnapshot,
-      opts.currencySnapshot ?? "MAD",
-      now,
-      periodEnd,
-      trialEnds,
-    ],
-  );
-  return id;
-}

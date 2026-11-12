@@ -44,7 +44,7 @@ export type StaffLeaveItem = {
   createdAt: string;
 };
 
-export type StaffServiceLink = {
+type StaffServiceLink = {
   serviceId: string;
   serviceName: string;
   category: string | null;

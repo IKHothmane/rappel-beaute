@@ -32,4 +32,3 @@ export const SERVICE_NAME_SUGGESTIONS = [
   "Teinture cils et sourcils",
 ] as const;
 
-export type ServiceCatalogName = (typeof SERVICE_NAME_SUGGESTIONS)[number];

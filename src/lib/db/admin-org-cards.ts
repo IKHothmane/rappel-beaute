@@ -4,7 +4,7 @@ import { withTenantIsolation } from "@/lib/db/tenant-pool";
 const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 /** Données d'affichage supplémentaires pour les cartes « Instituts » du back-office. */
-export type OrganizationCardExtra = {
+type OrganizationCardExtra = {
   coverUrl: string | null;
   /** Arrière-plan de la carte de fidélité (null = fond par défaut). */
   cardBackgroundUrl: string | null;
@@ -51,7 +51,7 @@ export async function listOrganizationCardExtras(): Promise<Record<string, Organ
   return out;
 }
 
-export type OrganizationInsights = {
+type OrganizationInsights = {
   services: { name: string; category: string | null }[];
   team: { name: string; position: string | null }[];
   /** 6 derniers mois, du plus ancien au plus récent (revenu net des remboursements). */

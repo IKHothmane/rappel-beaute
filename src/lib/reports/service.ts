@@ -20,23 +20,7 @@ import type {
   StockLedgerReportRow,
 } from "@/types/reports";
 import type { AnalyticsFilters } from "@/types/analytics";
-import {
-  getAnalyticsOverview,
-  getAppointmentAnalytics,
-  getCustomerAnalytics,
-  getCustomerReportRows,
-  getInventoryAnalytics,
-  getLoyaltyAnalytics,
-  getMarketingAnalytics,
-  getRefundStats,
-  getRevenueAnalytics,
-  getReviewAnalytics,
-  getServiceAnalytics,
-  getStaffAnalytics,
-  getStockLedgerReport,
-  sumExpenses,
-  getOrganizationName,
-} from "@/lib/db/analytics";
+import { getAnalyticsOverview, getAppointmentAnalytics, getCustomerAnalytics, getCustomerReportRows, getInventoryAnalytics, getLoyaltyAnalytics, getMarketingAnalytics, getRefundStats, getRevenueAnalytics, getReviewAnalytics, getServiceAnalytics, getStaffAnalytics, getStockLedgerReport } from "@/lib/db/analytics";
 
 export async function buildFinanceReport(
   orgId: string,
@@ -57,7 +41,7 @@ export async function buildFinanceReport(
   };
 }
 
-export async function buildGlobalReport(
+async function buildGlobalReport(
   orgId: string,
   filters: AnalyticsFilters,
   orgName: string,

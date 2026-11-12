@@ -49,7 +49,7 @@ export class MockAIProvider implements AIProvider {
  * Provider compatible OpenAI Chat Completions (optionnel).
  * Variables : AI_API_KEY, AI_BASE_URL (défaut api.openai.com), AI_MODEL.
  */
-export class OpenAICompatibleProvider implements AIProvider {
+class OpenAICompatibleProvider implements AIProvider {
   readonly name = "openai-compatible";
   private readonly apiKey: string;
   private readonly baseUrl: string;

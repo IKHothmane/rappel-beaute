@@ -4,8 +4,6 @@
  */
 import { AT_RISK_DAYS, VIP_MIN_REVENUE, VIP_MIN_VISITS } from "@/types/customer";
 
-export const ANALYTICS_TIMEZONE = "Africa/Casablanca";
-
 export const KPI_DEFINITIONS = {
   /** Somme des paiements COMPLETED (kind=PAYMENT) sur paidAt dans la période */
   CA_BRUT: "SUM(Payment.amount) WHERE kind=PAYMENT AND status=COMPLETED",
@@ -46,4 +44,3 @@ export const KPI_DEFINITIONS = {
   LTV: "SUM paiements nets lifetime par cliente",
 } as const;
 
-export type KpiDefinitionKey = keyof typeof KPI_DEFINITIONS;

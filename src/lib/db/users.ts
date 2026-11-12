@@ -26,7 +26,7 @@ type UserRow = {
   sessionVersion: number;
 };
 
-export type UserSessionState = {
+type UserSessionState = {
   status: "ACTIVE" | "DISABLED";
   mustChangePassword: boolean;
   sessionVersion: number;
@@ -115,13 +115,6 @@ export async function authenticateUser(
     mustChangePassword: Boolean(user.mustChangePassword),
     sessionVersion: Number(user.sessionVersion) || 0,
   };
-}
-
-export async function setUserPasswordHash(userId: string, passwordHash: string) {
-  await pool.query(`UPDATE "User" SET "passwordHash" = $1, "updatedAt" = NOW() WHERE id = $2`, [
-    passwordHash,
-    userId,
-  ]);
 }
 
 /**

@@ -2,7 +2,7 @@ import { loyaltyCardHex } from "@/lib/loyalty/card-color";
 
 type Localized = { defaultValue: { language: "fr-FR"; value: string } };
 
-export type WalletImage = {
+type WalletImage = {
   sourceUri: { uri: string };
   contentDescription: Localized;
 };
@@ -34,10 +34,10 @@ function walletImage(uri: string | undefined, label: string): WalletImage | unde
  * Cercle du pass. Logo de l'institut s'il en a un.
  * Sinon le logo Rappel Beauty, issu de /brand/logo.png, en carré 660×660.
  */
-export const WALLET_LOGO_PATH = "/loyalty/brand-logo.png";
+const WALLET_LOGO_PATH = "/loyalty/brand-logo.png";
 
 /** Grande image du pass. Le feuillage, format 1032×812. */
-export const WALLET_HERO_PATH = "/loyalty/fond-bordeaux-hero.png";
+const WALLET_HERO_PATH = "/loyalty/fond-bordeaux-hero.png";
 
 function usesFoliageArtwork(backgroundUrl: string) {
   return (

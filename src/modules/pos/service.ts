@@ -32,14 +32,6 @@ export async function listPosProductsApi(params?: {
   return data.data;
 }
 
-export async function searchPosCustomersApi(q: string) {
-  const res = await fetch(
-    `/api/pos/customers/search/?q=${encodeURIComponent(q)}`,
-    fetchOpts,
-  );
-  return parseJson<{ data: { id: string; name: string; phone: string }[] }>(res);
-}
-
 export async function createPosSaleApi(
   input: CreatePosSaleInput,
 ): Promise<{ ok: true; sale: PosSaleDetail } | { ok: false; error: string }> {
@@ -83,22 +75,6 @@ export async function listPosSalesApi(params?: {
   if (params?.limit) q.set("limit", String(params.limit));
   const res = await fetch(`/api/pos/sales/?${q}`, fetchOpts);
   return parseJson<{ data: PosSaleDetail[]; kpis: PosSalesKpis }>(res);
-}
-
-export async function refundPosSaleApi(
-  saleId: string,
-): Promise<{ ok: true; sale: PosSaleDetail } | { ok: false; error: string }> {
-  try {
-    const res = await fetch(`/api/pos/sales/${saleId}/refund/`, {
-      method: "POST",
-      credentials: "include",
-    });
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error ?? "Erreur remboursement" };
-    return { ok: true, sale: data as PosSaleDetail };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Erreur réseau" };
-  }
 }
 
 export function newPosIdempotencyKey(): string {

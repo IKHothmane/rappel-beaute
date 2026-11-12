@@ -16,7 +16,7 @@ import {
 
 const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
-export type ScanReward = {
+type ScanReward = {
   id: string;
   name: string;
   status: string;
@@ -25,7 +25,7 @@ export type ScanReward = {
   value: number | null;
 };
 
-export type ScanPreview = {
+type ScanPreview = {
   token: string;
   customerId: string;
   customerName: string;

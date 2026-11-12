@@ -1,13 +1,4 @@
-import type {
-  CreateGiftCardInput,
-  CreatePromotionInput,
-  GiftCardJournalItem,
-  GiftCardKpis,
-  GiftCardListItem,
-  PromotionKpis,
-  PromotionListItem,
-  PromotionStatus,
-} from "@/types/promo";
+import type { CreatePromotionInput, GiftCardJournalItem, GiftCardKpis, GiftCardListItem, PromotionKpis, PromotionListItem, PromotionStatus } from "@/types/promo";
 import {
   GIFT_CARD_STATUS_LABEL,
   GIFT_CARD_TXN_LABEL,
@@ -80,18 +71,6 @@ export async function listGiftCards(params?: {
   q.set("limit", String(params?.limit ?? 200));
   const res = await fetch(`/api/gift-cards/?${q}`, fetchOpts);
   return parseJson(res);
-}
-
-export async function createGiftCard(input: CreateGiftCardInput) {
-  const res = await fetch("/api/gift-cards/", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const data = await res.json();
-  if (!res.ok) return { ok: false as const, error: data.error ?? "Erreur" };
-  return { ok: true as const, card: data as GiftCardListItem };
 }
 
 export async function cancelGiftCard(id: string) {

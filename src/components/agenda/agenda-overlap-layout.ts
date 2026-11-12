@@ -1,10 +1,10 @@
-export type CalendarEvent = {
+type CalendarEvent = {
   id: string;
   startAt: string;
   endAt: string;
 };
 
-export type PositionedEvent<T extends CalendarEvent> = {
+type PositionedEvent<T extends CalendarEvent> = {
   event: T;
   /** Index dans la pile (0 = fond) */
   column: number;

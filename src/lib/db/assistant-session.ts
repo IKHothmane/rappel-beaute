@@ -184,7 +184,7 @@ export async function listWidgetFrameAncestors(publicId: string): Promise<string
   return found.rows.map((row) => row.origin);
 }
 
-export const ASSISTANT_PREVIEW_PUBLIC_ID = "pub_preview";
+const ASSISTANT_PREVIEW_PUBLIC_ID = "pub_preview";
 
 export async function ensurePreviewWidget(): Promise<void> {
   const org = await pool.query<{ id: string }>(

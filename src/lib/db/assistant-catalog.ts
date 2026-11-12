@@ -5,7 +5,7 @@ import { getPublicServices } from "@/lib/db/public-booking";
 
 const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
-export type PublicCatalogService = {
+type PublicCatalogService = {
   id: string;
   name: string;
   description: string | null;
@@ -14,7 +14,7 @@ export type PublicCatalogService = {
   durationMin: number;
 };
 
-export type PublicCatalogProduct = {
+type PublicCatalogProduct = {
   id: string;
   name: string;
   brand: string | null;
@@ -23,7 +23,7 @@ export type PublicCatalogProduct = {
   inStock: boolean;
 };
 
-export type PublicCatalogPromotion = {
+type PublicCatalogPromotion = {
   id: string;
   name: string;
   description: string | null;

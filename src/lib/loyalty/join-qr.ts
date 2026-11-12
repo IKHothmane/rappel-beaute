@@ -10,7 +10,7 @@ function joinToken() {
   return `RBJOIN_${newPublicToken().slice("RBLOY_".length)}`;
 }
 
-export type JoinQrView = {
+type JoinQrView = {
   token: string;
   status: "ACTIVE";
   organizationName: string;
@@ -20,7 +20,7 @@ export type JoinQrView = {
   active: boolean;
 };
 
-export async function getActiveJoinQr(organizationId: string): Promise<JoinQrView | null> {
+async function getActiveJoinQr(organizationId: string): Promise<JoinQrView | null> {
   const { rows } = await pool.query<{
     token: string;
     organizationName: string;

@@ -30,7 +30,7 @@ function strArray(v: unknown): string[] | undefined {
   return arr.length ? arr : undefined;
 }
 
-export function parseSegmentFilters(raw: unknown): CampaignSegmentFilters {
+function parseSegmentFilters(raw: unknown): CampaignSegmentFilters {
   if (!raw || typeof raw !== "object") return {};
   const o = raw as Record<string, unknown>;
   return {

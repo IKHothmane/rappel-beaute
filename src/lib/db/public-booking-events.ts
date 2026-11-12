@@ -8,7 +8,7 @@ function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;
 }
 
-export type PublicBookingEventType = "VIEW" | "BOOKED";
+type PublicBookingEventType = "VIEW" | "BOOKED";
 
 export async function recordPublicBookingEvent(input: {
   organizationId: string;

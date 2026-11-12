@@ -9,7 +9,7 @@ function newId() {
   return `rcd_${randomBytes(8).toString("hex")}`;
 }
 
-export type ResourceCatalogDefaultItem = {
+type ResourceCatalogDefaultItem = {
   type: ResourceType;
   imageUrl: string | null;
   updatedAt: string | null;

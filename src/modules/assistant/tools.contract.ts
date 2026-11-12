@@ -7,16 +7,16 @@
  * Le parcours public n'utilise pas d'OTP : la widgetSession suffit pour proposer.
  */
 
-export const ASSISTANT_SURFACES = [
+const ASSISTANT_SURFACES = [
   "widget_visitor",
   "widget_verified_customer",
   "dashboard",
   "mobile",
 ] as const;
 
-export type AssistantSurface = (typeof ASSISTANT_SURFACES)[number];
+type AssistantSurface = (typeof ASSISTANT_SURFACES)[number];
 
-export const SERVER_AUTHORITY_KEYS = [
+const SERVER_AUTHORITY_KEYS = [
   "organizationId",
   "customerId",
   "permissions",
@@ -30,9 +30,9 @@ export type AssistantServerContext = {
   verified: boolean;
 };
 
-export type AssistantToolEffect = "read" | "propose";
+type AssistantToolEffect = "read" | "propose";
 
-export type AssistantToolName =
+type AssistantToolName =
   | "list_services"
   | "list_public_products"
   | "list_promotions"
@@ -50,7 +50,7 @@ type ToolRule = {
   requiresVerifiedCustomer: boolean;
 };
 
-export const ASSISTANT_TOOLS: Record<AssistantToolName, ToolRule> = {
+const ASSISTANT_TOOLS: Record<AssistantToolName, ToolRule> = {
   list_services: {
     effect: "read",
     surfaces: ["widget_visitor", "widget_verified_customer", "dashboard", "mobile"],
@@ -103,7 +103,7 @@ export const ASSISTANT_TOOLS: Record<AssistantToolName, ToolRule> = {
   },
 };
 
-export type ToolDecision =
+type ToolDecision =
   | { allowed: true; effect: AssistantToolEffect }
   | { allowed: false; reason: "unknown_tool" | "surface_denied" | "customer_not_verified" };
 
@@ -122,7 +122,7 @@ export function authorizeAssistantTool(
   return { allowed: true, effect: rule.effect };
 }
 
-export function isAssistantToolName(tool: string): tool is AssistantToolName {
+function isAssistantToolName(tool: string): tool is AssistantToolName {
   return Object.prototype.hasOwnProperty.call(ASSISTANT_TOOLS, tool);
 }
 

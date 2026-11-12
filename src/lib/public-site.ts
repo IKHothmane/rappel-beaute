@@ -51,8 +51,3 @@ export function productPlaceholderImage(id: string) {
 export const HERO_IMAGE =
   "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=85";
 
-export const SERVICES_HERO_IMAGE =
-  "https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=1400&q=80";
-
-export const PRODUCTS_HERO_IMAGE =
-  "https://images.unsplash.com/photo-1596462502278-27bfdd403348?auto=format&fit=crop&w=1400&q=80";

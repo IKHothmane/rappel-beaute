@@ -11,7 +11,7 @@ import type {
 import { randomBytes } from "crypto";
 import { Pool } from "pg";
 import { withTenantIsolation } from "@/lib/db/tenant-pool";
-import { limitPhoneDigits, localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
+import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 
 const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
@@ -78,20 +78,6 @@ export async function getPublicProducts(
   );
 
   return rows.map(mapProduct);
-}
-
-export async function resolvePublicProductRef(
-  organizationId: string,
-  ref: string,
-): Promise<PublicProductItem | null> {
-  const products = await getPublicProducts(organizationId);
-  const needle = ref.trim().toLowerCase();
-  if (!needle) return null;
-  return (
-    products.find((p) => p.id.toLowerCase() === needle) ??
-    products.find((p) => p.slug === needle) ??
-    null
-  );
 }
 
 export async function createPublicProductOrder(

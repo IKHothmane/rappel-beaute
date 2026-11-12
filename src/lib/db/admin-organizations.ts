@@ -298,7 +298,7 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
   };
 }
 
-export async function slugExists(slug: string, excludeId?: string): Promise<boolean> {
+async function slugExists(slug: string, excludeId?: string): Promise<boolean> {
   const params: unknown[] = [slug.trim().toLowerCase()];
   let sql = `SELECT 1 FROM "Organization" WHERE LOWER(slug) = $1`;
   if (excludeId) {
@@ -310,7 +310,7 @@ export async function slugExists(slug: string, excludeId?: string): Promise<bool
   return rows.length > 0;
 }
 
-export type CreateOrganizationResult = {
+type CreateOrganizationResult = {
   organizationId: string;
   ownerUserId: string;
   subscriptionId: string;
@@ -758,73 +758,6 @@ export async function endSupportSession(actor: PlatformSessionUser, sessionId: s
     entityId: sessionId,
     action: "SUPPORT_SESSION_ENDED",
   });
-}
-
-export async function listAllOrganizationUsers(opts?: {
-  search?: string;
-  role?: string;
-  limit?: number;
-}): Promise<import("@/types/platform").PlatformOrgUser[]> {
-  const limit = Math.min(opts?.limit ?? 200, 500);
-  const params: unknown[] = [];
-  const conds: string[] = [];
-
-  if (opts?.search?.trim()) {
-    params.push(`%${opts.search.trim().toLowerCase()}%`);
-    conds.push(
-      `(LOWER(u.email) LIKE $${params.length} OR LOWER(u."firstName") LIKE $${params.length} OR LOWER(u."lastName") LIKE $${params.length} OR LOWER(o.name) LIKE $${params.length})`,
-    );
-  }
-  if (opts?.role) {
-    params.push(opts.role);
-    conds.push(`u.role = $${params.length}::"UserRole"`);
-  }
-  params.push(limit);
-
-  const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
-  const { rows } = await pool.query<{
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    phone: string | null;
-    role: string;
-    status: string;
-    organizationId: string;
-    organizationName: string;
-    organizationCity: string | null;
-    createdAt: Date;
-    mustChangePassword: boolean;
-    sessionVersion: number;
-  }>(
-    `SELECT u.id, u.email, u."firstName", u."lastName", u.phone, u.role::text, u.status::text,
-            u."organizationId", o.name AS "organizationName", o.city AS "organizationCity",
-            u."createdAt", u."mustChangePassword", u."sessionVersion"
-     FROM "User" u
-     JOIN "Organization" o ON o.id = u."organizationId"
-     ${where}
-     ORDER BY o.name, u."lastName", u."firstName"
-     LIMIT $${params.length}`,
-    params,
-  );
-
-  return rows.map((r) => ({
-    id: r.id,
-    email: r.email,
-    firstName: r.firstName,
-    lastName: r.lastName,
-    phone: r.phone,
-    role: r.role,
-    status: r.status,
-    organizationId: r.organizationId,
-    organizationName: r.organizationName,
-    organizationCity: r.organizationCity,
-    createdAt: r.createdAt.toISOString(),
-    mustChangePassword: Boolean(r.mustChangePassword),
-    sessionVersion: r.sessionVersion ?? 0,
-    accountKind: "ORG" as const,
-    lastLoginAt: null,
-  }));
 }
 
 export async function listSupportSessions(opts?: {

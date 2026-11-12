@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export const REMEMBERED_CARDS_KEY = "rb_cards";
+const REMEMBERED_CARDS_KEY = "rb_cards";
 
 /** Garde le jeton de la carte dans le navigateur : un second scan du QR d'adhésion retrouve la même carte. */
 export function RememberCard({ token }: { token: string }) {

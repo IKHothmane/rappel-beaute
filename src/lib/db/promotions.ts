@@ -44,7 +44,7 @@ function mapPromo(r: Record<string, unknown>): PromotionListItem {
   };
 }
 
-export async function getPromotionKpis(organizationId: string): Promise<PromotionKpis> {
+async function getPromotionKpis(organizationId: string): Promise<PromotionKpis> {
   const { rows } = await pool.query<{
     activeCount: number;
     usedThisMonth: number;

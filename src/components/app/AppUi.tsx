@@ -72,12 +72,6 @@ export function Tabs({
   );
 }
 
-export function EmptyHint({ children }: { children: ReactNode }) {
-  return (
-    <div className="surface p-6 text-sm text-ink/60">{children}</div>
-  );
-}
-
 /** Ligne de liste responsive : empile sur mobile, aligne sur sm+ */
 export function ListRow({
   left,

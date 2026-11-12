@@ -161,7 +161,7 @@ export async function getOrgIdBySlug(slug: string): Promise<string> {
 const ELAPSED_STATUSES = `('CONFIRMED', 'ARRIVED', 'IN_PROGRESS')`;
 
 /** Passe en Terminé les RDV dont la durée prévue (endAt) est dépassée. */
-export async function completeElapsedAppointments(organizationId: string): Promise<void> {
+async function completeElapsedAppointments(organizationId: string): Promise<void> {
   const { rows } = await pool.query<{ id: string; serviceId: string | null }>(
     `UPDATE "Appointment"
      SET status = 'COMPLETED'::"AppointmentStatus", "updatedAt" = NOW()

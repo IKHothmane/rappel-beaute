@@ -3,7 +3,7 @@ import { pool } from "@/lib/db/pool";
 import { logger } from "@/lib/logger";
 import { applePushToken, appleSerial, passTypeMatches } from "@/lib/loyalty/apple-passkit";
 
-export type ApplePassRecord = {
+type ApplePassRecord = {
   id: string;
   serialNumber: string;
   authenticationToken: string;

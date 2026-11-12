@@ -77,25 +77,25 @@ export default function ModulesSection() {
     <section
       id="modules"
       aria-labelledby="modules-heading"
-      className="modules-section relative isolate overflow-hidden bg-[#fff7fa] py-20 sm:py-24 lg:py-28"
+      className="modules-section relative isolate overflow-hidden bg-[#fff7fa] py-14 lg:py-16"
     >
       {/* Arrière-plan décoratif */}
       
 
-      <div className="relative mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+      <div className="relative mx-auto max-w-[1200px] px-6 lg:px-8">
         {/* En-tête */}
         <div className="mx-auto mb-14 max-w-3xl text-center">
           <div className="mb-6 flex items-center justify-center gap-4">
             <span className="h-px w-9 bg-[#d00059]" />
             <span className="text-xs font-bold uppercase tracking-[0.17em] text-[#c00053]">
-              Inclus dans l'abonnement
+              Inclus dans l’abonnement
             </span>
             <span className="h-px w-9 bg-[#d00059]" />
           </div>
 
           <h2
             id="modules-heading"
-            className="font-serif text-[clamp(2.3rem,4vw,4rem)] font-semibold leading-[1.13] tracking-tight text-[#351226]"
+            className="font-serif font-semibold leading-[1.13] tracking-tight text-[#351226]"
           >
             Les modules dont un institut
             <br className="hidden sm:block" />
@@ -119,7 +119,7 @@ export default function ModulesSection() {
           </h2>
 
           <p className="mt-8 text-base leading-8 text-[#715a68] sm:text-lg">
-            Pas d'option payante à ajouter.
+            Pas d’option payante à ajouter.
             <br className="sm:hidden" />
             {" "}Tout est disponible dès le premier jour.
           </p>
@@ -134,7 +134,7 @@ export default function ModulesSection() {
               <Link
                 key={module.title}
                 href={module.href}
-                className="module-card group relative flex min-h-[255px] flex-col overflow-hidden rounded-[26px] border border-[#f0d5df] bg-white/90 p-7 shadow-[0_8px_24px_rgba(107,27,61,0.05)] transition-all duration-300 hover:-translate-y-2 hover:border-[#d00059] hover:shadow-[0_22px_45px_rgba(156,0,68,0.13)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#c00053]"
+                className="module-card group relative flex flex-col overflow-hidden rounded-[18px] border border-[#f0d5df] bg-white/90 p-5 shadow-[0_8px_24px_rgba(107,27,61,0.05)] transition-all duration-300 hover:-translate-y-1 hover:border-[#d00059] hover:shadow-[0_16px_32px_rgba(156,0,68,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#c00053]"
               >
                 {/* Reflet subtil */}
                 <div
@@ -146,7 +146,7 @@ export default function ModulesSection() {
                   {/* Icône */}
                   <div className="mb-7 flex h-16 w-16 items-center justify-center rounded-[19px] bg-gradient-to-br from-[#fff0f6] to-[#fbd4e4] text-[#bf0052] transition-all duration-300 group-hover:scale-110 group-hover:from-[#c00053] group-hover:to-[#e34487] group-hover:text-white">
                     <Icon
-                      size={30}
+                      size={24}
                       strokeWidth={1.8}
                       aria-hidden="true"
                     />

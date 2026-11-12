@@ -1,6 +1,9 @@
 node_modules
 .next
+.next-audit
+.tmp
 .git
 .env*
 !package.json
 npm-debug.log*
+*.tsbuildinfo

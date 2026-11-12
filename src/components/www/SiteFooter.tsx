@@ -65,27 +65,27 @@ export function SiteFooter() {
       <div className="footer-container">
         <div className="footer-columns">
           <div className="footer-brand">
-            <BrandLogo height={82} />
+            <BrandLogo height={48} />
             <p>Le logiciel tout-en-un pour les instituts de beauté : rendez-vous, clientes, caisse, stock, équipe, fidélité et plus encore.</p>
             <div className="footer-socials" aria-label="Réseaux sociaux">
               {Object.entries(SOCIAL_ICONS).map(([label, icon]) => (
-                <span key={label} role="img" aria-label={label}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icon}</svg></span>
+                <span key={label} role="img" aria-label={label}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icon}</svg></span>
               ))}
             </div>
           </div>
 
           {COLUMNS.map(({ title, icon: Icon, links }) => (
             <nav key={title} className="footer-navigation" aria-label={title}>
-              <h2><Icon size={25} strokeWidth={1.7} aria-hidden="true" /><span>{title}</span></h2>
+              <h2><Icon size={16} strokeWidth={1.7} aria-hidden="true" /><span>{title}</span></h2>
               <ul>{links.map(({ href, label }) => <li key={label}><Link href={href}>{label}</Link></li>)}</ul>
             </nav>
           ))}
 
           <div className="footer-news">
-            <h2><Mail size={27} strokeWidth={1.7} aria-hidden="true" /><span>Restez informé(e)</span></h2>
+            <h2><Mail size={16} strokeWidth={1.7} aria-hidden="true" /><span>Restez informé(e)</span></h2>
             <p>Recevez nos nouveautés, conseils et offres spéciales.</p>
             <FooterEmailForm />
-            <Image src="/brand/footer-spa-cutout.png" alt="" width={1774} height={887} sizes="(max-width: 700px) 280px, 320px" className="footer-spa-art" />
+            <Image src="/brand/footer-spa-cutout.png" alt="" width={1774} height={887} sizes="180px" className="footer-spa-art" />
           </div>
         </div>
 
@@ -96,7 +96,7 @@ export function SiteFooter() {
             <Link href="/confidentialite/">Politique de confidentialité</Link>
             <Link href="/mentions-legales/">Mentions légales</Link>
           </nav>
-          <p className="footer-origin"><svg width="30" height="20" viewBox="0 0 30 20" role="img" aria-label="Maroc"><rect width="30" height="20" rx="2" fill="#c1272d" /><path d="m15 4 3.5 11-9.1-6.8h11.2L11.5 15Z" fill="none" stroke="#006233" strokeWidth="1.2" strokeLinejoin="round" /></svg>Made in Morocco<Heart size={25} strokeWidth={1.5} aria-hidden="true" /></p>
+          <p className="footer-origin"><svg width="22" height="15" viewBox="0 0 30 20" role="img" aria-label="Maroc"><rect width="30" height="20" rx="2" fill="#c1272d" /><path d="m15 4 3.5 11-9.1-6.8h11.2L11.5 15Z" fill="none" stroke="#006233" strokeWidth="1.2" strokeLinejoin="round" /></svg>Made in Morocco<Heart size={16} strokeWidth={1.5} aria-hidden="true" /></p>
         </div>
       </div>
     </footer>

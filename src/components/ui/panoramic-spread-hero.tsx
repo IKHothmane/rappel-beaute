@@ -34,13 +34,22 @@ function generatePanoramicCards(images: readonly PanoramicImage[]): Card[] {
       desktop: {
         stacked: { x: offset * 2, y: offset * -2, rotateZ: offset * 2.5, rotateY: 0 },
         panoramic: { x: offset * 18, y: absOffset * 3, rotateZ: offset * 1.5, rotateY: offset * -12, scale: 1 - absOffset * 0.05 },
-        // Les marges valent exactement -50 % de w/h pour garder le centrage.
-        size: { w: "28vw", h: "36vh", ml: "-14vw", mt: "-18vh" },
+        size: {
+          w: "clamp(148px, 14vw, 210px)",
+          h: "clamp(96px, 12vh, 128px)",
+          ml: "calc(clamp(148px, 14vw, 210px) / -2)",
+          mt: "calc(clamp(96px, 12vh, 128px) / -2)",
+        },
       },
       mobile: {
         stacked: { x: offset * 1.5, y: offset * -1.5, rotateZ: offset * 3, rotateY: 0 },
         panoramic: { x: offset * 16, y: absOffset * 5, rotateZ: offset * 2, rotateY: offset * -15, scale: 1 - absOffset * 0.04 },
-        size: { w: "68vw", h: "32vh", ml: "-34vw", mt: "-16vh" },
+        size: {
+          w: "min(52vw, 200px)",
+          h: "min(22vh, 140px)",
+          ml: "calc(min(52vw, 200px) / -2)",
+          mt: "calc(min(22vh, 140px) / -2)",
+        },
       },
     };
   });
@@ -90,14 +99,14 @@ function GalleryCard({
 
   const xRaw = useTransform(ease, [0, 1], [stacked.x, panoramic.x]);
   const yRaw = useTransform(ease, [0, 1], [stacked.y, panoramic.y]);
-  const x = useTransform(xRaw, (v) => `${v}vw`);
-  const y = useTransform(yRaw, (v) => `${v}vh`);
+  const x = useTransform(xRaw, (v) => `calc(${v} * clamp(6px, 0.62vw, 10px))`);
+  const y = useTransform(yRaw, (v) => `calc(${v} * clamp(3px, 0.4vh, 6px))`);
   const rotateZ = useTransform(ease, [0, 1], [stacked.rotateZ, panoramic.rotateZ]);
   const rotateY = useTransform(ease, [0, 1], [stacked.rotateY, panoramic.rotateY]);
   const scale = useTransform(ease, [0, 1], [0.75, panoramic.scale]);
 
   return (
-    <div className="pointer-events-none absolute left-1/2 top-[70%]" style={{ zIndex: z }}>
+    <div className="pointer-events-none absolute left-1/2 top-[min(72%,_20rem)]" style={{ zIndex: z }}>
       <motion.div
         className="pointer-events-auto bg-transparent will-change-transform"
         style={{
@@ -121,7 +130,7 @@ function GalleryCard({
             fill
             priority={priority}
             draggable={false}
-            sizes="(max-width: 768px) 68vw, 28vw"
+            sizes="(max-width: 768px) 200px, 210px"
             className="bg-transparent object-contain transition-transform duration-700 group-hover:scale-105"
           />
         </div>
@@ -162,7 +171,7 @@ export default function PanoramicSpreadHero({
 
   const { scrollYProgress } = useScroll({ target: wrapRef, offset: ["start start", "end end"] });
   const smoothProgress = useSpring(scrollYProgress, PROGRESS_SPRING);
-  const scrolled = useTransform(smoothProgress, [0.15, 0.85], [0, 1]);
+  const scrolled = useTransform(smoothProgress, [0.12, 0.88], [0, 1]);
 
   // Sans animation : galerie directement dépliée, sans section à faire défiler.
   const spreadOpen = useMotionValue(1);
@@ -173,10 +182,10 @@ export default function PanoramicSpreadHero({
   const { tiltX, tiltY } = usePointerTilt(spread, !reduce);
 
   return (
-    <section ref={wrapRef} className={`relative w-full bg-transparent text-ink ${reduce ? "" : "h-[400vh]"} ${className}`}>
+    <section ref={wrapRef} className={`relative w-full bg-transparent text-ink ${reduce ? "hm-pano-static" : "hm-pano-scroll"} ${className}`}>
       {/* Collé sous le header du site (h-[5.5rem], md:h-24). */}
       <div
-        className={`sticky top-[5.75rem] flex h-[calc(100svh-5.75rem)] w-full justify-center overflow-hidden md:top-[6.5rem] md:h-[calc(100svh-6.5rem)] ${stageClassName}`}
+        className={`sticky top-[4.75rem] flex h-[clamp(32.5rem,_52svh,_36rem)] w-full justify-center overflow-hidden md:top-[5.5rem] ${stageClassName}`}
         style={{ perspective: "1200px" }}
       >
         <motion.div
@@ -190,7 +199,7 @@ export default function PanoramicSpreadHero({
 
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center px-6 pt-5 text-center md:pt-7">
           <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary md:text-xs">{eyebrow}</span>
-          <h1 className="mt-3 max-w-[min(1000px,92vw)]">{title}</h1>
+          <h1 className="mt-3 max-w-[min(18em,100%)]">{title}</h1>
           {description ? (
             <p className="mt-3 hidden max-w-[62ch] text-base leading-relaxed text-ink/70 md:block [@media(max-height:700px)]:hidden">
               {description}

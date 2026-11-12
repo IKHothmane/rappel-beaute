@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { PageHero } from "@/components/www/PageHero";
 
 export const dynamic = "force-static";
@@ -18,7 +17,7 @@ export default function BlogPage() {
         title="Les articles arrivent bientôt."
         text="Guides métier, cas d’instituts et nouveautés seront publiés ici."
       />
-      <div className="container-rb py-16">
+      <div className="container-rb py-12">
         <p className="max-w-xl text-sm text-ink/60">
           En attendant, la FAQ et les pages fonctionnalités couvrent le produit.
         </p>

@@ -1,16 +1,5 @@
 /* Restore natural sizing on the homepage only. */
 html:has(.hm) { zoom: 1; width: 100%; min-height: 100%; }
-body:has(.hm),
-body:has(.fn) { position: relative; z-index: 0; background: transparent; }
-body:has(.hm)::before,
-body:has(.fn)::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: #fff5f8;
-}
 /*
  * Accueil de la vitrine : fond uni commun et sections transparentes.
  * Tout est scopé sous .hm pour ne pas
@@ -37,14 +26,14 @@ body:has(.fn)::before {
   --f-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --f-body: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --f-mono: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --wrap: 1240px;
+  --wrap: var(--vt-container, 1200px);
   --r: 14px;
   color-scheme: light;
   background: transparent;
   color: var(--ink);
   font-family: var(--f-body);
-  font-size: clamp(16px, 1.1vw, 18px);
-  line-height: 1.7;
+  font-size: var(--vt-fs-body);
+  line-height: var(--vt-lh-body);
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
 }
@@ -59,12 +48,6 @@ body:has(.fn)::before {
 .marketing-site:has(.fn),
 .marketing-site:has(.hm) > main,
 .marketing-site:has(.fn) > main { background: transparent; }
-.marketing-site:has(.hm) > footer,
-.marketing-site:has(.fn) > footer {
-  background: rgb(255 248 251 / 78%);
-  border-color: rgb(255 255 255 / 45%);
-  backdrop-filter: blur(8px);
-}
 .hm .soft,
 .hm .benefits,
 .marketing-site .hm > section[id] { background: transparent; border-color: transparent; }
@@ -79,19 +62,18 @@ body:has(.fn)::before {
   color: var(--ink);
   text-wrap: balance;
 }
-.hm h3 { font-size: clamp(18px, 1.5vw, 21px); font-weight: 600; line-height: 1.35; text-wrap: balance; letter-spacing: -.015em; }
-.hm ul { list-style: none; padding: 0; margin: 0; }
+.hm h3 { font-size: var(--vt-fs-h4); font-weight: 600; line-height: var(--vt-lh-h3); text-wrap: balance; letter-spacing: -.015em; }
 .hm button { font: inherit; color: inherit; }
 .hm .ico { width: 20px; height: 20px; flex-shrink: 0; stroke: currentcolor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.hm .wrap { max-width: var(--wrap); margin: 0 auto; padding-inline: clamp(20px, 4vw, 40px); }
-.hm section { padding-block: clamp(64px, 7vw, 104px); scroll-margin-top: 104px; }
+.hm .wrap { max-width: var(--wrap); margin: 0 auto; padding-inline: var(--vt-gutter); }
+.hm section { padding-block: var(--vt-section-y); scroll-margin-top: 5.5rem; }
 .hm .soft { background: transparent; border-block: 0; }
 .hm .label { display: inline-flex; align-items: center; gap: 8px; font: 600 12px var(--f-body); color: var(--primary); letter-spacing: .09em; text-transform: uppercase; }
 .hm .label::before { content: ""; width: 18px; height: 2px; background: currentcolor; border-radius: 2px; }
-.hm .head { display: grid; gap: 18px; max-width: 740px; margin-bottom: clamp(32px, 4vw, 52px); }
+.hm .head { display: grid; gap: 12px; max-width: 680px; margin-bottom: clamp(20px, 2vw, 32px); }
 .hm .head.center { margin-inline: auto; text-align: center; justify-items: center; }
-.marketing-site .hm .head h2 { font-size: clamp(30px, 3.8vw, 48px); }
-.hm .head p { color: var(--ink-2); font-size: clamp(16px, 1.45vw, 19px); line-height: 1.75; max-width: 62ch; text-wrap: pretty; }
+.marketing-site .hm .head h2 { font-size: var(--vt-fs-h2); }
+.hm .head p { color: var(--ink-2); font-size: var(--vt-fs-lead); line-height: var(--vt-lh-lead); max-width: 62ch; text-wrap: pretty; }
 .hm .head p a { color: var(--primary); font-weight: 600; text-underline-offset: 3px; }
 .hm a:focus-visible, .hm button:focus-visible, .hm summary:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent);
@@ -100,7 +82,7 @@ body:has(.fn)::before {
 
 /* hero panoramique (composant ui/panoramic-spread-hero) */
 .hm section.hm-pano { padding-block: 0; }
-.marketing-site .hm .hm-pano h1 { font-size: clamp(36px, min(5vw, 9vh), 72px); line-height: 1.08; max-width: 1050px; }
+.marketing-site .hm .hm-pano h1 { font-size: var(--vt-fs-h1); line-height: var(--vt-lh-h1); max-width: min(18em, 100%); }
 .hm .hm-pano h1 em { font-style: italic; color: var(--primary); }
 /* Images presented without a decorative backdrop. */
 .hm .hm-pano-stage { background: transparent; }
@@ -111,7 +93,7 @@ body:has(.fn)::before {
   isolation: isolate;
   overflow: hidden;
   border: 0;
-  padding-block: clamp(64px, 8vw, 112px);
+  padding-block: var(--vt-section-y);
   background:
     transparent;
 }
@@ -121,7 +103,7 @@ body:has(.fn)::before {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
-  max-width: 1180px;
+  max-width: var(--vt-container, 1200px);
 }
 .hm .benefit {
   position: relative;
@@ -131,7 +113,7 @@ body:has(.fn)::before {
   gap: 14px;
   align-items: center;
   min-width: 0;
-  padding: 22px 18px 28px;
+  padding: 18px 16px 20px;
   border: 0;
   border-radius: 22px;
   background: #fff;
@@ -139,8 +121,8 @@ body:has(.fn)::before {
 }
 .hm .benefit > * { position: relative; z-index: 1; }
 .hm .benefit .ic {
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -148,9 +130,9 @@ body:has(.fn)::before {
   color: #e21866;
 }
 .hm .benefit .ic .ico { width: 24px; height: 24px; stroke-width: 1.7; }
-.hm .benefit h3 { font-size: 16px; font-weight: 700; letter-spacing: -.02em; color: #3d2434; line-height: 1.25; }
+.hm .benefit h3 { font-size: var(--vt-fs-body); font-weight: 700; letter-spacing: -.02em; color: #3d2434; line-height: 1.25; }
 .hm .benefit p { font-size: 13.5px; color: #8d7c86; margin-top: 4px; line-height: 1.35; }
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
   .hm .benefits .wrap { grid-template-columns: 1fr 1fr; }
   .hm .benefit { padding: 20px 16px 28px; }
 }
@@ -167,15 +149,20 @@ body:has(.fn)::before {
   .hm *, .hm *::before, .hm *::after { animation: none !important; transition: none !important; }
 }
 /* Hero typography and narrow screen proportions. */
-.hm .hm-pano-stage > div:last-child { padding-top: clamp(28px, 4vh, 48px); gap: 16px; }
-.hm .hm-pano-stage > div:last-child > span { font-size: 12px; letter-spacing: .12em; line-height: 1.6; }
-.hm .hm-pano-stage > div:last-child > p { font-size: clamp(16px, 1.4vw, 19px); line-height: 1.75; max-width: 64ch; }
+.hm .hm-pano-stage > div:last-child { padding-top: clamp(12px, 2vh, 24px); gap: 12px; }
+.hm .hm-pano-stage > div:last-child > span { font-size: var(--vt-fs-caption); letter-spacing: .12em; line-height: 1.6; }
+.hm .hm-pano-stage > div:last-child > p { font-size: var(--vt-fs-lead); line-height: var(--vt-lh-lead); max-width: 64ch; }
 @media (max-width: 760px) {
 .hm section { padding-block: 64px; }
 .hm .head { gap: 14px; }
-.hm .benefit h3 { font-size: 18px; }
+.hm .benefit h3 { font-size: var(--vt-fs-h4); }
 }
 @media (max-width: 400px) {
 .hm .wrap { padding-inline: 18px; }
-.marketing-site .hm .hm-pano h1 { font-size: 32px; }
+.marketing-site .hm .hm-pano h1 { font-size: 2rem; }
 }
+
+/* Piste de défilement : assez longue pour déplier les cartes, sans les 220 vh d’avant.
+   La scène collée reste compacte ; seul le défilement s’allonge. */
+.hm section.hm-pano.hm-pano-scroll { height: calc(100svh + clamp(22rem, 32vh, 34rem)); }
+.hm section.hm-pano.hm-pano-static { height: auto; }

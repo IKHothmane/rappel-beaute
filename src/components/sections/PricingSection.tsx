@@ -42,7 +42,7 @@ export default function PricingSection() {
     <section
       id="tarifs"
       aria-labelledby="pricing-heading"
-      className="pricing-section relative isolate overflow-hidden bg-[#fff7fa] px-5 py-20 sm:px-8 lg:py-28"
+      className="pricing-section relative isolate overflow-hidden bg-[#fff7fa] px-6 py-14 lg:py-16"
     >
       <span id="tarif" className="pricing-legacy-anchor" aria-hidden="true" />
       {/* Décoration d'arrière-plan */}
@@ -57,7 +57,7 @@ export default function PricingSection() {
             <span className="h-px w-9 bg-[#c50050]" />
           </div>
 
-          <h2 id="pricing-heading" className="font-serif text-4xl leading-tight tracking-tight text-[#390c27] sm:text-5xl lg:text-6xl">
+          <h2 id="pricing-heading" className="font-serif leading-tight tracking-tight text-[#390c27]">
             Une formule simple,{" "}
             <span className="relative inline-block italic text-[#c50050]">
               tout inclus
@@ -111,7 +111,7 @@ export default function PricingSection() {
 
             <div className="pricing-price mt-9" aria-live="polite" aria-atomic="true">
               <div className="flex flex-wrap items-baseline gap-2">
-                <span className="font-serif text-6xl font-bold tracking-tight text-[#390c27] sm:text-7xl">
+                <span className="font-serif text-[clamp(2.5rem,3vw,3rem)] font-bold tracking-tight text-[#390c27]">
                   {annual
                     ? formatPrice(annualPrice)
                     : monthlyPrice}
@@ -156,7 +156,7 @@ export default function PricingSection() {
               href="/professionnel/"
               className="mt-9 flex min-h-14 items-center justify-center gap-3 rounded-2xl bg-[#c50050] px-5 py-4 text-center text-sm font-bold text-white shadow-[0_12px_25px_-12px_#c50050] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#a90044] hover:shadow-lg"
             >
-              Commencer l'essai gratuit
+              Commencer l’essai gratuit
               <ArrowRight aria-hidden="true" size={19} />
             </Link>
 

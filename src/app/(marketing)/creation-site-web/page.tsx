@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Brush, CalendarDays, ClipboardList, Code2, Layers, Link2, Monitor, Package, Play, Rocket, Sparkles, Star, Users } from "lucide-react";
 import { AccordionSection, CheckList, FaqAccordion, IconCards, SpaCutout } from "@/components/www/blocks";

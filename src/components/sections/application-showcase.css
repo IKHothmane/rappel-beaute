@@ -2,11 +2,11 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  padding: clamp(36px, 4vw, 64px) 0 24px;
+  padding: var(--vt-hero-y) 0 24px;
 }
 
 .application-showcase-inner {
-  max-width: 1440px;
+  max-width: var(--vt-container);
   margin-inline: auto;
   padding-inline: clamp(20px, 3.6vw, 52px);
 }
@@ -26,7 +26,7 @@
   border-radius: 999px;
   background: #fce0ed;
   color: #a50046;
-  font-size: 12px;
+  font-size: var(--vt-fs-caption);
   font-weight: 700;
   letter-spacing: .045em;
   text-transform: uppercase;
@@ -34,8 +34,8 @@
 
 .marketing-site .hm .application-showcase h2 {
   margin-top: 18px;
-  font-size: clamp(32px, 3.65vw, 54px);
-  line-height: 1.08;
+  font-size: var(--vt-fs-h2);
+  line-height: var(--vt-lh-h2);
   letter-spacing: -.045em;
   color: #410c27;
 }
@@ -60,8 +60,8 @@
 .hm p.application-showcase-intro {
   max-width: 48ch;
   margin-top: 28px;
-  font-size: clamp(15px, 1.2vw, 17px);
-  line-height: 1.7;
+  font-size: var(--vt-fs-lead);
+  line-height: var(--vt-lh-lead);
   color: #634b5a;
 }
 
@@ -109,8 +109,8 @@
 
 .application-showcase-tab[aria-selected="true"] .application-showcase-icon { background: #dc286d; color: #fff; }
 .application-showcase-tab-label { flex: 1; min-width: 0; }
-.application-showcase-tab-label b { display: block; font-size: 16px; line-height: 1.4; }
-.application-showcase-tab-label > span { display: block; margin-top: 2px; font-size: 13px; line-height: 1.5; color: #725366; }
+.application-showcase-tab-label b { display: block; font-size: var(--vt-fs-body); line-height: 1.4; }
+.application-showcase-tab-label > span { display: block; margin-top: 2px; font-size: var(--vt-fs-caption); line-height: 1.5; color: #725366; }
 .application-showcase-tab[aria-selected="true"] .application-showcase-tab-label > span { color: #ffe1ed; }
 .application-showcase-preview { min-width: 0; }
 .application-showcase-images { display: grid; align-items: center; aspect-ratio: 2200 / 1270; }
@@ -139,8 +139,8 @@
 .application-showcase-benefits li { display: flex; align-items: center; gap: 12px; padding: 0 18px; }
 .application-showcase-benefits li + li { border-left: 1px solid #efd5e1; }
 .application-showcase-benefits svg { color: #d8005a; flex-shrink: 0; }
-.application-showcase-benefits b { display: block; font-size: 14px; line-height: 1.5; color: #411629; }
-.application-showcase-benefits li > span > span { display: block; margin-top: 3px; font-size: 12px; line-height: 1.6; color: #725366; }
+.application-showcase-benefits b { display: block; font-size: var(--vt-fs-xs); line-height: 1.5; color: #411629; }
+.application-showcase-benefits li > span > span { display: block; margin-top: 3px; font-size: var(--vt-fs-caption); line-height: 1.6; color: #725366; }
 
 @media (max-width: 1100px) {
   .application-showcase-grid { grid-template-columns: minmax(0, .45fr) minmax(0, .55fr); gap: 20px; }
@@ -155,7 +155,7 @@
   .application-showcase-benefits li:nth-child(3) { border-left: 0; }
 }
 @media (max-width: 480px) {
-  .marketing-site .hm .application-showcase h2 { font-size: 34px; }
+  .marketing-site .hm .application-showcase h2 { font-size: 2.125rem; }
   .hm ul.application-showcase-benefits { grid-template-columns: 1fr; padding: 20px; gap: 18px; border-radius: 18px; }
   .application-showcase-benefits li { padding: 0; }
   .application-showcase-benefits li + li { border-left: 0; }

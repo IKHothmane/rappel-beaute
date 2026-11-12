@@ -45,13 +45,13 @@ export default function WhatsAppSection() {
     <section
       id="whatsapp"
       aria-labelledby="whatsapp-heading"
-      className="whatsapp-section relative isolate overflow-hidden bg-[#fff8fb] py-20 lg:py-28"
+      className="whatsapp-section relative isolate overflow-hidden bg-[#fff8fb] py-14 lg:py-16"
     >
       <span id="rappels-whatsapp" className="whatsapp-legacy-anchor" aria-hidden="true" />
       {/* Background */}
       
 
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+      <div className="mx-auto grid max-w-[1200px] items-center gap-8 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:px-8">
         {/* LEFT */}
         <div>
           <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-pink-200 bg-white/80 px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-[#c00052] shadow-sm">
@@ -59,7 +59,7 @@ export default function WhatsAppSection() {
             Rappels WhatsApp
           </div>
 
-          <h2 id="whatsapp-heading" className="max-w-[680px] font-serif text-[clamp(2.6rem,4.2vw,4.5rem)] font-semibold leading-[1.1] tracking-tight text-[#391429]">
+          <h2 id="whatsapp-heading" className="max-w-[680px] font-serif font-semibold leading-[1.1] tracking-tight text-[#391429]">
             Moins de rendez-vous manqués,{" "}
             <span className="relative inline-block italic text-[#c00052]">
               sans robot
@@ -68,10 +68,10 @@ export default function WhatsAppSection() {
           </h2>
 
           <p className="mt-8 max-w-xl text-base leading-8 text-[#755767] md:text-lg">
-            Rappel Beauty prépare chaque rappel. Vous l'envoyez
+            Rappel Beauty prépare chaque rappel. Vous l’envoyez
             depuis le WhatsApp de votre institut en un clic.
             Vos clientes reçoivent un message de votre numéro,
-            jamais d'un inconnu.
+            jamais d’un inconnu.
           </p>
 
           <div className="mt-10 space-y-4">
@@ -133,12 +133,12 @@ export default function WhatsAppSection() {
         </div>
 
         {/* RIGHT */}
-        <div className="whatsapp-preview relative flex min-h-[660px] items-center justify-center lg:min-h-[760px]">
+        <div className="whatsapp-preview relative flex items-center justify-center">
           <div className="absolute h-[500px] w-[500px] max-w-full rounded-full bg-pink-200/40 blur-3xl" />
 
           {/* PHONE */}
           <div className="whatsapp-phone relative z-10 w-[min(100%,365px)] rotate-[-2deg] rounded-[48px] border-[7px] border-[#30232b] bg-[#30232b] p-[5px] shadow-[0_35px_75px_rgba(75,20,50,0.25)] transition-transform duration-500 hover:rotate-0">
-            <div id="whatsapp-conversation" role="group" aria-label="Exemple de conversation WhatsApp" className="whatsapp-phone-screen relative h-[650px] overflow-hidden rounded-[36px] bg-[#efe7df]">
+            <div id="whatsapp-conversation" role="group" aria-label="Exemple de conversation WhatsApp" className="whatsapp-phone-screen relative overflow-hidden rounded-[36px] bg-[#efe7df]">
               <div className="absolute left-1/2 top-2 z-20 h-6 w-28 -translate-x-1/2 rounded-full bg-[#211820]" />
 
               {/* WhatsApp header */}
@@ -173,11 +173,11 @@ export default function WhatsAppSection() {
                   <p className="text-[15px] leading-6 text-[#17302a]">
                     Bonjour Amal, petit rappel : votre{" "}
                     <strong>
-                      massage relaxant à l'huile d'argan
+                      massage relaxant à l’huile d’argan
                     </strong>{" "}
                     est prévu demain mardi à{" "}
                     <strong>10:00</strong> avec Nadia,
-                    à l'Institut Royal.
+                    à l’Institut Royal.
                     <br />
                     À demain ! 🌸
                   </p>
@@ -223,7 +223,7 @@ export default function WhatsAppSection() {
           <div className="absolute right-0 top-[14%] z-20 hidden rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-xl xl:flex xl:items-center xl:gap-3">
             <CalendarDays aria-hidden="true" className="text-[#c00052]" size={23} />
             <span className="text-sm font-semibold text-[#391429]">
-              Moins d'absences
+              Moins d’absences
             </span>
           </div>
 

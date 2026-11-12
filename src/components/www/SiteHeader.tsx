@@ -22,15 +22,15 @@ export function SiteHeader() {
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5 md:pt-4">
       <div
-        className={`pointer-events-auto mx-auto max-w-[1180px] rounded-[1.6rem] border border-white/80 shadow-[0_16px_40px_rgb(186_0_73/14%)] backdrop-blur-md transition-all duration-300 ${
+        className={`pointer-events-auto mx-auto max-w-[1200px] rounded-[1.25rem] border border-white/80 shadow-[0_10px_28px_rgb(186_0_73/12%)] backdrop-blur-md transition-all duration-300 ${
           scrolled ? "bg-white/95" : "bg-white/75"
         }`}
       >
-      <div className="flex h-16 items-center justify-between gap-3 px-4 md:h-[4.5rem] md:px-6">
-        <BrandLogo height={52} className="max-h-11 md:max-h-14" priority />
+      <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-5">
+        <BrandLogo height={40} className="max-h-10" priority />
 
         <nav
-          className="hidden items-center gap-4 lg:flex xl:gap-6"
+          className="hidden items-center gap-3 lg:flex xl:gap-5"
           aria-label="Navigation principale"
         >
           {NAV.map((item) => (
@@ -38,7 +38,7 @@ export function SiteHeader() {
               key={item.href}
               href={item.href}
               aria-current={pathname?.replace(/\/$/, "") === item.href.replace(/\/$/, "") ? "page" : undefined}
-              className="relative text-[13px] font-medium text-ink/70 transition hover:text-ink after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
+              className="relative text-sm font-medium text-ink/70 transition hover:text-ink after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
             >
               {item.label}
             </Link>
@@ -48,13 +48,13 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <Link
             href="/professionnel/"
-            className="btn-ghost hidden px-4 py-2 transition hover:scale-[1.02] lg:inline-flex"
+            className="btn-ghost hidden px-3 py-2 text-sm transition hover:scale-[1.02] lg:inline-flex"
           >
             Je suis un professionnel
           </Link>
           <Link
             href="/connexion/"
-            className="btn-primary px-3 py-2 text-[13px] transition hover:scale-[1.02] sm:px-4"
+            className="btn-primary px-3 py-2 text-sm transition hover:scale-[1.02]"
           >
             Se connecter
           </Link>

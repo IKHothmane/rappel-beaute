@@ -1,4 +1,5 @@
 import { JsonLd } from "@/components/www/JsonLd";
+import { faqPageJsonLd } from "@/lib/seo";
 
 export function SeoCloser({
   problem,
@@ -45,17 +46,7 @@ export function SeoCloser({
                 </details>
               ))}
             </div>
-            <JsonLd
-              data={{
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                mainEntity: faqs.map((item) => ({
-                  "@type": "Question",
-                  name: item.q,
-                  acceptedAnswer: { "@type": "Answer", text: item.a },
-                })),
-              }}
-            />
+            <JsonLd data={faqPageJsonLd(faqs.map((item) => ({ question: item.q, answer: item.a })))} />
           </div>
         ) : null}
       </div>

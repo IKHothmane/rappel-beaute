@@ -17,7 +17,7 @@ export function PageHero({
   return (
     <section className="relative overflow-hidden border-b border-line bg-[radial-gradient(ellipse_at_top_left,_rgba(227,28,95,0.10),_transparent_50%),linear-gradient(180deg,#FFFBF9_0%,#FDEAF0_100%)]">
       <div className="pointer-events-none absolute inset-0 bg-grain opacity-70" />
-      <div className="container-rb relative py-16 md:py-20">
+      <div className="container-rb relative py-12 md:py-14">
         <motion.p
           className="eyebrow"
           initial={{ opacity: 0, y: 12 }}

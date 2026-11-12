@@ -66,9 +66,9 @@ export default function MoroccoPaymentsSection() {
       ref={sectionRef}
       id="maroc"
       aria-labelledby="morocco-payments-heading"
-      className="morocco-payments relative isolate overflow-hidden bg-[#fff8fa] py-20 lg:py-28"
+      className="morocco-payments relative isolate overflow-hidden bg-[#fff8fa] py-14 lg:py-16"
     >
-      <div className="mx-auto grid max-w-[1400px] items-center gap-14 px-5 sm:px-8 lg:grid-cols-2 lg:gap-20 lg:px-12">
+      <div className="mx-auto grid max-w-[1200px] items-center gap-8 px-6 lg:grid-cols-2 lg:gap-10 lg:px-8">
         {/* Texte et fonctionnalités */}
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-white/80 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#bd0055]">
@@ -76,7 +76,7 @@ export default function MoroccoPaymentsSection() {
             Conçu au Maroc
           </span>
 
-          <h2 id="morocco-payments-heading" className="mt-6 font-serif text-4xl font-semibold leading-[1.12] tracking-tight text-[#400b28] sm:text-5xl lg:text-[56px]">
+          <h2 id="morocco-payments-heading" className="mt-6 font-serif font-semibold leading-[1.12] tracking-tight text-[#400b28]">
             Pensé pour la façon
             <br />
             dont{" "}
@@ -86,8 +86,8 @@ export default function MoroccoPaymentsSection() {
           </h2>
 
           <p className="mt-6 max-w-[550px] text-base leading-8 text-[#765569] sm:text-lg">
-            Rappel Beauty part de la réalité d'un institut
-            marocain, pas d'un logiciel européen traduit
+            Rappel Beauty part de la réalité d’un institut
+            marocain, pas d’un logiciel européen traduit
             à la hâte.
           </p>
 

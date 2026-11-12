@@ -14,10 +14,10 @@ export default function FreeTrialSection() {
     <section
       id="essai"
       aria-labelledby="free-trial-title"
-      className="free-trial-section relative overflow-hidden bg-white px-4 py-16 sm:px-6 lg:py-24"
+      className="free-trial-section relative overflow-hidden bg-white px-4 py-14 sm:px-6"
     >
-      <div className="mx-auto max-w-7xl">
-        <div className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-br from-[#850039] via-[#b90050] to-[#e74486] px-6 py-12 shadow-[0_24px_70px_rgba(120,0,55,0.16)] sm:px-10 lg:px-16 lg:py-20">
+      <div className="mx-auto max-w-[1200px]">
+        <div className="relative isolate overflow-hidden rounded-[20px] bg-gradient-to-br from-[#850039] via-[#b90050] to-[#e74486] px-6 py-8 shadow-[0_16px_40px_rgba(120,0,55,0.14)] sm:px-8 lg:px-10 lg:py-10">
           
           {/* Décorations de fond */}
           <div
@@ -29,7 +29,7 @@ export default function FreeTrialSection() {
             <div className="absolute -bottom-32 left-1/3 h-56 w-[500px] rotate-[-12deg] rounded-[100%] bg-white/5 blur-2xl" />
           </div>
 
-          <div className="relative z-10 grid items-center gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
+          <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10">
 
             {/* Colonne gauche */}
             <div className="text-white">
@@ -40,7 +40,7 @@ export default function FreeTrialSection() {
 
               <h2
                 id="free-trial-title"
-                className="max-w-[650px] font-serif text-[clamp(2.3rem,4vw,4.3rem)] font-semibold leading-[1.08] tracking-[-0.035em]"
+                className="max-w-[650px] font-serif font-semibold leading-[1.08] tracking-[-0.035em]"
               >
                 Essayez Rappel Beauty
                 <span className="block">dans votre institut</span>
@@ -87,7 +87,7 @@ export default function FreeTrialSection() {
                 <p className="mb-8 text-base leading-7 text-[#675262]">
                   Renseignez les informations de votre institut.
                   Votre essai gratuit de {PUBLIC_OFFER.trialDays} jours démarre
-                  dès l'activation de votre accès.
+                  dès l’activation de votre accès.
                 </p>
 
                 <Link

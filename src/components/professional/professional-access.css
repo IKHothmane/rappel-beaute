@@ -3,13 +3,14 @@ html:has(.pro-access) { zoom: 1; width: 100%; min-height: 100%; }
 .pro-access *, .pro-access *::before, .pro-access *::after { box-sizing: border-box; }
 .pro-access h1, .pro-access h2, .pro-access p { margin: 0; }
 .pro-access::before { position: absolute; z-index: -1; content: ""; inset: 0; background: linear-gradient(90deg, #410b25dd, #6d193c8c 36%, #efb2cbab 65%, #f9d1e2ed); }
-.pro-layout { display: grid; grid-template-columns: minmax(0, .46fr) minmax(0, .54fr); gap: clamp(28px, 4vw, 64px); align-items: center; max-width: 1600px; margin-inline: auto; padding: 28px clamp(24px, 4.5vw, 72px); min-height: 100svh; }
-.pro-story { position: relative; align-self: stretch; display: flex; flex-direction: column; justify-content: center; padding-bottom: 130px; color: white; }
-.pro-logo { display: inline-flex; align-self: flex-start; margin-bottom: 36px; padding: 6px 18px; border-radius: 18px; background: #fff8fbf2; }
-.pro-logo img { display: block; width: 170px; height: 78px; object-fit: contain; }
-.marketing-site .pro-story h2 { max-width: 12ch; font-family: var(--font-fraunces), Georgia, serif; font-size: clamp(38px, 4.2vw, 62px); line-height: 1.05; letter-spacing: -.035em; font-weight: 500; font-style: italic; color: white; text-wrap: balance; }
+.pro-layout { display: grid; grid-template-columns: minmax(0, .46fr) minmax(0, .54fr); gap: clamp(24px, 2vw, 40px); align-items: center; max-width: var(--vt-container); margin-inline: auto; padding: 24px clamp(24px, 2vw, 40px); min-height: 100svh; }
+.pro-story { position: relative; align-self: stretch; display: flex; flex-direction: column; justify-content: center; padding-bottom: 72px; color: white; }
+.pro-logo { display: inline-flex; align-self: flex-start; margin-bottom: 20px; padding: 4px 12px; border-radius: 14px; background: #fff8fbf2; }
+.pro-logo img { display: block; width: 140px; height: 64px; object-fit: contain; }
+.pro-background { object-fit: cover; object-position: center top; }
+.marketing-site .pro-story h2 { max-width: 12ch; font-family: var(--font-fraunces), Georgia, serif; font-size: var(--vt-fs-h2); line-height: 1.05; letter-spacing: -.035em; font-weight: 500; font-style: italic; color: white; text-wrap: balance; }
 .pro-story h2 em { display: inline; color: #ff79af; font-style: inherit; }
-.pro-story > p { max-width: 34ch; margin-top: 26px; font-size: 17px; line-height: 1.7; color: #fff5fa; }
+.pro-story > p { max-width: 36ch; margin-top: 16px; font-size: 15px; line-height: 1.6; color: #fff5fa; }
 .pro-story ul { display: grid; gap: 12px; list-style: none; padding: 0; margin: 28px 0 0; }
 .pro-story li { display: flex; align-items: center; gap: 14px; font-size: 15px; font-weight: 600; }
 .pro-story li span { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 11px; background: #fff2f9; color: #e80063; }
@@ -17,7 +18,7 @@ html:has(.pro-access) { zoom: 1; width: 100%; min-height: 100%; }
 .pro-spa { position: absolute; left: -50px; bottom: -5px; width: 370px; max-width: 95%; height: auto; pointer-events: none; }
 .pro-panel { padding: clamp(24px, 2.5vw, 38px); border: 1px solid #fff8fc; border-radius: 32px; background: #fff9fdef; box-shadow: 0 18px 65px -35px #4d0a2c80; backdrop-filter: blur(18px); min-width: 0; }
 .pro-heading { text-align: center; }
-.marketing-site .pro-heading h1 { font-family: var(--font-fraunces), Georgia, serif; font-size: clamp(32px, 3.4vw, 46px); line-height: 1.15; letter-spacing: -.035em; font-weight: 500; color: #241923; scroll-margin-top: 24px; outline: none; }
+.marketing-site .pro-heading h1 { font-family: var(--font-fraunces), Georgia, serif; font-size: clamp(2.5rem, 1.4rem + 1vw, 2.75rem); line-height: 1.15; letter-spacing: -.035em; font-weight: 500; color: #241923; scroll-margin-top: 24px; outline: none; }
 .pro-heading h1 em { color: #cc0056; }
 .pro-heading p { margin-top: 10px; color: #655763; font-size: 15px; line-height: 1.5; }
 .pro-heading strong { font-weight: 700; color: #30232e; }
@@ -84,7 +85,7 @@ html:has(.pro-access) { zoom: 1; width: 100%; min-height: 100%; }
   .pro-story { padding: 0; }
   .pro-logo { margin-bottom: 22px; }
   .pro-logo img { width: 140px; height: 60px; }
-  .marketing-site .pro-story h2 { font-size: 38px; max-width: 20ch; }
+  .marketing-site .pro-story h2 { font-size: var(--vt-fs-h2); max-width: 20ch; }
   .pro-story > p { margin-top: 16px; max-width: 38ch; font-size: 16px; }
   .pro-story ul, .pro-spa { display: none; }
   .pro-panel { padding: 26px 22px; border-radius: 24px; }

@@ -29,12 +29,12 @@ export default function FaqSection() {
     <section
       id="faq"
       aria-labelledby="home-faq-heading"
-      className="faq-section relative isolate overflow-hidden bg-[#fff8fa] px-5 py-20 sm:px-8 lg:py-28"
+      className="faq-section relative isolate overflow-hidden bg-[#fff8fa] px-6 py-14 lg:py-16"
     >
       {/* Fond décoratif */}
       
 
-      <div className="mx-auto grid max-w-7xl items-start gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <div className="mx-auto grid max-w-[1200px] items-start gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-10">
         {/* Colonne gauche */}
         <div className="lg:sticky lg:top-28">
           <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[#f4c6d8] bg-[#fff0f5] px-5 py-3 text-sm font-bold uppercase tracking-wider text-[#c50050]">
@@ -42,7 +42,7 @@ export default function FaqSection() {
             Questions fréquentes
           </div>
 
-          <h2 id="home-faq-heading" className="font-serif text-5xl font-semibold leading-[1.08] tracking-tight text-[#430b2b] sm:text-6xl">
+          <h2 id="home-faq-heading" className="font-serif font-semibold leading-[1.08] tracking-tight text-[#430b2b]">
             Avant de vous
             <span className="relative mt-1 block w-fit">
               lancer

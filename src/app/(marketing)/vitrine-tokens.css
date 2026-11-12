@@ -1,0 +1,153 @@
+/*
+ * Design system typographique et d'espacement de la vitrine.
+ * Source unique : toutes les pages vitrines (.hm, .fn, .tp, .sp, .fl, …) et leurs
+ * composants partagés consomment ces variables au lieu de valeurs en dur.
+ * Tout est en rem : le texte suit le réglage de taille du navigateur et le zoom 200 %.
+ * Scopé à .marketing-site : l'application (dashboard, caisse…) n'est pas touchée.
+ */
+.marketing-site {
+  /* ---------- Échelle typographique ---------- */
+  --vt-fs-h1: clamp(2.5rem, 1.7rem + 1.4vw, 3.25rem);      /* 40 → 52 px  Hero */
+  --vt-fs-h2: clamp(1.75rem, 1.45rem + 0.7vw, 2.25rem);    /* 28 → 36 px  Titre de section */
+  --vt-fs-h2-sm: clamp(1.25rem, 1.15rem + 0.35vw, 1.5rem); /* 20 → 24 px  Titre secondaire */
+  --vt-fs-h3: clamp(1.125rem, 1.05rem + 0.2vw, 1.375rem);  /* 18 → 22 px  Titre de carte */
+  --vt-fs-h4: 1.125rem;                                    /* 18 px */
+  --vt-fs-lead: clamp(0.9375rem, 0.9rem + 0.15vw, 1.0625rem); /* 15 → 17 px */
+  --vt-fs-body: 1rem;                                      /* 16 px */
+  --vt-fs-sm: 0.875rem;                                    /* 14 px */
+  --vt-fs-xs: 0.875rem;                                    /* 14 px */
+  --vt-fs-caption: 0.8125rem;                              /* 13 px */
+  --vt-fs-nav: 0.875rem;
+
+  /* ---------- Interlignes ---------- */
+  --vt-lh-h1: 1.12;
+  --vt-lh-h2: 1.2;
+  --vt-lh-h3: 1.3;
+  --vt-lh-lead: 1.6;
+  --vt-lh-body: 1.6;
+  --vt-lh-snug: 1.6;
+  --vt-lh-btn: 1.3;
+
+  /* ---------- Échelle d'espacement (4 8 12 16 24 32 48 64 80 96 112) ---------- */
+  --vt-sp-1: 0.25rem;
+  --vt-sp-2: 0.5rem;
+  --vt-sp-3: 0.75rem;
+  --vt-sp-4: 1rem;
+  --vt-sp-6: 1.5rem;
+  --vt-sp-8: 2rem;
+  --vt-sp-12: 3rem;
+  --vt-sp-16: 4rem;
+  --vt-sp-20: 5rem;
+  --vt-sp-24: 6rem;
+  --vt-sp-28: 7rem;
+
+  /* ---------- Rythme vertical ---------- */
+  --vt-gap-badge-title: 0.75rem;                            /* badge → titre : 12 */
+  --vt-gap-title-text: clamp(0.75rem, 0.6rem + 0.3vw, 1.25rem); /* titre → description : 12 → 20 */
+  --vt-gap-text: 1rem;                                      /* entre paragraphes : 16 */
+  --vt-gap-text-cta: 1.25rem;                               /* description → CTA : 20 */
+  --vt-gap-head-content: clamp(1.25rem, 1rem + 0.6vw, 2rem); /* titre → cartes : 20 → 32 */
+  --vt-gap-cards: clamp(1rem, 0.85rem + 0.4vw, 1.5rem);    /* entre cartes : 16 → 24 */
+  --vt-card-pad: clamp(1.25rem, 1.1rem + 0.25vw, 1.5rem);  /* padding de carte : 20 → 24 */
+  --vt-section-y: clamp(3.5rem, 2.8rem + 1.2vw, 5rem);     /* sections : 56 → 80 */
+  --vt-hero-y: clamp(1.75rem, 1.2rem + 1vw, 2.5rem);       /* hero : 28 → 40 */
+
+  /* ---------- Conteneurs et mesure de lecture ---------- */
+  --vt-container: 1200px;
+  --vt-gutter: clamp(1.5rem, 1rem + 1vw, 2.5rem);          /* 24 → 40 */
+  --vt-measure: 68ch;                                       /* paragraphes : ~60-75 caractères */
+  --vt-measure-lead: 56ch;                                  /* description hero */
+  --vt-measure-title: 16ch;                                 /* grands titres */
+
+  /* ---------- Boutons ---------- */
+  --vt-btn-h: 2.75rem;                                      /* 44 px */
+  --vt-btn-pad: 0.625rem 1.25rem;                          /* 10 × 20 */
+  --vt-fs-btn: 0.9375rem;                                  /* 15 px */
+  --vt-btn-radius: 12px;
+}
+
+/* ---------- Styles réutilisables ---------- */
+
+/* Conteneur */
+.vt-container {
+  width: 100%;
+  max-width: var(--vt-container);
+  margin-inline: auto;
+  padding-inline: var(--vt-gutter);
+}
+
+/* Section : espacement vertical standard */
+.vt-section { padding-block: var(--vt-section-y); }
+
+/* Titre hero */
+.vt-hero-title {
+  font-size: var(--vt-fs-h1);
+  line-height: var(--vt-lh-h1);
+  max-width: var(--vt-measure-title);
+  text-wrap: balance;
+}
+
+/* Titre de section */
+.vt-section-title {
+  font-size: var(--vt-fs-h2);
+  line-height: var(--vt-lh-h2);
+  text-wrap: balance;
+}
+
+/* Titre de carte */
+.vt-card-title {
+  font-size: var(--vt-fs-h3);
+  line-height: var(--vt-lh-h3);
+}
+
+/* Sous-titre / description hero */
+.vt-lead {
+  max-width: var(--vt-measure-lead);
+  font-size: var(--vt-fs-lead);
+  line-height: var(--vt-lh-lead);
+  text-wrap: pretty;
+}
+
+/* Paragraphe */
+.vt-text {
+  max-width: var(--vt-measure);
+  font-size: var(--vt-fs-body);
+  line-height: var(--vt-lh-body);
+  text-wrap: pretty;
+}
+
+/* Texte secondaire */
+.vt-text-sm {
+  font-size: var(--vt-fs-sm);
+  line-height: var(--vt-lh-snug);
+}
+
+/* Mention / légende */
+.vt-caption {
+  font-size: var(--vt-fs-caption);
+  line-height: var(--vt-lh-snug);
+}
+
+/* Bouton */
+.vt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vt-sp-2);
+  min-height: var(--vt-btn-h);
+  padding: var(--vt-btn-pad);
+  border-radius: var(--vt-btn-radius);
+  font-size: var(--vt-fs-btn);
+  font-weight: 600;
+  line-height: var(--vt-lh-btn);
+  text-align: center;
+}
+
+/* Carte */
+.vt-card {
+  padding: var(--vt-card-pad);
+  border-radius: 20px;
+}
+
+/* Grille de cartes */
+.vt-grid { display: grid; gap: var(--vt-gap-cards); }

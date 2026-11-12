@@ -1,22 +1,33 @@
-/* Visual identity scoped to the public website. */
+@import "./vitrine-tokens.css";
+
+/* La vitrine reste à l'échelle 1. Le zoom 0.8 du document ne s'applique qu'à l'application. */
+html:has(.marketing-site) { zoom: 1; width: 100%; min-height: 100%; }
+
 .marketing-site {
   background: #fff;
   color: #3a2533;
   line-height: 1.6;
+  font-size: 1rem;
 }
 .marketing-site > header {
   background: transparent;
   border: 0;
 }
-.marketing-site > main { padding-top: 5.75rem; }
+.marketing-site > main { padding-top: 4.75rem; }
 @media (min-width: 768px) {
-  .marketing-site > main { padding-top: 6.5rem; }
+  .marketing-site > main { padding-top: 5.5rem; }
 }
 .marketing-site > footer {
   background: #fbf6f7;
-}
-body:has(.fn) { position: relative; z-index: 0; background: transparent; }
-body:has(.fn)::before {
+}body:has(.fn),
+body:has(.hm),
+body:has(.sp) {
+  position: relative;
+  z-index: 0;
+  background: transparent;
+}body:has(.fn)::before,
+body:has(.hm)::before,
+body:has(.sp)::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -25,8 +36,9 @@ body:has(.fn)::before {
   background: #fff5f8;
 }
 .marketing-site:has(.fn),
-.marketing-site:has(.fn) > main { background: transparent; }
-.marketing-site:has(.fn) > footer {
+.marketing-site:has(.fn) > main { background: transparent; }.marketing-site:has(.fn) > footer,
+.marketing-site:has(.hm) > footer,
+.marketing-site:has(.sp) > footer {
   background: rgb(255 248 251 / 78%);
   border-color: rgb(255 255 255 / 45%);
   backdrop-filter: blur(8px);
@@ -39,15 +51,235 @@ body:has(.fn)::before {
 }
 .marketing-site .btn-primary,
 .marketing-site .btn-ghost {
-  min-height: 50px;
+  min-height: var(--vt-btn-h);
   border-radius: 12px;
 }
 .marketing-site .btn-primary {
   box-shadow: 0 4px 12px rgb(144 0 55 / 12%);
-}
+}.fn a:focus-visible,
+.fn summary:focus-visible,
 .marketing-site a:focus-visible,
 .marketing-site button:focus-visible,
 .marketing-site summary:focus-visible {
   outline: 3px solid #ba004966;
   outline-offset: 4px;
+}
+
+/* Règles communes aux pages de la vitrine */
+.ib-wrap,
+.pv-wrap,
+.fn-wrap,
+.rdv-wrap,
+.bk-wrap {
+  max-width: var(--vt-container);
+  margin-inline: auto;
+  padding-inline: var(--vt-gutter);
+}
+
+.ib-hero,
+.bk-hero {
+  display: grid;
+  grid-template-columns: minmax(0, .44fr) minmax(0, .56fr);
+  gap: 32px;
+  align-items: center;
+  padding-block: var(--vt-hero-y);
+}
+
+.ib-actions,
+.fn-actions,
+.rdv-actions,
+.bk-actions,
+.cw-hero-actions,
+.sp-actions,
+.eng-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.ib-actions svg,
+.fq-support-primary svg,
+.fq-support-secondary svg,
+.fl-actions svg,
+.fl-cta a svg,
+.ml-contact-links svg,
+.bk-actions svg,
+.tp-button svg,
+.tp-included svg,
+.tp-contact svg,
+.cw-primary svg,
+.cw-secondary svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.ib-promises,
+.sp-promises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--vt-fs-caption);
+  font-weight: 600;
+}
+
+.ib-promises li,
+.cw-promises li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ib-highlights,
+.rdv-highlights {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-block: 24px;
+}
+
+.ib-highlight-icon svg,
+.rdv-icon svg,
+.tp-icon svg,
+.sp-step-icon svg,
+.sp-feature-icon svg,
+.sp-perk-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.7;
+}
+
+.ib-section-heading,
+.rdv-section-heading {
+  max-width: 850px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.ib details > a svg,
+.ib-local > a svg,
+.fq-answer > a svg,
+.ml-pill svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.ap-wrap,
+.fq-wrap {
+  max-width: var(--vt-container);
+  padding-inline: var(--vt-gutter);
+  margin-inline: auto;
+}
+
+.ap-reception,
+.ap-portrait-frame img,
+.fn-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.fl-wrap,
+.ml-wrap,
+.eng-wrap {
+  max-width: var(--vt-container);
+  margin-inline: auto;
+  padding-inline: var(--vt-gutter);
+}
+
+.marketing-site .fl h1,
+.marketing-site .ml h1,
+.marketing-site .eng h1 {
+  margin-top: var(--vt-gap-badge-title);
+  font-family: var(--font-fraunces),Georgia,serif;
+  font-size: var(--vt-fs-h1);
+  font-weight: 500;
+  font-style: italic;
+  line-height: var(--vt-lh-h1);
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+.marketing-site .fl h2,
+.marketing-site .eng h2 {
+  font-family: var(--font-fraunces),Georgia,serif;
+  font-size: var(--vt-fs-h2);
+  font-weight: 500;
+  line-height: var(--vt-lh-h2);
+  letter-spacing: -.035em;
+}
+
+.fl-process > h2,
+.bk-process > h2,
+.dm-explorer > h2 {
+  text-align: center;
+  max-width: 1000px;
+  margin-inline: auto;
+}
+
+.fl-wallet ul,
+.hm ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fl a:focus-visible,
+.fl summary:focus-visible,
+.ml a:focus-visible {
+  outline: 3px solid #b8004d;
+  outline-offset: 4px;
+}
+
+.rdv-promises li,
+.bk-promises li,
+.sp-promises li,
+.eng-promises li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.rdv-hero-visual,
+.dm-hero-art {
+  position: relative;
+  isolation: isolate;
+  padding-block: 32px;
+}
+
+.ml-notice svg,
+.ct-remote p svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: #d6005b;
+  margin-top: 2px;
+}
+
+.bk summary,
+.cw-faq summary,
+.sp summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 17px 18px;
+  list-style: none;
+  cursor: pointer;
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.tp-laptop,
+.sp-laptop {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
 }

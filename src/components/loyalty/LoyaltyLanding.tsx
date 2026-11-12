@@ -1,9 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BarChart3, CalendarDays, Check, CheckCircle2, ChevronDown, Gift, Heart, PlayCircle, QrCode, Settings, Smartphone, Sparkles, Star, Trophy, Users, WalletCards } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarDays, Check, CheckCircle2, ChevronDown, Gift, Heart, PlayCircle, QrCode, Settings, Sparkles, Star, Trophy, Users, WalletCards } from "lucide-react";
+import { Accordion, AccordionSection, CheckList, FaqAccordion, SpaCutout } from "@/components/www/blocks";
+import { JsonLd } from "@/components/www/JsonLd";
+import { faqPageJsonLd } from "@/lib/seo";
 import { PUBLIC_OFFER } from "@/lib/site";
 
 type LoyaltySection = { id: string; title: string; text: string };
+
+/** Liens affichés sous certaines rubriques, indexés par identifiant de rubrique. */
+const SECTION_LINKS: Record<string, { href: string; link: string }> = {
+  fiche: { href: "/gestion-clientes/", link: "Découvrir les fiches clientes" },
+  "rendez-vous": { href: "/reservation-en-ligne/", link: "Découvrir la réservation en ligne" },
+  ventes: { href: "/caisse/", link: "Découvrir la caisse" },
+};
 
 const steps = [
   { icon: CalendarDays, title: "La cliente vient au salon", text: "Vous réalisez sa prestation." },
@@ -21,8 +31,8 @@ const benefits = [
 ] as const;
 
 const faqs = [
-  { q: "Un rendez-vous annulé donne-t-il des points ?", a: "Non. Les points suivent un paiement enregistré, pas le seul fait d’avoir pris rendez-vous." },
-  { q: "Où voit-on le solde ?", a: "Sur la fiche cliente, avec le niveau et les derniers mouvements." },
+  { question: "Un rendez-vous annulé donne-t-il des points ?", answer: "Non. Les points suivent un paiement enregistré, pas le seul fait d’avoir pris rendez-vous." },
+  { question: "Où voit-on le solde ?", answer: "Sur la fiche cliente, avec le niveau et les derniers mouvements." },
 ] as const;
 
 function LoyaltyCard({ compact = false }: { compact?: boolean }) {
@@ -48,19 +58,19 @@ function LoyaltyCard({ compact = false }: { compact?: boolean }) {
 export function LoyaltyLanding({ sections }: { sections: readonly LoyaltySection[] }) {
   return (
     <div className="fl">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(faq => ({ "@type": "Question", name: faq.q, acceptedAnswer: { "@type": "Answer", text: faq.a } })) }).replace(/</g, "\\u003c") }} />
+      <JsonLd data={faqPageJsonLd(faqs)} />
       <section className="fl-wrap fl-hero">
         <div>
           <span className="fl-badge"><Gift aria-hidden="true" /> Programme de fidélité</span>
           <h1>Fidélisez vos clientes et <em>boostez votre activité</em></h1>
           <p className="fl-lead">Un programme de fidélité simple, moderne et digital pour récompenser vos clientes, suivre leurs avantages et leur donner envie de revenir.</p>
           <div className="fl-actions"><Link href="/professionnel/">Activer la fidélité <ArrowRight aria-hidden="true" /></Link><Link href="/demo/"><PlayCircle aria-hidden="true" /> Voir la démo</Link></div>
-          <ul className="fl-promises">{["Carte digitale", "Suivi des avantages", "Récompenses personnalisées"].map(text => <li key={text}><Check aria-hidden="true" />{text}</li>)}</ul>
+          <CheckList className="fl-promises" items={["Carte digitale", "Suivi des avantages", "Récompenses personnalisées"]} />
         </div>
         <div className="fl-hero-art">
           <div className="fl-photo"><Image src="/brand/institut-beaute-soin.webp" alt="Un moment de soin du visage en institut de beauté" width={1536} height={1024} priority sizes="(max-width: 760px) 100vw, 55vw" /></div>
           <div className="fl-hero-phone"><LoyaltyCard /></div>
-          <Image className="fl-spa" src="/brand/footer-spa-cutout.png" alt="" width={1774} height={887} sizes="(max-width: 760px) 40vw, 220px" />
+          <SpaCutout className="fl-spa" sizes="(max-width: 760px) 40vw, 220px" />
           <span className="fl-floating-gift" aria-hidden="true"><Gift /></span>
         </div>
       </section>
@@ -87,8 +97,8 @@ export function LoyaltyLanding({ sections }: { sections: readonly LoyaltySection
           <section className="fl-rewards"><h2>Des récompenses <em>à votre image</em></h2><p>Exemples à adapter aux règles de votre institut.</p><div>{[{ icon: Sparkles, title: "Un soin offert" }, { icon: Gift, title: "Une remise fidélité" }, { icon: Star, title: "Une attention spéciale" }].map(item => { const Icon = item.icon; return <article key={item.title}><Icon aria-hidden="true" /><h3>{item.title}</h3></article>; })}</div></section>
           <section className="fl-cta"><Heart aria-hidden="true" /><div><h2>Activez dès aujourd’hui <em>votre programme de fidélité</em></h2><p>Gardez le lien avec vos clientes, visite après visite.</p><Link href="/professionnel/">Essai gratuit {PUBLIC_OFFER.trialDays} jours <ArrowRight aria-hidden="true" /></Link></div></section>
         </div>
-        <section className="fl-details" aria-labelledby="fl-details-title"><h2 id="fl-details-title">La fidélité, <em>dans votre quotidien</em></h2><div>{sections.map(section => <details key={section.id} id={section.id}><summary>{section.title}<ChevronDown aria-hidden="true" /></summary><p>{section.text}</p>{section.id === "fiche" && <Link href="/gestion-clientes/">Découvrir les fiches clientes <ArrowRight aria-hidden="true" /></Link>}{section.id === "rendez-vous" && <Link href="/reservation-en-ligne/">Découvrir la réservation en ligne <ArrowRight aria-hidden="true" /></Link>}{section.id === "ventes" && <Link href="/caisse/">Découvrir la caisse <ArrowRight aria-hidden="true" /></Link>}</details>)}</div></section>
-        <section className="fl-faq" aria-labelledby="fl-faq-title"><h2 id="fl-faq-title">Vos questions sur <em>la fidélité</em></h2>{faqs.map(faq => <details key={faq.q}><summary>{faq.q}<ChevronDown aria-hidden="true" /></summary><p>{faq.a}</p></details>)}</section>
+        <AccordionSection className="fl-details" id="fl-details-title" title={<>La fidélité, <em>dans votre quotidien</em></>}><Accordion icon={ChevronDown} items={sections.map(section => ({ ...section, ...SECTION_LINKS[section.id] }))} /></AccordionSection>
+        <section className="fl-faq" aria-labelledby="fl-faq-title"><h2 id="fl-faq-title">Vos questions sur <em>la fidélité</em></h2><FaqAccordion icon={ChevronDown} faqs={faqs} /></section>
       </div>
     </div>
   );

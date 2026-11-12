@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST='{"components\\\\loyalty\\\\loyalty-board.tsx -> barcode-detector/ponyfill":{"id":18054,"files":["static/chunks/8054.0ec3d4e0fa64b128.js"]}}';

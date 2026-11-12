@@ -1,10 +1,7 @@
 import { randomBytes } from "crypto";
-import { Pool } from "pg";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { issueLoyaltyCard, newLoyaltyId, newPublicToken } from "@/lib/loyalty/cards";
 import { localPhoneDigits } from "@/lib/validation/customer";
-
-const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
+import { pool } from "@/lib/db/pool";
 
 function joinToken() {
   return `RBJOIN_${newPublicToken().slice("RBLOY_".length)}`;

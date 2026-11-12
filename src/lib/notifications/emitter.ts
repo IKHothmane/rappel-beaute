@@ -1,10 +1,7 @@
-import { Pool } from "pg";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { emitNotification } from "@/lib/db/notifications";
 import { computeStockAlert } from "@/types/inventory";
 import type { Appointment } from "@/types/appointment";
-
-const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
+import { pool } from "@/lib/db/pool";
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);

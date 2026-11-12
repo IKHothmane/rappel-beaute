@@ -1,9 +1,6 @@
 import { randomBytes } from "crypto";
-import { Pool } from "pg";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { SERVICE_NAME_SUGGESTIONS } from "@/lib/services/catalog-names";
-
-const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
+import { pool } from "@/lib/db/pool";
 
 function newId() {
   return `scd_${randomBytes(8).toString("hex")}`;

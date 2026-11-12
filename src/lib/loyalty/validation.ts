@@ -1,6 +1,5 @@
 import { createHash, randomInt } from "crypto";
 import { Pool, type PoolClient } from "pg";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writeAuditLog } from "@/lib/db/audit";
 import { shortCardCode } from "@/lib/loyalty/card-code";
 import { notifyGoogleWallet } from "@/lib/loyalty/google-wallet";
@@ -13,8 +12,7 @@ import {
   type CardProgress,
   type VisitProgram,
 } from "@/lib/loyalty/cards";
-
-const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
+import { pool } from "@/lib/db/pool";
 
 type ScanReward = {
   id: string;

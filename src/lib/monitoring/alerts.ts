@@ -1,3 +1,5 @@
+import { sendTelegramAlert } from "@/lib/monitoring/telegram";
+
 export type AlertSeverity = "critical" | "warning" | "info";
 
 type AlertPayload = {
@@ -19,6 +21,14 @@ const SEVERITY_EMOJI: Record<AlertSeverity, string> = {
  * No-op si webhook absent (local dev).
  */
 export async function sendAlert(payload: AlertPayload): Promise<boolean> {
+  if (process.env.MONITORING_ENABLED === "true") {
+    await sendTelegramAlert({
+      level: payload.severity === "critical" ? "critical" : "warning",
+      title: payload.title,
+      source: payload.source,
+    });
+  }
+
   const url = process.env.ALERT_WEBHOOK_URL;
   if (!url) {
     console.warn("[monitoring] ALERT_WEBHOOK_URL absent — alerte loggée uniquement", payload);

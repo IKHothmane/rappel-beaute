@@ -16,4 +16,6 @@ nixpkgsArchive = "51ad838b03a05b1de6f9f2a0fffecee64a9788ee"
 cmds = ["npm ci --include=dev"]
 
 [phases.build]
-cmds = ["npm run build"]
+# `npm prune` : retire les devDependencies (vitest, playwright, eslint…) après le build
+# pour alléger l'image. Next, Prisma, sharp et tsx sont dans `dependencies`.
+cmds = ["npm run build", "npm prune --omit=dev"]

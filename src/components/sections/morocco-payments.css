@@ -38,32 +38,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.morocco-receipt-window {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  overflow: hidden;
-}
-
-.morocco-receipt {
-  animation: morocco-print 1.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes morocco-print {
-  from {
-    transform: translateY(72%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .morocco-receipt {
-    animation: none;
-  }
-}
-
 @media (max-width: 480px) {
   .hm .morocco-payments h3 {
     font-size: 1.0625rem;

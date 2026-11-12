@@ -3,8 +3,11 @@ name: CI
 on:
   pull_request:
     branches: [main, master, develop]
+  # `main` est volontairement absent : le workflow « Staging » (push sur main)
+  # appelle déjà celui-ci via workflow_call. Sinon la CI tournait deux fois
+  # par push → deux runs en échec → deux e-mails.
   push:
-    branches: [main, master, develop]
+    branches: [master, develop]
   workflow_call:
 
 permissions:

@@ -8,7 +8,7 @@ export function LoginScreen({ children }: { children: React.ReactNode }) {
       <div className="rb-login-scene" aria-hidden="true">
         <Image
           className="rb-login-reception"
-          src="/brand/Réception de salon Rappel Beauty en 3D.png"
+          src="/brand/reception-salon.png"
           alt=""
           fill
           sizes="(max-width: 800px) 1px, 50vw"

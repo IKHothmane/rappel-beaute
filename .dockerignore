@@ -7,3 +7,18 @@ node_modules
 !package.json
 npm-debug.log*
 *.tsbuildinfo
+
+# Non nécessaire pour construire / lancer l'app sur Railway
+.github
+.next-compact
+.next-audit
+audit-responsive
+captures
+test-results
+playwright-report
+_parked
+docs
+e2e
+tests
+infra
+*.md

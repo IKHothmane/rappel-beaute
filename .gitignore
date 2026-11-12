@@ -61,3 +61,6 @@ next-env.d.ts
 # artefacts temporaires (captures, builds de vérification) — on garde seulement le CSS lu par scripts/check-*.cjs
 /.tmp/*
 !/.tmp/feedback-preview.css
+
+# build d'audit local (ne jamais versionner)
+/.next-audit/

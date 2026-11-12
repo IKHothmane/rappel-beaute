@@ -164,9 +164,7 @@ export default function WhatsAppSection() {
                 </div>
 
                 <div
-                  className={`ml-auto max-w-[95%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] p-4 shadow-sm transition-all duration-500 ${
-                    activeStep === 0 ? "opacity-70" : "opacity-100"
-                  }`}
+                  className="ml-auto max-w-[95%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] p-4 shadow-sm"
                 >
                   <p className="text-[15px] leading-6 text-[#17302a]">
                     Bonjour Amal, petit rappel : votre{" "}
@@ -175,7 +173,7 @@ export default function WhatsAppSection() {
                     <br />À demain ! 🌸
                   </p>
 
-                  <div className="mt-2 flex items-center justify-end gap-1 text-xs text-[#6c8276]">
+                  <div className="mt-2 flex items-center justify-end gap-1 text-xs text-[#3f5c4e]">
                     18:02
                     {activeStep === 0 ? (
                       <Check aria-hidden="true" size={15} />
@@ -188,14 +186,14 @@ export default function WhatsAppSection() {
                 {activeStep === 2 && (
                   <div className="max-w-[80%] rounded-2xl rounded-tl-sm bg-white p-4 shadow-sm">
                     <p className="text-[15px] text-[#17302a]">Merci, je serai là. 😊</p>
-                    <div className="mt-2 text-right text-xs text-gray-400">18:09</div>
+                    <div className="mt-2 text-right text-xs text-[#595959]">18:09</div>
                   </div>
                 )}
               </div>
 
               {/* Input */}
               <div className="flex items-center gap-2 px-3 pb-4">
-                <div className="flex flex-1 items-center rounded-full bg-white px-4 py-3 text-sm text-gray-400 shadow-sm">
+                <div className="flex flex-1 items-center rounded-full bg-white px-4 py-3 text-sm text-[#595959] shadow-sm">
                   Message...
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#00866b] text-white">

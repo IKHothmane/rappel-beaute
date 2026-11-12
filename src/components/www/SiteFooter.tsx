@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BookOpen, Building2, Heart, Layers, LayoutGrid, Mail } from "lucide-react";
 import { BrandLogo } from "@/components/www/BrandLogo";
 import { FooterEmailForm } from "@/components/www/FooterEmailForm";
+import { AudiencePreferencesButton } from "@/components/www/AudiencePreferences";
 import { SITE } from "@/lib/site";
 import "./site-footer.css";
 
@@ -171,6 +172,7 @@ export function SiteFooter() {
             <Link href="/tarifs/">Tarifs et offre</Link>
             <Link href="/confidentialite/">Politique de confidentialité</Link>
             <Link href="/mentions-legales/">Mentions légales</Link>
+            <AudiencePreferencesButton />
           </nav>
           <p className="footer-origin">
             <svg width="22" height="15" viewBox="0 0 30 20" role="img" aria-label="Maroc">

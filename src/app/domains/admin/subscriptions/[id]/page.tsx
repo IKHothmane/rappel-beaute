@@ -65,7 +65,7 @@ function DetailInner() {
 
   return (
     <>
-      <Link href={adminHref("/subscriptions/")} className="text-sm text-[var(--admin-accent)]">
+      <Link href={adminHref("/organizations/")} className="text-sm text-[var(--admin-accent)]">
         ← Abonnements
       </Link>
 

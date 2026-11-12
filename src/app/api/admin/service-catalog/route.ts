@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import {
+  SERVICE_NAME_MAX_LENGTH,
   deleteServiceCatalogDefault,
   listServiceCatalogDefaults,
   upsertServiceCatalogDefault,
@@ -11,7 +12,6 @@ import {
   sniffServiceImage,
 } from "@/lib/images/service-image";
 import { storeOptimizedServiceImages } from "@/lib/images/store-service-image";
-import { SERVICE_NAME_SUGGESTIONS } from "@/lib/services/catalog-names";
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const runtime = "nodejs";
@@ -37,8 +37,8 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
   try {
     const form = await request.formData();
     const name = String(form.get("name") ?? "").trim();
-    if (!(SERVICE_NAME_SUGGESTIONS as readonly string[]).includes(name)) {
-      return adminError("Nom de service inconnu.", 400);
+    if (!name || name.length > SERVICE_NAME_MAX_LENGTH) {
+      return adminError("Nom de service invalide.", 400);
     }
 
     const file = form.get("image");
@@ -86,8 +86,8 @@ export const DELETE = platformRoute(async function DELETE(request: NextRequest) 
 
   try {
     const name = new URL(request.url).searchParams.get("name")?.trim() ?? "";
-    if (!(SERVICE_NAME_SUGGESTIONS as readonly string[]).includes(name)) {
-      return adminError("Nom de service inconnu.", 400);
+    if (!name || name.length > SERVICE_NAME_MAX_LENGTH) {
+      return adminError("Nom de service invalide.", 400);
     }
     await deleteServiceCatalogDefault(name);
     return adminJson({ ok: true });

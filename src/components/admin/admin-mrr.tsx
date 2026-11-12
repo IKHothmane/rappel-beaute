@@ -863,7 +863,7 @@ export function AdminMrrView() {
             </p>
           </div>
           <Link
-            href={adminHref("/subscriptions/")}
+            href={adminHref("/organizations/")}
             className="inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline"
           >
             Voir tous les abonnements <ArrowRight className="h-4 w-4" />

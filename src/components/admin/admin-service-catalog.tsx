@@ -9,6 +9,8 @@ type CatalogItem = {
   name: string;
   imageUrl: string | null;
   updatedAt: string | null;
+  source?: "suggested" | "added";
+  usedBy?: number;
 };
 
 export function AdminServiceCatalogView() {
@@ -53,7 +55,9 @@ export function AdminServiceCatalogView() {
       });
       const data = (await res.json()) as { item?: CatalogItem; error?: string };
       if (!res.ok || !data.item) throw new Error(data.error || "Échec du téléversement.");
-      setItems((prev) => prev.map((item) => (item.name === name ? data.item! : item)));
+      setItems((prev) =>
+        prev.map((item) => (item.name === name ? { ...item, ...data.item!, source: item.source, usedBy: item.usedBy } : item)),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur d'envoi.");
     } finally {
@@ -88,19 +92,21 @@ export function AdminServiceCatalogView() {
   });
 
   const withImage = items.filter((item) => item.imageUrl).length;
+  const addedCount = items.filter((item) => item.source === "added").length;
 
   return (
     <div className="space-y-5">
       <section className="rounded-2xl border border-[#F0DFE8] bg-white p-5 shadow-sm">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/40">Catalogue plateforme</p>
-        <h1 className="mt-1 font-display text-2xl font-bold text-ink">Images des services suggérés</h1>
+        <h1 className="mt-1 font-display text-2xl font-bold text-ink">Tous les services</h1>
         <p className="mt-2 max-w-2xl text-sm text-ink/55">
+          Les services suggérés par la plateforme et tous les services ajoutés par les instituts, sans doublons.
           Ces photos s’appliquent automatiquement quand un institut choisit un nom dans la liste
           « Nouveau service ». Chaque institut peut ensuite remplacer l’image par la sienne.
           Idéal : WebP ou JPG 800×600 (4:3), max 2 Mo — conversion WebP automatique.
         </p>
         <p className="mt-3 text-xs font-semibold text-[#B60050]">
-          {withImage} / {items.length} soins avec image par défaut
+          {items.length} services · {addedCount} ajoutés par les instituts · {withImage} avec image par défaut
         </p>
       </section>
 
@@ -167,7 +173,13 @@ export function AdminServiceCatalogView() {
                 </div>
 
                 <div className="space-y-3 p-4">
-                  <h2 className="font-bold text-ink">{item.name}</h2>
+                  <div>
+                    <h2 className="font-bold text-ink">{item.name}</h2>
+                    <p className="mt-0.5 text-xs text-ink/50">
+                      {item.source === "added" ? "Ajouté par les instituts" : "Suggestion plateforme"}
+                      {item.usedBy ? ` · ${item.usedBy} institut${item.usedBy > 1 ? "s" : ""}` : ""}
+                    </p>
+                  </div>
                   <div className="flex gap-2">
                     <label
                       htmlFor={fileInputId}

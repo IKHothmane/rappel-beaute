@@ -594,7 +594,7 @@ export async function getPlatformDashboardHome(): Promise<PlatformDashboardHome>
       severity: "high",
       label: "paiements / abonnements en retard",
       count: pastDue,
-      href: "/subscriptions/?status=PAST_DUE",
+      href: "/organizations/",
     });
   }
   if (subKpis.expiringSoon > 0) {
@@ -603,7 +603,7 @@ export async function getPlatformDashboardHome(): Promise<PlatformDashboardHome>
       severity: "medium",
       label: "abonnements arrivent à échéance",
       count: subKpis.expiringSoon,
-      href: "/subscriptions/",
+      href: "/organizations/",
     });
   }
   if (suspendedOrgs > 0) {

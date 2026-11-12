@@ -5,7 +5,7 @@ import ProfessionalAccessPage, {
   type ProfessionalCredentials,
   type ProfessionalFormData,
 } from "@/components/professional/ProfessionalAccessPage";
-import { CITIES } from "@/lib/site";
+import { CITY_GROUPS } from "@/lib/site";
 import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
 
 export function ProfessionnelRequest() {
@@ -67,7 +67,7 @@ export function ProfessionnelRequest() {
 
   return (
     <ProfessionalAccessPage
-      cities={CITIES}
+      cityGroups={CITY_GROUPS}
       onSubmit={handleSubmit}
       loading={loading}
       error={error}

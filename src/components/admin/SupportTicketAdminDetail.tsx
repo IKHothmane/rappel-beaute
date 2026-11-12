@@ -196,7 +196,7 @@ export function SupportTicketAdminDetail() {
               >
                 Organisation
               </Link>
-              <Link href={adminHref("/subscriptions/")} className="ac-btn-ghost text-xs">
+              <Link href={adminHref("/organizations/")} className="ac-btn-ghost text-xs">
                 Abonnements
               </Link>
               <Link

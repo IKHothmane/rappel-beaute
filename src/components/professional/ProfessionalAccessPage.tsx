@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ChartNoAxesCombined,
   Check,
+  ChevronDown,
   CreditCard,
   Gift,
   Globe,
@@ -40,7 +41,7 @@ export type ProfessionalFormData = {
 export type ProfessionalCredentials = { identifier: string; temporaryPassword: string };
 type Props = {
   onSubmit: (data: ProfessionalFormData) => Promise<void>;
-  cities: readonly string[];
+  cityGroups: readonly { region: string; cities: readonly string[] }[];
   loading?: boolean;
   error?: string | null;
   credentials?: ProfessionalCredentials | null;
@@ -62,6 +63,92 @@ const MODULES = [
   { icon: Package, label: "Stock & produits" },
   { icon: ChartNoAxesCombined, label: "Statistiques" },
 ];
+
+function CitySelect({
+  id,
+  groups,
+  value,
+  onChange,
+}: {
+  id: string;
+  groups: readonly { region: string; cities: readonly string[] }[];
+  value: string;
+  onChange: (city: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function close(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const label = value === "Autre" ? "Autre ville" : value || "Choisissez votre ville";
+
+  return (
+    <div className="pro-input pro-input-city" ref={rootRef}>
+      <MapPin aria-hidden="true" />
+      <button
+        id={id}
+        type="button"
+        className="pro-city-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className={value ? undefined : "is-placeholder"}>{label}</span>
+        <ChevronDown aria-hidden="true" />
+      </button>
+      {open ? (
+        <div className="pro-city-menu" id={`${id}-list`} role="listbox" aria-label="Villes">
+          {groups.map((group) => (
+            <div key={group.region}>
+              <p className="pro-city-region">{group.region}</p>
+              {group.cities.map((city) => (
+                <button
+                  key={city}
+                  type="button"
+                  role="option"
+                  aria-selected={value === city}
+                  onClick={() => {
+                    onChange(city);
+                    setOpen(false);
+                  }}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+          ))}
+          <p className="pro-city-region">Autre</p>
+          <button
+            type="button"
+            role="option"
+            aria-selected={value === "Autre"}
+            onClick={() => {
+              onChange("Autre");
+              setOpen(false);
+            }}
+          >
+            Autre ville
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function Field({
   id,
@@ -87,7 +174,7 @@ function Field({
 
 export default function ProfessionalAccessPage({
   onSubmit,
-  cities,
+  cityGroups,
   loading = false,
   error = null,
   credentials = null,
@@ -255,23 +342,12 @@ export default function ProfessionalAccessPage({
                   </Field>
                   <div className="pro-row">
                     <Field id="pro-city" label="Ville" required>
-                      <div className="pro-input">
-                        <MapPin aria-hidden="true" />
-                        <select
-                          id="pro-city"
-                          name="ville"
-                          required
-                          value={form.city}
-                          onChange={(e) => update("city", e.target.value)}
-                        >
-                          <option value="">Choisissez votre ville</option>
-                          {cities.map((city) => (
-                            <option key={city} value={city}>
-                              {city}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <CitySelect
+                        id="pro-city"
+                        groups={cityGroups}
+                        value={form.city}
+                        onChange={(city) => update("city", city)}
+                      />
                     </Field>
                     <Field id="pro-phone" label="Téléphone WhatsApp" required>
                       <div className="pro-input">

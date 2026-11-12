@@ -22,31 +22,29 @@ const cards = [
     id: "editeur",
     icon: Building2,
     title: "Éditeur du site",
-    text: "Rappel Beauté — logiciel de gestion pour instituts de beauté. Forme juridique, capital social, siège : à compléter à l’immatriculation.",
+    text: "Rappel Beauty — logiciel de gestion pour instituts de beauté.",
+    fields: ["Nom juridique", "Forme juridique", "Capital social", "Siège social"],
   },
   {
     id: "hebergement",
     icon: Laptop,
     title: "Hébergement",
-    text: `Vitrine V1.2 servie en local / SSG. L’hébergeur de production (nom, adresse, contact) sera indiqué ici. Le site public est ${SITE.url.replace("https://", "")}.`,
+    text: `Site public : ${SITE.url.replace("https://", "")}.`,
+    fields: ["Hébergeur", "Adresse", "Contact"],
   },
   {
     id: "publication",
     icon: IdCard,
     title: "Directeur de publication",
-    text: "Le représentant légal de Rappel Beauté.",
+    text: "",
+    fields: ["Responsable de publication"],
   },
   {
     id: "immatriculation",
     icon: FileText,
     title: "Immatriculation",
     text: "",
-    registrations: [
-      "ICE : en cours d’attribution",
-      "RC : en cours d’immatriculation",
-      "Identifiant fiscal : en cours",
-      "CNSS : en cours",
-    ],
+    fields: ["ICE", "RC", "Identifiant fiscal", "CNSS"],
   },
   {
     id: "utilisation",
@@ -117,10 +115,6 @@ export function LegalMentions() {
         </div>
       </section>
       <div className="vt-wrap ml-wrap ml-body">
-        <p className="ml-notice">
-          <Info aria-hidden="true" /> Les informations d’immatriculation et d’hébergement ci-dessous
-          restent à compléter avant commercialisation.
-        </p>
         <div className="ml-grid">
           {cards.map((card) => {
             const Icon = card.icon;
@@ -132,12 +126,15 @@ export function LegalMentions() {
                 <div>
                   <h2 id={`ml-${card.id}`}>{card.title}</h2>
                   {card.text && <p>{card.text}</p>}
-                  {card.registrations && (
-                    <ul>
-                      {card.registrations.map((item) => (
-                        <li key={item}>{item}</li>
+                  {card.fields && (
+                    <dl className="ml-blank-fields">
+                      {card.fields.map((label) => (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd>{"\u00a0"}</dd>
+                        </div>
                       ))}
-                    </ul>
+                    </dl>
                   )}
                   {card.href && (
                     <Link className="ml-pill" href={card.href}>

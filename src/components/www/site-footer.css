@@ -211,7 +211,8 @@
   flex-wrap: wrap;
   gap: 12px 20px;
 }
-.footer-legal a {
+.footer-legal a,
+.footer-legal .audience-preferences-button {
   padding-left: 20px;
   border-left: 1px solid #d69bb5;
   text-decoration: none;
@@ -286,7 +287,8 @@
   .footer-legal {
     gap: 10px;
   }
-  .footer-legal a {
+  .footer-legal a,
+  .footer-legal .audience-preferences-button {
     border: 0;
     padding-left: 0;
   }

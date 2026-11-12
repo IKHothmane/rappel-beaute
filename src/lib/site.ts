@@ -155,18 +155,51 @@ export function formatPrice(amount: number): string {
   return amount.toLocaleString("fr-FR");
 }
 
-export const CITIES = [
-  "Casablanca",
-  "Rabat",
-  "Marrakech",
-  "Tanger",
-  "Fès",
-  "Agadir",
-  "Meknès",
-  "Oujda",
-  "Tétouan",
-  "Autre",
-] as const;
+/** Villes proposées à l’inscription, regroupées par région. */
+export const CITY_GROUPS = [
+  {
+    region: "Casablanca-Settat",
+    cities: ["Berrechid", "Bouskoura", "Casablanca", "Dar Bouazza", "El Jadida", "Mohammedia", "Settat"],
+  },
+  {
+    region: "Rabat-Salé-Kénitra",
+    cities: ["Kénitra", "Khémisset", "Rabat", "Salé", "Skhirate", "Témara"],
+  },
+  {
+    region: "Tanger-Tétouan-Al Hoceïma",
+    cities: ["Al Hoceïma", "Asilah", "Chefchaouen", "Fnideq", "Larache", "M'diq", "Martil", "Tanger", "Tétouan"],
+  },
+  {
+    region: "Fès-Meknès",
+    cities: ["Fès", "Ifrane", "Meknès", "Sefrou", "Taza"],
+  },
+  {
+    region: "Marrakech-Safi",
+    cities: ["Essaouira", "Marrakech", "Safi"],
+  },
+  {
+    region: "Souss-Massa",
+    cities: ["Agadir", "Aït Melloul", "Inezgane", "Taroudant", "Tiznit"],
+  },
+  {
+    region: "L’Oriental",
+    cities: ["Berkane", "Nador", "Oujda"],
+  },
+  {
+    region: "Béni Mellal-Khénifra",
+    cities: ["Béni Mellal", "Khénifra", "Khouribga"],
+  },
+  {
+    region: "Drâa-Tafilalet",
+    cities: ["Errachidia", "Ouarzazate"],
+  },
+  {
+    region: "Régions sahariennes",
+    cities: ["Dakhla", "Laâyoune"],
+  },
+] as const
+
+export const CITIES = [...CITY_GROUPS.flatMap((group) => group.cities), "Autre"] as const
 
 export type FaqCategory = "general" | "agenda" | "clientes" | "produits" | "site" | "tarifs" | "securite" | "support";
 

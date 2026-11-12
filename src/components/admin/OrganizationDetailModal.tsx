@@ -6,6 +6,7 @@ import {
   BadgeCheck,
   BarChart3,
   CreditCard,
+  KeyRound,
   Loader2,
   MapPin,
   Pause,
@@ -22,7 +23,7 @@ import { adminHref } from "@/lib/admin/href";
 import { cn } from "@/lib/utils";
 import { PLAN_LABEL } from "@/types/platform";
 import type { OrganizationDetail, OrganizationListItem } from "@/types/platform";
-import { OrganizationCover, StatusPill, type OrganizationCard } from "./OrganizationsView";
+import { StatusPill, type OrganizationCard } from "./OrganizationsView";
 
 type Insights = {
   services: { name: string; category: string | null }[];
@@ -88,7 +89,7 @@ function RevenueChart({ series }: { series: Insights["revenueSeries"] }) {
     <div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="h-[72px] w-full"
+        className="h-[140px] w-full"
         role="img"
         aria-label={`Revenus mensuels : ${series.map((p) => `${p.label} ${mad(p.value)}`).join(", ")}`}
       >
@@ -118,17 +119,22 @@ function RevenueChart({ series }: { series: Insights["revenueSeries"] }) {
 function Section({
   icon: Icon,
   title,
+  action,
   children,
 }: {
   icon: typeof MapPin;
   title: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex gap-3 border-t border-slate-200 py-3.5">
-      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" aria-hidden />
+    <section className="flex gap-4 border-t border-slate-200 py-5">
+      <Icon className="mt-0.5 h-6 w-6 shrink-0 text-slate-500" aria-hidden />
       <div className="min-w-0 flex-1">
-        <h3 className="text-xs font-medium text-slate-500">{title}</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-medium text-slate-500">{title}</h3>
+          {action}
+        </div>
         <div className="mt-1">{children}</div>
       </div>
     </section>
@@ -136,6 +142,47 @@ function Section({
 }
 
 type FormState = { name: string; phone: string; email: string; address: string; city: string };
+type OwnerForm = { firstName: string; lastName: string; email: string; phone: string };
+type SubForm = { price: string; periodEnd: string; quick: string };
+
+/** Raccourcis de période : prolongation (mois) ou période d’essai (jours, repart d’aujourd’hui). */
+const QUICK_PERIODS: { value: string; label: string; kind: "extend" | "trial"; amount: number }[] = [
+  { value: "m1", label: "+ 1 mois", kind: "extend", amount: 1 },
+  { value: "m3", label: "+ 3 mois", kind: "extend", amount: 3 },
+  { value: "m6", label: "+ 6 mois", kind: "extend", amount: 6 },
+  { value: "y1", label: "+ 1 année", kind: "extend", amount: 12 },
+  { value: "t7", label: "Période d’essai — 7 jours", kind: "trial", amount: 7 },
+  { value: "t14", label: "Période d’essai — 14 jours", kind: "trial", amount: 14 },
+  { value: "t30", label: "Période d’essai — 30 jours", kind: "trial", amount: 30 },
+];
+
+function quickPreview(quick: string, currentEnd: string): Date | null {
+  const q = QUICK_PERIODS.find((p) => p.value === quick);
+  if (!q) return null;
+  if (q.kind === "trial") return new Date(Date.now() + q.amount * 86_400_000);
+  const end = new Date(currentEnd);
+  const base = end.getTime() < Date.now() ? new Date() : end;
+  const d = new Date(base);
+  d.setMonth(d.getMonth() + q.amount);
+  return d;
+}
+type ResetResult = { temporaryPassword: string; messageTemplate: string };
+
+const INPUT_CLASS =
+  "h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm text-slate-900 outline-none focus:border-[#3B63D6] focus:ring-2 focus:ring-[#3B63D6]/20";
+
+function EditLink({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-[#3B63D6] transition hover:bg-[#3B63D6]/10 disabled:opacity-60"
+    >
+      {children}
+    </button>
+  );
+}
 
 export function OrganizationDetailModal({
   organizationId,
@@ -158,6 +205,14 @@ export function OrganizationDetailModal({
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({ name: "", phone: "", email: "", address: "", city: "" });
+  const [ownerEdit, setOwnerEdit] = useState(false);
+  const [ownerForm, setOwnerForm] = useState<OwnerForm>({ firstName: "", lastName: "", email: "", phone: "" });
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetResult, setResetResult] = useState<ResetResult | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [subEdit, setSubEdit] = useState(false);
+  const [subForm, setSubForm] = useState<SubForm>({ price: "", periodEnd: "", quick: "" });
+  const [sectionError, setSectionError] = useState<{ section: "owner" | "sub"; message: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -191,12 +246,6 @@ export function OrganizationDetailModal({
   const insights = data?.insights ?? null;
   const name = org?.name ?? fallback?.name ?? "Institut";
   const status = org?.status ?? fallback?.status ?? "ACTIVE";
-  const cover =
-    (org?.cardBackgroundUrl ?? (fallback && "coverUrl" in fallback ? fallback.coverUrl : null)) ??
-    org?.logoUrl ??
-    fallback?.logoUrl ??
-    null;
-
   async function run(fn: () => Promise<unknown>, after?: () => void) {
     setBusy(true);
     setActionError(null);
@@ -208,6 +257,126 @@ export function OrganizationDetailModal({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function runSection(section: "owner" | "sub", fn: () => Promise<unknown>, after?: () => void | Promise<void>) {
+    setBusy(true);
+    setSectionError(null);
+    try {
+      await fn();
+      await after?.();
+    } catch (e) {
+      setSectionError({ section, message: e instanceof Error ? e.message : "Action impossible." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startOwnerEdit() {
+    if (!org) return;
+    setOwnerForm({
+      firstName: org.ownerFirstName ?? "",
+      lastName: org.ownerLastName ?? "",
+      email: org.ownerEmail ?? "",
+      phone: org.ownerPhone ?? "",
+    });
+    setSectionError(null);
+    setConfirmReset(false);
+    setOwnerEdit(true);
+  }
+
+  function saveOwner(e: React.FormEvent) {
+    e.preventDefault();
+    if (!org?.ownerId) return;
+    const ownerId = org.ownerId;
+    void runSection(
+      "owner",
+      () =>
+        api(`/api/admin/users/${ownerId}/`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            firstName: ownerForm.firstName.trim(),
+            lastName: ownerForm.lastName.trim(),
+            email: ownerForm.email.trim(),
+            phone: ownerForm.phone.trim() || null,
+          }),
+        }),
+      async () => {
+        setOwnerEdit(false);
+        await load();
+        onChanged();
+      },
+    );
+  }
+
+  function resetPassword() {
+    if (!org?.ownerId) return;
+    const ownerId = org.ownerId;
+    void runSection("owner", async () => {
+      const result = await api<ResetResult>(`/api/admin/users/${ownerId}/reset-password/`, { method: "POST" });
+      setResetResult({ temporaryPassword: result.temporaryPassword, messageTemplate: result.messageTemplate });
+      setConfirmReset(false);
+      setCopied(false);
+    });
+  }
+
+  async function copyResetMessage() {
+    if (!resetResult) return;
+    try {
+      await navigator.clipboard.writeText(resetResult.messageTemplate);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  function startSubEdit() {
+    if (!org?.subscription) return;
+    setSubForm({
+      price: String(org.subscription.price),
+      periodEnd: org.subscription.renewAt.slice(0, 10),
+      quick: "",
+    });
+    setSectionError(null);
+    setSubEdit(true);
+  }
+
+  function saveSubscription(e: React.FormEvent) {
+    e.preventDefault();
+    const sub = org?.subscription;
+    if (!sub) return;
+    const price = Number(subForm.price.replace(",", "."));
+    if (!Number.isFinite(price) || price < 0 || price > 1_000_000) {
+      setSectionError({ section: "sub", message: "Indiquez un prix en dirhams, entre 0 et 1 000 000." });
+      return;
+    }
+    if (!subForm.periodEnd) {
+      setSectionError({ section: "sub", message: "Indiquez une date de fin de période." });
+      return;
+    }
+    const post = (body: Record<string, unknown>) =>
+      api(`/api/admin/subscriptions/${sub.id}/`, { method: "POST", body: JSON.stringify(body) });
+    void runSection(
+      "sub",
+      async () => {
+        if (price !== sub.price) await post({ action: "set-price", price });
+        const quick = QUICK_PERIODS.find((p) => p.value === subForm.quick);
+        if (quick) {
+          await post(
+            quick.kind === "trial"
+              ? { action: "demo-trial", days: quick.amount }
+              : { action: "extend", months: quick.amount },
+          );
+        } else if (subForm.periodEnd !== sub.renewAt.slice(0, 10)) {
+          await post({ action: "set-period", periodEnd: new Date(`${subForm.periodEnd}T23:59:59`).toISOString() });
+        }
+      },
+      async () => {
+        setSubEdit(false);
+        await load();
+        onChanged();
+      },
+    );
   }
 
   function startEdit() {
@@ -280,10 +449,10 @@ export function OrganizationDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative my-auto w-full max-w-[520px] rounded-2xl bg-white p-5 shadow-2xl sm:p-6"
+        className="relative my-auto w-full max-w-[1000px] rounded-3xl bg-white p-5 shadow-2xl sm:p-8 lg:p-10"
       >
-        <header className="mb-4 flex items-center justify-between">
-          <h2 id={titleId} className="text-xl font-bold text-[#0F172A]">
+        <header className="mb-6 flex items-center justify-between">
+          <h2 id={titleId} className="text-2xl font-bold text-[#0F172A] sm:text-3xl">
             Détails du salon
           </h2>
           <button
@@ -297,14 +466,10 @@ export function OrganizationDetailModal({
           </button>
         </header>
 
-        <div className="aspect-[16/7] overflow-hidden rounded-xl bg-slate-100 shadow-md">
-          <OrganizationCover src={cover} name={name} />
-        </div>
-
-        <div className="mt-4 flex items-center gap-2">
-          <h3 className="min-w-0 truncate text-xl font-bold text-[#0F172A]">{name}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="min-w-0 truncate text-2xl font-bold text-[#0F172A] sm:text-3xl">{name}</h3>
           {org?.subscriptionStatus === "ACTIVE" ? (
-            <BadgeCheck className="h-5 w-5 shrink-0 fill-[#3B63D6] text-white" aria-label="Abonnement actif" />
+            <BadgeCheck className="h-6 w-6 shrink-0 fill-[#3B63D6] text-white" aria-label="Abonnement actif" />
           ) : null}
         </div>
         <div className="mt-2">
@@ -372,27 +537,299 @@ export function OrganizationDetailModal({
           <>
             <div className="mt-4">
               <Section icon={MapPin} title="Adresse">
-                <p className="text-sm font-bold text-slate-900">
+                <p className="text-base font-bold text-slate-900">
                   {[org.address, org.city].filter(Boolean).join(", ") || "Non renseignée"}
                 </p>
               </Section>
 
-              <Section icon={UserRound} title="Propriétaire & contact">
-                <p className="text-sm font-bold text-slate-900">{org.ownerName ?? "Aucun propriétaire"}</p>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
-                  {org.ownerEmail ?? org.email ? <span>{org.ownerEmail ?? org.email}</span> : null}
-                  {org.phone ?? org.ownerPhone ? (
-                    <span className="inline-flex items-center gap-1">
-                      <Phone className="h-3 w-3" aria-hidden />
-                      {org.phone ?? org.ownerPhone}
-                    </span>
-                  ) : null}
-                </p>
+              <Section
+                icon={UserRound}
+                title="Propriétaire & contact"
+                action={
+                  org.ownerId && !ownerEdit ? (
+                    <EditLink onClick={startOwnerEdit} disabled={busy}>
+                      <Pencil className="h-3.5 w-3.5" aria-hidden /> Modifier
+                    </EditLink>
+                  ) : null
+                }
+              >
+                {ownerEdit ? (
+                  <form onSubmit={saveOwner} className="mt-1 space-y-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-medium text-slate-500">Prénom</span>
+                        <input
+                          required
+                          value={ownerForm.firstName}
+                          onChange={(e) => setOwnerForm((f) => ({ ...f, firstName: e.target.value }))}
+                          className={INPUT_CLASS}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-medium text-slate-500">Nom</span>
+                        <input
+                          required
+                          value={ownerForm.lastName}
+                          onChange={(e) => setOwnerForm((f) => ({ ...f, lastName: e.target.value }))}
+                          className={INPUT_CLASS}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-medium text-slate-500">E-mail</span>
+                        <input
+                          type="email"
+                          required
+                          value={ownerForm.email}
+                          onChange={(e) => setOwnerForm((f) => ({ ...f, email: e.target.value }))}
+                          className={INPUT_CLASS}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-medium text-slate-500">Téléphone</span>
+                        <input
+                          type="tel"
+                          value={ownerForm.phone}
+                          onChange={(e) => setOwnerForm((f) => ({ ...f, phone: e.target.value }))}
+                          className={INPUT_CLASS}
+                        />
+                      </label>
+                    </div>
+                    {sectionError?.section === "owner" ? (
+                      <p role="alert" className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+                        {sectionError.message}
+                      </p>
+                    ) : null}
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setOwnerEdit(false)}
+                        disabled={busy}
+                        className="h-11 flex-1 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={busy}
+                        className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#3B63D6] text-sm font-semibold text-white hover:bg-[#2F52B8] disabled:opacity-70"
+                      >
+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                        Enregistrer
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <p className="text-base font-bold text-slate-900">{org.ownerName ?? "Aucun propriétaire"}</p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-slate-500">
+                      {org.ownerEmail ?? org.email ? <span>{org.ownerEmail ?? org.email}</span> : null}
+                      {org.ownerPhone ?? org.phone ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="h-3 w-3" aria-hidden />
+                          {org.ownerPhone ?? org.phone}
+                        </span>
+                      ) : null}
+                    </p>
+
+                    {org.ownerId ? (
+                      <div className="mt-3">
+                        {resetResult ? (
+                          <div role="status" className="rounded-xl bg-emerald-50 p-3.5">
+                            <p className="text-sm font-semibold text-emerald-800">Mot de passe réinitialisé</p>
+                            <p className="mt-1 text-xs text-emerald-700">
+                              Mot de passe temporaire :{" "}
+                              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-sm font-bold text-slate-900">
+                                {resetResult.temporaryPassword}
+                              </code>
+                            </p>
+                            <p className="mt-1 text-xs text-emerald-700">
+                              Le propriétaire devra en choisir un nouveau à sa première connexion.
+                            </p>
+                            <div className="mt-2 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void copyResetMessage()}
+                                className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
+                              >
+                                {copied ? "Message copié ✓" : "Copier le message"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setResetResult(null)}
+                                className="h-9 rounded-lg border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-800"
+                              >
+                                Fermer
+                              </button>
+                            </div>
+                          </div>
+                        ) : confirmReset ? (
+                          <div role="alertdialog" className="rounded-xl bg-amber-50 p-3.5">
+                            <p className="text-sm font-semibold text-amber-900">
+                              Réinitialiser le mot de passe de {org.ownerName ?? "ce propriétaire"} ?
+                            </p>
+                            <p className="mt-0.5 text-xs text-amber-800">
+                              Un mot de passe temporaire sera généré et l’ancien ne fonctionnera plus.
+                            </p>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setConfirmReset(false)}
+                                disabled={busy}
+                                className="h-10 flex-1 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700"
+                              >
+                                Annuler
+                              </button>
+                              <button
+                                type="button"
+                                onClick={resetPassword}
+                                disabled={busy}
+                                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-amber-600 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-70"
+                              >
+                                {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <KeyRound className="h-4 w-4" aria-hidden />}
+                                Oui, réinitialiser
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSectionError(null);
+                              setConfirmReset(true);
+                            }}
+                            disabled={busy}
+                            className="inline-flex h-10 items-center gap-2 rounded-xl border-2 border-amber-500 px-4 text-sm font-semibold text-amber-600 transition hover:bg-amber-50 disabled:opacity-60"
+                          >
+                            <KeyRound className="h-4 w-4" aria-hidden /> Réinitialiser le mot de passe
+                          </button>
+                        )}
+                        {sectionError?.section === "owner" ? (
+                          <p role="alert" className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                            {sectionError.message}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </Section>
 
-              <Section icon={CreditCard} title="Abonnement">
-                {org.subscription ? (
-                  <p className="text-sm text-slate-900">
+              <Section
+                icon={CreditCard}
+                title="Abonnement"
+                action={
+                  org.subscription && !subEdit ? (
+                    <EditLink onClick={startSubEdit} disabled={busy}>
+                      <Pencil className="h-3.5 w-3.5" aria-hidden /> Modifier
+                    </EditLink>
+                  ) : null
+                }
+              >
+                {subEdit && org.subscription ? (
+                  <form onSubmit={saveSubscription} className="mt-1 space-y-3">
+                    <label className="block">
+                      <span className="mb-1 block text-xs font-medium text-slate-500">
+                        Ajouter une période
+                      </span>
+                      <select
+                        value={subForm.quick}
+                        onChange={(e) => {
+                          const quick = e.target.value;
+                          const preview = quickPreview(quick, org.subscription!.renewAt);
+                          setSubForm((f) => ({
+                            ...f,
+                            quick,
+                            periodEnd: preview
+                              ? preview.toISOString().slice(0, 10)
+                              : org.subscription!.renewAt.slice(0, 10),
+                          }));
+                        }}
+                        className={INPUT_CLASS}
+                      >
+                        <option value="">— Aucune (garder la date ci-dessous) —</option>
+                        <optgroup label="Prolonger l’abonnement">
+                          {QUICK_PERIODS.filter((p) => p.kind === "extend").map((p) => (
+                            <option key={p.value} value={p.value}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Période d’essai (repart d’aujourd’hui)">
+                          {QUICK_PERIODS.filter((p) => p.kind === "trial").map((p) => (
+                            <option key={p.value} value={p.value}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                      {subForm.quick ? (
+                        <span className="mt-1 block text-xs text-slate-500">
+                          Nouvelle fin de période :{" "}
+                          <strong className="text-slate-700">
+                            {formatLongDate(
+                              (quickPreview(subForm.quick, org.subscription.renewAt) ?? new Date()).toISOString(),
+                            )}
+                          </strong>
+                          {QUICK_PERIODS.find((p) => p.value === subForm.quick)?.kind === "trial"
+                            ? " · le statut passera en « essai »"
+                            : ""}
+                        </span>
+                      ) : null}
+                    </label>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-medium text-slate-500">Prix / mois (DH)</span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          max={1000000}
+                          step="0.01"
+                          required
+                          value={subForm.price}
+                          onChange={(e) => setSubForm((f) => ({ ...f, price: e.target.value }))}
+                          className={INPUT_CLASS}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-medium text-slate-500">
+                          Fin de la période (renouvellement)
+                        </span>
+                        <input
+                          type="date"
+                          required
+                          value={subForm.periodEnd}
+                          onChange={(e) => setSubForm((f) => ({ ...f, periodEnd: e.target.value, quick: "" }))}
+                          className={INPUT_CLASS}
+                        />
+                      </label>
+                    </div>
+                    {sectionError?.section === "sub" ? (
+                      <p role="alert" className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+                        {sectionError.message}
+                      </p>
+                    ) : null}
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSubEdit(false)}
+                        disabled={busy}
+                        className="h-11 flex-1 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={busy}
+                        className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#3B63D6] text-sm font-semibold text-white hover:bg-[#2F52B8] disabled:opacity-70"
+                      >
+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                        Enregistrer
+                      </button>
+                    </div>
+                  </form>
+                ) : org.subscription ? (
+                  <p className="text-base text-slate-900">
                     <strong className="font-bold">{PLAN_LABEL[org.subscription.plan]}</strong> ·{" "}
                     {mad(org.subscription.price)} / mois
                     <span className="block text-xs text-slate-500">
@@ -411,7 +848,7 @@ export function OrganizationDetailModal({
                     {insights.services.map((s, i) => (
                       <li
                         key={`${s.name}-${i}`}
-                        className={cn("rounded-md px-2 py-1 text-xs font-semibold", CHIP_COLORS[i % CHIP_COLORS.length])}
+                        className={cn("rounded-md px-3 py-1.5 text-sm font-semibold", CHIP_COLORS[i % CHIP_COLORS.length])}
                       >
                         {s.name}
                       </li>
@@ -426,10 +863,10 @@ export function OrganizationDetailModal({
                 {insights.team.length ? (
                   <ul className="flex flex-wrap gap-x-5 gap-y-3">
                     {insights.team.map((m, i) => (
-                      <li key={`${m.name}-${i}`} className="flex w-20 flex-col items-center text-center">
+                      <li key={`${m.name}-${i}`} className="flex w-24 flex-col items-center text-center">
                         <span
                           className={cn(
-                            "flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white",
+                            "flex h-14 w-14 items-center justify-center rounded-full text-base font-bold text-white",
                             AVATAR_COLORS[i % AVATAR_COLORS.length],
                           )}
                           aria-hidden
@@ -447,10 +884,10 @@ export function OrganizationDetailModal({
               </Section>
 
               <Section icon={BarChart3} title="Statistiques">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-slate-100 p-3.5">
-                    <p className="text-[11px] text-slate-500">Chiffre d’affaires ({monthLabel})</p>
-                    <p className="mt-1 text-2xl font-bold tracking-tight text-[#0F172A]">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="rounded-xl bg-slate-100 p-5">
+                    <p className="text-xs text-slate-500">Chiffre d’affaires ({monthLabel})</p>
+                    <p className="mt-1 text-3xl font-bold tracking-tight text-[#0F172A]">
                       {mad(insights.revenueThisMonth)}
                     </p>
                     {growth != null ? (
@@ -467,21 +904,21 @@ export function OrganizationDetailModal({
                       <span className="mt-1.5 inline-block text-[11px] text-slate-400">Pas de mois précédent</span>
                     )}
                   </div>
-                  <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
-                    <p className="text-[11px] font-medium text-slate-600">Revenus mensuels</p>
+                  <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                    <p className="text-xs font-medium text-slate-600">Revenus mensuels</p>
                     <RevenueChart series={insights.revenueSeries} />
                     <p className="text-[10px] text-slate-400">Moy. mensuelle : {mad(monthlyAvg)}</p>
                   </div>
                 </div>
-                <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
                   {[
                     ["Clients", org.stats.customers],
                     ["Rendez-vous", org.stats.appointments],
                     ["Employés", org.stats.staff],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-lg bg-slate-50 py-2">
-                      <dd className="text-base font-bold text-slate-900">{Number(value).toLocaleString("fr-FR")}</dd>
-                      <dt className="text-[11px] text-slate-500">{label}</dt>
+                    <div key={label} className="rounded-lg bg-slate-50 py-4">
+                      <dd className="text-2xl font-bold text-slate-900">{Number(value).toLocaleString("fr-FR")}</dd>
+                      <dt className="text-xs text-slate-500">{label}</dt>
                     </div>
                   ))}
                 </dl>

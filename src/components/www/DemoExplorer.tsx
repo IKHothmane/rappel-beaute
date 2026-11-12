@@ -61,7 +61,7 @@ const modules = [
       "Définissez les durées et les prix",
       "Suivez les forfaits dans la fiche cliente",
     ],
-    href: "/fonctionnalites/#services",
+    href: "/fonctionnalites/#rdv",
   },
   {
     icon: Package,

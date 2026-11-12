@@ -199,10 +199,11 @@ export async function listOrganizations(opts?: {
 
 export async function getOrganizationById(id: string): Promise<OrganizationDetail | null> {
   const { rows } = await pool.query<
-    OrgRow & { address: string | null; ownerPhone: string | null }
+    OrgRow & { address: string | null; ownerPhone: string | null; ownerId: string | null }
   >(
     `SELECT
       o.id, o.name, o.slug, o.city, o.phone, o.email, o."logoUrl", o.status, o.address, o."createdAt",
+      u.id AS "ownerId",
       p.code AS plan, s."priceSnapshot"::text AS "subPrice",
       s.id AS "subscriptionId",
       s.status AS "subStatus", s."currentPeriodEnd" AS "renewAt",
@@ -216,7 +217,7 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
     ) s ON true
     LEFT JOIN "Plan" p ON p.id = s."planId"
     LEFT JOIN LATERAL (
-      SELECT "firstName", "lastName", email, phone FROM "User"
+      SELECT id, "firstName", "lastName", email, phone FROM "User"
       WHERE "organizationId" = o.id AND role = 'OWNER'
       ORDER BY "createdAt" ASC LIMIT 1
     ) u ON true
@@ -271,6 +272,9 @@ export async function getOrganizationById(id: string): Promise<OrganizationDetai
     ...base,
     address: r.address ?? null,
     ownerPhone: r.ownerPhone ?? null,
+    ownerId: r.ownerId ?? null,
+    ownerFirstName: r.ownerFirst ?? null,
+    ownerLastName: r.ownerLast ?? null,
     cardBackgroundUrl: background.rows[0]?.cardBackgroundUrl ?? null,
     stats: {
       customers: parseInt(stats[0]?.customers ?? "0", 10),

@@ -4,7 +4,7 @@ import { test, expect, type Page } from "@playwright/test";
  * Garde-fous responsive et accessibilité du site vitrine.
  * Chaque page est vérifiée sur mobile, tablette et ordinateur :
  * pas de défilement horizontal, pas de texte qui sort de son cadre,
- * un seul h1 et aucune image sans texte alternatif.
+ * un seul h1, des images décodables et leurs textes alternatifs.
  */
 
 const PAGES = [
@@ -40,6 +40,16 @@ const VIEWPORTS = [
 /** Éléments volontairement plus larges que leur boîte (socle d'ordinateur des maquettes). */
 const ALLOWED_OVERFLOW = [".cw-preview-trigger"];
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("rb:audience-consent:v1", "denied");
+    } catch {
+      /* Non-HTTP documents. */
+    }
+  });
+});
+
 async function auditPage(page: Page) {
   return page.evaluate((allowed) => {
     const root = document.documentElement;
@@ -69,12 +79,30 @@ async function auditPage(page: Page) {
 
 for (const viewport of VIEWPORTS) {
   test.describe(`Vitrine — ${viewport.name} (${viewport.width}px)`, () => {
+    test.setTimeout(120_000);
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
     for (const path of PAGES) {
       test(`${path} s'affiche sans débordement`, async ({ page }) => {
         const response = await page.goto(path, { waitUntil: "load" });
         expect(response?.status(), "statut HTTP").toBeLessThan(400);
+        await page.evaluate(() => document.fonts.ready);
+        const brokenImages = await page.locator("img").evaluateAll(async (images) => {
+          const results = await Promise.all(
+            images.map(async (element) => {
+              const img = element as HTMLImageElement;
+              img.loading = "eager";
+              try {
+                await img.decode();
+                return img.naturalWidth > 0 ? null : img.currentSrc;
+              } catch {
+                return img.currentSrc || img.src;
+              }
+            }),
+          );
+          return results.filter(Boolean);
+        });
+        expect(brokenImages, "images introuvables ou non décodables").toEqual([]);
 
         const audit = await auditPage(page);
         expect(audit.horizontalOverflow, "défilement horizontal (px)").toBeLessThanOrEqual(0);

@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
 import "./morocco-payments.css";
 import {
   Banknote,
@@ -37,33 +34,11 @@ const services = [
 ];
 
 export default function MoroccoPaymentsSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const element = sectionRef.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 },
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <section
-      ref={sectionRef}
       id="maroc"
       aria-labelledby="morocco-payments-heading"
-      className="morocco-payments relative isolate overflow-hidden bg-vt-surface py-14 lg:py-16"
+      className="morocco-payments relative isolate overflow-x-clip bg-vt-surface py-14 lg:py-16"
     >
       <div className="morocco-layout mx-auto grid max-w-[1200px] items-center gap-8 px-6 lg:grid-cols-2 lg:gap-10 lg:px-8">
         {/* Texte et fonctionnalités */}
@@ -125,13 +100,9 @@ export default function MoroccoPaymentsSection() {
           />
 
           <div className="relative z-10 flex w-full flex-col items-center">
-            {/* Ticket animé */}
-            <div
-              className={[
-                "relative z-0 w-[min(78%,330px)] rounded-t-xl border border-vt-line-neutral bg-white px-5 pb-16 pt-7 shadow-[0_8px_35px_rgba(70,20,40,0.12)] transition-transform duration-[1600ms] ease-out motion-reduce:transition-none",
-                visible ? "translate-y-0" : "translate-y-[150px]",
-              ].join(" ")}
-            >
+            {/* Le ticket sort entièrement, puis reste lisible au-dessus de la machine */}
+            <div className="morocco-receipt-window">
+            <div className="morocco-receipt relative z-0 w-[min(78%,330px)] rounded-t-xl border border-vt-line-neutral bg-white px-5 pb-6 pt-7 shadow-[0_8px_35px_rgba(70,20,40,0.12)]">
               <div className="morocco-receipt-head text-center">
                 <h3 className="font-serif text-2xl font-bold text-vt-primary-rich">
                   Institut Royal
@@ -176,9 +147,10 @@ export default function MoroccoPaymentsSection() {
                 Merci pour votre visite ♡
               </p>
             </div>
+            </div>
 
             {/* Boîtier de l'imprimante */}
-            <div className="relative z-20 -mt-12 w-[min(92%,410px)] rounded-[30px] border border-[#e7bccc] bg-gradient-to-br from-white via-vt-surface to-vt-line-neutral p-5 shadow-[0_24px_50px_rgba(95,20,57,0.22)]">
+            <div className="relative z-20 -mt-3 w-[min(92%,410px)] rounded-[30px] border border-[#e7bccc] bg-gradient-to-br from-white via-vt-surface to-vt-line-neutral p-5 shadow-[0_24px_50px_rgba(95,20,57,0.22)]">
               <div className="flex items-center justify-between">
                 <span className="font-serif text-xl font-bold italic text-vt-primary-rich">
                   Rappel Beauty

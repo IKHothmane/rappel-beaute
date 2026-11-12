@@ -237,6 +237,9 @@ export function platformAuditActionLabel(action: string): string {
 export type OrganizationDetail = OrganizationListItem & {
   address: string | null;
   ownerPhone: string | null;
+  ownerId: string | null;
+  ownerFirstName: string | null;
+  ownerLastName: string | null;
   cardBackgroundUrl: string | null;
   stats: {
     customers: number;

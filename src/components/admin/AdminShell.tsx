@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   Armchair,
-  CreditCard,
   Gift,
   LayoutDashboard,
   LifeBuoy,
@@ -44,7 +43,6 @@ const NAV: NavGroup[] = [
       { href: "/dashboard/", label: "Tableau de bord", icon: LayoutDashboard },
       { href: "/organizations/", label: "Instituts", icon: Store },
       { href: "/loyalty/", label: "Fidélité", icon: Gift },
-      { href: "/subscriptions/", label: "Abonnements", icon: CreditCard },
       { href: "/users/", label: "Utilisateurs globaux", icon: Users },
     ],
   },
@@ -80,7 +78,6 @@ const MOBILE_NAV: NavItem[] = [
   { href: "/dashboard/", label: "Accueil", icon: LayoutDashboard },
   { href: "/organizations/", label: "Instituts", icon: Store },
   { href: "/services/", label: "Services", icon: Scissors },
-  { href: "/subscriptions/", label: "Abos", icon: CreditCard },
   { href: "/support/tickets/", label: "Support", icon: LifeBuoy, badge: "tickets" },
   { href: "/system/health/", label: "Système", icon: Terminal },
 ];
@@ -116,9 +113,6 @@ function isActive(pathname: string, href: string) {
   }
   if (href === "/billing/") {
     return path.startsWith("/billing");
-  }
-  if (href === "/subscriptions/") {
-    return path.startsWith("/subscriptions");
   }
   if (href === "/services/") {
     return path.startsWith("/services");

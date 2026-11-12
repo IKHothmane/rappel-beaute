@@ -13,22 +13,55 @@ export type ServiceCatalogDefaultItem = {
   name: string;
   imageUrl: string | null;
   updatedAt: string | null;
+  /** "suggested" = liste de la plateforme ; "added" = service créé par un institut. */
+  source?: "suggested" | "added";
+  /** Nombre d’instituts qui proposent ce service. */
+  usedBy?: number;
 };
 
-export async function listServiceCatalogDefaults(): Promise<ServiceCatalogDefaultItem[]> {
-  const { rows } = await pool.query<{ name: string; imageUrl: string; updatedAt: Date }>(
-    `SELECT name, "imageUrl", "updatedAt" FROM "ServiceCatalogDefault"`,
-  );
-  const byName = new Map(rows.map((row) => [row.name, row]));
+export const SERVICE_NAME_MAX_LENGTH = 120;
 
-  return SERVICE_NAME_SUGGESTIONS.map((name) => {
-    const row = byName.get(name);
+const normalizeName = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
+
+/** Tous les services : suggestions plateforme + services ajoutés par les instituts (sans doublons). */
+export async function listServiceCatalogDefaults(): Promise<ServiceCatalogDefaultItem[]> {
+  const [{ rows }, { rows: added }] = await Promise.all([
+    pool.query<{ name: string; imageUrl: string; updatedAt: Date }>(
+      `SELECT name, "imageUrl", "updatedAt" FROM "ServiceCatalogDefault"`,
+    ),
+    pool.query<{ name: string; usedBy: string }>(
+      `SELECT MIN(TRIM(name)) AS name, COUNT(DISTINCT "organizationId")::text AS "usedBy"
+       FROM "Service"
+       WHERE TRIM(name) <> ''
+       GROUP BY LOWER(REGEXP_REPLACE(TRIM(name), '\\s+', ' ', 'g'))`,
+    ),
+  ]);
+  const byName = new Map(rows.map((row) => [normalizeName(row.name), row]));
+  const usage = new Map(added.map((row) => [normalizeName(row.name), parseInt(row.usedBy, 10)]));
+
+  const toItem = (name: string, source: "suggested" | "added"): ServiceCatalogDefaultItem => {
+    const key = normalizeName(name);
+    const row = byName.get(key);
     return {
-      name,
+      name: row?.name ?? name,
       imageUrl: row?.imageUrl ?? null,
       updatedAt: row?.updatedAt?.toISOString() ?? null,
+      source,
+      usedBy: usage.get(key) ?? 0,
     };
-  });
+  };
+
+  const seen = new Set<string>();
+  const items: ServiceCatalogDefaultItem[] = [];
+  for (const name of SERVICE_NAME_SUGGESTIONS) {
+    seen.add(normalizeName(name));
+    items.push(toItem(name, "suggested"));
+  }
+  const extra = [...added.map((r) => r.name), ...rows.map((r) => r.name)]
+    .filter((name) => !seen.has(normalizeName(name)) && seen.add(normalizeName(name)))
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  for (const name of extra) items.push(toItem(name, "added"));
+  return items;
 }
 
 export async function getServiceCatalogDefaultsMap(): Promise<Record<string, string>> {
@@ -45,8 +78,7 @@ export async function upsertServiceCatalogDefault(
   imageUrl: string,
   updatedBy?: string | null,
 ): Promise<ServiceCatalogDefaultItem> {
-  const allowed = (SERVICE_NAME_SUGGESTIONS as readonly string[]).includes(name);
-  if (!allowed) throw new Error("UNKNOWN_SERVICE_NAME");
+  if (!name.trim() || name.length > SERVICE_NAME_MAX_LENGTH) throw new Error("UNKNOWN_SERVICE_NAME");
 
   const { rows } = await pool.query<{ name: string; imageUrl: string; updatedAt: Date }>(
     `INSERT INTO "ServiceCatalogDefault" (id, name, "imageUrl", "updatedAt", "updatedBy", "createdAt")

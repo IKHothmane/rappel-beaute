@@ -21,7 +21,7 @@ export const dynamic = "force-static";
 export const metadata = marketingPageMetadata({
   title: "Politique de confidentialité · Rappel Beauty",
   description:
-    "Traitement des données personnelles Rappel Beauté — loi 09-08, CNDP. Aucune photo cliente en V1.",
+    "Informations sur les données de votre compte, les demandes par e-mail et vos préférences de mesure d’audience sur Rappel Beauty.",
   canonical: "/confidentialite/",
 });
 const SECTIONS = [
@@ -31,8 +31,8 @@ const SECTIONS = [
     title: "Responsable de traitement",
     content: (
       <p>
-        Rappel Beauté, <a href={`mailto:${SITE.email}`}>{SITE.email}</a>. Déclaration CNDP : à
-        déposer avant le traitement opérationnel des fiches clientes en production.
+        Pour vos questions sur les données personnelles et leur utilisation par Rappel Beauty,
+        contactez notre équipe : <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
       </p>
     ),
   },
@@ -41,11 +41,19 @@ const SECTIONS = [
     icon: Database,
     title: "Données collectées sur la vitrine",
     content: (
-      <p>
-        Formulaires démo / essai / contact : nom, institut, ville, téléphone, e-mail, message, plan
-        souhaité. Finalité : recontact et activation d’accès sous 24 h. Base : mesures
-        précontractuelles.
-      </p>
+      <>
+        <p>
+          Lors de l’inscription professionnelle, le nom, l’institut, la ville, le numéro WhatsApp,
+          l’e-mail et les informations facultatives renseignées sont transmis à Rappel Beauty pour
+          créer le compte et traiter la demande.
+        </p>
+        <p>
+          Les formulaires de contact et de demande de site préparent un e-mail dans votre
+          messagerie. Ces demandes ne nous parviennent que lorsque vous envoyez l’e-mail. La demande
+          de démo guidée utilise ce même parcours. Le formulaire du footer prépare également une
+          demande par e-mail ; il ne vous inscrit pas automatiquement à une newsletter.
+        </p>
+      </>
     ),
   },
   {
@@ -64,11 +72,20 @@ const SECTIONS = [
     icon: Cookie,
     title: "Cookies",
     content: (
-      <p>
-        La politique cookies est distincte de cette page et sera publiée avant production (mesure
-        d’audience, session de connexion). En V1.2 vitrine locale : cookies techniques de
-        développement uniquement (sélecteur de domaine <code>__host</code>).
-      </p>
+      <>
+        <p>
+          Les cookies techniques servent notamment à la connexion et à la sélection de l’espace du
+          site. Votre préférence de mesure d’audience est enregistrée dans le stockage local de
+          votre navigateur.
+        </p>
+        <p>
+          Google Analytics et Google Tag Manager sont chargés après votre acceptation de la mesure
+          d’audience. Si vous refusez, ces scripts ne sont pas chargés. Vous pouvez modifier votre
+          choix à tout moment avec le bouton « Préférences cookies » du footer. Après le retrait
+          d’un accord, la page se recharge et les cookies de mesure Google accessibles au site sont
+          supprimés.
+        </p>
+      </>
     ),
   },
   {
@@ -88,8 +105,11 @@ const SECTIONS = [
     title: "Durée et isolation",
     content: (
       <p>
-        Les leads vitrine ne sont pas mélangés aux données métier. En application, chaque institut
-        est isolé (organizationId + RLS).
+        Les données du compte servent au fonctionnement de votre espace et au suivi de votre
+        demande. Les demandes envoyées par e-mail sont traitées par notre équipe dans sa messagerie.
+        Pour une demande de suppression ou une question sur leur conservation, contactez-nous. Les
+        accès aux données métier de l’application sont limités à l’institut et aux utilisateurs
+        autorisés.
       </p>
     ),
   },
@@ -109,8 +129,8 @@ export default function ConfidentialitePage() {
               Politique de <em>confidentialité</em>
             </h1>
             <p className="pv-lead">
-              Rappel Beauté traite des données d’identification pour les demandes de démo et
-              d’essai. Les données métier d’institut n’apparaissent pas sur cette vitrine.
+              Retrouvez comment fonctionnent l’inscription, les demandes par e-mail et vos choix de
+              mesure d’audience sur le site Rappel Beauty.
             </p>
           </div>
           <div className="pv-hero-art">

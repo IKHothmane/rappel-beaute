@@ -141,7 +141,7 @@ export function AdminDashboardView() {
             Utilisateurs ({data.users.total})
           </Link>
           <Link
-            href={adminHref("/subscriptions/")}
+            href={adminHref("/organizations/")}
             className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-[#FFEFF8] px-4 text-sm font-semibold text-ink"
           >
             <CreditCard className="h-4 w-4 text-primary" />
@@ -197,7 +197,7 @@ export function AdminDashboardView() {
         </Link>
 
         <Link
-          href={adminHref("/subscriptions/")}
+          href={adminHref("/organizations/")}
           className="group flex flex-col justify-between rounded-xl bg-white p-3.5 shadow-sm transition hover:shadow-md xl:p-6"
         >
           <div className="flex items-center justify-between">
@@ -447,7 +447,7 @@ export function AdminDashboardView() {
             </li>
           </ul>
           <Link
-            href={adminHref("/subscriptions/")}
+            href={adminHref("/organizations/")}
             className="mt-4 block text-center text-sm font-bold text-primary hover:underline"
           >
             Gérer les abonnements →

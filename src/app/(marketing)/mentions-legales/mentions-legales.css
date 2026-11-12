@@ -1,3 +1,22 @@
+.ml-blank-fields {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--vt-muted);
+}
+.ml-blank-fields > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding-block: 5px;
+}
+.ml-blank-fields dt {
+  font-weight: 600;
+}
+.ml-blank-fields dd {
+  min-height: 1.5em;
+  margin: 0;
+}
+
 .ml {
   --ml-pink: var(--vt-primary-bright);
   --ml-ink: var(--vt-ink-deep);
@@ -129,18 +148,6 @@
 }
 .ml-body {
   padding-block: 8px 44px;
-}
-.ml-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 16px 20px;
-  margin-bottom: 22px !important;
-  border: 1px solid var(--vt-line);
-  border-radius: 14px;
-  background: var(--vt-surface-soft);
-  font-size: var(--vt-fs-xs);
-  color: #734657;
 }
 .ml-grid {
   display: grid;

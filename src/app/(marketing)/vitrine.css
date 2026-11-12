@@ -1,5 +1,37 @@
 @import "./vitrine-tokens.css";
 
+.vt-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 16px;
+  z-index: 100;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: #fff;
+  color: #a80045;
+  font-weight: 600;
+  transform: translateY(-150%);
+}
+.vt-skip-link:focus {
+  transform: translateY(0);
+}
+#main-content {
+  scroll-margin-top: 96px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .vt-enter {
+    animation: vt-enter 0.5s ease-out;
+  }
+  @keyframes vt-enter {
+    from {
+      transform: translateY(12px);
+    }
+    to {
+      transform: none;
+    }
+  }
+}
+
 /* La vitrine reste à l'échelle 1. Le zoom 0.8 du document ne s'applique qu'à l'application. */
 html:has(.marketing-site) {
   zoom: 1;

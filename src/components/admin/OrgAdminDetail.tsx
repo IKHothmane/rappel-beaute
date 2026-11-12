@@ -388,7 +388,7 @@ export function OrgAdminDetail() {
             <p>{PLAN_LABEL[org.subscription.plan]}</p>
             <p>Début : {new Date(org.subscription.startAt).toLocaleDateString("fr-FR")}</p>
             <p>Renouvellement : {new Date(org.subscription.renewAt).toLocaleDateString("fr-FR")}</p>
-            <Link href={adminHref("/subscriptions/")} className="inline-block text-[var(--admin-accent)]">
+            <Link href={adminHref("/organizations/")} className="inline-block text-[var(--admin-accent)]">
               Voir tous les abonnements →
             </Link>
           </section>

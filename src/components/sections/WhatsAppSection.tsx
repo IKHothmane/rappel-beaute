@@ -47,7 +47,7 @@ export default function WhatsAppSection() {
       <span id="rappels-whatsapp" className="whatsapp-legacy-anchor" aria-hidden="true" />
       {/* Background */}
 
-      <div className="whatsapp-layout mx-auto grid max-w-[1200px] items-center gap-8 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:px-8">
+      <div className="whatsapp-layout mx-auto grid max-w-[1200px] items-center gap-8 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:px-8 xl:grid-cols-[0.9fr_1.1fr]">
         {/* LEFT */}
         <div>
           <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-pink-200 bg-white/80 px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-vt-primary-rich shadow-sm">
@@ -130,8 +130,8 @@ export default function WhatsAppSection() {
         </div>
 
         {/* RIGHT */}
-        <div className="whatsapp-preview relative flex items-center justify-center">
-          <div className="absolute h-[500px] w-[500px] max-w-full rounded-full bg-pink-200/40 blur-3xl" />
+        <div className="whatsapp-preview relative">
+          <div className="whatsapp-glow absolute h-[500px] w-[500px] max-w-full rounded-full bg-pink-200/40 blur-3xl" />
 
           {/* PHONE */}
           <div className="whatsapp-phone relative z-10 w-[min(100%,365px)] rotate-[-2deg] rounded-[48px] border-[7px] border-vt-ink-dark bg-vt-ink-dark p-[5px] shadow-[0_35px_75px_rgba(75,20,50,0.25)] transition-transform duration-500 hover:rotate-0">
@@ -158,7 +158,7 @@ export default function WhatsAppSection() {
               </div>
 
               {/* Chat */}
-              <div className="space-y-5 px-4 py-7">
+              <div className="space-y-4 px-4 py-5">
                 <div className="mx-auto w-fit rounded-lg bg-[#dbeaf0] px-4 py-1.5 text-xs text-[#43606b]">
                   Lundi
                 </div>
@@ -194,7 +194,7 @@ export default function WhatsAppSection() {
               </div>
 
               {/* Input */}
-              <div className="absolute bottom-5 left-3 right-3 flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 pb-4">
                 <div className="flex flex-1 items-center rounded-full bg-white px-4 py-3 text-sm text-gray-400 shadow-sm">
                   Message...
                 </div>
@@ -205,26 +205,25 @@ export default function WhatsAppSection() {
             </div>
           </div>
 
-          {/* FLOATING CARDS */}
-          <div className="absolute right-0 top-[14%] z-20 hidden rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-xl xl:flex xl:items-center xl:gap-3">
-            <CalendarDays aria-hidden="true" className="text-vt-primary-rich" size={23} />
-            <span className="text-sm font-semibold text-vt-ink-plum">Moins d’absences</span>
-          </div>
+          <ul className="whatsapp-badges">
+            <li>
+              <CalendarDays aria-hidden="true" className="text-vt-primary-rich" size={23} />
+              Moins d’absences
+            </li>
+            <li>
+              <Heart aria-hidden="true" className="text-vt-primary-rich" size={23} />
+              Clientes informées
+            </li>
+            <li>
+              <TrendingUp aria-hidden="true" className="text-vt-primary-rich" size={23} />
+              Planning mieux suivi
+            </li>
+          </ul>
 
-          <div className="absolute -right-3 top-[43%] z-20 hidden rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-xl xl:flex xl:items-center xl:gap-3">
-            <Heart aria-hidden="true" className="text-vt-primary-rich" size={23} />
-            <span className="text-sm font-semibold text-vt-ink-plum">Clientes informées</span>
-          </div>
-
-          <div className="absolute bottom-[18%] right-0 z-20 hidden rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-xl xl:flex xl:items-center xl:gap-3">
-            <TrendingUp aria-hidden="true" className="text-vt-primary-rich" size={23} />
-            <span className="text-sm font-semibold text-vt-ink-plum">Planning mieux suivi</span>
-          </div>
-
-          <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-pink-100 bg-white/90 px-5 py-3 text-xs font-medium text-[#7d5366] shadow-sm">
+          <p className="whatsapp-caption">
             <Sparkles aria-hidden="true" size={15} className="text-vt-primary-rich" />
             Simple, humain et sans robot
-          </div>
+          </p>
         </div>
       </div>
     </section>

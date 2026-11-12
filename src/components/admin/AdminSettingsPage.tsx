@@ -377,7 +377,7 @@ export function AdminSettingsPage() {
                   </ul>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Link href={adminHref("/subscriptions/")} className="ac-btn">
+                  <Link href={adminHref("/organizations/")} className="ac-btn">
                     Gérer les abonnements instituts
                   </Link>
                 </div>

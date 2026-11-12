@@ -1,6 +1,9 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writeAuditLog } from "@/lib/db/audit";
-import { pool } from "@/lib/db/pool";
+
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 type WhatsAppWebhookMessage = {
   from: string;

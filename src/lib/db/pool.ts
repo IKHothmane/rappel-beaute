@@ -4,22 +4,16 @@ import { withTenantIsolation } from "@/lib/db/tenant-pool";
 const globalForPg = globalThis as unknown as { pgPool?: Pool };
 
 /**
- * Un seul pool partagé pour tout le code applicatif (`src/lib/**`).
- * Chaque fichier `new Pool()` ouvrait jusqu'à 10 connexions : au chargement du
- * dashboard (~20 API), Postgres saturait.
- *
- * Exception volontaire : `/api/health/db` ouvre une connexion éphémère à part,
- * pour que la sonde reste fiable même si ce pool est saturé.
+ * Un seul pool partagé. Chaque fichier `new Pool()` ouvrait jusqu'à 10
+ * connexions : au chargement du dashboard (~20 API), Postgres saturait.
  */
 export const pool =
   globalForPg.pgPool ??
   withTenantIsolation(
     new Pool({
       connectionString: process.env.DATABASE_URL,
-      // Un seul pool sert tous les modules : 10 connexions couvrent les transactions
-      // simultanées (chacune en garde une) sans approcher max_connections.
-      // Ajustable sans redéploiement de code via PG_POOL_MAX.
-      max: Number(process.env.PG_POOL_MAX ?? 10),
+      // Instance Railway unique : 5 connexions suffisent et coûtent moins de RAM.
+      max: Number(process.env.PG_POOL_MAX ?? 5),
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 8_000,
     }),

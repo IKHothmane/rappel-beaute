@@ -1,3 +1,5 @@
+import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { buildPublicBookingUrl, slugifyLabel } from "@/lib/booking-qr";
 import { getAIProvider } from "@/lib/ai/provider";
 import {
@@ -10,7 +12,8 @@ import {
   type AIRequestContext,
 } from "@/types/ai";
 import type { WhatsAppTaskType } from "@/types/whatsapp";
-import { pool } from "@/lib/db/pool";
+
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 export const AI_KIND_TO_WHATSAPP: Record<AIMessageKind, WhatsAppTaskType> = {
   inactive: "REACTIVATION",

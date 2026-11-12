@@ -6,14 +6,11 @@ const PLATFORM = { email: "admin@rappelbeaute.ma", password: "demo1234" };
 test.describe("Parcours commercial — seed Institut Royal", () => {
   test("OWNER login → dashboard", async ({ page }) => {
     await page.goto("/login/?__host=app", { waitUntil: "domcontentloaded" });
-    // /login/ sur le domaine public renvoie vers /connexion/, qui a aussi
-    // le champ e-mail du pied de page. On vise uniquement le formulaire.
-    const form = page.locator("form.rb-login-form");
-    const email = form.locator('input[name="email"]');
+    const email = page.locator('input[name="email"]');
     await expect(email).toBeVisible({ timeout: 15_000 });
     await email.fill(OWNER.email);
-    await form.locator('input[name="password"]').fill(OWNER.password);
-    await form.locator('button[type="submit"]').click();
+    await page.locator('input[name="password"]').fill(OWNER.password);
+    await page.locator('button[type="submit"]').click();
     await page.waitForURL(/dashboard/, { timeout: 15_000 });
     await expect(page.locator("body")).toContainText(/Institut|Dashboard|Tableau/i);
   });

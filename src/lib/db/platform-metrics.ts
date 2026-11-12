@@ -2,10 +2,13 @@
  * Métriques plateforme Super Admin — dérivées de PostgreSQL (Subscription, Organization, …).
  * Pas de paiements SaaS séparés : le MRR vient des abonnements actifs.
  */
+import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import type { PlanCode } from "@/types/subscription";
 import type { PlatformAnalytics, PlatformBillingSnapshot } from "@/types/platform";
 import { getPlatformDashboardStats } from "@/lib/db/admin-organizations";
-import { pool } from "@/lib/db/pool";
+
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 /** Dernière subscription par organisation (même règle que le dashboard) */
 const LATEST_SUB_FILTER = `s.id = (

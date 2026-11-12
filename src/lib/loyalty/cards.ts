@@ -1,8 +1,10 @@
 import { randomBytes } from "crypto";
-import { type PoolClient } from "pg";
+import { Pool, type PoolClient } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { getOrCreateLoyaltyProgram } from "@/lib/db/loyalty";
 import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
-import { pool } from "@/lib/db/pool";
+
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 

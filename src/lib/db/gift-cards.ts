@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "crypto";
-import { type PoolClient } from "pg";
+import { Pool, type PoolClient } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writeAuditLog } from "@/lib/db/audit";
 import type {
   CreateGiftCardInput,
@@ -10,7 +11,8 @@ import type {
   GiftCardTxnItem,
   GiftCardTxnType,
 } from "@/types/promo";
-import { pool } from "@/lib/db/pool";
+
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;

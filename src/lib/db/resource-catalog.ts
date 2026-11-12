@@ -1,6 +1,9 @@
 import { randomBytes } from "crypto";
+import { Pool } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { RESOURCE_TYPES, type ResourceType } from "@/types/resource";
-import { pool } from "@/lib/db/pool";
+
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 function newId() {
   return `rcd_${randomBytes(8).toString("hex")}`;

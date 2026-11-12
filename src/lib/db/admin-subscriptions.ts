@@ -1,11 +1,13 @@
 import { randomBytes } from "crypto";
-import { type PoolClient } from "pg";
+import { Pool, type PoolClient } from "pg";
+import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 import { getPlanByCode, getPlanById, listPlans } from "@/lib/subscriptions/plans";
 import { addMonths } from "@/lib/subscriptions/subscription-service";
 import type { PlanCode, SubscriptionStatus } from "@/types/subscription";
-import { pool } from "@/lib/db/pool";
+
+const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 function actorName(actor: PlatformSessionUser) {
   return `${actor.firstName} ${actor.lastName}`.trim();

@@ -57,6 +57,9 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
     });
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "REFERENCE_NOT_FOUND") {
+      return NextResponse.json({ error: "Référence introuvable." }, { status: 404 });
+    }
     console.error("[POST /api/expenses]", error);
     return NextResponse.json({ error: "Impossible de créer la dépense." }, { status: 500 });
   }

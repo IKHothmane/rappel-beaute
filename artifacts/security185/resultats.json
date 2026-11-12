@@ -1,0 +1,62 @@
+{
+  "baseline": {
+    "passed": 8,
+    "failed": 1,
+    "crossReferences": [
+      "Expense.supplierId",
+      "GiftCard.buyerCustomerId",
+      "GiftCard.beneficiaryCustomerId"
+    ],
+    "disclosed": [
+      "Beauty Pro",
+      "El Amrani"
+    ]
+  },
+  "final": {
+    "files": 84,
+    "tests": {
+      "passed": 691,
+      "skipped": 2
+    },
+    "security": {
+      "passed": 135
+    },
+    "isolationApi": {
+      "passed": 17
+    },
+    "postgresRls": {
+      "passed": 18
+    },
+    "skipped": [
+      {
+        "file": "C:/Users/LordOfTHeRings/Desktop/rappel beauty/tests/ops/backup-restore.test.ts",
+        "name": "Ops — backup → restore (local/staging) vérifie les tables critiques sur la DB courante",
+        "status": "skipped"
+      },
+      {
+        "file": "C:/Users/LordOfTHeRings/Desktop/rappel beauty/tests/ops/backup-restore.test.ts",
+        "name": "Ops — backup → restore (local/staging) backup .dump puis verify-restore",
+        "status": "skipped"
+      }
+    ]
+  },
+  "typecheck": {
+    "exitCode": 0
+  },
+  "eslint": {
+    "exitCode": 0,
+    "existingWarnings": true
+  },
+  "build": {
+    "exitCode": 0,
+    "pages": 226
+  },
+  "environment": {
+    "postgresql": "18 local embedded",
+    "ciPostgresql": "17",
+    "redis": "memory fallback",
+    "productionTouched": false,
+    "committed": false,
+    "pushed": false
+  }
+}

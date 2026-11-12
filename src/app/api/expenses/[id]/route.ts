@@ -67,6 +67,7 @@ export const PATCH = tenantRoute(async function PATCH(request: NextRequest, cont
   } catch (error) {
     if (error instanceof Error) {
       const map: Record<string, [string, number]> = {
+        REFERENCE_NOT_FOUND: ["Référence introuvable.", 404],
         NOT_FOUND: ["Dépense introuvable.", 404],
         VOIDED: ["Dépense déjà annulée.", 400],
       };

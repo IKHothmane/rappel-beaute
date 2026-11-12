@@ -11,6 +11,7 @@ import type {
   GiftCardTxnType,
 } from "@/types/promo";
 import { pool } from "@/lib/db/pool";
+import { assertTenantReference } from "@/lib/db/tenant-reference";
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;
@@ -31,7 +32,7 @@ export function isUniqueViolation(error: unknown): boolean {
 }
 
 const CARD_SELECT = `g.id, g.code, g."initialValue"::text, g.balance::text, g.status::text,
-              g."buyerCustomerId", g."beneficiaryCustomerId", g."expiresAt", g."createdAt", g.notes,
+              b.id AS "buyerCustomerId", n.id AS "beneficiaryCustomerId", g."expiresAt", g."createdAt", g.notes,
               b."firstName" AS "buyerFirst", b."lastName" AS "buyerLast", b.phone AS "buyerPhone",
               n."firstName" AS "benFirst", n."lastName" AS "benLast", n.phone AS "benPhone"`;
 
@@ -182,16 +183,16 @@ export async function listGiftCards(
     pool.query<{ total: number }>(
       `SELECT COUNT(*)::int AS total
        FROM "GiftCard" g
-       LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId"
-       LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId"
+       LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId" AND b."organizationId" = g."organizationId"
+       LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId" AND n."organizationId" = g."organizationId"
        WHERE ${where}`,
       params,
     ),
     pool.query(
       `SELECT ${CARD_SELECT}
        FROM "GiftCard" g
-       LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId"
-       LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId"
+       LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId" AND b."organizationId" = g."organizationId"
+       LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId" AND n."organizationId" = g."organizationId"
        WHERE ${where}
        ORDER BY g."createdAt" DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,
@@ -213,8 +214,8 @@ export async function getGiftCardById(
   const { rows } = await pool.query(
     `SELECT ${CARD_SELECT}
      FROM "GiftCard" g
-     LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId"
-     LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId"
+     LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId" AND b."organizationId" = g."organizationId"
+     LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId" AND n."organizationId" = g."organizationId"
      WHERE g.id = $1 AND g."organizationId" = $2`,
     [id, organizationId],
   );
@@ -229,8 +230,8 @@ export async function getGiftCardById(
     createdAt: Date;
   }>(
     `SELECT id, type::text, amount::text, "balanceAfter"::text, reason, "paymentId", "createdAt"
-     FROM "GiftCardTransaction" WHERE "giftCardId" = $1 ORDER BY "createdAt" ASC`,
-    [id],
+     FROM "GiftCardTransaction" WHERE "giftCardId" = $1 AND "organizationId" = $2 ORDER BY "createdAt" ASC`,
+    [id, organizationId],
   );
   return {
     ...mapCard(rows[0] as Record<string, unknown>),
@@ -253,8 +254,8 @@ export async function getGiftCardByCode(
   const { rows } = await pool.query(
     `SELECT ${CARD_SELECT}
      FROM "GiftCard" g
-     LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId"
-     LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId"
+     LEFT JOIN "Customer" b ON b.id = g."buyerCustomerId" AND b."organizationId" = g."organizationId"
+     LEFT JOIN "Customer" n ON n.id = g."beneficiaryCustomerId" AND n."organizationId" = g."organizationId"
      WHERE g."organizationId" = $1 AND upper(g.code) = upper($2)`,
     [organizationId, code],
   );
@@ -272,6 +273,9 @@ export async function issueGiftCard(
   const id = newId("gc");
   try {
     await client.query("BEGIN");
+    await assertTenantReference(client, organizationId, "Customer", input.buyerCustomerId);
+    await assertTenantReference(client, organizationId, "Customer", input.beneficiaryCustomerId);
+    await assertTenantReference(client, organizationId, "User", actor.id);
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
         await client.query(
@@ -357,8 +361,8 @@ export async function listGiftCardJournal(
             t.reason, t."paymentId", t."createdAt",
             NULLIF(TRIM(COALESCE(u."firstName", '') || ' ' || COALESCE(u."lastName", '')), '') AS "actorName"
      FROM "GiftCardTransaction" t
-     JOIN "GiftCard" g ON g.id = t."giftCardId"
-     LEFT JOIN "User" u ON u.id = t."createdById"
+     JOIN "GiftCard" g ON g.id = t."giftCardId" AND g."organizationId" = t."organizationId"
+     LEFT JOIN "User" u ON u.id = t."createdById" AND u."organizationId" = t."organizationId"
      WHERE t."organizationId" = $1
      ORDER BY t."createdAt" DESC
      LIMIT $2`,

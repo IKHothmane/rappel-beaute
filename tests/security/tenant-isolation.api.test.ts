@@ -798,6 +798,155 @@ run("Isolation API entre instituts A et B", () => {
     expect(changedTables(before, await fingerprint(ORG_A))).toEqual([]);
   });
 
+  it.each([
+    ["expenses", "supplierId", "Supplier"],
+    ["gift-cards", "buyerCustomerId", "Customer"],
+    ["gift-cards", "beneficiaryCustomerId", "Customer"],
+  ])("POST /%s refuse séparément %s étranger ou inexistant sans écriture", async (target, field, table) => {
+    const beforeA = await fingerprint(ORG_A);
+    const beforeB = await fingerprint(ORG_B);
+    for (const id of [(await firstId(table, ORG_A))!, "iso_reference_missing"]) {
+      const result = await call(path.join(API_ROOT, target, "route.ts"), "POST", `/${target}/`, tokenB, {}, {
+        organizationId: ORG_A,
+        category: "OTHER", amount: 25, paymentMethod: "CASH", expenseDate: "2031-04-07",
+        [field]: id,
+      });
+      expect(result.status, `${target}.${field}=${id}: ${result.text}`).toBe(404);
+      expect(result.text).toBe('{"error":"Référence introuvable."}');
+    }
+    expect(changedTables(beforeA, await fingerprint(ORG_A))).toEqual([]);
+    expect(changedTables(beforeB, await fingerprint(ORG_B))).toEqual([]);
+  });
+
+  it("PATCH dépense refuse le fournisseur de A et conserve la dépense de B", async () => {
+    const created = await call(path.join(API_ROOT, "expenses", "route.ts"), "POST", "/expenses/", tokenB, {}, {
+      category: "OTHER", amount: 25, paymentMethod: "CASH", expenseDate: "2031-04-07", supplierId: B.supplier,
+    });
+    expect(created.status).toBe(201);
+    const expense = JSON.parse(created.text) as { id: string };
+    const before = await fingerprint(ORG_B);
+    const result = await call(path.join(API_ROOT, "expenses", "[id]", "route.ts"), "PATCH",
+      `/expenses/${expense.id}/`, tokenB, { id: expense.id },
+      { supplierId: await firstId("Supplier", ORG_A), amount: 999 });
+    expect(result.status).toBe(404);
+    expect(changedTables(before, await fingerprint(ORG_B))).toEqual([]);
+    const updated = await call(path.join(API_ROOT, "expenses", "[id]", "route.ts"), "PATCH",
+      `/expenses/${expense.id}/`, tokenB, { id: expense.id }, { amount: 26 });
+    expect(updated.status).toBe(200);
+    expect(JSON.parse(updated.text)).toMatchObject({ supplierId: B.supplier, amount: 26 });
+  });
+
+  it("les références propres et nulles restent valides et les cartes sont lisibles par id et code", async () => {
+    for (const refs of [
+      { buyerCustomerId: B.customer, beneficiaryCustomerId: B.customer },
+      { buyerCustomerId: null, beneficiaryCustomerId: null },
+    ]) {
+      const file = path.join(API_ROOT, "gift-cards", "route.ts");
+      const created = await call(file, "POST", "/gift-cards/", tokenB, {}, { amount: 30, ...refs });
+      expect(created.status).toBe(201);
+      const card = JSON.parse(created.text) as { id: string; code: string };
+      for (const query of [`id=${card.id}`, `code=${card.code}`]) {
+        const own = await call(file, "GET", `/gift-cards/?${query}`, tokenB, {});
+        expect(own.status).toBe(200);
+        expect(JSON.parse(own.text)).toMatchObject(refs);
+        const foreign = await call(file, "GET", `/gift-cards/?${query}`, tokenA, {});
+        expect(foreign.status).toBe(404);
+      }
+    }
+    const created = await call(path.join(API_ROOT, "expenses", "route.ts"), "POST", "/expenses/", tokenB, {}, {
+      category: "OTHER", amount: 25, paymentMethod: "CASH", expenseDate: "2031-04-07", supplierId: null,
+    });
+    expect(created.status).toBe(201);
+    expect(JSON.parse(created.text).supplierId).toBeNull();
+  });
+
+  it("les anciennes références incohérentes ne divulguent ni identité ni téléphone ni identifiant", async () => {
+    const supplierA = (await firstId("Supplier", ORG_A))!;
+    const customerA = (await firstId("Customer", ORG_A))!;
+    const fixture = await testPool.connect();
+    try {
+      await fixture.query("BEGIN");
+      // Privileged, local test fixture only: simulate rows that predate the new constraints.
+      // SET LOCAL is automatically reset on COMMIT/ROLLBACK; application code never uses it.
+      await fixture.query("SET LOCAL session_replication_role = replica");
+      await fixture.query(`INSERT INTO "Expense" (id, "organizationId", category, amount, "paymentMethod",
+        "supplierId", "expenseDate", "updatedAt") VALUES ('iso_legacy_exp', $1, 'OTHER', 10, 'CASH', $2, NOW(), NOW())`,
+      [ORG_B, supplierA]);
+      await fixture.query(`INSERT INTO "GiftCard" (id, "organizationId", code, "initialValue", balance,
+        "buyerCustomerId", "beneficiaryCustomerId", "updatedAt")
+        VALUES ('iso_legacy_gc', $1, 'ISO-LEGACY-PRIVATE', 10, 10, $2, $2, NOW())`, [ORG_B, customerA]);
+      await fixture.query(`INSERT INTO "GiftCardTransaction" (id, "organizationId", "giftCardId", type,
+        amount, "balanceAfter", reason, "idempotencyKey")
+        VALUES ('iso_legacy_tx', $1, 'iso_legacy_gc', 'ISSUED', 10, 10, 'PRIVATE-TRANSACTION-OF-A', 'iso_legacy_tx')`, [ORG_A]);
+      await fixture.query("COMMIT");
+    } catch (error) {
+      await fixture.query("ROLLBACK");
+      throw error;
+    } finally {
+      fixture.release();
+    }
+    try {
+      const responses = [
+        await call(path.join(API_ROOT, "expenses", "route.ts"), "GET", "/expenses/", tokenB, {}),
+        await call(path.join(API_ROOT, "expenses", "[id]", "route.ts"), "GET", "/expenses/iso_legacy_exp/", tokenB, { id: "iso_legacy_exp" }),
+        await call(path.join(API_ROOT, "gift-cards", "route.ts"), "GET", "/gift-cards/", tokenB, {}),
+        await call(path.join(API_ROOT, "gift-cards", "route.ts"), "GET", "/gift-cards/?id=iso_legacy_gc", tokenB, {}),
+        await call(path.join(API_ROOT, "gift-cards", "route.ts"), "GET", "/gift-cards/?code=ISO-LEGACY-PRIVATE", tokenB, {}),
+      ];
+      for (const result of responses) {
+        expect(result.status).toBe(200);
+        const values = stringValues(result.text);
+        expect(values.has(customerA)).toBe(false);
+        expect(values.has(supplierA)).toBe(false);
+        expect(result.text).not.toContain("PRIVATE-TRANSACTION-OF-A");
+        expect(markersA.filter(m => result.text.includes(m))).toEqual([]);
+      }
+      expect(JSON.parse(responses[1].text)).toMatchObject({ supplierId: null, supplierName: null });
+      expect(JSON.parse(responses[3].text)).toMatchObject({ buyerCustomerId: null, beneficiaryCustomerId: null, transactions: [] });
+      // An unrelated edit must not silently detach or delete a legacy relationship.
+      const update = await call(path.join(API_ROOT, "expenses", "[id]", "route.ts"), "PATCH", "/expenses/iso_legacy_exp/",
+        tokenB, { id: "iso_legacy_exp" }, { amount: 11 });
+      expect(update.status).toBe(200);
+      const persisted = await testPool.query(`SELECT "supplierId" FROM "Expense" WHERE id = 'iso_legacy_exp'`);
+      expect(persisted.rows[0].supplierId).toBe(supplierA);
+    } finally {
+      await testPool.query(`DELETE FROM "GiftCardTransaction" WHERE id = 'iso_legacy_tx'`);
+      await testPool.query(`DELETE FROM "GiftCard" WHERE id = 'iso_legacy_gc'`);
+      await testPool.query(`DELETE FROM "Expense" WHERE id = 'iso_legacy_exp'`);
+    }
+  });
+
+  it("PostgreSQL refuse aussi les trois références croisées écrites directement", async () => {
+    const supplierA = (await firstId("Supplier", ORG_A))!;
+    const customerA = (await firstId("Customer", ORG_A))!;
+    await expect(testPool.query(`INSERT INTO "Expense" (id, "organizationId", category, amount, "paymentMethod",
+      "supplierId", "expenseDate", "updatedAt") VALUES ('iso_sql_exp', $1, 'OTHER', 10, 'CASH', $2, NOW(), NOW())`,
+      [ORG_B, supplierA])).rejects.toMatchObject({ code: "23503", constraint: "Expense_supplier_tenant_fkey" });
+    for (const [field, constraint] of [
+      ["buyerCustomerId", "GiftCard_buyer_tenant_fkey"],
+      ["beneficiaryCustomerId", "GiftCard_beneficiary_tenant_fkey"],
+    ]) {
+      await expect(testPool.query(`INSERT INTO "GiftCard" (id, "organizationId", code, "initialValue", balance,
+        "${field}", "updatedAt") VALUES ('iso_sql_gc', $1, 'ISO-SQL', 10, 10, $2, NOW())`,
+        [ORG_B, customerA])).rejects.toMatchObject({ code: "23503", constraint });
+    }
+    expect(await crossOrgReferences()).toEqual([]);
+  });
+
+  it("les créations concurrentes refusent les références de A et acceptent celles de B", async () => {
+    const before = await fingerprint(ORG_A);
+    const supplierA = await firstId("Supplier", ORG_A);
+    const results = await Promise.all(Array.from({ length: 12 }, (_, i) =>
+      call(path.join(API_ROOT, "expenses", "route.ts"), "POST", "/expenses/", tokenB, {}, {
+        category: "OTHER", amount: 10, paymentMethod: "CASH", expenseDate: "2031-04-07",
+        supplierId: i % 2 ? supplierA : B.supplier,
+      }).then(result => ({ foreign: Boolean(i % 2), ...result })),
+    ));
+    for (const result of results) expect(result.status).toBe(result.foreign ? 404 : 201);
+    expect(await crossOrgReferences()).toEqual([]);
+    expect(changedTables(before, await fingerprint(ORG_A))).toEqual([]);
+  });
+
   it("200 lectures concurrentes entrelacées : aucune réponse ne mélange les instituts", async () => {
     const file = path.join(API_ROOT, "customers", "route.ts");
     const results = await Promise.all(

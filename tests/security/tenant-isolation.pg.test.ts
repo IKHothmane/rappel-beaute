@@ -260,7 +260,20 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
     const p = makePool(1, url.toString());
     await tenant(A, async () => {
       const running = expect(p.query("SELECT pg_sleep(5)")).rejects.toBeTruthy();
-      await wait(150);
+      // Wait for the query on PostgreSQL, not a guessed connection startup delay.
+      // Otherwise termination can run before the pool even opens its first connection.
+      const deadline = Date.now() + 4_000;
+      let active = false;
+      while (Date.now() < deadline) {
+        const result = await admin.query(
+          `SELECT 1 FROM pg_stat_activity WHERE usename = 'rappel_app'
+           AND application_name = $1 AND state = 'active' AND query = 'SELECT pg_sleep(5)'`,
+          [name],
+        );
+        if (result.rowCount) { active = true; break; }
+        await wait(25);
+      }
+      if (!active) throw new Error("The query to terminate did not start on PostgreSQL");
       await killOthers(name);
       await running;
     });

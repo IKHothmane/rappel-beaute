@@ -623,6 +623,9 @@ model Customer {
   @@index([organizationId])
   @@index([organizationId, lastName])
   @@index([organizationId, deletedAt])
+  // Supports the tenant reference constraints maintained in SQL migrations.
+  @@unique([id, organizationId])
+
 }
 
 /// Notes internes institut — jamais visibles par la cliente (41.21 / 41.22)
@@ -1144,6 +1147,9 @@ model Supplier {
   @@index([organizationId])
   @@index([organizationId, active])
   @@index([organizationId, deletedAt])
+  // Supports the tenant reference constraints maintained in SQL migrations.
+  @@unique([id, organizationId])
+
 }
 
 /// Prix / conditions négociés par couple produit ↔ fournisseur (N-N)

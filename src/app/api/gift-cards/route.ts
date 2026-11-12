@@ -118,6 +118,9 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
     const card = await issueGiftCard(auth.session.organizationId, validated.data, actor);
     return NextResponse.json(card, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "REFERENCE_NOT_FOUND") {
+      return NextResponse.json({ error: "Référence introuvable." }, { status: 404 });
+    }
     console.error("[POST /api/gift-cards]", error);
     return NextResponse.json({ error: "Impossible de traiter la carte." }, { status: 500 });
   }

@@ -11,6 +11,7 @@ import type {
 import { EXPENSE_CATEGORY_LABEL } from "@/types/expense";
 import type { PaymentMethod } from "@/types/finance";
 import { pool } from "@/lib/db/pool";
+import { assertTenantReference } from "@/lib/db/tenant-reference";
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;
@@ -49,13 +50,13 @@ function mapExpense(r: Record<string, unknown>): ExpenseListItem {
 const SELECT = `
   SELECT
     e.id, e.category::text, e.amount::text, e."paymentMethod"::text,
-    e.description, e."supplierId", s.name AS "supplierName",
-    e."expenseDate", e.reference, e.status::text, e."createdById",
+    e.description, s.id AS "supplierId", s.name AS "supplierName",
+    e."expenseDate", e.reference, e.status::text, u.id AS "createdById",
     e."createdAt", e."updatedAt",
     u."firstName" AS "userFirst", u."lastName" AS "userLast"
   FROM "Expense" e
-  LEFT JOIN "Supplier" s ON s.id = e."supplierId"
-  LEFT JOIN "User" u ON u.id = e."createdById"
+  LEFT JOIN "Supplier" s ON s.id = e."supplierId" AND s."organizationId" = e."organizationId"
+  LEFT JOIN "User" u ON u.id = e."createdById" AND u."organizationId" = e."organizationId"
 `;
 
 async function getExpenseKpis(organizationId: string): Promise<ExpenseKpis> {
@@ -240,7 +241,7 @@ export async function listExpenses(
     pool.query<{ total: number }>(
       `SELECT COUNT(*)::int AS total
        FROM "Expense" e
-       LEFT JOIN "Supplier" s ON s.id = e."supplierId"
+       LEFT JOIN "Supplier" s ON s.id = e."supplierId" AND s."organizationId" = e."organizationId"
        WHERE ${where}`,
       params,
     ),
@@ -288,6 +289,9 @@ export async function createExpense(
 
   try {
     await client.query("BEGIN");
+
+    await assertTenantReference(client, organizationId, "Supplier", input.supplierId);
+    await assertTenantReference(client, organizationId, "User", actor.id);
 
     await client.query(
       `INSERT INTO "Expense" (
@@ -374,13 +378,16 @@ export async function updateExpense(
   try {
     await client.query("BEGIN");
 
+    await assertTenantReference(client, organizationId, "Supplier", input.supplierId);
+    await assertTenantReference(client, organizationId, "User", actor.id);
+
     await client.query(
       `UPDATE "Expense" SET
         category = $1::"ExpenseCategory",
         amount = $2,
         "paymentMethod" = $3::"PaymentMethod",
         description = $4,
-        "supplierId" = $5,
+        "supplierId" = CASE WHEN $10::boolean THEN $5 ELSE "supplierId" END,
         "expenseDate" = $6,
         reference = $7,
         "updatedAt" = NOW()
@@ -395,6 +402,7 @@ export async function updateExpense(
         next.reference,
         expenseId,
         organizationId,
+        input.supplierId !== undefined,
       ],
     );
 

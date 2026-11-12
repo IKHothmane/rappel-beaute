@@ -292,16 +292,16 @@
 .pv-card-icon {
   display: grid;
   place-items: center;
-  width: var(--vt-size-54px);
-  height: var(--vt-size-54px);
+  width: 2rem;
+  height: 2rem;
   flex-shrink: 0;
   border-radius: 50%;
   color: var(--vt-primary-vivid);
   background: var(--vt-surface-pink);
 }
 .pv-card-icon > svg {
-  width: var(--vt-size-29px);
-  height: var(--vt-size-29px);
+  width: 15px;
+  height: 15px;
   stroke-width: 1.7;
 }
 .marketing-site .pv-sections h2 {
@@ -376,12 +376,12 @@
     gap: var(--vt-space-14px);
   }
   .pv-card-icon {
-    width: var(--vt-size-44px);
-    height: var(--vt-size-44px);
+    width: 1.75rem;
+    height: 1.75rem;
   }
   .pv-card-icon > svg {
-    width: var(--vt-size-26px);
-    height: var(--vt-size-26px);
+    width: 15px;
+    height: 15px;
   }
 }
 @media (max-width: 760px) {
@@ -412,12 +412,12 @@
     gap: var(--vt-space-12px);
   }
   .pv-card-icon {
-    width: var(--vt-size-38px);
-    height: var(--vt-size-38px);
+    width: 1.75rem;
+    height: 1.75rem;
   }
   .pv-card-icon > svg {
-    width: var(--vt-size-23px);
-    height: var(--vt-size-23px);
+    width: 15px;
+    height: 15px;
   }
   .marketing-site .pv-sections h2 {
     font-size: var(--vt-text-1p4375rem);

@@ -266,11 +266,13 @@ export default function GestionRdvPage() {
           </h2>
           <div className="rdv-feature-grid">
             {FEATURES.map(({ icon: Icon, title, text, href }) => (
-              <article key={title}>
-                <Icon aria-hidden="true" />
-                <h3>
-                  <Link href={href}>{title}</Link>
-                </h3>
+              <article className="vt-icon-card" key={title}>
+                <div className="vt-card-head">
+                  <Icon aria-hidden="true" />
+                  <h3>
+                    <Link href={href}>{title}</Link>
+                  </h3>
+                </div>
                 <p>{text}</p>
               </article>
             ))}

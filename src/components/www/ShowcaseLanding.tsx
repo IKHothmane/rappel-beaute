@@ -211,10 +211,12 @@ export function ShowcaseLanding({
               checkList
             )}
             <aside className="sp-callout">
-              <span className="sp-callout-icon">
-                <CalloutIcon aria-hidden="true" />
-              </span>
-              <h3>{callout.title}</h3>
+              <div className="sp-callout-head">
+                <span className="sp-callout-icon">
+                  <CalloutIcon aria-hidden="true" />
+                </span>
+                <h3>{callout.title}</h3>
+              </div>
               <p>{callout.text}</p>
               <Link className="sp-primary" href="/professionnel/">
                 Commencer maintenant

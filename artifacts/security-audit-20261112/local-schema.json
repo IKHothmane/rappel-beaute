@@ -1,0 +1,2618 @@
+{
+  "server": [
+    {
+      "host": "127.0.0.1/32",
+      "port": 55447,
+      "db": "rappel_security_audit",
+      "version": "PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35228, 64-bit"
+    }
+  ],
+  "roles": [
+    {
+      "rolname": "postgres",
+      "rolsuper": true,
+      "rolbypassrls": true,
+      "rolcanlogin": true,
+      "rolcreaterole": true,
+      "rolcreatedb": true
+    },
+    {
+      "rolname": "rappel_app",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "rolcanlogin": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false
+    }
+  ],
+  "tables": [
+    {
+      "relname": "AIConversation",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AIMessage",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "AIUsagePeriod",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ActivationToken",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "AdsAgentConfig",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "AdsAgentDecision",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "AdsCampaignSnapshot",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "AppleWalletDevice",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "AppleWalletPass",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AppleWalletRegistration",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "Appointment",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AssistantAction",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AssistantConversation",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AssistantCustomerSession",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AssistantMessage",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "AssistantSettings",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AssistantVerificationChallenge",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AssistantWidgetSession",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "AuditLog",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "BookingPolicySettings",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Campaign",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "CampaignRecipient",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "CashRegisterSession",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "CashRegisterTransaction",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "CommissionAdjustment",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "CommissionPeriod",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "CommissionRecord",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "CommissionSettings",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Customer",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "CustomerNote",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "CustomerPushDelivery",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Expense",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "GiftCard",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "GiftCardTransaction",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "GoogleCalendarConnection",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "GoogleWalletMessage",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "InventoryMovement",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Invoice",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "InvoiceItem",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "InvoiceSequence",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyAccount",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyCard",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyCreditCode",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyEvent",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyJoinQr",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyProgram",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyRedemption",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyReward",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyTransaction",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "LoyaltyVisitReward",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Notification",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "NotificationPreference",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Organization",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "OrganizationClosure",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Package",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PackageItem",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "PackageSession",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Payment",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PaymentTicketSequence",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Plan",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "PlatformAuditLog",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PlatformConfig",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "PlatformUser",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "PosSale",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PostVisitSettings",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Product",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ProductLot",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "ProductPriceHistory",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "ProductSupplier",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "Promotion",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PromotionUsage",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PublicBookingEvent",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PublicWidget",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PublicWidgetOrigin",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "Purchase",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PurchaseItem",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "PurchaseReceipt",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "PurchaseReceiptLine",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "PushAccessGrant",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ReactivationSettings",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ReactivationSnooze",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Resource",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ResourceCatalogDefault",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "ResourceMaintenance",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "Review",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ReviewRequest",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ReviewSettings",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ReviewStaffRating",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "Service",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "ServiceCatalogDefault",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "ServiceCommission",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "ServiceProduct",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "ServiceResource",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "ServiceStaff",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "Staff",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "StaffBreak",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "StaffLeave",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "StaffOvertime",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "StaffReplacement",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "StaffSchedule",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "Subscription",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "Supplier",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "SupportMessage",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    },
+    {
+      "relname": "SupportSession",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "SupportTicket",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "User",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "WaitingListEntry",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "WebPushSubscription",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "WhatsAppTask",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "WhatsAppTemplate",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": true
+    },
+    {
+      "relname": "_prisma_migrations",
+      "relrowsecurity": false,
+      "relforcerowsecurity": false,
+      "owner": "postgres",
+      "direct_org": false
+    }
+  ],
+  "foreignKeys": [
+    {
+      "table_name": "\"AIConversation\"",
+      "conname": "AIConversation_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AIConversation\"",
+      "conname": "AIConversation_userId_fkey",
+      "def": "FOREIGN KEY (\"userId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AIMessage\"",
+      "conname": "AIMessage_conversationId_fkey",
+      "def": "FOREIGN KEY (\"conversationId\") REFERENCES \"AIConversation\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AIUsagePeriod\"",
+      "conname": "AIUsagePeriod_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ActivationToken\"",
+      "conname": "ActivationToken_userId_fkey",
+      "def": "FOREIGN KEY (\"userId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AdsAgentDecision\"",
+      "conname": "AdsAgentDecision_campaignId_fkey",
+      "def": "FOREIGN KEY (\"campaignId\") REFERENCES \"AdsCampaignSnapshot\"(id) ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"AppleWalletPass\"",
+      "conname": "AppleWalletPass_loyaltyCardId_fkey",
+      "def": "FOREIGN KEY (\"loyaltyCardId\") REFERENCES \"LoyaltyCard\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AppleWalletPass\"",
+      "conname": "AppleWalletPass_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AppleWalletRegistration\"",
+      "conname": "AppleWalletRegistration_deviceId_fkey",
+      "def": "FOREIGN KEY (\"deviceId\") REFERENCES \"AppleWalletDevice\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AppleWalletRegistration\"",
+      "conname": "AppleWalletRegistration_passId_fkey",
+      "def": "FOREIGN KEY (\"passId\") REFERENCES \"AppleWalletPass\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Appointment\"",
+      "conname": "Appointment_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"Appointment\"",
+      "conname": "Appointment_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Appointment\"",
+      "conname": "Appointment_promotionId_fkey",
+      "def": "FOREIGN KEY (\"promotionId\") REFERENCES \"Promotion\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"Appointment\"",
+      "conname": "Appointment_resourceId_fkey",
+      "def": "FOREIGN KEY (\"resourceId\") REFERENCES \"Resource\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"Appointment\"",
+      "conname": "Appointment_serviceId_fkey",
+      "def": "FOREIGN KEY (\"serviceId\") REFERENCES \"Service\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"Appointment\"",
+      "conname": "Appointment_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"AssistantAction\"",
+      "conname": "AssistantAction_conversationId_fkey",
+      "def": "FOREIGN KEY (\"conversationId\") REFERENCES \"AssistantConversation\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantAction\"",
+      "conname": "AssistantAction_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"AssistantAction\"",
+      "conname": "AssistantAction_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantConversation\"",
+      "conname": "AssistantConversation_customerSessionId_fkey",
+      "def": "FOREIGN KEY (\"customerSessionId\") REFERENCES \"AssistantCustomerSession\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"AssistantConversation\"",
+      "conname": "AssistantConversation_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantConversation\"",
+      "conname": "AssistantConversation_widgetSessionId_fkey",
+      "def": "FOREIGN KEY (\"widgetSessionId\") REFERENCES \"AssistantWidgetSession\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"AssistantCustomerSession\"",
+      "conname": "AssistantCustomerSession_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantCustomerSession\"",
+      "conname": "AssistantCustomerSession_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantCustomerSession\"",
+      "conname": "AssistantCustomerSession_widgetSessionId_fkey",
+      "def": "FOREIGN KEY (\"widgetSessionId\") REFERENCES \"AssistantWidgetSession\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantMessage\"",
+      "conname": "AssistantMessage_conversationId_fkey",
+      "def": "FOREIGN KEY (\"conversationId\") REFERENCES \"AssistantConversation\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantSettings\"",
+      "conname": "AssistantSettings_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantVerificationChallenge\"",
+      "conname": "AssistantVerificationChallenge_widgetSessionId_fkey",
+      "def": "FOREIGN KEY (\"widgetSessionId\") REFERENCES \"AssistantWidgetSession\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantWidgetSession\"",
+      "conname": "AssistantWidgetSession_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AssistantWidgetSession\"",
+      "conname": "AssistantWidgetSession_widgetId_fkey",
+      "def": "FOREIGN KEY (\"widgetId\") REFERENCES \"PublicWidget\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"AuditLog\"",
+      "conname": "AuditLog_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"BookingPolicySettings\"",
+      "conname": "BookingPolicySettings_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Campaign\"",
+      "conname": "Campaign_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Campaign\"",
+      "conname": "Campaign_promotionId_fkey",
+      "def": "FOREIGN KEY (\"promotionId\") REFERENCES \"Promotion\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"CampaignRecipient\"",
+      "conname": "CampaignRecipient_campaignId_fkey",
+      "def": "FOREIGN KEY (\"campaignId\") REFERENCES \"Campaign\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CampaignRecipient\"",
+      "conname": "CampaignRecipient_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CampaignRecipient\"",
+      "conname": "CampaignRecipient_whatsappTaskId_fkey",
+      "def": "FOREIGN KEY (\"whatsappTaskId\") REFERENCES \"WhatsAppTask\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"CashRegisterSession\"",
+      "conname": "CashRegisterSession_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CashRegisterTransaction\"",
+      "conname": "CashRegisterTransaction_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CashRegisterTransaction\"",
+      "conname": "CashRegisterTransaction_paymentId_fkey",
+      "def": "FOREIGN KEY (\"paymentId\") REFERENCES \"Payment\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"CashRegisterTransaction\"",
+      "conname": "CashRegisterTransaction_sessionId_fkey",
+      "def": "FOREIGN KEY (\"sessionId\") REFERENCES \"CashRegisterSession\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CommissionAdjustment\"",
+      "conname": "CommissionAdjustment_commissionRecordId_fkey",
+      "def": "FOREIGN KEY (\"commissionRecordId\") REFERENCES \"CommissionRecord\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CommissionAdjustment\"",
+      "conname": "CommissionAdjustment_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CommissionPeriod\"",
+      "conname": "CommissionPeriod_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CommissionRecord\"",
+      "conname": "CommissionRecord_appointmentId_fkey",
+      "def": "FOREIGN KEY (\"appointmentId\") REFERENCES \"Appointment\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CommissionRecord\"",
+      "conname": "CommissionRecord_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CommissionRecord\"",
+      "conname": "CommissionRecord_posSaleId_fkey",
+      "def": "FOREIGN KEY (\"posSaleId\") REFERENCES \"PosSale\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CommissionRecord\"",
+      "conname": "CommissionRecord_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"CommissionSettings\"",
+      "conname": "CommissionSettings_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Customer\"",
+      "conname": "Customer_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CustomerNote\"",
+      "conname": "CustomerNote_authorId_fkey",
+      "def": "FOREIGN KEY (\"authorId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"CustomerNote\"",
+      "conname": "CustomerNote_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CustomerNote\"",
+      "conname": "CustomerNote_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CustomerPushDelivery\"",
+      "conname": "CustomerPushDelivery_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"CustomerPushDelivery\"",
+      "conname": "CustomerPushDelivery_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Expense\"",
+      "conname": "Expense_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Expense\"",
+      "conname": "Expense_supplierId_fkey",
+      "def": "FOREIGN KEY (\"supplierId\") REFERENCES \"Supplier\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"GiftCard\"",
+      "conname": "GiftCard_beneficiaryCustomerId_fkey",
+      "def": "FOREIGN KEY (\"beneficiaryCustomerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"GiftCard\"",
+      "conname": "GiftCard_buyerCustomerId_fkey",
+      "def": "FOREIGN KEY (\"buyerCustomerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"GiftCard\"",
+      "conname": "GiftCard_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"GiftCardTransaction\"",
+      "conname": "GiftCardTransaction_giftCardId_fkey",
+      "def": "FOREIGN KEY (\"giftCardId\") REFERENCES \"GiftCard\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"GiftCardTransaction\"",
+      "conname": "GiftCardTransaction_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"GoogleCalendarConnection\"",
+      "conname": "GoogleCalendarConnection_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"GoogleWalletMessage\"",
+      "conname": "GoogleWalletMessage_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"GoogleWalletMessage\"",
+      "conname": "GoogleWalletMessage_loyaltyCardId_fkey",
+      "def": "FOREIGN KEY (\"loyaltyCardId\") REFERENCES \"LoyaltyCard\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"GoogleWalletMessage\"",
+      "conname": "GoogleWalletMessage_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"InventoryMovement\"",
+      "conname": "InventoryMovement_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"InventoryMovement\"",
+      "conname": "InventoryMovement_productId_fkey",
+      "def": "FOREIGN KEY (\"productId\") REFERENCES \"Product\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Invoice\"",
+      "conname": "Invoice_appointmentId_fkey",
+      "def": "FOREIGN KEY (\"appointmentId\") REFERENCES \"Appointment\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"Invoice\"",
+      "conname": "Invoice_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"Invoice\"",
+      "conname": "Invoice_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Invoice\"",
+      "conname": "Invoice_promotionId_fkey",
+      "def": "FOREIGN KEY (\"promotionId\") REFERENCES \"Promotion\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"InvoiceItem\"",
+      "conname": "InvoiceItem_invoiceId_fkey",
+      "def": "FOREIGN KEY (\"invoiceId\") REFERENCES \"Invoice\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"InvoiceItem\"",
+      "conname": "InvoiceItem_productId_fkey",
+      "def": "FOREIGN KEY (\"productId\") REFERENCES \"Product\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"InvoiceSequence\"",
+      "conname": "InvoiceSequence_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyAccount\"",
+      "conname": "LoyaltyAccount_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyAccount\"",
+      "conname": "LoyaltyAccount_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyCard\"",
+      "conname": "LoyaltyCard_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyCard\"",
+      "conname": "LoyaltyCard_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyCreditCode\"",
+      "conname": "LoyaltyCreditCode_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyEvent\"",
+      "conname": "LoyaltyEvent_appointmentId_fkey",
+      "def": "FOREIGN KEY (\"appointmentId\") REFERENCES \"Appointment\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"LoyaltyEvent\"",
+      "conname": "LoyaltyEvent_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyEvent\"",
+      "conname": "LoyaltyEvent_loyaltyCardId_fkey",
+      "def": "FOREIGN KEY (\"loyaltyCardId\") REFERENCES \"LoyaltyCard\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyEvent\"",
+      "conname": "LoyaltyEvent_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyJoinQr\"",
+      "conname": "LoyaltyJoinQr_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyProgram\"",
+      "conname": "LoyaltyProgram_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyRedemption\"",
+      "conname": "LoyaltyRedemption_accountId_fkey",
+      "def": "FOREIGN KEY (\"accountId\") REFERENCES \"LoyaltyAccount\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyRedemption\"",
+      "conname": "LoyaltyRedemption_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyRedemption\"",
+      "conname": "LoyaltyRedemption_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyRedemption\"",
+      "conname": "LoyaltyRedemption_rewardId_fkey",
+      "def": "FOREIGN KEY (\"rewardId\") REFERENCES \"LoyaltyReward\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"LoyaltyReward\"",
+      "conname": "LoyaltyReward_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyTransaction\"",
+      "conname": "LoyaltyTransaction_accountId_fkey",
+      "def": "FOREIGN KEY (\"accountId\") REFERENCES \"LoyaltyAccount\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyTransaction\"",
+      "conname": "LoyaltyTransaction_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyVisitReward\"",
+      "conname": "LoyaltyVisitReward_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyVisitReward\"",
+      "conname": "LoyaltyVisitReward_loyaltyCardId_fkey",
+      "def": "FOREIGN KEY (\"loyaltyCardId\") REFERENCES \"LoyaltyCard\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyVisitReward\"",
+      "conname": "LoyaltyVisitReward_loyaltyEventId_fkey",
+      "def": "FOREIGN KEY (\"loyaltyEventId\") REFERENCES \"LoyaltyEvent\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"LoyaltyVisitReward\"",
+      "conname": "LoyaltyVisitReward_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Notification\"",
+      "conname": "Notification_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Notification\"",
+      "conname": "Notification_userId_fkey",
+      "def": "FOREIGN KEY (\"userId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"NotificationPreference\"",
+      "conname": "NotificationPreference_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"NotificationPreference\"",
+      "conname": "NotificationPreference_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"OrganizationClosure\"",
+      "conname": "OrganizationClosure_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Package\"",
+      "conname": "Package_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Package\"",
+      "conname": "Package_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Package\"",
+      "conname": "Package_serviceId_fkey",
+      "def": "FOREIGN KEY (\"serviceId\") REFERENCES \"Service\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"PackageItem\"",
+      "conname": "PackageItem_packageId_fkey",
+      "def": "FOREIGN KEY (\"packageId\") REFERENCES \"Package\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PackageItem\"",
+      "conname": "PackageItem_serviceId_fkey",
+      "def": "FOREIGN KEY (\"serviceId\") REFERENCES \"Service\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"PackageSession\"",
+      "conname": "PackageSession_appointmentId_fkey",
+      "def": "FOREIGN KEY (\"appointmentId\") REFERENCES \"Appointment\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PackageSession\"",
+      "conname": "PackageSession_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PackageSession\"",
+      "conname": "PackageSession_packageId_fkey",
+      "def": "FOREIGN KEY (\"packageId\") REFERENCES \"Package\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Payment\"",
+      "conname": "Payment_appointmentId_fkey",
+      "def": "FOREIGN KEY (\"appointmentId\") REFERENCES \"Appointment\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"Payment\"",
+      "conname": "Payment_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"Payment\"",
+      "conname": "Payment_giftCardId_fkey",
+      "def": "FOREIGN KEY (\"giftCardId\") REFERENCES \"GiftCard\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"Payment\"",
+      "conname": "Payment_invoiceId_fkey",
+      "def": "FOREIGN KEY (\"invoiceId\") REFERENCES \"Invoice\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"Payment\"",
+      "conname": "Payment_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Payment\"",
+      "conname": "Payment_parentPaymentId_fkey",
+      "def": "FOREIGN KEY (\"parentPaymentId\") REFERENCES \"Payment\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"PaymentTicketSequence\"",
+      "conname": "PaymentTicketSequence_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PlatformAuditLog\"",
+      "conname": "PlatformAuditLog_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"PlatformAuditLog\"",
+      "conname": "PlatformAuditLog_platformUserId_fkey",
+      "def": "FOREIGN KEY (\"platformUserId\") REFERENCES \"PlatformUser\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"PosSale\"",
+      "conname": "PosSale_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"PosSale\"",
+      "conname": "PosSale_invoiceId_fkey",
+      "def": "FOREIGN KEY (\"invoiceId\") REFERENCES \"Invoice\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"PosSale\"",
+      "conname": "PosSale_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PostVisitSettings\"",
+      "conname": "PostVisitSettings_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Product\"",
+      "conname": "Product_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ProductLot\"",
+      "conname": "ProductLot_productId_fkey",
+      "def": "FOREIGN KEY (\"productId\") REFERENCES \"Product\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ProductPriceHistory\"",
+      "conname": "ProductPriceHistory_productId_fkey",
+      "def": "FOREIGN KEY (\"productId\") REFERENCES \"Product\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ProductSupplier\"",
+      "conname": "ProductSupplier_productId_fkey",
+      "def": "FOREIGN KEY (\"productId\") REFERENCES \"Product\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ProductSupplier\"",
+      "conname": "ProductSupplier_supplierId_fkey",
+      "def": "FOREIGN KEY (\"supplierId\") REFERENCES \"Supplier\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Promotion\"",
+      "conname": "Promotion_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PromotionUsage\"",
+      "conname": "PromotionUsage_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"PromotionUsage\"",
+      "conname": "PromotionUsage_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PromotionUsage\"",
+      "conname": "PromotionUsage_promotionId_fkey",
+      "def": "FOREIGN KEY (\"promotionId\") REFERENCES \"Promotion\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PublicBookingEvent\"",
+      "conname": "PublicBookingEvent_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PublicWidget\"",
+      "conname": "PublicWidget_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PublicWidgetOrigin\"",
+      "conname": "PublicWidgetOrigin_widgetId_fkey",
+      "def": "FOREIGN KEY (\"widgetId\") REFERENCES \"PublicWidget\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Purchase\"",
+      "conname": "Purchase_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Purchase\"",
+      "conname": "Purchase_supplierId_fkey",
+      "def": "FOREIGN KEY (\"supplierId\") REFERENCES \"Supplier\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"PurchaseItem\"",
+      "conname": "PurchaseItem_productId_fkey",
+      "def": "FOREIGN KEY (\"productId\") REFERENCES \"Product\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"PurchaseItem\"",
+      "conname": "PurchaseItem_purchaseId_fkey",
+      "def": "FOREIGN KEY (\"purchaseId\") REFERENCES \"Purchase\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PurchaseReceipt\"",
+      "conname": "PurchaseReceipt_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PurchaseReceipt\"",
+      "conname": "PurchaseReceipt_purchaseId_fkey",
+      "def": "FOREIGN KEY (\"purchaseId\") REFERENCES \"Purchase\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PurchaseReceiptLine\"",
+      "conname": "PurchaseReceiptLine_receiptId_fkey",
+      "def": "FOREIGN KEY (\"receiptId\") REFERENCES \"PurchaseReceipt\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PushAccessGrant\"",
+      "conname": "PushAccessGrant_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"PushAccessGrant\"",
+      "conname": "PushAccessGrant_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ReactivationSettings\"",
+      "conname": "ReactivationSettings_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ReactivationSnooze\"",
+      "conname": "ReactivationSnooze_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ReactivationSnooze\"",
+      "conname": "ReactivationSnooze_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Resource\"",
+      "conname": "Resource_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ResourceMaintenance\"",
+      "conname": "ResourceMaintenance_resourceId_fkey",
+      "def": "FOREIGN KEY (\"resourceId\") REFERENCES \"Resource\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Review\"",
+      "conname": "Review_appointmentId_fkey",
+      "def": "FOREIGN KEY (\"appointmentId\") REFERENCES \"Appointment\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Review\"",
+      "conname": "Review_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Review\"",
+      "conname": "Review_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Review\"",
+      "conname": "Review_reviewRequestId_fkey",
+      "def": "FOREIGN KEY (\"reviewRequestId\") REFERENCES \"ReviewRequest\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Review\"",
+      "conname": "Review_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"ReviewRequest\"",
+      "conname": "ReviewRequest_appointmentId_fkey",
+      "def": "FOREIGN KEY (\"appointmentId\") REFERENCES \"Appointment\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ReviewRequest\"",
+      "conname": "ReviewRequest_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ReviewRequest\"",
+      "conname": "ReviewRequest_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ReviewRequest\"",
+      "conname": "ReviewRequest_whatsappTaskId_fkey",
+      "def": "FOREIGN KEY (\"whatsappTaskId\") REFERENCES \"WhatsAppTask\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"ReviewSettings\"",
+      "conname": "ReviewSettings_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ReviewStaffRating\"",
+      "conname": "ReviewStaffRating_reviewId_fkey",
+      "def": "FOREIGN KEY (\"reviewId\") REFERENCES \"Review\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ReviewStaffRating\"",
+      "conname": "ReviewStaffRating_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Service\"",
+      "conname": "Service_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ServiceCommission\"",
+      "conname": "ServiceCommission_serviceId_fkey",
+      "def": "FOREIGN KEY (\"serviceId\") REFERENCES \"Service\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ServiceCommission\"",
+      "conname": "ServiceCommission_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ServiceProduct\"",
+      "conname": "ServiceProduct_productId_fkey",
+      "def": "FOREIGN KEY (\"productId\") REFERENCES \"Product\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ServiceProduct\"",
+      "conname": "ServiceProduct_serviceId_fkey",
+      "def": "FOREIGN KEY (\"serviceId\") REFERENCES \"Service\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ServiceResource\"",
+      "conname": "ServiceResource_resourceId_fkey",
+      "def": "FOREIGN KEY (\"resourceId\") REFERENCES \"Resource\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ServiceResource\"",
+      "conname": "ServiceResource_serviceId_fkey",
+      "def": "FOREIGN KEY (\"serviceId\") REFERENCES \"Service\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ServiceStaff\"",
+      "conname": "ServiceStaff_serviceId_fkey",
+      "def": "FOREIGN KEY (\"serviceId\") REFERENCES \"Service\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"ServiceStaff\"",
+      "conname": "ServiceStaff_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Staff\"",
+      "conname": "Staff_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"StaffBreak\"",
+      "conname": "StaffBreak_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"StaffLeave\"",
+      "conname": "StaffLeave_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"StaffOvertime\"",
+      "conname": "StaffOvertime_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"StaffOvertime\"",
+      "conname": "StaffOvertime_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"StaffReplacement\"",
+      "conname": "StaffReplacement_absentStaffId_fkey",
+      "def": "FOREIGN KEY (\"absentStaffId\") REFERENCES \"Staff\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"StaffReplacement\"",
+      "conname": "StaffReplacement_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"StaffReplacement\"",
+      "conname": "StaffReplacement_substituteStaffId_fkey",
+      "def": "FOREIGN KEY (\"substituteStaffId\") REFERENCES \"Staff\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"StaffSchedule\"",
+      "conname": "StaffSchedule_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Subscription\"",
+      "conname": "Subscription_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"Subscription\"",
+      "conname": "Subscription_planId_fkey",
+      "def": "FOREIGN KEY (\"planId\") REFERENCES \"Plan\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"Supplier\"",
+      "conname": "Supplier_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"SupportMessage\"",
+      "conname": "SupportMessage_senderPlatformUserId_fkey",
+      "def": "FOREIGN KEY (\"senderPlatformUserId\") REFERENCES \"PlatformUser\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"SupportMessage\"",
+      "conname": "SupportMessage_senderUserId_fkey",
+      "def": "FOREIGN KEY (\"senderUserId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"SupportMessage\"",
+      "conname": "SupportMessage_ticketId_fkey",
+      "def": "FOREIGN KEY (\"ticketId\") REFERENCES \"SupportTicket\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"SupportSession\"",
+      "conname": "SupportSession_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"SupportSession\"",
+      "conname": "SupportSession_platformUserId_fkey",
+      "def": "FOREIGN KEY (\"platformUserId\") REFERENCES \"PlatformUser\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"SupportTicket\"",
+      "conname": "SupportTicket_assignedToPlatformUserId_fkey",
+      "def": "FOREIGN KEY (\"assignedToPlatformUserId\") REFERENCES \"PlatformUser\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"SupportTicket\"",
+      "conname": "SupportTicket_createdByUserId_fkey",
+      "def": "FOREIGN KEY (\"createdByUserId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "\"SupportTicket\"",
+      "conname": "SupportTicket_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"User\"",
+      "conname": "User_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"WaitingListEntry\"",
+      "conname": "WaitingListEntry_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"WaitingListEntry\"",
+      "conname": "WaitingListEntry_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"WaitingListEntry\"",
+      "conname": "WaitingListEntry_serviceId_fkey",
+      "def": "FOREIGN KEY (\"serviceId\") REFERENCES \"Service\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"WaitingListEntry\"",
+      "conname": "WaitingListEntry_staffId_fkey",
+      "def": "FOREIGN KEY (\"staffId\") REFERENCES \"Staff\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"WebPushSubscription\"",
+      "conname": "WebPushSubscription_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"WebPushSubscription\"",
+      "conname": "WebPushSubscription_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"WhatsAppTask\"",
+      "conname": "WhatsAppTask_appointmentId_fkey",
+      "def": "FOREIGN KEY (\"appointmentId\") REFERENCES \"Appointment\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"WhatsAppTask\"",
+      "conname": "WhatsAppTask_campaignId_fkey",
+      "def": "FOREIGN KEY (\"campaignId\") REFERENCES \"Campaign\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"WhatsAppTask\"",
+      "conname": "WhatsAppTask_customerId_fkey",
+      "def": "FOREIGN KEY (\"customerId\") REFERENCES \"Customer\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"WhatsAppTask\"",
+      "conname": "WhatsAppTask_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    },
+    {
+      "table_name": "\"WhatsAppTask\"",
+      "conname": "WhatsAppTask_templateId_fkey",
+      "def": "FOREIGN KEY (\"templateId\") REFERENCES \"WhatsAppTemplate\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+    },
+    {
+      "table_name": "\"WhatsAppTemplate\"",
+      "conname": "WhatsAppTemplate_organizationId_fkey",
+      "def": "FOREIGN KEY (\"organizationId\") REFERENCES \"Organization\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+    }
+  ],
+  "policies": [
+    {
+      "tablename": "AIConversation",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AIMessage",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"AIConversation\" parent\n  WHERE (parent.id = \"AIMessage\".\"conversationId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"AIConversation\" parent\n  WHERE (parent.id = \"AIMessage\".\"conversationId\"))))"
+    },
+    {
+      "tablename": "AIUsagePeriod",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ActivationToken",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"User\" parent\n  WHERE (parent.id = \"ActivationToken\".\"userId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"User\" parent\n  WHERE (parent.id = \"ActivationToken\".\"userId\"))))"
+    },
+    {
+      "tablename": "AppleWalletPass",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AppleWalletRegistration",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"AppleWalletPass\" parent\n  WHERE (parent.id = \"AppleWalletRegistration\".\"passId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"AppleWalletPass\" parent\n  WHERE (parent.id = \"AppleWalletRegistration\".\"passId\"))))"
+    },
+    {
+      "tablename": "Appointment",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AssistantAction",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AssistantConversation",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AssistantCustomerSession",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AssistantMessage",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"AssistantConversation\" parent\n  WHERE (parent.id = \"AssistantMessage\".\"conversationId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"AssistantConversation\" parent\n  WHERE (parent.id = \"AssistantMessage\".\"conversationId\"))))"
+    },
+    {
+      "tablename": "AssistantSettings",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AssistantVerificationChallenge",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AssistantWidgetSession",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "AuditLog",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "BookingPolicySettings",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Campaign",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "CampaignRecipient",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Campaign\" parent\n  WHERE (parent.id = \"CampaignRecipient\".\"campaignId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Campaign\" parent\n  WHERE (parent.id = \"CampaignRecipient\".\"campaignId\"))))"
+    },
+    {
+      "tablename": "CashRegisterSession",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "CashRegisterTransaction",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "CommissionAdjustment",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "CommissionPeriod",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "CommissionRecord",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "CommissionSettings",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Customer",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "CustomerNote",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "CustomerPushDelivery",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Expense",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "GiftCard",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "GiftCardTransaction",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "GoogleCalendarConnection",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "GoogleWalletMessage",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "InventoryMovement",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Invoice",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "InvoiceItem",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Invoice\" parent\n  WHERE (parent.id = \"InvoiceItem\".\"invoiceId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Invoice\" parent\n  WHERE (parent.id = \"InvoiceItem\".\"invoiceId\"))))"
+    },
+    {
+      "tablename": "InvoiceSequence",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyAccount",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyCard",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyCreditCode",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyEvent",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyJoinQr",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyProgram",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyRedemption",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyReward",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyTransaction",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "LoyaltyVisitReward",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Notification",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "NotificationPreference",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "OrganizationClosure",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Package",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PackageItem",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Package\" parent\n  WHERE (parent.id = \"PackageItem\".\"packageId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Package\" parent\n  WHERE (parent.id = \"PackageItem\".\"packageId\"))))"
+    },
+    {
+      "tablename": "PackageSession",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Payment",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PaymentTicketSequence",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PosSale",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PostVisitSettings",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Product",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ProductLot",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Product\" parent\n  WHERE (parent.id = \"ProductLot\".\"productId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Product\" parent\n  WHERE (parent.id = \"ProductLot\".\"productId\"))))"
+    },
+    {
+      "tablename": "ProductPriceHistory",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Product\" parent\n  WHERE (parent.id = \"ProductPriceHistory\".\"productId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Product\" parent\n  WHERE (parent.id = \"ProductPriceHistory\".\"productId\"))))"
+    },
+    {
+      "tablename": "ProductSupplier",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Product\" parent\n  WHERE (parent.id = \"ProductSupplier\".\"productId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Product\" parent\n  WHERE (parent.id = \"ProductSupplier\".\"productId\"))))"
+    },
+    {
+      "tablename": "Promotion",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PromotionUsage",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PublicBookingEvent",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PublicWidget",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PublicWidgetOrigin",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"PublicWidget\" parent\n  WHERE (parent.id = \"PublicWidgetOrigin\".\"widgetId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"PublicWidget\" parent\n  WHERE (parent.id = \"PublicWidgetOrigin\".\"widgetId\"))))"
+    },
+    {
+      "tablename": "Purchase",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PurchaseItem",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Purchase\" parent\n  WHERE (parent.id = \"PurchaseItem\".\"purchaseId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Purchase\" parent\n  WHERE (parent.id = \"PurchaseItem\".\"purchaseId\"))))"
+    },
+    {
+      "tablename": "PurchaseReceipt",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "PurchaseReceiptLine",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"PurchaseReceipt\" parent\n  WHERE (parent.id = \"PurchaseReceiptLine\".\"receiptId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"PurchaseReceipt\" parent\n  WHERE (parent.id = \"PurchaseReceiptLine\".\"receiptId\"))))"
+    },
+    {
+      "tablename": "PushAccessGrant",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ReactivationSettings",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ReactivationSnooze",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Resource",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ResourceMaintenance",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Resource\" parent\n  WHERE (parent.id = \"ResourceMaintenance\".\"resourceId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Resource\" parent\n  WHERE (parent.id = \"ResourceMaintenance\".\"resourceId\"))))"
+    },
+    {
+      "tablename": "Review",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ReviewRequest",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ReviewSettings",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ReviewStaffRating",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Review\" parent\n  WHERE (parent.id = \"ReviewStaffRating\".\"reviewId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Review\" parent\n  WHERE (parent.id = \"ReviewStaffRating\".\"reviewId\"))))"
+    },
+    {
+      "tablename": "Service",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "ServiceCommission",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Service\" parent\n  WHERE (parent.id = \"ServiceCommission\".\"serviceId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Service\" parent\n  WHERE (parent.id = \"ServiceCommission\".\"serviceId\"))))"
+    },
+    {
+      "tablename": "ServiceProduct",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Service\" parent\n  WHERE (parent.id = \"ServiceProduct\".\"serviceId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Service\" parent\n  WHERE (parent.id = \"ServiceProduct\".\"serviceId\"))))"
+    },
+    {
+      "tablename": "ServiceResource",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Service\" parent\n  WHERE (parent.id = \"ServiceResource\".\"serviceId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Service\" parent\n  WHERE (parent.id = \"ServiceResource\".\"serviceId\"))))"
+    },
+    {
+      "tablename": "ServiceStaff",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Service\" parent\n  WHERE (parent.id = \"ServiceStaff\".\"serviceId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Service\" parent\n  WHERE (parent.id = \"ServiceStaff\".\"serviceId\"))))"
+    },
+    {
+      "tablename": "Staff",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "StaffBreak",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Staff\" parent\n  WHERE (parent.id = \"StaffBreak\".\"staffId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Staff\" parent\n  WHERE (parent.id = \"StaffBreak\".\"staffId\"))))"
+    },
+    {
+      "tablename": "StaffLeave",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Staff\" parent\n  WHERE (parent.id = \"StaffLeave\".\"staffId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Staff\" parent\n  WHERE (parent.id = \"StaffLeave\".\"staffId\"))))"
+    },
+    {
+      "tablename": "StaffOvertime",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "StaffReplacement",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "StaffSchedule",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Staff\" parent\n  WHERE (parent.id = \"StaffSchedule\".\"staffId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"Staff\" parent\n  WHERE (parent.id = \"StaffSchedule\".\"staffId\"))))"
+    },
+    {
+      "tablename": "Subscription",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "Supplier",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "SupportMessage",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"SupportTicket\" parent\n  WHERE (parent.id = \"SupportMessage\".\"ticketId\"))))",
+      "with_check": "(app_rls_bypass() OR (EXISTS ( SELECT 1\n   FROM \"SupportTicket\" parent\n  WHERE (parent.id = \"SupportMessage\".\"ticketId\"))))"
+    },
+    {
+      "tablename": "SupportSession",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "SupportTicket",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "User",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "WaitingListEntry",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "WebPushSubscription",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "WhatsAppTask",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    },
+    {
+      "tablename": "WhatsAppTemplate",
+      "policyname": "tenant_isolation",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))",
+      "with_check": "(app_rls_bypass() OR (\"organizationId\" = app_current_org()))"
+    }
+  ]
+}

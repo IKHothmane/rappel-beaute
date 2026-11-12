@@ -213,10 +213,12 @@ export default function WhatsappPage() {
         <ol className="sp-steps">
           {STEPS.map(({ icon: Icon, title, text }, index) => (
             <li className="sp-step" key={title}>
-              <span className="sp-step-icon">
-                <Icon aria-hidden="true" />
-              </span>
-              <strong>{title}</strong>
+              <div className="sp-step-head">
+                <span className="sp-step-icon">
+                  <Icon aria-hidden="true" />
+                </span>
+                <strong>{title}</strong>
+              </div>
               <p>{text}</p>
               {index < STEPS.length - 1 ? (
                 <span className="sp-step-arrow" aria-hidden="true">

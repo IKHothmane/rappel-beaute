@@ -19,15 +19,15 @@
 }
 .hm .modules-section .module-card h3 {
   font-family: var(--f-display);
-  font-size: var(--vt-fs-h3);
-  font-weight: 500;
-  line-height: var(--vt-lh-h3);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.25;
   letter-spacing: -0.02em;
   color: var(--vt-ink-plum);
 }
 .hm .modules-section .module-card p {
-  font-size: var(--vt-fs-sm);
-  line-height: var(--vt-lh-body);
+  font-size: 0.8125rem;
+  line-height: 1.4;
   color: var(--vt-muted);
 }
 .module-card:focus-visible .module-card-glow {
@@ -44,16 +44,16 @@
 @media (max-width: 639px) {
   .modules-section .module-card {
     min-height: 0;
-    padding: var(--vt-space-20px);
+    padding: var(--vt-space-12px);
   }
   .modules-section .module-card .module-card-icon {
-    width: var(--vt-size-48px);
-    height: var(--vt-size-48px);
-    margin-bottom: var(--vt-space-14px);
-    border-radius: var(--vt-size-14px);
+    width: 1.75rem;
+    height: 1.75rem;
+    margin-bottom: 0;
+    border-radius: var(--vt-size-10px);
   }
   .modules-section .module-card .module-card-foot {
-    padding-top: var(--vt-space-14px);
+    padding-top: var(--vt-space-10px);
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -39,21 +39,21 @@ function generatePanoramicCards(images: readonly PanoramicImage[]): Card[] {
       desktop: {
         stacked: { x: offset * 2, y: offset * -2, rotateZ: offset * 2.5, rotateY: 0 },
         panoramic: {
-          x: offset * 26,
+          x: offset * 30,
           y: absOffset * 2,
-          rotateZ: offset * 1.1,
-          rotateY: offset * -8,
-          scale: 1 - absOffset * 0.035,
+          rotateZ: offset * 0.8,
+          rotateY: offset * -6,
+          scale: 1 - absOffset * 0.03,
         },
       },
       mobile: {
         stacked: { x: offset * 1.5, y: offset * -1.5, rotateZ: offset * 3, rotateY: 0 },
         panoramic: {
-          x: offset * 24,
-          y: absOffset * 3,
-          rotateZ: offset * 1.4,
-          rotateY: offset * -10,
-          scale: 1 - absOffset * 0.03,
+          x: offset * 28,
+          y: absOffset * 2,
+          rotateZ: offset * 1,
+          rotateY: offset * -7,
+          scale: 1 - absOffset * 0.028,
         },
       },
     };
@@ -133,8 +133,9 @@ function GalleryCard({
             alt={item.alt}
             fill
             priority={priority}
+            fetchPriority={priority ? "high" : "low"}
             draggable={false}
-            sizes="(max-width: 768px) 320px, 400px"
+            sizes="(max-width: 390px) 82vw, (max-width: 1023px) 320px, (max-width: 1538px) 20.8vw, 320px"
             className="bg-transparent object-contain transition-transform duration-700 group-hover:scale-105"
           />
         </div>

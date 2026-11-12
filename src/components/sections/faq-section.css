@@ -1,5 +1,5 @@
 .hm section.faq-section {
-  padding-block: var(--vt-section-y);
+  padding-block: 2rem;
 }
 .faq-layout > * {
   min-width: 0;
@@ -11,7 +11,7 @@
   color: var(--vt-ink-deep);
 }
 .hm .faq-section h2 + p {
-  margin-top: var(--vt-space-40px);
+  margin-top: 0.75rem;
   font-size: var(--vt-fs-lead);
   line-height: var(--vt-lh-lead);
 }
@@ -26,7 +26,7 @@
   color: var(--vt-ink-deep);
 }
 .faq-section h3 button {
-  min-height: var(--vt-size-80px);
+  min-height: 2.75rem;
 }
 .faq-section .faq-answer {
   display: grid;
@@ -45,7 +45,7 @@
   overflow: hidden;
 }
 .hm .faq-answer p {
-  padding: 0 var(--vt-space-24px) var(--vt-space-24px) var(--vt-space-84px);
+  padding: 0 0.75rem 0.65rem 2.75rem;
   font-size: var(--vt-fs-body);
   line-height: var(--vt-lh-body);
   color: #725365;
@@ -56,9 +56,9 @@
     padding: var(--vt-space-14px) var(--vt-space-12px);
   }
   .faq-section .faq-question-icon {
-    width: var(--vt-size-40px);
-    height: var(--vt-size-40px);
-    border-radius: var(--vt-size-12px);
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.55rem;
   }
   .faq-section .faq-question-toggle {
     width: var(--vt-size-28px);

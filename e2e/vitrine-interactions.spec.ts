@@ -119,8 +119,10 @@ test("aucune mesure avant accord et refus conservé", async ({ page }) => {
     await route.fulfill({ contentType: "application/javascript", body: "" });
   });
   await page.goto("/blog/");
-  await expect(page.locator(".audience-banner")).toBeVisible();
+  await expect(page.locator(".audience-banner")).toHaveCount(0);
   expect(requests).toEqual([]);
+  await page.getByRole("button", { name: "Préférences cookies" }).click();
+  await expect(page.locator(".audience-banner")).toBeVisible();
   await expect(page.locator("script[data-rb-audience]")).toHaveCount(0);
   await page.getByRole("button", { name: "Refuser", exact: true }).click();
   expect(await page.evaluate((key) => localStorage.getItem(key), CONSENT_KEY)).toBe("denied");
@@ -139,6 +141,8 @@ test("accord puis retrait : arrêt des scripts et conservation des cookies techn
     await route.fulfill({ contentType: "application/javascript", body: "" });
   });
   await page.goto("/blog/");
+  await expect(page.locator(".audience-banner")).toHaveCount(0);
+  await page.getByRole("button", { name: "Préférences cookies" }).click();
   await expect(page.locator(".audience-banner")).toBeVisible();
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });

@@ -83,14 +83,14 @@ export default function WhatsAppSection() {
                   aria-pressed={active}
                   aria-controls="whatsapp-conversation"
                   onClick={() => setActiveStep(index)}
-                  className={`group flex w-full gap-[var(--vt-space-1rem)] rounded-[var(--vt-size-22px)] border p-[var(--vt-space-1p25rem)] text-left transition-all duration-300 md:p-[var(--vt-space-1p5rem)] ${
+                  className={`group flex w-full items-center gap-[var(--vt-size-0p5rem)] rounded-[14px] border p-3 text-left ${
                     active
                       ? "border-vt-primary-bright bg-white shadow-[0_15px_40px_rgba(190,0,78,0.12)]"
                       : "border-[#f0dce4] bg-white/85 hover:-translate-y-1 hover:border-pink-300 hover:shadow-lg"
                   }`}
                 >
-                  <div className="whatsapp-step-icon flex h-[var(--vt-size-3p5rem)] w-[var(--vt-size-3p5rem)] shrink-0 items-center justify-center rounded-2xl bg-vt-surface-soft text-vt-primary-rich">
-                    <Icon aria-hidden="true" size={25} />
+                  <div className="whatsapp-step-icon flex h-[2rem] w-[2rem] shrink-0 items-center justify-center rounded-[0.55rem] bg-vt-surface-soft text-vt-primary-rich">
+                    <Icon aria-hidden="true" size={15} />
                   </div>
 
                   <div className="min-w-[var(--vt-size-0rem)] flex-1">
@@ -105,7 +105,7 @@ export default function WhatsAppSection() {
                         {index + 1}
                       </span>
 
-                      <span className="whatsapp-step-title font-semibold text-vt-ink-plum md:text-[length:var(--vt-text-1p125rem)]/[var(--vt-line-1p75rem)]">
+                      <span className="whatsapp-step-title text-[0.95rem] font-semibold leading-tight text-vt-ink-plum">
                         {step.title}
                       </span>
 
@@ -114,7 +114,7 @@ export default function WhatsAppSection() {
                       </span>
                     </div>
 
-                    <p className="mt-[var(--vt-size-0p5rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-6 text-vt-muted-soft md:text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)]">
+                    <p className="mt-1 text-[0.8125rem] leading-snug text-vt-muted-soft">
                       {step.description}
                     </p>
                   </div>

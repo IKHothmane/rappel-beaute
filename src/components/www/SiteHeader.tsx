@@ -33,7 +33,7 @@ export function SiteHeader() {
             aria-label="Navigation principale"
           >
             {NAV.map((item) => (
-              <Link
+              <Link prefetch={false}
                 key={item.href}
                 href={item.href}
                 aria-current={
@@ -47,13 +47,13 @@ export function SiteHeader() {
           </nav>
 
           <div className="ml-auto flex items-center gap-[var(--vt-size-0p5rem)]">
-            <Link
+            <Link prefetch={false}
               href="/professionnel/"
               className="btn-ghost hidden px-[var(--vt-space-0p75rem)] py-[var(--vt-size-0p5rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] transition hover:scale-[1.02] lg:inline-flex"
             >
               Je suis un professionnel
             </Link>
-            <Link
+            <Link prefetch={false}
               href="/connexion/"
               className="btn-primary px-[var(--vt-space-0p75rem)] py-[var(--vt-size-0p5rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] transition hover:scale-[1.02]"
             >
@@ -107,7 +107,7 @@ export function SiteHeader() {
                   }`}
                   style={{ transitionDelay: open ? `${40 * i}ms` : "0ms" }}
                 >
-                  <Link
+                  <Link prefetch={false}
                     href={item.href}
                     aria-current={
                       pathname?.replace(/\/$/, "") === item.href.replace(/\/$/, "")
@@ -121,14 +121,14 @@ export function SiteHeader() {
                   </Link>
                 </div>
               ))}
-              <Link
+              <Link prefetch={false}
                 href="/professionnel/"
                 className="btn-ghost mt-[var(--vt-size-0p5rem)] w-full"
                 onClick={() => setOpen(false)}
               >
                 Je suis un professionnel
               </Link>
-              <Link
+              <Link prefetch={false}
                 href="/connexion/"
                 className="btn-primary w-full"
                 onClick={() => setOpen(false)}

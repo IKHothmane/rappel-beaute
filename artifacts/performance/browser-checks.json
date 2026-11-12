@@ -1,0 +1,46 @@
+[
+  {
+    "width": 390,
+    "before": {
+      "state": "waiting",
+      "height": 620,
+      "printerRequests": 0,
+      "hero": {
+        "priority": "high",
+        "loading": "auto",
+        "complete": true,
+        "width": 319
+      },
+      "overflow": false
+    },
+    "after": {
+      "state": "ready",
+      "height": 620,
+      "buttons": 2,
+      "printerRequests": 1
+    },
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "before": {
+      "state": "waiting",
+      "height": 496,
+      "printerRequests": 0,
+      "hero": {
+        "priority": "high",
+        "loading": "auto",
+        "complete": true,
+        "width": 299
+      },
+      "overflow": false
+    },
+    "after": {
+      "state": "ready",
+      "height": 496,
+      "buttons": 2,
+      "printerRequests": 1
+    },
+    "errors": []
+  }
+]

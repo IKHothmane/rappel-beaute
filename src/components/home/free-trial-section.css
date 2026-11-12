@@ -1,5 +1,5 @@
 .hm section.free-trial-section {
-  padding-block: var(--vt-section-y);
+  padding-block: 2rem;
 }
 .free-trial-grid > * {
   min-width: 0;
@@ -12,31 +12,31 @@
   color: #fff;
 }
 .hm .free-trial-section h2 + p {
-  margin-top: var(--vt-space-14px);
-  font-size: var(--vt-fs-lead);
-  line-height: var(--vt-lh-lead);
+  margin-top: 0.65rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
   color: rgb(255 255 255 / 90%);
 }
 .hm .free-trial-section ul {
-  margin-top: var(--vt-space-18px);
+  margin-top: 0.85rem;
 }
 .hm .free-trial-section h3 {
-  margin-top: var(--vt-size-4px);
-  font-size: var(--vt-fs-h3);
-  line-height: var(--vt-lh-h3);
+  margin-top: 0.125rem;
+  font-size: 0.95rem;
+  line-height: 1.25;
   color: var(--vt-ink-plum);
 }
 .hm .free-trial-section .free-trial-card-text {
-  margin-bottom: var(--vt-space-32px);
-  font-size: var(--vt-fs-body);
-  line-height: var(--vt-lh-body);
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
   color: var(--vt-muted);
 }
 .free-trial-section a {
-  min-height: var(--vt-size-44px);
+  min-height: 2.5rem;
 }
 .free-trial-section .free-trial-cta {
-  min-height: var(--vt-btn-h);
+  min-height: 2.5rem;
 }
 @media (max-width: 480px) {
   .free-trial-section .free-trial-card-head {

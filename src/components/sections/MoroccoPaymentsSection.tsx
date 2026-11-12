@@ -1,4 +1,7 @@
-import { ReceiptPrinter } from "@/components/ui/receipt-printer";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { DeferredReceiptPrinter } from "@/components/sections/DeferredReceiptPrinter";
 import "./morocco-payments.css";
 import { Banknote, Check, Coins, CreditCard, MessageCircle, Wallet } from "lucide-react";
 
@@ -33,6 +36,24 @@ const PRINTER_LABELS = {
 };
 
 export default function MoroccoPaymentsSection() {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [print, setPrint] = useState(false);
+
+  useEffect(() => {
+    const heading = headingRef.current;
+    if (!heading) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setPrint(true);
+        observer.disconnect();
+      },
+      { threshold: 0.55 },
+    );
+    observer.observe(heading);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
       id="maroc"
@@ -48,6 +69,7 @@ export default function MoroccoPaymentsSection() {
           </span>
 
           <h2
+            ref={headingRef}
             id="morocco-payments-heading"
             className="mt-[var(--vt-space-1p5rem)] font-serif font-semibold leading-[1.12] tracking-tight text-vt-ink-deep"
           >
@@ -68,18 +90,18 @@ export default function MoroccoPaymentsSection() {
               return (
                 <div
                   key={feature.title}
-                  className="group flex items-center gap-[var(--vt-space-1rem)] rounded-2xl border border-[#efd9e2] bg-white/85 p-[var(--vt-space-1p25rem)] shadow-[0_8px_28px_rgba(105,25,65,0.04)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#e8a8c2] hover:shadow-lg"
+                  className="group flex items-center gap-[var(--vt-size-0p5rem)] rounded-[14px] border border-[#efd9e2] bg-white/85 p-3 shadow-[0_8px_28px_rgba(105,25,65,0.04)] backdrop-blur-sm"
                   style={{
                     transitionDelay: `${index * 60}ms`,
                   }}
                 >
-                  <div className="flex h-[var(--vt-size-3p5rem)] w-[var(--vt-size-3p5rem)] shrink-0 items-center justify-center rounded-2xl bg-vt-surface-soft text-vt-primary-rich">
-                    <Icon size={25} strokeWidth={1.8} aria-hidden="true" />
+                  <div className="flex h-[2rem] w-[2rem] shrink-0 items-center justify-center rounded-[0.55rem] bg-vt-surface-soft text-vt-primary-rich">
+                    <Icon size={15} strokeWidth={1.8} aria-hidden="true" />
                   </div>
 
-                  <div className="flex-1">
-                    <h3 className="text-[length:var(--vt-text-1p125rem)]/[var(--vt-line-1p75rem)] font-bold text-vt-ink-deep">{feature.title}</h3>
-                    <p className="mt-[var(--vt-size-0p25rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-6 text-[#7b596b]">{feature.description}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[0.95rem] font-bold leading-tight text-vt-ink-deep">{feature.title}</h3>
+                    <p className="mt-1 text-[0.8125rem] leading-snug text-[#7b596b]">{feature.description}</p>
                   </div>
 
                   <span className="hidden h-[var(--vt-size-2p25rem)] w-[var(--vt-size-2p25rem)] shrink-0 items-center justify-center rounded-full bg-vt-surface-soft text-vt-primary-rich sm:flex">
@@ -100,9 +122,9 @@ export default function MoroccoPaymentsSection() {
 
           <div className="relative z-10 flex w-full flex-col items-center">
             <div className="h-[var(--vt-printer-height)] w-full max-w-[var(--vt-printer-width)]">
-              <ReceiptPrinter
+              <DeferredReceiptPrinter
                 embedded
-                autoPrint
+                autoPrint={print}
                 store="Institut Royal"
                 address="Aicha Chahbi · Ticket de caisse"
                 items={RECEIPT_ITEMS}

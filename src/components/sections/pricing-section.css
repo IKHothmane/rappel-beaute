@@ -27,20 +27,24 @@
   margin-top: var(--vt-space-12px);
   line-height: var(--vt-leading-1p8);
 }
+.hm .pricing-section .pricing-plan-title {
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
 .hm .pricing-section h4 {
-  margin-bottom: var(--vt-space-24px);
+  margin-bottom: 0.45rem;
 }
-.hm .pricing-price p {
-  margin-top: var(--vt-space-12px);
-  line-height: var(--vt-leading-1p7);
-}
-.pricing-price .pricing-amount {
-  font-family: var(--f-display);
-  font-variant-numeric: tabular-nums;
+.hm .pricing-section .pricing-price p {
+  margin-top: 0.25rem;
+  line-height: 1.35;
 }
 .hm .pricing-section button {
   min-height: var(--vt-size-44px);
   color: #6f4c5d;
+}
+.hm .pricing-section [aria-label="Période de facturation"] button {
+  min-height: 2rem;
+  padding-block: 0.2rem;
 }
 .hm .pricing-section button[aria-pressed="true"] {
   color: var(--vt-primary-strong);
@@ -51,8 +55,9 @@
 .pricing-section [aria-label="Période de facturation"] {
   flex-shrink: 0;
 }
-.hm .pricing-section .pricing-plan-title {
-  font-size: var(--vt-fs-h2-sm);
+.pricing-price .pricing-amount {
+  font-family: var(--f-display);
+  font-variant-numeric: tabular-nums;
 }
 @media (max-width: 480px) {
   .pricing-section .pricing-aside,
@@ -60,9 +65,9 @@
     gap: var(--vt-space-14px);
   }
   .pricing-section .pricing-info-icon {
-    width: var(--vt-size-44px);
-    height: var(--vt-size-44px);
-    border-radius: var(--vt-size-12px);
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.55rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {

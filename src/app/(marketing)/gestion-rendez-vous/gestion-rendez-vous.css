@@ -188,10 +188,10 @@
 .rdv-icon {
   display: grid;
   place-items: center;
-  width: var(--vt-size-50px);
-  height: var(--vt-size-50px);
+  width: 2rem;
+  height: 2rem;
   flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: 0.55rem;
   background: var(--vt-surface-pink);
   color: var(--vt-primary-vivid);
 }
@@ -527,12 +527,12 @@
     gap: var(--vt-size-8px);
   }
   .rdv-icon {
-    width: var(--vt-size-40px);
-    height: var(--vt-size-40px);
+    width: 1.75rem;
+    height: 1.75rem;
   }
   .rdv-icon svg {
-    width: var(--vt-size-24px);
-    height: var(--vt-size-24px);
+    width: 15px;
+    height: 15px;
   }
   .rdv-benefits {
     gap: var(--vt-space-28px);

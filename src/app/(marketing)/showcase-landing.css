@@ -325,12 +325,18 @@
 }
 .sp-step {
   position: relative;
-  padding: var(--vt-space-30px) var(--vt-space-16px) var(--vt-space-20px);
+  padding: 12px 14px;
   border: 1px solid var(--vt-surface-pink);
-  border-radius: var(--vt-size-18px);
+  border-radius: 14px;
   background: white;
-  text-align: center;
+  text-align: left;
   box-shadow: 0 14px 30px -24px var(--vt-rose-shadow);
+}
+.sp-step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 .sp-step-icon,
 .sp-feature-icon,
@@ -345,15 +351,17 @@
   color: var(--sp-pink);
 }
 .sp-step-icon {
-  width: var(--vt-size-50px);
-  height: var(--vt-size-50px);
-  margin-bottom: var(--vt-space-14px);
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  flex-shrink: 0;
 }
 .sp-step strong {
   display: block;
-  font-size: var(--vt-fs-body);
+  font-size: 0.95rem;
   font-weight: 700;
-  line-height: var(--vt-leading-1p25);
+  line-height: 1.25;
+  text-align: left;
   letter-spacing: -0.02em;
   color: var(--vt-ink);
 }
@@ -377,26 +385,27 @@
 }
 .sp-feature,
 .sp-perk {
-  padding: var(--vt-space-24px) var(--vt-space-14px);
+  padding: 12px 14px;
   border: 1px solid var(--vt-surface-pink);
-  border-radius: var(--vt-size-19px);
+  border-radius: 14px;
   background: white;
-  text-align: center;
+  text-align: left;
   box-shadow: 0 14px 30px -24px var(--vt-rose-shadow);
 }
 .sp-feature-icon,
 .sp-perk-icon {
-  width: var(--vt-size-50px);
-  height: var(--vt-size-50px);
-  margin-bottom: var(--vt-space-13px);
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
 }
 .marketing-site .sp-feature h3,
 .marketing-site .sp-perk h3,
 .marketing-site .sp-callout h3 {
   font-family: var(--font-inter), system-ui, sans-serif;
-  font-size: var(--vt-fs-h4);
+  font-size: 0.95rem;
   font-weight: 600;
-  line-height: var(--vt-lh-h3);
+  line-height: 1.25;
+  margin: 0;
   letter-spacing: -0.015em;
   color: var(--vt-ink);
 }
@@ -555,23 +564,30 @@
   stroke-width: 3;
 }
 .sp-callout {
-  padding: var(--vt-space-26px) var(--vt-space-20px);
+  padding: 12px 14px;
   border: 1px solid var(--vt-surface-deep);
-  border-radius: var(--vt-size-28px);
+  border-radius: 14px;
   background: linear-gradient(180deg, #fff, var(--vt-surface-soft));
-  text-align: center;
+  text-align: left;
   box-shadow: 0 16px 36px -28px var(--vt-primary-bright);
 }
+.sp-callout-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
 .sp-callout-icon {
-  width: var(--vt-size-50px);
-  height: var(--vt-size-50px);
-  margin-bottom: var(--vt-space-14px);
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  flex-shrink: 0;
   background: white;
   box-shadow: 0 8px 18px -12px var(--vt-primary-bright);
 }
 .sp-callout-icon svg {
-  width: var(--vt-size-28px);
-  height: var(--vt-size-28px);
+  width: 15px;
+  height: 15px;
 }
 .sp-callout p {
   margin-top: var(--vt-space-10px);
@@ -602,15 +618,15 @@
 .sp-connect-mark {
   display: grid;
   place-items: center;
-  width: var(--vt-size-52px);
-  height: var(--vt-size-52px);
-  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
   background: var(--vt-success-bg);
   color: #128c4e;
 }
 .sp-connect-mark svg {
-  width: var(--vt-size-28px);
-  height: var(--vt-size-28px);
+  width: 15px;
+  height: 15px;
 }
 .sp-connect p {
   margin-top: var(--vt-space-10px);
@@ -633,15 +649,15 @@
   padding: var(--vt-size-8px) var(--vt-space-10px);
 }
 .sp-metric-icon {
-  width: var(--vt-size-50px);
-  height: var(--vt-size-50px);
+  width: 1.75rem;
+  height: 1.75rem;
   flex-shrink: 0;
   margin: 0;
   border-radius: 50%;
 }
 .sp-metric-icon svg {
-  width: var(--vt-size-28px);
-  height: var(--vt-size-28px);
+  width: 15px;
+  height: 15px;
 }
 .sp-metrics strong {
   display: block;
@@ -795,18 +811,18 @@
     margin-top: var(--vt-space-24px);
   }
   .sp-step {
-    padding: var(--vt-space-20px) var(--vt-space-16px) var(--vt-space-18px);
+    padding: 12px 14px;
   }
   .sp-feature,
   .sp-perk {
-    padding: var(--vt-space-20px) var(--vt-space-16px);
+    padding: 12px 14px;
   }
   .sp-step-icon,
   .sp-feature-icon,
   .sp-perk-icon {
-    width: var(--vt-size-44px);
-    height: var(--vt-size-44px);
-    margin-bottom: var(--vt-space-10px);
+    width: 1.75rem;
+    height: 1.75rem;
+    margin: 0;
     border-radius: var(--vt-size-14px);
   }
   .sp-actions a,

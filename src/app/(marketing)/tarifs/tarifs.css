@@ -175,9 +175,9 @@
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  width: var(--vt-size-52px);
-  height: var(--vt-size-52px);
-  border-radius: var(--vt-size-14px);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
   background: var(--vt-surface-pink);
   color: var(--vt-primary-vivid);
 }
@@ -475,8 +475,8 @@
     gap: var(--vt-space-10px);
   }
   .tp-trust-item .tp-icon {
-    width: var(--vt-size-42px);
-    height: var(--vt-size-42px);
+    width: 2rem;
+    height: 2rem;
   }
   .tp-faq {
     gap: var(--vt-space-28px);
@@ -534,12 +534,12 @@
     font-size: var(--vt-fs-caption);
   }
   .tp-trust-item .tp-icon {
-    width: var(--vt-size-38px);
-    height: var(--vt-size-38px);
+    width: 1.75rem;
+    height: 1.75rem;
   }
   .tp-trust-item .tp-icon svg {
-    width: var(--vt-size-24px);
-    height: var(--vt-size-24px);
+    width: 15px;
+    height: 15px;
   }
   .tp-included a {
     margin-top: var(--vt-size-6px);

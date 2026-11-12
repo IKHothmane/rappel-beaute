@@ -171,14 +171,14 @@
   place-items: center;
   background: var(--vt-surface-pink);
   border-radius: var(--vt-size-15px);
-  width: var(--vt-size-64px);
-  height: var(--vt-size-64px);
+  width: 2rem;
+  height: 2rem;
   flex-shrink: 0;
   color: var(--vt-primary-vivid);
 }
 .ml-icon svg {
-  width: var(--vt-size-36px);
-  height: var(--vt-size-36px);
+  width: 15px;
+  height: 15px;
   stroke-width: 1.6;
 }
 .marketing-site .ml h2 {
@@ -287,13 +287,13 @@
     gap: var(--vt-space-16px);
   }
   .ml-icon {
-    width: var(--vt-size-48px);
-    height: var(--vt-size-48px);
-    border-radius: var(--vt-size-12px);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.55rem;
   }
   .ml-icon svg {
-    width: var(--vt-size-29px);
-    height: var(--vt-size-29px);
+    width: 15px;
+    height: 15px;
   }
   .ml-books > span {
     padding: var(--vt-space-12px) var(--vt-size-8px);
@@ -352,13 +352,13 @@
     padding: var(--vt-space-20px) var(--vt-space-16px);
   }
   .ml-icon {
-    width: var(--vt-size-40px);
-    height: var(--vt-size-40px);
-    border-radius: var(--vt-size-10px);
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.55rem;
   }
   .ml-icon svg {
-    width: var(--vt-size-25px);
-    height: var(--vt-size-25px);
+    width: 15px;
+    height: 15px;
   }
   .marketing-site .ml h2 {
     font-size: var(--vt-text-1p4375rem);

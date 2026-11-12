@@ -1,0 +1,144 @@
+{
+  "identity": {
+    "host": "127.0.0.1/32",
+    "port": 55447,
+    "db": "rappel_security_audit"
+  },
+  "prefix": "audit_1794512433869",
+  "checks": [
+    {
+      "name": "customer_read_B_from_A",
+      "blocked": true
+    },
+    {
+      "name": "customer_search_B_from_A",
+      "count": 0
+    },
+    {
+      "name": "B"
+    },
+    {
+      "name": "customer_archive_B_from_A",
+      "deleted": null
+    },
+    {
+      "name": "staff_patch_B_services_empty",
+      "http": 404,
+      "remainingBLinks": 0
+    },
+    {
+      "name": "resource_patch_B_services_empty",
+      "http": 404,
+      "remainingBLinks": 0
+    },
+    {
+      "name": "resource_maintenance_empty_patch_B",
+      "http": 200,
+      "body": {
+        "id": "audit_1794512433869_B_maintenance",
+        "startAt": "2026-11-12T18:40:33.894Z",
+        "endAt": "2026-11-12T19:40:33.894Z",
+        "type": "PREVENTIVE",
+        "reason": "B maintenance confidential",
+        "status": "SCHEDULED",
+        "createdAt": "2026-11-12T18:40:33.894Z"
+      }
+    },
+    {
+      "name": "expense_foreign_supplier",
+      "http": 201,
+      "supplierName": "B supplier confidential",
+      "expenseOrg": "audit_1794512433869_A"
+    },
+    {
+      "name": "gift_card_foreign_customer",
+      "http": 201,
+      "buyerName": "B Secret",
+      "buyerPhone": "0600011102",
+      "beneficiaryPhone": "0600011102"
+    },
+    {
+      "name": "rls_read_B",
+      "rows": 0
+    },
+    {
+      "name": "rls_cross_tenant_child_reference",
+      "accepted": true,
+      "service": "audit_1794512433869_A_s",
+      "staff": "audit_1794512433869_B_staff"
+    },
+    {
+      "name": "rls_custom_setting_bypass",
+      "visibleB": 1
+    },
+    {
+      "name": "whatsapp_unsigned_webhook_without_secret",
+      "http": 200,
+      "createdLogs": [
+        {
+          "organizationId": "audit_1794512433869_B",
+          "action": "INCOMING_MESSAGE"
+        }
+      ]
+    },
+    {
+      "name": "whatsapp_same_phone_account_B",
+      "intendedOrg": "audit_1794512433869_B",
+      "matchedOrg": "audit_1794512433869_A"
+    },
+    {
+      "name": "public_confirmation_unknown_id_changes_B",
+      "statusAfter": "COMPLETED",
+      "invoices": 1,
+      "session": "none",
+      "idRequested": "not-an-appointment",
+      "org": "audit_1794512433869_B"
+    },
+    {
+      "name": "staff_cross_reference_with_RLS",
+      "role": "rappel_app",
+      "rls": "all",
+      "http": 404,
+      "crossLinks": 1
+    },
+    {
+      "name": "resource_cross_reference_with_RLS",
+      "role": "rappel_app",
+      "rls": "all",
+      "http": 404,
+      "crossLinks": 1
+    },
+    {
+      "name": "public_confirmation_changes_B_with_RLS",
+      "role": "rappel_app",
+      "rls": "all",
+      "session": "none",
+      "statusAfter": "COMPLETED",
+      "invoices": 1
+    },
+    {
+      "name": "campaign_foreign_promotion",
+      "promotionName": "B confidential promotion",
+      "promotionCode": "BPRIVATEAUDIT"
+    },
+    {
+      "name": "package_foreign_customer_service",
+      "customerName": "B Secret",
+      "serviceName": "S B"
+    },
+    {
+      "name": "tenant_session_cannot_admin_B",
+      "http": 403
+    },
+    {
+      "name": "customer_export_csv_A",
+      "containsBName": false,
+      "bytes": 136
+    },
+    {
+      "name": "concurrent_cross_reads",
+      "attempts": 100,
+      "leaks": 0
+    }
+  ]
+}

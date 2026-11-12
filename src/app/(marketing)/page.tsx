@@ -23,7 +23,7 @@ export const metadata: Metadata = marketingPageMetadata({
   canonical: "/",
 });
 
-// Les deux entrées centrales (index 3 et 4) sont au sommet de la pile au chargement.
+// L’entrée centrale (Services) reste au sommet de la pile au chargement.
 const HERO_IMAGES = [
   { src: "/site/rappelbeauty-clientes-pc-reel.webp", alt: "Fiches clientes dans Rappel Beauty" },
   {
@@ -34,6 +34,10 @@ const HERO_IMAGES = [
   {
     src: "/site/rappelbeauty-agenda-pc-complet-2200x1270.webp",
     alt: "Agenda de la semaine dans Rappel Beauty",
+  },
+  {
+    src: "/site/service-hero.webp",
+    alt: "Services et prestations dans Rappel Beauty",
   },
   {
     src: "/site/rappelbeauty-dashboard-pc-reel.webp",

@@ -1,7 +1,0 @@
-{
-  "/(marketing)/page": "app/(marketing)/page.js",
-  "/(marketing)/solutions/institut-beaute/page": "app/(marketing)/solutions/institut-beaute/page.js",
-  "/(marketing)/fidelite/page": "app/(marketing)/fidelite/page.js",
-  "/(marketing)/gestion-clientes/page": "app/(marketing)/gestion-clientes/page.js",
-  "/(marketing)/gestion-stock/page": "app/(marketing)/gestion-stock/page.js"
-}

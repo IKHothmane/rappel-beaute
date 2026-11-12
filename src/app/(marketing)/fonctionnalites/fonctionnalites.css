@@ -7,7 +7,7 @@
   font-size: var(--vt-fs-body);
   line-height: var(--vt-lh-body);
   color: var(--fn-ink);
-  overflow-x: clip;
+  overflow-x: visible;
   background: linear-gradient(
     180deg,
     var(--vt-surface-soft),
@@ -26,6 +26,41 @@
 .fn h3,
 .fn p {
   margin: 0;
+}
+.fn-tunnel {
+  position: relative;
+  height: 165vh;
+}
+.fn-tunnel-static {
+  height: auto;
+}
+.fn-tunnel-stage {
+  background: radial-gradient(ellipse at center, #fff 0%, var(--vt-surface-soft) 72%);
+}
+.fn-tunnel-copy .fn-promises,
+.fn-tunnel-copy .fn-actions {
+  justify-content: center;
+}
+.fn-tunnel-copy .fn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+.fn-tunnel-copy .fn-promises {
+  margin-top: 0.75rem;
+}
+.fn-tunnel-prompt {
+  pointer-events: none;
+  position: absolute;
+  bottom: 1.25rem;
+  z-index: 20;
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--vt-primary);
 }
 .fn-hero {
   position: relative;
@@ -266,15 +301,15 @@
   place-items: center;
   grid-column: 1;
   grid-row: 1 / span 3;
-  width: var(--vt-size-40px);
-  height: var(--vt-size-40px);
-  border-radius: var(--vt-size-12px);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
   background: linear-gradient(135deg, var(--vt-surface-soft), #fbd4e4);
   color: var(--vt-primary-bright);
 }
 .fn-icon svg {
-  width: var(--vt-size-22px);
-  height: var(--vt-size-22px);
+  width: 15px;
+  height: 15px;
 }
 .marketing-site .fn-copy h3 {
   grid-column: 2;
@@ -390,13 +425,13 @@
     gap: var(--vt-space-22px);
   }
   .fn-copy {
-    grid-template-columns: var(--vt-size-46px) minmax(0, 1fr);
+    grid-template-columns: 2rem minmax(0, 1fr);
     column-gap: var(--vt-space-12px);
   }
   .fn-icon {
-    width: var(--vt-size-46px);
-    height: var(--vt-size-46px);
-    border-radius: var(--vt-size-14px);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.55rem;
   }
 }
 @media (max-width: 767px) {
@@ -434,16 +469,16 @@
     width: 100%;
   }
   .fn-copy {
-    grid-template-columns: var(--vt-size-40px) minmax(0, 1fr);
+    grid-template-columns: 1.75rem minmax(0, 1fr);
   }
   .fn-icon {
-    width: var(--vt-size-40px);
-    height: var(--vt-size-40px);
-    border-radius: var(--vt-size-12px);
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.55rem;
   }
   .fn-icon svg {
-    width: var(--vt-size-24px);
-    height: var(--vt-size-24px);
+    width: 15px;
+    height: 15px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

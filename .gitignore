@@ -70,3 +70,6 @@ next-env.d.ts
 
 # build du serveur de test (npm run dev:test)
 /.next-test/
+
+# build d'audit typographique local (ne jamais versionner)
+/.next-typography-audit/

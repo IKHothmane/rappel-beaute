@@ -1,0 +1,1 @@
+C:/Users/LordOfTHeRings/Desktop/rappel beauty/node_modules/@embedded-postgres/windows-x64/native/bin/postgres.exe "-D" ".audit-security-db/pgdata" "-h" "127.0.0.1" "-p" "55447"

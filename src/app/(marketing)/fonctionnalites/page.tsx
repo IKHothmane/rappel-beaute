@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import PerspectiveTunnelHero from "@/components/ui/perspective-tunnel-hero";
 import { marketingPageMetadata } from "@/lib/seo";
 import { SeoCloser } from "@/components/www/SeoCloser";
-import { PUBLIC_OFFER } from "@/lib/site";
 import "./fonctionnalites.css";
 
 export const dynamic = "force-static";
@@ -13,8 +13,6 @@ export const metadata = marketingPageMetadata({
     "Fonctionnalités Rappel Beauty : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne.",
   canonical: "/fonctionnalites/",
 });
-
-const PROMISES = ["Tout-en-un", "Simple à utiliser", "Pensé pour le Maroc"] as const;
 
 const MODULES = [
   {
@@ -109,6 +107,18 @@ const MODULES = [
   },
 ] as const;
 
+const TUNNEL_IMAGES = [
+  { src: "/site/rappelbeauty-agenda-pc-complet-2200x1270.webp", title: "Agenda" },
+  { src: "/site/rappelbeauty-clientes-pc-reel.webp", title: "Clientes" },
+  { src: "/site/rappelbeauty-caisse-pc-reel.webp", title: "Caisse" },
+  { src: "/site/rappelbeauty-produits-stock-pc-reel.webp", title: "Stock" },
+  { src: "/site/rappelbeauty-planning-pc-reel.webp", title: "Équipe" },
+  { src: "/site/rappelbeauty-analytics-pc-reel.webp", title: "Analyses" },
+  { src: "/site/rappelbeauty-dashboard-pc-reel.webp", title: "Tableau de bord" },
+  { src: "/site/rappelbeauty-fidelite-pc-reel.webp", title: "Fidélité" },
+  { src: "/site/service.png", title: "Services" },
+] as const;
+
 const FAQ = [
   {
     q: "Rappel Beauty est-il une marketplace ?",
@@ -156,63 +166,18 @@ function Glyph({ name }: { name: (typeof MODULES)[number]["icon"] | "check" }) {
 }
 
 export default function FonctionnalitesPage() {
-  const trial = PUBLIC_OFFER.trialDays;
-
   return (
     <div className="fn">
-      <section className="vt-wrap fn-wrap fn-hero">
-        <div>
-          <p className="fn-badge">
-            <Glyph name="cal" />
-            Fonctionnalités
-          </p>
-          <h1>
+      <PerspectiveTunnelHero
+        images={TUNNEL_IMAGES}
+        eyebrow="Fonctionnalités"
+        title={
+          <>
             Toutes les fonctions pour gérer <span>votre institut</span>
-          </h1>
-          <p className="fn-lead">
-            Une solution complète et simple pour les instituts de beauté : réservations, clientes,
-            caisse, stock, équipe, fidélité, promotions et bien plus encore.
-          </p>
-          <ul className="fn-promises">
-            {PROMISES.map((item) => (
-              <li key={item}>
-                <span className="fn-mark">
-                  <Glyph name="check" />
-                </span>
-                {item}
-              </li>
-            ))}
-          </ul>
-          <div className="fn-actions">
-            <Link href="/professionnel/">
-              Essayer gratuitement {trial} jours
-              <span aria-hidden>→</span>
-            </Link>
-            <Link href="/demo/">Voir la démo</Link>
-          </div>
-        </div>
-
-        <div className="fn-hero-visual">
-          <Image
-            className="fn-hero-art"
-            src="/brand/footer-spa-cutout.png"
-            alt=""
-            width={1774}
-            height={887}
-            sizes="180px"
-          />
-          <div className="fn-shot">
-            <Image
-              src="/site/rappelbeauty-dashboard-pc-reel.webp"
-              alt="Tableau de bord Rappel Beauty sur ordinateur"
-              width={2200}
-              height={1270}
-              sizes="(max-width: 1000px) 100vw, 58vw"
-              priority
-            />
-          </div>
-        </div>
-      </section>
+          </>
+        }
+        description="Une solution complète et simple pour les instituts de beauté : réservations, clientes, caisse, stock, équipe, fidélité, promotions et bien plus encore."
+      />
 
       <section className="vt-wrap fn-wrap fn-modules">
         <div className="fn-modules-head">

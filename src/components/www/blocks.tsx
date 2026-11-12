@@ -118,15 +118,17 @@ export function IconCards({
   return (
     <>
       {items.map(({ icon: Icon, title, text }) => (
-        <article className={articleClassName} key={title}>
-          {iconClassName ? (
-            <span className={iconClassName}>
+        <article className={["vt-icon-card", articleClassName].filter(Boolean).join(" ")} key={title}>
+          <div className="vt-card-head">
+            {iconClassName ? (
+              <span className={iconClassName}>
+                <Icon aria-hidden="true" />
+              </span>
+            ) : (
               <Icon aria-hidden="true" />
-            </span>
-          ) : (
-            <Icon aria-hidden="true" />
-          )}
-          <h3>{title}</h3>
+            )}
+            <h3>{title}</h3>
+          </div>
           <p>{text}</p>
         </article>
       ))}

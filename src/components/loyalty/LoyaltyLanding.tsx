@@ -192,8 +192,10 @@ export function LoyaltyLanding({ sections }: { sections: readonly LoyaltySection
             return (
               <li key={step.title}>
                 <span className="fl-number">{index + 1}</span>
-                <Icon aria-hidden="true" />
-                <h3>{step.title}</h3>
+                <div className="fl-step-head">
+                  <Icon aria-hidden="true" />
+                  <h3>{step.title}</h3>
+                </div>
                 <p>{step.text}</p>
                 {index < steps.length - 1 && (
                   <ArrowRight className="fl-step-arrow" aria-hidden="true" />
@@ -234,9 +236,11 @@ export function LoyaltyLanding({ sections }: { sections: readonly LoyaltySection
             {benefits.map((item) => {
               const Icon = item.icon;
               return (
-                <article key={item.title}>
-                  <Icon aria-hidden="true" />
-                  <h3>{item.title}</h3>
+                <article className="vt-icon-card" key={item.title}>
+                  <div className="vt-card-head">
+                    <Icon aria-hidden="true" />
+                    <h3>{item.title}</h3>
+                  </div>
                   <p>{item.text}</p>
                 </article>
               );
@@ -280,9 +284,11 @@ export function LoyaltyLanding({ sections }: { sections: readonly LoyaltySection
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <article key={item.title}>
-                    <Icon aria-hidden="true" />
-                    <h3>{item.title}</h3>
+                  <article className="vt-icon-card" key={item.title}>
+                    <div className="vt-card-head">
+                      <Icon aria-hidden="true" />
+                      <h3>{item.title}</h3>
+                    </div>
                   </article>
                 );
               })}

@@ -91,7 +91,7 @@ function LoginFormFields() {
       <form className="rb-login-form" onSubmit={onSubmit}>
         <div>
           <label className="sr-only" htmlFor="email">
-            Numéro WhatsApp ou e-mail professionnel
+            E-mail professionnel
           </label>
           <div className="rb-login-input">
             <Mail aria-hidden="true" />
@@ -100,7 +100,7 @@ function LoginFormFields() {
               id="email"
               name="email"
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="WhatsApp ou e-mail professionnel"
+              placeholder="E-mail professionnel"
               required
               type="text"
               maxLength={254}

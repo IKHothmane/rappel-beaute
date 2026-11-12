@@ -140,9 +140,9 @@
     gap: var(--vt-space-12px);
   }
   .whatsapp-section .whatsapp-step-icon {
-    width: var(--vt-size-42px);
-    height: var(--vt-size-42px);
-    border-radius: var(--vt-size-12px);
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.55rem;
   }
   .whatsapp-step-title {
     font-size: var(--vt-fs-body);

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Mono, Inter } from "next/font/google";
 import { SITE } from "@/lib/site";
 import "./globals.css";
-import "./metric-cards.css";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -21,6 +20,7 @@ const ibmPlexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
   variable: "--font-ibm-plex-mono",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

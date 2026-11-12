@@ -45,7 +45,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--vt-space-30px) clamp(var(--vt-space-28px), 5vw, var(--vt-space-88px));
+  padding: 1.25rem clamp(1.25rem, 4vw, 3.5rem);
   border-radius: var(--vt-size-64px) 0 0 0;
   background: radial-gradient(ellipse at 0 10%, var(--vt-surface), transparent 70%),
     linear-gradient(150deg, var(--vt-surface), var(--vt-surface) 55%, var(--vt-surface-pink));
@@ -58,8 +58,8 @@
 }
 .rb-login-brand img {
   display: block;
-  width: var(--vt-size-220px);
-  height: var(--vt-size-110px);
+  width: 9rem;
+  height: 4.25rem;
   object-fit: contain;
 }
 .rb-login-tagline {
@@ -70,13 +70,13 @@
 .rb-login-content {
   width: 100%;
   max-width: var(--vt-size-470px);
-  margin-top: var(--vt-space-30px);
+  margin-top: 0.75rem;
 }
 .marketing-site .rb-login h1 {
   text-align: center;
   color: var(--vt-ink-plum);
   font-family: var(--font-fraunces), Georgia, serif;
-  font-size: var(--vt-fs-h1);
+  font-size: 1.65rem;
   font-weight: 500;
   font-style: italic;
   line-height: var(--vt-leading-1p12);
@@ -88,16 +88,16 @@
 }
 .rb-login .rb-login-intro {
   max-width: 36ch;
-  margin: var(--vt-space-14px) auto 0;
+  margin: 0.4rem auto 0;
   text-align: center;
-  font-size: var(--vt-text-1p0625rem);
-  line-height: var(--vt-leading-1p6);
+  font-size: 0.9rem;
+  line-height: 1.35;
   color: #594452;
 }
 .rb-login-form {
   display: grid;
-  gap: var(--vt-space-16px);
-  margin-top: var(--vt-space-28px);
+  gap: 0.55rem;
+  margin-top: 0.85rem;
 }
 .rb-login-input {
   display: flex;
@@ -112,19 +112,19 @@
 }
 .rb-login-input > svg {
   flex-shrink: 0;
-  width: var(--vt-size-23px);
-  height: var(--vt-size-23px);
-  margin-left: var(--vt-space-18px);
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.7rem;
   color: var(--vt-primary-vivid);
   stroke-width: 1.8;
 }
 .rb-login-input input {
   width: 100%;
   min-width: 0;
-  min-height: var(--vt-size-52px);
+  min-height: 2.35rem;
   border: 0;
   border-radius: inherit;
-  padding: var(--vt-space-13px) var(--vt-space-16px);
+  padding: 0.35rem 0.7rem;
   background: transparent;
   color: var(--vt-ink-dark);
   font-family: inherit;
@@ -144,8 +144,8 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: var(--vt-size-48px);
-  height: var(--vt-size-48px);
+  width: 2.1rem;
+  height: 2.1rem;
   margin-right: var(--vt-size-4px);
   border: 0;
   border-radius: var(--vt-size-12px);
@@ -195,24 +195,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--vt-space-18px);
+  gap: 0.45rem;
   width: 100%;
-  min-height: var(--vt-size-54px);
-  padding: var(--vt-space-13px) var(--vt-space-20px);
+  min-height: 2.4rem;
+  padding: 0.4rem 1rem;
   border: 0;
   border-radius: var(--vt-size-999px);
   background: linear-gradient(165deg, var(--vt-primary-vivid), var(--vt-primary-strong));
   color: white;
   font-family: inherit;
-  font-size: var(--vt-text-1p0625rem);
+  font-size: 0.9375rem;
   font-weight: 650;
   line-height: var(--vt-leading-1p4);
   cursor: pointer;
   transition: box-shadow 0.2s;
 }
 .rb-login-submit svg {
-  width: var(--vt-size-24px);
-  height: var(--vt-size-24px);
+  width: 1rem;
+  height: 1rem;
 }
 .rb-login-submit:hover {
   box-shadow: 0 8px 20px -8px #af004b80;
@@ -232,13 +232,13 @@
   line-height: var(--vt-leading-1p6);
 }
 .rb-login-signup {
-  margin-top: var(--vt-space-30px);
-  padding-top: var(--vt-space-26px);
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
   border-top: 1px solid #e8d0df;
   text-align: center;
 }
 .rb-login-signup p {
-  margin-bottom: var(--vt-space-14px);
+  margin-bottom: 0.4rem;
   color: #594452;
   font-size: var(--vt-fs-sm);
 }
@@ -247,7 +247,7 @@
   justify-content: center;
   align-items: center;
   gap: var(--vt-space-12px);
-  min-height: var(--vt-size-50px);
+  min-height: 2.35rem;
   border: 1px solid #e1005c;
   border-radius: var(--vt-size-999px);
   padding: var(--vt-space-12px) var(--vt-space-18px);
@@ -275,7 +275,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--vt-space-10px) var(--vt-space-22px);
-  margin-top: var(--vt-space-26px);
+  margin-top: 0.7rem;
   color: #8b7180;
   font-size: var(--vt-fs-caption);
 }

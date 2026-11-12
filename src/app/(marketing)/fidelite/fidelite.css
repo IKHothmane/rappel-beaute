@@ -302,11 +302,24 @@
 }
 .fl-process li {
   position: relative;
-  padding: var(--vt-space-30px) var(--vt-space-14px) var(--vt-space-20px);
+  padding: 22px 12px 12px;
   border: 1px solid var(--vt-line);
-  border-radius: var(--vt-size-18px);
+  border-radius: 14px;
   background: var(--vt-surface);
-  text-align: center;
+  text-align: left;
+}
+.fl-step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+.fl-step-head > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  flex-shrink: 0;
+  color: var(--vt-primary-vivid);
 }
 .fl-process li:last-child {
   background: var(--vt-surface-soft);
@@ -326,20 +339,14 @@
   background: linear-gradient(var(--vt-pink-vivid), var(--vt-primary));
   font-weight: 650;
 }
-.fl-process li > svg:not(.fl-step-arrow) {
-  display: block;
-  width: var(--vt-size-36px);
-  height: var(--vt-size-36px);
-  margin: 0 auto var(--vt-space-14px);
-  color: var(--vt-primary-vivid);
-  stroke-width: 1.7;
-}
 .marketing-site .fl-process h3 {
+  margin: 0;
   font-family: inherit;
-  font-size: var(--vt-fs-body);
-  line-height: var(--vt-leading-1p4);
+  font-size: 0.95rem;
+  line-height: 1.25;
   font-weight: 650;
   letter-spacing: 0;
+  text-align: left;
 }
 .fl-process li p {
   margin-top: var(--vt-size-8px);

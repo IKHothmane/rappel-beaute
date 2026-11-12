@@ -32,7 +32,7 @@ export function FooterEmailForm() {
           placeholder="Votre adresse e-mail"
         />
         <button type="submit" aria-label="Demander les nouveautés par e-mail">
-          <Send size={22} aria-hidden="true" />
+          <Send size={15} aria-hidden="true" />
         </button>
       </form>
       <p className="footer-form-note" role="status">

@@ -208,9 +208,49 @@ body:has(.sp)::before {
 .sp-step-icon svg,
 .sp-feature-icon svg,
 .sp-perk-icon svg {
-  width: var(--vt-size-28px);
-  height: var(--vt-size-28px);
-  stroke-width: 1.7;
+  width: var(--vt-size-15px);
+  height: var(--vt-size-15px);
+  stroke-width: 1.8;
+}
+
+.marketing-site .vt-icon-card {
+  text-align: left;
+  padding: 12px 14px;
+}
+.vt-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.vt-card-head > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  flex-shrink: 0;
+  color: var(--vt-primary-vivid);
+}
+.vt-card-head > span {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 0.55rem;
+}
+.marketing-site article .vt-card-head h3 {
+  margin: 0;
+  text-align: left;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.marketing-site article .vt-card-head + p {
+  margin-top: 0.4rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  line-height: 1.4;
 }
 
 .ib-section-heading,

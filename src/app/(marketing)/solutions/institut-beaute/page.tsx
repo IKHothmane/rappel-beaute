@@ -77,7 +77,7 @@ const CHAPTERS = [
 
 export const dynamic = "force-static";
 export const metadata = marketingPageMetadata({
-  title: "Institut de beauté et réservation au Maroc | Rappel",
+  title: "Institut de beauté au Maroc : logiciel | Rappel Beauty",
   description:
     "Réservation en ligne et gestion d’institut au Maroc : agenda, clientes, équipe, stock, caisse et fidélité.",
   canonical: "/solutions/institut-beaute/",

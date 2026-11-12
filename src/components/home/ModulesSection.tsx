@@ -116,7 +116,7 @@ export default function ModulesSection() {
         </div>
 
         {/* Grille des modules */}
-        <div className="grid grid-cols-1 gap-[var(--vt-space-1p25rem)] sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-[var(--vt-space-0p75rem)] sm:grid-cols-2 lg:grid-cols-4">
           {modules.map((module) => {
             const Icon = module.icon;
 
@@ -124,7 +124,7 @@ export default function ModulesSection() {
               <Link
                 key={module.title}
                 href={module.href}
-                className="module-card group relative flex flex-col overflow-hidden rounded-[var(--vt-size-18px)] border border-[#f0d5df] bg-white/90 p-[var(--vt-space-1p25rem)] shadow-[0_8px_24px_rgba(107,27,61,0.05)] transition-all duration-300 hover:-translate-y-1 hover:border-vt-primary-bright hover:shadow-[0_16px_32px_rgba(156,0,68,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vt-primary-rich"
+                className="module-card group relative flex flex-col overflow-hidden rounded-[var(--vt-size-14px)] border border-[#f0d5df] bg-white/90 p-[var(--vt-space-12px)] shadow-[0_8px_24px_rgba(107,27,61,0.05)] transition-all duration-300 hover:-translate-y-0.5 hover:border-vt-primary-bright hover:shadow-[0_12px_24px_rgba(156,0,68,0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vt-primary-rich"
               >
                 {/* Reflet subtil */}
                 <div
@@ -133,26 +133,23 @@ export default function ModulesSection() {
                 />
 
                 <div className="relative z-10 flex flex-1 flex-col">
-                  {/* Icône */}
-                  <div className="module-card-icon mb-[var(--vt-space-1p75rem)] flex h-[var(--vt-size-4rem)] w-[var(--vt-size-4rem)] items-center justify-center rounded-[var(--vt-size-19px)] bg-gradient-to-br from-vt-surface-soft to-[#fbd4e4] text-vt-primary-rich transition-all duration-300 group-hover:scale-110 group-hover:from-vt-primary-rich group-hover:to-vt-pink group-hover:text-white">
-                    <Icon size={24} strokeWidth={1.8} aria-hidden="true" />
-                  </div>
-
-                  <div className="mb-[var(--vt-space-0p75rem)] flex items-start justify-between gap-[var(--vt-size-0p5rem)]">
-                    <h3 className="font-serif text-[length:var(--vt-text-23px)] font-semibold leading-[var(--vt-leading-1p25)] text-vt-ink-plum">
+                  <div className="mb-[var(--vt-size-0p5rem)] flex items-center gap-[var(--vt-size-0p5rem)]">
+                    <div className="module-card-icon flex h-[var(--vt-size-2rem)] w-[var(--vt-size-2rem)] shrink-0 items-center justify-center rounded-[var(--vt-size-10px)] bg-gradient-to-br from-vt-surface-soft to-[#fbd4e4] text-vt-primary-rich transition-colors duration-300 group-hover:from-vt-primary-rich group-hover:to-vt-pink group-hover:text-white">
+                      <Icon size={15} strokeWidth={1.8} aria-hidden="true" />
+                    </div>
+                    <h3 className="min-w-0 flex-1 font-serif font-semibold leading-tight text-vt-ink-plum">
                       {module.title}
                     </h3>
-
                     <ArrowUpRight
-                      size={19}
+                      size={16}
                       aria-hidden="true"
-                      className="shrink-0 text-vt-primary-rich opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:opacity-100"
+                      className="shrink-0 text-vt-primary-rich opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100"
                     />
                   </div>
 
-                  <p className="text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-7 text-vt-muted">{module.description}</p>
+                  <p className="text-[length:var(--vt-text-0p875rem)] leading-snug text-vt-muted">{module.description}</p>
 
-                  <div className="module-card-foot mt-auto pt-[var(--vt-space-1p5rem)]">
+                  <div className="module-card-foot mt-auto pt-[var(--vt-size-0p5rem)]">
                     <span className="inline-flex items-center gap-[var(--vt-size-0p5rem)] text-[length:var(--vt-text-0p75rem)]/[var(--vt-line-1rem)] font-semibold text-vt-primary-rich">
                       <Check size={15} aria-hidden="true" />
                       Inclus

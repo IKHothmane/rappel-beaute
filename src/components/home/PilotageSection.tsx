@@ -62,10 +62,12 @@ export default function PilotageSection() {
         <div className="pilotage-features">
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <div key={title} className="pilotage-feature">
-              <span className="pilotage-feature-icon">
-                <Icon size={22} aria-hidden="true" />
-              </span>
-              <h3>{title}</h3>
+              <div className="pilotage-feature-head">
+                <span className="pilotage-feature-icon">
+                  <Icon size={15} aria-hidden="true" />
+                </span>
+                <h3>{title}</h3>
+              </div>
               <p>{description}</p>
             </div>
           ))}

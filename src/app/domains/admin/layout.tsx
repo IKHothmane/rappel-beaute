@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/AdminShell";
+import "../../metric-cards.css";
 
 export const metadata: Metadata = {
   title: {

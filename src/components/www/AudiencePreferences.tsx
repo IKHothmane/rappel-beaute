@@ -103,7 +103,7 @@ export function AudiencePreferences() {
       setChoice(stored);
       if (stored === "granted") loadAudienceScripts();
       else disableAudience();
-    } else setOpen(true);
+    }
     const showPreferences = () => {
       previousFocus.current =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;

@@ -215,9 +215,10 @@ export default function ProfessionalAccessPage({
               sizes="180px"
             />
           </Link>
-          <h2>
+          {/* Paragraphe et non titre : il précède le h1 de la page dans le DOM. */}
+          <p className="pro-story-title">
             Inscrivez votre institut sur <em>Rappel Beauty</em>
-          </h2>
+          </p>
           <p>Créez votre espace en quelques minutes et gérez votre institut en toute simplicité.</p>
           <ul>
             {MODULES.map(({ icon: Icon, label }) => (

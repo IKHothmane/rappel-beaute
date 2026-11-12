@@ -397,9 +397,11 @@ export async function middleware(request: NextRequest) {
   if (domain === "www") {
     if (path === "/login" || path === "/login/" || path === "/essai" || path === "/essai/") {
       const local = request.nextUrl.clone();
-      local.pathname = path.startsWith("/essai") ? "/professionnel/" : "/connexion/";
+      const retired = path.startsWith("/essai");
+      local.pathname = retired ? "/professionnel/" : "/connexion/";
       local.search = "";
-      return withFrameDeny(NextResponse.redirect(local, 307));
+      // /essai/ est une page retirée : redirection permanente pour les moteurs.
+      return withFrameDeny(NextResponse.redirect(local, retired ? 308 : 307));
     }
 
     const res = withFrameDeny(NextResponse.next({ request: { headers } }));

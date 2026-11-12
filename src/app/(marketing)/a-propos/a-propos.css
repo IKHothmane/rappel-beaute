@@ -92,25 +92,25 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: var(--vt-size-40px);
-  height: var(--vt-size-40px);
-  border-radius: var(--vt-size-12px);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
   color: var(--vt-primary-vivid);
   background: var(--vt-surface-pink);
 }
 .ap-icon svg {
-  width: var(--vt-size-22px);
-  height: var(--vt-size-22px);
+  width: 15px;
+  height: 15px;
   stroke-width: 1.8;
 }
 .ap-pillar .ap-icon {
-  width: var(--vt-size-40px);
-  height: var(--vt-size-40px);
-  border-radius: var(--vt-size-11px);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
 }
 .ap-pillar .ap-icon svg {
-  width: var(--vt-size-24px);
-  height: var(--vt-size-24px);
+  width: 15px;
+  height: 15px;
 }
 .ap-pillar p {
   font-size: var(--vt-fs-caption);
@@ -338,8 +338,8 @@
     gap: var(--vt-space-14px);
   }
   .ap-purpose-copy .ap-icon {
-    width: var(--vt-size-44px);
-    height: var(--vt-size-44px);
+    width: 2rem;
+    height: 2rem;
   }
   .ap-values {
     padding: var(--vt-space-26px) var(--vt-space-22px);
@@ -384,13 +384,13 @@
     gap: var(--vt-space-28px);
   }
   .ap-purpose-copy .ap-icon {
-    width: var(--vt-size-40px);
-    height: var(--vt-size-40px);
-    border-radius: var(--vt-size-12px);
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.55rem;
   }
   .ap-purpose-copy .ap-icon svg {
-    width: var(--vt-size-25px);
-    height: var(--vt-size-25px);
+    width: 15px;
+    height: 15px;
   }
   .ap-purpose-copy article {
     gap: var(--vt-space-12px);
@@ -435,12 +435,12 @@
     gap: var(--vt-size-7px);
   }
   .ap-pillar .ap-icon {
-    width: var(--vt-size-34px);
-    height: var(--vt-size-34px);
+    width: 1.75rem;
+    height: 1.75rem;
   }
   .ap-pillar .ap-icon svg {
-    width: var(--vt-size-21px);
-    height: var(--vt-size-21px);
+    width: 15px;
+    height: 15px;
   }
   .ap-pillar p {
     font-size: var(--vt-fs-caption);

@@ -201,12 +201,12 @@
   overflow: hidden;
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: var(--vt-space-14px);
+  gap: 0.5rem;
   align-items: center;
   min-width: 0;
-  padding: var(--vt-space-18px) var(--vt-space-16px) var(--vt-space-20px);
+  padding: 12px 14px;
   border: 0;
-  border-radius: var(--vt-size-22px);
+  border-radius: 14px;
   background: #fff;
   box-shadow:
     0 14px 34px rgb(186 0 73 / 8%),
@@ -217,8 +217,8 @@
   z-index: 1;
 }
 .hm .benefit .ic {
-  width: var(--vt-size-40px);
-  height: var(--vt-size-40px);
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -226,8 +226,8 @@
   color: var(--vt-primary-bright);
 }
 .hm .benefit .ic .ico {
-  width: var(--vt-size-24px);
-  height: var(--vt-size-24px);
+  width: 15px;
+  height: 15px;
   stroke-width: 1.7;
 }
 .hm .benefit h3 {
@@ -248,7 +248,7 @@
     grid-template-columns: 1fr 1fr;
   }
   .hm .benefit {
-    padding: var(--vt-space-20px) var(--vt-space-16px) var(--vt-space-28px);
+    padding: 12px 14px;
   }
 }
 @media (max-width: 560px) {

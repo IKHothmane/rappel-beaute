@@ -104,7 +104,7 @@ export function SiteFooter() {
       <div className="footer-container">
         <div className="footer-columns">
           <div className="footer-brand">
-            <BrandLogo height={48} />
+            <BrandLogo height={34} />
             <p>
               Le logiciel tout-en-un pour les instituts de beauté : rendez-vous, clientes, caisse,
               stock, équipe, fidélité et plus encore.
@@ -139,7 +139,7 @@ export function SiteFooter() {
               <ul>
                 {links.map(({ href, label }) => (
                   <li key={label}>
-                    <Link href={href}>{label}</Link>
+                    <Link prefetch={false} href={href}>{label}</Link>
                   </li>
                 ))}
               </ul>
@@ -169,9 +169,9 @@ export function SiteFooter() {
             © 2026 <strong>{SITE.name}.</strong> Tous droits réservés.
           </p>
           <nav className="footer-legal" aria-label="Informations légales">
-            <Link href="/tarifs/">Tarifs et offre</Link>
-            <Link href="/confidentialite/">Politique de confidentialité</Link>
-            <Link href="/mentions-legales/">Mentions légales</Link>
+            <Link prefetch={false} href="/tarifs/">Tarifs et offre</Link>
+            <Link prefetch={false} href="/confidentialite/">Politique de confidentialité</Link>
+            <Link prefetch={false} href="/mentions-legales/">Mentions légales</Link>
             <AudiencePreferencesButton />
           </nav>
           <p className="footer-origin">

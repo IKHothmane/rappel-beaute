@@ -7,8 +7,14 @@ const API_ROOT = path.join(process.cwd(), "src", "app", "api");
 /** Modules exportant les gardes de session/RBAC. Un wrapper doit y déléguer. */
 const GUARD_MODULES = ["@/lib/auth/api-guard", "@/lib/ai/guard"];
 
-/** Routes authentifiées autrement qu'par session applicative (signature HMAC entrante). */
-const NON_SESSION_ROUTES = ["/whatsapp/webhook/route.ts"];
+/**
+ * Routes authentifiées autrement que par session applicative :
+ * signature HMAC entrante (Meta) ou secret de webhook (Telegram).
+ */
+const NON_SESSION_ROUTES = [
+  "/whatsapp/webhook/route.ts",
+  "/monitoring/telegram/route.ts",
+];
 
 function listRouteFiles(dir: string): string[] {
   const out: string[] = [];
@@ -78,6 +84,16 @@ describe("Sécurité API — conventions multi-tenant", () => {
     );
     expect(src).toContain("verifyMetaSignature");
     expect(src).toContain("verifyMetaWebhookChallenge");
+  });
+
+  it("le webhook Telegram vérifie le secret et le chat autorisé", () => {
+    const src = fs.readFileSync(
+      path.join(API_ROOT, "monitoring", "telegram", "route.ts"),
+      "utf8",
+    );
+    expect(src).toContain("x-telegram-bot-api-secret-token");
+    expect(src).toContain("timingSafeEqual");
+    expect(src).toContain("authorizedChat(update)");
   });
 
   it("POST/PATCH avec body JSON utilisent stripOrganizationId (sauf auth)", () => {

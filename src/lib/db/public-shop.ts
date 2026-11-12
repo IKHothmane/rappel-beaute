@@ -9,11 +9,8 @@ import type {
   PublicProductOrderResult,
 } from "@/types/public-booking";
 import { randomBytes } from "crypto";
-import { Pool } from "pg";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
-
-const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
+import { pool } from "@/lib/db/pool";
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;

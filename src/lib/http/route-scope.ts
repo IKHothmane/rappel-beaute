@@ -1,20 +1,35 @@
 import { NextResponse } from "next/server";
 import { runInScope, TenantContextError, type TenantScope } from "@/lib/db/tenant-context";
+import { observeApi, routeLabel } from "@/lib/monitoring/events";
 
 type RouteResult = Response | Promise<Response>;
+
+function watch(args: unknown[], status: number, started: number, exception: boolean) {
+  void observeApi({
+    source: routeLabel(args[0]),
+    status,
+    durationMs: Date.now() - started,
+    exception,
+  }).catch(() => undefined);
+}
 
 function scoped(makeScope: () => TenantScope) {
   return <A extends unknown[], R extends RouteResult>(handler: (...args: A) => R) =>
     async (...args: A): Promise<Awaited<R>> => {
+      const started = Date.now();
       try {
-        return await runInScope(makeScope(), () => handler(...args));
+        const response = await runInScope(makeScope(), () => handler(...args));
+        if (response instanceof Response) watch(args, response.status, started, false);
+        return response;
       } catch (error) {
         if (error instanceof TenantContextError) {
+          watch(args, 403, started, false);
           return NextResponse.json(
             { error: "Accès refusé.", code: error.code },
             { status: 403 },
           ) as Awaited<R>;
         }
+        watch(args, 500, started, true);
         throw error;
       }
     };

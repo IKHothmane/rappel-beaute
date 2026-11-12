@@ -1,9 +1,6 @@
 import { randomBytes } from "crypto";
-import { Pool } from "pg";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { hashPassword } from "@/lib/auth/crypto";
-
-const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
+import { pool } from "@/lib/db/pool";
 
 /** Lien d'activation existant, réutilisé pour la réinitialisation. null si compte inconnu. */
 export async function issuePasswordResetToken(email: string): Promise<string | null> {

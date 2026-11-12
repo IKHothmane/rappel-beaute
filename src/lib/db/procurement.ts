@@ -1,6 +1,5 @@
 import { randomBytes } from "crypto";
-import { Pool, type PoolClient } from "pg";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
+import { type PoolClient } from "pg";
 import { createInventoryMovement } from "@/lib/db/inventory";
 import type {
   CreatePurchaseInput,
@@ -21,8 +20,7 @@ import type {
   UpdateSupplierInput,
 } from "@/types/procurement";
 import type { ProductUnit } from "@/types/inventory";
-
-const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
+import { pool } from "@/lib/db/pool";
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(8).toString("hex")}`;

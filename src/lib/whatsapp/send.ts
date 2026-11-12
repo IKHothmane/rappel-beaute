@@ -1,5 +1,3 @@
-import { Pool } from "pg";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
 import { normalizePhoneForWa } from "@/lib/db/whatsapp";
 import { writeAuditLog } from "@/lib/db/audit";
 import type { WhatsAppTaskItem } from "@/types/whatsapp";
@@ -10,8 +8,7 @@ import {
   TWILIO_FROM_MISSING_MESSAGE,
   twilioCredentialsPresent,
 } from "@/lib/whatsapp/twilio";
-
-const pool = withTenantIsolation(new Pool({ connectionString: process.env.DATABASE_URL }));
+import { pool } from "@/lib/db/pool";
 
 export type SendWhatsAppApiResult =
   | { ok: true; messageId: string; rawResponse?: unknown }

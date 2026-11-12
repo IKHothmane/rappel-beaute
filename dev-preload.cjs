@@ -9,6 +9,7 @@ const fs = require("fs");
 const LOCKED = [
   "src\\app\\api\\loyalty\\card-background",
   "src\\app\\api\\admin\\organizations\\[id]\\card-background",
+  "src\\app\\api\\monitoring\\test",
   "scripts",
 ];
 

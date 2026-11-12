@@ -1,3 +1,4 @@
+import "../dev-preload.cjs";
 import dotenv from "dotenv";
 
 dotenv.config();

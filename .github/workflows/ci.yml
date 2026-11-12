@@ -22,6 +22,10 @@ env:
   # 127.0.0.1 évite localhost → ::1 (Redis/Postgres IPv4-only sur GHA)
   DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rappel_beaute_ci?schema=public
   REDIS_URL: redis://127.0.0.1:6379
+  # Les tests n'utilisent que ces deux variables (tests/helpers/test-database.ts) ;
+  # elles désignent les services éphémères du job, jamais une base partagée.
+  DATABASE_TEST_URL: postgresql://postgres:postgres@127.0.0.1:5432/rappel_beaute_ci?schema=public
+  REDIS_TEST_URL: redis://127.0.0.1:6379
   SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long
   ENCRYPTION_KEY: ci-test-encryption-key-32chars!!
 

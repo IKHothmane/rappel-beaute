@@ -1,6 +1,33 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+/**
+ * Cible par défaut :
+ * - CI : l'application démarrée par le workflow sur sa base dédiée (port 3000) ;
+ * - local : le serveur de test `npm run dev:test` (port 3100, base DATABASE_TEST_URL),
+ *   jamais le serveur de dev habituel branché sur DATABASE_URL.
+ */
+const baseURL =
+  process.env.PLAYWRIGHT_BASE_URL ??
+  (process.env.CI ? "http://127.0.0.1:3000" : "http://127.0.0.1:3100");
+
+const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
+const PRODUCTION_HOST = /(^|\.)rappelbeauty\.com$/i;
+
+/** Les parcours E2E se connectent et écrivent : jamais sur la production. */
+function assertSafeTarget(url: string): void {
+  const host = new URL(url).hostname;
+  if (PRODUCTION_HOST.test(host)) {
+    throw new Error(`[e2e] Refus : ${host} est la production.`);
+  }
+  if (!LOCAL_HOSTS.includes(host) && process.env.PLAYWRIGHT_ALLOW_REMOTE !== "1") {
+    throw new Error(
+      `[e2e] ${host} n'est pas local. Pour un environnement distant de test, ` +
+        "définissez PLAYWRIGHT_ALLOW_REMOTE=1.",
+    );
+  }
+}
+
+assertSafeTarget(baseURL);
 
 /** En CI le workflow démarre l'app lui-même (logs visibles) — ne pas double-lancer. */
 const skipWebServer =

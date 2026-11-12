@@ -64,3 +64,9 @@ next-env.d.ts
 
 # build d'audit local (ne jamais versionner)
 /.next-audit/
+
+# base PostgreSQL locale des tests (embedded-postgres)
+/.test-db/
+
+# build du serveur de test (npm run dev:test)
+/.next-test/

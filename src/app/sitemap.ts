@@ -5,6 +5,7 @@ const entries: { path: string; priority: number; changeFrequency: "weekly" | "mo
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/solutions/institut-beaute/", priority: 0.9, changeFrequency: "weekly" },
   { path: "/fonctionnalites/", priority: 0.9, changeFrequency: "monthly" },
+  { path: "/creation-site-web/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/tarifs/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/gestion-rendez-vous/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/gestion-stock/", priority: 0.8, changeFrequency: "monthly" },

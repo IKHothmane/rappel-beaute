@@ -48,8 +48,8 @@ export default scopedPage(
         (card.phone?.startsWith("WL") && card.lastName === card.phone.slice(-4).toUpperCase()));
 
     return (
-      <main className="min-h-screen bg-vt-surface py-6 sm:py-10">
-        <div className="mx-auto max-w-md space-y-4 px-4">
+      <main className="min-h-screen bg-vt-surface py-[var(--vt-space-1p5rem)] sm:py-[var(--vt-space-2p5rem)]">
+        <div className="mx-auto max-w-[var(--vt-size-28rem)] space-y-[var(--vt-space-1rem)] px-[var(--vt-space-1rem)]">
           <RememberCard token={token} />
           <LoyaltyStampCard
             organizationName={card.organizationName}
@@ -82,9 +82,9 @@ export default scopedPage(
             />
           ) : (
             <>
-              <section className="rounded-2xl border border-[#F0DDE7] bg-white p-4 sm:p-5">
-                <h2 className="text-lg font-extrabold text-vt-ink">Mes informations</h2>
-                <dl className="mt-3 space-y-3 text-sm">
+              <section className="rounded-2xl border border-[#F0DDE7] bg-white p-[var(--vt-space-1rem)] sm:p-[var(--vt-space-1p25rem)]">
+                <h2 className="text-[length:var(--vt-text-1p125rem)]/[var(--vt-line-1p75rem)] font-extrabold text-vt-ink">Mes informations</h2>
+                <dl className="mt-[var(--vt-space-0p75rem)] space-y-[var(--vt-space-0p75rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)]">
                   {[
                     { label: "Prénom", value: card.firstName },
                     { label: "Nom", value: card.lastName },
@@ -94,7 +94,7 @@ export default scopedPage(
                     .map((item) => (
                       <div
                         key={item.label}
-                        className="flex flex-wrap items-baseline justify-between gap-2"
+                        className="flex flex-wrap items-baseline justify-between gap-[var(--vt-size-0p5rem)]"
                       >
                         <dt className="text-vt-muted-soft">{item.label}</dt>
                         <dd className="break-words font-semibold text-vt-ink">{item.value}</dd>
@@ -114,23 +114,23 @@ export default scopedPage(
           )}
 
           <section>
-            <h2 className="px-1 text-xl font-extrabold text-vt-ink">Historique des passages</h2>
-            <ul className="mt-3 space-y-3">
+            <h2 className="px-[var(--vt-size-0p25rem)] text-[length:var(--vt-text-1p25rem)]/[var(--vt-line-1p75rem)] font-extrabold text-vt-ink">Historique des passages</h2>
+            <ul className="mt-[var(--vt-space-0p75rem)] space-y-[var(--vt-space-0p75rem)]">
               {card.history.length === 0 ? (
-                <li className="rounded-2xl border border-[#F0DDE7] bg-white p-4 text-center text-sm text-vt-muted-soft">
+                <li className="rounded-2xl border border-[#F0DDE7] bg-white p-[var(--vt-space-1rem)] text-center text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] text-vt-muted-soft">
                   Votre premier passage validé apparaîtra ici.
                 </li>
               ) : (
                 card.history.map((item) => (
                   <li
                     key={`${item.at}-${item.service}`}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-[#F0DDE7] bg-white px-4 py-3 text-sm"
+                    className="flex items-center justify-between gap-[var(--vt-space-0p75rem)] rounded-2xl border border-[#F0DDE7] bg-white px-[var(--vt-space-1rem)] py-[var(--vt-space-0p75rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)]"
                   >
-                    <div className="min-w-0">
-                      <p className="text-xs text-vt-muted-soft">{day(item.at)}</p>
-                      <p className="mt-1 truncate font-semibold text-vt-ink">{item.service}</p>
+                    <div className="min-w-[var(--vt-size-0rem)]">
+                      <p className="text-[length:var(--vt-text-0p75rem)]/[var(--vt-line-1rem)] text-vt-muted-soft">{day(item.at)}</p>
+                      <p className="mt-[var(--vt-size-0p25rem)] truncate font-semibold text-vt-ink">{item.service}</p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-vt-surface-soft px-3 py-1 text-xs font-bold text-[#A83E70]">
+                    <span className="shrink-0 rounded-full bg-vt-surface-soft px-[var(--vt-space-0p75rem)] py-[var(--vt-size-0p25rem)] text-[length:var(--vt-text-0p75rem)]/[var(--vt-line-1rem)] font-bold text-[#A83E70]">
                       {item.points > 0 ? `+${item.points}` : item.points} passage
                     </span>
                   </li>
@@ -138,7 +138,7 @@ export default scopedPage(
               )}
             </ul>
           </section>
-          <p className="pb-4 text-center text-xs text-[#8C7682]">
+          <p className="pb-[var(--vt-space-1rem)] text-center text-[length:var(--vt-text-0p75rem)]/[var(--vt-line-1rem)] text-[#8C7682]">
             Carte personnelle · Les passages et récompenses sont confirmés par l’institut.
           </p>
         </div>

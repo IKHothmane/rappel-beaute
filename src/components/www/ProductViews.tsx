@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export function ReceiptView() {
   return (
-    <figure className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-white p-1.5 shadow-[0_24px_65px_-30px_rgba(23,16,24,0.55)]">
+    <figure className="mx-auto max-w-[var(--vt-size-64rem)] overflow-hidden rounded-2xl border border-white/10 bg-white p-[var(--vt-size-0p375rem)] shadow-[0_24px_65px_-30px_rgba(23,16,24,0.55)]">
       <Image
         src="/site/rappelbeauty-caisse-pc-reel.webp"
         alt="Caisse Rappel Beauty sur ordinateur"

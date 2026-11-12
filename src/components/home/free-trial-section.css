@@ -5,35 +5,35 @@
   min-width: 0;
 }
 .marketing-site .hm .free-trial-section h2 {
-  max-width: 650px;
+  max-width: var(--vt-size-650px);
   font-size: var(--vt-fs-h2);
   line-height: var(--vt-lh-h2);
   letter-spacing: -0.035em;
   color: #fff;
 }
 .hm .free-trial-section h2 + p {
-  margin-top: 14px;
+  margin-top: var(--vt-space-14px);
   font-size: var(--vt-fs-lead);
   line-height: var(--vt-lh-lead);
   color: rgb(255 255 255 / 90%);
 }
 .hm .free-trial-section ul {
-  margin-top: 18px;
+  margin-top: var(--vt-space-18px);
 }
 .hm .free-trial-section h3 {
-  margin-top: 4px;
+  margin-top: var(--vt-size-4px);
   font-size: var(--vt-fs-h3);
   line-height: var(--vt-lh-h3);
   color: var(--vt-ink-plum);
 }
 .hm .free-trial-section .free-trial-card-text {
-  margin-bottom: 32px;
+  margin-bottom: var(--vt-space-32px);
   font-size: var(--vt-fs-body);
   line-height: var(--vt-lh-body);
   color: var(--vt-muted);
 }
 .free-trial-section a {
-  min-height: 44px;
+  min-height: var(--vt-size-44px);
 }
 .free-trial-section .free-trial-cta {
   min-height: var(--vt-btn-h);
@@ -41,10 +41,10 @@
 @media (max-width: 480px) {
   .free-trial-section .free-trial-card-head {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: var(--vt-space-12px);
   }
   .free-trial-section .free-trial-cta {
-    padding-inline: 14px;
+    padding-inline: var(--vt-space-14px);
   }
 }
 @media (prefers-reduced-motion: reduce) {

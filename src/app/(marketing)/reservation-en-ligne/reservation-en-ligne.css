@@ -11,7 +11,7 @@
   );
   font-family: var(--font-inter), system-ui, sans-serif;
   font-size: var(--vt-fs-body);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
   color: var(--bk-ink);
 }
 .bk *,
@@ -29,8 +29,8 @@
   min-width: 0;
 }
 .bk-badge svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
 }
 .marketing-site .bk h1 {
   margin-top: var(--vt-gap-badge-title);
@@ -60,16 +60,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--vt-space-10px);
   min-height: var(--vt-btn-h);
-  padding: 13px 20px;
+  padding: var(--vt-space-13px) var(--vt-space-20px);
   border: 1px solid var(--vt-primary-bright);
-  border-radius: 999px;
+  border-radius: var(--vt-size-999px);
   color: var(--vt-primary);
   background: var(--vt-surface);
   font-size: var(--vt-fs-body);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   text-align: center;
   text-decoration: none;
   transition:
@@ -90,18 +90,18 @@
 .bk-promises {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 16px;
+  gap: var(--vt-space-12px) var(--vt-space-16px);
   padding: 0;
-  margin: 24px 0 0;
+  margin: var(--vt-space-24px) 0 0;
   list-style: none;
   font-size: var(--vt-fs-caption);
   font-weight: 600;
 }
 .bk-promises svg,
 .bk-integration li svg {
-  width: 17px;
-  height: 17px;
-  padding: 3px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
+  padding: var(--vt-size-3px);
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--vt-primary-vivid);
@@ -111,14 +111,14 @@
 .bk-hero-art {
   position: relative;
   isolation: isolate;
-  padding-left: 50px;
-  padding-bottom: 38px;
+  padding-left: var(--vt-space-50px);
+  padding-bottom: var(--vt-space-38px);
 }
 .bk-treatment-frame {
   aspect-ratio: 1.22;
   overflow: hidden;
   border-radius: 42% 8% 14% 18% / 34% 10% 18% 20%;
-  padding-bottom: 9px;
+  padding-bottom: var(--vt-space-9px);
   background: var(--vt-surface-deep);
 }
 .bk-treatment-frame img {
@@ -132,33 +132,33 @@
 .bk-hero-phone {
   position: absolute;
   width: 30%;
-  min-width: 165px;
+  min-width: var(--vt-size-165px);
   left: 0;
-  bottom: 44px;
+  bottom: var(--vt-size-44px);
 }
 .bk-hero-phone .cw-device-phone {
   --cw-unit: 0.6px;
 }
 .bk-hero-phone .cw-mini-hero h3 {
-  font-size: 16px;
+  font-size: var(--vt-text-16px);
 }
 .bk-hero-spa {
   position: absolute;
   left: -24px;
-  bottom: 18px;
+  bottom: var(--vt-size-18px);
   width: 30%;
   height: auto;
   pointer-events: none;
 }
 .bk-hero-art > p {
-  margin-top: 12px;
+  margin-top: var(--vt-space-12px);
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   text-align: center;
   color: var(--vt-muted-light);
-  font-size: 11px;
+  font-size: var(--vt-text-11px);
 }
 .marketing-site .bk-process > h2,
 .marketing-site .bk-benefits > h2,
@@ -175,16 +175,16 @@
 .bk-process ol {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 28px;
-  margin: 42px 0 0;
+  gap: var(--vt-space-28px);
+  margin: var(--vt-space-42px) 0 0;
   padding: 0;
   list-style: none;
 }
 .bk-process li {
   position: relative;
-  padding: 30px 16px 20px;
+  padding: var(--vt-space-30px) var(--vt-space-16px) var(--vt-space-20px);
   border: 1px solid var(--vt-line);
-  border-radius: 18px;
+  border-radius: var(--vt-size-18px);
   background: var(--vt-surface);
   text-align: center;
 }
@@ -196,8 +196,8 @@
   position: absolute;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: var(--vt-size-34px);
+  height: var(--vt-size-34px);
   top: -18px;
   left: 50%;
   transform: translateX(-50%);
@@ -205,41 +205,41 @@
   background: linear-gradient(var(--vt-pink-vivid), var(--vt-primary));
   color: white;
   font-size: var(--vt-fs-h4);
-  line-height: 1;
+  line-height: var(--vt-leading-1);
   font-weight: 650;
 }
 .bk-process li > svg:not(.bk-step-arrow) {
   display: block;
-  width: 38px;
-  height: 38px;
-  margin: 0 auto 14px;
+  width: var(--vt-size-38px);
+  height: var(--vt-size-38px);
+  margin: 0 auto var(--vt-space-14px);
   color: var(--vt-primary-vivid);
   stroke-width: 1.7;
 }
 .bk-process p {
   font-size: var(--vt-fs-xs);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
 }
 .bk-process .bk-step-arrow {
   position: absolute;
   top: 50%;
   right: -26px;
-  width: 22px;
-  height: 22px;
+  width: var(--vt-size-22px);
+  height: var(--vt-size-22px);
   transform: translateY(-50%);
   color: var(--vt-primary-vivid);
 }
 .bk-benefit-layout {
   display: grid;
   grid-template-columns: minmax(0, 0.32fr) minmax(0, 0.68fr);
-  gap: 30px;
-  padding-block: 40px;
+  gap: var(--vt-space-30px);
+  padding-block: var(--vt-space-40px);
   align-items: start;
 }
 .bk-demo {
-  padding: 24px;
+  padding: var(--vt-space-24px);
   border: 1px solid var(--vt-surface-pink);
-  border-radius: 22px;
+  border-radius: var(--vt-size-22px);
   background: linear-gradient(145deg, var(--vt-surface-pink), var(--vt-surface));
 }
 .marketing-site .bk-demo h3 {
@@ -250,28 +250,28 @@
   color: var(--bk-ink);
 }
 .bk-demo > p {
-  margin-top: 9px;
+  margin-top: var(--vt-space-9px);
   color: var(--bk-muted);
   font-size: var(--vt-fs-caption);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
 }
 .bk-demo form {
   display: grid;
-  gap: 13px;
-  margin-top: 18px;
+  gap: var(--vt-space-13px);
+  margin-top: var(--vt-space-18px);
 }
 .bk-demo-input {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding-left: 12px;
+  gap: var(--vt-space-9px);
+  padding-left: var(--vt-space-12px);
   border: 1px solid var(--vt-line);
-  border-radius: 10px;
+  border-radius: var(--vt-size-10px);
   background: var(--vt-surface);
 }
 .bk-demo-input > svg {
-  width: 21px;
-  height: 21px;
+  width: var(--vt-size-21px);
+  height: var(--vt-size-21px);
   flex-shrink: 0;
   color: var(--vt-primary-vivid);
 }
@@ -279,15 +279,15 @@
 .bk-demo-input input {
   width: 100%;
   min-width: 0;
-  min-height: 44px;
-  padding: 10px 8px;
+  min-height: var(--vt-size-44px);
+  padding: var(--vt-space-10px) var(--vt-size-8px);
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--vt-size-10px);
   background: transparent;
   color: #59344a;
   font-family: inherit;
   font-size: var(--vt-fs-body);
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
 }
 .bk-demo-input:focus-within {
   outline: 2px solid #df005b55;
@@ -306,20 +306,20 @@
 .bk-demo legend {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 9px;
+  gap: var(--vt-size-6px);
+  margin-bottom: var(--vt-space-9px);
   color: var(--bk-muted);
-  font-size: 11px;
+  font-size: var(--vt-text-11px);
 }
 .bk-demo legend svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
   color: var(--vt-primary-vivid);
 }
 .bk-demo-hours {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--vt-size-6px);
 }
 .bk-demo-hours label {
   position: relative;
@@ -335,14 +335,14 @@
 }
 .bk-demo-hours span {
   display: block;
-  padding: 8px 3px;
+  padding: var(--vt-size-8px) var(--vt-size-3px);
   border: 1px solid var(--vt-line);
-  border-radius: 8px;
+  border-radius: var(--vt-size-8px);
   background: var(--vt-surface);
   text-align: center;
   color: #745168;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--vt-text-11px);
+  line-height: var(--vt-leading-1p4);
 }
 .bk-demo-hours input:checked + span {
   background: var(--vt-primary-bright);
@@ -357,55 +357,55 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 46px;
-  padding: 11px 16px;
+  gap: var(--vt-space-10px);
+  min-height: var(--vt-size-46px);
+  padding: var(--vt-space-11px) var(--vt-space-16px);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--vt-size-999px);
   color: white;
   background: linear-gradient(155deg, var(--vt-primary-vivid), var(--vt-primary));
   font-family: inherit;
   font-size: var(--vt-fs-xs);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   cursor: pointer;
 }
 .bk-demo button[type="submit"] svg {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
 }
 .bk-demo > a {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
+  gap: var(--vt-size-8px);
+  margin-top: var(--vt-space-14px);
   color: var(--vt-primary);
   font-size: var(--vt-fs-caption);
   text-underline-offset: 4px;
 }
 .bk-demo > a svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
 }
 .bk-demo .bk-demo-result {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 12px;
+  gap: var(--vt-size-8px);
+  padding: var(--vt-space-12px);
   border: 1px solid var(--vt-line-strong);
-  border-radius: 10px;
+  border-radius: var(--vt-size-10px);
   background: var(--vt-surface);
   font-size: var(--vt-fs-caption);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
   color: #995470;
 }
 .bk-demo-result > svg {
-  width: 19px;
-  height: 19px;
+  width: var(--vt-size-19px);
+  height: var(--vt-size-19px);
   flex-shrink: 0;
   color: var(--vt-primary-bright);
-  margin-top: 2px;
+  margin-top: var(--vt-size-2px);
 }
 .bk-benefits > h2 {
   text-align: center;
@@ -413,22 +413,22 @@
 .bk-benefits > div {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 13px;
-  margin-top: 26px;
+  gap: var(--vt-space-13px);
+  margin-top: var(--vt-space-26px);
 }
 .bk-benefits article {
-  padding: 24px 14px;
+  padding: var(--vt-space-24px) var(--vt-space-14px);
   border: 1px solid var(--vt-surface-soft);
-  border-radius: 19px;
+  border-radius: var(--vt-size-19px);
   background: #ffffffb3;
   text-align: center;
   box-shadow: 0 5px 15px -10px #a4164b30;
 }
 .bk-benefits article > svg {
   display: block;
-  width: 35px;
-  height: 35px;
-  margin: 0 auto 13px;
+  width: var(--vt-size-35px);
+  height: var(--vt-size-35px);
+  margin: 0 auto var(--vt-space-13px);
   color: var(--vt-primary-vivid);
   stroke-width: 1.7;
 }
@@ -441,7 +441,7 @@
   overflow-wrap: anywhere;
 }
 .bk-benefits p {
-  margin-top: 10px;
+  margin-top: var(--vt-space-10px);
   color: var(--bk-muted);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
@@ -449,13 +449,13 @@
 .bk-channels {
   display: grid;
   grid-template-columns: minmax(0, 0.33fr) minmax(0, 0.42fr) minmax(0, 0.25fr);
-  gap: 28px;
+  gap: var(--vt-space-28px);
   align-items: center;
-  padding-bottom: 38px;
+  padding-bottom: var(--vt-space-38px);
 }
 .bk-website-art {
   position: relative;
-  padding: 14px 34px 38px 0;
+  padding: var(--vt-space-14px) var(--vt-space-34px) var(--vt-space-38px) 0;
 }
 .bk-website-art > .cw-device {
   --cw-unit: 0.58px;
@@ -463,81 +463,81 @@
 .bk-website-art > div:last-child {
   position: absolute;
   width: 28%;
-  min-width: 95px;
+  min-width: var(--vt-size-95px);
   right: 0;
   bottom: 0;
 }
 .bk-website-art .cw-device-phone {
   --cw-unit: 0.35px;
-  padding: 3px;
-  border-radius: 14px;
+  padding: var(--vt-size-3px);
+  border-radius: var(--vt-size-14px);
   border-width: 3px;
 }
 .bk-website-art .cw-device-phone .cw-mini-hero h3 {
-  font-size: 10px;
+  font-size: var(--vt-text-10px);
 }
 .bk-website-art .cw-device-phone .cw-mini-hero > div {
-  padding: 6px;
+  padding: var(--vt-size-6px);
 }
 .bk-website-art .cw-device-phone .cw-mini-times {
-  padding: 4px;
-  font-size: 5px;
-  gap: 3px;
+  padding: var(--vt-size-4px);
+  font-size: var(--vt-text-5px);
+  gap: var(--vt-size-3px);
 }
 .bk-channels > div > ul {
   display: grid;
-  gap: 16px;
+  gap: var(--vt-space-16px);
   list-style: none;
   padding: 0;
-  margin: 24px 0 0;
+  margin: var(--vt-space-24px) 0 0;
 }
 .bk-channels > div > ul > li {
   display: flex;
   align-items: flex-start;
-  gap: 11px;
+  gap: var(--vt-space-11px);
 }
 .bk-channels > div > ul svg {
-  width: 23px;
-  height: 23px;
+  width: var(--vt-size-23px);
+  height: var(--vt-size-23px);
   flex-shrink: 0;
   color: var(--vt-primary-vivid);
-  margin-top: 3px;
+  margin-top: var(--vt-size-3px);
 }
 .bk-channels strong {
   display: block;
   font-size: var(--vt-fs-xs);
-  line-height: 1.6;
+  line-height: var(--vt-leading-1p6);
   font-weight: 650;
 }
 .bk-channels p > span {
   display: block;
   font-size: var(--vt-fs-caption);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
   color: var(--bk-muted);
 }
 .bk-channels > div > a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 20px;
+  gap: var(--vt-size-8px);
+  margin-top: var(--vt-space-20px);
   color: var(--vt-primary);
   font-size: var(--vt-fs-xs);
   text-underline-offset: 4px;
 }
 .bk-channels > div > a svg {
-  width: 17px;
-  height: 17px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
 }
 .bk-integration {
-  padding: 24px 20px;
+  padding: var(--vt-space-24px) var(--vt-space-20px);
   border: 1px solid var(--vt-line);
-  border-radius: 22px;
+  border-radius: var(--vt-size-22px);
   background: linear-gradient(140deg, var(--vt-surface-soft), var(--vt-surface));
 }
 .bk-integration > svg {
-  width: 34px;
-  height: 34px;
-  margin-bottom: 14px;
+  width: var(--vt-size-34px);
+  height: var(--vt-size-34px);
+  margin-bottom: var(--vt-space-14px);
   color: var(--vt-primary-bright);
 }
 .marketing-site .bk-integration h3 {
@@ -549,23 +549,23 @@
 }
 .bk-integration ul {
   display: grid;
-  gap: 12px;
+  gap: var(--vt-space-12px);
   list-style: none;
-  margin: 20px 0 0;
+  margin: var(--vt-space-20px) 0 0;
   padding: 0;
 }
 .bk-integration li {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--vt-size-8px);
   font-size: var(--vt-fs-caption);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
 }
 .bk-integration li svg {
-  margin-top: 2px;
+  margin-top: var(--vt-size-2px);
 }
 .bk-details {
-  padding-block: 32px;
+  padding-block: var(--vt-space-32px);
   border-top: 1px solid #f1d7e4;
 }
 .bk-details > h2 {
@@ -575,21 +575,21 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
-  gap: 12px;
-  margin-top: 26px;
+  gap: var(--vt-space-12px);
+  margin-top: var(--vt-space-26px);
 }
 .bk details {
   border: 1px solid var(--vt-line);
-  border-radius: 14px;
+  border-radius: var(--vt-size-14px);
   background: #fffafdd6;
-  scroll-margin-top: 120px;
+  scroll-margin-top: var(--vt-size-120px);
 }
 .bk summary::-webkit-details-marker {
   display: none;
 }
 .bk summary svg {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
   flex-shrink: 0;
   color: var(--vt-primary-bright);
 }
@@ -597,7 +597,7 @@
   transform: rotate(45deg);
 }
 .bk details p {
-  padding: 0 18px 18px;
+  padding: 0 var(--vt-space-18px) var(--vt-space-18px);
   color: var(--bk-muted);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
@@ -605,40 +605,40 @@
 .bk details > a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 18px 18px;
+  gap: var(--vt-size-8px);
+  margin: 0 var(--vt-space-18px) var(--vt-space-18px);
   color: var(--vt-primary);
   font-size: var(--vt-fs-xs);
   text-underline-offset: 4px;
 }
 .bk details > a svg {
-  width: 17px;
-  height: 17px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
 }
 .bk-faq {
   display: grid;
   grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
-  gap: 40px;
-  padding-block: 26px 38px;
+  gap: var(--vt-space-40px);
+  padding-block: var(--vt-space-26px) var(--vt-space-38px);
 }
 .bk-faq > div {
   display: grid;
-  gap: 12px;
+  gap: var(--vt-space-12px);
 }
 .bk-cta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 20px;
-  padding: 30px;
-  margin-bottom: 36px;
-  border-radius: 24px;
+  gap: var(--vt-space-20px);
+  padding: var(--vt-space-30px);
+  margin-bottom: var(--vt-space-36px);
+  border-radius: var(--vt-size-24px);
   background: linear-gradient(110deg, var(--vt-primary-strong), var(--vt-primary-vivid));
   color: white;
 }
 .bk-cta > div {
   flex: 1;
-  min-width: 260px;
+  min-width: var(--vt-size-260px);
 }
 .marketing-site .bk-cta h2 {
   font-family: var(--font-fraunces), Georgia, serif;
@@ -648,7 +648,7 @@
   color: white;
 }
 .bk-cta p {
-  margin-top: 12px;
+  margin-top: var(--vt-space-12px);
   color: var(--vt-surface-soft);
   font-size: var(--vt-fs-xs);
 }
@@ -656,25 +656,25 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--vt-space-10px);
   min-height: var(--vt-btn-h);
-  padding: 12px 20px;
+  padding: var(--vt-space-12px) var(--vt-space-20px);
   border: 1px solid var(--vt-surface-soft);
-  border-radius: 999px;
+  border-radius: var(--vt-size-999px);
   background: var(--vt-surface);
   color: var(--vt-primary);
   font-size: var(--vt-fs-sm);
   font-weight: 600;
   text-decoration: none;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
 }
 .bk-cta > a:last-child {
   background: transparent;
   color: white;
 }
 .bk-cta > a svg {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
 }
 .bk a:focus-visible,
 .bk button:focus-visible,
@@ -684,20 +684,20 @@
 }
 @media (max-width: 1100px) {
   .bk-hero {
-    gap: 24px;
+    gap: var(--vt-space-24px);
   }
   .bk-hero-art {
-    padding-left: 25px;
+    padding-left: var(--vt-space-25px);
   }
   .bk-hero-phone {
-    min-width: 135px;
+    min-width: var(--vt-size-135px);
   }
   .bk-hero-phone .cw-mini-hero h3 {
-    font-size: 13px;
+    font-size: var(--vt-text-13px);
   }
   .bk-process ol {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 32px 20px;
+    gap: var(--vt-space-32px) var(--vt-space-20px);
   }
   .bk-process li:last-child {
     grid-column: 1/-1;
@@ -706,14 +706,14 @@
     display: none;
   }
   .bk-benefit-layout {
-    gap: 24px;
+    gap: var(--vt-space-24px);
     grid-template-columns: minmax(0, 0.36fr) minmax(0, 0.64fr);
   }
   .bk-benefits > div {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .bk-demo {
-    padding: 22px 18px;
+    padding: var(--vt-space-22px) var(--vt-space-18px);
   }
   .bk-channels {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -731,53 +731,53 @@
 @media (max-width: 760px) {
   .bk-hero {
     grid-template-columns: 1fr;
-    padding-top: 28px;
-    gap: 28px;
+    padding-top: var(--vt-space-28px);
+    gap: var(--vt-space-28px);
   }
   .bk-hero-art {
-    padding-left: 30px;
+    padding-left: var(--vt-space-30px);
   }
   .bk-hero-phone {
-    min-width: 125px;
+    min-width: var(--vt-size-125px);
     width: 34%;
   }
   .bk-hero-phone .cw-mini-hero h3 {
-    font-size: 12px;
+    font-size: var(--vt-text-12px);
   }
   .bk-hero-phone .cw-mini-hero > div {
-    padding: 8px;
+    padding: var(--vt-size-8px);
   }
   .bk-hero-phone .cw-device-phone {
     --cw-unit: 0.4px;
-    padding: 4px;
+    padding: var(--vt-size-4px);
     border-width: 3px;
-    border-radius: 16px;
+    border-radius: var(--vt-size-16px);
   }
   .bk-hero-phone .cw-mini-times {
-    font-size: 5px;
-    padding: 5px;
-    gap: 3px;
+    font-size: var(--vt-text-5px);
+    padding: var(--vt-size-5px);
+    gap: var(--vt-size-3px);
   }
   .bk-hero-phone .cw-mini-hero p {
     display: none;
   }
   .bk-process ol {
-    gap: 32px 16px;
+    gap: var(--vt-space-32px) var(--vt-space-16px);
   }
   .bk-benefit-layout {
     grid-template-columns: 1fr;
-    padding-block: 30px;
+    padding-block: var(--vt-space-30px);
   }
   .bk-benefits > div {
-    margin-top: 22px;
+    margin-top: var(--vt-space-22px);
   }
   .bk-channels {
     grid-template-columns: 1fr;
-    gap: 28px;
-    padding-bottom: 26px;
+    gap: var(--vt-space-28px);
+    padding-bottom: var(--vt-space-26px);
   }
   .bk-website-art {
-    max-width: 440px;
+    max-width: var(--vt-size-440px);
     width: 100%;
     margin-inline: auto;
   }
@@ -792,10 +792,10 @@
   }
   .bk-faq {
     grid-template-columns: 1fr;
-    gap: 22px;
+    gap: var(--vt-space-22px);
   }
   .bk-cta {
-    padding: 26px 22px;
+    padding: var(--vt-space-26px) var(--vt-space-22px);
   }
   .bk-cta > div {
     min-width: 0;
@@ -807,7 +807,7 @@
 }
 @media (max-width: 400px) {
   .marketing-site .bk h1 {
-    font-size: 2rem;
+    font-size: var(--vt-text-2rem);
   }
   .bk-benefits > div {
     grid-template-columns: 1fr;
@@ -816,7 +816,7 @@
     grid-template-columns: 1fr;
   }
   .bk-hero-phone {
-    min-width: 110px;
+    min-width: var(--vt-size-110px);
   }
 }
 @media (max-width: 360px) {

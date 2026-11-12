@@ -18,8 +18,8 @@ import "./home.css";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "Rappel Beauty – Logiciel de gestion pour institut de beauté au Maroc",
-  description: `Rappel Beauty est le logiciel de gestion pour instituts de beauté au Maroc : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne. Essai gratuit ${PUBLIC_OFFER.trialDays} jours.`,
+  title: "Logiciel institut de beauté au Maroc | Rappel Beauty",
+  description: `Logiciel pour instituts de beauté au Maroc : rendez-vous, clientes, caisse, stock et réservation. Essai gratuit ${PUBLIC_OFFER.trialDays} jours.`,
   canonical: "/",
 });
 

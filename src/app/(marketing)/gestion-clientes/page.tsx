@@ -18,7 +18,7 @@ import "../showcase-landing.css";
 export const dynamic = "force-static";
 
 export const metadata = marketingPageMetadata({
-  title: "Logiciel de gestion des clientes pour institut de beauté · Rappel Beauty",
+  title: "Gestion des clientes d’un institut | Rappel Beauty",
   description:
     "Centralisez les fiches, l’historique, la fidélité et les messages de vos clientes dans Rappel Beauty.",
   canonical: "/gestion-clientes/",

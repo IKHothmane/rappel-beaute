@@ -28,9 +28,9 @@ import "./gestion-rendez-vous.css";
 export const dynamic = "force-static";
 
 export const metadata = marketingPageMetadata({
-  title: "Logiciel de rendez-vous pour institut de beauté · Rappel Beauty",
+  title: "Rendez-vous pour institut de beauté | Rappel Beauty",
   description:
-    "Gérez les rendez-vous de votre institut de beauté avec un agenda clair, les disponibilités de votre équipe, la liste d'attente et un planning adapté à votre activité.",
+    "Agenda de votre institut : disponibilités de l’équipe, liste d’attente et planning adapté à votre activité.",
   canonical: "/gestion-rendez-vous/",
 });
 

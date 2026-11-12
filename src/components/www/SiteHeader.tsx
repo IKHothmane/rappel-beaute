@@ -19,17 +19,17 @@ export function SiteHeader() {
   }, []);
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5 md:pt-4">
+    <header className="pointer-events-none fixed inset-x-[var(--vt-size-0rem)] top-[var(--vt-size-0rem)] z-50 px-[var(--vt-space-0p75rem)] pt-[var(--vt-space-0p75rem)] md:px-[var(--vt-space-1p25rem)] md:pt-[var(--vt-space-1rem)]">
       <div
-        className={`pointer-events-auto mx-auto max-w-[1200px] rounded-[1.25rem] border border-white/80 shadow-[0_10px_28px_rgb(186_0_73/12%)] backdrop-blur-md transition-all duration-300 ${
+        className={`pointer-events-auto mx-auto max-w-[var(--vt-size-1200px)] rounded-[var(--vt-size-1p25rem)] border border-white/80 shadow-[0_10px_28px_rgb(186_0_73/12%)] backdrop-blur-md transition-all duration-300 ${
           scrolled ? "bg-white/95" : "bg-white/75"
         }`}
       >
-        <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-5">
-          <BrandLogo height={40} className="max-h-10" priority />
+        <div className="flex h-[var(--vt-size-4rem)] items-center justify-between gap-[var(--vt-space-0p75rem)] px-[var(--vt-space-1rem)] md:px-[var(--vt-space-1p25rem)]">
+          <BrandLogo height={40} className="max-h-[var(--vt-size-2p5rem)]" priority />
 
           <nav
-            className="hidden items-center gap-3 lg:flex xl:gap-5"
+            className="hidden items-center gap-[var(--vt-space-0p75rem)] lg:flex xl:gap-[var(--vt-space-1p25rem)]"
             aria-label="Navigation principale"
           >
             {NAV.map((item) => (
@@ -39,49 +39,49 @@ export function SiteHeader() {
                 aria-current={
                   pathname?.replace(/\/$/, "") === item.href.replace(/\/$/, "") ? "page" : undefined
                 }
-                className="relative text-sm font-medium text-ink/70 transition hover:text-ink after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
+                className="relative text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] font-medium text-ink/70 transition hover:text-ink after:absolute after:-bottom-1 after:left-[var(--vt-size-0rem)] after:h-[var(--vt-size-1px)] after:w-[var(--vt-size-0rem)] after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-[var(--vt-size-0p5rem)]">
             <Link
               href="/professionnel/"
-              className="btn-ghost hidden px-3 py-2 text-sm transition hover:scale-[1.02] lg:inline-flex"
+              className="btn-ghost hidden px-[var(--vt-space-0p75rem)] py-[var(--vt-size-0p5rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] transition hover:scale-[1.02] lg:inline-flex"
             >
               Je suis un professionnel
             </Link>
             <Link
               href="/connexion/"
-              className="btn-primary px-3 py-2 text-sm transition hover:scale-[1.02]"
+              className="btn-primary px-[var(--vt-space-0p75rem)] py-[var(--vt-size-0p5rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] transition hover:scale-[1.02]"
             >
               Se connecter
             </Link>
 
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-line transition hover:bg-primary-light lg:hidden"
+              className="flex h-[var(--vt-btn-h)] w-[var(--vt-btn-h)] items-center justify-center rounded-lg border border-line transition hover:bg-primary-light lg:hidden"
               aria-expanded={open}
               aria-controls="site-mobile-nav"
               aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
               onClick={() => setOpen((v) => !v)}
             >
               <span className="sr-only">Menu</span>
-              <span className="relative flex h-3.5 w-4 flex-col justify-between">
+              <span className="relative flex h-[var(--vt-size-0p875rem)] w-[var(--vt-size-1rem)] flex-col justify-between">
                 <span
-                  className={`block h-px w-full origin-center bg-ink transition duration-300 ${
+                  className={`block h-[var(--vt-size-1px)] w-full origin-center bg-ink transition duration-300 ${
                     open ? "translate-y-[6.5px] rotate-45" : ""
                   }`}
                 />
                 <span
-                  className={`block h-px w-full bg-ink transition duration-300 ${
+                  className={`block h-[var(--vt-size-1px)] w-full bg-ink transition duration-300 ${
                     open ? "opacity-0" : ""
                   }`}
                 />
                 <span
-                  className={`block h-px w-3 origin-center bg-ink transition duration-300 ${
+                  className={`block h-[var(--vt-size-1px)] w-[var(--vt-size-0p75rem)] origin-center bg-ink transition duration-300 ${
                     open ? "w-full -translate-y-[6.5px] -rotate-45" : ""
                   }`}
                 />
@@ -97,8 +97,8 @@ export function SiteHeader() {
             open ? "visible grid-rows-[1fr] opacity-100" : "invisible grid-rows-[0fr] opacity-0"
           }`}
         >
-          <div className="min-h-0 overflow-hidden">
-            <nav className="container-rb flex flex-col gap-3 border-t border-line/70 py-4">
+          <div className="min-h-[var(--vt-size-0rem)] overflow-hidden">
+            <nav className="container-rb flex flex-col gap-[var(--vt-space-0p75rem)] border-t border-line/70 py-[var(--vt-space-1rem)]">
               {NAV.map((item, i) => (
                 <div
                   key={item.href}
@@ -114,7 +114,7 @@ export function SiteHeader() {
                         ? "page"
                         : undefined
                     }
-                    className="block text-sm font-medium"
+                    className="block text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] font-medium"
                     onClick={() => setOpen(false)}
                   >
                     {item.label}
@@ -123,7 +123,7 @@ export function SiteHeader() {
               ))}
               <Link
                 href="/professionnel/"
-                className="btn-ghost mt-2 w-full"
+                className="btn-ghost mt-[var(--vt-size-0p5rem)] w-full"
                 onClick={() => setOpen(false)}
               >
                 Je suis un professionnel

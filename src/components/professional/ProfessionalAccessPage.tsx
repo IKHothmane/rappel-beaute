@@ -14,7 +14,6 @@ import {
   Globe,
   Mail,
   MapPin,
-  Monitor,
   Package,
   Phone,
   ShieldCheck,
@@ -36,7 +35,6 @@ export type ProfessionalFormData = {
   email: string;
   website: string;
   needs: string;
-  noWebsite: boolean;
 };
 export type ProfessionalCredentials = { identifier: string; temporaryPassword: string };
 type Props = {
@@ -54,7 +52,6 @@ const initialValues: ProfessionalFormData = {
   email: "",
   website: "",
   needs: "",
-  noWebsite: false,
 };
 const MODULES = [
   { icon: CalendarDays, label: "Agenda & rendez-vous" },
@@ -192,7 +189,7 @@ export default function ProfessionalAccessPage({
       instituteName: form.instituteName.trim(),
       whatsapp: limitPhoneDigits(form.whatsapp),
       email: form.email.trim(),
-      website: form.noWebsite ? "" : form.website.trim(),
+      website: form.website.trim(),
       needs: form.needs.trim(),
     });
   }
@@ -395,27 +392,13 @@ export default function ProfessionalAccessPage({
                           type="text"
                           inputMode="url"
                           autoComplete="url"
-                          placeholder={
-                            form.noWebsite ? "Pas de site web" : "https://www.moninstitut.ma"
-                          }
-                          disabled={form.noWebsite}
+                          placeholder="https://www.moninstitut.ma"
                           maxLength={L.website}
-                          value={form.noWebsite ? "" : form.website}
+                          value={form.website}
                           onChange={(e) => update("website", e.target.value)}
                         />
                       </div>
                     </Field>
-                    <div className="pro-website-choice">
-                      <span>Vous n’avez pas de site web ?</span>
-                      <button
-                        type="button"
-                        aria-pressed={form.noWebsite}
-                        onClick={() => update("noWebsite", !form.noWebsite)}
-                      >
-                        <Monitor aria-hidden="true" />
-                        {form.noWebsite ? "Demande ajoutée" : "Demander un site web"}
-                      </button>
-                    </div>
                   </div>
                   <Field id="pro-needs" label="Précisions et besoins (facultatif)">
                     <textarea

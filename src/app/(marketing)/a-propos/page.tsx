@@ -22,9 +22,9 @@ import "./a-propos.css";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = marketingPageMetadata({
-  title: "À propos de Rappel Beauty · Logiciel institut de beauté au Maroc",
+  title: "À propos · logiciel institut de beauté | Rappel Beauty",
   description:
-    "Découvrez Rappel Beauty : un logiciel pensé pour simplifier le quotidien des instituts de beauté au Maroc. Notre mission, notre vision et les valeurs qui guident le produit.",
+    "Rappel Beauty simplifie le quotidien des instituts de beauté au Maroc : mission, vision et valeurs du logiciel.",
   canonical: "/a-propos/",
 });
 

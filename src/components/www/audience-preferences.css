@@ -1,17 +1,17 @@
 .audience-banner {
   position: fixed;
   z-index: 80;
-  inset: auto 16px 16px;
+  inset: auto var(--vt-size-16px) var(--vt-size-16px);
   display: flex;
   align-items: center;
-  gap: 24px;
-  max-width: 1000px;
-  max-height: calc(100dvh - 32px);
+  gap: var(--vt-space-24px);
+  max-width: var(--vt-size-1000px);
+  max-height: calc(100dvh - var(--vt-size-32px));
   overflow-y: auto;
   margin-inline: auto;
-  padding: 22px 24px;
+  padding: var(--vt-space-22px) var(--vt-space-24px);
   border: 1px solid #e9b7ce;
-  border-radius: 20px;
+  border-radius: var(--vt-size-20px);
   background: #fff8fc;
   color: #410c27;
   box-shadow: 0 12px 60px #55112925;
@@ -20,38 +20,38 @@
 .marketing-site .audience-banner h2 {
   margin: 0;
   font-family: inherit;
-  font-size: 17px;
+  font-size: var(--vt-text-17px);
   font-weight: 650;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   letter-spacing: 0;
 }
 .audience-banner p {
-  margin: 8px 0;
-  font-size: 14px;
-  line-height: 1.6;
+  margin: var(--vt-size-8px) 0;
+  font-size: var(--vt-text-14px);
+  line-height: var(--vt-leading-1p6);
   color: #6b5763;
 }
 .audience-banner a {
   color: #a80045;
-  font-size: 14px;
+  font-size: var(--vt-text-14px);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 .audience-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--vt-space-10px);
   flex-shrink: 0;
 }
 .audience-actions button {
-  min-height: 44px;
-  padding: 10px 18px;
+  min-height: var(--vt-size-44px);
+  padding: var(--vt-space-10px) var(--vt-space-18px);
   border: 1px solid #ba0049;
-  border-radius: 999px;
+  border-radius: var(--vt-size-999px);
   color: #a80045;
   background: white;
   font:
-    600 14px/1.4 var(--font-inter),
+    600 var(--vt-text-14px)/1.4 var(--font-inter),
     system-ui,
     sans-serif;
   cursor: pointer;
@@ -81,8 +81,8 @@
   .audience-banner {
     align-items: stretch;
     flex-direction: column;
-    gap: 14px;
-    padding: 20px;
+    gap: var(--vt-space-14px);
+    padding: var(--vt-space-20px);
   }
   .audience-actions {
     justify-content: flex-end;

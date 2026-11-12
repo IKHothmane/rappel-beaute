@@ -13,7 +13,7 @@ const COLUMNS = [
     icon: Layers,
     links: [
       { href: "/solutions/institut-beaute/", label: "Institut de beauté" },
-      { href: "/creation-site-web/", label: "Création de site web" },
+      { href: "/gestion-clientes/", label: "Gestion des clientes" },
       { href: "/gestion-rendez-vous/", label: "Gestion des rendez-vous" },
       { href: "/reservation-en-ligne/", label: "Réservation en ligne" },
       { href: "/fidelite/", label: "Fidélité clientes" },

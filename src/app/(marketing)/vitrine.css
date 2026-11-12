@@ -2,11 +2,11 @@
 
 .vt-skip-link {
   position: fixed;
-  top: 8px;
-  left: 16px;
+  top: var(--vt-size-8px);
+  left: var(--vt-size-16px);
   z-index: 100;
-  padding: 12px 20px;
-  border-radius: 10px;
+  padding: var(--vt-space-12px) var(--vt-space-20px);
+  border-radius: var(--vt-size-10px);
   background: #fff;
   color: #a80045;
   font-weight: 600;
@@ -16,7 +16,7 @@
   transform: translateY(0);
 }
 #main-content {
-  scroll-margin-top: 96px;
+  scroll-margin-top: var(--vt-size-96px);
 }
 @media (prefers-reduced-motion: no-preference) {
   .vt-enter {
@@ -42,19 +42,19 @@ html:has(.marketing-site) {
 .marketing-site {
   background: #fff;
   color: var(--vt-ink);
-  line-height: 1.6;
-  font-size: 1rem;
+  line-height: var(--vt-leading-1p6);
+  font-size: var(--vt-text-1rem);
 }
 .marketing-site > header {
   background: transparent;
   border: 0;
 }
 .marketing-site > main {
-  padding-top: 4.75rem;
+  padding-top: var(--vt-size-4p75rem);
 }
 @media (min-width: 768px) {
   .marketing-site > main {
-    padding-top: 5.5rem;
+    padding-top: var(--vt-size-5p5rem);
   }
 }
 .marketing-site > footer {
@@ -97,7 +97,7 @@ body:has(.sp)::before {
 .marketing-site .btn-primary,
 .marketing-site .btn-ghost {
   min-height: var(--vt-btn-h);
-  border-radius: 12px;
+  border-radius: var(--vt-size-12px);
 }
 .marketing-site .btn-primary {
   box-shadow: 0 4px 12px rgb(144 0 55 / 12%);
@@ -121,9 +121,9 @@ body:has(.sp)::before {
 .vt-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 14px;
-  border-radius: 999px;
+  gap: var(--vt-size-8px);
+  padding: var(--vt-size-5px) var(--vt-space-14px);
+  border-radius: var(--vt-size-999px);
   background: var(--vt-surface-pink);
   color: var(--vt-primary-strong);
   font-size: var(--vt-fs-caption);
@@ -141,7 +141,7 @@ body:has(.sp)::before {
 .bk-hero {
   display: grid;
   grid-template-columns: minmax(0, 0.44fr) minmax(0, 0.56fr);
-  gap: 32px;
+  gap: var(--vt-space-32px);
   align-items: center;
   padding-block: var(--vt-hero-y);
 }
@@ -155,8 +155,8 @@ body:has(.sp)::before {
 .eng-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 28px;
+  gap: var(--vt-space-12px);
+  margin-top: var(--vt-space-28px);
 }
 
 .ib-actions svg,
@@ -171,8 +171,8 @@ body:has(.sp)::before {
 .tp-contact svg,
 .cw-primary svg,
 .cw-secondary svg {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
   flex-shrink: 0;
 }
 
@@ -180,8 +180,8 @@ body:has(.sp)::before {
 .sp-promises {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 16px;
-  margin: 24px 0 0;
+  gap: var(--vt-space-12px) var(--vt-space-16px);
+  margin: var(--vt-space-24px) 0 0;
   padding: 0;
   list-style: none;
   font-size: var(--vt-fs-caption);
@@ -192,14 +192,14 @@ body:has(.sp)::before {
 .cw-promises li {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--vt-size-7px);
 }
 
 .ib-highlights,
 .rdv-highlights {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  padding-block: 24px;
+  padding-block: var(--vt-space-24px);
 }
 
 .ib-highlight-icon svg,
@@ -208,14 +208,14 @@ body:has(.sp)::before {
 .sp-step-icon svg,
 .sp-feature-icon svg,
 .sp-perk-icon svg {
-  width: 28px;
-  height: 28px;
+  width: var(--vt-size-28px);
+  height: var(--vt-size-28px);
   stroke-width: 1.7;
 }
 
 .ib-section-heading,
 .rdv-section-heading {
-  max-width: 850px;
+  max-width: var(--vt-size-850px);
   margin-inline: auto;
   text-align: center;
 }
@@ -224,8 +224,8 @@ body:has(.sp)::before {
 .ib-local > a svg,
 .fq-answer > a svg,
 .ml-pill svg {
-  width: 17px;
-  height: 17px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
   flex-shrink: 0;
 }
 
@@ -264,7 +264,7 @@ body:has(.sp)::before {
 .bk-process > h2,
 .dm-explorer > h2 {
   text-align: center;
-  max-width: 1000px;
+  max-width: var(--vt-size-1000px);
   margin-inline: auto;
 }
 
@@ -288,23 +288,23 @@ body:has(.sp)::before {
 .eng-promises li {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--vt-size-7px);
 }
 
 .rdv-hero-visual,
 .dm-hero-art {
   position: relative;
   isolation: isolate;
-  padding-block: 32px;
+  padding-block: var(--vt-space-32px);
 }
 
 .ml-notice svg,
 .ct-remote p svg {
-  width: 20px;
-  height: 20px;
+  width: var(--vt-size-20px);
+  height: var(--vt-size-20px);
   flex-shrink: 0;
   color: var(--vt-primary-bright);
-  margin-top: 2px;
+  margin-top: var(--vt-size-2px);
 }
 
 .bk summary,
@@ -313,13 +313,13 @@ body:has(.sp)::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 17px 18px;
+  gap: var(--vt-space-16px);
+  padding: var(--vt-space-17px) var(--vt-space-18px);
   list-style: none;
   cursor: pointer;
   font-size: var(--vt-fs-sm);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: var(--vt-leading-1p5);
 }
 
 .tp-laptop,
@@ -328,4 +328,17 @@ body:has(.sp)::before {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* Les maquettes occupent moins de place sur ordinateur et gardent leur largeur mobile. */
+.marketing-site :is(.tp-visual, .fn-hero-visual, .rdv-hero-visual, .sp-device, .application-showcase-images) {
+  width: var(--vt-visual-width);
+  justify-self: center;
+  margin-inline: auto;
+}
+
+/* Préserver les zones tactiles lorsque les espacements des cartes diminuent. */
+.marketing-site :is(.btn-primary, .btn-ghost, .faq-cta) {
+  min-height: var(--vt-btn-h);
+  font-size: var(--vt-fs-btn);
 }

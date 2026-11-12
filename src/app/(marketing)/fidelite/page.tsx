@@ -7,7 +7,7 @@ export const dynamic = "force-static";
 export const metadata = marketingPageMetadata({
   title: "Logiciel de fidélité pour institut de beauté · Rappel Beauty",
   description:
-    "Fidélisez les clientes de votre institut de beauté avec Rappel Beauty : programme de fidélité, suivi des avantages, historique et intégration avec les rendez-vous et les ventes.",
+    "Fidélisez vos clientes : programme, avantages et historique, reliés aux rendez-vous et aux ventes.",
   canonical: "/fidelite/",
 });
 

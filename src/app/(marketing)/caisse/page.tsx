@@ -10,7 +10,7 @@ export const dynamic = "force-static";
 export const metadata = marketingPageMetadata({
   title: "Logiciel de caisse pour institut de beauté · Rappel Beauty",
   description:
-    "Gérez la caisse et les ventes de votre institut de beauté avec Rappel Beauty : encaissements, paiements, dépenses, ventes de produits, facturation et suivi financier.",
+    "Caisse et ventes de votre institut : encaissements, paiements, dépenses, produits et suivi financier.",
   canonical: "/caisse/",
 });
 
@@ -65,61 +65,61 @@ const SECTIONS = [
 export default function CaissePage() {
   return (
     <>
-      <section className="border-b border-line bg-paper py-14 sm:py-20">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+      <section className="border-b border-line bg-paper py-[var(--vt-space-3p5rem)] sm:py-[var(--vt-space-5rem)]">
+        <div className="mx-auto max-w-[var(--vt-size-48rem)] px-[var(--vt-space-1rem)] text-center sm:px-[var(--vt-space-1p5rem)]">
           <Reveal>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[11px]">
+            <p className="text-[length:var(--vt-text-10px)] font-bold uppercase tracking-[0.18em] text-primary sm:text-[length:var(--vt-text-11px)]">
               Caisse pour instituts de beauté au Maroc
             </p>
-            <h1 className="mt-3 font-display text-[length:var(--vt-fs-h1)] leading-[var(--vt-lh-h1)] tracking-tight text-ink">
+            <h1 className="mt-[var(--vt-space-0p75rem)] font-display text-[length:var(--vt-fs-h1)] leading-[var(--vt-lh-h1)] tracking-tight text-ink">
               Caisse pour institut de beauté
             </h1>
-            <p className="mt-5 text-[length:var(--vt-fs-lead)] leading-[var(--vt-lh-lead)] text-ink/70">
+            <p className="mt-[var(--vt-space-1p25rem)] text-[length:var(--vt-fs-lead)] leading-[var(--vt-lh-lead)] text-ink/70">
               Encaissements, paiements, dépenses, factures et ventes de produits, dans le logiciel
               de l&apos;institut.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-[var(--vt-space-2rem)] flex flex-col items-center justify-center gap-[var(--vt-space-0p75rem)] sm:flex-row">
               <Link
                 href="/professionnel/"
-                className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark"
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-[var(--vt-space-1p5rem)] py-[var(--vt-space-0p75rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] font-semibold text-white shadow-sm transition hover:bg-primary-dark"
               >
                 Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
               </Link>
               <Link
                 href="/fonctionnalites/"
-                className="inline-flex items-center justify-center rounded-lg border border-line bg-white px-6 py-3 text-sm font-semibold text-ink transition hover:border-primary/40"
+                className="inline-flex items-center justify-center rounded-lg border border-line bg-white px-[var(--vt-space-1p5rem)] py-[var(--vt-space-0p75rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] font-semibold text-ink transition hover:border-primary/40"
               >
                 Voir toutes les fonctionnalités
               </Link>
             </div>
-            <p className="mt-4 text-xs text-ink/55 sm:text-sm">
+            <p className="mt-[var(--vt-space-1rem)] text-[length:var(--vt-text-0p75rem)]/[var(--vt-line-1rem)] text-ink/55 sm:text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)]">
               Sans engagement · {PUBLIC_OFFER.trialDays} jours gratuits · Sans carte bancaire
             </p>
           </Reveal>
         </div>
       </section>
-      <section className="bg-institut px-4 py-12 sm:px-6">
+      <section className="bg-institut px-[var(--vt-space-1rem)] py-[var(--vt-space-3rem)] sm:px-[var(--vt-space-1p5rem)]">
         <ReceiptView />
       </section>
 
-      <div className="mx-auto max-w-3xl space-y-8 px-4 py-12 sm:space-y-12 sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-[var(--vt-size-48rem)] space-y-[var(--vt-space-2rem)] px-[var(--vt-space-1rem)] py-[var(--vt-space-3rem)] sm:space-y-[var(--vt-space-3rem)] sm:px-[var(--vt-space-1p5rem)] sm:py-[var(--vt-space-4rem)]">
         {SECTIONS.map((section, index) => (
           <Reveal key={section.id}>
             <section
               id={section.id}
-              className={`scroll-mt-28 ${index === 0 ? "" : "border-t border-line pt-8 sm:pt-12"}`}
+              className={`scroll-mt-28 ${index === 0 ? "" : "border-t border-line pt-[var(--vt-space-2rem)] sm:pt-[var(--vt-space-3rem)]"}`}
             >
-              <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
+              <h2 className="font-display text-[length:var(--vt-text-1p5rem)]/[var(--vt-line-2rem)] font-light text-ink sm:text-[length:var(--vt-text-1p875rem)]/[var(--vt-line-2p25rem)]">
                 {section.title}
               </h2>
-              <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">
+              <p className="mt-[var(--vt-space-1rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-[var(--vt-leading-1p625)] text-ink/70 sm:text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)]">
                 {section.text}
               </p>
               {section.id === "pos" ? (
-                <p className="mt-4">
+                <p className="mt-[var(--vt-space-1rem)]">
                   <Link
                     href="/gestion-stock/"
-                    className="text-sm font-semibold text-primary hover:text-primary-dark"
+                    className="text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] font-semibold text-primary hover:text-primary-dark"
                   >
                     Découvrir la gestion du stock
                   </Link>
@@ -145,17 +145,17 @@ export default function CaissePage() {
           },
         ]}
       />
-      <section className="vt-on-dark bg-institut py-14 text-center text-white sm:py-20">
-        <div className="mx-auto max-w-2xl px-4">
+      <section className="vt-on-dark bg-institut py-[var(--vt-space-3p5rem)] text-center text-white sm:py-[var(--vt-space-5rem)]">
+        <div className="mx-auto max-w-[var(--vt-size-42rem)] px-[var(--vt-space-1rem)]">
           <h2 className="font-display text-[length:var(--vt-fs-h2)] leading-[var(--vt-lh-h2)]">
             Essayez Rappel Beauty pendant {PUBLIC_OFFER.trialDays} jours
           </h2>
-          <p className="mt-4 text-sm text-white/75 sm:text-base">
+          <p className="mt-[var(--vt-space-1rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] text-white/75 sm:text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)]">
             Sans engagement et sans carte bancaire.
           </p>
           <Link
             href="/professionnel/"
-            className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+            className="mt-[var(--vt-space-1p5rem)] inline-flex items-center justify-center rounded-lg bg-primary px-[var(--vt-space-1p5rem)] py-[var(--vt-space-0p75rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] font-semibold text-white transition hover:bg-primary-dark"
           >
             Essayer gratuitement {PUBLIC_OFFER.trialDays} jours
           </Link>

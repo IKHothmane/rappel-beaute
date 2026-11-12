@@ -18,7 +18,7 @@ import "../showcase-landing.css";
 export const dynamic = "force-static";
 
 export const metadata = marketingPageMetadata({
-  title: "Logiciel de gestion de stock pour institut de beauté · Rappel Beauty",
+  title: "Logiciel de stock pour institut beauté | Rappel Beauty",
   description:
     "Gérez les produits et le stock de votre institut de beauté : catalogue, quantités, alertes, achats, fournisseurs et consommations en cabine.",
   canonical: "/gestion-stock/",

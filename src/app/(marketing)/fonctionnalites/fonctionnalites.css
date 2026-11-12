@@ -33,7 +33,7 @@
   display: grid;
   grid-template-columns: minmax(0, 0.46fr) minmax(0, 0.54fr);
   align-items: center;
-  gap: 24px;
+  gap: var(--vt-space-24px);
   padding-block: var(--vt-hero-y);
 }
 .fn-hero > * {
@@ -51,9 +51,9 @@
 .fn-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
-  border-radius: 999px;
+  gap: var(--vt-size-8px);
+  padding: var(--vt-size-7px) var(--vt-space-14px);
+  border-radius: var(--vt-size-999px);
   background: var(--vt-surface-pink);
   color: var(--vt-primary-strong);
   font-size: var(--vt-fs-caption);
@@ -61,8 +61,8 @@
   letter-spacing: 0.045em;
 }
 .fn-badge svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
 }
 .marketing-site .fn h1 {
   max-width: var(--vt-measure-title);
@@ -86,7 +86,7 @@
   right: 0;
   bottom: -5px;
   width: 75%;
-  height: 3px;
+  height: var(--vt-size-3px);
   border-radius: 50%;
   background: var(--vt-pink);
   transform: rotate(-2deg);
@@ -101,9 +101,9 @@
 .fn-promises {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 20px;
+  gap: var(--vt-space-12px) var(--vt-space-20px);
   list-style: none;
-  margin: 22px 0 0;
+  margin: var(--vt-space-22px) 0 0;
   padding: 0;
   font-size: var(--vt-fs-caption);
   font-weight: 600;
@@ -112,41 +112,41 @@
 .fn-points li {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: var(--vt-space-9px);
 }
 .fn-mark {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: var(--vt-size-20px);
+  height: var(--vt-size-20px);
   border-radius: 50%;
   background: var(--vt-surface-pink);
   color: var(--vt-primary-bright);
 }
 .fn-mark svg {
-  width: 14px;
-  height: 14px;
+  width: var(--vt-size-14px);
+  height: var(--vt-size-14px);
 }
 .fn-promises .fn-mark {
   background: var(--vt-primary);
   color: white;
-  margin-top: 1px;
+  margin-top: var(--vt-size-1px);
 }
 .fn-actions a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--vt-space-10px);
   min-height: var(--vt-btn-h);
-  padding: 14px 24px;
+  padding: var(--vt-space-14px) var(--vt-space-24px);
   border: 1px solid #eed8e3;
-  border-radius: 12px;
+  border-radius: var(--vt-size-12px);
   background: #fff;
   color: var(--fn-primary);
   font-size: var(--vt-fs-body);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   text-align: center;
   text-decoration: none;
   transition:
@@ -168,7 +168,7 @@
 .fn-hero-visual {
   position: relative;
   isolation: isolate;
-  padding-block: 20px;
+  padding-block: var(--vt-space-20px);
 }
 .fn-shot {
   display: flex;
@@ -184,25 +184,25 @@
   position: absolute;
   z-index: 0;
   right: -40px;
-  bottom: 8px;
-  width: 180px;
+  bottom: var(--vt-size-8px);
+  width: var(--vt-size-180px);
   height: auto;
   object-fit: contain;
 }
 .fn-modules {
   position: relative;
-  padding-block: 24px 48px;
+  padding-block: var(--vt-space-24px) var(--vt-space-48px);
 }
 .fn-modules-head {
-  max-width: 860px;
-  margin: 0 auto 36px;
+  max-width: var(--vt-size-860px);
+  margin: 0 auto var(--vt-space-36px);
   text-align: center;
 }
 .fn .fn-kicker {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: var(--vt-space-12px);
   color: var(--fn-primary);
   font-size: var(--vt-fs-caption);
   font-weight: 700;
@@ -212,12 +212,12 @@
 .fn-kicker::before,
 .fn-kicker::after {
   content: "";
-  width: 32px;
-  height: 1px;
+  width: var(--vt-size-32px);
+  height: var(--vt-size-1px);
   background: var(--vt-primary-bright);
 }
 .marketing-site .fn-modules-head h2 {
-  margin-top: 18px;
+  margin-top: var(--vt-space-18px);
   font-family: var(--font-fraunces), Georgia, serif;
   font-size: var(--vt-fs-h2);
   font-weight: 500;
@@ -234,15 +234,15 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  gap: 20px;
+  gap: var(--vt-space-20px);
   min-height: 0;
-  margin-top: 16px;
-  padding: 20px 24px;
+  margin-top: var(--vt-space-16px);
+  padding: var(--vt-space-20px) var(--vt-space-24px);
   border: 1px solid #f1d7e3;
-  border-radius: 28px;
+  border-radius: var(--vt-size-28px);
   background: linear-gradient(110deg, var(--vt-surface) 5%, var(--vt-surface-pink) 100%);
   box-shadow: 0 8px 28px -22px #90003733;
-  scroll-margin-top: 120px;
+  scroll-margin-top: var(--vt-size-120px);
 }
 .fn-module.is-reverse {
   background: linear-gradient(110deg, var(--vt-surface-pink), var(--vt-surface) 95%);
@@ -255,9 +255,9 @@
 }
 .fn-copy {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  column-gap: 14px;
-  row-gap: 8px;
+  grid-template-columns: var(--vt-size-40px) minmax(0, 1fr);
+  column-gap: var(--vt-space-14px);
+  row-gap: var(--vt-size-8px);
   align-content: center;
   min-width: 0;
 }
@@ -266,15 +266,15 @@
   place-items: center;
   grid-column: 1;
   grid-row: 1 / span 3;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: var(--vt-size-40px);
+  height: var(--vt-size-40px);
+  border-radius: var(--vt-size-12px);
   background: linear-gradient(135deg, var(--vt-surface-soft), #fbd4e4);
   color: var(--vt-primary-bright);
 }
 .fn-icon svg {
-  width: 22px;
-  height: 22px;
+  width: var(--vt-size-22px);
+  height: var(--vt-size-22px);
 }
 .marketing-site .fn-copy h3 {
   grid-column: 2;
@@ -294,30 +294,30 @@
 .fn-points {
   grid-column: 2;
   display: grid;
-  gap: 8px;
-  margin: 6px 0 0;
+  gap: var(--vt-size-8px);
+  margin: var(--vt-size-6px) 0 0;
   padding: 0;
   list-style: none;
   font-size: var(--vt-fs-sm);
-  line-height: 1.6;
+  line-height: var(--vt-leading-1p6);
   color: #411629;
 }
 .fn-points .fn-mark {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
   background: var(--vt-surface-pink);
-  margin-top: 3px;
+  margin-top: var(--vt-size-3px);
 }
 .fn-module .fn-shot img {
-  max-height: 300px;
+  max-height: var(--vt-size-300px);
 }
 .fn-context {
-  padding-block: 20px;
+  padding-block: var(--vt-space-20px);
 }
 .fn-context > section {
   border: 0;
   background: transparent;
-  padding-block: 28px;
+  padding-block: var(--vt-space-28px);
 }
 .marketing-site .fn-context h2 {
   font-family: var(--font-fraunces), Georgia, serif;
@@ -331,10 +331,10 @@
   color: var(--fn-muted);
 }
 .fn-faq {
-  padding-block: 28px 48px;
+  padding-block: var(--vt-space-28px) var(--vt-space-48px);
 }
 .fn-faq-inner {
-  max-width: 900px;
+  max-width: var(--vt-size-900px);
   margin-inline: auto;
 }
 .marketing-site .fn-faq h2 {
@@ -347,64 +347,64 @@
 }
 .fn-faq-list {
   display: grid;
-  gap: 12px;
-  margin-top: 28px;
+  gap: var(--vt-space-12px);
+  margin-top: var(--vt-space-28px);
 }
 .fn-faq-item {
-  padding: 20px;
+  padding: var(--vt-space-20px);
   border: 1px solid #efd4e1;
-  border-radius: 18px;
+  border-radius: var(--vt-size-18px);
   background: #ffffffcc;
 }
 .fn-faq-item summary {
   cursor: pointer;
-  font-size: 1.0625rem;
+  font-size: var(--vt-text-1p0625rem);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: var(--vt-leading-1p5);
 }
 .fn-faq-item p {
-  margin-top: 14px;
+  margin-top: var(--vt-space-14px);
   font-size: var(--vt-fs-body);
   line-height: var(--vt-lh-body);
   color: var(--fn-muted);
 }
 .fn-faq-inner > p {
-  margin-top: 24px;
+  margin-top: var(--vt-space-24px);
   font-size: var(--vt-fs-sm);
 }
 @media (max-width: 1000px) {
   .fn-hero {
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
+    gap: var(--vt-space-28px);
   }
   .fn-hero > div:first-child {
-    max-width: 700px;
+    max-width: var(--vt-size-700px);
   }
   .fn-hero-visual {
-    max-width: 760px;
+    max-width: var(--vt-size-760px);
     width: 100%;
     margin-inline: auto;
   }
   .fn-module {
-    padding: 26px;
-    gap: 22px;
+    padding: var(--vt-space-26px);
+    gap: var(--vt-space-22px);
   }
   .fn-copy {
-    grid-template-columns: 46px minmax(0, 1fr);
-    column-gap: 12px;
+    grid-template-columns: var(--vt-size-46px) minmax(0, 1fr);
+    column-gap: var(--vt-space-12px);
   }
   .fn-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
+    width: var(--vt-size-46px);
+    height: var(--vt-size-46px);
+    border-radius: var(--vt-size-14px);
   }
 }
 @media (max-width: 767px) {
   .fn-module {
     grid-template-columns: minmax(0, 1fr);
-    padding: 24px 20px;
-    gap: 20px;
-    border-radius: 22px;
+    padding: var(--vt-space-24px) var(--vt-space-20px);
+    gap: var(--vt-space-20px);
+    border-radius: var(--vt-size-22px);
   }
   .fn-module.is-reverse .fn-copy,
   .fn-module.is-reverse .fn-shot {
@@ -412,20 +412,20 @@
   }
   .fn-module .fn-shot {
     width: 100%;
-    max-width: 600px;
+    max-width: var(--vt-size-600px);
     margin-inline: auto;
   }
   .fn-module .fn-shot img {
     max-height: none;
   }
   .fn-hero-art {
-    width: 130px;
+    width: var(--vt-size-130px);
     right: -16px;
   }
 }
 @media (max-width: 400px) {
   .marketing-site .fn h1 {
-    font-size: 2rem;
+    font-size: var(--vt-text-2rem);
   }
   .fn-actions {
     flex-direction: column;
@@ -434,16 +434,16 @@
     width: 100%;
   }
   .fn-copy {
-    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-columns: var(--vt-size-40px) minmax(0, 1fr);
   }
   .fn-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: var(--vt-size-40px);
+    height: var(--vt-size-40px);
+    border-radius: var(--vt-size-12px);
   }
   .fn-icon svg {
-    width: 24px;
-    height: 24px;
+    width: var(--vt-size-24px);
+    height: var(--vt-size-24px);
   }
 }
 @media (prefers-reduced-motion: reduce) {

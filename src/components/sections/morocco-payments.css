@@ -1,5 +1,5 @@
 .hm section.morocco-payments {
-  padding-block: clamp(2.75rem, 4vw, 4.5rem);
+  padding-block: clamp(var(--vt-space-2p75rem), 4vw, var(--vt-space-4p5rem));
 }
 
 .morocco-layout > * {
@@ -7,7 +7,7 @@
 }
 
 .marketing-site .hm .morocco-payments h2 {
-  margin-top: 24px;
+  margin-top: var(--vt-space-24px);
   font-size: var(--vt-fs-h2);
   line-height: var(--vt-lh-h2);
   letter-spacing: -0.035em;
@@ -15,7 +15,7 @@
 }
 
 .hm .morocco-payments h2 + p {
-  margin-top: 24px;
+  margin-top: var(--vt-space-24px);
   font-size: var(--vt-fs-lead);
   line-height: var(--vt-lh-lead);
 }
@@ -26,7 +26,7 @@
 }
 
 .hm .morocco-payments h3 + p {
-  margin-top: 6px;
+  margin-top: var(--vt-size-6px);
 }
 .hm .morocco-payments .morocco-receipt-head h3 {
   font-family: var(--f-display);
@@ -40,6 +40,6 @@
 
 @media (max-width: 480px) {
   .hm .morocco-payments h3 {
-    font-size: 1.0625rem;
+    font-size: var(--vt-text-1p0625rem);
   }
 }

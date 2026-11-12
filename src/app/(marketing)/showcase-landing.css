@@ -25,8 +25,8 @@
   margin: 0;
 }
 .sp-badge svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
 }
 .sp-badge-green {
   background: var(--vt-success-bg);
@@ -65,13 +65,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--vt-space-10px);
   min-height: var(--vt-btn-h);
-  padding: 13px 20px;
-  border-radius: 12px;
+  padding: var(--vt-space-13px) var(--vt-space-20px);
+  border-radius: var(--vt-size-12px);
   font-size: var(--vt-fs-body);
   font-weight: 700;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   text-decoration: none;
 }
 .sp-primary {
@@ -94,8 +94,8 @@
 .sp-play {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: var(--vt-size-28px);
+  height: var(--vt-size-28px);
   border-radius: 50%;
   background: var(--vt-surface-soft);
   color: var(--sp-pink);
@@ -103,17 +103,17 @@
 .sp-play svg,
 .sp-primary svg,
 .sp-callout > a svg {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
 }
 .sp-play svg {
-  width: 12px;
-  height: 12px;
+  width: var(--vt-size-12px);
+  height: var(--vt-size-12px);
 }
 .sp-promises svg {
-  width: 17px;
-  height: 17px;
-  padding: 3px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
+  padding: var(--vt-size-3px);
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--sp-pink);
@@ -124,7 +124,7 @@
 .sp-hero {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 32px;
+  gap: var(--vt-space-32px);
   align-items: center;
   padding-block: var(--vt-hero-y);
 }
@@ -134,12 +134,12 @@
 
 .sp-scene {
   position: relative;
-  min-height: 420px;
+  min-height: var(--vt-size-420px);
 }
 .sp-scene-photo {
-  height: 360px;
+  height: var(--vt-size-360px);
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: var(--vt-size-28px);
   box-shadow: 0 16px 36px -28px #a61d56;
 }
 .sp-scene-photo img {
@@ -152,91 +152,91 @@
 .sp-phone {
   position: absolute;
   z-index: 2;
-  width: min(190px, 40%);
+  width: min(var(--vt-size-190px), 40%);
   right: 3%;
-  top: 28px;
-  padding: 8px;
-  border-radius: 32px;
+  top: var(--vt-size-28px);
+  padding: var(--vt-size-8px);
+  border-radius: var(--vt-size-32px);
   background: #161616;
   box-shadow: 0 24px 46px -18px rgba(60, 8, 30, 0.55);
 }
 .sp-phone-screen {
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: var(--vt-size-24px);
   background: #efe7de;
 }
 .sp-phone-status {
   display: flex;
   justify-content: space-between;
-  padding: 8px 12px 0;
+  padding: var(--vt-size-8px) var(--vt-space-12px) 0;
   color: white;
   background: var(--vt-whatsapp-dark);
-  font-size: 11px;
+  font-size: var(--vt-text-11px);
   font-weight: 650;
 }
 .sp-phone-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px 12px;
+  gap: var(--vt-size-8px);
+  padding: var(--vt-size-8px) var(--vt-space-12px) var(--vt-space-12px);
   background: var(--vt-whatsapp-dark);
   color: white;
 }
 .sp-phone-head strong {
   display: block;
-  font-size: 13px;
-  line-height: 1.2;
+  font-size: var(--vt-text-13px);
+  line-height: var(--vt-leading-1p2);
 }
 .sp-phone-head span {
   display: block;
-  font-size: 11px;
+  font-size: var(--vt-text-11px);
   opacity: 0.85;
 }
 .sp-avatar {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: var(--vt-size-32px);
+  height: var(--vt-size-32px);
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--vt-whatsapp);
 }
 .sp-avatar svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
 }
 .sp-bubble {
-  margin: 10px;
-  padding: 10px 12px;
-  border-radius: 12px 12px 12px 4px;
+  margin: var(--vt-space-10px);
+  padding: var(--vt-space-10px) var(--vt-space-12px);
+  border-radius: var(--vt-size-12px) var(--vt-size-12px) var(--vt-size-12px) var(--vt-size-4px);
   background: white;
   color: #1f2933;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--vt-text-12px);
+  line-height: var(--vt-leading-1p45);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
 }
 .sp-bubble p + p {
-  margin-top: 8px;
+  margin-top: var(--vt-size-8px);
 }
 .sp-replies {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-top: 8px;
+  gap: var(--vt-size-6px);
+  margin-top: var(--vt-size-8px);
 }
 .sp-replies span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 4px;
-  border-radius: 8px;
-  font-size: 11px;
+  gap: var(--vt-size-4px);
+  padding: var(--vt-size-6px) var(--vt-size-4px);
+  border-radius: var(--vt-size-8px);
+  font-size: var(--vt-text-11px);
   font-weight: 750;
 }
 .sp-replies span svg {
-  width: 12px;
-  height: 12px;
+  width: var(--vt-size-12px);
+  height: var(--vt-size-12px);
 }
 .sp-yes {
   background: var(--vt-success-bg);
@@ -248,10 +248,10 @@
 }
 .sp-bubble time {
   display: block;
-  margin-top: 6px;
+  margin-top: var(--vt-size-6px);
   text-align: right;
   color: #8b93a0;
-  font-size: 10px;
+  font-size: var(--vt-text-10px);
 }
 .sp-wa-float,
 .sp-bloom {
@@ -265,21 +265,21 @@
   z-index: 4;
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: var(--vt-size-52px);
+  height: var(--vt-size-52px);
   right: -6px;
-  top: 8px;
+  top: var(--vt-size-8px);
   border-radius: 50%;
   background: var(--vt-whatsapp);
   color: white;
   box-shadow: 0 10px 22px -10px var(--vt-success);
 }
 .sp-wa-float svg {
-  width: 26px;
-  height: 26px;
+  width: var(--vt-size-26px);
+  height: var(--vt-size-26px);
 }
 .sp-bloom {
-  width: min(168px, 34%);
+  width: min(var(--vt-size-168px), 34%);
   right: -12px;
   bottom: -18px;
   height: auto;
@@ -292,11 +292,11 @@
   position: absolute;
   inset: 12% 8% auto;
   height: 70%;
-  border-radius: 40px;
+  border-radius: var(--vt-size-40px);
   background: radial-gradient(circle, var(--vt-surface-deep) 0%, transparent 70%);
 }
 .sp-device .sp-bloom {
-  width: min(150px, 28%);
+  width: min(var(--vt-size-150px), 28%);
   right: 0;
   bottom: 6%;
 }
@@ -312,22 +312,22 @@
   text-wrap: balance;
 }
 .sp-block {
-  padding-block: 18px 36px;
+  padding-block: var(--vt-space-18px) var(--vt-space-36px);
 }
 
 .sp-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 28px;
-  margin-top: 42px;
+  gap: var(--vt-space-28px);
+  margin-top: var(--vt-space-42px);
   padding: 0;
   list-style: none;
 }
 .sp-step {
   position: relative;
-  padding: 30px 16px 20px;
+  padding: var(--vt-space-30px) var(--vt-space-16px) var(--vt-space-20px);
   border: 1px solid var(--vt-surface-pink);
-  border-radius: 18px;
+  border-radius: var(--vt-size-18px);
   background: white;
   text-align: center;
   box-shadow: 0 14px 30px -24px var(--vt-rose-shadow);
@@ -340,27 +340,27 @@
   display: grid;
   place-items: center;
   margin-inline: auto;
-  border-radius: 16px;
+  border-radius: var(--vt-size-16px);
   background: var(--vt-surface-soft);
   color: var(--sp-pink);
 }
 .sp-step-icon {
-  width: 50px;
-  height: 50px;
-  margin-bottom: 14px;
+  width: var(--vt-size-50px);
+  height: var(--vt-size-50px);
+  margin-bottom: var(--vt-space-14px);
 }
 .sp-step strong {
   display: block;
   font-size: var(--vt-fs-body);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--vt-leading-1p25);
   letter-spacing: -0.02em;
   color: var(--vt-ink);
 }
 .sp-step p,
 .sp-feature p,
 .sp-perk p {
-  margin-top: 8px;
+  margin-top: var(--vt-size-8px);
   color: var(--vt-muted);
   font-size: var(--vt-fs-body);
   line-height: var(--vt-lh-body);
@@ -372,23 +372,23 @@
 .sp-features {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 28px;
+  gap: var(--vt-space-14px);
+  margin-top: var(--vt-space-28px);
 }
 .sp-feature,
 .sp-perk {
-  padding: 24px 14px;
+  padding: var(--vt-space-24px) var(--vt-space-14px);
   border: 1px solid var(--vt-surface-pink);
-  border-radius: 19px;
+  border-radius: var(--vt-size-19px);
   background: white;
   text-align: center;
   box-shadow: 0 14px 30px -24px var(--vt-rose-shadow);
 }
 .sp-feature-icon,
 .sp-perk-icon {
-  width: 50px;
-  height: 50px;
-  margin-bottom: 13px;
+  width: var(--vt-size-50px);
+  height: var(--vt-size-50px);
+  margin-bottom: var(--vt-space-13px);
 }
 .marketing-site .sp-feature h3,
 .marketing-site .sp-perk h3,
@@ -404,14 +404,14 @@
 .sp-duo {
   display: grid;
   grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
-  gap: 28px;
+  gap: var(--vt-space-28px);
   align-items: start;
-  padding-block: 12px 40px;
+  padding-block: var(--vt-space-12px) var(--vt-space-40px);
 }
 .sp-example {
-  padding: 18px;
+  padding: var(--vt-space-18px);
   border: 1px solid var(--vt-surface-pink);
-  border-radius: 26px;
+  border-radius: var(--vt-size-26px);
   background: white;
   box-shadow: 0 18px 40px -30px var(--vt-rose-shadow);
 }
@@ -420,7 +420,7 @@
 .marketing-site .sp-connect h2 {
   font-family: var(--font-fraunces), Georgia, serif;
   font-weight: 500;
-  line-height: 1.15;
+  line-height: var(--vt-leading-1p15);
   letter-spacing: -0.035em;
   text-align: left;
   color: var(--sp-ink);
@@ -431,47 +431,47 @@
   font-size: var(--vt-fs-h2);
 }
 .sp-chat {
-  margin-top: 14px;
+  margin-top: var(--vt-space-14px);
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: var(--vt-size-18px);
   border: 1px solid var(--vt-success-bg);
 }
 .sp-chat-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: var(--vt-space-10px);
+  padding: var(--vt-space-12px) var(--vt-space-14px);
   background: #0b7a4b;
   color: white;
 }
 .sp-chat-head strong {
   display: block;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--vt-text-14px);
+  line-height: var(--vt-leading-1p6);
 }
 .sp-chat-head span {
   display: block;
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: var(--vt-text-13px);
+  line-height: var(--vt-leading-1p7);
   opacity: 0.85;
 }
 .sp-chat .sp-bubble {
-  margin: 12px;
-  font-size: 15px;
-  line-height: 1.7;
+  margin: var(--vt-space-12px);
+  font-size: var(--vt-text-15px);
+  line-height: var(--vt-leading-1p7);
 }
 .sp-example > p {
-  margin-top: 12px;
+  margin-top: var(--vt-space-12px);
   color: var(--sp-muted);
   font-size: var(--vt-fs-xs);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
 }
 
 .sp-perks {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
+  gap: var(--vt-space-12px);
+  margin-top: var(--vt-space-18px);
 }
 .sp-duo .sp-title {
   text-align: left;
@@ -480,25 +480,25 @@
 .sp-story {
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  gap: 28px;
+  gap: var(--vt-space-28px);
   align-items: center;
-  padding-block: 10px 36px;
+  padding-block: var(--vt-space-10px) var(--vt-space-36px);
 }
 .sp-still,
 .sp-portrait {
   overflow: hidden;
-  border-radius: 24px;
-  min-height: 320px;
+  border-radius: var(--vt-size-24px);
+  min-height: var(--vt-size-320px);
 }
 .sp-still {
   display: grid;
   place-items: end center;
-  padding: 28px 18px 0;
+  padding: var(--vt-space-28px) var(--vt-space-18px) 0;
   background: radial-gradient(circle at 30% 18%, #fff 0%, transparent 42%),
     linear-gradient(160deg, var(--vt-surface-pink), #fff7f2 46%, #f8e6da);
 }
 .sp-still img {
-  width: min(100%, 420px);
+  width: min(100%, var(--vt-size-420px));
   height: auto;
 }
 .sp-portrait {
@@ -508,19 +508,19 @@
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 320px;
+  min-height: var(--vt-size-320px);
   object-fit: cover;
   object-position: center 18%;
 }
 .sp-story-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(220px, 0.85fr);
-  gap: 16px;
-  margin-top: 18px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(var(--vt-size-220px), 0.85fr);
+  gap: var(--vt-space-16px);
+  margin-top: var(--vt-space-18px);
   align-items: stretch;
 }
 .sp-kicker {
-  margin: 0 0 14px;
+  margin: 0 0 var(--vt-space-14px);
   font-family: var(--font-fraunces), Georgia, serif;
   font-size: var(--vt-fs-h2);
   font-weight: 500;
@@ -530,7 +530,7 @@
 }
 .sp-checks {
   display: grid;
-  gap: 16px;
+  gap: var(--vt-space-16px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -538,16 +538,16 @@
 .sp-checks li {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--vt-space-10px);
   font-size: var(--vt-fs-body);
   font-weight: 600;
   line-height: var(--vt-lh-body);
 }
 .sp-checks svg {
-  width: 24px;
-  height: 24px;
-  margin-top: 2px;
-  padding: 4px;
+  width: var(--vt-size-24px);
+  height: var(--vt-size-24px);
+  margin-top: var(--vt-size-2px);
+  padding: var(--vt-size-4px);
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--sp-pink);
@@ -555,139 +555,139 @@
   stroke-width: 3;
 }
 .sp-callout {
-  padding: 26px 20px;
+  padding: var(--vt-space-26px) var(--vt-space-20px);
   border: 1px solid var(--vt-surface-deep);
-  border-radius: 28px;
+  border-radius: var(--vt-size-28px);
   background: linear-gradient(180deg, #fff, var(--vt-surface-soft));
   text-align: center;
   box-shadow: 0 16px 36px -28px var(--vt-primary-bright);
 }
 .sp-callout-icon {
-  width: 50px;
-  height: 50px;
-  margin-bottom: 14px;
+  width: var(--vt-size-50px);
+  height: var(--vt-size-50px);
+  margin-bottom: var(--vt-space-14px);
   background: white;
   box-shadow: 0 8px 18px -12px var(--vt-primary-bright);
 }
 .sp-callout-icon svg {
-  width: 28px;
-  height: 28px;
+  width: var(--vt-size-28px);
+  height: var(--vt-size-28px);
 }
 .sp-callout p {
-  margin-top: 10px;
+  margin-top: var(--vt-space-10px);
   color: var(--sp-muted);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
 }
 .sp-callout > a {
   width: 100%;
-  margin-top: 16px;
+  margin-top: var(--vt-space-16px);
 }
 
 .sp-connect,
 .sp-metrics {
-  margin-block: 8px 36px;
+  margin-block: var(--vt-size-8px) var(--vt-space-36px);
   border: 1px solid var(--vt-surface-pink);
-  border-radius: 28px;
+  border-radius: var(--vt-size-28px);
   background: white;
   box-shadow: 0 16px 36px -30px var(--vt-rose-shadow);
 }
 .sp-connect {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 22px;
+  gap: var(--vt-space-22px);
   align-items: center;
-  padding: 22px 24px;
+  padding: var(--vt-space-22px) var(--vt-space-24px);
 }
 .sp-connect-mark {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: var(--vt-size-52px);
+  height: var(--vt-size-52px);
   border-radius: 50%;
   background: var(--vt-success-bg);
   color: #128c4e;
 }
 .sp-connect-mark svg {
-  width: 28px;
-  height: 28px;
+  width: var(--vt-size-28px);
+  height: var(--vt-size-28px);
 }
 .sp-connect p {
-  margin-top: 10px;
+  margin-top: var(--vt-space-10px);
   max-width: 62ch;
   color: var(--sp-muted);
   font-size: var(--vt-fs-xs);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
 }
 .sp-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  padding: 18px;
+  gap: var(--vt-size-8px);
+  padding: var(--vt-space-18px);
   list-style: none;
 }
 .sp-metrics li {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: var(--vt-space-12px);
+  padding: var(--vt-size-8px) var(--vt-space-10px);
 }
 .sp-metric-icon {
-  width: 50px;
-  height: 50px;
+  width: var(--vt-size-50px);
+  height: var(--vt-size-50px);
   flex-shrink: 0;
   margin: 0;
   border-radius: 50%;
 }
 .sp-metric-icon svg {
-  width: 28px;
-  height: 28px;
+  width: var(--vt-size-28px);
+  height: var(--vt-size-28px);
 }
 .sp-metrics strong {
   display: block;
   font-size: var(--vt-fs-caption);
-  line-height: 1.5;
+  line-height: var(--vt-leading-1p5);
 }
 .sp-metrics span {
   display: block;
-  margin-top: 4px;
+  margin-top: var(--vt-size-4px);
   color: var(--sp-muted);
   font-size: var(--vt-fs-caption);
-  line-height: 1.5;
+  line-height: var(--vt-leading-1p5);
 }
 
 .sp-details,
 .sp-faq {
-  padding-block: 8px 28px;
+  padding-block: var(--vt-size-8px) var(--vt-space-28px);
 }
 .sp-details > div,
 .sp-faq > div {
   display: grid;
-  gap: 10px;
-  margin-top: 22px;
+  gap: var(--vt-space-10px);
+  margin-top: var(--vt-space-22px);
 }
 .sp-faq {
   display: grid;
   grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
-  gap: 40px;
+  gap: var(--vt-space-40px);
   align-items: start;
-  padding-block: 26px 38px;
+  padding-block: var(--vt-space-26px) var(--vt-space-38px);
 }
 .sp-faq .sp-title {
   text-align: left;
 }
 .sp details {
   border: 1px solid #f0d4e2;
-  border-radius: 14px;
+  border-radius: var(--vt-size-14px);
   background: var(--vt-surface);
-  scroll-margin-top: 120px;
+  scroll-margin-top: var(--vt-size-120px);
 }
 .sp summary::-webkit-details-marker {
   display: none;
 }
 .sp summary svg {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
   flex-shrink: 0;
   color: var(--sp-pink);
 }
@@ -695,7 +695,7 @@
   transform: rotate(45deg);
 }
 .sp details p {
-  padding: 0 18px 18px;
+  padding: 0 var(--vt-space-18px) var(--vt-space-18px);
   color: var(--sp-muted);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
@@ -703,16 +703,16 @@
 .sp details > a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 18px 18px;
+  gap: var(--vt-size-8px);
+  margin: 0 var(--vt-space-18px) var(--vt-space-18px);
   color: var(--vt-primary-strong);
   font-size: var(--vt-fs-xs);
   font-weight: 600;
   text-underline-offset: 4px;
 }
 .sp details > a svg {
-  width: 17px;
-  height: 17px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
 }
 .sp a:focus-visible,
 .sp summary:focus-visible {
@@ -727,14 +727,14 @@
     position: absolute;
     top: 50%;
     right: -15px;
-    width: 22px;
-    height: 22px;
+    width: var(--vt-size-22px);
+    height: var(--vt-size-22px);
     color: var(--sp-pink);
     transform: translateY(-50%);
   }
   .sp-step-arrow svg {
-    width: 18px;
-    height: 18px;
+    width: var(--vt-size-18px);
+    height: var(--vt-size-18px);
   }
 }
 
@@ -763,7 +763,7 @@
 @media (max-width: 860px) {
   .sp-hero {
     grid-template-columns: 1fr;
-    padding-top: 8px;
+    padding-top: var(--vt-size-8px);
   }
   .marketing-site .sp h1 {
     max-width: 21ch;
@@ -772,14 +772,14 @@
     min-height: 0;
   }
   .sp-scene-photo {
-    height: 380px;
+    height: var(--vt-size-380px);
   }
   .sp-phone {
-    top: 16px;
+    top: var(--vt-size-16px);
   }
   .sp-portrait img,
   .sp-still {
-    min-height: 280px;
+    min-height: var(--vt-size-280px);
   }
 }
 
@@ -791,23 +791,23 @@
     grid-template-columns: 1fr;
   }
   .sp-steps {
-    gap: 14px;
-    margin-top: 24px;
+    gap: var(--vt-space-14px);
+    margin-top: var(--vt-space-24px);
   }
   .sp-step {
-    padding: 20px 16px 18px;
+    padding: var(--vt-space-20px) var(--vt-space-16px) var(--vt-space-18px);
   }
   .sp-feature,
   .sp-perk {
-    padding: 20px 16px;
+    padding: var(--vt-space-20px) var(--vt-space-16px);
   }
   .sp-step-icon,
   .sp-feature-icon,
   .sp-perk-icon {
-    width: 44px;
-    height: 44px;
-    margin-bottom: 10px;
-    border-radius: 14px;
+    width: var(--vt-size-44px);
+    height: var(--vt-size-44px);
+    margin-bottom: var(--vt-space-10px);
+    border-radius: var(--vt-size-14px);
   }
   .sp-actions a,
   .sp-callout > a,
@@ -815,32 +815,32 @@
     width: 100%;
   }
   .sp-scene-photo {
-    height: 300px;
-    border-radius: 24px;
+    height: var(--vt-size-300px);
+    border-radius: var(--vt-size-24px);
   }
   .sp-phone {
-    width: min(214px, 62%);
-    padding: 6px;
-    border-radius: 24px;
+    width: min(var(--vt-size-214px), 62%);
+    padding: var(--vt-size-6px);
+    border-radius: var(--vt-size-24px);
   }
   .sp-bubble {
-    font-size: 11px;
+    font-size: var(--vt-text-11px);
   }
   .sp-replies span {
-    font-size: 10px;
-    padding: 5px 2px;
+    font-size: var(--vt-text-10px);
+    padding: var(--vt-size-5px) var(--vt-size-2px);
   }
   .sp-wa-float {
-    width: 40px;
-    height: 40px;
+    width: var(--vt-size-40px);
+    height: var(--vt-size-40px);
   }
   .sp-wa-float svg {
-    width: 20px;
-    height: 20px;
+    width: var(--vt-size-20px);
+    height: var(--vt-size-20px);
   }
   .sp-connect,
   .sp-metrics {
-    padding: 16px;
+    padding: var(--vt-space-16px);
   }
   .sp-metrics strong {
     font-size: var(--vt-fs-xs);
@@ -851,9 +851,9 @@
 }
 @media (max-width: 400px) {
   .marketing-site .sp h1 {
-    font-size: 2rem;
+    font-size: var(--vt-text-2rem);
   }
   .sp-wrap {
-    padding-inline: 18px;
+    padding-inline: var(--vt-space-18px);
   }
 }

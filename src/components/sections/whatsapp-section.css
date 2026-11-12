@@ -4,7 +4,7 @@
 .whatsapp-legacy-anchor {
   position: absolute;
   top: 0;
-  scroll-margin-top: 104px;
+  scroll-margin-top: var(--vt-size-104px);
 }
 .whatsapp-layout > * {
   min-width: 0;
@@ -16,7 +16,7 @@
   color: var(--vt-ink-plum);
 }
 .hm .whatsapp-section h2 + p {
-  margin-top: 32px;
+  margin-top: var(--vt-space-32px);
   font-size: var(--vt-fs-lead);
   line-height: var(--vt-lh-lead);
   color: #755767;
@@ -25,11 +25,11 @@
   color: var(--vt-ink-plum);
 }
 .whatsapp-step-title {
-  font-size: 1.0625rem;
-  line-height: 1.45;
+  font-size: var(--vt-text-1p0625rem);
+  line-height: var(--vt-leading-1p45);
 }
 .hm .whatsapp-section button p {
-  margin-top: 8px;
+  margin-top: var(--vt-size-8px);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
   color: var(--vt-muted-soft);
@@ -38,17 +38,17 @@
   border-color: var(--vt-primary-bright);
 }
 .hm .whatsapp-section .whatsapp-note {
-  margin-top: 24px;
+  margin-top: var(--vt-space-24px);
   font-size: var(--vt-fs-xs);
-  line-height: 1.7;
+  line-height: var(--vt-leading-1p7);
 }
 .whatsapp-section .whatsapp-preview {
   display: grid;
-  grid-template-columns: minmax(0, 365px);
+  grid-template-columns: minmax(0, var(--vt-phone-width));
   justify-content: center;
   justify-items: center;
   min-height: 0;
-  padding-block: 8px 16px;
+  padding-block: var(--vt-size-8px) var(--vt-space-16px);
 }
 .whatsapp-section .whatsapp-glow {
   left: 50%;
@@ -70,7 +70,7 @@
   z-index: 2;
   grid-row: 1;
   flex-direction: column;
-  gap: 22px;
+  gap: var(--vt-space-22px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -78,15 +78,15 @@
 .whatsapp-section .whatsapp-badges li {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--vt-space-12px);
   border: 1px solid #fce7f3;
-  border-radius: 16px;
+  border-radius: var(--vt-size-16px);
   background: rgb(255 255 255 / 95%);
-  padding: 12px 16px;
+  padding: var(--vt-space-12px) var(--vt-space-16px);
   color: var(--vt-ink-plum);
-  font-size: 14px;
+  font-size: var(--vt-text-14px);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: var(--vt-leading-1p3);
   white-space: nowrap;
   box-shadow: 0 16px 30px -18px rgb(75 20 50 / 45%);
 }
@@ -95,27 +95,27 @@
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 18px;
+  gap: var(--vt-size-8px);
+  margin-top: var(--vt-space-18px);
   border: 1px solid #fce7f3;
-  border-radius: 999px;
+  border-radius: var(--vt-size-999px);
   background: rgb(255 255 255 / 92%);
-  padding: 10px 18px;
+  padding: var(--vt-space-10px) var(--vt-space-18px);
   color: #7d5366;
-  font-size: 12px;
+  font-size: var(--vt-text-12px);
   font-weight: 500;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   white-space: nowrap;
   box-shadow: 0 8px 18px -14px rgb(75 20 50 / 40%);
 }
 @media (min-width: 1280px) {
   .whatsapp-section .whatsapp-preview {
-    grid-template-columns: minmax(260px, 340px) max-content;
-    column-gap: 22px;
+    grid-template-columns: minmax(0, var(--vt-phone-wide-width)) max-content;
+    column-gap: var(--vt-space-22px);
     justify-content: end;
   }
   .whatsapp-section .whatsapp-phone {
-    width: min(100%, 340px);
+    width: min(100%, var(--vt-phone-wide-width));
   }
   .whatsapp-section .whatsapp-badges {
     display: flex;
@@ -126,8 +126,8 @@
   }
 }
 .hm .whatsapp-phone-screen p {
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: var(--vt-text-15px);
+  line-height: var(--vt-leading-1p65);
   color: #17302a;
 }
 .whatsapp-section button:focus-visible {
@@ -136,13 +136,13 @@
 }
 @media (max-width: 639px) {
   .whatsapp-section button {
-    padding: 18px;
-    gap: 12px;
+    padding: var(--vt-space-18px);
+    gap: var(--vt-space-12px);
   }
   .whatsapp-section .whatsapp-step-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
+    width: var(--vt-size-42px);
+    height: var(--vt-size-42px);
+    border-radius: var(--vt-size-12px);
   }
   .whatsapp-step-title {
     font-size: var(--vt-fs-body);
@@ -151,7 +151,7 @@
     min-height: 0;
   }
   .whatsapp-section .whatsapp-phone {
-    width: min(100%, 320px);
+    width: min(100%, var(--vt-size-320px));
   }
   .whatsapp-section .whatsapp-phone-screen {
     height: auto;

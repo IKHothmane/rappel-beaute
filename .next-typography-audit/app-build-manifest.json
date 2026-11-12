@@ -1,0 +1,156 @@
+{
+  "pages": {
+    "/global-error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/global-error.js"
+    ],
+    "/(marketing)/tarifs/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/tarifs/page.css",
+      "static/chunks/app/(marketing)/tarifs/page.js"
+    ],
+    "/(marketing)/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/layout.css",
+      "static/chunks/app/(marketing)/layout.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
+    ],
+    "/error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/error.js"
+    ],
+    "/not-found": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/not-found.css",
+      "static/chunks/app/not-found.js"
+    ],
+    "/(marketing)/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/page.css",
+      "static/chunks/app/(marketing)/page.js"
+    ],
+    "/(marketing)/fonctionnalites/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/fonctionnalites/page.css",
+      "static/chunks/app/(marketing)/fonctionnalites/page.js"
+    ],
+    "/(marketing)/professionnel/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/professionnel/page.css",
+      "static/chunks/app/(marketing)/professionnel/page.js"
+    ],
+    "/(marketing)/connexion/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/connexion/page.css",
+      "static/chunks/app/(marketing)/connexion/page.js"
+    ],
+    "/(marketing)/creation-site-web/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/creation-site-web/page.css",
+      "static/chunks/app/(marketing)/creation-site-web/page.js"
+    ],
+    "/(marketing)/a-propos/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/a-propos/page.css",
+      "static/chunks/app/(marketing)/a-propos/page.js"
+    ],
+    "/(marketing)/solutions/institut-beaute/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/solutions/institut-beaute/page.css",
+      "static/chunks/app/(marketing)/solutions/institut-beaute/page.js"
+    ],
+    "/(marketing)/gestion-rendez-vous/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/gestion-rendez-vous/page.css",
+      "static/chunks/app/(marketing)/gestion-rendez-vous/page.js"
+    ],
+    "/(marketing)/reservation-en-ligne/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/reservation-en-ligne/page.css",
+      "static/chunks/app/(marketing)/reservation-en-ligne/page.js"
+    ],
+    "/(marketing)/gestion-clientes/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/gestion-clientes/page.css",
+      "static/chunks/app/(marketing)/gestion-clientes/page.js"
+    ],
+    "/(marketing)/gestion-stock/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/gestion-stock/page.css",
+      "static/chunks/app/(marketing)/gestion-stock/page.js"
+    ],
+    "/(marketing)/caisse/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(marketing)/caisse/page.js"
+    ],
+    "/(marketing)/fidelite/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/fidelite/page.css",
+      "static/chunks/app/(marketing)/fidelite/page.js"
+    ],
+    "/(marketing)/whatsapp/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/whatsapp/page.css",
+      "static/chunks/app/(marketing)/whatsapp/page.js"
+    ],
+    "/(marketing)/faq/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/faq/page.css",
+      "static/chunks/app/(marketing)/faq/page.js"
+    ],
+    "/(marketing)/blog/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(marketing)/blog/page.js"
+    ],
+    "/(marketing)/demo/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/demo/page.css",
+      "static/chunks/app/(marketing)/demo/page.js"
+    ],
+    "/(marketing)/contact/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/contact/page.css",
+      "static/chunks/app/(marketing)/contact/page.js"
+    ],
+    "/(marketing)/confidentialite/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/confidentialite/page.css",
+      "static/chunks/app/(marketing)/confidentialite/page.js"
+    ],
+    "/(marketing)/mentions-legales/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/mentions-legales/page.css",
+      "static/chunks/app/(marketing)/mentions-legales/page.js"
+    ]
+  }
+}

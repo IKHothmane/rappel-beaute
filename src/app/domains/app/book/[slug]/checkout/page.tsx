@@ -1,8 +1,10 @@
-import { PublicCheckoutPage } from "@/components/public-site/PublicCheckoutPage";
+import { permanentRedirect } from "next/navigation";
 
-type Props = { params: Promise<{ slug: string }> };
-
-export default async function Page({ params }: Props) {
+export default async function RemovedPublicCheckoutPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
-  return <PublicCheckoutPage slug={slug} />;
+  permanentRedirect(`/book/${encodeURIComponent(slug)}/booking/`);
 }

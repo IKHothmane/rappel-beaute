@@ -1,22 +1,34 @@
 /*
+ * MODIFIER LES TAILLES DE TOUTE LA VITRINE ICI.
+ * 1. --vt-fs-* : rôles typographiques (titres, paragraphes, boutons).
+ * 2. --vt-sp-*, --vt-gap-*, --vt-card-pad : rythme et espacements partagés.
+ * 3. --vt-text-* : variantes typographiques des pages et illustrations.
+ * 4. --vt-leading-* / --vt-line-* : interlignes.
+ * 5. --vt-size-* : dimensions fixes, marges, paddings, rayons et conteneurs.
+ * Les suffixes indiquent la valeur initiale : 1p25rem signifie 1.25rem.
+ * Pour changer une taille, modifier sa valeur, sans renommer la variable.
+ * Les seuils @media, proportions %, animations et dimensions intrinsèques
+ * des images restent dans leurs composants ; ils ne règlent pas l'échelle UI.
+ *
  * Design system typographique et d'espacement de la vitrine.
  * Source unique : toutes les pages vitrines (.hm, .fn, .tp, .sp, .fl, …) et leurs
  * composants partagés consomment ces variables au lieu de valeurs en dur.
- * Tout est en rem : le texte suit le réglage de taille du navigateur et le zoom 200 %.
+ * L'échelle principale est en rem ; les variantes fixes conservent leur unité initiale.
  * Scopé à .marketing-site : l'application (dashboard, caisse…) n'est pas touchée.
  */
 .marketing-site {
   /* ---------- Échelle typographique ---------- */
-  --vt-fs-h1: clamp(2.5rem, 1.7rem + 1.4vw, 3.25rem); /* 40 → 52 px  Hero */
-  --vt-fs-h2: clamp(1.75rem, 1.45rem + 0.7vw, 2.25rem); /* 28 → 36 px  Titre de section */
-  --vt-fs-h2-sm: clamp(1.25rem, 1.15rem + 0.35vw, 1.5rem); /* 20 → 24 px  Titre secondaire */
-  --vt-fs-h3: clamp(1.125rem, 1.05rem + 0.2vw, 1.375rem); /* 18 → 22 px  Titre de carte */
+  --vt-fs-h1: clamp(1.875rem, 1.4rem + 1.35vw, 2.625rem); /* 30 → 42 px */
+  --vt-fs-h1-mobile: 1.875rem; /* 30 px */
+  --vt-fs-h2: clamp(1.5rem, 1.25rem + 0.7vw, 1.875rem); /* 24 → 30 px */
+  --vt-fs-h2-sm: clamp(1.125rem, 1rem + 0.3vw, 1.25rem); /* 18 → 20 px */
+  --vt-fs-h3: clamp(1.125rem, 1rem + 0.3vw, 1.25rem); /* 18 → 20 px */
   --vt-fs-h4: 1.125rem; /* 18 px */
-  --vt-fs-lead: clamp(0.9375rem, 0.9rem + 0.15vw, 1.0625rem); /* 15 → 17 px */
+  --vt-fs-lead: 1rem; /* 16 px */
   --vt-fs-body: 1rem; /* 16 px */
   --vt-fs-sm: 0.875rem; /* 14 px */
   --vt-fs-xs: 0.875rem; /* 14 px */
-  --vt-fs-caption: 0.8125rem; /* 13 px */
+  --vt-fs-caption: 0.875rem; /* 14 px */
   --vt-fs-nav: 0.875rem;
 
   /* ---------- Interlignes ---------- */
@@ -46,15 +58,26 @@
   --vt-gap-title-text: clamp(0.75rem, 0.6rem + 0.3vw, 1.25rem); /* titre → description : 12 → 20 */
   --vt-gap-text: 1rem; /* entre paragraphes : 16 */
   --vt-gap-text-cta: 1.25rem; /* description → CTA : 20 */
-  --vt-gap-head-content: clamp(1.25rem, 1rem + 0.6vw, 2rem); /* titre → cartes : 20 → 32 */
-  --vt-gap-cards: clamp(1rem, 0.85rem + 0.4vw, 1.5rem); /* entre cartes : 16 → 24 */
-  --vt-card-pad: clamp(1.25rem, 1.1rem + 0.25vw, 1.5rem); /* padding de carte : 20 → 24 */
-  --vt-section-y: clamp(3.5rem, 2.8rem + 1.2vw, 5rem); /* sections : 56 → 80 */
-  --vt-hero-y: clamp(1.75rem, 1.2rem + 1vw, 2.5rem); /* hero : 28 → 40 */
+  --vt-gap-head-content: clamp(1rem, 0.8rem + 0.5vw, 1.5rem); /* 16 → 24 px */
+  --vt-gap-cards: clamp(0.75rem, 0.6rem + 0.5vw, 1.25rem); /* 12 → 20 px */
+  --vt-card-pad: clamp(1rem, 0.9rem + 0.4vw, 1.25rem); /* 16 → 20 px */
+  --vt-section-y: clamp(2.5rem, 2rem + 1.5vw, 3.5rem); /* 40 → 56 px */
+  --vt-hero-y: clamp(1.25rem, 1rem + 0.8vw, 2rem); /* 20 → 32 px */
+  --vt-space-scale: 0.8; /* Marges et espacements fixes : -20 %, sans réduire les contrôles. */
+  --vt-pano-scroll-distance: clamp(17.6rem, 25.6vh, 27.2rem);
+  --vt-visual-scale: 0.8; /* Illustrations sur ordinateur. */
+  --vt-phone-width: 365px;
+  --vt-phone-wide-width: 340px;
+  --vt-visual-width: 100%;
+  --vt-printer-width: 440px;
+  --vt-printer-height: 620px;
+  --vt-pano-card-width: min(82vw, 320px);
+  --vt-pano-card-height: min(47vw, 184px);
+  --vt-pano-stage-height: min(38rem, calc(85svh - 4.75rem));
 
   /* ---------- Conteneurs et mesure de lecture ---------- */
   --vt-container: 1200px;
-  --vt-gutter: clamp(1.5rem, 1rem + 1vw, 2.5rem); /* 24 → 40 */
+  --vt-gutter: clamp(1rem, 2.2vw, 2rem); /* 16 → 32 px */
   --vt-measure: 68ch; /* paragraphes : ~60-75 caractères */
   --vt-measure-lead: 56ch; /* description hero */
   --vt-measure-title: 16ch; /* grands titres */
@@ -64,4 +87,342 @@
   --vt-btn-pad: 0.625rem 1.25rem; /* 10 × 20 */
   --vt-fs-btn: 0.9375rem; /* 15 px */
   --vt-btn-radius: 12px;
+}
+
+/* Variantes fixes utilisées par les pages et composants de la vitrine. */
+.marketing-site {
+
+  /* Tailles de texte : une modification affecte toutes les occurrences de cette taille. */
+  --vt-text-0p75rem: 0.75rem;
+  --vt-text-0p8125rem: var(--vt-fs-caption);
+  --vt-text-0p875rem: var(--vt-fs-sm);
+  --vt-text-1rem: var(--vt-fs-body);
+  --vt-text-1p0625rem: 1.0625rem;
+  --vt-text-1p125rem: var(--vt-fs-h4);
+  --vt-text-1p25rem: 1.25rem;
+  --vt-text-1p4rem: 1.4rem;
+  --vt-text-1p4375rem: 1.4375rem;
+  --vt-text-1p5rem: 1.5rem;
+  --vt-text-1p875rem: 1.875rem;
+  --vt-text-2rem: var(--vt-fs-h1-mobile);
+  --vt-text-2p125rem: var(--vt-fs-h1-mobile);
+  --vt-text-2p25rem: 2.25rem;
+  --vt-text-2p375rem: var(--vt-fs-h1);
+  --vt-text-2p5rem: 2.5rem;
+  --vt-text-2p75rem: 2.75rem;
+  --vt-text-5px: 5px;
+  --vt-text-7px: 7px;
+  --vt-text-8px: 8px;
+  --vt-text-9px: 9px;
+  --vt-text-10px: 10px;
+  --vt-text-11px: 11px;
+  --vt-text-12px: 12px;
+  --vt-text-13px: 14px;
+  --vt-text-13p5px: 14px;
+  --vt-text-14px: 14px;
+  --vt-text-15px: 15px;
+  --vt-text-16px: 16px;
+  --vt-text-17px: 17px;
+  --vt-text-19px: 19px;
+  --vt-text-20px: 20px;
+  --vt-text-23px: 23px;
+  --vt-text-24px: 24px;
+
+  --vt-text-6cqw: 6cqw;
+  --vt-text-7cqw: 7cqw;
+  --vt-text-9cqw: 9cqw;
+  --vt-text-4p8cqw: 4.8cqw;
+  --vt-text-12cqw: 12cqw;
+  --vt-text-4p5cqw: 4.5cqw;
+  --vt-text-0p55em: 0.55em;
+  --vt-text-5cqw: 5cqw;
+  --vt-text-4cqw: 4cqw;
+  --vt-text-6p5cqw: 6.5cqw;
+
+  /* Interlignes sans unité. */
+  --vt-leading-1: 1;
+  --vt-leading-1p05: 1.05;
+  --vt-leading-1p08: 1.08;
+  --vt-leading-1p12: 1.12;
+  --vt-leading-1p15: 1.15;
+  --vt-leading-1p2: 1.2;
+  --vt-leading-1p25: 1.25;
+  --vt-leading-1p3: 1.3;
+  --vt-leading-1p35: 1.35;
+  --vt-leading-1p4: 1.4;
+  --vt-leading-1p45: 1.45;
+  --vt-leading-1p5: 1.5;
+  --vt-leading-1p55: 1.55;
+  --vt-leading-1p6: 1.6;
+  --vt-leading-1p625: 1.625;
+  --vt-leading-1p65: 1.65;
+  --vt-leading-1p7: 1.7;
+  --vt-leading-1p8: 1.8;
+
+  /* Interlignes fixes. */
+  --vt-line-1rem: 1rem;
+  --vt-line-1p25rem: 1.25rem;
+  --vt-line-1p5rem: 1.5rem;
+  --vt-line-1p75rem: 1.75rem;
+  --vt-line-2rem: 2rem;
+  --vt-line-2p25rem: 2.25rem;
+  --vt-line-2p5rem: 2.5rem;
+
+  /* Dimensions fixes : espacements, éléments, rayons et conteneurs. */
+  --vt-size-0rem: 0rem;
+  --vt-size-0p125rem: 0.125rem;
+  --vt-size-0p25rem: 0.25rem;
+  --vt-size-0p375rem: 0.375rem;
+  --vt-size-0p5rem: 0.5rem;
+  --vt-size-0p625rem: 0.625rem;
+  --vt-size-0p75rem: 0.75rem;
+  --vt-size-0p875rem: 0.875rem;
+  --vt-size-1px: 1px;
+  --vt-size-1rem: 1rem;
+  --vt-size-1p25rem: 1.25rem;
+  --vt-size-1p5rem: 1.5rem;
+  --vt-size-1p75rem: 1.75rem;
+  --vt-size-2px: 2px;
+  --vt-size-2rem: 2rem;
+  --vt-size-2p25rem: 2.25rem;
+  --vt-size-2p5rem: 2.5rem;
+  --vt-size-2p75rem: 2.75rem;
+  --vt-size-3px: 3px;
+  --vt-size-3rem: 3rem;
+  --vt-size-3p5rem: 3.5rem;
+  --vt-size-4px: 4px;
+  --vt-size-4rem: 4rem;
+  --vt-size-4p5rem: 4.5rem;
+  --vt-size-4p75rem: 4.75rem;
+  --vt-size-5px: 5px;
+  --vt-size-5rem: 5rem;
+  --vt-size-5p5rem: 5.5rem;
+  --vt-size-6px: 6px;
+  --vt-size-6rem: 6rem;
+  --vt-size-7px: 7px;
+  --vt-size-7rem: 7rem;
+  --vt-size-8px: 8px;
+  --vt-size-9px: 9px;
+  --vt-size-10px: 10px;
+  --vt-size-11px: 11px;
+  --vt-size-12px: 12px;
+  --vt-size-12rem: 12rem;
+  --vt-size-13px: 13px;
+  --vt-size-13rem: 13rem;
+  --vt-size-14px: 14px;
+  --vt-size-14rem: 14rem;
+  --vt-size-15px: 15px;
+  --vt-size-16px: 16px;
+  --vt-size-17px: 17px;
+  --vt-size-18px: 18px;
+  --vt-size-19px: 19px;
+  --vt-size-20px: 20px;
+  --vt-size-21px: 21px;
+  --vt-size-22px: 22px;
+  --vt-size-22rem: 22rem;
+  --vt-size-23px: 23px;
+  --vt-size-24px: 24px;
+  --vt-size-24rem: 24rem;
+  --vt-size-25px: 25px;
+  --vt-size-26px: 26px;
+  --vt-size-27px: 27px;
+  --vt-size-28px: 28px;
+  --vt-size-28rem: 28rem;
+  --vt-size-29px: 29px;
+  --vt-size-30px: 30px;
+  --vt-size-32px: 32px;
+  --vt-size-34px: 34px;
+  --vt-size-34rem: 34rem;
+  --vt-size-35px: 35px;
+  --vt-size-36px: 36px;
+  --vt-size-36rem: 36rem;
+  --vt-size-38px: 38px;
+  --vt-size-40px: 40px;
+  --vt-size-42px: 42px;
+  --vt-size-42rem: 42rem;
+  --vt-size-44px: 44px;
+  --vt-size-46px: 46px;
+  --vt-size-48px: 48px;
+  --vt-size-48rem: 48rem;
+  --vt-size-50px: 50px;
+  --vt-size-52px: 52px;
+  --vt-size-53px: 53px;
+  --vt-size-54px: 54px;
+  --vt-size-56px: 56px;
+  --vt-size-58px: 58px;
+  --vt-size-60px: 60px;
+  --vt-size-64px: 64px;
+  --vt-size-64rem: 64rem;
+  --vt-size-68px: 68px;
+  --vt-size-72px: 72px;
+  --vt-size-72rem: 72rem;
+  --vt-size-76px: 76px;
+  --vt-size-78px: 78px;
+  --vt-size-80px: 80px;
+  --vt-size-84px: 84px;
+  --vt-size-86px: 86px;
+  --vt-size-88px: 88px;
+  --vt-size-90px: 90px;
+  --vt-size-95px: 95px;
+  --vt-size-96px: 96px;
+  --vt-size-100px: 100px;
+  --vt-size-104px: 104px;
+  --vt-size-110px: 110px;
+  --vt-size-112px: 112px;
+  --vt-size-120px: 120px;
+  --vt-size-125px: 125px;
+  --vt-size-130px: 130px;
+  --vt-size-135px: 135px;
+  --vt-size-140px: 140px;
+  --vt-size-150px: 150px;
+  --vt-size-160px: 160px;
+  --vt-size-165px: 165px;
+  --vt-size-168px: 168px;
+  --vt-size-180px: 180px;
+  --vt-size-190px: 190px;
+  --vt-size-200px: 200px;
+  --vt-size-208px: 208px;
+  --vt-size-214px: 214px;
+  --vt-size-220px: 220px;
+  --vt-size-230px: 230px;
+  --vt-size-240px: 240px;
+  --vt-size-242px: 242px;
+  --vt-size-244px: 244px;
+  --vt-size-250px: 250px;
+  --vt-size-260px: 260px;
+  --vt-size-270px: 270px;
+  --vt-size-280px: 280px;
+  --vt-size-300px: 300px;
+  --vt-size-310px: 310px;
+  --vt-size-320px: 320px;
+  --vt-size-340px: 340px;
+  --vt-size-350px: 350px;
+  --vt-size-360px: 360px;
+  --vt-size-365px: 365px;
+  --vt-size-370px: 370px;
+  --vt-size-380px: 380px;
+  --vt-size-390px: 390px;
+  --vt-size-420px: 420px;
+  --vt-size-430px: 430px;
+  --vt-size-440px: 440px;
+  --vt-size-450px: 450px;
+  --vt-size-470px: 470px;
+  --vt-size-500px: 500px;
+  --vt-size-520px: 520px;
+  --vt-size-530px: 530px;
+  --vt-size-540px: 540px;
+  --vt-size-550px: 550px;
+  --vt-size-560px: 560px;
+  --vt-size-580px: 580px;
+  --vt-size-600px: 600px;
+  --vt-size-620px: 620px;
+  --vt-size-640px: 640px;
+  --vt-size-650px: 650px;
+  --vt-size-680px: 680px;
+  --vt-size-700px: 700px;
+  --vt-size-760px: 760px;
+  --vt-size-800px: 800px;
+  --vt-size-850px: 850px;
+  --vt-size-860px: 860px;
+  --vt-size-900px: 900px;
+  --vt-size-999px: 999px;
+  --vt-size-1000px: 1000px;
+  --vt-size-1080px: 1080px;
+  --vt-size-1200px: var(--vt-container);
+  --vt-size-1280px: 1280px;
+}
+
+@media (max-width: 760px) {
+  .marketing-site {
+    --vt-fs-h1: var(--vt-fs-h1-mobile);
+    --vt-fs-h2: 1.5rem;
+    --vt-section-y: clamp(2rem, 6vw, 2.5rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-site {
+    --vt-visual-width: 80%;
+    --vt-phone-width: calc(365px * var(--vt-visual-scale));
+    --vt-phone-wide-width: calc(340px * var(--vt-visual-scale));
+    --vt-printer-width: calc(440px * var(--vt-visual-scale));
+    --vt-printer-height: calc(620px * var(--vt-visual-scale));
+    --vt-pano-card-width: clamp(192px, 20.8vw, 320px);
+    --vt-pano-card-height: clamp(110.4px, 12vw, 184px);
+    --vt-pano-stage-height: min(42rem, calc(80svh - 5.5rem));
+  }
+}
+
+@media (max-width: 360px) {
+  .marketing-site {
+    --vt-fs-h1-mobile: 1.75rem; /* 28 px sur les écrans les plus étroits. */
+  }
+}
+
+/* Espacements : même échelle compacte pour CSS et Tailwind. */
+.marketing-site {
+  --vt-space-32px: calc(var(--vt-size-32px) * var(--vt-space-scale));
+  --vt-space-30px: calc(var(--vt-size-30px) * var(--vt-space-scale));
+  --vt-space-16px: calc(var(--vt-size-16px) * var(--vt-space-scale));
+  --vt-space-14px: calc(var(--vt-size-14px) * var(--vt-space-scale));
+  --vt-space-18px: calc(var(--vt-size-18px) * var(--vt-space-scale));
+  --vt-space-28px: calc(var(--vt-size-28px) * var(--vt-space-scale));
+  --vt-space-10px: calc(var(--vt-size-10px) * var(--vt-space-scale));
+  --vt-space-24px: calc(var(--vt-size-24px) * var(--vt-space-scale));
+  --vt-space-40px: calc(var(--vt-size-40px) * var(--vt-space-scale));
+  --vt-space-20px: calc(var(--vt-size-20px) * var(--vt-space-scale));
+  --vt-space-12px: calc(var(--vt-size-12px) * var(--vt-space-scale));
+  --vt-space-26px: calc(var(--vt-size-26px) * var(--vt-space-scale));
+  --vt-space-9px: calc(var(--vt-size-9px) * var(--vt-space-scale));
+  --vt-space-38px: calc(var(--vt-size-38px) * var(--vt-space-scale));
+  --vt-space-36px: calc(var(--vt-size-36px) * var(--vt-space-scale));
+  --vt-space-100px: calc(var(--vt-size-100px) * var(--vt-space-scale));
+  --vt-space-22px: calc(var(--vt-size-22px) * var(--vt-space-scale));
+  --vt-space-64px: calc(var(--vt-size-64px) * var(--vt-space-scale));
+  --vt-space-1p5rem: calc(var(--vt-size-1p5rem) * var(--vt-space-scale));
+  --vt-space-4rem: calc(var(--vt-size-4rem) * var(--vt-space-scale));
+  --vt-space-1rem: calc(var(--vt-size-1rem) * var(--vt-space-scale));
+  --vt-space-3rem: calc(var(--vt-size-3rem) * var(--vt-space-scale));
+  --vt-space-3p5rem: calc(var(--vt-size-3p5rem) * var(--vt-space-scale));
+  --vt-space-5rem: calc(var(--vt-size-5rem) * var(--vt-space-scale));
+  --vt-space-0p75rem: calc(var(--vt-size-0p75rem) * var(--vt-space-scale));
+  --vt-space-1p25rem: calc(var(--vt-size-1p25rem) * var(--vt-space-scale));
+  --vt-space-2rem: calc(var(--vt-size-2rem) * var(--vt-space-scale));
+  --vt-space-2p5rem: calc(var(--vt-size-2p5rem) * var(--vt-space-scale));
+  --vt-space-56px: calc(var(--vt-size-56px) * var(--vt-space-scale));
+  --vt-space-13px: calc(var(--vt-size-13px) * var(--vt-space-scale));
+  --vt-space-11px: calc(var(--vt-size-11px) * var(--vt-space-scale));
+  --vt-space-34px: calc(var(--vt-size-34px) * var(--vt-space-scale));
+  --vt-space-15px: calc(var(--vt-size-15px) * var(--vt-space-scale));
+  --vt-space-53px: calc(var(--vt-size-53px) * var(--vt-space-scale));
+  --vt-space-42px: calc(var(--vt-size-42px) * var(--vt-space-scale));
+  --vt-space-17px: calc(var(--vt-size-17px) * var(--vt-space-scale));
+  --vt-space-60px: calc(var(--vt-size-60px) * var(--vt-space-scale));
+  --vt-space-48px: calc(var(--vt-size-48px) * var(--vt-space-scale));
+  --vt-space-46px: calc(var(--vt-size-46px) * var(--vt-space-scale));
+  --vt-space-76px: calc(var(--vt-size-76px) * var(--vt-space-scale));
+  --vt-space-72px: calc(var(--vt-size-72px) * var(--vt-space-scale));
+  --vt-space-25px: calc(var(--vt-size-25px) * var(--vt-space-scale));
+  --vt-space-44px: calc(var(--vt-size-44px) * var(--vt-space-scale));
+  --vt-space-50px: calc(var(--vt-size-50px) * var(--vt-space-scale));
+  --vt-space-110px: calc(var(--vt-size-110px) * var(--vt-space-scale));
+  --vt-space-78px: calc(var(--vt-size-78px) * var(--vt-space-scale));
+  --vt-space-86px: calc(var(--vt-size-86px) * var(--vt-space-scale));
+  --vt-space-88px: calc(var(--vt-size-88px) * var(--vt-space-scale));
+  --vt-space-1p75rem: calc(var(--vt-size-1p75rem) * var(--vt-space-scale));
+  --vt-space-2p25rem: calc(var(--vt-size-2p25rem) * var(--vt-space-scale));
+  --vt-space-52px: calc(var(--vt-size-52px) * var(--vt-space-scale));
+  --vt-space-84px: calc(var(--vt-size-84px) * var(--vt-space-scale));
+  --vt-space-7rem: calc(var(--vt-size-7rem) * var(--vt-space-scale));
+  --vt-space-2p75rem: calc(var(--vt-size-2p75rem) * var(--vt-space-scale));
+  --vt-space-4p5rem: calc(var(--vt-size-4p5rem) * var(--vt-space-scale));
+  --vt-space-0p625rem: calc(var(--vt-size-0p625rem) * var(--vt-space-scale));
+}
+
+/* Variantes de la page création de site web. */
+.marketing-site {
+  --vt-space-58px: calc(var(--vt-size-58px) * var(--vt-space-scale));
+  --vt-size-62px: 62px;
+  --vt-space-62px: calc(var(--vt-size-62px) * var(--vt-space-scale));
+  --vt-text-1p75rem: 1.75rem;
 }

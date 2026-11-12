@@ -6,7 +6,8 @@ export const dynamic = "force-static";
 
 export const metadata = marketingPageMetadata({
   title: "Mentions légales · Rappel Beauty",
-  description: "Mentions légales Rappel Beauté : éditeur, ICE, RC, hébergeur.",
+  description:
+    "Mentions légales de Rappel Beauty : éditeur du site, ICE, RC, hébergeur et informations de contact.",
   canonical: "/mentions-legales/",
 });
 

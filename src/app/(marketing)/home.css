@@ -44,7 +44,7 @@
 .marketing-site .hm > section[id],
 .marketing-site .hm > .benefits {
   margin-block: 0;
-  padding-block: clamp(12px, 1.5vw, 20px);
+  padding-block: clamp(var(--vt-space-12px), 1.5vw, var(--vt-space-20px));
 }
 .marketing-site:has(.hm),
 .marketing-site:has(.fn),
@@ -74,7 +74,7 @@
   font-family: var(--f-display);
   font-weight: 500;
   letter-spacing: -0.035em;
-  line-height: 1.12;
+  line-height: var(--vt-leading-1p12);
   color: var(--ink);
   text-wrap: balance;
 }
@@ -90,8 +90,8 @@
   color: inherit;
 }
 .hm .ico {
-  width: 20px;
-  height: 20px;
+  width: var(--vt-size-20px);
+  height: var(--vt-size-20px);
   flex-shrink: 0;
   stroke: currentcolor;
   fill: none;
@@ -106,7 +106,7 @@
 }
 .hm section {
   padding-block: var(--vt-section-y);
-  scroll-margin-top: 5.5rem;
+  scroll-margin-top: var(--vt-size-5p5rem);
 }
 .hm .soft {
   background: transparent;
@@ -115,24 +115,24 @@
 .hm .label {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font: 600 12px var(--f-body);
+  gap: var(--vt-size-8px);
+  font: 600 var(--vt-text-12px) var(--f-body);
   color: var(--primary);
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 .hm .label::before {
   content: "";
-  width: 18px;
-  height: 2px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-2px);
   background: currentcolor;
-  border-radius: 2px;
+  border-radius: var(--vt-size-2px);
 }
 .hm .head {
   display: grid;
-  gap: 12px;
-  max-width: 680px;
-  margin-bottom: clamp(20px, 2vw, 32px);
+  gap: var(--vt-space-12px);
+  max-width: var(--vt-size-680px);
+  margin-bottom: clamp(var(--vt-space-20px), 2vw, var(--vt-space-32px));
 }
 .hm .head.center {
   margin-inline: auto;
@@ -193,20 +193,20 @@
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  max-width: var(--vt-container, 1200px);
+  gap: var(--vt-space-18px);
+  max-width: var(--vt-container, var(--vt-size-1200px));
 }
 .hm .benefit {
   position: relative;
   overflow: hidden;
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 14px;
+  gap: var(--vt-space-14px);
   align-items: center;
   min-width: 0;
-  padding: 18px 16px 20px;
+  padding: var(--vt-space-18px) var(--vt-space-16px) var(--vt-space-20px);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--vt-size-22px);
   background: #fff;
   box-shadow:
     0 14px 34px rgb(186 0 73 / 8%),
@@ -217,8 +217,8 @@
   z-index: 1;
 }
 .hm .benefit .ic {
-  width: 40px;
-  height: 40px;
+  width: var(--vt-size-40px);
+  height: var(--vt-size-40px);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -226,8 +226,8 @@
   color: var(--vt-primary-bright);
 }
 .hm .benefit .ic .ico {
-  width: 24px;
-  height: 24px;
+  width: var(--vt-size-24px);
+  height: var(--vt-size-24px);
   stroke-width: 1.7;
 }
 .hm .benefit h3 {
@@ -235,40 +235,40 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--vt-ink);
-  line-height: 1.25;
+  line-height: var(--vt-leading-1p25);
 }
 .hm .benefit p {
-  font-size: 13.5px;
+  font-size: var(--vt-text-13p5px);
   color: #5c4652;
-  margin-top: 4px;
-  line-height: 1.35;
+  margin-top: var(--vt-size-4px);
+  line-height: var(--vt-leading-1p35);
 }
 @media (max-width: 1100px) {
   .hm .benefits .wrap {
     grid-template-columns: 1fr 1fr;
   }
   .hm .benefit {
-    padding: 20px 16px 28px;
+    padding: var(--vt-space-20px) var(--vt-space-16px) var(--vt-space-28px);
   }
 }
 @media (max-width: 560px) {
   .hm .benefits {
-    padding-block: 48px;
+    padding-block: var(--vt-space-48px);
   }
   .hm .benefits .wrap {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: var(--vt-space-12px);
   }
   .hm .benefit {
-    padding: 16px;
+    padding: var(--vt-space-16px);
   }
 }
 @media (max-width: 760px) {
   .hm section {
-    padding-block: 72px;
+    padding-block: var(--vt-space-72px);
   }
   .hm .head {
-    margin-bottom: 36px;
+    margin-bottom: var(--vt-space-36px);
   }
 }
 
@@ -282,13 +282,13 @@
 }
 /* Hero typography and narrow screen proportions. */
 .hm .hm-pano-stage .panoramic-hero-copy {
-  padding-top: clamp(12px, 2vh, 24px);
-  gap: 12px;
+  padding-top: clamp(var(--vt-space-12px), 2vh, var(--vt-space-24px));
+  gap: var(--vt-space-12px);
 }
 .hm .hm-pano-stage .panoramic-hero-copy > span {
   font-size: var(--vt-fs-caption);
   letter-spacing: 0.12em;
-  line-height: 1.6;
+  line-height: var(--vt-leading-1p6);
 }
 .hm .hm-pano-stage .panoramic-hero-copy > p {
   font-size: var(--vt-fs-lead);
@@ -297,10 +297,10 @@
 }
 @media (max-width: 760px) {
   .hm section {
-    padding-block: 64px;
+    padding-block: var(--vt-space-64px);
   }
   .hm .head {
-    gap: 14px;
+    gap: var(--vt-space-14px);
   }
   .hm .benefit h3 {
     font-size: var(--vt-fs-h4);
@@ -308,17 +308,17 @@
 }
 @media (max-width: 400px) {
   .hm .wrap {
-    padding-inline: 18px;
+    padding-inline: var(--vt-space-18px);
   }
   .marketing-site .hm .hm-pano h1 {
-    font-size: 2rem;
+    font-size: var(--vt-text-2rem);
   }
 }
 
 /* Piste de défilement : assez longue pour déplier les cartes, sans les 220 vh d’avant.
    La scène collée reste compacte ; seul le défilement s’allonge. */
 .hm section.hm-pano.hm-pano-scroll {
-  height: calc(100svh + clamp(22rem, 32vh, 34rem));
+  height: calc(100svh + var(--vt-pano-scroll-distance));
 }
 .hm section.hm-pano.hm-pano-static {
   height: auto;

@@ -24,27 +24,27 @@
 .ap-hero {
   display: grid;
   grid-template-columns: minmax(0, 0.48fr) minmax(0, 0.52fr);
-  gap: 32px;
+  gap: var(--vt-space-32px);
   align-items: center;
-  padding-block: var(--vt-hero-y) 30px;
+  padding-block: var(--vt-hero-y) var(--vt-space-30px);
 }
 .ap-hero-copy {
-  padding-block: 16px;
+  padding-block: var(--vt-space-16px);
 }
 .ap-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 14px;
-  border-radius: 999px;
+  gap: var(--vt-size-6px);
+  padding: var(--vt-size-4px) var(--vt-space-14px);
+  border-radius: var(--vt-size-999px);
   background: var(--vt-surface-pink);
   color: var(--vt-primary-strong);
   font-size: var(--vt-fs-caption);
   font-weight: 700;
 }
 .ap-badge svg {
-  width: 14px;
-  height: 14px;
+  width: var(--vt-size-14px);
+  height: var(--vt-size-14px);
 }
 .marketing-site .ap h1 {
   margin-top: var(--vt-gap-badge-title);
@@ -65,7 +65,7 @@
   left: 0;
   right: 0;
   bottom: -5px;
-  height: 4px;
+  height: var(--vt-size-4px);
   border-radius: 50%;
   background: var(--vt-pink);
   transform: rotate(-2deg);
@@ -80,41 +80,41 @@
 .ap-pillars {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
-  margin-top: 28px;
+  gap: var(--vt-space-18px);
+  margin-top: var(--vt-space-28px);
 }
 .ap-pillar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--vt-space-10px);
 }
 .ap-icon {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: var(--vt-size-40px);
+  height: var(--vt-size-40px);
+  border-radius: var(--vt-size-12px);
   color: var(--vt-primary-vivid);
   background: var(--vt-surface-pink);
 }
 .ap-icon svg {
-  width: 22px;
-  height: 22px;
+  width: var(--vt-size-22px);
+  height: var(--vt-size-22px);
   stroke-width: 1.8;
 }
 .ap-pillar .ap-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
+  width: var(--vt-size-40px);
+  height: var(--vt-size-40px);
+  border-radius: var(--vt-size-11px);
 }
 .ap-pillar .ap-icon svg {
-  width: 24px;
-  height: 24px;
+  width: var(--vt-size-24px);
+  height: var(--vt-size-24px);
 }
 .ap-pillar p {
   font-size: var(--vt-fs-caption);
-  line-height: 1.5;
+  line-height: var(--vt-leading-1p5);
 }
 .ap-pillar strong {
   font-weight: 650;
@@ -126,10 +126,10 @@
 .ap-purpose {
   display: grid;
   grid-template-columns: minmax(0, 0.47fr) minmax(0, 0.53fr);
-  gap: clamp(24px, 3vw, 40px);
+  gap: clamp(var(--vt-space-24px), 3vw, var(--vt-space-40px));
   align-items: center;
-  padding-block: 20px 28px;
-  scroll-margin-top: 5.5rem;
+  padding-block: var(--vt-space-20px) var(--vt-space-28px);
+  scroll-margin-top: var(--vt-size-5p5rem);
 }
 .ap-professional {
   position: relative;
@@ -146,12 +146,12 @@
 }
 .ap-purpose-copy {
   display: grid;
-  gap: 20px;
+  gap: var(--vt-space-20px);
 }
 .ap-purpose-copy article {
   display: flex;
   align-items: flex-start;
-  gap: 20px;
+  gap: var(--vt-space-20px);
 }
 .marketing-site .ap-purpose h2 {
   font-family: var(--font-fraunces), Georgia, serif;
@@ -165,14 +165,14 @@
   color: var(--ap-primary);
 }
 .ap-purpose-copy article p {
-  margin-top: 12px;
+  margin-top: var(--vt-space-12px);
   font-size: var(--vt-fs-body);
   line-height: var(--vt-lh-body);
   color: var(--ap-muted);
 }
 .ap-values {
-  padding: 30px;
-  border-radius: 30px;
+  padding: var(--vt-space-30px);
+  border-radius: var(--vt-size-30px);
   background: linear-gradient(120deg, var(--vt-surface-soft), var(--vt-surface-pink));
 }
 .ap-values-heading {
@@ -181,7 +181,7 @@
 .ap-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--vt-space-12px);
   text-transform: uppercase;
   font-size: var(--vt-fs-caption);
   font-weight: 700;
@@ -190,12 +190,12 @@
 .ap-eyebrow::before,
 .ap-eyebrow::after {
   content: "";
-  width: 36px;
-  height: 1px;
+  width: var(--vt-size-36px);
+  height: var(--vt-size-1px);
   background: var(--vt-pink);
 }
 .marketing-site .ap-values h2 {
-  margin-top: 8px;
+  margin-top: var(--vt-size-8px);
   font-family: var(--font-fraunces), Georgia, serif;
   font-size: var(--vt-fs-h2);
   line-height: var(--vt-lh-h2);
@@ -206,21 +206,21 @@
 .ap-values-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 26px;
+  gap: var(--vt-space-16px);
+  margin-top: var(--vt-space-26px);
 }
 .ap-values-grid article {
   text-align: center;
   background: #ffffffd1;
-  padding: 26px 18px;
+  padding: var(--vt-space-26px) var(--vt-space-18px);
   border: 1px solid var(--vt-surface);
-  border-radius: 22px;
+  border-radius: var(--vt-size-22px);
   box-shadow: 0 5px 10px -7px #9b17433b;
 }
 .ap-values-grid article > svg {
-  width: 36px;
-  height: 36px;
-  margin: 0 auto 12px;
+  width: var(--vt-size-36px);
+  height: var(--vt-size-36px);
+  margin: 0 auto var(--vt-space-12px);
   color: var(--vt-primary-vivid);
   stroke-width: 1.7;
 }
@@ -232,7 +232,7 @@
   color: var(--ap-ink);
 }
 .ap-values-grid p {
-  margin-top: 9px;
+  margin-top: var(--vt-space-9px);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
   color: var(--ap-muted);
@@ -243,10 +243,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 30px;
-  margin: 38px 0 0;
-  padding: 30px 36px 30px 100px;
-  border-radius: 28px;
+  gap: var(--vt-space-30px);
+  margin: var(--vt-space-38px) 0 0;
+  padding: var(--vt-space-30px) var(--vt-space-36px) var(--vt-space-30px) var(--vt-space-100px);
+  border-radius: var(--vt-size-28px);
   color: white;
   background: linear-gradient(
     110deg,
@@ -271,29 +271,29 @@
 .ap-cta p {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 12px;
+  gap: var(--vt-size-7px);
+  margin-top: var(--vt-space-12px);
   font-size: var(--vt-fs-caption);
   color: var(--vt-surface-soft);
 }
 .ap-cta p svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
 }
 .ap-cta a {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: var(--vt-space-14px);
   min-height: var(--vt-btn-h);
-  padding: 14px 24px;
-  border-radius: 16px;
+  padding: var(--vt-space-14px) var(--vt-space-24px);
+  border-radius: var(--vt-size-16px);
   background: var(--vt-surface);
   color: var(--vt-primary);
   font-size: var(--vt-fs-body);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   text-align: center;
   text-decoration: none;
   transition:
@@ -305,13 +305,13 @@
   box-shadow: 0 5px 15px #65002b30;
 }
 .ap-cta a svg {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
 }
 .ap-cta-spa {
   position: absolute;
   z-index: -1;
-  width: 220px;
+  width: var(--vt-size-220px);
   height: auto;
   left: -110px;
   bottom: -5px;
@@ -322,43 +322,43 @@
   outline-offset: 5px;
 }
 .ap-wrap {
-  padding-bottom: 40px;
+  padding-bottom: var(--vt-space-40px);
 }
 @media (max-width: 1050px) {
   .ap-hero {
-    gap: 22px;
+    gap: var(--vt-space-22px);
   }
   .ap-pillars {
-    gap: 14px;
+    gap: var(--vt-space-14px);
   }
   .ap-purpose {
-    gap: 28px;
+    gap: var(--vt-space-28px);
   }
   .ap-purpose-copy article {
-    gap: 14px;
+    gap: var(--vt-space-14px);
   }
   .ap-purpose-copy .ap-icon {
-    width: 44px;
-    height: 44px;
+    width: var(--vt-size-44px);
+    height: var(--vt-size-44px);
   }
   .ap-values {
-    padding: 26px 22px;
+    padding: var(--vt-space-26px) var(--vt-space-22px);
   }
   .ap-values-grid {
-    gap: 12px;
+    gap: var(--vt-space-12px);
   }
   .ap-values-grid article {
-    padding: 22px 12px;
+    padding: var(--vt-space-22px) var(--vt-space-12px);
   }
   .ap-cta {
-    padding-left: 64px;
+    padding-left: var(--vt-space-64px);
   }
 }
 @media (max-width: 760px) {
   .ap-hero {
     grid-template-columns: 1fr;
-    gap: 22px;
-    padding-top: 24px;
+    gap: var(--vt-space-22px);
+    padding-top: var(--vt-space-24px);
   }
   .ap-hero-copy {
     padding-block: 0;
@@ -367,45 +367,45 @@
     margin-top: var(--vt-gap-title-text);
   }
   .ap-pillars {
-    gap: 16px 18px;
-    margin-top: 24px;
+    gap: var(--vt-space-16px) var(--vt-space-18px);
+    margin-top: var(--vt-space-24px);
   }
   .ap-purpose {
     grid-template-columns: 1fr;
-    padding-top: 10px;
-    gap: 32px;
+    padding-top: var(--vt-space-10px);
+    gap: var(--vt-space-32px);
   }
   .ap-professional {
     width: 100%;
-    max-width: 500px;
+    max-width: var(--vt-size-500px);
     margin-inline: auto;
   }
   .ap-purpose-copy {
-    gap: 28px;
+    gap: var(--vt-space-28px);
   }
   .ap-purpose-copy .ap-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: var(--vt-size-40px);
+    height: var(--vt-size-40px);
+    border-radius: var(--vt-size-12px);
   }
   .ap-purpose-copy .ap-icon svg {
-    width: 25px;
-    height: 25px;
+    width: var(--vt-size-25px);
+    height: var(--vt-size-25px);
   }
   .ap-purpose-copy article {
-    gap: 12px;
+    gap: var(--vt-space-12px);
   }
   .ap-values {
-    padding: 26px 16px;
-    border-radius: 24px;
+    padding: var(--vt-space-26px) var(--vt-space-16px);
+    border-radius: var(--vt-size-24px);
   }
   .ap-values-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: var(--vt-space-12px);
   }
   .ap-values-grid article {
-    padding: 22px 12px;
-    border-radius: 18px;
+    padding: var(--vt-space-22px) var(--vt-space-12px);
+    border-radius: var(--vt-size-18px);
   }
   .ap-values-grid h3 {
     margin-inline: -10px;
@@ -413,13 +413,13 @@
   .ap-cta {
     flex-direction: column;
     align-items: stretch;
-    gap: 24px;
-    padding: 28px 24px;
-    border-radius: 22px;
-    margin-top: 28px;
+    gap: var(--vt-space-24px);
+    padding: var(--vt-space-28px) var(--vt-space-24px);
+    border-radius: var(--vt-size-22px);
+    margin-top: var(--vt-space-28px);
   }
   .ap-cta-spa {
-    width: 160px;
+    width: var(--vt-size-160px);
     left: -100px;
     bottom: -12px;
   }
@@ -429,18 +429,18 @@
 }
 @media (max-width: 400px) {
   .marketing-site .ap h1 {
-    font-size: 2rem;
+    font-size: var(--vt-text-2rem);
   }
   .ap-pillar {
-    gap: 7px;
+    gap: var(--vt-size-7px);
   }
   .ap-pillar .ap-icon {
-    width: 34px;
-    height: 34px;
+    width: var(--vt-size-34px);
+    height: var(--vt-size-34px);
   }
   .ap-pillar .ap-icon svg {
-    width: 21px;
-    height: 21px;
+    width: var(--vt-size-21px);
+    height: var(--vt-size-21px);
   }
   .ap-pillar p {
     font-size: var(--vt-fs-caption);

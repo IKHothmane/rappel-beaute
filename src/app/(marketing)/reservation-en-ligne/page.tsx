@@ -37,7 +37,7 @@ export const dynamic = "force-static";
 export const metadata = marketingPageMetadata({
   title: "Réservation en ligne pour institut de beauté · Rappel Beauty",
   description:
-    "Permettez à vos clientes de réserver en ligne auprès de votre institut : page publique, services, tarifs, disponibilités, rendez-vous et vitrine produits avec retrait à l'institut.",
+    "Réservation en ligne pour votre institut : page publique, services, tarifs, disponibilités et produits.",
   canonical: "/reservation-en-ligne/",
 });
 
@@ -255,8 +255,8 @@ export default function ReservationEnLignePage() {
             <ul>
               <IconFacts items={CHANNELS} />
             </ul>
-            <Link href="/creation-site-web/">
-              Vous souhaitez créer votre site ?<ArrowRight aria-hidden="true" />
+            <Link href="/professionnel/">
+              Activer la réservation<ArrowRight aria-hidden="true" />
             </Link>
           </div>
           <aside className="bk-integration">

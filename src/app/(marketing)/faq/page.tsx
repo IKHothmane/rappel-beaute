@@ -8,7 +8,7 @@ import "./faq.css";
 export const dynamic = "force-static";
 export const metadata: Metadata = marketingPageMetadata({
   title: "FAQ Rappel Beauty · Vos questions, nos réponses",
-  description: `Retrouvez les réponses sur Rappel Beauty : agenda, clientes, stock, création de site web, sécurité et abonnement. ${formatPrice(PUBLIC_OFFER.monthlyPrice)} DH/mois, essai de ${PUBLIC_OFFER.trialDays} jours sans carte bancaire.`,
+  description: `Réponses Rappel Beauty : agenda, clientes, stock, réservation, sécurité et abonnement. ${formatPrice(PUBLIC_OFFER.monthlyPrice)} DH/mois, essai ${PUBLIC_OFFER.trialDays} jours.`,
   canonical: "/faq/",
 });
 

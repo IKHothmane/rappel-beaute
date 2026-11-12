@@ -1,9 +1,6 @@
-"use client";
-
-import { PublicCartProvider } from "@/components/public-site/PublicCartContext";
-import { PublicSiteShell } from "@/components/public-site/PublicSiteShell";
 import type { PublicOrganizationProfile } from "@/types/public-booking";
 import type { ReactNode } from "react";
+import { PublicSiteShell } from "@/components/public-site/PublicSiteShell";
 
 export function PublicSiteProviders({
   org,
@@ -12,9 +9,5 @@ export function PublicSiteProviders({
   org: PublicOrganizationProfile;
   children: ReactNode;
 }) {
-  return (
-    <PublicCartProvider slug={org.slug}>
-      <PublicSiteShell org={org}>{children}</PublicSiteShell>
-    </PublicCartProvider>
-  );
+  return <PublicSiteShell org={org}>{children}</PublicSiteShell>;
 }

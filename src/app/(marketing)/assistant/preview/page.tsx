@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 export default scopedPage("public", async function AssistantPreviewPage() {
   await ensurePreviewWidget();
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
-      <h1 className="font-serif text-3xl text-ink">Aperçu du widget</h1>
-      <p className="mt-4 text-sm leading-6 text-ink/70">
+    <main className="mx-auto max-w-[var(--vt-size-48rem)] px-[var(--vt-space-1p5rem)] py-[var(--vt-space-4rem)]">
+      <h1 className="font-serif text-[length:var(--vt-text-1p875rem)]/[var(--vt-line-2p25rem)] text-ink">Aperçu du widget</h1>
+      <p className="mt-[var(--vt-space-1rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-6 text-ink/70">
         Cette page charge le script public. L&apos;assistant s&apos;ouvre en bas à droite, après
         vérification du domaine. Le catalogue de l&apos;institut s&apos;affiche dans le widget. Le
         rendez-vous est proposé dans le widget, puis enregistré seulement après confirmation. Une

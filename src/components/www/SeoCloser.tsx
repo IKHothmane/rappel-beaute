@@ -14,35 +14,35 @@ export function SeoCloser({
 }) {
   return (
     <section className="border-t border-line bg-white">
-      <div className="mx-auto max-w-3xl space-y-8 px-4 py-12 sm:space-y-12 sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-[var(--vt-size-48rem)] space-y-[var(--vt-space-2rem)] px-[var(--vt-space-1rem)] py-[var(--vt-space-3rem)] sm:space-y-[var(--vt-space-3rem)] sm:px-[var(--vt-space-1p5rem)] sm:py-[var(--vt-space-4rem)]">
         <div>
-          <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
+          <h2 className="font-display text-[length:var(--vt-text-1p5rem)]/[var(--vt-line-2rem)] font-light text-ink sm:text-[length:var(--vt-text-1p875rem)]/[var(--vt-line-2p25rem)]">
             Le problème dans l&apos;institut
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{problem}</p>
+          <p className="mt-[var(--vt-space-1rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-[var(--vt-leading-1p625)] text-ink/70 sm:text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)]">{problem}</p>
         </div>
         <div>
-          <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
+          <h2 className="font-display text-[length:var(--vt-text-1p5rem)]/[var(--vt-line-2rem)] font-light text-ink sm:text-[length:var(--vt-text-1p875rem)]/[var(--vt-line-2p25rem)]">
             Ce que fait Rappel Beauty
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{solution}</p>
+          <p className="mt-[var(--vt-space-1rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-[var(--vt-leading-1p625)] text-ink/70 sm:text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)]">{solution}</p>
         </div>
         <div>
-          <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">Un cas concret</h2>
-          <p className="mt-4 text-sm leading-relaxed text-ink/70 sm:text-base">{useCase}</p>
+          <h2 className="font-display text-[length:var(--vt-text-1p5rem)]/[var(--vt-line-2rem)] font-light text-ink sm:text-[length:var(--vt-text-1p875rem)]/[var(--vt-line-2p25rem)]">Un cas concret</h2>
+          <p className="mt-[var(--vt-space-1rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-[var(--vt-leading-1p625)] text-ink/70 sm:text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)]">{useCase}</p>
         </div>
         {faqs && faqs.length > 0 ? (
           <div>
-            <h2 className="font-display text-2xl font-light text-ink sm:text-3xl">
+            <h2 className="font-display text-[length:var(--vt-text-1p5rem)]/[var(--vt-line-2rem)] font-light text-ink sm:text-[length:var(--vt-text-1p875rem)]/[var(--vt-line-2p25rem)]">
               Questions fréquentes
             </h2>
-            <div className="mt-6 space-y-3">
+            <div className="mt-[var(--vt-space-1p5rem)] space-y-[var(--vt-space-0p75rem)]">
               {faqs.map((item) => (
-                <details key={item.q} className="rounded-xl border border-line bg-paper p-4 sm:p-5">
-                  <summary className="cursor-pointer text-sm font-medium text-ink sm:text-base">
+                <details key={item.q} className="rounded-xl border border-line bg-paper p-[var(--vt-space-1rem)] sm:p-[var(--vt-space-1p25rem)]">
+                  <summary className="cursor-pointer text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] font-medium text-ink sm:text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)]">
                     {item.q}
                   </summary>
-                  <p className="mt-3 text-sm leading-relaxed text-ink/65">{item.a}</p>
+                  <p className="mt-[var(--vt-space-0p75rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-[var(--vt-leading-1p625)] text-ink/65">{item.a}</p>
                 </details>
               ))}
             </div>

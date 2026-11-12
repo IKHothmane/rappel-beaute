@@ -15,7 +15,6 @@ const PAGES = [
   "/confidentialite/",
   "/connexion/",
   "/contact/",
-  "/creation-site-web/",
   "/demo/",
   "/faq/",
   "/fidelite/",

@@ -5,7 +5,8 @@ export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   title: "Blog",
-  description: "Journal Rappel Beauté — articles à venir.",
+  description:
+    "Le journal Rappel Beauty : conseils et actualités pour les instituts de beauté au Maroc. Articles à venir.",
   robots: { index: false, follow: false },
 };
 
@@ -17,8 +18,8 @@ export default function BlogPage() {
         title="Les articles arrivent bientôt."
         text="Guides métier, cas d’instituts et nouveautés seront publiés ici."
       />
-      <div className="container-rb py-12">
-        <p className="max-w-xl text-sm text-ink/60">
+      <div className="container-rb py-[var(--vt-space-3rem)]">
+        <p className="max-w-[var(--vt-size-36rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] text-ink/60">
           En attendant, la FAQ et les pages fonctionnalités couvrent le produit.
         </p>
       </div>

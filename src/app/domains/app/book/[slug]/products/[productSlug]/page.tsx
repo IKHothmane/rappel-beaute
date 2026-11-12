@@ -1,8 +1,10 @@
-import { PublicProductDetailPage } from "@/components/public-site/PublicProductDetailPage";
+import { permanentRedirect } from "next/navigation";
 
-type Props = { params: Promise<{ slug: string; productSlug: string }> };
-
-export default async function Page({ params }: Props) {
-  const { slug, productSlug } = await params;
-  return <PublicProductDetailPage slug={slug} productSlug={productSlug} />;
+export default async function RemovedPublicProductPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  permanentRedirect(`/book/${encodeURIComponent(slug)}/booking/`);
 }

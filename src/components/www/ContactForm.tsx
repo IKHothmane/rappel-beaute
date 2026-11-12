@@ -100,7 +100,6 @@ export function ContactForm() {
             {[
               "Démonstration",
               "Question sur le logiciel",
-              "Création de site web",
               "Tarifs et abonnement",
               "Assistance",
               "Autre demande",

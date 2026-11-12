@@ -8,7 +8,7 @@
   color: var(--vt-ink-plum);
 }
 .hm .modules-section h2 + p {
-  margin-top: 32px;
+  margin-top: var(--vt-space-32px);
   font-size: var(--vt-fs-lead);
   line-height: var(--vt-lh-lead);
   color: var(--vt-muted);
@@ -44,16 +44,16 @@
 @media (max-width: 639px) {
   .modules-section .module-card {
     min-height: 0;
-    padding: 20px;
+    padding: var(--vt-space-20px);
   }
   .modules-section .module-card .module-card-icon {
-    width: 48px;
-    height: 48px;
-    margin-bottom: 14px;
-    border-radius: 14px;
+    width: var(--vt-size-48px);
+    height: var(--vt-size-48px);
+    margin-bottom: var(--vt-space-14px);
+    border-radius: var(--vt-size-14px);
   }
   .modules-section .module-card .module-card-foot {
-    padding-top: 14px;
+    padding-top: var(--vt-space-14px);
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 import { resolveOrganizationBySlug } from "@/lib/db/public-booking";
 import { getAppointmentById } from "@/lib/db/appointments";
 import { formatBookingDate, formatBookingTime, formatMad } from "@/modules/public-booking/service";

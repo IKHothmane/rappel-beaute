@@ -8,9 +8,9 @@ import "./fonctionnalites.css";
 export const dynamic = "force-static";
 
 export const metadata = marketingPageMetadata({
-  title: "Fonctionnalités du logiciel pour institut de beauté · Rappel Beauty",
+  title: "Fonctionnalités du logiciel institut | Rappel Beauty",
   description:
-    "Découvrez les fonctionnalités de Rappel Beauty pour gérer votre institut de beauté au Maroc : rendez-vous, clientes, équipe, services, stock, caisse, fidélité et réservation en ligne.",
+    "Fonctionnalités Rappel Beauty : rendez-vous, clientes, équipe, stock, caisse, fidélité et réservation en ligne.",
   canonical: "/fonctionnalites/",
 });
 
@@ -143,7 +143,7 @@ function Glyph({ name }: { name: (typeof MODULES)[number]["icon"] | "check" }) {
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
-      className="h-5 w-5"
+      className="h-[var(--vt-size-1p25rem)] w-[var(--vt-size-1p25rem)]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -277,7 +277,7 @@ export default function FonctionnalitesPage() {
               </details>
             ))}
           </div>
-          <p className="mt-6 text-center text-sm text-vt-muted">
+          <p className="mt-[var(--vt-space-1p5rem)] text-center text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] text-vt-muted">
             Le détail des prix est sur la{" "}
             <Link href="/tarifs/" className="font-semibold text-vt-primary">
               page tarifs

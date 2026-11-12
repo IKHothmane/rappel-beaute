@@ -6,17 +6,17 @@
   padding-block: var(--vt-section-y);
 }
 .pilotage-container {
-  max-width: 1280px;
-  padding-inline: clamp(20px, 4vw, 48px);
+  max-width: var(--vt-size-1280px);
+  padding-inline: clamp(var(--vt-space-20px), 4vw, var(--vt-space-48px));
   margin-inline: auto;
 }
 .pilotage-heading {
-  max-width: 800px;
+  max-width: var(--vt-size-800px);
 }
 .pilotage-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--vt-space-10px);
   color: var(--vt-primary-rich);
   font-size: var(--vt-fs-caption);
   font-weight: 700;
@@ -24,12 +24,12 @@
   text-transform: uppercase;
 }
 .pilotage-eyebrow > span {
-  width: 32px;
-  height: 1px;
+  width: var(--vt-size-32px);
+  height: var(--vt-size-1px);
   background: currentColor;
 }
 .marketing-site .hm .pilotage-heading h2 {
-  margin-top: 22px;
+  margin-top: var(--vt-space-22px);
   font-size: var(--vt-fs-h2);
   line-height: var(--vt-lh-h2);
   letter-spacing: -0.035em;
@@ -39,7 +39,7 @@
   color: var(--vt-primary-rich);
 }
 .hm .pilotage-heading p {
-  margin-top: 24px;
+  margin-top: var(--vt-space-24px);
   max-width: 64ch;
   font-size: var(--vt-fs-lead);
   line-height: var(--vt-lh-lead);
@@ -47,41 +47,41 @@
 }
 .pilotage-preview {
   position: relative;
-  margin: 48px 0 0;
+  margin: var(--vt-space-48px) 0 0;
 }
 .pilotage-preview::before {
   content: "";
   position: absolute;
   inset: -20px;
   z-index: -1;
-  border-radius: 36px;
+  border-radius: var(--vt-size-36px);
   background: #e99ab833;
   filter: blur(48px);
 }
 .pilotage-frame {
   overflow: hidden;
-  padding: 10px;
+  padding: var(--vt-space-10px);
   border: 1px solid #f1d6e0;
-  border-radius: 18px;
+  border-radius: var(--vt-size-18px);
   background: #fff;
   box-shadow: 0 30px 90px -30px rgb(91 13 48 / 30%);
 }
 .pilotage-dashboard {
   width: 100%;
   height: auto;
-  border-radius: 10px;
+  border-radius: var(--vt-size-10px);
   transition: transform 0.7s;
 }
 .pilotage-caption {
   position: absolute;
-  right: 20px;
+  right: var(--vt-size-20px);
   bottom: -20px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: var(--vt-space-10px);
+  padding: var(--vt-space-12px) var(--vt-space-16px);
   border: 1px solid #f2dce4;
-  border-radius: 12px;
+  border-radius: var(--vt-size-12px);
   background: #fff;
   box-shadow: 0 10px 24px -12px #5b0d3040;
   font-size: var(--vt-fs-xs);
@@ -91,9 +91,9 @@
 .pilotage-caption > span {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: var(--vt-size-32px);
+  height: var(--vt-size-32px);
+  border-radius: var(--vt-size-8px);
   background: var(--vt-surface-soft);
   color: var(--vt-primary-rich);
   flex-shrink: 0;
@@ -101,14 +101,14 @@
 .pilotage-features {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-  margin-top: 64px;
+  gap: var(--vt-space-20px);
+  margin-top: var(--vt-space-64px);
 }
 .pilotage-feature {
   min-width: 0;
-  padding: 26px;
+  padding: var(--vt-space-26px);
   border: 1px solid #f0dce4;
-  border-radius: 18px;
+  border-radius: var(--vt-size-18px);
   background: rgb(255 255 255 / 90%);
   box-shadow: 0 3px 12px -8px #5b0d3033;
   backdrop-filter: blur(12px);
@@ -119,10 +119,10 @@
 .pilotage-feature-icon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 20px;
-  border-radius: 12px;
+  width: var(--vt-size-44px);
+  height: var(--vt-size-44px);
+  margin-bottom: var(--vt-space-20px);
+  border-radius: var(--vt-size-12px);
   background: var(--vt-surface-soft);
   color: var(--vt-primary-rich);
 }
@@ -132,7 +132,7 @@
   color: var(--vt-ink-deep);
 }
 .hm .pilotage-feature p {
-  margin-top: 10px;
+  margin-top: var(--vt-space-10px);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
   color: var(--vt-muted);
@@ -149,26 +149,26 @@
 @media (max-width: 767px) {
   .pilotage-features {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-    margin-top: 28px;
+    gap: var(--vt-space-16px);
+    margin-top: var(--vt-space-28px);
   }
   .pilotage-preview {
-    margin-top: 32px;
+    margin-top: var(--vt-space-32px);
   }
   .pilotage-frame {
-    padding: 6px;
-    border-radius: 14px;
+    padding: var(--vt-size-6px);
+    border-radius: var(--vt-size-14px);
   }
   .pilotage-caption {
     position: static;
-    margin-top: 16px;
+    margin-top: var(--vt-space-16px);
     font-size: var(--vt-fs-caption);
   }
   .pilotage-feature {
-    padding: 20px;
+    padding: var(--vt-space-20px);
   }
   .pilotage-feature-icon {
-    margin-bottom: 14px;
+    margin-bottom: var(--vt-space-14px);
   }
 }
 @media (prefers-reduced-motion: reduce) {

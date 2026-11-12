@@ -35,7 +35,7 @@ export function WebsitePreview({
         </div>
         {variant === "boutique" ? (
           <div className="cw-mini-shop">
-            <h3>{TITLES[variant]}</h3>
+            <span className="cw-mini-title">{TITLES[variant]}</span>
             <p>La sélection de votre institut</p>
             <div className="cw-mini-products">
               {["Soin visage", "Huile corps", "Crème mains"].map((label, i) => (
@@ -51,7 +51,7 @@ export function WebsitePreview({
             <div className="cw-mini-hero">
               <div>
                 <span>Votre institut de beauté</span>
-                <h3>{TITLES[variant]}</h3>
+                <span className="cw-mini-title">{TITLES[variant]}</span>
                 <p>Un lieu pour prendre soin de vous.</p>
                 <b>{variant === "rendez-vous" ? "Choisir mon créneau" : "Découvrir nos soins"}</b>
               </div>

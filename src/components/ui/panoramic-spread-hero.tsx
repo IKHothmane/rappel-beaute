@@ -21,7 +21,7 @@ type Layout = { stacked: Omit<Pose, "scale">; panoramic: Pose };
 // Taille des cartes : pilotée en CSS (variables --pano-w / --pano-h posées sur la section,
 // bascule à md = 768px) pour que le rendu serveur ait déjà la bonne taille sur mobile.
 const CARD_SIZE_CLASSES =
-  "[--pano-w:min(82vw,320px)] [--pano-h:min(47vw,184px)] md:[--pano-w:clamp(240px,26vw,400px)] md:[--pano-h:clamp(138px,15vw,230px)]";
+  "[--pano-w:var(--vt-pano-card-width)] [--pano-h:var(--vt-pano-card-height)]";
 type Card = { item: PanoramicImage; z: number; desktop: Layout; mobile: Layout; priority: boolean };
 
 // Arc 3D autour du centre, pour le mobile et le desktop.
@@ -190,13 +190,13 @@ export default function PanoramicSpreadHero({
       ref={wrapRef}
       className={`relative w-full bg-transparent text-ink ${CARD_SIZE_CLASSES} ${reduce ? "hm-pano-static" : "hm-pano-scroll"} ${className}`}
     >
-      {/* Collé sous le header du site (h-[5.5rem], md:h-24). */}
+      {/* Collé sous le header du site (h-[5.5rem], md:h-[var(--vt-size-6rem)]). */}
       <div
-        className={`sticky top-[4.75rem] flex h-[min(52rem,calc(100svh-4.75rem))] w-full justify-center overflow-hidden md:top-[5.5rem] md:h-[min(52rem,calc(100svh-5.5rem))] ${stageClassName}`}
+        className={`sticky top-[var(--vt-size-4p75rem)] flex h-[var(--vt-pano-stage-height)] w-full justify-center overflow-hidden md:top-[var(--vt-size-5p5rem)] ${stageClassName}`}
         style={{ perspective: "1200px" }}
       >
         <motion.div
-          className="absolute inset-0 z-10"
+          className="absolute inset-[var(--vt-size-0rem)] z-10"
           style={{ rotateX: tiltX, rotateY: tiltY, transformStyle: "preserve-3d" }}
         >
           {cards.map((card) => (
@@ -204,13 +204,13 @@ export default function PanoramicSpreadHero({
           ))}
         </motion.div>
 
-        <div className="panoramic-hero-copy pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center px-6 pt-5 text-center md:pt-7">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary md:text-xs">
+        <div className="panoramic-hero-copy pointer-events-none absolute inset-x-[var(--vt-size-0rem)] top-[var(--vt-size-0rem)] z-20 flex flex-col items-center px-[var(--vt-size-1p5rem)] pt-[var(--vt-size-1p25rem)] text-center md:pt-[var(--vt-size-1p75rem)]">
+          <span className="text-[length:var(--vt-text-11px)] font-semibold uppercase tracking-[0.22em] text-primary md:text-[length:var(--vt-text-0p75rem)]/[var(--vt-line-1rem)]">
             {eyebrow}
           </span>
-          <h1 className="mt-3 max-w-[min(18em,100%)]">{title}</h1>
+          <h1 className="mt-[var(--vt-size-0p75rem)] max-w-[min(18em,100%)]">{title}</h1>
           {description ? (
-            <p className="mt-3 hidden max-w-[62ch] text-base leading-relaxed text-ink/70 md:block [@media(max-height:700px)]:hidden">
+            <p className="mt-[var(--vt-size-0p75rem)] hidden max-w-[62ch] text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)] leading-[var(--vt-leading-1p625)] text-ink/70 md:block [@media(max-height:700px)]:hidden">
               {description}
             </p>
           ) : null}

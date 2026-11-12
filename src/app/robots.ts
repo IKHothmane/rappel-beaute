@@ -18,6 +18,7 @@ export default function robots(): MetadataRoute.Robots {
         "/activate/",
         "/reset-password/",
         "/carte/",
+        "/book/",
         "/assistant/",
         "/agenda/",
         "/customers/",

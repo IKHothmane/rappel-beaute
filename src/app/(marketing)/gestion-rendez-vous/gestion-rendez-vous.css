@@ -28,7 +28,7 @@
 .rdv-hero {
   display: grid;
   grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr);
-  gap: 20px;
+  gap: var(--vt-space-20px);
   align-items: center;
   padding-block: var(--vt-hero-y);
 }
@@ -36,8 +36,8 @@
   min-width: 0;
 }
 .rdv-badge svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
 }
 .marketing-site .rdv h1 {
   max-width: var(--vt-measure-title);
@@ -66,18 +66,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--vt-space-10px);
   min-height: var(--vt-btn-h);
-  padding: 13px 20px;
+  padding: var(--vt-space-13px) var(--vt-space-20px);
   border: 1px solid var(--vt-primary-vivid);
-  border-radius: 999px;
+  border-radius: var(--vt-size-999px);
   background: var(--vt-surface);
   color: var(--vt-primary);
   text-decoration: none;
   text-align: center;
   font-size: var(--vt-fs-body);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   transition:
     background 0.2s,
     box-shadow 0.2s;
@@ -94,23 +94,23 @@
   background: var(--vt-primary-strong);
 }
 .rdv-actions svg {
-  width: 19px;
-  height: 19px;
+  width: var(--vt-size-19px);
+  height: var(--vt-size-19px);
 }
 .rdv-promises {
   display: flex;
   flex-wrap: wrap;
   list-style: none;
-  gap: 12px 16px;
-  margin: 26px 0 0;
+  gap: var(--vt-space-12px) var(--vt-space-16px);
+  margin: var(--vt-space-26px) 0 0;
   padding: 0;
   font-size: var(--vt-fs-caption);
   font-weight: 600;
 }
 .rdv-promises svg {
-  width: 17px;
-  height: 17px;
-  padding: 3px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
+  padding: var(--vt-size-3px);
   border-radius: 50%;
   color: white;
   background: var(--vt-primary-bright);
@@ -144,31 +144,31 @@
   bottom: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--vt-space-12px);
+  padding: var(--vt-space-14px) var(--vt-space-16px);
   border: 1px solid var(--vt-line);
-  border-radius: 17px;
+  border-radius: var(--vt-size-17px);
   background: #fff9fdf5;
   box-shadow: 0 10px 25px -12px #960b4440;
   color: var(--vt-primary);
   text-decoration: none;
 }
 .rdv-booking-badge > svg {
-  width: 25px;
-  height: 25px;
+  width: var(--vt-size-25px);
+  height: var(--vt-size-25px);
   flex-shrink: 0;
 }
 .rdv-booking-badge > svg:last-child {
-  width: 17px;
-  height: 17px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
 }
 .rdv-booking-badge span {
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--vt-text-12px);
+  line-height: var(--vt-leading-1p5);
 }
 .rdv-booking-badge strong {
   display: block;
-  font-size: 14px;
+  font-size: var(--vt-text-14px);
   color: var(--rdv-ink);
 }
 .rdv-highlight-band {
@@ -179,8 +179,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding-inline: 18px;
+  gap: var(--vt-space-12px);
+  padding-inline: var(--vt-space-18px);
 }
 .rdv-highlights > div + div {
   border-left: 1px solid var(--vt-line);
@@ -188,8 +188,8 @@
 .rdv-icon {
   display: grid;
   place-items: center;
-  width: 50px;
-  height: 50px;
+  width: var(--vt-size-50px);
+  height: var(--vt-size-50px);
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--vt-surface-pink);
@@ -197,32 +197,32 @@
 }
 .rdv-highlights p {
   font-size: var(--vt-fs-caption);
-  line-height: 1.5;
+  line-height: var(--vt-leading-1p5);
 }
 .rdv-highlights strong,
 .rdv-highlights p > span {
   display: block;
 }
 .rdv-highlights p > span {
-  margin-top: 4px;
+  margin-top: var(--vt-size-4px);
   font-size: var(--vt-fs-caption);
   color: var(--rdv-muted);
 }
 .rdv-benefits {
   display: grid;
   grid-template-columns: minmax(0, 0.46fr) minmax(0, 0.54fr);
-  gap: 48px;
+  gap: var(--vt-space-48px);
   align-items: center;
-  padding-block: 48px;
+  padding-block: var(--vt-space-48px);
 }
 .rdv-portrait {
   position: relative;
-  padding: 18px 16px 28px 0;
+  padding: var(--vt-space-18px) var(--vt-space-16px) var(--vt-space-28px) 0;
 }
 .rdv-portrait-frame {
   overflow: hidden;
   border-radius: 45% 38% 40% 30% / 45% 36% 44% 38%;
-  padding: 0 9px 9px 0;
+  padding: 0 var(--vt-space-9px) var(--vt-space-9px) 0;
   background: #ffc3dc;
   transform: rotate(-2deg);
 }
@@ -239,20 +239,20 @@
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 12px 14px;
+  gap: var(--vt-space-9px);
+  padding: var(--vt-space-12px) var(--vt-space-14px);
   border: 1px solid var(--vt-surface-pink);
-  border-radius: 14px;
+  border-radius: var(--vt-size-14px);
   background: #fffafdf2;
   box-shadow: 0 6px 22px -14px #9d0c4b66;
   color: var(--vt-primary);
-  font-size: 12px;
+  font-size: var(--vt-text-12px);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
 }
 .rdv-float svg {
-  width: 23px;
-  height: 23px;
+  width: var(--vt-size-23px);
+  height: var(--vt-size-23px);
   flex-shrink: 0;
   color: var(--vt-primary-vivid);
 }
@@ -261,7 +261,7 @@
   top: 16%;
 }
 .rdv-float-calendar span {
-  font-size: 12px;
+  font-size: var(--vt-text-12px);
   color: var(--rdv-muted);
   font-weight: 400;
 }
@@ -288,30 +288,30 @@
 }
 .rdv-benefits-copy ul {
   display: grid;
-  gap: 20px;
+  gap: var(--vt-space-20px);
   list-style: none;
   padding: 0;
-  margin: 28px 0 0;
+  margin: var(--vt-space-28px) 0 0;
 }
 .rdv-benefits-copy li {
   display: flex;
   align-items: flex-start;
-  gap: 13px;
+  gap: var(--vt-space-13px);
 }
 .rdv-check {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: var(--vt-size-24px);
+  height: var(--vt-size-24px);
   border-radius: 50%;
   background: var(--vt-primary-vivid);
   color: white;
-  margin-top: 3px;
+  margin-top: var(--vt-size-3px);
 }
 .rdv-check svg {
-  width: 16px;
-  height: 16px;
+  width: var(--vt-size-16px);
+  height: var(--vt-size-16px);
   stroke-width: 3;
 }
 .rdv-benefits-copy p {
@@ -324,8 +324,8 @@
   font-weight: 650;
 }
 .rdv-features {
-  padding: 30px 22px;
-  border-radius: 28px;
+  padding: var(--vt-space-30px) var(--vt-space-22px);
+  border-radius: var(--vt-size-28px);
   background: linear-gradient(140deg, var(--vt-surface-soft), var(--vt-surface-pink));
 }
 .rdv-features > h2 {
@@ -334,21 +334,21 @@
 .rdv-feature-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 28px;
+  gap: var(--vt-space-14px);
+  margin-top: var(--vt-space-28px);
 }
 .rdv-feature-grid article {
-  padding: 24px 18px;
+  padding: var(--vt-space-24px) var(--vt-space-18px);
   border: 1px solid var(--vt-surface);
-  border-radius: 20px;
+  border-radius: var(--vt-size-20px);
   background: #ffffffc9;
   text-align: center;
   box-shadow: 0 4px 12px -9px #96033a50;
 }
 .rdv-feature-grid article > svg {
-  width: 32px;
-  height: 32px;
-  margin: 0 auto 12px;
+  width: var(--vt-size-32px);
+  height: var(--vt-size-32px);
+  margin: 0 auto var(--vt-space-12px);
   color: var(--vt-primary-vivid);
   stroke-width: 1.7;
 }
@@ -368,19 +368,19 @@
   text-underline-offset: 4px;
 }
 .rdv-feature-grid p {
-  margin-top: 10px;
+  margin-top: var(--vt-space-10px);
   color: var(--rdv-muted);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
 }
 .rdv-details {
-  padding-top: 46px;
+  padding-top: var(--vt-space-46px);
 }
 .rdv-section-heading h2 {
-  margin-top: 18px;
+  margin-top: var(--vt-space-18px);
 }
 .rdv-section-heading p {
-  margin-top: 18px;
+  margin-top: var(--vt-space-18px);
   color: var(--rdv-muted);
   font-size: var(--vt-fs-body);
 }
@@ -388,14 +388,14 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
-  gap: 12px;
-  margin-top: 28px;
+  gap: var(--vt-space-12px);
+  margin-top: var(--vt-space-28px);
 }
 .rdv details {
   border: 1px solid var(--vt-line);
-  border-radius: 14px;
+  border-radius: var(--vt-size-14px);
   background: #fffafccf;
-  scroll-margin-top: 120px;
+  scroll-margin-top: var(--vt-size-120px);
 }
 .rdv details:target {
   border-color: var(--vt-primary-bright);
@@ -405,20 +405,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 17px 18px;
+  gap: var(--vt-space-14px);
+  padding: var(--vt-space-17px) var(--vt-space-18px);
   list-style: none;
   cursor: pointer;
   font-size: var(--vt-fs-sm);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: var(--vt-leading-1p5);
 }
 .rdv summary::-webkit-details-marker {
   display: none;
 }
 .rdv summary svg {
-  width: 19px;
-  height: 19px;
+  width: var(--vt-size-19px);
+  height: var(--vt-size-19px);
   flex-shrink: 0;
   color: var(--vt-primary-bright);
 }
@@ -426,7 +426,7 @@
   transform: rotate(45deg);
 }
 .rdv details p {
-  padding: 0 18px 18px;
+  padding: 0 var(--vt-space-18px) var(--vt-space-18px);
   font-size: var(--vt-fs-sm);
   line-height: var(--vt-lh-body);
   color: var(--rdv-muted);
@@ -434,39 +434,39 @@
 .rdv details > a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 18px 18px;
+  gap: var(--vt-size-8px);
+  margin: 0 var(--vt-space-18px) var(--vt-space-18px);
   color: var(--vt-primary-rich);
   text-underline-offset: 4px;
   font-size: var(--vt-fs-xs);
 }
 .rdv details > a svg {
-  width: 17px;
-  height: 17px;
+  width: var(--vt-size-17px);
+  height: var(--vt-size-17px);
 }
 .rdv-faq {
   display: grid;
   grid-template-columns: minmax(0, 0.44fr) minmax(0, 0.56fr);
-  gap: 40px;
+  gap: var(--vt-space-40px);
   align-items: start;
-  padding-block: 46px;
+  padding-block: var(--vt-space-46px);
 }
 .rdv-faq > div {
   display: grid;
-  gap: 12px;
+  gap: var(--vt-space-12px);
 }
 .rdv-cta {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 30px;
-  border-radius: 24px;
+  gap: var(--vt-space-24px);
+  padding: var(--vt-space-30px);
+  border-radius: var(--vt-size-24px);
   background: linear-gradient(115deg, var(--vt-primary-strong), #e30064);
   color: white;
 }
 .rdv-cta > svg {
-  width: 52px;
-  height: 52px;
+  width: var(--vt-size-52px);
+  height: var(--vt-size-52px);
   flex-shrink: 0;
   stroke-width: 1.6;
 }
@@ -478,7 +478,7 @@
   font-size: var(--vt-fs-h2-sm);
 }
 .rdv-cta p {
-  margin-top: 10px;
+  margin-top: var(--vt-space-10px);
   font-size: var(--vt-fs-xs);
   color: var(--vt-surface-soft);
 }
@@ -486,28 +486,28 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: var(--vt-space-12px);
   min-height: var(--vt-btn-h);
-  padding: 13px 22px;
-  border-radius: 999px;
+  padding: var(--vt-space-13px) var(--vt-space-22px);
+  border-radius: var(--vt-size-999px);
   background: var(--vt-surface);
   color: var(--vt-primary);
   text-align: center;
   font-size: var(--vt-fs-body);
   font-weight: 600;
   text-decoration: none;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
 }
 .rdv-cta > a:hover {
   background: var(--vt-surface-pink);
 }
 .rdv-cta > a svg {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
 }
 .rdv .rdv-more {
-  margin: 22px 0 0;
-  padding-bottom: 32px;
+  margin: var(--vt-space-22px) 0 0;
+  padding-bottom: var(--vt-space-32px);
   color: var(--rdv-muted);
   text-align: center;
   font-size: var(--vt-fs-xs);
@@ -523,19 +523,19 @@
 }
 @media (max-width: 1100px) {
   .rdv-highlights > div {
-    padding-inline: 12px;
-    gap: 8px;
+    padding-inline: var(--vt-space-12px);
+    gap: var(--vt-size-8px);
   }
   .rdv-icon {
-    width: 40px;
-    height: 40px;
+    width: var(--vt-size-40px);
+    height: var(--vt-size-40px);
   }
   .rdv-icon svg {
-    width: 24px;
-    height: 24px;
+    width: var(--vt-size-24px);
+    height: var(--vt-size-24px);
   }
   .rdv-benefits {
-    gap: 28px;
+    gap: var(--vt-space-28px);
   }
   .rdv-feature-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -547,27 +547,27 @@
     flex-wrap: wrap;
   }
   .rdv-cta > a {
-    margin-left: 76px;
+    margin-left: var(--vt-space-76px);
   }
 }
 @media (max-width: 760px) {
   .rdv-hero {
     grid-template-columns: 1fr;
-    gap: 30px;
-    padding-top: 28px;
-    padding-bottom: 38px;
+    gap: var(--vt-space-30px);
+    padding-top: var(--vt-space-28px);
+    padding-bottom: var(--vt-space-38px);
   }
   .marketing-site .rdv h1 {
     max-width: 21ch;
   }
   .rdv-hero-visual {
-    padding-block: 12px 42px;
+    padding-block: var(--vt-space-12px) var(--vt-space-42px);
   }
   .rdv-agenda {
     width: 100%;
   }
   .rdv-hero-glow {
-    inset: 0 -5% 20px;
+    inset: 0 -5% var(--vt-size-20px);
   }
   .rdv-spa {
     width: 33%;
@@ -575,25 +575,25 @@
     bottom: 12%;
   }
   .rdv-booking-badge {
-    padding: 10px 12px;
-    gap: 8px;
+    padding: var(--vt-space-10px) var(--vt-space-12px);
+    gap: var(--vt-size-8px);
     right: 0;
     bottom: 0;
   }
   .rdv-booking-badge strong {
-    font-size: 12px;
+    font-size: var(--vt-text-12px);
   }
   .rdv-booking-badge span {
-    font-size: 11px;
+    font-size: var(--vt-text-11px);
   }
   .rdv-highlights {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22px 0;
-    padding-block: 22px;
+    gap: var(--vt-space-22px) 0;
+    padding-block: var(--vt-space-22px);
   }
   .rdv-highlights > div {
     justify-content: flex-start;
-    padding-inline: 8px;
+    padding-inline: var(--vt-size-8px);
   }
   .rdv-highlights > div:nth-child(3) {
     border-left: 0;
@@ -602,82 +602,82 @@
     font-size: var(--vt-fs-caption);
   }
   .rdv-highlights p > span {
-    font-size: 11px;
+    font-size: var(--vt-text-11px);
   }
   .rdv-benefits {
     grid-template-columns: 1fr;
-    padding-block: 32px;
-    gap: 26px;
+    padding-block: var(--vt-space-32px);
+    gap: var(--vt-space-26px);
   }
   .rdv-portrait {
-    max-width: 500px;
+    max-width: var(--vt-size-500px);
     width: 100%;
     margin-inline: auto;
   }
   .rdv-float {
-    padding: 9px 10px;
-    font-size: 10px;
-    gap: 6px;
+    padding: var(--vt-space-9px) var(--vt-space-10px);
+    font-size: var(--vt-text-10px);
+    gap: var(--vt-size-6px);
   }
   .rdv-float svg {
-    width: 20px;
-    height: 20px;
+    width: var(--vt-size-20px);
+    height: var(--vt-size-20px);
   }
   .rdv-float-calendar span {
-    font-size: 10px;
+    font-size: var(--vt-text-10px);
   }
   .rdv-benefits-copy ul {
-    margin-top: 22px;
-    gap: 16px;
+    margin-top: var(--vt-space-22px);
+    gap: var(--vt-space-16px);
   }
   .rdv-features {
-    padding: 26px 16px;
-    border-radius: 24px;
+    padding: var(--vt-space-26px) var(--vt-space-16px);
+    border-radius: var(--vt-size-24px);
   }
   .rdv-feature-grid article {
-    padding: 22px 12px;
+    padding: var(--vt-space-22px) var(--vt-space-12px);
   }
   .rdv-details {
-    padding-top: 32px;
+    padding-top: var(--vt-space-32px);
   }
   .rdv-details-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: var(--vt-space-10px);
   }
   .rdv-faq {
     grid-template-columns: 1fr;
-    gap: 24px;
-    padding-block: 32px;
+    gap: var(--vt-space-24px);
+    padding-block: var(--vt-space-32px);
   }
   .rdv-cta {
-    padding: 26px 22px;
-    gap: 16px;
+    padding: var(--vt-space-26px) var(--vt-space-22px);
+    gap: var(--vt-space-16px);
   }
   .rdv-cta > svg {
-    width: 38px;
-    height: 38px;
+    width: var(--vt-size-38px);
+    height: var(--vt-size-38px);
   }
   .rdv-cta > div {
-    min-width: 180px;
+    min-width: var(--vt-size-180px);
   }
   .rdv-cta > a {
     width: 100%;
-    margin: 4px 0 0;
+    margin: var(--vt-size-4px) 0 0;
   }
 }
 @media (max-width: 400px) {
   .marketing-site .rdv h1 {
-    font-size: 2rem;
+    font-size: var(--vt-text-2rem);
   }
   .rdv-actions {
-    gap: 10px;
+    gap: var(--vt-space-10px);
   }
   .rdv-actions a {
-    padding-inline: 18px;
+    padding-inline: var(--vt-space-18px);
   }
   .rdv-highlights {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: var(--vt-space-16px);
   }
   .rdv-highlights > div + div {
     border-left: 0;

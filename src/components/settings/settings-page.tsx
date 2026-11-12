@@ -13,7 +13,6 @@ import {
 import { ROLE_LABEL, useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { InstituteLogoField } from "@/components/settings/institute-logo-field";
 import { InstituteSettingsForm } from "@/components/settings/institute-settings-form";
-import { WebsiteRequestCard } from "@/components/settings/website-request-card";
 import type { SubscriptionDto } from "@/types/subscription";
 
 export function SettingsPageView() {
@@ -131,8 +130,6 @@ export function SettingsPageView() {
             <InstituteSettingsForm canEdit={canEditInstitute} />
           </div>
         </SettingsCard>
-
-        <WebsiteRequestCard canRequest={canEditInstitute} />
 
         <SettingsCard icon={CreditCard} title="Abonnement" subtitle="Formule et renouvellement">
           <div className="space-y-4">

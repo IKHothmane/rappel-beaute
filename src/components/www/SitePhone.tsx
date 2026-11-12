@@ -3,7 +3,7 @@ import { SITE } from "@/lib/site";
 
 export function SitePhone({
   className = "",
-  iconClassName = "h-4 w-4 shrink-0",
+  iconClassName = "h-[var(--vt-size-1rem)] w-[var(--vt-size-1rem)] shrink-0",
   numberClassName = "",
 }: {
   className?: string;
@@ -17,7 +17,7 @@ export function SitePhone({
       href={`https://wa.me/${whatsapp}`}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2 ${className}`}
+      className={`inline-flex items-center gap-[var(--vt-size-0p5rem)] ${className}`}
     >
       <Phone className={iconClassName} aria-hidden />
       <span className={numberClassName}>{SITE.phone}</span>

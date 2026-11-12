@@ -30,9 +30,9 @@ import "./creation-site-web.css";
 
 export const dynamic = "force-static";
 export const metadata = marketingPageMetadata({
-  title: "Création de site web pour institut de beauté au Maroc · Rappel Beauty",
+  title: "Création de site web pour institut | Rappel Beauty",
   description:
-    "Un site web à l’image de votre institut : vitrine, réservation en ligne, catalogue de produits ou projet complet connecté à Rappel Beauty. Découvrez les maquettes et demandez votre devis.",
+    "Site web à l’image de votre institut : vitrine, réservation, catalogue ou projet complet. Demandez un devis.",
   canonical: "/creation-site-web/",
 });
 const CONNECTIONS = [

@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicSiteProviders } from "@/components/public-site/PublicSiteProviders";
 import { resolveOrganizationBySlug } from "@/lib/db/public-booking";
 import { scopedPage } from "@/lib/http/route-scope";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type Props = {
   children: React.ReactNode;

@@ -11,7 +11,7 @@
   color: var(--vt-ink-deep);
 }
 .hm .faq-section h2 + p {
-  margin-top: 40px;
+  margin-top: var(--vt-space-40px);
   font-size: var(--vt-fs-lead);
   line-height: var(--vt-lh-lead);
 }
@@ -26,7 +26,7 @@
   color: var(--vt-ink-deep);
 }
 .faq-section h3 button {
-  min-height: 80px;
+  min-height: var(--vt-size-80px);
 }
 .faq-section .faq-answer {
   display: grid;
@@ -45,37 +45,37 @@
   overflow: hidden;
 }
 .hm .faq-answer p {
-  padding: 0 24px 24px 84px;
+  padding: 0 var(--vt-space-24px) var(--vt-space-24px) var(--vt-space-84px);
   font-size: var(--vt-fs-body);
   line-height: var(--vt-lh-body);
   color: #725365;
 }
 @media (max-width: 639px) {
   .faq-section h3 button {
-    gap: 10px;
-    padding: 14px 12px;
+    gap: var(--vt-space-10px);
+    padding: var(--vt-space-14px) var(--vt-space-12px);
   }
   .faq-section .faq-question-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: var(--vt-size-40px);
+    height: var(--vt-size-40px);
+    border-radius: var(--vt-size-12px);
   }
   .faq-section .faq-question-toggle {
-    width: 28px;
-    height: 28px;
+    width: var(--vt-size-28px);
+    height: var(--vt-size-28px);
   }
   .faq-section .faq-question-text {
     font-size: var(--vt-fs-sm);
-    line-height: 1.5;
+    line-height: var(--vt-leading-1p5);
   }
   .hm .faq-answer p {
-    padding: 0 18px 22px;
+    padding: 0 var(--vt-space-18px) var(--vt-space-22px);
     font-size: var(--vt-fs-sm);
   }
 }
 @media (max-width: 400px) {
   .faq-section .faq-badge {
-    padding-inline: 14px;
+    padding-inline: var(--vt-space-14px);
     font-size: var(--vt-fs-caption);
   }
   .faq-section .faq-cta {

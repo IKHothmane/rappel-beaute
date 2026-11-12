@@ -77,9 +77,9 @@ const CHAPTERS = [
 
 export const dynamic = "force-static";
 export const metadata = marketingPageMetadata({
-  title: "Institut de beauté : gestion et réservation en ligne au Maroc · Rappel Beauty",
+  title: "Institut de beauté et réservation au Maroc | Rappel",
   description:
-    "Offrez la réservation en ligne à vos clientes et retrouvez chaque rendez-vous dans votre agenda. Rappel Beauty réunit la gestion de votre institut de beauté au Maroc : clientes, équipe, stock, caisse et fidélité.",
+    "Réservation en ligne et gestion d’institut au Maroc : agenda, clientes, équipe, stock, caisse et fidélité.",
   canonical: "/solutions/institut-beaute/",
 });
 const HIGHLIGHTS = [

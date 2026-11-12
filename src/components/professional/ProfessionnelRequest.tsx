@@ -33,12 +33,8 @@ export function ProfessionnelRequest() {
       body.set("ville", data.city);
       body.set("phone", data.whatsapp);
       body.set("email", data.email);
-      if (data.noWebsite) body.set("no_website", "1");
-      else if (data.website) body.set("website", data.website);
-      const message = [data.needs, data.noWebsite ? "Demande de site web pour l’institut." : ""]
-        .filter(Boolean)
-        .join("\n")
-        .slice(0, L.message);
+      if (data.website) body.set("website", data.website);
+      const message = data.needs.trim().slice(0, L.message);
       if (message) body.set("message", message);
 
       const res = await fetch("/api/public/signup/", { method: "POST", body });

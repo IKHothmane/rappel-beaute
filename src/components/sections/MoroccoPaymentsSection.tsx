@@ -37,52 +37,52 @@ export default function MoroccoPaymentsSection() {
     <section
       id="maroc"
       aria-labelledby="morocco-payments-heading"
-      className="morocco-payments relative isolate overflow-x-clip bg-vt-surface py-14 lg:py-16"
+      className="morocco-payments relative isolate overflow-x-clip bg-vt-surface py-[var(--vt-space-3p5rem)] lg:py-[var(--vt-space-4rem)]"
     >
-      <div className="morocco-layout mx-auto grid max-w-[1200px] items-center gap-8 px-6 lg:grid-cols-2 lg:gap-10 lg:px-8">
+      <div className="morocco-layout mx-auto grid max-w-[var(--vt-size-1200px)] items-center gap-[var(--vt-space-2rem)] px-[var(--vt-space-1p5rem)] lg:grid-cols-2 lg:gap-[var(--vt-space-2p5rem)] lg:px-[var(--vt-space-2rem)]">
         {/* Texte et fonctionnalités */}
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-white/80 px-4 py-2 text-xs font-bold uppercase tracking-widest text-vt-primary-rich">
+          <span className="inline-flex items-center gap-[var(--vt-size-0p5rem)] rounded-full border border-pink-200 bg-white/80 px-[var(--vt-space-1rem)] py-[var(--vt-size-0p5rem)] text-[length:var(--vt-text-0p75rem)]/[var(--vt-line-1rem)] font-bold uppercase tracking-widest text-vt-primary-rich">
             <Wallet aria-hidden="true" size={16} />
             Conçu au Maroc
           </span>
 
           <h2
             id="morocco-payments-heading"
-            className="mt-6 font-serif font-semibold leading-[1.12] tracking-tight text-vt-ink-deep"
+            className="mt-[var(--vt-space-1p5rem)] font-serif font-semibold leading-[1.12] tracking-tight text-vt-ink-deep"
           >
             Pensé pour la façon
             <br />
             dont <span className="italic text-vt-primary-rich">vous encaissez</span>
           </h2>
 
-          <p className="mt-6 max-w-[550px] text-base leading-8 text-[#765569] sm:text-lg">
+          <p className="mt-[var(--vt-space-1p5rem)] max-w-[var(--vt-size-550px)] text-[length:var(--vt-text-1rem)]/[var(--vt-line-1p5rem)] leading-8 text-[#765569] sm:text-[length:var(--vt-text-1p125rem)]/[var(--vt-line-1p75rem)]">
             Rappel Beauty part de la réalité d’un institut marocain, pas d’un logiciel européen
             traduit à la hâte.
           </p>
 
-          <div className="mt-9 space-y-4">
+          <div className="mt-[var(--vt-space-2p25rem)] space-y-[var(--vt-space-1rem)]">
             {features.map((feature, index) => {
               const Icon = feature.icon;
 
               return (
                 <div
                   key={feature.title}
-                  className="group flex items-center gap-4 rounded-2xl border border-[#efd9e2] bg-white/85 p-5 shadow-[0_8px_28px_rgba(105,25,65,0.04)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#e8a8c2] hover:shadow-lg"
+                  className="group flex items-center gap-[var(--vt-space-1rem)] rounded-2xl border border-[#efd9e2] bg-white/85 p-[var(--vt-space-1p25rem)] shadow-[0_8px_28px_rgba(105,25,65,0.04)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#e8a8c2] hover:shadow-lg"
                   style={{
                     transitionDelay: `${index * 60}ms`,
                   }}
                 >
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-vt-surface-soft text-vt-primary-rich">
+                  <div className="flex h-[var(--vt-size-3p5rem)] w-[var(--vt-size-3p5rem)] shrink-0 items-center justify-center rounded-2xl bg-vt-surface-soft text-vt-primary-rich">
                     <Icon size={25} strokeWidth={1.8} aria-hidden="true" />
                   </div>
 
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-vt-ink-deep">{feature.title}</h3>
-                    <p className="mt-1 text-sm leading-6 text-[#7b596b]">{feature.description}</p>
+                    <h3 className="text-[length:var(--vt-text-1p125rem)]/[var(--vt-line-1p75rem)] font-bold text-vt-ink-deep">{feature.title}</h3>
+                    <p className="mt-[var(--vt-size-0p25rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] leading-6 text-[#7b596b]">{feature.description}</p>
                   </div>
 
-                  <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-vt-surface-soft text-vt-primary-rich sm:flex">
+                  <span className="hidden h-[var(--vt-size-2p25rem)] w-[var(--vt-size-2p25rem)] shrink-0 items-center justify-center rounded-full bg-vt-surface-soft text-vt-primary-rich sm:flex">
                     <Check aria-hidden="true" size={19} />
                   </span>
                 </div>
@@ -92,14 +92,14 @@ export default function MoroccoPaymentsSection() {
         </div>
 
         {/* Machine à tickets */}
-        <div className="relative mx-auto flex w-full max-w-[600px] flex-col items-center pt-6">
+        <div className="relative mx-auto flex w-full max-w-[var(--vt-size-600px)] flex-col items-center pt-[var(--vt-space-1p5rem)]">
           <div
             aria-hidden="true"
-            className="absolute left-1/2 top-[12%] h-[420px] w-[420px] max-w-full -translate-x-1/2 rounded-full bg-pink-200/55 blur-3xl"
+            className="absolute left-1/2 top-[12%] h-[var(--vt-size-420px)] w-[var(--vt-size-420px)] max-w-full -translate-x-1/2 rounded-full bg-pink-200/55 blur-3xl"
           />
 
           <div className="relative z-10 flex w-full flex-col items-center">
-            <div className="h-[620px] w-full max-w-[440px]">
+            <div className="h-[var(--vt-printer-height)] w-full max-w-[var(--vt-printer-width)]">
               <ReceiptPrinter
                 embedded
                 autoPrint
@@ -118,8 +118,8 @@ export default function MoroccoPaymentsSection() {
             </div>
 
             {/* Informations */}
-            <div className="relative z-10 mt-8 flex max-w-full items-center gap-3 rounded-2xl border border-pink-200 bg-white/90 px-5 py-4 text-sm text-[#60384c] shadow-sm">
-              <span className="rounded-full bg-vt-surface-soft p-2 text-vt-primary-rich">
+            <div className="relative z-10 mt-[var(--vt-space-2rem)] flex max-w-full items-center gap-[var(--vt-space-0p75rem)] rounded-2xl border border-pink-200 bg-white/90 px-[var(--vt-space-1p25rem)] py-[var(--vt-space-1rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] text-[#60384c] shadow-sm">
+              <span className="rounded-full bg-vt-surface-soft p-[var(--vt-size-0p5rem)] text-vt-primary-rich">
                 <Banknote aria-hidden="true" size={20} />
               </span>
               <span>

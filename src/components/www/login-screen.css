@@ -6,7 +6,7 @@
   font-family: var(--font-inter), system-ui, sans-serif;
   color: var(--vt-ink-dark);
   font-size: var(--vt-fs-body);
-  line-height: 1.6;
+  line-height: var(--vt-leading-1p6);
 }
 .rb-login *,
 .rb-login *::before,
@@ -22,7 +22,7 @@
   isolation: isolate;
   min-width: 0;
   overflow: hidden;
-  border-radius: 0 0 90px 0;
+  border-radius: 0 0 var(--vt-size-90px) 0;
   background: radial-gradient(ellipse at 60% 35%, #ffe1e3, #efacb8 70%);
 }
 .rb-login-reception {
@@ -35,7 +35,7 @@
   display: block;
   left: -25px;
   bottom: -4px;
-  width: min(440px, 70%);
+  width: min(var(--vt-size-440px), 70%);
   height: auto;
   filter: drop-shadow(0 10px 16px #5b233a26);
 }
@@ -45,8 +45,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 30px clamp(28px, 5vw, 88px);
-  border-radius: 64px 0 0 0;
+  padding: var(--vt-space-30px) clamp(var(--vt-space-28px), 5vw, var(--vt-space-88px));
+  border-radius: var(--vt-size-64px) 0 0 0;
   background: radial-gradient(ellipse at 0 10%, var(--vt-surface), transparent 70%),
     linear-gradient(150deg, var(--vt-surface), var(--vt-surface) 55%, var(--vt-surface-pink));
   min-width: 0;
@@ -58,8 +58,8 @@
 }
 .rb-login-brand img {
   display: block;
-  width: 220px;
-  height: 110px;
+  width: var(--vt-size-220px);
+  height: var(--vt-size-110px);
   object-fit: contain;
 }
 .rb-login-tagline {
@@ -69,8 +69,8 @@
 }
 .rb-login-content {
   width: 100%;
-  max-width: 470px;
-  margin-top: 30px;
+  max-width: var(--vt-size-470px);
+  margin-top: var(--vt-space-30px);
 }
 .marketing-site .rb-login h1 {
   text-align: center;
@@ -79,7 +79,7 @@
   font-size: var(--vt-fs-h1);
   font-weight: 500;
   font-style: italic;
-  line-height: 1.12;
+  line-height: var(--vt-leading-1p12);
   letter-spacing: -0.035em;
 }
 .rb-login h1 em {
@@ -88,23 +88,23 @@
 }
 .rb-login .rb-login-intro {
   max-width: 36ch;
-  margin: 14px auto 0;
+  margin: var(--vt-space-14px) auto 0;
   text-align: center;
-  font-size: 1.0625rem;
-  line-height: 1.6;
+  font-size: var(--vt-text-1p0625rem);
+  line-height: var(--vt-leading-1p6);
   color: #594452;
 }
 .rb-login-form {
   display: grid;
-  gap: 16px;
-  margin-top: 28px;
+  gap: var(--vt-space-16px);
+  margin-top: var(--vt-space-28px);
 }
 .rb-login-input {
   display: flex;
   align-items: center;
   min-width: 0;
   border: 1px solid #ddc8dc;
-  border-radius: 15px;
+  border-radius: var(--vt-size-15px);
   background: #fffafdc9;
   transition:
     border-color 0.2s,
@@ -112,24 +112,24 @@
 }
 .rb-login-input > svg {
   flex-shrink: 0;
-  width: 23px;
-  height: 23px;
-  margin-left: 18px;
+  width: var(--vt-size-23px);
+  height: var(--vt-size-23px);
+  margin-left: var(--vt-space-18px);
   color: var(--vt-primary-vivid);
   stroke-width: 1.8;
 }
 .rb-login-input input {
   width: 100%;
   min-width: 0;
-  min-height: 52px;
+  min-height: var(--vt-size-52px);
   border: 0;
   border-radius: inherit;
-  padding: 13px 16px;
+  padding: var(--vt-space-13px) var(--vt-space-16px);
   background: transparent;
   color: var(--vt-ink-dark);
   font-family: inherit;
   font-size: var(--vt-fs-body);
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   outline: none;
 }
 .rb-login-input input::placeholder {
@@ -144,11 +144,11 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  margin-right: 4px;
+  width: var(--vt-size-48px);
+  height: var(--vt-size-48px);
+  margin-right: var(--vt-size-4px);
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--vt-size-12px);
   background: transparent;
   color: var(--vt-muted-soft);
   cursor: pointer;
@@ -158,27 +158,27 @@
   background: var(--vt-surface-soft);
 }
 .rb-login-eye svg {
-  width: 22px;
-  height: 22px;
+  width: var(--vt-size-22px);
+  height: var(--vt-size-22px);
 }
 .rb-login-options {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px 12px;
+  gap: var(--vt-space-10px) var(--vt-space-12px);
   font-size: var(--vt-fs-caption);
-  line-height: 1.5;
+  line-height: var(--vt-leading-1p5);
 }
 .rb-login-options label {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--vt-size-8px);
   cursor: pointer;
 }
 .rb-login-options input {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
   accent-color: var(--vt-primary-bright);
   cursor: pointer;
 }
@@ -195,24 +195,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: var(--vt-space-18px);
   width: 100%;
-  min-height: 54px;
-  padding: 13px 20px;
+  min-height: var(--vt-size-54px);
+  padding: var(--vt-space-13px) var(--vt-space-20px);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--vt-size-999px);
   background: linear-gradient(165deg, var(--vt-primary-vivid), var(--vt-primary-strong));
   color: white;
   font-family: inherit;
-  font-size: 1.0625rem;
+  font-size: var(--vt-text-1p0625rem);
   font-weight: 650;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   cursor: pointer;
   transition: box-shadow 0.2s;
 }
 .rb-login-submit svg {
-  width: 24px;
-  height: 24px;
+  width: var(--vt-size-24px);
+  height: var(--vt-size-24px);
 }
 .rb-login-submit:hover {
   box-shadow: 0 8px 20px -8px #af004b80;
@@ -224,21 +224,21 @@
 }
 .rb-login .rb-login-error {
   border: 1px solid #edb7c6;
-  padding: 12px;
-  border-radius: 12px;
+  padding: var(--vt-space-12px);
+  border-radius: var(--vt-size-12px);
   background: var(--vt-surface-soft);
   color: #9f183e;
   font-size: var(--vt-fs-xs);
-  line-height: 1.6;
+  line-height: var(--vt-leading-1p6);
 }
 .rb-login-signup {
-  margin-top: 30px;
-  padding-top: 26px;
+  margin-top: var(--vt-space-30px);
+  padding-top: var(--vt-space-26px);
   border-top: 1px solid #e8d0df;
   text-align: center;
 }
 .rb-login-signup p {
-  margin-bottom: 14px;
+  margin-bottom: var(--vt-space-14px);
   color: #594452;
   font-size: var(--vt-fs-sm);
 }
@@ -246,15 +246,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  min-height: 50px;
+  gap: var(--vt-space-12px);
+  min-height: var(--vt-size-50px);
   border: 1px solid #e1005c;
-  border-radius: 999px;
-  padding: 12px 18px;
+  border-radius: var(--vt-size-999px);
+  padding: var(--vt-space-12px) var(--vt-space-18px);
   color: #ca0052;
   font-size: var(--vt-fs-body);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--vt-leading-1p4);
   text-decoration: none;
   transition: background 0.2s;
 }
@@ -263,19 +263,19 @@
 }
 .rb-login-signup svg {
   flex-shrink: 0;
-  width: 23px;
-  height: 23px;
+  width: var(--vt-size-23px);
+  height: var(--vt-size-23px);
 }
 .rb-login-signup svg:last-child {
-  width: 18px;
-  height: 18px;
+  width: var(--vt-size-18px);
+  height: var(--vt-size-18px);
 }
 .rb-login-legal {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px 22px;
-  margin-top: 26px;
+  gap: var(--vt-space-10px) var(--vt-space-22px);
+  margin-top: var(--vt-space-26px);
   color: #8b7180;
   font-size: var(--vt-fs-caption);
 }
@@ -287,8 +287,8 @@
 }
 .rb-login-loading {
   width: 100%;
-  max-width: 470px;
-  min-height: 350px;
+  max-width: var(--vt-size-470px);
+  min-height: var(--vt-size-350px);
   display: grid;
   place-items: center;
   color: #7a586a;
@@ -302,35 +302,35 @@
 }
 @media (max-width: 1100px) {
   .rb-login-panel {
-    padding-inline: 32px;
+    padding-inline: var(--vt-space-32px);
   }
   .rb-login-options {
     font-size: var(--vt-fs-caption);
   }
   .rb-login-content {
-    margin-top: 24px;
+    margin-top: var(--vt-space-24px);
   }
 }
 @media (min-width: 801px) and (max-height: 800px) {
   .rb-login-panel {
-    padding-block: 22px;
+    padding-block: var(--vt-space-22px);
   }
   .rb-login-brand img {
-    width: 180px;
-    height: 90px;
+    width: var(--vt-size-180px);
+    height: var(--vt-size-90px);
   }
   .rb-login-content {
-    margin-top: 20px;
+    margin-top: var(--vt-space-20px);
   }
   .rb-login-form {
-    margin-top: 24px;
+    margin-top: var(--vt-space-24px);
   }
   .rb-login-signup {
-    margin-top: 24px;
-    padding-top: 22px;
+    margin-top: var(--vt-space-24px);
+    padding-top: var(--vt-space-22px);
   }
   .rb-login-legal {
-    margin-top: 22px;
+    margin-top: var(--vt-space-22px);
   }
 }
 @media (max-width: 800px) {
@@ -344,17 +344,17 @@
   .rb-login-panel {
     min-height: 100svh;
     border-radius: 0;
-    padding: 26px 24px;
+    padding: var(--vt-space-26px) var(--vt-space-24px);
   }
   .rb-login-brand img {
-    width: 200px;
-    height: 100px;
+    width: var(--vt-size-200px);
+    height: var(--vt-size-100px);
   }
   .rb-login-content {
-    margin-top: 26px;
+    margin-top: var(--vt-space-26px);
   }
   .marketing-site .rb-login h1 {
-    font-size: 2.375rem;
+    font-size: var(--vt-text-2p375rem);
   }
   .rb-login-options {
     font-size: var(--vt-fs-caption);
@@ -365,21 +365,21 @@
 }
 @media (max-width: 400px) {
   .rb-login-panel {
-    padding: 24px 20px;
+    padding: var(--vt-space-24px) var(--vt-space-20px);
   }
   .marketing-site .rb-login h1 {
-    font-size: 2.125rem;
+    font-size: var(--vt-text-2p125rem);
   }
   .rb-login .rb-login-intro {
     font-size: var(--vt-fs-body);
   }
   .rb-login-input > svg {
-    margin-left: 13px;
-    width: 21px;
-    height: 21px;
+    margin-left: var(--vt-space-13px);
+    width: var(--vt-size-21px);
+    height: var(--vt-size-21px);
   }
   .rb-login-input input {
-    padding-inline: 12px;
+    padding-inline: var(--vt-space-12px);
   }
   .rb-login-options {
     font-size: var(--vt-fs-caption);

@@ -5,7 +5,7 @@
 .pricing-legacy-anchor {
   position: absolute;
   top: 0;
-  scroll-margin-top: 104px;
+  scroll-margin-top: var(--vt-size-104px);
 }
 .marketing-site .hm .pricing-section h2 {
   font-size: var(--vt-fs-h2);
@@ -14,8 +14,8 @@
   color: #390c27;
 }
 .hm .pricing-section h2 + p {
-  margin-top: 28px;
-  line-height: 1.8;
+  margin-top: var(--vt-space-28px);
+  line-height: var(--vt-leading-1p8);
 }
 .hm .pricing-section h3 {
   font-family: var(--f-display);
@@ -24,22 +24,22 @@
   color: #390c27;
 }
 .hm .pricing-section h3 + p {
-  margin-top: 12px;
-  line-height: 1.8;
+  margin-top: var(--vt-space-12px);
+  line-height: var(--vt-leading-1p8);
 }
 .hm .pricing-section h4 {
-  margin-bottom: 24px;
+  margin-bottom: var(--vt-space-24px);
 }
 .hm .pricing-price p {
-  margin-top: 12px;
-  line-height: 1.7;
+  margin-top: var(--vt-space-12px);
+  line-height: var(--vt-leading-1p7);
 }
 .pricing-price .pricing-amount {
   font-family: var(--f-display);
   font-variant-numeric: tabular-nums;
 }
 .hm .pricing-section button {
-  min-height: 44px;
+  min-height: var(--vt-size-44px);
   color: #6f4c5d;
 }
 .hm .pricing-section button[aria-pressed="true"] {
@@ -57,12 +57,12 @@
 @media (max-width: 480px) {
   .pricing-section .pricing-aside,
   .pricing-section .pricing-info {
-    gap: 14px;
+    gap: var(--vt-space-14px);
   }
   .pricing-section .pricing-info-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: var(--vt-size-44px);
+    height: var(--vt-size-44px);
+    border-radius: var(--vt-size-12px);
   }
 }
 @media (prefers-reduced-motion: reduce) {

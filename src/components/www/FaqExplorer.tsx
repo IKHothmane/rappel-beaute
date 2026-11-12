@@ -30,7 +30,7 @@ const CATEGORIES = [
   { id: "agenda", icon: CalendarDays, title: "Rendez-vous", subtitle: "et agenda" },
   { id: "clientes", icon: Users, title: "Clientes", subtitle: "et fidélité" },
   { id: "produits", icon: Package, title: "Produits", subtitle: "et stock" },
-  { id: "site", icon: Monitor, title: "Site web", subtitle: "et réservation" },
+  { id: "site", icon: Monitor, title: "Réservation", subtitle: "en ligne" },
   { id: "tarifs", icon: CreditCard, title: "Tarifs", subtitle: "et abonnement" },
   { id: "securite", icon: ShieldCheck, title: "Sécurité", subtitle: "et données" },
   { id: "support", icon: Headphones, title: "Assistance", subtitle: "et support" },
@@ -47,7 +47,7 @@ const QUESTION_ICONS = {
 };
 const HERO_TOPICS = [
   { icon: CalendarDays, text: "Rendez-vous" },
-  { icon: Monitor, text: "Site web" },
+  { icon: Monitor, text: "Réservation" },
   { icon: Package, text: "Produits" },
   { icon: Users, text: "Clientes" },
   { icon: ChartNoAxesCombined, text: "Pilotage" },
@@ -104,7 +104,7 @@ export function FaqExplorer() {
             </h1>
             <p className="fq-lead">
               Retrouvez ici les réponses aux questions les plus fréquentes sur Rappel Beauty, ses
-              fonctionnalités, ses tarifs et la création de votre site web.
+              fonctionnalités, ses tarifs et la réservation en ligne.
             </p>
             <form
               className="fq-search"
@@ -234,7 +234,7 @@ export function FaqExplorer() {
               <ul>
                 {[
                   "Gestion complète de votre institut",
-                  "Création de site web sur devis",
+                  "Réservation en ligne sur votre page",
                   `${PUBLIC_OFFER.trialDays} jours d’essai, sans carte bancaire`,
                   "Support en français inclus",
                 ].map((text) => (

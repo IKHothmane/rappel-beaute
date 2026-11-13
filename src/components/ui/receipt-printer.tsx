@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -129,15 +128,14 @@ export function ReceiptPrinter({
 
   useEffect(() => () => feeding.current?.stop(), []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!embedded) return;
     const el = frameRef.current;
     if (!el) return;
     const fit = () => {
       const next = Math.min(el.clientWidth / W, el.clientHeight / H);
-      if (next > 0) setUnit(next);
+      if (next > 0) setUnit((current) => (Math.abs(current - next) < 0.001 ? current : next));
     };
-    fit();
     const observer = new ResizeObserver(fit);
     observer.observe(el);
     return () => observer.disconnect();
@@ -580,10 +578,9 @@ function Segment({
 }) {
   const inner = useRef(null as HTMLDivElement | null);
   const full = useMotionValue(0);
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = inner.current;
     if (!el) return;
-    full.set(el.offsetHeight);
     const observer = new ResizeObserver(() => full.set(el.offsetHeight));
     observer.observe(el);
     return () => observer.disconnect();

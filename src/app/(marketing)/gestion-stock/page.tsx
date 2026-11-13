@@ -136,7 +136,7 @@ export default function GestionStockPage() {
       storyMedia={
         <div className="sp-still">
           <Image
-            src="/brand/footer-spa-cutout.png"
+            src="/brand/footer-spa-cutout.webp"
             alt="Produits et linge de soin d’un institut"
             width={1774}
             height={887}

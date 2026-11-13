@@ -116,7 +116,7 @@ const TUNNEL_IMAGES = [
   { src: "/site/rappelbeauty-analytics-pc-reel.webp", title: "Analyses" },
   { src: "/site/rappelbeauty-dashboard-pc-reel.webp", title: "Tableau de bord" },
   { src: "/site/rappelbeauty-fidelite-pc-reel.webp", title: "Fidélité" },
-  { src: "/site/service.png", title: "Services" },
+  { src: "/site/Écran Rappel Beauty – Services & Prestations.webp", title: "Services" },
 ] as const;
 
 const FAQ = [

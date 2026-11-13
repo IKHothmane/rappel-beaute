@@ -8,7 +8,7 @@ export function LoginScreen({ children }: { children: React.ReactNode }) {
       <div className="rb-login-scene" aria-hidden="true">
         <Image
           className="rb-login-reception"
-          src="/brand/reception-salon.png"
+          src="/brand/reception-salon.webp"
           alt=""
           fill
           sizes="(max-width: 800px) 1px, 50vw"
@@ -16,7 +16,7 @@ export function LoginScreen({ children }: { children: React.ReactNode }) {
         />
         <Image
           className="rb-login-spa"
-          src="/brand/footer-spa-cutout.png"
+          src="/brand/footer-spa-cutout.webp"
           alt=""
           width={1774}
           height={887}
@@ -26,7 +26,7 @@ export function LoginScreen({ children }: { children: React.ReactNode }) {
       <div className="rb-login-panel">
         <Link className="rb-login-brand" href="/" aria-label="Rappel Beauty — Accueil">
           <Image
-            src="/brand/logo.png"
+            src="/brand/logo.webp"
             alt="Rappel Beauty"
             width={256}
             height={128}

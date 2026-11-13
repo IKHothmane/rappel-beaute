@@ -154,7 +154,7 @@ export function SiteFooter() {
             <p>Recevez nos nouveautés, conseils et offres spéciales.</p>
             <FooterEmailForm />
             <Image
-              src="/brand/footer-spa-cutout.png"
+              src="/brand/footer-spa-cutout.webp"
               alt=""
               width={1774}
               height={887}

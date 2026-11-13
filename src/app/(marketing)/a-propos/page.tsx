@@ -84,7 +84,7 @@ export default function AProposPage() {
           </div>
           <div className="ap-reception-frame">
             <Image
-              src="/brand/reception-salon.png"
+              src="/brand/reception-salon.webp"
               alt="Réception de salon Rappel Beauty en 3D"
               width={1568}
               height={1003}
@@ -103,7 +103,7 @@ export default function AProposPage() {
           <div className="ap-professional">
             <div className="ap-portrait-frame">
               <Image
-                src="/brand/rappels-beaute.png"
+                src="/brand/rappels-beaute.webp"
                 alt="Professionnelle Rappel Beauty sur tablette, avec des illustrations de rappels et de rendez-vous"
                 width={1536}
                 height={1024}

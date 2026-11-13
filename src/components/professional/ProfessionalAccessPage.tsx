@@ -208,7 +208,7 @@ export default function ProfessionalAccessPage({
         <aside className="pro-story" aria-label="Rappel Beauty pour votre institut">
           <Link href="/" className="pro-logo" aria-label="Rappel Beauty — Accueil">
             <Image
-              src="/brand/logo.png"
+              src="/brand/logo.webp"
               alt="Rappel Beauty"
               width={220}
               height={100}
@@ -232,7 +232,7 @@ export default function ProfessionalAccessPage({
           </ul>
           <Image
             className="pro-spa"
-            src="/brand/footer-spa-cutout.png"
+            src="/brand/footer-spa-cutout.webp"
             alt=""
             width={1774}
             height={887}

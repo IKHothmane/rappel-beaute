@@ -52,7 +52,8 @@ const nextConfig = {
     minimumCacheTTL: 31 * 24 * 60 * 60,
     // Évite les variantes 3840px inutiles sur le marketing / vitrine.
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // 160 : le logo du header fait 80 px. Sans ce palier, un écran 1,75× (Lighthouse) saute de 128 à 256.
+    imageSizes: [16, 32, 48, 64, 96, 128, 160, 256, 384],
     formats: ["image/webp"],
     remotePatterns: [
       {
@@ -123,4 +124,13 @@ export default withSentryConfig(nextConfig, {
   disableLogger: true,
   widenClientFileUpload: false,
   sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  // Pas de traces (tracesSampleRate: 0) ni de rejeu de session : ces modules
+  // restaient dans le JS de chaque page sans jamais s'exécuter.
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeTracing: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+    excludeReplayWorker: true,
+  },
 });

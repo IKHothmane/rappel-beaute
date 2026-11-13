@@ -48,7 +48,7 @@ export async function createAppleWalletPass(token: string): Promise<Buffer | nul
   // webServiceURL https public (jamais localhost) pour les mises à jour Wallet
   const webServiceURL = record ? appleWebServiceUrl(cardSiteOrigin()) : null;
   const pass = new PKPass(
-    applePassImages(),
+    await applePassImages(),
     {
       wwdr: loadPem("APPLE_WWDR", "APPLE_WWDR_PATH"),
       signerCert: loadPem("APPLE_PASS_CERT", "APPLE_PASS_CERT_PATH"),

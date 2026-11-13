@@ -1,12 +1,12 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { loadSentry } from "@/lib/monitoring/sentry-client";
 
 /** Erreur dans une page : remontée à Sentry, et la cliente garde la mise en page du site. */
 export default function RouteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    void loadSentry().then((Sentry) => Sentry?.captureException(error));
   }, [error]);
 
   return (

@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
-import { deflateSync, inflateSync } from "zlib";
+import { deflateSync } from "zlib";
+import sharp from "sharp";
 
 const CRC_TABLE = new Uint32Array(256);
 for (let n = 0; n < 256; n += 1) {
@@ -59,63 +60,6 @@ const WHITE: Rgb = [255, 255, 255];
 /** Le R du logo, sans le texte, pour l'icône 29 pt. */
 const EMBLEM = { x: 128, y: 2, width: 220, height: 168 };
 
-function paeth(left: number, up: number, upLeft: number) {
-  const estimate = left + up - upLeft;
-  const dl = Math.abs(estimate - left);
-  const du = Math.abs(estimate - up);
-  const dlu = Math.abs(estimate - upLeft);
-  if (dl <= du && dl <= dlu) return left;
-  return du <= dlu ? up : upLeft;
-}
-
-/** PNG indexé de public/brand/logo.png, aplati sur blanc. Apple refuse une icône transparente. */
-function decodeBrandLogo(buffer: Buffer): Raster {
-  let offset = 8;
-  const parts: Record<string, Buffer[]> = {};
-  while (offset < buffer.length) {
-    const length = buffer.readUInt32BE(offset);
-    const type = buffer.subarray(offset + 4, offset + 8).toString();
-    const data = buffer.subarray(offset + 8, offset + 8 + length);
-    (parts[type] ??= []).push(data);
-    offset += 12 + length;
-    if (type === "IEND") break;
-  }
-  const ihdr = Buffer.concat(parts.IHDR ?? []);
-  const width = ihdr.readUInt32BE(0);
-  const height = ihdr.readUInt32BE(4);
-  if (ihdr[8] !== 8 || ihdr[9] !== 3) throw new Error("APPLE_LOGO_PNG");
-  const palette = Buffer.concat(parts.PLTE ?? []);
-  const alpha = Buffer.concat(parts.tRNS ?? []);
-  const raw = inflateSync(Buffer.concat(parts.IDAT ?? []));
-  const rgb = new Uint8Array(width * height * 3);
-  let cursor = 0;
-  const prior = new Uint8Array(width);
-  const row = new Uint8Array(width);
-  for (let y = 0; y < height; y += 1) {
-    const filter = raw[cursor];
-    cursor += 1;
-    for (let x = 0; x < width; x += 1) {
-      const left = x > 0 ? row[x - 1] : 0;
-      const up = prior[x] ?? 0;
-      const upLeft = x > 0 ? (prior[x - 1] ?? 0) : 0;
-      let value = raw[cursor] ?? 0;
-      cursor += 1;
-      if (filter === 1) value = (value + left) & 255;
-      else if (filter === 2) value = (value + up) & 255;
-      else if (filter === 3) value = (value + Math.floor((left + up) / 2)) & 255;
-      else if (filter === 4) value = (value + paeth(left, up, upLeft)) & 255;
-      row[x] = value;
-      const color = value * 3;
-      const cover = alpha[value] ?? 255;
-      const i = (y * width + x) * 3;
-      rgb[i] = Math.round(((palette[color] ?? 0) * cover + WHITE[0] * (255 - cover)) / 255);
-      rgb[i + 1] = Math.round(((palette[color + 1] ?? 0) * cover + WHITE[1] * (255 - cover)) / 255);
-      rgb[i + 2] = Math.round(((palette[color + 2] ?? 0) * cover + WHITE[2] * (255 - cover)) / 255);
-    }
-    prior.set(row);
-  }
-  return { width, height, rgb };
-}
 
 function sample(
   source: Raster,
@@ -153,11 +97,27 @@ function resize(source: Raster, cropX: number, cropY: number, cropWidth: number,
   return rgbPng(width, height, (x, y) => sample(source, cropX, cropY, cropWidth, cropHeight, width, height, x, y));
 }
 
-let brand: Raster | null = null;
+let brandPromise: Promise<Raster> | null = null;
 
+/** WebP du logo, aplati sur blanc. Le .pkpass, lui, reste en PNG : Apple l'exige. */
 function brandLogo() {
-  if (!brand) brand = decodeBrandLogo(readFileSync("public/brand/logo.png"));
-  return brand;
+  if (!brandPromise) {
+    brandPromise = sharp(readFileSync("public/brand/logo.webp"))
+      .flatten({ background: "#ffffff" })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+      .then(({ data, info }) => ({
+        width: info.width,
+        height: info.height,
+        rgb: new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+      }))
+      .catch((error: unknown) => {
+        brandPromise = null;
+        throw error;
+      });
+  }
+  return brandPromise;
 }
 
 function opaqueBounds(source: Raster) {
@@ -179,9 +139,9 @@ function opaqueBounds(source: Raster) {
   return { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
 }
 
-/** Logo et icône du .pkpass, à partir de public/brand/logo.png. */
-export function applePassImages() {
-  const source = brandLogo();
+/** Logo et icône du .pkpass, à partir de public/brand/logo.webp. */
+export async function applePassImages() {
+  const source = await brandLogo();
   const art = opaqueBounds(source);
   const scale = Math.min(160 / art.width, 50 / art.height);
   const logoWidth = Math.max(1, Math.round(art.width * scale));

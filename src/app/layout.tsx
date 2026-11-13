@@ -48,7 +48,7 @@ export const metadata: Metadata = {
 
   icons: {
     icon: [{ url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" }],
-    apple: [{ url: "/brand/logo.png", type: "image/png" }],
+    apple: [{ url: "/brand/logo.webp", type: "image/webp" }],
     shortcut: ["/favicon.ico"],
   },
 
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
       "Gérez vos rendez-vous, clientes, équipe, stock, caisse et réservation en ligne depuis une seule plateforme.",
     images: [
       {
-        url: "/brand/logo.png",
+        url: "/brand/logo.webp",
         alt: "Rappel Beauty — logiciel de gestion pour instituts de beauté au Maroc",
       },
     ],
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Logiciel de gestion pour institut de beauté au Maroc | Rappel Beauty",
     description: "Gérez vos rendez-vous, clientes, équipe, stock, caisse et réservation en ligne.",
-    images: ["/brand/logo.png"],
+    images: ["/brand/logo.webp"],
   },
 };
 

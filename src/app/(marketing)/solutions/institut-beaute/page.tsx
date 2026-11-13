@@ -229,7 +229,7 @@ export default function InstitutBeautePage() {
               <span className="ib-phone-notch" />
               <Image
                 className="ib-phone-logo"
-                src="/brand/logo.png"
+                src="/brand/logo.webp"
                 alt="Rappel Beauty"
                 width={180}
                 height={90}

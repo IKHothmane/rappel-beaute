@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import {
-  motion,
+  LazyMotion,
+  domMin,
+  m,
   useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
@@ -22,9 +24,10 @@ type Layout = { stacked: Omit<Pose, "scale">; panoramic: Pose };
 // bascule à md = 768px) pour que le rendu serveur ait déjà la bonne taille sur mobile.
 const CARD_SIZE_CLASSES =
   "[--pano-w:var(--vt-pano-card-width)] [--pano-h:var(--vt-pano-card-height)]";
-type Card = { item: PanoramicImage; z: number; desktop: Layout; mobile: Layout; priority: boolean };
+type Card = { item: PanoramicImage; z: number; layout: Layout; priority: boolean };
 
-// Arc 3D autour du centre, pour le mobile et le desktop.
+// Une seule pose : la taille des cartes change déjà en CSS. Un second calcul
+// mobile après l'hydratation invalidait les styles puis relisait la géométrie.
 function generatePanoramicCards(images: readonly PanoramicImage[]): Card[] {
   const centerIndex = (images.length - 1) / 2;
 
@@ -37,7 +40,7 @@ function generatePanoramicCards(images: readonly PanoramicImage[]): Card[] {
       z: Math.round(10 - absOffset),
       // The outer planning card is also an LCP candidate on mobile (PageSpeed trace).
       priority: absOffset < 1 || i === images.length - 1,
-      desktop: {
+      layout: {
         stacked: { x: offset * 2, y: offset * -2, rotateZ: offset * 2.5, rotateY: 0 },
         panoramic: {
           x: offset * 30,
@@ -45,16 +48,6 @@ function generatePanoramicCards(images: readonly PanoramicImage[]): Card[] {
           rotateZ: offset * 0.8,
           rotateY: offset * -6,
           scale: 1 - absOffset * 0.03,
-        },
-      },
-      mobile: {
-        stacked: { x: offset * 1.5, y: offset * -1.5, rotateZ: offset * 3, rotateY: 0 },
-        panoramic: {
-          x: offset * 28,
-          y: absOffset * 2,
-          rotateZ: offset * 1,
-          rotateY: offset * -7,
-          scale: 1 - absOffset * 0.028,
         },
       },
     };
@@ -90,14 +83,12 @@ function usePointerTilt(active: boolean, enabled: boolean) {
 function GalleryCard({
   card,
   progress,
-  isMobile,
 }: {
   card: Card;
   progress: MotionValue<number>;
-  isMobile: boolean;
 }) {
-  const { item, desktop, mobile, z, priority } = card;
-  const { stacked, panoramic } = isMobile ? mobile : desktop;
+  const { item, layout, z, priority } = card;
+  const { stacked, panoramic } = layout;
 
   const ease = useTransform(progress, (p: number) =>
     p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2,
@@ -113,7 +104,7 @@ function GalleryCard({
 
   return (
     <div className="pointer-events-none absolute left-1/2 top-[70%]" style={{ zIndex: z }}>
-      <motion.div
+      <m.div
         className="pointer-events-auto bg-transparent will-change-transform"
         style={{
           width: "var(--pano-w)",
@@ -142,7 +133,7 @@ function GalleryCard({
             className="bg-transparent object-contain transition-transform duration-700 group-hover:scale-105"
           />
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -167,15 +158,7 @@ export default function PanoramicSpreadHero({
 }: Props) {
   const wrapRef = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
-  const [isMobile, setIsMobile] = useState(false);
   const cards = useMemo(() => generatePanoramicCards(images), [images]);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const { scrollYProgress } = useScroll({ target: wrapRef, offset: ["start start", "end end"] });
   const smoothProgress = useSpring(scrollYProgress, PROGRESS_SPRING);
@@ -190,6 +173,9 @@ export default function PanoramicSpreadHero({
   const { tiltX, tiltY } = usePointerTilt(spread, !reduce);
 
   return (
+    // domMin : transformations seulement. Le composant `motion` embarque aussi
+    // le glisser-déposer et les animations de layout, inutilisés ici.
+    <LazyMotion features={domMin} strict>
     <section
       ref={wrapRef}
       className={`relative w-full bg-transparent text-ink ${CARD_SIZE_CLASSES} ${reduce ? "hm-pano-static" : "hm-pano-scroll"} ${className}`}
@@ -199,14 +185,14 @@ export default function PanoramicSpreadHero({
         className={`sticky top-[var(--vt-size-4p75rem)] flex h-[var(--vt-pano-stage-height)] w-full justify-center overflow-hidden md:top-[var(--vt-size-5p5rem)] ${stageClassName}`}
         style={{ perspective: "1200px" }}
       >
-        <motion.div
+        <m.div
           className="absolute inset-[var(--vt-size-0rem)] z-10"
           style={{ rotateX: tiltX, rotateY: tiltY, transformStyle: "preserve-3d" }}
         >
           {cards.map((card) => (
-            <GalleryCard key={card.item.src} card={card} progress={progress} isMobile={isMobile} />
+            <GalleryCard key={card.item.src} card={card} progress={progress} />
           ))}
-        </motion.div>
+        </m.div>
 
         <div className="panoramic-hero-copy pointer-events-none absolute inset-x-[var(--vt-size-0rem)] top-[var(--vt-size-0rem)] z-20 flex flex-col items-center px-[var(--vt-size-1p5rem)] pt-[var(--vt-size-1p25rem)] text-center md:pt-[var(--vt-size-1p75rem)]">
           <span className="text-[length:var(--vt-text-11px)] font-semibold uppercase tracking-[0.22em] text-primary md:text-[length:var(--vt-text-0p75rem)]/[var(--vt-line-1rem)]">
@@ -221,5 +207,6 @@ export default function PanoramicSpreadHero({
         </div>
       </div>
     </section>
+    </LazyMotion>
   );
 }

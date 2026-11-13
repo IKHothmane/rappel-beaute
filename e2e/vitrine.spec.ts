@@ -87,16 +87,27 @@ for (const viewport of VIEWPORTS) {
         expect(response?.status(), "statut HTTP").toBeLessThan(400);
         await page.evaluate(() => document.fonts.ready);
         const brokenImages = await page.locator("img").evaluateAll(async (images) => {
+          // `decode()` ne se résout jamais pour certaines images lazy déjà peintes
+          // (complete reste faux). Une largeur naturelle suffit à dire qu'elles sont là.
           const results = await Promise.all(
             images.map(async (element) => {
               const img = element as HTMLImageElement;
+              if (img.naturalWidth > 0) return null;
               img.loading = "eager";
-              try {
-                await img.decode();
-                return img.naturalWidth > 0 ? null : img.currentSrc;
-              } catch {
-                return img.currentSrc || img.src;
-              }
+              await new Promise<void>((resolve) => {
+                const finish = () => {
+                  window.clearInterval(poll);
+                  window.clearTimeout(limit);
+                  resolve();
+                };
+                const poll = window.setInterval(() => {
+                  if (img.naturalWidth > 0 || img.complete) finish();
+                }, 100);
+                const limit = window.setTimeout(finish, 10000);
+                img.addEventListener("load", finish, { once: true });
+                img.addEventListener("error", finish, { once: true });
+              });
+              return img.naturalWidth > 0 ? null : img.currentSrc || img.src || "(sans source)";
             }),
           );
           return results.filter(Boolean);

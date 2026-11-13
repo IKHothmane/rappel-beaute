@@ -17,7 +17,7 @@ function getOrganizationStructuredData() {
         "@id": `${SITE.url}/#organization`,
         name: SITE.name,
         url: `${SITE.url}/`,
-        logo: `${SITE.url}/brand/logo.png`,
+        logo: `${SITE.url}/brand/logo.webp`,
         description:
           "Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc.",
         email: SITE.email,
@@ -93,7 +93,7 @@ export function marketingPageMetadata(input: {
       url: input.canonical,
       images: [
         {
-          url: "/brand/logo.png",
+          url: "/brand/logo.webp",
           alt: "Rappel Beauty — logiciel de gestion pour instituts de beauté au Maroc",
         },
       ],
@@ -102,7 +102,7 @@ export function marketingPageMetadata(input: {
       card: "summary_large_image",
       title: input.title,
       description: input.description,
-      images: ["/brand/logo.png"],
+      images: ["/brand/logo.webp"],
     },
   };
 }

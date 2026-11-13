@@ -162,7 +162,7 @@ export function FaqExplorer() {
             </div>
             <Image
               className="fq-hero-spa"
-              src="/brand/footer-spa-cutout.png"
+              src="/brand/footer-spa-cutout.webp"
               alt=""
               width={1774}
               height={887}

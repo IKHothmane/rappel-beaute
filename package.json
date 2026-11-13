@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "node --require ./dev-preload.cjs ./node_modules/next/dist/bin/next dev -p 3000",
-    "build": "npx prisma generate && node --require ./dev-preload.cjs ./node_modules/next/dist/bin/next build",
+    "build": "npx prisma generate && node --require ./dev-preload.cjs ./node_modules/next/dist/bin/next build && node scripts/inline-critical-css.mjs",
     "start": "next start",
     "lint": "node --require ./dev-preload.cjs ./node_modules/next/dist/bin/next lint",
     "format:vitrine": "prettier --write \"src/app/[(]marketing[)]/**/*.{ts,tsx,css}\" \"src/components/{www,home,sections,professional,website-creation}/**/*.{ts,tsx,css}\" src/components/ui/panoramic-spread-hero.tsx src/components/loyalty/LoyaltyLanding.tsx",
@@ -50,6 +50,7 @@
     "barcode-detector": "^3.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "critters": "^0.0.23",
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
     "framer-motion": "^13.5.1",

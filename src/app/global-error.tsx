@@ -1,12 +1,12 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { loadSentry } from "@/lib/monitoring/sentry-client";
 
 /** Dernier filet : erreur dans le layout racine. Remonte l'erreur à Sentry et propose de réessayer. */
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    void loadSentry().then((Sentry) => Sentry?.captureException(error));
   }, [error]);
 
   return (

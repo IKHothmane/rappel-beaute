@@ -7,8 +7,8 @@ function size(png: Buffer) {
 }
 
 describe("images Apple Wallet", () => {
-  it("place le logo Rappel Beauty dans l'icône et le bandeau", () => {
-    const images = applePassImages();
+  it("place le logo Rappel Beauty dans l'icône et le bandeau", async () => {
+    const images = await applePassImages();
     expect(size(images["icon.png"])).toEqual({ width: 29, height: 29 });
     expect(size(images["icon@2x.png"])).toEqual({ width: 58, height: 58 });
     expect(size(images["icon@3x.png"])).toEqual({ width: 87, height: 87 });

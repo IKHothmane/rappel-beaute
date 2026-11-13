@@ -10,7 +10,7 @@ type BrandLogoProps = {
   priority?: boolean;
 };
 
-/** Logo officiel — /public/brand/logo.png (512×256) */
+/** Logo officiel — /public/brand/logo.webp (512×256) */
 export function BrandLogo({
   height = 48,
   className = "",
@@ -21,7 +21,7 @@ export function BrandLogo({
 
   const img = (
     <Image
-      src="/brand/logo.png"
+      src="/brand/logo.webp"
       alt="Rappel Beauty — Gérez, réservez, développez"
       width={width}
       height={height}

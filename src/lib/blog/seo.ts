@@ -4,7 +4,7 @@ import { SITE } from "@/lib/site";
 import type { BlogArticle } from "./types";
 export function articleMetadata(article: BlogArticle): Metadata {
   const canonical = `/blog/${article.slug}/`;
-  const image = article.sections.find((section) => section.image)?.image?.src ?? "/brand/logo.png";
+  const image = article.sections.find((section) => section.image)?.image?.src ?? "/brand/logo.webp";
   return {
     ...marketingPageMetadata({
       title: `${article.title} | Rappel Beauty`,
@@ -43,7 +43,7 @@ export function articleJsonLd(article: BlogArticle) {
     author: { "@type": "Organization", name: article.author, url: `${SITE.url}/a-propos/` },
     publisher: { "@id": `${SITE.url}/#organization` },
     image: absoluteUrl(
-      article.sections.find((section) => section.image)?.image?.src ?? "/brand/logo.png",
+      article.sections.find((section) => section.image)?.image?.src ?? "/brand/logo.webp",
     ),
     ...(article.publishedAt
       ? { datePublished: article.publishedAt, dateModified: article.updatedAt }

@@ -10,7 +10,7 @@ import {
   walletAssetOrigin,
 } from "@/lib/loyalty/google-wallet-view";
 
-const ART = "/loyalty/fond-bordeaux.png";
+const ART = "/loyalty/fond-bordeaux.webp";
 
 describe("aperçu Google Wallet", () => {
   it("publie les images sur rappelbeauty.com", () => {

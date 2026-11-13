@@ -1,10 +1,14 @@
 import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/seo";
+import { publishedArticles } from "@/lib/blog/public";
+
+export const dynamic = "force-dynamic";
 
 const entries: { path: string; priority: number; changeFrequency: "weekly" | "monthly" }[] = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/solutions/institut-beaute/", priority: 0.9, changeFrequency: "weekly" },
   { path: "/fonctionnalites/", priority: 0.9, changeFrequency: "monthly" },
+  { path: "/blog/", priority: 0.7, changeFrequency: "weekly" },
   { path: "/creation-site-web/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/tarifs/", priority: 0.8, changeFrequency: "monthly" },
   { path: "/gestion-rendez-vous/", priority: 0.8, changeFrequency: "monthly" },
@@ -23,10 +27,19 @@ const entries: { path: string; priority: number; changeFrequency: "weekly" | "mo
   { path: "/confidentialite/", priority: 0.2, changeFrequency: "monthly" },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  return entries.map((entry) => ({
-    url: absoluteUrl(entry.path),
-    changeFrequency: entry.changeFrequency,
-    priority: entry.priority,
-  }));
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const articles = await publishedArticles();
+  return [
+    ...entries.map((entry) => ({
+      url: absoluteUrl(entry.path),
+      changeFrequency: entry.changeFrequency,
+      priority: entry.priority,
+    })),
+    ...articles.map((article) => ({
+      url: absoluteUrl(`/blog/${article.slug}/`),
+      lastModified: article.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
+  ];
 }

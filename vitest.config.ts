@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export default defineConfig({
+  // Transformer le JSX des composants Next pour les tests de rendu serveur.
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     globals: true,
     environment: "node",

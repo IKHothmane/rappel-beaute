@@ -39,7 +39,7 @@ const COLUMNS = [
       { href: "/ressources/", label: "Centre d’aide" },
       { href: "/fonctionnalites/", label: "Découvrir le logiciel" },
       { href: "/faq/", label: "FAQ" },
-      { href: "/blog/", label: "Blog — articles à venir" },
+      { href: "/blog/", label: "Blog — conseils & guides" },
       { href: "/whatsapp/", label: "Conseils WhatsApp" },
       { href: "/demo/", label: "Démonstration" },
     ],

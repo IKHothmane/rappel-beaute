@@ -47,6 +47,7 @@ export const NAV = [
   { href: "/creation-site-web/", label: "Création de site web" },
   { href: "/tarifs/", label: "Tarifs" },
   { href: "/a-propos/", label: "À propos" },
+  { href: "/blog/", label: "Blog" },
 ] as const;
 
 export const FEATURES = [

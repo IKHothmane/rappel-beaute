@@ -2515,6 +2515,35 @@ model PlatformConfig {
   updatedBy String?
 }
 
+/// Articles éditoriaux ; les contraintes de publication sont dans la migration SQL.
+model BlogArticle {
+  slug        String   @id
+  content     Json
+  status      String   @default("draft")
+  author      String   @default("Rappel Beauty")
+  version     Int      @default(1)
+  reviewedBy  String?
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, publishedAt], map: "BlogArticle_publication_idx")
+}
+
+/// Questions générales déjà anonymisées, ajoutées volontairement par un administrateur.
+model BlogQuestion {
+  id          String   @id
+  fingerprint String   @unique
+  question    String
+  category    String
+  occurrences Int      @default(1)
+  articleSlug String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([updatedAt], map: "BlogQuestion_updatedAt_idx")
+}
+
 /// Images par défaut des soins suggérés (liste Nouveau service)
 model ServiceCatalogDefault {
   id        String   @id @default(cuid())

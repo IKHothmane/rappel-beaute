@@ -493,7 +493,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </div>
             </header>
-            <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-5 xl:p-6">{children}</main>
           </div>
 
           {/* Mobile layout */}
@@ -526,7 +525,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </div>
             </header>
-            <main className="min-w-0 flex-1 p-3 sm:p-4">{children}</main>
             <nav
               className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
               aria-label="Navigation mobile Super Admin"
@@ -536,6 +534,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </div>
             </nav>
           </div>
+          <main
+            className="min-w-0 flex-1 p-3 transition-[margin] sm:p-4 lg:ml-[var(--admin-sidebar-offset)] lg:p-5 xl:p-6"
+            style={{ "--admin-sidebar-offset": `${sidebarW}px` } as React.CSSProperties}
+          >
+            {children}
+          </main>
         </div>
       </div>
     </div>

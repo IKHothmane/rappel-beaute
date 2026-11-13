@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { FAQ_ITEMS, PUBLIC_OFFER, SITE } from "@/lib/site";
+import { FAQ_ITEMS, PUBLIC_OFFER, SITE, SOCIAL_PROFILES } from "@/lib/site";
 
 export function absoluteUrl(path: string): string {
   if (path === "/") return `${SITE.url}/`;
@@ -21,6 +21,7 @@ function getOrganizationStructuredData() {
         description:
           "Rappel Beauty est un logiciel de gestion pour les instituts de beauté au Maroc.",
         email: SITE.email,
+        ...(SOCIAL_PROFILES.length ? { sameAs: [...SOCIAL_PROFILES] } : {}),
         telephone,
         areaServed: {
           "@type": "Country",
@@ -93,7 +94,9 @@ export function marketingPageMetadata(input: {
       url: input.canonical,
       images: [
         {
-          url: "/brand/logo.webp",
+          url: "/brand/og-default.jpg",
+        width: 1200,
+        height: 630,
           alt: "Rappel Beauty — logiciel de gestion pour instituts de beauté au Maroc",
         },
       ],
@@ -102,7 +105,7 @@ export function marketingPageMetadata(input: {
       card: "summary_large_image",
       title: input.title,
       description: input.description,
-      images: ["/brand/logo.webp"],
+      images: ["/brand/og-default.jpg"],
     },
   };
 }

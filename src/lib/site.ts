@@ -201,3 +201,9 @@ export const FAQ_ITEMS = [
   { id: "photos", category: "securite", q: "Les photos des clientes sont-elles utilisées ?", a: "Non. Aucune photo cliente n’est utilisée dans les fiches en V1. Les informations de suivi restent textuelles." },
   { id: "autorisations", category: "securite", q: "Puis-je limiter les accès de mon équipe ?", a: "Oui. Les rôles et autorisations permettent d’adapter les accès à chaque utilisateur de votre institut, selon ses responsabilités." },
 ] as const satisfies readonly { id: string; category: FaqCategory; q: string; a: string; href?: string; linkLabel?: string }[];
+
+/**
+ * Profils officiels de Rappel Beauty (Instagram, Facebook, LinkedIn, fiche Google…).
+ * Renseigner uniquement des URL réelles : elles alimentent `sameAs` dans le JSON-LD.
+ */
+export const SOCIAL_PROFILES: readonly string[] = [];

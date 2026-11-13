@@ -36,7 +36,7 @@ const HERO_IMAGES = [
     alt: "Agenda de la semaine dans Rappel Beauty",
   },
   {
-    src: "/site/Écran Rappel Beauty – Services & Prestations.webp",
+    src: "/site/rappelbeauty-services-pc-reel.webp",
     alt: "Services et prestations dans Rappel Beauty",
   },
   {

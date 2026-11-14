@@ -30,6 +30,7 @@ vi.mock("@/lib/db/pool", () => ({
 }));
 
 import { requireAppSession, requirePlatformSession } from "@/lib/auth/api-guard";
+import { requireSuperAdmin } from "@/lib/admin/api-helpers";
 import { assertAppointmentReferences } from "@/lib/db/appointments";
 
 function requestWith(token: string): NextRequest {
@@ -42,6 +43,7 @@ function requestWith(token: string): NextRequest {
 const platformToken = () =>
   signJwt(
     { id: "pu_1", email: "a@t.test", firstName: "A", lastName: "A", role: "SUPPORT", scope: "platform", accountType: "PLATFORM" },
+    // SUPPORT n'est pas un rôle plateforme : le jeton peut encore le porter, la base tranche.
     getSessionSecret(),
     3600,
   );
@@ -72,10 +74,17 @@ describe("session back-office", () => {
   });
 
   it("applique le rôle de la base, pas celui du jeton", async () => {
-    state.platformUser = { id: "pu_1", role: "SUPPORT", scope: "platform", accountType: "PLATFORM" };
+    state.platformUser = { id: "pu_1", role: "SUPER_ADMIN", scope: "platform", accountType: "PLATFORM" };
     const auth = await requirePlatformSession(requestWith(platformToken()));
     expect(auth.ok).toBe(true);
-    if (auth.ok) expect(auth.session?.role).toBe("SUPPORT");
+    if (auth.ok) expect(auth.session?.role).toBe("SUPER_ADMIN");
+  });
+
+  it("refuse le back-office si la base ne confirme pas SUPER_ADMIN", async () => {
+    state.platformUser = { id: "pu_1", role: "SUPPORT", scope: "platform", accountType: "PLATFORM" };
+    const auth = await requireSuperAdmin(requestWith(platformToken()));
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) expect(auth.response.status).toBe(403);
   });
 
   it("refuse une session institut sur le back-office", async () => {

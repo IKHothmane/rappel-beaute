@@ -4,13 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import {
   bindOrganization,
+  bindPublicInstitute,
   decideQuery,
   parseRlsSetting,
   runInScope,
   TenantContextError,
   type TenantScope,
 } from "@/lib/db/tenant-context";
-import { withTenantIsolation } from "@/lib/db/tenant-pool";
+import { pilotConnectionString, withTenantIsolation } from "@/lib/db/tenant-pool";
+import { rlsContextProof } from "@/lib/db/rls-proof";
 import { publicRoute, tenantRoute } from "@/lib/http/route-scope";
 
 const root = path.resolve(__dirname, "../..");
@@ -18,7 +20,7 @@ const flush = () => new Promise((r) => setTimeout(r, 5));
 const tenantScope = (organizationId: string | null): TenantScope => ({ kind: "tenant", organizationId });
 const publicScope: TenantScope = { kind: "public", reason: "test" };
 
-function fakePool(privileged = false) {
+function fakePool(privileged = false, connectionString?: string) {
   const calls: string[] = [];
   const params: unknown[][] = [];
   const listeners = new Set<(e: Error) => void>();
@@ -38,6 +40,7 @@ function fakePool(privileged = false) {
   const rawConnect = vi.fn(async () => client);
   const raw = {
     connect: rawConnect,
+    options: connectionString ? { connectionString } : undefined,
     on: vi.fn(),
     query: vi.fn(async (sql: string) => {
       if (sql.includes("pg_roles")) return { rows: [{ privileged }] };
@@ -114,6 +117,13 @@ describe("portée de requête", () => {
     expect(decideQuery({ scope, setting: parseRlsSetting("all"), limitedRole: true }).action).toBe("refuse");
   });
 
+  it("ne laisse pas un institut devenir une session plateforme", () => {
+    const scope = tenantScope("org_a");
+    runInScope(scope, () => bindOrganization("org_a"));
+    expect(scope).toMatchObject({ kind: "tenant", organizationId: "org_a" });
+    expect(decideQuery({ scope, setting: parseRlsSetting("all"), limitedRole: true }).action).toBe("tenant");
+  });
+
   it("ne garde aucune portée entre deux requêtes", async () => {
     const seen = await Promise.all(
       ["org_a", "org_b"].map((org) =>
@@ -161,13 +171,31 @@ describe("wrappers de route", () => {
 
 describe("couche de connexion", () => {
   const original = process.env.RLS_ENFORCE;
+  const originalKey = process.env.RLS_CONTEXT_KEY;
+  const roleEnv = [
+    "RAPPEL_PLATFORM_DATABASE_URL",
+    "RAPPEL_PUBLIC_DATABASE_URL",
+    "RAPPEL_JOB_DATABASE_URL",
+    "RLS_PILOT",
+    "RLS_PILOT_ORG",
+    "RLS_PILOT_DATABASE_URL",
+  ] as const;
+  const originalRoles = Object.fromEntries(roleEnv.map((name) => [name, process.env[name]]));
   const inA = <T,>(fn: () => Promise<T>) => runInScope(tenantScope("org_a"), fn);
   beforeEach(() => {
     process.env.RLS_ENFORCE = "all";
+    process.env.RLS_CONTEXT_KEY = "unit-test-rls-context-key";
   });
   afterEach(() => {
     if (original === undefined) delete process.env.RLS_ENFORCE;
     else process.env.RLS_ENFORCE = original;
+    if (originalKey === undefined) delete process.env.RLS_CONTEXT_KEY;
+    else process.env.RLS_CONTEXT_KEY = originalKey;
+    for (const name of roleEnv) {
+      const value = originalRoles[name];
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
   });
 
   it("limite le contexte à une transaction autour de chaque requête", async () => {
@@ -175,7 +203,32 @@ describe("couche de connexion", () => {
     await inA(() => pool.query("SELECT 1"));
     await flush();
     expect(calls).toEqual(["BEGIN", "SET", "SELECT", "COMMIT", "RELEASE"]);
-    expect(params[0]).toEqual(["org_a", "off"]);
+    expect(params[0]).toEqual(["org_a", "off", "tenant", rlsContextProof("tenant", "org_a", "off")]);
+  });
+
+  it("garde un institut sur ses lignes même si le réglage d'application est vide", async () => {
+    process.env.RLS_ENFORCE = "";
+    const { pool, params } = fakePool();
+    await inA(() => pool.query("SELECT 1"));
+    expect(params[0].slice(0, 3)).toEqual(["org_a", "off", "tenant"]);
+  });
+
+  it("signe l'institut d'une route publique sans lui ouvrir la session", async () => {
+    const { pool, params } = fakePool();
+    await runInScope({ kind: "public", reason: "réservation" }, async () => {
+      bindPublicInstitute("org_a");
+      await pool.query("SELECT 1");
+    });
+    expect(params[0].slice(0, 3)).toEqual(["org_a", "off", "tenant"]);
+    expect(params[0][3]).toBe(rlsContextProof("tenant", "org_a", "off"));
+  });
+
+  it("ne donne pas à un institut la preuve d'une session plateforme", async () => {
+    const { pool, params } = fakePool();
+    await runInScope({ kind: "platform", reason: "t" }, () => pool.query("SELECT 1"));
+    expect(params[0].slice(0, 3)).toEqual(["", "on", "platform"]);
+    expect(params[0][3]).toBe(rlsContextProof("platform", "", "on"));
+    expect(params[0][3]).not.toBe(rlsContextProof("tenant", "org_a", "off"));
   });
 
   it("annule la transaction implicite si la requête échoue", async () => {
@@ -299,6 +352,40 @@ describe("couche de connexion", () => {
     expect(rawConnect).not.toHaveBeenCalled();
   });
 
+  it("n'envoie vers la connexion limitée que la session de l'institut pilote", () => {
+    const pilot = "postgresql://rappel_app:unit@127.0.0.1/db";
+    process.env.RLS_PILOT = "on";
+    process.env.RLS_PILOT_ORG = "org_demo";
+    process.env.RLS_PILOT_DATABASE_URL = pilot;
+    expect(pilotConnectionString({ kind: "tenant", organizationId: "org_demo" })).toBe(pilot);
+    expect(pilotConnectionString({ kind: "tenant", organizationId: "org_autre" })).toBeUndefined();
+    expect(pilotConnectionString({ kind: "public", reason: "page", organizationId: "org_demo" })).toBeUndefined();
+    expect(pilotConnectionString({ kind: "job", reason: "relance" })).toBeUndefined();
+    expect(pilotConnectionString({ kind: "platform", reason: "back-office" })).toBeUndefined();
+    process.env.RLS_PILOT = "off";
+    expect(pilotConnectionString({ kind: "tenant", organizationId: "org_demo" })).toBeUndefined();
+  });
+
+  it("refuse un pilote qui réutilise la connexion de base", async () => {
+    const url = "postgresql://rappel_app:unit@127.0.0.1/db";
+    process.env.RLS_PILOT = "on";
+    process.env.RLS_PILOT_ORG = "org_a";
+    process.env.RLS_PILOT_DATABASE_URL = url;
+    const { pool, rawConnect } = fakePool(false, url);
+    await expect(inA(() => pool.query("SELECT 1"))).rejects.toThrow("connexion de base");
+    expect(rawConnect).not.toHaveBeenCalled();
+  });
+
+  it("refuse une connexion de rôle incomplète au lieu de revenir à la base", async () => {
+    process.env.RAPPEL_PUBLIC_DATABASE_URL = "postgresql://rappel_public:secret@127.0.0.1/db";
+    const { pool, rawConnect } = fakePool();
+    await expect(
+      runInScope(publicScope, () => pool.query("SELECT 1")),
+    ).rejects.toThrow("doivent être définies ensemble");
+    expect(rawConnect).not.toHaveBeenCalled();
+    expect(String(rawConnect.mock.calls)).not.toContain("secret");
+  });
+
   it("n'ouvre aucune connexion pour un accès refusé", async () => {
     const { pool, rawConnect } = fakePool();
     await expect(runInScope(tenantScope(null), () => pool.query("SELECT 1"))).rejects.toBeInstanceOf(TenantContextError);
@@ -341,6 +428,20 @@ describe("garanties du code source", () => {
     expect(bare).toEqual([]);
   });
 
+  it("seul le contrôle de session fixe l'institut d'une route métier", () => {
+    const callers = walk(path.join(root, "src"), (f) => /\.tsx?$/.test(f)).filter((f) => {
+      if (f.endsWith(`${path.sep}tenant-context.ts`)) return false;
+      return fs.readFileSync(f, "utf8").includes("bindOrganization(");
+    });
+    expect(callers.map((f) => path.basename(f))).toEqual(["api-guard.ts"]);
+  });
+
+  it("la sonde de base suit la connexion publique", () => {
+    const src = fs.readFileSync(path.join(root, "src/app/api/health/db/route.ts"), "utf8");
+    expect(src).toContain('connectionStringFor("public")');
+    expect(src).not.toContain("DATABASE_URL not configured");
+  });
+
   it("n'utilise plus de module interne de Next", () => {
     const uses = walk(path.join(root, "src"), (f) => /\.tsx?$/.test(f)).filter((f) =>
       fs.readFileSync(f, "utf8").includes("request-async-storage"),
@@ -360,9 +461,19 @@ describe("garanties du code source", () => {
       .map((d) => fs.readFileSync(path.join(dir, d, "migration.sql"), "utf8"))
       .join("\n");
     const missing = models.filter(
-      (t) => t !== "PlatformAuditLog" && !sql.includes(`ALTER TABLE "${t}" ENABLE ROW LEVEL SECURITY`),
+      (t) => !sql.includes(`ALTER TABLE "${t}" ENABLE ROW LEVEL SECURITY`),
     );
     expect(missing).toEqual([]);
+    const bypasses = [...sql.matchAll(/CREATE OR REPLACE FUNCTION app_rls_bypass\(\) RETURNS boolean[\s\S]*?AS \$\$[\s\S]*?\$\$/g)];
+    expect(bypasses.at(-1)?.[0]).toContain("current_user IN ('rappel_platform', 'rappel_job')");
+    expect(bypasses.at(-1)?.[0]).not.toContain("rappel_public");
+    expect(bypasses.at(-1)?.[0]).not.toContain("current_setting('app.rls_bypass'");
+    const reads = [...sql.matchAll(/CREATE POLICY platform_audit_read ON "PlatformAuditLog" FOR SELECT USING \(([^;]+)\)/g)];
+    const inserts = [...sql.matchAll(/CREATE POLICY platform_audit_insert ON "PlatformAuditLog" FOR INSERT WITH CHECK \(([^;]+)\)/g)];
+    expect(reads.at(-1)?.[1]).toBe("current_user = 'rappel_platform'");
+    expect(inserts.at(-1)?.[1]).toBe("current_user IN ('rappel_platform', 'rappel_public')");
+    expect(sql).not.toMatch(/CREATE POLICY \w+ ON "PlatformAuditLog" FOR (UPDATE|DELETE)/);
+    expect(sql).not.toMatch(/CREATE POLICY \w+ ON "PlatformAuditLog" USING \(app_rls_bypass\(\)/);
     expect(sql).not.toContain("app_current_org() IS NULL OR");
   });
 });

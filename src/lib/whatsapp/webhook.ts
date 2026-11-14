@@ -140,16 +140,8 @@ async function findCustomersByIncomingPhone(rawPhone: string): Promise<
     phone: string;
   }>(
     `SELECT id, "organizationId", "firstName", "lastName", phone
-     FROM "Customer"
-     WHERE "deletedAt" IS NULL
-       AND (
-         regexp_replace(phone, '\\D', '', 'g') = $1
-         OR regexp_replace(phone, '\\D', '', 'g') = $2
-         OR regexp_replace(phone, '\\D', '', 'g') = $3
-         OR phone = $4
-       )
-     LIMIT 5`,
-    [digits, localMorocco, intlMorocco, rawPhone],
+     FROM app_public_customer_by_phone(ARRAY[$1, $2, $3]::text[])`,
+    [digits, localMorocco, intlMorocco],
   );
 
   return rows;

@@ -11,6 +11,7 @@ import type {
 import { randomBytes } from "crypto";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 import { pool } from "@/lib/db/pool";
+import { bindPublicInstitute } from "@/lib/db/tenant-context";
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;
@@ -50,6 +51,7 @@ function mapProduct(r: {
 export async function getPublicProducts(
   organizationId: string,
 ): Promise<PublicProductItem[]> {
+  bindPublicInstitute(organizationId);
   const { rows } = await pool.query<{
     id: string;
     name: string;
@@ -83,6 +85,7 @@ export async function createPublicProductOrder(
 ): Promise<PublicProductOrderResult> {
   const org = await resolveOrganizationBySlug(slug);
   if (!org) throw new Error("Institut introuvable.");
+  bindPublicInstitute(org.id);
 
   if (!input.lines?.length) throw new Error("Panier vide.");
   if (!input.customer?.firstName?.trim() || !input.customer?.lastName?.trim()) {

@@ -1,6 +1,6 @@
 # Préparer une publication progressive des 110 guides
 
-> Proposition antérieure conservée pour référence. Le propriétaire a ensuite demandé l’affichage de tous les guides sur la vitrine : le catalogue public de 110 guides est désormais défini dans `src/lib/blog/public.ts`, sans passage par l’administration.
+> Les 110 guides du code restent des brouillons. `publishedArticles()` ne lit que le stockage éditorial : statut publié, relecteur renseigné, date de publication atteinte. Un retrait administratif sort l’article de la vitrine et du sitemap.
 
 Les 100 adresses initiales sont conservées. La catégorie **SEO local & Google Maps** ajoute dix guides d’environ 520 à 590 mots. Quatre articles prioritaires ont été développés : environ 1 500 mots pour le guide de choix 2027 et 770 à 925 mots pour les trois autres, selon le comptage du contenu visible, FAQ et tableaux compris.
 

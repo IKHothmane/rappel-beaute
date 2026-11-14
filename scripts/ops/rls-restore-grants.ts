@@ -12,6 +12,7 @@
 import { Client } from "pg";
 
 const ROLE = "rappel_app";
+const TRANSVERSAL = ["rappel_platform", "rappel_public", "rappel_job"] as const;
 const CHILD_TABLES = [
   "ServiceStaff", "ServiceResource", "ServiceProduct", "ServiceCommission", "StaffSchedule", "StaffBreak",
   "StaffLeave", "ResourceMaintenance", "ProductLot", "ProductPriceHistory", "ProductSupplier", "PurchaseItem",
@@ -29,11 +30,30 @@ async function restore(db: Client): Promise<void> {
     END $$`);
   // Un rôle préexistant est ramené aux seuls attributs attendus.
   await db.query(`ALTER ROLE ${ROLE} NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION`);
+  for (const role of TRANSVERSAL) {
+    await db.query(`DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${role}') THEN
+          CREATE ROLE ${role} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+        END IF;
+      END $$`);
+    await db.query(`ALTER ROLE ${role} NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION`);
+    await db.query(`GRANT USAGE ON SCHEMA public TO ${role}`);
+    await db.query(`REVOKE CREATE ON SCHEMA public FROM ${role}`);
+    await db.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${role}`);
+    await db.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${role}`);
+  }
 
-  const password = process.env.RAPPEL_APP_PASSWORD ?? "";
-  if (password) {
-    if (password.length < 24) throw new Error("RAPPEL_APP_PASSWORD : 24 caractères minimum.");
-    const { rows } = await db.query<{ sql: string }>(`SELECT format('ALTER ROLE ${ROLE} LOGIN PASSWORD %L', $1::text) AS sql`, [password]);
+  const passwords: Array<[string, string | undefined]> = [
+    [ROLE, process.env.RAPPEL_APP_PASSWORD],
+    ["rappel_platform", process.env.RAPPEL_PLATFORM_PASSWORD],
+    ["rappel_public", process.env.RAPPEL_PUBLIC_PASSWORD],
+    ["rappel_job", process.env.RAPPEL_JOB_PASSWORD],
+  ];
+  for (const [role, password] of passwords) {
+    if (!password) continue;
+    if (password.length < 24) throw new Error(`${role} : mot de passe de 24 caractères minimum.`);
+    const { rows } = await db.query<{ sql: string }>(`SELECT format('ALTER ROLE %I LOGIN PASSWORD %L', $1::text, $2::text) AS sql`, [role, password]);
     await db.query(rows[0].sql);
   }
 
@@ -41,8 +61,21 @@ async function restore(db: Client): Promise<void> {
   await db.query(`REVOKE CREATE ON SCHEMA public FROM ${ROLE}`);
   await db.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${ROLE}`);
   await db.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${ROLE}`);
-  await db.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${ROLE}`);
-  await db.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO ${ROLE}`);
+  await db.query(`REVOKE ALL ON TABLE "PlatformAuditLog" FROM ${ROLE}, rappel_public, rappel_job, rappel_platform`);
+  await db.query(`GRANT SELECT, INSERT ON TABLE "PlatformAuditLog" TO rappel_platform`);
+  await db.query(`GRANT INSERT ON TABLE "PlatformAuditLog" TO rappel_public`);
+  await db.query(`DO $$
+    BEGIN
+      IF to_regprocedure('app_private.org_proof_ok()') IS NOT NULL THEN
+        GRANT USAGE ON SCHEMA app_private TO rappel_app, rappel_platform, rappel_public, rappel_job;
+        GRANT EXECUTE ON FUNCTION app_private.org_proof_ok() TO rappel_app, rappel_platform, rappel_public, rappel_job;
+        GRANT EXECUTE ON FUNCTION app_current_org() TO rappel_app, rappel_platform, rappel_public, rappel_job;
+      END IF;
+    END $$`);
+  for (const role of [ROLE, ...TRANSVERSAL]) {
+    await db.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM ${role}`);
+    await db.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE USAGE, SELECT ON SEQUENCES FROM ${role}`);
+  }
   await db.query(`DO $$
     BEGIN
       IF to_regclass('public._prisma_migrations') IS NOT NULL THEN
@@ -86,6 +119,7 @@ async function verify(db: Client): Promise<string[]> {
   if (rows.some((r) => r.owner === ROLE)) problems.push(`${ROLE} possède des tables`);
 
   for (const { t } of rows) {
+    if (t === "PlatformAuditLog") continue;
     if (t === "_prisma_migrations") {
       const { rows: p } = await db.query(`SELECT has_table_privilege($1, '"_prisma_migrations"', 'SELECT') ok`, [ROLE]);
       if (p[0].ok) problems.push(`${ROLE} peut lire _prisma_migrations`);
@@ -107,10 +141,11 @@ async function verify(db: Client): Promise<string[]> {
     await db.query(`SET LOCAL ROLE ${ROLE}`);
     const count = async () => Number((await db.query(`SELECT count(*) n FROM "Customer"`)).rows[0].n);
     if ((await count()) !== 0) problems.push("sans contexte, des lignes restent visibles");
-    await db.query(`SELECT set_config('app.current_org', '__verification__', true), set_config('app.rls_bypass', 'off', true)`);
-    if ((await count()) !== 0) problems.push("un institut inconnu voit des lignes");
-    await db.query(`SELECT set_config('app.current_org', '', true), set_config('app.rls_bypass', 'on', true)`);
-    if ((await count()) !== total) problems.push("l'accès autorisé ne voit pas toutes les lignes");
+    await db.query(`SELECT set_config('app.current_org', '__verification__', true), set_config('app.rls_bypass', 'on', true)`);
+    if ((await count()) !== 0) problems.push("rappel_app s'ouvre les autres instituts avec la variable de session");
+    await db.query("RESET ROLE");
+    await db.query("SET LOCAL ROLE rappel_platform");
+    if ((await count()) !== total) problems.push("le rôle plateforme ne voit pas les lignes");
   } finally {
     await db.query("ROLLBACK");
   }

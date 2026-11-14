@@ -66,15 +66,71 @@ jobs:
       name: production
       url: https://app.rappelbeauty.com
 
+    timeout-minutes: 40
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Deploy placeholder
-        run: |
-          echo "Production deploy — artefact build + redémarrage rolling."
-          echo "Rollback : redéployer le tag/commit précédent (sans migration destructive)."
-          echo "Cloudflare : www / app / admin → origine Next.js"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: Health check post-deploy
+      - name: Installer Railway CLI
+        run: npm install -g @railway/cli@5.74.0
+
+      # Rollback : dans Railway, redéployer le déploiement réussi précédent.
+      # Ne pas lancer migrate reset. Les migrations déjà appliquées restent en place.
+      - name: Déployer l’instantané du commit
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
         run: |
-          echo "curl -f https://app.rappelbeauty.com/api/health/ || exit 1"
+          set -euo pipefail
+          if [ -z "${RAILWAY_TOKEN}" ]; then
+            echo "::error::Secret RAILWAY_TOKEN absent sur l'environnement GitHub production. Enregistrez un jeton de projet Railway limité à cet environnement. Ne définissez pas RAILWAY_API_TOKEN en même temps."
+            exit 1
+          fi
+          if [ -n "${RAILWAY_API_TOKEN:-}" ]; then
+            echo "::error::RAILWAY_TOKEN et RAILWAY_API_TOKEN sont tous les deux définis. Railway n'en accepte qu'un."
+            exit 1
+          fi
+          if [ -z "${RAILWAY_SERVICE}" ]; then
+            echo "::error::Variable RAILWAY_SERVICE absente. Indiquez le service Next.js, pas PostgreSQL ni Redis."
+            exit 1
+          fi
+          railway up --ci --yes --service "${RAILWAY_SERVICE}" --message "production ${GITHUB_SHA}"
+
+      - name: Contrôle de santé post-déploiement
+        env:
+          HEALTH_BASE_URL: ${{ vars.HEALTH_BASE_URL }}
+          ORIGIN_SECRET: ${{ secrets.ORIGIN_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${HEALTH_BASE_URL}" ]; then
+            echo "::error::Variable HEALTH_BASE_URL absente sur l'environnement production."
+            exit 1
+          fi
+          base="${HEALTH_BASE_URL%/}"
+          case "${base}" in
+            http://*|https://*) ;;
+            *)
+              echo "::error::HEALTH_BASE_URL doit être une URL absolue http(s)."
+              exit 1
+              ;;
+          esac
+          curl_args=(-sS --max-time 15)
+          if [ -n "${ORIGIN_SECRET}" ]; then
+            curl_args+=(-H "x-rappel-origin: ${ORIGIN_SECRET}")
+          fi
+          for i in $(seq 1 36); do
+            code=$(curl "${curl_args[@]}" -o /tmp/health.json -w "%{http_code}" "${base}/api/health/" || echo "000")
+            body=$(cat /tmp/health.json 2>/dev/null || true)
+            echo "try=${i} http=${code} body=${body}"
+            if [ "${code}" = "200" ] && printf '%s' "${body}" | grep -q '"database":"ok"'; then
+              echo "Santé confirmée sur ${base}/api/health/"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Santé non confirmée sur ${base}/api/health/ après le déploiement."
+          exit 1

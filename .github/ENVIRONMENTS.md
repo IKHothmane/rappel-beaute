@@ -41,6 +41,15 @@ Même liste, **valeurs totalement différentes** :
 - Autres secrets cryptographiques
 - Bucket S3 dédié production
 
+Déploiement réel (`production.yml`) :
+
+| Secret / variable | Rôle |
+|-------------------|------|
+| `RAILWAY_TOKEN` | Jeton de **projet** Railway, limité à l’environnement de production. Ne pas définir `RAILWAY_API_TOKEN` dans le même job. |
+| `RAILWAY_SERVICE` | **Variable** : nom du service Next.js. Jamais PostgreSQL ni Redis. |
+| `ORIGIN_SECRET` | Optionnel. Envoyé en `x-rappel-origin` si l’origine l’exige. |
+| `HEALTH_BASE_URL` | **Variable** déjà listée plus bas. La sonde appelle `${HEALTH_BASE_URL}/api/health/` et exige `database: ok`. |
+
 ## Variables (non secrètes)
 
 Dans chaque environment, onglet **Variables** :

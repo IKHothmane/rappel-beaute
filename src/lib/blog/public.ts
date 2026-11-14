@@ -1,14 +1,11 @@
-import { BLOG_DRAFTS } from "@/lib/blog/articles";
-import type { BlogArticle } from "@/lib/blog/types";
+import "server-only";
+import { listPublishedArticles } from "@/lib/db/blog";
 
-/** Catalogue public demandé pour la vitrine, indépendant du stockage administratif. */
-export const PUBLIC_BLOG_ARTICLES: BlogArticle[] = BLOG_DRAFTS.map((article) => ({
-  ...article,
-  status: "published",
-  publishedAt: "2026-11-13T00:00:00.000Z",
-  // La mise à disposition est demandée par le propriétaire ; aucun faux compte de relecteur.
-  reviewedBy: null,
-}));
+/**
+ * Vitrine : uniquement les articles relus et publiés dans le stockage éditorial.
+ * Les brouillons du code restent des propositions. Retirer un article dans
+ * l’administration (statut brouillon, sans relecteur) le retire aussi d’ici.
+ */
 export async function publishedArticles() {
-  return PUBLIC_BLOG_ARTICLES;
+  return listPublishedArticles();
 }

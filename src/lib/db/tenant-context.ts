@@ -13,7 +13,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
  */
 export type TenantScope =
   | { kind: "tenant"; organizationId: string | null }
-  | { kind: "public" | "platform" | "job"; reason: string };
+  | { kind: "public"; reason: string; organizationId?: string }
+  | { kind: "platform" | "job"; reason: string };
 
 type RlsSetting = { kind: "off" } | { kind: "all" } | { kind: "list"; ids: Set<string> };
 
@@ -52,6 +53,21 @@ export function runAsJob<T>(reason: string, fn: () => T): T {
  * Fixe l'institut de la requête en cours, appelé par le contrôle de session.
  * La portée est mutable : un contrôle `await` dans une fonction appelée reste visible de la route.
  */
+/**
+ * Annonce l'institut d'une route publique sans changer de rôle PostgreSQL.
+ * La preuve HMAC limite ensuite les lectures à cet institut.
+ */
+export function bindPublicInstitute(organizationId: string | null | undefined): void {
+  const scope = storage.getStore();
+  if (!scope || scope.kind !== "public") return;
+  const next = organizationId?.trim() || "";
+  if (!next) return;
+  if (scope.organizationId && scope.organizationId !== next) {
+    throw new TenantContextError("Institut différent dans une même requête.");
+  }
+  scope.organizationId = next;
+}
+
 export function bindOrganization(organizationId: string | null | undefined): void {
   const scope = storage.getStore();
   if (!scope) return;

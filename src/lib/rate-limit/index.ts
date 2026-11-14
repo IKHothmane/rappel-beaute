@@ -6,6 +6,31 @@ type MemoryBucket = { count: number; resetAt: number };
 
 const memoryBuckets = new Map<string, MemoryBucket>();
 const memoryIdempotency = new Map<string, number>();
+let cleanupTimer: ReturnType<typeof setInterval> | undefined;
+
+/** Remove expired fallback entries, including keys that are never requested again. */
+export function pruneExpiredRateLimits(now = Date.now()): number {
+  let removed = 0;
+  for (const [key, bucket] of memoryBuckets) {
+    if (bucket.resetAt <= now) {
+      memoryBuckets.delete(key);
+      removed += 1;
+    }
+  }
+  for (const [key, until] of memoryIdempotency) {
+    if (until <= now) {
+      memoryIdempotency.delete(key);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
+function startFallbackCleanup(): void {
+  if (cleanupTimer) return;
+  cleanupTimer = setInterval(() => pruneExpiredRateLimits(), 60_000);
+  cleanupTimer.unref?.();
+}
 
 type RateLimitConfig = {
   key: string;
@@ -26,6 +51,7 @@ function effectiveLimit(config: RateLimitConfig): number {
 }
 
 function checkMemory(config: RateLimitConfig, limit: number): RateLimitResult {
+  startFallbackCleanup();
   const now = Date.now();
   const existing = memoryBuckets.get(config.key);
 
@@ -106,6 +132,8 @@ export async function consumeDimensions(
 }
 
 export function resetRateLimitsForTests(): void {
+  if (cleanupTimer) clearInterval(cleanupTimer);
+  cleanupTimer = undefined;
   memoryBuckets.clear();
   memoryIdempotency.clear();
 }
@@ -127,6 +155,7 @@ export async function claimIdempotency(key: string, ttlSec: number): Promise<boo
   }
   const now = Date.now();
   const until = memoryIdempotency.get(key);
+  startFallbackCleanup();
   if (until && until > now) return false;
   memoryIdempotency.set(key, now + ttlSec * 1000);
   return true;

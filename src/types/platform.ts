@@ -4,7 +4,7 @@ export type { PlanCode, SubscriptionStatus };
 export type SubscriptionPlan = PlanCode;
 export { PLAN_LABEL } from "@/types/subscription";
 
-export type PlatformRole = "SUPER_ADMIN" | "SUPPORT";
+export type PlatformRole = "SUPER_ADMIN";
 
 export type OrganizationStatus = "ACTIVE" | "SUSPENDED" | "ARCHIVED";
 

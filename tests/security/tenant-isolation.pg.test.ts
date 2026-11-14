@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Client, Pool } from "pg";
-import { runAsJob, runInScope, bindOrganization, TenantContextError } from "@/lib/db/tenant-context";
+import { runAsJob, runInScope, bindOrganization, bindPublicInstitute, TenantContextError } from "@/lib/db/tenant-context";
 import { withTenantIsolation } from "@/lib/db/tenant-pool";
 
 /**
@@ -9,16 +9,22 @@ import { withTenantIsolation } from "@/lib/db/tenant-pool";
  */
 const adminUrl = process.env.RLS_TEST_DATABASE_URL ?? "";
 const localOnly = /@(127\.0\.0\.1|localhost)[:/]/.test(adminUrl);
+if (localOnly && !process.env.RLS_CONTEXT_KEY) {
+  process.env.RLS_CONTEXT_KEY = "local-rls-context-key-000000000000";
+}
 const A = "rls_test_a";
 const B = "rls_test_b";
 const PASSWORD = "local-test-only-password-000";
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function appUrl(): string {
+function roleUrl(role: string): string {
   const url = new URL(adminUrl);
-  url.username = "rappel_app";
+  url.username = role;
   url.password = PASSWORD;
   return url.toString();
+}
+function appUrl(): string {
+  return roleUrl("rappel_app");
 }
 
 describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
@@ -47,6 +53,17 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
     admin = new Client({ connectionString: adminUrl });
     await admin.connect();
     await admin.query(`ALTER ROLE rappel_app LOGIN PASSWORD '${PASSWORD}'`);
+    for (const role of ["rappel_platform", "rappel_public", "rappel_job"]) {
+      await admin.query(`ALTER ROLE ${role} LOGIN PASSWORD '${PASSWORD}'`);
+    }
+    process.env.RAPPEL_PLATFORM_DATABASE_URL = roleUrl("rappel_platform");
+    process.env.RAPPEL_PUBLIC_DATABASE_URL = roleUrl("rappel_public");
+    process.env.RAPPEL_JOB_DATABASE_URL = roleUrl("rappel_job");
+    await admin.query(
+      `INSERT INTO app_private.context_key(id, value) VALUES (1, $1)
+       ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value`,
+      [process.env.RLS_CONTEXT_KEY],
+    );
     await admin.query(`DELETE FROM "Organization" WHERE id IN ('${A}','${B}')`);
     await admin.query(`INSERT INTO "Organization"(id,name,slug,"updatedAt") VALUES ('${A}','A','${A}',now()),('${B}','B','${B}',now())`);
     for (const org of [A, B]) {
@@ -81,7 +98,7 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
   it("le rôle réel ne peut ni changer de rôle ni contourner les règles", async () => {
     const raw = new Client({ connectionString: appUrl() });
     await raw.connect();
-    for (const sql of [`SET ROLE postgres`, `SET SESSION AUTHORIZATION postgres`, `ALTER TABLE "Customer" DISABLE ROW LEVEL SECURITY`, `DROP POLICY tenant_isolation ON "Customer"`, `TRUNCATE "Customer"`, `CREATE TABLE zz(a int)`, `SET session_replication_role = replica`]) {
+    for (const sql of [`SET ROLE postgres`, `SET ROLE rappel_platform`, `SET ROLE rappel_public`, `SET ROLE rappel_job`, `SET SESSION AUTHORIZATION postgres`, `ALTER TABLE "Customer" DISABLE ROW LEVEL SECURITY`, `DROP POLICY tenant_isolation ON "Customer"`, `TRUNCATE "Customer"`, `CREATE TABLE zz(a int)`, `SET session_replication_role = replica`]) {
       await expect(raw.query(sql), sql).rejects.toBeTruthy();
     }
     await raw.end();
@@ -105,11 +122,11 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
   it("refuse un accès sans portée en mode all, l'autorise en mode liste", async () => {
     await expect(pool.query("SELECT 1")).rejects.toBeInstanceOf(TenantContextError);
     process.env.RLS_ENFORCE = A;
-    expect(await orgs()).toBe(`${A},${B}`);
+    expect(await orgs()).toBe("");
   });
 
   it("laisse les accès explicitement autorisés traverser", async () => {
-    expect(await runInScope({ kind: "public", reason: "t" }, () => orgs())).toBe(`${A},${B}`);
+    expect(await runInScope({ kind: "public", reason: "t" }, () => orgs())).toBe("");
     expect(await runInScope({ kind: "platform", reason: "t" }, () => orgs())).toBe(`${A},${B}`);
     expect(await runAsJob("t", () => orgs())).toBe(`${A},${B}`);
   });
@@ -117,14 +134,27 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
   it("n'applique le filtre qu'aux instituts listés", async () => {
     process.env.RLS_ENFORCE = A;
     expect(await tenant(A, () => orgs())).toBe(A);
-    expect(await tenant(B, () => orgs())).toBe(`${A},${B}`);
+    expect(await tenant(B, () => orgs())).toBe(B);
   });
 
-  it("isolation vide avec le rôle limité : comportement identique", async () => {
+  it("le rôle institut ne voit pas les autres, même isolation applicative vide", async () => {
     process.env.RLS_ENFORCE = "";
-    expect(await tenant(A, () => orgs())).toBe(`${A},${B}`);
-    expect(await orgs()).toBe(`${A},${B}`);
-    expect((await pool.query(`UPDATE "Customer" SET notes='z' WHERE id='rls_test_c_${B}'`)).rowCount).toBe(1);
+    expect(await tenant(A, () => orgs())).toBe(A);
+    expect(await orgs()).toBe("");
+    expect((await pool.query(`UPDATE "Customer" SET notes='z' WHERE id='rls_test_c_${B}'`)).rowCount).toBe(0);
+    await tenant(A, async () => {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(`SELECT set_config('app.rls_bypass', 'on', true)`);
+        expect((await client.query(`SELECT "organizationId" o FROM "Customer" WHERE id LIKE 'rls_test_%' ORDER BY 1`)).rows.map((row) => row.o).join()).toBe("");
+        await client.query(`SELECT set_config('app.current_org', $1, true)`, [B]);
+        expect((await client.query(`SELECT count(*)::int n FROM "Customer" WHERE id LIKE 'rls_test_%'`)).rows[0].n).toBe(0);
+        await client.query("ROLLBACK");
+      } finally {
+        client.release();
+      }
+    });
   });
 
   it("le superutilisateur reste en accès direct, sans transaction ajoutée", async () => {
@@ -138,7 +168,7 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
     await Promise.all(
       Array.from({ length: 400 }, async (_, i) => {
         const org = i % 3 === 0 ? A : i % 3 === 1 ? B : null;
-        const want = org ?? `${A},${B}`;
+        const want = org ?? "";
         const run = async () => {
           if (i % 2) return orgs();
           const c = await pool.connect();
@@ -167,7 +197,7 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
     expect(await tenant(A, () => orgs(one))).toBe(A);
     expect(await tenant(B, backend)).toBe(first);
     process.env.RLS_ENFORCE = "";
-    expect(await runInScope({ kind: "public", reason: "t" }, () => orgs(one))).toBe(`${A},${B}`);
+    expect(await runInScope({ kind: "public", reason: "t" }, () => orgs(one))).toBe("");
   });
 
   it("le contexte disparaît à la fin de la transaction sur la même connexion", async () => {
@@ -251,6 +281,273 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
     await killOthers(name);
     await wait(200);
     expect(await tenant(B, () => orgs(p))).toBe(B);
+  });
+
+  it("réserve le journal plateforme au contexte qui peut le prouver", async () => {
+    await admin.query(`DELETE FROM "PlatformAuditLog" WHERE id LIKE 'rls_test_audit%'`);
+    await admin.query(
+      `INSERT INTO "PlatformAuditLog"(id, "organizationId", "entityType", "entityId", action)
+       VALUES ('rls_test_audit', $1, 'Organization', $1, 'RLS_TEST')`,
+      [A],
+    );
+    const countAudit = async (p: Pool = pool) =>
+      (await p.query(`SELECT count(*)::int n FROM "PlatformAuditLog" WHERE id LIKE 'rls_test_audit%'`)).rows[0].n as number;
+
+    const raw = new Client({ connectionString: appUrl() });
+    await raw.connect();
+    expect((await raw.query(`SELECT current_user u`)).rows[0].u).toBe("rappel_app");
+    expect((await raw.query(`SELECT rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user`)).rows[0].bypass).toBe(false);
+    await expect(raw.query(`SELECT count(*)::int n FROM "PlatformAuditLog"`)).rejects.toMatchObject({ code: "42501" });
+    await expect(
+      raw.query(
+        `INSERT INTO "PlatformAuditLog"(id, "entityType", "entityId", action) VALUES ('rls_test_audit_raw', 'Organization', $1, 'RLS_TEST')`,
+        [A],
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+    await expect(raw.query(`SELECT value FROM app_private.context_key`)).rejects.toBeTruthy();
+    await expect(raw.query(`ALTER TABLE "PlatformAuditLog" DISABLE ROW LEVEL SECURITY`)).rejects.toBeTruthy();
+    await expect(raw.query(`DROP POLICY platform_audit_read ON "PlatformAuditLog"`)).rejects.toBeTruthy();
+    await raw.query("BEGIN");
+    await raw.query(
+      `SELECT set_config('app.scope', 'platform', true),
+              set_config('app.rls_bypass', 'on', true),
+              set_config('app.scope_proof', repeat('ab', 32), true)`,
+    );
+    await expect(raw.query(`SELECT count(*)::int n FROM "PlatformAuditLog"`)).rejects.toMatchObject({ code: "42501" });
+    await raw.query("ROLLBACK");
+    await raw.end();
+
+    await tenant(A, async () => {
+      expect((await pool.query(`SELECT current_user u`)).rows[0].u).toBe("rappel_app");
+      await expect(countAudit()).rejects.toMatchObject({ code: "42501" });
+      await expect(
+        pool.query(
+          `INSERT INTO "PlatformAuditLog"(id, "organizationId", "entityType", "entityId", action) VALUES ('rls_test_audit_tenant', $1, 'Organization', $1, 'RLS_TEST')`,
+          [A],
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(
+          `SELECT set_config('app.scope', 'platform', true), set_config('app.rls_bypass', 'on', true)`,
+        );
+        await expect(client.query(`SELECT count(*)::int n FROM "PlatformAuditLog" WHERE id LIKE 'rls_test_audit%'`)).rejects.toMatchObject({ code: "42501" });
+        await client.query("ROLLBACK");
+      } finally {
+        client.release();
+      }
+    });
+
+    await runInScope({ kind: "public", reason: "connexion" }, async () => {
+      expect((await pool.query(`SELECT current_user u`)).rows[0].u).toBe("rappel_public");
+      await expect(countAudit()).rejects.toMatchObject({ code: "42501" });
+      await pool.query(
+        `INSERT INTO "PlatformAuditLog" (
+          id, "platformUserId", "platformUserName", "organizationId",
+          "entityType", "entityId", action, "before", "after"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb)`,
+        ["rls_test_audit_public", null, "Ada Admin", null, "PlatformUser", "login", "LOGIN", null, null],
+      );
+    });
+    await runAsJob("tâche", async () => {
+      expect((await pool.query(`SELECT current_user u`)).rows[0].u).toBe("rappel_job");
+      await expect(countAudit()).rejects.toMatchObject({ code: "42501" });
+      await expect(
+        pool.query(
+          `INSERT INTO "PlatformAuditLog"(id, "entityType", "entityId", action) VALUES ('rls_test_audit_job', 'Organization', $1, 'RLS_TEST')`,
+          [A],
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+    });
+    await runInScope({ kind: "platform", reason: "back-office" }, async () => {
+      expect((await pool.query(`SELECT current_user u`)).rows[0].u).toBe("rappel_platform");
+      expect(await countAudit()).toBe(2);
+      expect((await pool.query(`SELECT action FROM "PlatformAuditLog" WHERE id = 'rls_test_audit_public'`)).rows[0].action).toBe("LOGIN");
+      await expect(pool.query(`UPDATE "PlatformAuditLog" SET action = 'CHANGED' WHERE id = 'rls_test_audit'`)).rejects.toMatchObject({ code: "42501" });
+      await expect(pool.query(`DELETE FROM "PlatformAuditLog" WHERE id = 'rls_test_audit'`)).rejects.toMatchObject({ code: "42501" });
+    });
+    expect((await admin.query(`SELECT current_user u`)).rows[0].u).toBe("postgres");
+    expect(Number((await admin.query(`SELECT count(*)::int n FROM "PlatformAuditLog" WHERE id LIKE 'rls_test_audit%'`)).rows[0].n)).toBe(2);
+    await admin.query(`DELETE FROM "PlatformAuditLog" WHERE id LIKE 'rls_test_audit%'`);
+  });
+
+  it("branche webhook, blog et tâche sur leur rôle, et ferme les tables nouvelles", async () => {
+    const blog = makePool(1, appUrl());
+    await runInScope({ kind: "public", reason: "webhook" }, async () => {
+      expect((await pool.query(`SELECT current_user u`)).rows[0].u).toBe("rappel_public");
+      expect((await blog.query(`SELECT current_user u`)).rows[0].u).toBe("rappel_public");
+    });
+    await runAsJob("relance", async () => {
+      expect((await pool.query(`SELECT current_user u`)).rows[0].u).toBe("rappel_job");
+    });
+
+    const previous = await admin.query<{ data: unknown }>(`SELECT data FROM "PlatformConfig" WHERE id = 'default'`);
+    await admin.query(
+      `INSERT INTO "PlatformUser"(id, email, "firstName", "lastName", "createdAt", "updatedAt")
+       VALUES ('rls_probe_user', 'rls-probe@example.test', 'Ada', 'Probe', NOW(), NOW())
+       ON CONFLICT (id) DO NOTHING`,
+    );
+    await admin.query(
+      `INSERT INTO "PlatformConfig"(id, data, "updatedAt")
+       VALUES ('default', '{"billing":{"publicPrice":490},"probe":"rls"}'::jsonb, NOW())
+       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, "updatedAt" = NOW()`,
+    );
+    await admin.query(
+      `INSERT INTO "BlogArticle"(slug, content, status, "reviewedBy", "publishedAt")
+       VALUES
+         ('rls-probe-draft', '{}'::jsonb, 'draft', NULL, NULL),
+         ('rls-probe-live', '{}'::jsonb, 'published', 'Ada', NOW() - INTERVAL '1 minute')
+       ON CONFLICT (slug) DO UPDATE SET status = EXCLUDED.status, "reviewedBy" = EXCLUDED."reviewedBy", "publishedAt" = EXCLUDED."publishedAt"`,
+    );
+    await admin.query(`CREATE TABLE "RlsPrivilegeProbe" (id int)`);
+    try {
+      await runInScope({ kind: "public", reason: "prix public" }, async () => {
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "PlatformUser" WHERE id = 'rls_probe_user'`)).rows[0].n)).toBe(1);
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "PlatformConfig"`)).rows[0].n)).toBe(0);
+        expect(Number((await pool.query(`SELECT app_public_price() n`)).rows[0].n)).toBe(490);
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "BlogArticle" WHERE slug = 'rls-probe-draft'`)).rows[0].n)).toBe(0);
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "BlogArticle" WHERE slug = 'rls-probe-live'`)).rows[0].n)).toBe(1);
+        expect((await pool.query(`UPDATE "PlatformUser" SET "firstName" = 'Non' WHERE id = 'rls_probe_user'`)).rowCount).toBe(0);
+      });
+      expect((await admin.query(`SELECT "firstName" AS name FROM "PlatformUser" WHERE id = 'rls_probe_user'`)).rows[0].name).toBe("Ada");
+      await tenant(A, async () => {
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "PlatformUser"`)).rows[0].n)).toBe(0);
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "BlogArticle" WHERE slug LIKE 'rls-probe-%'`)).rows[0].n)).toBe(0);
+        await expect(pool.query(`INSERT INTO "PlatformUser"(id, email, "firstName", "lastName", "createdAt", "updatedAt") VALUES ('rls_probe_app', 'rls-app@example.test', 'A', 'B', NOW(), NOW())`)).rejects.toMatchObject({ code: "42501" });
+        await expect(pool.query(`SELECT * FROM "RlsPrivilegeProbe"`)).rejects.toMatchObject({ code: "42501" });
+      });
+      await runAsJob("tâche", async () => {
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "PlatformUser"`)).rows[0].n)).toBe(0);
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "PlatformConfig"`)).rows[0].n)).toBe(0);
+      });
+      await runInScope({ kind: "platform", reason: "back-office" }, async () => {
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "PlatformConfig"`)).rows[0].n)).toBe(1);
+        expect(Number((await pool.query(`SELECT count(*)::int n FROM "BlogArticle" WHERE slug = 'rls-probe-draft'`)).rows[0].n)).toBe(1);
+      });
+
+      const definers = await admin.query<{ proname: string }>(
+        `SELECT p.proname FROM pg_proc p
+         JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE p.prosecdef AND n.nspname IN ('public', 'app_private')
+         ORDER BY 1`,
+      );
+      expect(definers.rows.map((row) => row.proname)).toEqual([
+        "app_public_card_by_token",
+        "app_public_customer_by_phone",
+        "app_public_price",
+        "app_scope_granted",
+        "org_proof_ok",
+      ]);
+      const members = await admin.query(
+        `SELECT r.rolname FROM pg_auth_members m
+         JOIN pg_roles r ON r.oid = m.member
+         WHERE r.rolname IN ('rappel_app', 'rappel_public', 'rappel_platform', 'rappel_job')`,
+      );
+      expect(members.rows).toEqual([]);
+      const flags = await admin.query<{ rolname: string; rolsuper: boolean; rolbypassrls: boolean; rolinherit: boolean }>(
+        `SELECT rolname, rolsuper, rolbypassrls, rolinherit FROM pg_roles
+         WHERE rolname IN ('rappel_app', 'rappel_public', 'rappel_platform', 'rappel_job')
+         ORDER BY 1`,
+      );
+      expect(flags.rows).toEqual([
+        { rolname: "rappel_app", rolsuper: false, rolbypassrls: false, rolinherit: true },
+        { rolname: "rappel_job", rolsuper: false, rolbypassrls: false, rolinherit: true },
+        { rolname: "rappel_platform", rolsuper: false, rolbypassrls: false, rolinherit: true },
+        { rolname: "rappel_public", rolsuper: false, rolbypassrls: false, rolinherit: true },
+      ]);
+    } finally {
+      await admin.query(`DROP TABLE IF EXISTS "RlsPrivilegeProbe"`);
+      await admin.query(`DELETE FROM "BlogArticle" WHERE slug LIKE 'rls-probe-%'`);
+      await admin.query(`DELETE FROM "PlatformUser" WHERE id LIKE 'rls_probe_%'`);
+      if (previous.rowCount) {
+        await admin.query(`UPDATE "PlatformConfig" SET data = $1::jsonb WHERE id = 'default'`, [JSON.stringify(previous.rows[0].data)]);
+      } else {
+        await admin.query(`DELETE FROM "PlatformConfig" WHERE id = 'default'`);
+      }
+    }
+  });
+
+  it("refuse la caisse à une route publique ou à une tâche, et isole les instituts", async () => {
+    const customers = async () => orgs();
+    await runInScope({ kind: "public", reason: "route compromise" }, async () => {
+      expect(await customers()).toBe("");
+      await expect(pool.query(`SELECT count(*)::int n FROM "CashRegisterSession"`)).rejects.toMatchObject({ code: "42501" });
+      await expect(pool.query(`SELECT count(*)::int n FROM "Payment"`)).rejects.toMatchObject({ code: "42501" });
+      await expect(pool.query(`SELECT count(*)::int n FROM "CustomerNote"`)).rejects.toMatchObject({ code: "42501" });
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(
+          `SELECT set_config('app.current_org', $1, true), set_config('app.rls_bypass', 'on', true)`,
+          [B],
+        );
+        expect((await client.query(`SELECT "organizationId" o FROM "Customer" WHERE id LIKE 'rls_test_%'`)).rows).toEqual([]);
+        await client.query("ROLLBACK");
+      } finally {
+        client.release();
+      }
+    });
+    await runInScope({ kind: "public", reason: "réservation" }, async () => {
+      bindPublicInstitute(A);
+      expect(await customers()).toBe(A);
+      await expect(pool.query(`SELECT count(*)::int n FROM "CashRegisterSession"`)).rejects.toMatchObject({ code: "42501" });
+    });
+    await runAsJob("relance", async () => {
+      expect(await customers()).toBe(`${A},${B}`);
+      await expect(pool.query(`SELECT count(*)::int n FROM "CashRegisterSession"`)).rejects.toMatchObject({ code: "42501" });
+      await expect(pool.query(`SELECT count(*)::int n FROM "Invoice"`)).rejects.toMatchObject({ code: "42501" });
+    });
+    const raw = new Client({ connectionString: roleUrl("rappel_public") });
+    await raw.connect();
+    expect((await raw.query(`SELECT count(*)::int n FROM "Customer" WHERE id LIKE 'rls_test_%'`)).rows[0].n).toBe(0);
+    await expect(raw.query(`SELECT count(*)::int n FROM "Payment"`)).rejects.toMatchObject({ code: "42501" });
+    await raw.query("BEGIN");
+    await raw.query(
+      `SELECT set_config('app.current_org', $1, true),
+              set_config('app.rls_bypass', 'on', true),
+              set_config('app.scope', 'tenant', true),
+              set_config('app.scope_proof', repeat('ab', 32), true)`,
+      [B],
+    );
+    expect((await raw.query(`SELECT count(*)::int n FROM "Customer" WHERE id LIKE 'rls_test_%'`)).rows[0].n).toBe(0);
+    await raw.query("ROLLBACK");
+    await raw.end();
+  });
+
+  it("fait passer l'institut pilote par rappel_app et laisse l'autre sur postgres", async () => {
+    const saved = {
+      pilot: process.env.RLS_PILOT,
+      org: process.env.RLS_PILOT_ORG,
+      url: process.env.RLS_PILOT_DATABASE_URL,
+    };
+    process.env.RLS_PILOT = "on";
+    process.env.RLS_PILOT_ORG = A;
+    process.env.RLS_PILOT_DATABASE_URL = appUrl();
+    const base = makePool(2, adminUrl);
+    const roleOf = (org: string) =>
+      runInScope({ kind: "tenant", organizationId: org }, async () =>
+        (await base.query(`SELECT current_user AS u`)).rows[0].u as string,
+      );
+    try {
+      expect(await roleOf(A)).toBe("rappel_app");
+      expect(await runInScope({ kind: "tenant", organizationId: A }, () => orgs(base))).toBe(A);
+      expect(await roleOf(B)).toBe("postgres");
+      expect(await runInScope({ kind: "tenant", organizationId: B }, () => orgs(base))).toBe(`${A},${B}`);
+      await runInScope({ kind: "public", reason: "page", organizationId: A }, async () => {
+        expect((await base.query(`SELECT current_user AS u`)).rows[0].u).toBe("rappel_public");
+      });
+      await runAsJob("relance", async () => {
+        expect((await base.query(`SELECT current_user AS u`)).rows[0].u).toBe("rappel_job");
+      });
+    } finally {
+      if (saved.pilot === undefined) delete process.env.RLS_PILOT;
+      else process.env.RLS_PILOT = saved.pilot;
+      if (saved.org === undefined) delete process.env.RLS_PILOT_ORG;
+      else process.env.RLS_PILOT_ORG = saved.org;
+      if (saved.url === undefined) delete process.env.RLS_PILOT_DATABASE_URL;
+      else process.env.RLS_PILOT_DATABASE_URL = saved.url;
+    }
   });
 
   it("une requête en cours coupée échoue proprement, le pool repart", async () => {

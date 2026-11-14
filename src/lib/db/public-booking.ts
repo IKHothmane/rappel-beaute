@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { bindPublicInstitute } from "@/lib/db/tenant-context";
 import { type PoolClient } from "pg";
 import { getOrgIdBySlug, isExclusionViolation, rowToDto, type AppointmentRow } from "@/lib/db/appointments";
 import { findOrCreateCustomerByPhone } from "@/lib/db/customers";
@@ -82,6 +83,7 @@ export async function resolvePublicStaffRef(
   ref: string,
   serviceId?: string | null,
 ): Promise<PublicStaffItem | null> {
+  bindPublicInstitute(organizationId);
   if (!serviceId) {
     const { items } = await listStaff(organizationId, {
       page: 1,
@@ -132,6 +134,7 @@ function matchStaffRef(
 }
 
 export async function getPublicServices(organizationId: string): Promise<PublicServiceItem[]> {
+  bindPublicInstitute(organizationId);
   const { rows } = await pool.query<{
     id: string;
     name: string;
@@ -306,6 +309,7 @@ export async function getPublicStaffForService(
   serviceId: string,
   date?: string,
 ): Promise<PublicStaffItem[]> {
+  bindPublicInstitute(organizationId);
   const service = await getServiceOption(organizationId, serviceId);
   if (!service) return [];
 
@@ -323,6 +327,7 @@ export async function getPublicDayClosedStatus(
   organizationId: string,
   date: string,
 ): Promise<{ closed: boolean; reason: string | null }> {
+  bindPublicInstitute(organizationId);
   const { start: dayStart, end: dayEnd } = dayBounds(date);
   const { items } = await listStaff(organizationId, {
     page: 1,
@@ -347,6 +352,7 @@ export async function getPublicAvailabilitySlots(
     excludeAppointmentId?: string;
   },
 ): Promise<PublicAvailabilitySlot[]> {
+  bindPublicInstitute(organizationId);
   const service = await getServiceOption(organizationId, opts.serviceId);
   if (!service) throw new Error("SERVICE_NOT_FOUND");
 
@@ -455,6 +461,7 @@ export async function planPublicSlot(
   startAt: Date;
   endAt: Date;
 }> {
+  bindPublicInstitute(organizationId);
   const service = await getServiceOption(organizationId, input.serviceId);
   if (!service || !service.active) throw new Error("SERVICE_NOT_FOUND");
 
@@ -498,6 +505,7 @@ export async function insertOrganizationBooking(
   input: PublicBookingInput,
   options?: { customerId?: string },
 ): Promise<PublicBookingResult> {
+  bindPublicInstitute(organizationId);
   const subCheck = await enforcePublicBookingLimits(organizationId);
   if (!subCheck.ok) {
     if (subCheck.code === "LIMIT_REACHED") throw new Error("LIMIT_REACHED");
@@ -691,6 +699,7 @@ export async function createPublicBooking(
 ): Promise<PublicBookingResult> {
   const org = await resolveOrganizationBySlug(slug);
   if (!org) throw new Error("ORG_NOT_FOUND");
+  bindPublicInstitute(org.id);
 
   const client = await pool.connect();
   try {

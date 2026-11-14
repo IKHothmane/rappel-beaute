@@ -66,10 +66,16 @@ export async function getPlanById(id: string): Promise<PlanDto | null> {
 
 /** Prix affiché sur la vitrine : valeur publiée, sinon le prix du plan Institut. */
 export async function getShowcaseMonthlyPrice(): Promise<number> {
-  const { getPlatformSettings } = await import("@/lib/db/platform-settings");
-  const settings = await getPlatformSettings();
-  const raw = settings.billing.publicPrice;
-  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 0) return Math.round(raw);
+  try {
+    const { rows } = await pool.query<{ price: string | null }>(`SELECT app_public_price()::text AS price`);
+    const raw = rows[0]?.price;
+    if (raw != null && raw !== "") {
+      const value = Number(raw);
+      if (Number.isFinite(value) && value >= 0) return Math.round(value);
+    }
+  } catch {
+    // Avant la migration, le prix publié n'est pas encore isolé du reste de la configuration.
+  }
   const plan = await getPlanByCode("INSTITUT");
   if (plan && Number.isFinite(plan.price) && plan.price >= 0) return Math.round(plan.price);
   return PUBLIC_OFFER.price;

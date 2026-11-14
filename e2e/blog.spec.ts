@@ -11,7 +11,10 @@ test("blog : parcours public et recherche sur mobile", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Le blog des professionnels de la beauté", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".bl-library .bl-card")).toHaveCount(110);
+  await expect(
+    page.getByRole("heading", { name: "Les premiers guides sont en préparation", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".bl-library .bl-card")).toHaveCount(0);
   await page.getByLabel("Rechercher un guide").fill("fidélité");
   await page.getByLabel("Thème", { exact: true }).selectOption("fidelite");
   await page.getByRole("button", { name: "Rechercher", exact: true }).click();
@@ -28,14 +31,14 @@ test("blog : URL inconnue et API protégées", async ({ request }) => {
   expect((await request.post("/api/admin/blog/questions/", { data: {} })).status()).toBe(401);
 });
 
-test("110 public guides with their own URLs", async ({ request, page }) => {
+test("les brouillons restent hors sitemap et répondent 404", async ({ request, page }) => {
   const xml = await (await request.get("/sitemap.xml")).text();
-  for (const guide of BLOG_DRAFTS) expect(xml).toContain(`/blog/${guide.slug}/`);
+  expect(xml).toContain("/blog/");
+  for (const guide of BLOG_DRAFTS) expect(xml).not.toContain(`/blog/${guide.slug}/`);
   for (const guide of [BLOG_DRAFTS[0], BLOG_DRAFTS[55], BLOG_DRAFTS[109]]) {
-    expect((await request.get(`/blog/${guide.slug}/`)).status()).toBe(200);
+    expect((await request.get(`/blog/${guide.slug}/`)).status()).toBe(404);
   }
-  await page.goto(`/blog/${BLOG_DRAFTS[0].slug}/`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(BLOG_DRAFTS[0].title);
+  await page.goto("/blog/");
   await expect(page.locator(".marketing-site > header")).toBeVisible();
   await expect(page.locator(".marketing-site footer")).toBeVisible();
   await expect(page.locator(".bl-review-note")).toHaveCount(0);

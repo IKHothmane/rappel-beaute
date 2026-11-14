@@ -444,10 +444,13 @@ export async function resolveLoyaltyCardToken(organizationId: string, raw: strin
 export async function getPublicCardByToken(token: string): Promise<CardProgress | null> {
   const normalized = token.trim().toUpperCase();
   if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(normalized)) return null;
-  const { rows } = await pool.query<{ id: string; organizationId: string }>(
-    `SELECT id, "organizationId" FROM "LoyaltyCard" WHERE "publicToken" = $1 AND status = 'ACTIVE'`,
+  const located = await pool.query<{ id: string; organizationId: string }>(
+    `SELECT id, "organizationId" FROM app_public_card_by_token($1)`,
     [normalized],
   );
+  const { bindPublicInstitute } = await import("@/lib/db/tenant-context");
+  if (located.rows[0]) bindPublicInstitute(located.rows[0].organizationId);
+  const { rows } = located;
   if (!rows[0]) return null;
   return loadCardProgress(rows[0].id, rows[0].organizationId);
 }

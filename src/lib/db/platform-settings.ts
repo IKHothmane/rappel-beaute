@@ -1,4 +1,3 @@
-import { hashPassword, verifyPassword } from "@/lib/auth/crypto";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { isAutomaticWhatsAppEnabled, getMetaWhatsAppConfig } from "@/lib/whatsapp/send";
 import { pool } from "@/lib/db/pool";
@@ -282,35 +281,6 @@ export async function updatePlatformProfile(input: {
   }).catch(() => undefined);
 
   return (await getPlatformProfile(input.id))!;
-}
-
-export async function changePlatformPassword(input: {
-  id: string;
-  currentPassword: string;
-  newPassword: string;
-  platformUserName: string;
-}): Promise<void> {
-  if (input.newPassword.length < 8) throw new Error("WEAK_PASSWORD");
-  const { rows } = await pool.query<{ passwordHash: string | null }>(
-    `SELECT "passwordHash" FROM "PlatformUser" WHERE id = $1 LIMIT 1`,
-    [input.id],
-  );
-  const hash = rows[0]?.passwordHash;
-  if (!hash || !verifyPassword(input.currentPassword, hash)) {
-    throw new Error("BAD_PASSWORD");
-  }
-  await pool.query(
-    `UPDATE "PlatformUser" SET "passwordHash" = $1, "updatedAt" = NOW() WHERE id = $2`,
-    [hashPassword(input.newPassword), input.id],
-  );
-  await writePlatformAuditLog({
-    platformUserId: input.id,
-    platformUserName: input.platformUserName,
-    entityType: "PlatformUser",
-    entityId: input.id,
-    action: "UPDATE",
-    after: { passwordChanged: true },
-  }).catch(() => undefined);
 }
 
 export function getIntegrationsStatus() {

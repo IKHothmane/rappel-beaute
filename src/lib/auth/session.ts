@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { getSessionSecret, signJwt, verifyJwt } from "@/lib/auth/crypto";
 import { payloadToSession } from "@/lib/auth/session-payload";
-import { SESSION_COOKIE, SESSION_MAX_AGE_SEC, type AppSessionUser, type PlatformSessionUser, type SessionPayload, type SessionUser } from "@/lib/auth/types";
+import { PLATFORM_SESSION_MAX_AGE_SEC, SESSION_COOKIE, SESSION_MAX_AGE_SEC, type AppSessionUser, type PlatformSessionUser, type SessionPayload, type SessionUser } from "@/lib/auth/types";
 
 function buildToken(user: SessionUser, maxAgeSec: number): string {
   return signJwt(user, getSessionSecret(), maxAgeSec);
@@ -46,10 +46,15 @@ function sessionCookieOptions(token: string, maxAgeSec: number | null = SESSION_
   };
 }
 
-/** maxAgeSec null = cookie de session navigateur (perdu à la fermeture). */
+/**
+ * maxAgeSec null = cookie de session navigateur (perdu à la fermeture).
+ * Une session plateforme ne dépasse jamais PLATFORM_SESSION_MAX_AGE_SEC, quel que soit l'appelant.
+ */
 export function createSessionCookie(user: SessionUser, maxAgeSec: number | null = SESSION_MAX_AGE_SEC) {
-  const token = buildToken(user, maxAgeSec ?? SESSION_MAX_AGE_SEC);
-  return sessionCookieOptions(token, maxAgeSec);
+  const ceiling = user.scope === "platform" ? PLATFORM_SESSION_MAX_AGE_SEC : SESSION_MAX_AGE_SEC;
+  const effective = maxAgeSec == null ? null : Math.min(maxAgeSec, ceiling);
+  const token = buildToken(user, effective ?? ceiling);
+  return sessionCookieOptions(token, effective);
 }
 
 export function clearSessionCookie() {

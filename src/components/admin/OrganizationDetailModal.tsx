@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   BadgeCheck,
   BarChart3,
   CreditCard,
+  CalendarDays,
+  History,
   KeyRound,
   Loader2,
   MapPin,
@@ -13,16 +14,16 @@ import {
   Pencil,
   Phone,
   Play,
+  ShieldUser,
   Trash2,
   UserRound,
   Users,
   Wrench,
   X,
 } from "lucide-react";
-import { adminHref } from "@/lib/admin/href";
 import { cn } from "@/lib/utils";
 import { PLAN_LABEL } from "@/types/platform";
-import type { OrganizationDetail, OrganizationListItem } from "@/types/platform";
+import type { OrganizationDetail, OrganizationListItem, OrganizationPaymentHistoryEntry } from "@/types/platform";
 import { StatusPill, type OrganizationCard } from "./OrganizationsView";
 
 type Insights = {
@@ -33,7 +34,34 @@ type Insights = {
   revenuePreviousMonth: number;
 };
 
-type Payload = { organization: OrganizationDetail; insights: Insights };
+type Payload = {
+  organization: OrganizationDetail;
+  insights: Insights;
+  paymentHistory?: OrganizationPaymentHistoryEntry[];
+  /** false quand l'historique n'a pas pu être chargé côté serveur. */
+  paymentHistoryAvailable?: boolean;
+};
+
+/** Sections ciblables depuis les anciens liens `?tab=...` de la fiche détaillée. */
+export type OrganizationDetailTab = "users" | "subscription" | "stats";
+
+type OrgUser = { id: string; firstName: string; lastName: string; email: string; role: string; status: string };
+
+const USER_ROLE_LABEL: Record<string, string> = {
+  OWNER: "Propriétaire",
+  MANAGER: "Responsable",
+  STAFF: "Employé",
+  EMPLOYEE: "Employé",
+};
+
+const SUB_STATUS_LABEL: Record<string, string> = {
+  TRIAL: "Essai",
+  ACTIVE: "Actif",
+  PAST_DUE: "Impayé",
+  PAUSED: "En pause",
+  CANCELLED: "Annulé",
+  EXPIRED: "Expiré",
+};
 
 const CHIP_COLORS = [
   "bg-indigo-100 text-indigo-800",
@@ -47,6 +75,29 @@ const AVATAR_COLORS = ["bg-[#3B63D6]", "bg-pink-500", "bg-emerald-500", "bg-ambe
 
 function mad(n: number) {
   return `${Math.round(n).toLocaleString("fr-MA")} DH`;
+}
+
+function formatPaymentAmount(amount: number, currency?: string | null) {
+  const code = currency?.trim().toUpperCase();
+  if (!code || code === "MAD" || code === "DH") return mad(amount);
+  try {
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: code, maximumFractionDigits: 0 }).format(amount);
+  } catch {
+    return `${Math.round(amount).toLocaleString("fr-FR")} ${code}`;
+  }
+}
+
+function formatPeriodDate(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("fr-FR", { timeZone: "Africa/Casablanca", day: "numeric", month: "short", year: "numeric" });
+}
+
+function formatPaymentPeriod(start?: string | null, end?: string | null) {
+  const from = start ? formatPeriodDate(start) : null;
+  const to = end ? formatPeriodDate(end) : null;
+  if (from && to) return `${from} – ${to}`;
+  return from ? `Dès le ${from}` : to ? `Jusqu’au ${to}` : null;
 }
 
 function formatLongDate(iso: string) {
@@ -89,7 +140,7 @@ function RevenueChart({ series }: { series: Insights["revenueSeries"] }) {
     <div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="h-[140px] w-full"
+        className="h-[100px] w-full"
         role="img"
         aria-label={`Revenus mensuels : ${series.map((p) => `${p.label} ${mad(p.value)}`).join(", ")}`}
       >
@@ -120,15 +171,21 @@ function Section({
   icon: Icon,
   title,
   action,
+  id,
   children,
 }: {
   icon: typeof MapPin;
   title: string;
   action?: React.ReactNode;
+  id?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex gap-4 border-t border-slate-200 py-5">
+    <section
+      id={id}
+      tabIndex={id ? -1 : undefined}
+      className="mb-3 flex break-inside-avoid gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-3 outline-none focus-visible:ring-2 focus-visible:ring-[#3B63D6]/40"
+    >
       <Icon className="mt-0.5 h-6 w-6 shrink-0 text-slate-500" aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-3">
@@ -143,17 +200,13 @@ function Section({
 
 type FormState = { name: string; phone: string; email: string; address: string; city: string };
 type OwnerForm = { firstName: string; lastName: string; email: string; phone: string };
-type SubForm = { price: string; periodEnd: string; quick: string };
+type SubForm = { price: string; periodEnd: string; quick: string; payment: "" | "paid" | "unpaid" };
 
 /** Raccourcis de période : prolongation (mois) ou période d’essai (jours, repart d’aujourd’hui). */
 const QUICK_PERIODS: { value: string; label: string; kind: "extend" | "trial"; amount: number }[] = [
-  { value: "m1", label: "+ 1 mois", kind: "extend", amount: 1 },
-  { value: "m3", label: "+ 3 mois", kind: "extend", amount: 3 },
-  { value: "m6", label: "+ 6 mois", kind: "extend", amount: 6 },
-  { value: "y1", label: "+ 1 année", kind: "extend", amount: 12 },
-  { value: "t7", label: "Période d’essai — 7 jours", kind: "trial", amount: 7 },
-  { value: "t14", label: "Période d’essai — 14 jours", kind: "trial", amount: 14 },
-  { value: "t30", label: "Période d’essai — 30 jours", kind: "trial", amount: 30 },
+  { value: "m1", label: "1 mois", kind: "extend", amount: 1 },
+  { value: "y1", label: "1 an", kind: "extend", amount: 12 },
+  { value: "t15", label: "Période d’essai — 15 jours", kind: "trial", amount: 15 },
 ];
 
 function quickPreview(quick: string, currentEnd: string): Date | null {
@@ -167,6 +220,18 @@ function quickPreview(quick: string, currentEnd: string): Date | null {
   return d;
 }
 type ResetResult = { temporaryPassword: string; messageTemplate: string };
+
+function ListPages({ page, count, size, onChange }: { page: number; count: number; size: number; onChange: (page: number) => void }) {
+  const pages = Math.ceil(count / size);
+  if (pages <= 1) return null;
+  return (
+    <nav aria-label="Pagination de la liste" className="mt-3 flex items-center justify-between gap-2 text-xs">
+      <button type="button" disabled={page === 0} onClick={() => onChange(page - 1)} className="h-9 rounded-lg border px-3 font-semibold disabled:opacity-40">Précédent</button>
+      <span aria-live="polite">{page + 1} / {pages}</span>
+      <button type="button" disabled={page >= pages - 1} onClick={() => onChange(page + 1)} className="h-9 rounded-lg border px-3 font-semibold disabled:opacity-40">Suivant</button>
+    </nav>
+  );
+}
 
 const INPUT_CLASS =
   "h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm text-slate-900 outline-none focus:border-[#3B63D6] focus:ring-2 focus:ring-[#3B63D6]/20";
@@ -187,12 +252,18 @@ function EditLink({ onClick, disabled, children }: { onClick: () => void; disabl
 export function OrganizationDetailModal({
   organizationId,
   fallback,
+  initialEdit = false,
+  initialTab,
   onClose,
   onChanged,
   onDeleted,
 }: {
   organizationId: string;
   fallback: OrganizationCard | OrganizationListItem | null;
+  /** Ouvre directement le formulaire de modification (ancien `?edit=1`). */
+  initialEdit?: boolean;
+  /** Fait défiler et place le focus sur la section voulue (ancien `?tab=...`). */
+  initialTab?: OrganizationDetailTab;
   onClose: () => void;
   onChanged: () => void;
   onDeleted: () => void;
@@ -202,6 +273,9 @@ export function OrganizationDetailModal({
   const [data, setData] = useState<Payload | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mode, setMode] = useState<"view" | "edit" | "confirm-delete">("view");
+  const [historyPage, setHistoryPage] = useState(0);
+  const [servicesPage, setServicesPage] = useState(0);
+  const [teamPage, setTeamPage] = useState(0);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({ name: "", phone: "", email: "", address: "", city: "" });
@@ -211,8 +285,12 @@ export function OrganizationDetailModal({
   const [resetResult, setResetResult] = useState<ResetResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [subEdit, setSubEdit] = useState(false);
-  const [subForm, setSubForm] = useState<SubForm>({ price: "", periodEnd: "", quick: "" });
+  const [subForm, setSubForm] = useState<SubForm>({ price: "", periodEnd: "", quick: "", payment: "" });
   const [sectionError, setSectionError] = useState<{ section: "owner" | "sub"; message: string } | null>(null);
+  const [users, setUsers] = useState<OrgUser[] | null>(null);
+  const [usersError, setUsersError] = useState<string | null>(null);
+  const [usersPage, setUsersPage] = useState(0);
+  const deepLinkApplied = useRef(false);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -227,20 +305,40 @@ export function OrganizationDetailModal({
     void load();
   }, [load]);
 
-  // Échap, blocage du scroll, focus initial
+  const loadUsers = useCallback(async () => {
+    setUsersError(null);
+    try {
+      const result = await api<{ users?: OrgUser[] }>(`/api/admin/organizations/${organizationId}/users/`);
+      setUsers(result.users ?? []);
+    } catch (e) {
+      setUsersError(e instanceof Error ? e.message : "Utilisateurs indisponibles.");
+    }
+  }, [organizationId]);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
+
+  // Échap, blocage du scroll, focus initial. onClose passe par une ref : un nouveau
+  // callback du parent ne doit ni réinstaller l'effet ni redonner le focus à « Fermer ».
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, []);
 
   const org = data?.organization ?? null;
   const insights = data?.insights ?? null;
@@ -336,6 +434,8 @@ export function OrganizationDetailModal({
       price: String(org.subscription.price),
       periodEnd: org.subscription.renewAt.slice(0, 10),
       quick: "",
+      // Préremplit avec l'état actuel : l'admin ne change que ce qui a changé.
+      payment: org.subscription.paid ? "paid" : "unpaid",
     });
     setSectionError(null);
     setSubEdit(true);
@@ -354,22 +454,24 @@ export function OrganizationDetailModal({
       setSectionError({ section: "sub", message: "Indiquez une date de fin de période." });
       return;
     }
+    if (!subForm.payment) {
+      setSectionError({ section: "sub", message: "Sélectionnez si la période est payée ou non payée." });
+      return;
+    }
     const post = (body: Record<string, unknown>) =>
       api(`/api/admin/subscriptions/${sub.id}/`, { method: "POST", body: JSON.stringify(body) });
     void runSection(
       "sub",
       async () => {
-        if (price !== sub.price) await post({ action: "set-price", price });
-        const quick = QUICK_PERIODS.find((p) => p.value === subForm.quick);
-        if (quick) {
-          await post(
-            quick.kind === "trial"
-              ? { action: "demo-trial", days: quick.amount }
-              : { action: "extend", months: quick.amount },
-          );
-        } else if (subForm.periodEnd !== sub.renewAt.slice(0, 10)) {
-          await post({ action: "set-period", periodEnd: new Date(`${subForm.periodEnd}T23:59:59`).toISOString() });
-        }
+        await post({
+          action: "save-period",
+          quick: subForm.quick,
+          paid: subForm.payment === "paid",
+          price,
+          periodEnd: subForm.periodEnd === sub.renewAt.slice(0, 10)
+            ? sub.renewAt
+            : new Date(`${subForm.periodEnd}T23:59:59`).toISOString(),
+        });
       },
       async () => {
         setSubEdit(false);
@@ -391,6 +493,24 @@ export function OrganizationDetailModal({
     setActionError(null);
     setMode("edit");
   }
+
+  // Liens profonds (?edit=1, ?tab=...) : appliqués une seule fois, quand les détails sont chargés.
+  const detailsReady = Boolean(org && insights);
+  useEffect(() => {
+    if (!detailsReady || deepLinkApplied.current) return;
+    deepLinkApplied.current = true;
+    if (initialEdit) {
+      startEdit();
+      return;
+    }
+    if (!initialTab) return;
+    const target = document.getElementById(`${titleId}-${initialTab}`);
+    if (!target) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    target.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailsReady]);
 
   function saveEdit(e: React.FormEvent) {
     e.preventDefault();
@@ -449,10 +569,10 @@ export function OrganizationDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative my-auto w-full max-w-[1000px] rounded-3xl bg-white p-5 shadow-2xl sm:p-8 lg:p-10"
+        className="relative my-auto w-full max-w-[1600px] rounded-3xl bg-white p-4 shadow-2xl sm:p-6"
       >
-        <header className="mb-6 flex items-center justify-between">
-          <h2 id={titleId} className="text-2xl font-bold text-[#0F172A] sm:text-3xl">
+        <header className="mb-3 flex items-center justify-between">
+          <h2 id={titleId} className="text-xl font-bold text-[#0F172A] sm:text-2xl">
             Détails du salon
           </h2>
           <button
@@ -535,7 +655,7 @@ export function OrganizationDetailModal({
           </form>
         ) : (
           <>
-            <div className="mt-4">
+            <div className="mt-4 columns-1 gap-3 md:columns-2 xl:columns-4">
               <Section icon={MapPin} title="Adresse">
                 <p className="text-base font-bold text-slate-900">
                   {[org.address, org.city].filter(Boolean).join(", ") || "Non renseignée"}
@@ -555,7 +675,7 @@ export function OrganizationDetailModal({
               >
                 {ownerEdit ? (
                   <form onSubmit={saveOwner} className="mt-1 space-y-3">
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <label className="block">
                         <span className="mb-1 block text-xs font-medium text-slate-500">Prénom</span>
                         <input
@@ -714,9 +834,16 @@ export function OrganizationDetailModal({
                 )}
               </Section>
 
+              <Section icon={CalendarDays} title="Date d’inscription">
+                <p className="text-sm font-semibold text-slate-900">
+                  <time dateTime={org.createdAt}>{formatLongDate(org.createdAt)}</time>
+                </p>
+              </Section>
+
               <Section
                 icon={CreditCard}
                 title="Abonnement"
+                id={`${titleId}-subscription`}
                 action={
                   org.subscription && !subEdit ? (
                     <EditLink onClick={startSubEdit} disabled={busy}>
@@ -776,7 +903,7 @@ export function OrganizationDetailModal({
                         </span>
                       ) : null}
                     </label>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <label className="block">
                         <span className="mb-1 block text-xs font-medium text-slate-500">Prix / mois (DH)</span>
                         <input
@@ -804,6 +931,18 @@ export function OrganizationDetailModal({
                         />
                       </label>
                     </div>
+                    <label className="block">
+                      <span className="mb-1 block text-xs font-medium text-slate-500">Paiement de la période</span>
+                      <select
+                        required
+                        value={subForm.payment}
+                        onChange={(e) => setSubForm((f) => ({ ...f, payment: e.target.value as SubForm["payment"] }))}
+                        className={INPUT_CLASS}
+                      >
+                        <option value="paid">Payé</option>
+                        <option value="unpaid">Non payé</option>
+                      </select>
+                    </label>
                     {sectionError?.section === "sub" ? (
                       <p role="alert" className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
                         {sectionError.message}
@@ -833,7 +972,11 @@ export function OrganizationDetailModal({
                     <strong className="font-bold">{PLAN_LABEL[org.subscription.plan]}</strong> ·{" "}
                     {mad(org.subscription.price)} / mois
                     <span className="block text-xs text-slate-500">
-                      {org.subscription.paid ? "Payé" : "En attente de paiement"} · renouvellement le{" "}
+                      Statut : {SUB_STATUS_LABEL[org.subscription.status] ?? org.subscription.status} ·{" "}
+                      {org.subscription.paid ? "Payé" : "En attente de paiement"}
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      Début le {formatLongDate(org.subscription.startAt)} · renouvellement le{" "}
                       {formatLongDate(org.subscription.renewAt)}
                     </span>
                   </p>
@@ -842,10 +985,47 @@ export function OrganizationDetailModal({
                 )}
               </Section>
 
+              <Section icon={History} title="Historique des paiements">
+                <p className="mb-3 text-xs text-slate-500">Confirmations de paiement enregistrées dans l’admin · 50 derniers événements</p>
+                {data?.paymentHistoryAvailable === false ? (
+                  <p role="status" className="mb-2 text-xs text-slate-500">Historique indisponible</p>
+                ) : null}
+                {data?.paymentHistory?.length ? (
+                  <ul className="space-y-2">
+                    {data.paymentHistory.slice(historyPage * 3, historyPage * 3 + 3).map((payment) => {
+                      const hasAmount = typeof payment.amount === "number" && Number.isFinite(payment.amount);
+                      const period = formatPaymentPeriod(payment.periodStart, payment.periodEnd);
+                      return (
+                        <li key={payment.id} className="flex flex-wrap items-start justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2.5">
+                          <div className="min-w-0">
+                            <p className={cn("text-sm font-semibold", payment.paid ? "text-emerald-700" : "text-amber-700")}>
+                              {payment.paid ? "Paiement confirmé" : "Marqué non payé"}
+                              {hasAmount ? (
+                                <span className="font-semibold text-slate-900"> · {formatPaymentAmount(payment.amount as number, payment.currency)}</span>
+                              ) : null}
+                            </p>
+                            {period ? <p className="break-words text-xs text-slate-500">Période : {period}</p> : null}
+                            {payment.recordedBy ? <p className="break-words text-xs text-slate-500">Par {payment.recordedBy}</p> : null}
+                          </div>
+                          <time dateTime={payment.recordedAt} className="text-xs text-slate-500">
+                            {new Date(payment.recordedAt).toLocaleString("fr-FR", {
+                              timeZone: "Africa/Casablanca", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+                            })}
+                          </time>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : data?.paymentHistoryAvailable === false ? null : (
+                  <p className="text-sm text-slate-500">Aucun paiement enregistré dans l’historique.</p>
+                )}
+                <ListPages page={historyPage} count={data?.paymentHistory?.length ?? 0} size={3} onChange={setHistoryPage} />
+              </Section>
+
               <Section icon={Wrench} title="Services">
                 {insights.services.length ? (
                   <ul className="flex flex-wrap gap-1.5">
-                    {insights.services.map((s, i) => (
+                    {insights.services.slice(servicesPage * 8, servicesPage * 8 + 8).map((s, i) => (
                       <li
                         key={`${s.name}-${i}`}
                         className={cn("rounded-md px-3 py-1.5 text-sm font-semibold", CHIP_COLORS[i % CHIP_COLORS.length])}
@@ -857,12 +1037,13 @@ export function OrganizationDetailModal({
                 ) : (
                   <p className="text-sm text-slate-500">Aucun service actif</p>
                 )}
+                <ListPages page={servicesPage} count={insights.services.length} size={8} onChange={setServicesPage} />
               </Section>
 
               <Section icon={Users} title="Équipe">
                 {insights.team.length ? (
                   <ul className="flex flex-wrap gap-x-5 gap-y-3">
-                    {insights.team.map((m, i) => (
+                    {insights.team.slice(teamPage * 4, teamPage * 4 + 4).map((m, i) => (
                       <li key={`${m.name}-${i}`} className="flex w-24 flex-col items-center text-center">
                         <span
                           className={cn(
@@ -881,11 +1062,57 @@ export function OrganizationDetailModal({
                 ) : (
                   <p className="text-sm text-slate-500">Aucun membre actif</p>
                 )}
+                <ListPages page={teamPage} count={insights.team.length} size={4} onChange={setTeamPage} />
               </Section>
 
-              <Section icon={BarChart3} title="Statistiques">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="rounded-xl bg-slate-100 p-5">
+              <Section
+                icon={ShieldUser}
+                title="Utilisateurs"
+                id={`${titleId}-users`}
+              >
+                {usersError ? (
+                  <p role="alert" className="text-sm text-red-700">
+                    {usersError}{" "}
+                    <button type="button" onClick={() => void loadUsers()} className="font-semibold underline">
+                      Réessayer
+                    </button>
+                  </p>
+                ) : users === null ? (
+                  <p role="status" className="flex items-center gap-2 text-sm text-slate-500">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Chargement…
+                  </p>
+                ) : users.length ? (
+                  <ul className="divide-y divide-slate-200">
+                    {users.slice(usersPage * 5, usersPage * 5 + 5).map((u) => (
+                      <li key={u.id} className="flex items-start justify-between gap-3 py-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {u.firstName} {u.lastName}
+                          </p>
+                          <p className="truncate text-xs text-slate-500">
+                            {u.email} · {USER_ROLE_LABEL[u.role] ?? u.role}
+                          </p>
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold",
+                            u.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600",
+                          )}
+                        >
+                          {u.status === "ACTIVE" ? "Actif" : u.status === "DISABLED" ? "Désactivé" : u.status}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-500">Aucun utilisateur</p>
+                )}
+                <ListPages page={usersPage} count={users?.length ?? 0} size={5} onChange={setUsersPage} />
+              </Section>
+
+              <Section icon={BarChart3} title="Statistiques" id={`${titleId}-stats`}>
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="rounded-xl bg-slate-100 p-3">
                     <p className="text-xs text-slate-500">Chiffre d’affaires ({monthLabel})</p>
                     <p className="mt-1 text-3xl font-bold tracking-tight text-[#0F172A]">
                       {mad(insights.revenueThisMonth)}
@@ -904,7 +1131,7 @@ export function OrganizationDetailModal({
                       <span className="mt-1.5 inline-block text-[11px] text-slate-400">Pas de mois précédent</span>
                     )}
                   </div>
-                  <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                  <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
                     <p className="text-xs font-medium text-slate-600">Revenus mensuels</p>
                     <RevenueChart series={insights.revenueSeries} />
                     <p className="text-[10px] text-slate-400">Moy. mensuelle : {mad(monthlyAvg)}</p>
@@ -915,12 +1142,18 @@ export function OrganizationDetailModal({
                     ["Clients", org.stats.customers],
                     ["Rendez-vous", org.stats.appointments],
                     ["Employés", org.stats.staff],
+                    ["Produits", org.stats.products],
+                    ["Utilisateurs", org.usersCount],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-lg bg-slate-50 py-4">
+                    <div key={label} className="rounded-lg bg-slate-50 py-2">
                       <dd className="text-2xl font-bold text-slate-900">{Number(value).toLocaleString("fr-FR")}</dd>
                       <dt className="text-xs text-slate-500">{label}</dt>
                     </div>
                   ))}
+                  <div className="rounded-lg bg-slate-50 px-1 py-2">
+                    <dd className="break-words text-lg font-bold leading-8 text-slate-900">{mad(org.stats.revenue)}</dd>
+                    <dt className="text-xs text-slate-500">CA total</dt>
+                  </div>
                 </dl>
               </Section>
             </div>
@@ -999,16 +1232,10 @@ export function OrganizationDetailModal({
                   {actionError}
                 </p>
               ) : null}
-              <Link
-                href={adminHref(`/organizations/${org.id}/`)}
-                className="mt-3 block text-center text-sm font-semibold text-[#3B63D6] hover:underline"
-              >
-                Ouvrir la fiche complète →
-              </Link>
             </div>
 
             <p className="mt-4 text-center text-xs text-slate-500">
-              Créé le {formatLongDate(org.createdAt)} · ID : {org.slug}
+              ID : {org.slug}
             </p>
           </>
         )}

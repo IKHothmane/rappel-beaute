@@ -532,6 +532,7 @@ model Organization {
   assistantSettings     AssistantSettings?
   assistantWidgetSessions AssistantWidgetSession[]
   assistantCustomerSessions AssistantCustomerSession[]
+  assistantVerificationChallenges AssistantVerificationChallenge[]
   assistantConversations AssistantConversation[]
   assistantActions      AssistantAction[]
   googleCalendarConnection GoogleCalendarConnection?
@@ -958,6 +959,8 @@ model Appointment {
   @@index([resourceId, startAt])
   @@index([customerId])
   @@index([promotionId])
+  @@index([customerId, status])
+  @@index([serviceId])
 }
 
 model GoogleCalendarConnection {
@@ -993,6 +996,8 @@ model Payment {
   giftCardId      String?
   /// Numéro de passage journalier : JJ/MM-NNN (ex. 08/11-001)
   ticketNumber    String?
+  /// Jour calendaire (Africa/Casablanca) du numéro de passage : le numéro JJ/MM n'a pas d'année
+  ticketDay       DateTime?     @default(dbgenerated("((now() AT TIME ZONE 'Africa/Casablanca'::text))::date")) @db.Date
   notes           String?
   userId          String?
   idempotencyKey  String?
@@ -1010,7 +1015,7 @@ model Payment {
   cashTxns     CashRegisterTransaction[]
 
   @@unique([organizationId, idempotencyKey])
-  @@unique([organizationId, ticketNumber])
+  @@unique([organizationId, ticketDay, ticketNumber])
   @@index([organizationId])
   @@index([appointmentId])
   @@index([customerId])
@@ -1018,7 +1023,6 @@ model Payment {
   @@index([giftCardId])
   @@index([parentPaymentId])
   @@index([organizationId, paidAt])
-  @@index([organizationId, ticketNumber])
 }
 
 /// Séquence atomique JJ/MM-NNN par organisation / jour (Africa/Casablanca)
@@ -1384,6 +1388,7 @@ model InvoiceItem {
 
   @@index([invoiceId])
   @@index([productId])
+  @@index([serviceId])
 }
 
 /// Vente POS produits (41.23) — orchestre Invoice + Payment + InventoryMovement SALE
@@ -1412,6 +1417,8 @@ model PosSale {
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, createdAt])
   @@index([organizationId, customerId])
+  @@index([customerId])
+  @@index([paymentId])
 }
 
 /// Paramètres commissions org (taux produit global)
@@ -1463,6 +1470,7 @@ model CommissionRecord {
   @@index([posSaleId])
   @@index([organizationId, createdAt])
   @@index([organizationId, serviceId])
+  @@index([serviceId])
 }
 
 /// Correction historisée (ex. remboursement) — jamais supprimer le CommissionRecord
@@ -1593,6 +1601,7 @@ model NotificationPreference {
 
   @@unique([organizationId, customerId])
   @@index([organizationId])
+  @@index([customerId])
 }
 
 model WebPushSubscription {
@@ -1612,6 +1621,7 @@ model WebPushSubscription {
   customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, customerId])
+  @@index([customerId])
 }
 
 /// File d'envoi cliente. L'idempotence empêche un double envoi du même événement.
@@ -1656,6 +1666,7 @@ model PushAccessGrant {
   customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, customerId])
+  @@index([customerId])
 }
 
 model AuditLog {
@@ -1807,6 +1818,7 @@ model GoogleWalletMessage {
   @@unique([organizationId, idempotencyKey])
   @@index([loyaltyCardId, sentAt])
   @@index([status, createdAt])
+  @@index([customerId])
 }
 
 model AppleWalletPass {
@@ -1876,6 +1888,7 @@ model LoyaltyEvent {
   @@index([organizationId])
   @@index([loyaltyCardId, validatedAt])
   @@index([customerId])
+  @@index([serviceId])
 }
 
 model LoyaltyVisitReward {
@@ -1899,6 +1912,7 @@ model LoyaltyVisitReward {
 
   @@index([organizationId])
   @@index([loyaltyCardId, status])
+  @@index([customerId])
 }
 
 /// Code institut à usage unique. Il autorise un passage exceptionnel, il n'est pas le QR public.
@@ -2082,6 +2096,7 @@ model Promotion {
   @@index([organizationId, status])
   @@index([organizationId, deletedAt])
   @@index([serviceId])
+  @@index([customerId])
 }
 
 model PromotionUsage {
@@ -2257,6 +2272,7 @@ model ReactivationSnooze {
   @@index([organizationId])
   @@index([organizationId, customerId])
   @@index([organizationId, snoozedUntil])
+  @@index([customerId])
 }
 
 model Campaign {
@@ -2390,6 +2406,8 @@ model WaitingListEntry {
   @@index([organizationId, serviceId, preferredDate])
   @@index([organizationId, customerId])
   @@index([staffId])
+  @@index([customerId])
+  @@index([serviceId])
 }
 
 /// Funnel réservation publique (QR / tracking) — stats réelles uniquement
@@ -2471,6 +2489,8 @@ model Review {
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
   @@index([organizationId, staffId])
+  @@index([customerId])
+  @@index([staffId])
 }
 
 model ReviewStaffRating {
@@ -2498,6 +2518,8 @@ model PlatformUser {
   passwordHash String?
   locale       String             @default("fr")
   timezone     String             @default("Africa/Casablanca")
+  /// Incrémenté pour invalider les sessions déjà émises de ce compte plateforme
+  sessionVersion Int              @default(0)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -2620,6 +2642,9 @@ model PlatformAuditLog {
   platformUserId   String?
   platformUserName String?
   organizationId   String?
+  /// Copie de l'institut à l'écriture, sans clé étrangère : survit à la suppression de l'institut
+  /// (organizationId passe à NULL par ON DELETE SET NULL). Lire COALESCE(organizationId, organizationIdSnapshot).
+  organizationIdSnapshot String?
   entityType       String
   entityId         String
   action           String
@@ -2631,6 +2656,7 @@ model PlatformAuditLog {
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
+  @@index([organizationIdSnapshot])
   @@index([platformUserId])
   @@index([createdAt])
   @@index([action])
@@ -3021,6 +3047,7 @@ model AssistantCustomerSession {
 
   @@index([organizationId, customerId])
   @@index([widgetSessionId])
+  @@index([customerId])
 }
 
 /// Défi OTP. Hors du parcours de réservation public.
@@ -3036,8 +3063,10 @@ model AssistantVerificationChallenge {
   createdAt       DateTime  @default(now())
 
   widgetSession AssistantWidgetSession @relation(fields: [widgetSessionId], references: [id], onDelete: Cascade)
+  organization  Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([widgetSessionId, consumedAt])
+  @@index([organizationId])
 }
 
 model AssistantConversation {

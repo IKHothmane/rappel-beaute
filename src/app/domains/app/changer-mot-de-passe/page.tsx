@@ -55,9 +55,12 @@ export default function ChangePasswordPage() {
   const { refresh, user, logout } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Mot de passe temporaire (premier changement) : pas de mot de passe actuel à saisir.
+  // Changement volontaire : le serveur exige le mot de passe actuel.
   const mustChange = user && isAppSession(user) ? Boolean(user.mustChangePassword) : true;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -68,13 +71,14 @@ export default function ChangePasswordPage() {
     const form = new FormData(e.currentTarget);
     const newPassword = String(form.get("newPassword") ?? "");
     const confirmPassword = String(form.get("confirmPassword") ?? "");
+    const currentPassword = mustChange ? undefined : String(form.get("currentPassword") ?? "");
 
     try {
       const res = await fetch("/api/auth/change-password/", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword, confirmPassword }),
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -122,6 +126,39 @@ export default function ChangePasswordPage() {
           </div>
 
           <form className="space-y-5" onSubmit={onSubmit}>
+            {!mustChange ? (
+              <div>
+                <label
+                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/80"
+                  htmlFor="currentPassword"
+                >
+                  Mot de passe actuel
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-ink/40">
+                    <LockIcon />
+                  </div>
+                  <input
+                    autoComplete="current-password"
+                    className={inputClass}
+                    id="currentPassword"
+                    name="currentPassword"
+                    placeholder="••••••••••••"
+                    required
+                    type={showCurrent ? "text" : "password"}
+                  />
+                  <button
+                    aria-label={showCurrent ? "Masquer le mot de passe actuel" : "Afficher le mot de passe actuel"}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-ink/40 hover:text-ink/70"
+                    onClick={() => setShowCurrent((v) => !v)}
+                    type="button"
+                  >
+                    <EyeIcon off={showCurrent} />
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             <div>
               <label
                 className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/80"

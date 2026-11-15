@@ -1,11 +1,25 @@
 import fs from "fs/promises";
 import path from "path";
 import { getLocalUploadsRoot } from "./local-root";
+import { extensionForMime } from "./image-upload";
 import { isPathInsideRoot } from "./path-guard";
 import type { PutObjectInput, StorageService, StoredObject } from "./types";
 
+/**
+ * Pour un type image connu, l'extension vient du MIME (liste blanche) et non du
+ * nom client : le type servi par /api/storage/local dépend de l'extension.
+ */
+export function safeStorageFilename(filename: string, contentType: string): string {
+  const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const ext = extensionForMime(contentType.toLowerCase());
+  if (!ext) return safe;
+  const dot = safe.lastIndexOf(".");
+  const base = (dot > 0 ? safe.slice(0, dot) : safe).replace(/^\.+/, "") || "file";
+  return `${base}.${ext}`;
+}
+
 function buildKey(input: PutObjectInput): string {
-  const safe = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const safe = safeStorageFilename(input.filename, input.contentType);
   if (input.fixedKey) {
     const fixed = input.fixedKey.replace(/[^a-zA-Z0-9._/-]/g, "_").replace(/\.\./g, "");
     return `${input.category}/${input.organizationId}/${fixed}`;

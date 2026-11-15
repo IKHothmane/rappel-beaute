@@ -1,4 +1,4 @@
-import type { PlanLimitKey } from "@/types/subscription";
+import type { PlanLimitKey, SubscriptionDto } from "@/types/subscription";
 import {
   getOrganizationSubscription,
   getSubscriptionUsage,
@@ -19,10 +19,7 @@ export type LimitCheckResult =
       planName?: string;
     };
 
-async function assertSubscriptionActive(
-  organizationId: string,
-): Promise<LimitCheckResult> {
-  const sub = await getOrganizationSubscription(organizationId);
+function checkSubscriptionActive(sub: SubscriptionDto | null): LimitCheckResult {
   if (!sub) {
     return {
       ok: false,
@@ -42,15 +39,19 @@ async function assertSubscriptionActive(
   return { ok: true };
 }
 
+/**
+ * `loadedSub` : abonnement déjà chargé par l'appelant (évite un rechargement).
+ * `undefined` = charger ici ; `null` = absence d'abonnement déjà constatée.
+ */
 export async function canUseFeature(
   organizationId: string,
   feature: PlanFeatureKey,
+  loadedSub?: SubscriptionDto | null,
 ): Promise<LimitCheckResult> {
-  const active = await assertSubscriptionActive(organizationId);
-  if (!active.ok) return active;
-
-  const sub = await getOrganizationSubscription(organizationId);
-  if (!sub) return active;
+  const sub =
+    loadedSub !== undefined ? loadedSub : await getOrganizationSubscription(organizationId);
+  const active = checkSubscriptionActive(sub);
+  if (!active.ok || !sub) return active;
 
   if (!isFeatureEnabled(sub.features, feature)) {
     return {
@@ -67,13 +68,15 @@ export async function canUseFeature(
 async function checkLimit(
   organizationId: string,
   limit: PlanLimitKey,
+  loadedSub?: SubscriptionDto | null,
 ): Promise<LimitCheckResult> {
-  const active = await assertSubscriptionActive(organizationId);
-  if (!active.ok) return active;
+  const sub =
+    loadedSub !== undefined ? loadedSub : await getOrganizationSubscription(organizationId);
+  const active = checkSubscriptionActive(sub);
+  if (!active.ok || !sub) return active;
 
-  const sub = await getOrganizationSubscription(organizationId);
-  const usage = await getSubscriptionUsage(organizationId);
-  if (!sub || !usage) {
+  const usage = await getSubscriptionUsage(organizationId, sub);
+  if (!usage) {
     return {
       ok: false,
       code: "SUBSCRIPTION_INACTIVE",
@@ -112,20 +115,23 @@ async function checkLimit(
 }
 
 export async function canCreateStaff(organizationId: string): Promise<LimitCheckResult> {
-  const feat = await canUseFeature(organizationId, "staff");
+  const sub = await getOrganizationSubscription(organizationId);
+  const feat = await canUseFeature(organizationId, "staff", sub);
   if (!feat.ok) return feat;
-  return checkLimit(organizationId, "staff");
+  return checkLimit(organizationId, "staff", sub);
 }
 
 export async function canCreateCustomer(organizationId: string): Promise<LimitCheckResult> {
-  const feat = await canUseFeature(organizationId, "customers");
+  const sub = await getOrganizationSubscription(organizationId);
+  const feat = await canUseFeature(organizationId, "customers", sub);
   if (!feat.ok) return feat;
-  return checkLimit(organizationId, "customers");
+  return checkLimit(organizationId, "customers", sub);
 }
 
 export async function canCreateAppointment(organizationId: string): Promise<LimitCheckResult> {
-  const feat = await canUseFeature(organizationId, "agenda");
+  const sub = await getOrganizationSubscription(organizationId);
+  const feat = await canUseFeature(organizationId, "agenda", sub);
   if (!feat.ok) return feat;
-  return checkLimit(organizationId, "appointments");
+  return checkLimit(organizationId, "appointments", sub);
 }
 

@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "context7": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@upstash/context7-mcp@latest"]
+      "command": "node",
+      "args": [
+        "C:/Users/LordOfTHeRings/Desktop/rappel beauty/scripts/dev/mcp-server.mjs",
+        "context7"
+      ]
     },
     "21st": {
       "type": "http",
@@ -12,12 +15,18 @@
       }
     },
     "playwright": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@playwright/mcp@latest"]
+      "command": "node",
+      "args": [
+        "C:/Users/LordOfTHeRings/Desktop/rappel beauty/scripts/dev/mcp-server.mjs",
+        "playwright"
+      ]
     },
     "chrome-devtools": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest"]
+      "command": "node",
+      "args": [
+        "C:/Users/LordOfTHeRings/Desktop/rappel beauty/scripts/dev/mcp-server.mjs",
+        "chrome-devtools"
+      ]
     },
     "github": {
       "type": "http",
@@ -28,22 +37,70 @@
     },
     "prisma": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "prisma", "mcp"]
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "prisma",
+        "mcp"
+      ]
     },
     "sequential-thinking": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-sequential-thinking"]
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
     },
     "memory": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-memory"]
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
     },
-    "figma": { "type": "http", "url": "https://mcp.figma.com/mcp" },
-    "supabase": { "type": "http", "url": "https://mcp.supabase.com/mcp" },
-    "sentry": { "type": "http", "url": "https://mcp.sentry.dev/mcp" },
-    "linear": { "type": "http", "url": "https://mcp.linear.app/mcp" },
-    "notion": { "type": "http", "url": "https://mcp.notion.com/mcp" },
-    "stripe": { "type": "http", "url": "https://mcp.stripe.com" },
-    "firecrawl": { "type": "http", "url": "https://mcp.firecrawl.dev/v2/mcp-oauth" }
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    },
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "stripe": {
+      "type": "http",
+      "url": "https://mcp.stripe.com"
+    },
+    "firecrawl": {
+      "type": "http",
+      "url": "https://mcp.firecrawl.dev/v2/mcp-oauth"
+    },
+    "railway": {
+      "command": "node",
+      "args": [
+        "C:/Users/LordOfTHeRings/Desktop/rappel beauty/scripts/dev/mcp-server.mjs",
+        "railway"
+      ]
+    },
+    "openaiDeveloperDocs": {
+      "type": "http",
+      "url": "https://developers.openai.com/mcp"
+    }
   }
 }

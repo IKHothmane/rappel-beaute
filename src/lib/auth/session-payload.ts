@@ -12,6 +12,8 @@ export function payloadToSession(payload: SessionPayload): SessionUser | null {
       role: payload.role as PlatformRole,
       scope: "platform",
       accountType: "PLATFORM",
+      // Ancien jeton sans version : accepté comme 0, puis ré-émis avec une version explicite.
+      sessionVersion: typeof payload.sessionVersion === "number" ? payload.sessionVersion : 0,
     };
   }
   if (

@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { newId } from "@/lib/db/ids";
 import { bindPublicInstitute } from "@/lib/db/tenant-context";
 import { type PoolClient } from "pg";
 import { getOrgIdBySlug, isExclusionViolation, rowToDto, type AppointmentRow } from "@/lib/db/appointments";
@@ -27,10 +28,6 @@ import type { ResourceAgendaContext } from "@/types/resource";
 import type { ServiceAgendaOption } from "@/types/service";
 import type { StaffAgendaContext } from "@/types/staff";
 import { pool } from "@/lib/db/pool";
-
-function newId(prefix: string) {
-  return `${prefix}_${randomBytes(6).toString("hex")}`;
-}
 
 function newBookingRef(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -564,11 +561,11 @@ export async function insertOrganizationBooking(
 
     await client.query(
       `INSERT INTO "Appointment" (
-        id, "organizationId", "customerId", "serviceId", "staffId", "resourceId",
+        id, "organizationId", "customerId", "serviceId", "serviceNameSnapshot", "staffId", "resourceId",
         "startAt", "endAt", price, deposit, "depositState", "depositDueAt",
         status, source, "attributionSource", notes, "bookingRef", "updatedAt"
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::"DepositState",$12,
+        $1,$2,$3,$4,(SELECT name FROM "Service" WHERE id = $4),$5,$6,$7,$8,$9,$10,$11::"DepositState",$12,
         'PENDING','ONLINE_BOOKING'::"AppointmentSource",$13,$14,$15,NOW()
       )`,
       [

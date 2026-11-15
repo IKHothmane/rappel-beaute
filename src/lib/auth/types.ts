@@ -28,6 +28,11 @@ export type PlatformSessionUser = {
   role: PlatformRole;
   scope: "platform";
   accountType: "PLATFORM";
+  /**
+   * Doit correspondre à PlatformUser.sessionVersion sinon session révoquée.
+   * Absent d'un ancien jeton : traité comme 0 (voir session-payload).
+   */
+  sessionVersion?: number;
 };
 
 export type SessionUser = AppSessionUser | PlatformSessionUser;
@@ -38,7 +43,10 @@ export type SessionPayload = SessionUser & {
 };
 
 export const SESSION_COOKIE = "rappel_session";
+/** Durée de session d'un institut. */
 export const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30;
+/** Durée de session du back-office plateforme (plus courte : comptes à privilèges élevés). */
+export const PLATFORM_SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7;
 
 export type PublicSession = SessionUser;
 

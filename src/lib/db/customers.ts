@@ -17,6 +17,7 @@ import {
 } from "@/types/customer";
 import { normalizePhone } from "@/lib/validation/customer";
 import { pool } from "@/lib/db/pool";
+import { newId } from "@/lib/db/ids";
 
 type DbClient = Pool | PoolClient;
 
@@ -386,7 +387,7 @@ export async function createCustomer(
   input: CreateCustomerInput,
 ): Promise<CustomerDetail> {
   const phone = normalizePhone(input.phone);
-  const id = `cust-${Date.now()}`;
+  const id = newId("cust", "-");
 
   await pool.query(
     `INSERT INTO "Customer" (

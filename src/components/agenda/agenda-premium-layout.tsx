@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
+import { AgendaTutorial } from "@/components/agenda/agenda-tutorial";
 import { Dropdown, type DropdownOption } from "@/components/ui/dropdown";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { staffColor } from "@/components/agenda/staff-colors";
@@ -62,6 +63,8 @@ type AgendaPremiumLayoutProps = {
   onNext: () => void;
   onToday: () => void;
   onCreate: () => void;
+  onTutorialCreate: () => void;
+  onTutorialClose: () => void;
   onAppointmentClick: (id: string) => void;
   onFullscreen?: () => void;
   children: ReactNode;
@@ -237,6 +240,8 @@ export function AgendaPremiumLayout({
   onNext,
   onToday,
   onCreate,
+  onTutorialCreate,
+  onTutorialClose,
   onAppointmentClick,
   onFullscreen,
   children,
@@ -269,7 +274,7 @@ export function AgendaPremiumLayout({
       >
         <div className="relative z-10 flex w-full flex-wrap items-center justify-between gap-4">
           <div className="min-w-0 max-w-xl">
-            <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
+            <h1 data-agenda-tour="intro" className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
               Agenda de l&apos;institut
             </h1>
             <p className="mt-1 max-w-lg text-sm leading-5 text-[#654254]">
@@ -278,10 +283,12 @@ export function AgendaPremiumLayout({
             </p>
           </div>
           <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-2">
+            <AgendaTutorial onOpenCreate={onTutorialCreate} onCloseCreate={onTutorialClose} />
             <GoogleCalendarConnect className="h-11 max-w-[260px] rounded-xl border border-[#F0D9E3] bg-white/90 px-3 shadow-sm backdrop-blur-sm hover:bg-white" />
             <button
               type="button"
               onClick={onCreate}
+              data-agenda-tour="create"
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#AC0E4C] px-5 text-sm font-bold text-white shadow-lg shadow-[#AC0E4C]/20 transition hover:bg-[#820D39]"
             >
               <Plus size={18} />
@@ -292,7 +299,7 @@ export function AgendaPremiumLayout({
       </header>
 
       {/* 2. KPI — 6 cartes */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
+      <div data-agenda-tour="metrics" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
         <StatCard
           label="RDV aujourd'hui"
           value={String(todayCount)}
@@ -352,7 +359,7 @@ export function AgendaPremiumLayout({
         <main className="min-w-0 space-y-3 xl:col-span-9">
           <section className="overflow-hidden rounded-[22px] border border-[#F0DDE5] bg-white shadow-[0_8px_30px_rgba(70,20,40,0.05)]">
             {/* Toolbar période */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0DDE5] px-4 py-3">
+            <div data-agenda-tour="dates" className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0DDE5] px-4 py-3">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -423,7 +430,7 @@ export function AgendaPremiumLayout({
 
             {/* Filtres + légende */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0DDE5] px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
+              <div data-agenda-tour="filters" className="flex flex-wrap items-center gap-2">
                 <FilterSelect
                   label="Praticienne"
                   value={staffFilter}
@@ -488,7 +495,7 @@ export function AgendaPremiumLayout({
               </div>
             </div>
 
-            <div className="min-w-0">{children}</div>
+            <div data-agenda-tour="planning" className="min-w-0">{children}</div>
           </section>
         </main>
 

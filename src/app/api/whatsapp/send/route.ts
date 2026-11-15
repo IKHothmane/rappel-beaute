@@ -12,6 +12,17 @@ import { WHATSAPP_TASK_TYPES, type WhatsAppTaskType } from "@/types/whatsapp";
 import { tenantRoute } from "@/lib/http/route-scope";
 
 /**
+ * Seul message individuel déclenché à la main depuis la fiche cliente (bouton « relancer »,
+ * type REACTIVATION) peut partir sans opt-in marketing. Tout autre type marketing
+ * (PROMOTION, BIRTHDAY, …) exige le consentement, quoi que contienne le corps de la requête.
+ */
+const STAFF_OPT_IN_BYPASS_TYPES: ReadonlySet<WhatsAppTaskType> = new Set<WhatsAppTaskType>(["REACTIVATION"]);
+
+function allowsStaffOptInBypass(type: WhatsAppTaskType): boolean {
+  return STAFF_OPT_IN_BYPASS_TYPES.has(type);
+}
+
+/**
  * POST /api/whatsapp/send
  * Envoi via Meta Cloud API — désactivé par défaut (V1 manuel).
  * Réactivation : WHATSAPP_DIRECT_SEND_ENABLED=true + token Meta.
@@ -74,7 +85,8 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
         type,
         appointmentId,
         attributionSource,
-        allowWithoutMarketingOptIn: raw.staffClick === true,
+        // Dérivé côté serveur : le drapeau `staffClick` du corps n'est plus lu.
+        allowWithoutMarketingOptIn: allowsStaffOptInBypass(type),
       },
       actor,
     );

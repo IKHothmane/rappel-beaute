@@ -156,6 +156,26 @@ export function SaasDashboard() {
     const nextDay = new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
     const dayEnd = businessDateTime(nextDay, "00:00");
 
+    // Les deux vagues partent en parallèle ; chaque requête de la 2e vague gère déjà son erreur (.catch).
+    const secondWave = Promise.all([
+      getAnalyticsServices({ preset: period, compare: false }).catch(() => ({ items: [] })),
+      getAnalyticsStaff({ preset: period, compare: false }).catch(() => ({ items: [] })),
+      getAnalyticsReviews({ preset: period, compare: false }).catch(() => null),
+      getCashRegister().catch(() => null),
+      listBillableAppointments().catch(() => []),
+      getStockKpis().catch(() => null),
+      listSupportTickets().catch(() => ({ items: [] })),
+      listStaff({ status: "ACTIVE", limit: 1 }).catch(() => ({
+        data: [],
+        pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
+      })),
+      getReviewsDashboard().catch(() => null),
+      listResources({ active: true, limit: 1 }).catch(() => ({
+        data: [],
+        pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
+      })),
+    ]);
+
     try {
       const [ov, revenue, apptsAnalytics, customersData, todayList] = await Promise.all([
         getAnalyticsOverview({ preset: period, compare: true }),
@@ -200,24 +220,7 @@ export function SaasDashboard() {
       staffList,
       reviewsDash,
       resources,
-    ] = await Promise.all([
-      getAnalyticsServices({ preset: period, compare: false }).catch(() => ({ items: [] })),
-      getAnalyticsStaff({ preset: period, compare: false }).catch(() => ({ items: [] })),
-      getAnalyticsReviews({ preset: period, compare: false }).catch(() => null),
-      getCashRegister().catch(() => null),
-      listBillableAppointments().catch(() => []),
-      getStockKpis().catch(() => null),
-      listSupportTickets().catch(() => ({ items: [] })),
-      listStaff({ status: "ACTIVE", limit: 1 }).catch(() => ({
-        data: [],
-        pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
-      })),
-      getReviewsDashboard().catch(() => null),
-      listResources({ active: true, limit: 1 }).catch(() => ({
-        data: [],
-        pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
-      })),
-    ]);
+    ] = await secondWave;
 
     if (gen !== loadGen.current) return;
 

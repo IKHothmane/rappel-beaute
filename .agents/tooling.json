@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "repositories": {
+    "openai/skills": {
+      "url": "https://github.com/openai/skills",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431"
+    },
+    "vercel-labs/agent-skills": {
+      "url": "https://github.com/vercel-labs/agent-skills",
+      "revision": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62"
+    },
+    "railwayapp/railway-skills": {
+      "url": "https://github.com/railwayapp/railway-skills",
+      "revision": "526e95524e964ed326689cbac4464d97a58ab81c",
+      "licensePath": ".agents/licenses/railwayapp-railway-skills.txt"
+    },
+    "prisma/skills": {
+      "url": "https://github.com/prisma/skills",
+      "revision": "a6f192959cf43b08aa330fe1ffca090267215812",
+      "licensePath": ".agents/licenses/prisma-skills.txt"
+    },
+    "getsentry/sentry-for-ai": {
+      "url": "https://github.com/getsentry/sentry-for-ai",
+      "revision": "c198c986a526c7f4f35d11bf79a5f7b036c122ad",
+      "licensePath": ".agents/licenses/getsentry-sentry-for-ai.txt"
+    }
+  },
+  "skills": {
+    "playwright": "openai/skills",
+    "security-best-practices": "openai/skills",
+    "security-threat-model": "openai/skills",
+    "gh-fix-ci": "openai/skills",
+    "gh-address-comments": "openai/skills",
+    "sentry": "openai/skills",
+    "react-best-practices": "vercel-labs/agent-skills",
+    "web-design-guidelines": "vercel-labs/agent-skills",
+    "use-railway": "railwayapp/railway-skills",
+    "prisma-cli": "prisma/skills",
+    "prisma-client-api": "prisma/skills",
+    "prisma-postgres-setup": "prisma/skills",
+    "sentry-nextjs-sdk": "getsentry/sentry-for-ai",
+    "sentry-fix-issues": "getsentry/sentry-for-ai"
+  },
+  "stdioServers": {
+    "context7": {
+      "package": "@upstash/context7-mcp",
+      "version": "4.7.0",
+      "repository": {
+        "url": "git+https://github.com/upstash/context7.git",
+        "type": "git",
+        "directory": "packages/mcp"
+      },
+      "args": []
+    },
+    "playwright": {
+      "package": "@playwright/mcp",
+      "version": "0.0.85",
+      "repository": {
+        "url": "git+https://github.com/microsoft/playwright-mcp.git",
+        "type": "git"
+      },
+      "args": [
+        "--headless",
+        "--browser",
+        "chrome"
+      ]
+    },
+    "chrome-devtools": {
+      "package": "chrome-devtools-mcp",
+      "version": "1.13.0",
+      "repository": {
+        "url": "git+https://github.com/ChromeDevTools/chrome-devtools-mcp.git",
+        "type": "git"
+      },
+      "args": [
+        "--headless",
+        "--isolated",
+        "--no-usage-statistics",
+        "--no-performance-crux"
+      ]
+    },
+    "railway": {
+      "package": "@railway/cli",
+      "version": "5.74.0",
+      "repository": {
+        "url": "git+https://github.com/railwayapp/cli.git",
+        "type": "git"
+      },
+      "args": [
+        "mcp"
+      ]
+    }
+  },
+  "httpServers": {
+    "openaiDeveloperDocs": {
+      "url": "https://developers.openai.com/mcp"
+    },
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "tokenEnv": "GITHUB_PERSONAL_ACCESS_TOKEN"
+    },
+    "sentry": {
+      "url": "https://mcp.sentry.dev/mcp",
+      "authentication": "OAuth"
+    }
+  }
+}

@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const { query } = vi.hoisted(() => ({ query: vi.fn() }));
-vi.mock("@/lib/db/pool", () => ({ pool: { query } }));
+vi.mock("@/lib/db/pool", () => ({
+  pool: {
+    query,
+    // changeOwnPassword s'exécute dans une transaction : BEGIN/COMMIT ne consomment pas les réponses simulées.
+    connect: async () => ({
+      query: (sql: string, values?: unknown[]) =>
+        /^(BEGIN|COMMIT|ROLLBACK)$/.test(sql) ? Promise.resolve({ rows: [] }) : query(sql, values),
+      release: () => {},
+    }),
+  },
+}));
 vi.mock("@/lib/db/audit", () => ({ writeAuditLog: vi.fn().mockResolvedValue(undefined) }));
 import { authenticateUser, changeOwnPassword } from "@/lib/db/users";
 import { hashPassword } from "@/lib/auth/crypto";
@@ -30,6 +40,13 @@ describe("Phone login alongside existing email accounts", () => {
   it("retains the phone identifier after the mandatory password change", async () => {
     query.mockResolvedValueOnce({ rows: [owner] }).mockResolvedValueOnce({ rows: [{ sessionVersion: 1 }] });
     expect(await changeOwnPassword({ userId: "owner", organizationId: "org", newPassword: "NewPassword456" })).toMatchObject({ email: "", loginPhone: "0612345678", mustChangePassword: false, sessionVersion: 1 });
+  });
+  it("requires the current password once the temporary one has been replaced", async () => {
+    const settled = { ...owner, mustChangePassword: false };
+    query.mockResolvedValueOnce({ rows: [settled] });
+    await expect(changeOwnPassword({ userId: "owner", organizationId: "org", newPassword: "NewPassword456" })).rejects.toThrow("CURRENT_PASSWORD_REQUIRED");
+    query.mockResolvedValueOnce({ rows: [settled] });
+    await expect(changeOwnPassword({ userId: "owner", organizationId: "org", newPassword: "NewPassword456", currentPassword: "Wrong12345" })).rejects.toThrow("CURRENT_PASSWORD_INVALID");
   });
   it("uses the same normalized account key for phone formats", () => {
     expect(normalizeLoginIdentifier("+212 612 345 678")).toBe(normalizeLoginIdentifier("0612345678"));

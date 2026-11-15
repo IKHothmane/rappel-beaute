@@ -18,11 +18,13 @@ export async function writePlatformAuditLog(opts: {
   client?: PoolClient;
 }): Promise<void> {
   const c = opts.client ?? pool;
+  // "organizationIdSnapshot" copies the institute id without a foreign key: the FK on
+  // "organizationId" is ON DELETE SET NULL, the snapshot keeps the history reachable afterwards.
   await c.query(
     `INSERT INTO "PlatformAuditLog" (
-      id, "platformUserId", "platformUserName", "organizationId",
+      id, "platformUserId", "platformUserName", "organizationId", "organizationIdSnapshot",
       "entityType", "entityId", action, "before", "after"
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb)`,
+    ) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8::jsonb,$9::jsonb)`,
     [
       newId("paud"),
       opts.platformUserId ?? null,
@@ -48,7 +50,11 @@ export async function listPlatformAuditLogs(opts: {
   const clauses: string[] = [];
   if (opts.organizationId) {
     params.push(opts.organizationId);
-    clauses.push(`a."organizationId" = $${params.length}`);
+    // Equivalent to COALESCE(a."organizationId", a."organizationIdSnapshot") = $n, written so that
+    // both indexes stay usable. Rows of a deleted institute only keep the snapshot.
+    clauses.push(
+      `(a."organizationId" = $${params.length} OR (a."organizationId" IS NULL AND a."organizationIdSnapshot" = $${params.length}))`,
+    );
   }
   if (opts.entityType) {
     params.push(opts.entityType);

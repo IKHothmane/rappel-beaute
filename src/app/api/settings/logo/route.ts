@@ -3,9 +3,9 @@ import type { NextRequest } from "next/server";
 import { requireFeatureRead, requireFeatureWrite } from "@/lib/auth/api-guard";
 import { getOrganizationLogoUrl, setOrganizationLogoUrl } from "@/lib/db/organization";
 import { getStorageService } from "@/lib/storage";
+import { validateLogoUpload } from "@/lib/storage/image-upload";
 import { tenantRoute } from "@/lib/http/route-scope";
 
-const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
 const MAX_BYTES = 2 * 1024 * 1024;
 
 export const GET = tenantRoute(async function GET(request: NextRequest) {
@@ -25,23 +25,22 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
     if (!(file instanceof File) || file.size === 0) {
       return NextResponse.json({ error: "Choisissez un fichier image." }, { status: 400 });
     }
-    if (!ALLOWED.has(file.type)) {
-      return NextResponse.json(
-        { error: "Formats acceptés : PNG, JPG, WEBP ou SVG." },
-        { status: 400 },
-      );
-    }
     if (file.size > MAX_BYTES) {
       return NextResponse.json({ error: "Le logo ne doit pas dépasser 2 Mo." }, { status: 400 });
     }
 
     const buf = Buffer.from(await file.arrayBuffer());
+    // Type MIME en liste blanche + octets magiques ; extension dérivée du MIME validé.
+    const checked = validateLogoUpload(file.type, buf, { maxBytes: MAX_BYTES });
+    if (!checked.ok) {
+      return NextResponse.json({ error: checked.error }, { status: 400 });
+    }
     const stored = await getStorageService().put({
       category: "logos",
       organizationId: auth.session.organizationId,
-      filename: file.name || "logo.png",
+      filename: checked.filename,
       data: buf,
-      contentType: file.type,
+      contentType: checked.contentType,
     });
 
     await setOrganizationLogoUrl(auth.session.organizationId, stored.url);

@@ -102,6 +102,20 @@ describe("session institut", () => {
     if (!auth.ok) expect(auth.response.status).toBe(403);
   });
 
+  it("applique le rôle courant de la base, pas celui du jeton (rétrogradation immédiate)", async () => {
+    state.userState = { status: "ACTIVE", mustChangePassword: false, sessionVersion: 0, orgStatus: "ACTIVE", role: "STAFF" };
+    const auth = await requireAppSession(requestWith(appToken()));
+    expect(auth.ok).toBe(true);
+    if (auth.ok) expect(auth.session.role).toBe("STAFF");
+  });
+
+  it("refuse un jeton dont la version de session a changé (rôle modifié par l'administration)", async () => {
+    state.userState = { status: "ACTIVE", mustChangePassword: false, sessionVersion: 1, orgStatus: "ACTIVE", role: "STAFF" };
+    const auth = await requireAppSession(requestWith(appToken()));
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) expect(auth.response.status).toBe(401);
+  });
+
   it("accepte un institut actif", async () => {
     state.userState = { status: "ACTIVE", mustChangePassword: false, sessionVersion: 0, orgStatus: "ACTIVE" };
     expect((await requireAppSession(requestWith(appToken()))).ok).toBe(true);

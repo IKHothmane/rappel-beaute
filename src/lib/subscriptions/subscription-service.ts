@@ -89,8 +89,12 @@ export function isSubscriptionOperational(sub: SubscriptionDto): boolean {
   return ["TRIAL", "ACTIVE", "PAST_DUE"].includes(sub.status);
 }
 
-export async function getSubscriptionUsage(organizationId: string): Promise<UsageDto | null> {
-  const sub = await getOrganizationSubscription(organizationId);
+export async function getSubscriptionUsage(
+  organizationId: string,
+  loadedSub?: SubscriptionDto | null,
+): Promise<UsageDto | null> {
+  const sub =
+    loadedSub !== undefined ? loadedSub : await getOrganizationSubscription(organizationId);
   if (!sub) return null;
 
   const periodStart = sub.currentPeriodStart;

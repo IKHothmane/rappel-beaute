@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Write(src/**)",
+      "Write(tests/**)",
+      "Write(docs/**)",
+      "Write(scripts/**)",
+      "Write(.agents/**)",
+      "Write(.claude/**)",
+      "Write(.cursor/**)",
+      "Write(.codex/**)",
+      "Write(AGENTS.md)",
+      "Write(CLAUDE.md)",
+      "Shell(npm.cmd)",
+      "Shell(npm)",
+      "Shell(npx)",
+      "Shell(node)",
+      "Shell(python)",
+      "Shell(git status)",
+      "Shell(git diff)",
+      "Shell(git log)",
+      "Shell(git show)",
+      "Shell(gh pr)",
+      "Shell(gh run)"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Write(.env*)",
+      "Shell(git push --force)",
+      "Shell(git reset --hard)",
+      "Shell(git clean)",
+      "Shell(railway up)",
+      "Shell(railway redeploy)",
+      "Shell(rm -rf)"
+    ]
+  }
+}

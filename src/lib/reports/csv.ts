@@ -1,5 +1,15 @@
-function escapeCsv(value: unknown): string {
-  const s = value == null ? "" : String(value);
+const FORMULA_PREFIX_RE = /^[=+\-@\t\r]/;
+const PLAIN_NUMBER_RE = /^[+-]?\d+(?:[.,]\d+)?$/;
+
+/**
+ * Neutralise l'injection de formule (tableur) pour les chaînes commençant par
+ * = + - @ tab ou CR. Les nombres et les chaînes purement numériques ("-12.5") restent inchangés.
+ */
+export function escapeCsv(value: unknown): string {
+  let s = value == null ? "" : String(value);
+  if (typeof value === "string" && FORMULA_PREFIX_RE.test(s) && !PLAIN_NUMBER_RE.test(s)) {
+    s = `'${s}`;
+  }
   if (/[",;\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

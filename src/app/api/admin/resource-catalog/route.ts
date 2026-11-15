@@ -13,6 +13,7 @@ import {
 import { storeOptimizedServiceImages } from "@/lib/images/store-service-image";
 import { RESOURCE_TYPES, type ResourceType } from "@/types/resource";
 import { platformRoute } from "@/lib/http/route-scope";
+import { normalizeImageMime, validateImageBytes } from "@/lib/storage/image-upload";
 
 export const runtime = "nodejs";
 
@@ -48,12 +49,14 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
     if (!(file instanceof File) || file.size === 0) {
       return adminError("Choisissez une image.", 400);
     }
-    if (!ALLOWED.has(file.type)) return adminError("Formats autorisés : JPG, PNG et WebP.", 400);
+    if (!ALLOWED.has(normalizeImageMime(file.type))) return adminError("Formats autorisés : JPG, PNG et WebP.", 400);
     if (file.size > SERVICE_IMAGE_MAX_UPLOAD_BYTES) {
       return adminError("L'image ne doit pas dépasser 2 Mo.", 400);
     }
 
     const raw = Buffer.from(await file.arrayBuffer());
+    const checked = validateImageBytes(file.type, raw, ALLOWED);
+    if (!checked.ok) return adminError(checked.error, 400);
     const sniffed = sniffServiceImage(raw);
     if (!sniffed) return adminError("Fichier image invalide.", 400);
 

@@ -36,8 +36,16 @@ export function NotificationBell() {
 
   useEffect(() => {
     refresh();
-    const id = window.setInterval(refresh, 60_000);
-    return () => window.clearInterval(id);
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      void refresh();
+    };
+    const id = window.setInterval(tick, 60_000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [refresh]);
 
   useEffect(() => {

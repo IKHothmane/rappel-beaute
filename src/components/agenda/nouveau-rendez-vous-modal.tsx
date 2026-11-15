@@ -60,6 +60,7 @@ type BookingPayload = CreateAppointmentInput;
 
 type NouveauRendezVousModalProps = {
   open: boolean;
+  tutorialMode?: boolean;
   onClose: () => void;
   appointments: Appointment[];
   services: ServiceAgendaOption[];
@@ -143,6 +144,7 @@ function formatDateDigits(raw: string): string {
 
 export default function NouveauRendezVousModal({
   open,
+  tutorialMode = false,
   onClose,
   appointments,
   services,
@@ -252,7 +254,7 @@ export default function NouveauRendezVousModal({
     setResourceOpen(false);
     setServiceQuery("");
     setListOpen(false);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
+    if (!tutorialMode && /^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
       const [y, m, d] = nextDate.split("-").map(Number);
       const msg = salonClosedMessage(
         new Date(y, m - 1, d),
@@ -261,7 +263,7 @@ export default function NouveauRendezVousModal({
       );
       if (msg) setClosedPopup(msg);
     }
-  }, [open, initial, services, staffContexts, closures]);
+  }, [open, initial, services, staffContexts, closures, tutorialMode]);
 
   useEffect(() => {
     if (!open) return;
@@ -478,6 +480,7 @@ export default function NouveauRendezVousModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (tutorialMode) return;
     if (!serviceId) {
       setFormError("Choisissez un service.");
       return;
@@ -600,7 +603,7 @@ export default function NouveauRendezVousModal({
                     Nouveau rendez-vous
                   </h2>
                   <p className="mt-1 max-w-md text-sm leading-5 text-[#654254]">
-                    Créez un rendez-vous en quelques clics.
+                    {tutorialMode ? "Mode tutoriel : aucun rendez-vous ni cliente ne sera enregistré." : "Créez un rendez-vous en quelques clics."}
                   </p>
                 </div>
                 <button
@@ -620,7 +623,7 @@ export default function NouveauRendezVousModal({
               className="flex min-h-0 flex-1 flex-col"
             >
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
-                <section className="space-y-3">
+                <section data-agenda-tour="customer" className="space-y-3">
                   <div
                     className="inline-flex rounded-xl bg-[#F8F0F4] p-1"
                     role="group"
@@ -810,7 +813,7 @@ export default function NouveauRendezVousModal({
                         + Ajouter un soin
                       </button>
                     </div>
-                    <div ref={serviceRef} className="relative space-y-2">
+                    <div data-agenda-tour="service" ref={serviceRef} className="relative space-y-2">
                       <button
                         type="button"
                         aria-expanded={serviceOpen}
@@ -1060,7 +1063,7 @@ export default function NouveauRendezVousModal({
                     <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
                       Employée
                     </span>
-                    <div ref={staffRef} className="relative">
+                    <div data-agenda-tour="staff" ref={staffRef} className="relative">
                       <button
                         type="button"
                         aria-expanded={staffOpen}
@@ -1134,7 +1137,7 @@ export default function NouveauRendezVousModal({
                     <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
                       Ressource / cabine
                     </span>
-                    <div ref={resourceRef} className="relative">
+                    <div data-agenda-tour="resource" ref={resourceRef} className="relative">
                       <button
                         type="button"
                         aria-expanded={resourceOpen}
@@ -1246,7 +1249,7 @@ export default function NouveauRendezVousModal({
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div data-agenda-tour="date" className="space-y-1.5">
                     <label htmlFor="appointment-date" className="block text-xs font-semibold uppercase tracking-wide text-[#887787]">
                       Date <span className="text-[#B60050]">*</span>
                     </label>
@@ -1296,7 +1299,7 @@ export default function NouveauRendezVousModal({
                     />
                   </div>
 
-                  <label className="block space-y-1.5">
+                  <label data-agenda-tour="price" className="block space-y-1.5">
                     <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
                       Prix (MAD) <span className="text-[#B60050]">*</span>
                     </span>
@@ -1399,7 +1402,7 @@ export default function NouveauRendezVousModal({
                     </p>
                   </div>
 
-                  <div className="space-y-1.5 sm:col-span-2">
+                  <div data-agenda-tour="slots" className="space-y-1.5 sm:col-span-2">
                     <span className="text-xs font-semibold uppercase tracking-wide text-[#887787]">
                       Créneau <span className="text-[#B60050]">*</span>
                     </span>
@@ -1457,7 +1460,8 @@ export default function NouveauRendezVousModal({
                   </button>
                   <button
                     type="submit"
-                    disabled={busy}
+                    data-agenda-tour="save"
+                    disabled={busy || tutorialMode}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
                   >
                     <CalendarPlus size={18} aria-hidden />

@@ -11,13 +11,13 @@ import {
 } from "@/lib/db/public-signup";
 import { setOrganizationLogoUrl } from "@/lib/db/organization";
 import { getStorageService } from "@/lib/storage";
+import { validateLogoUpload, type LogoValidation } from "@/lib/storage/image-upload";
 import { CITIES } from "@/lib/site";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
 import { publicRoute } from "@/lib/http/route-scope";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 const CITIES_SET = new Set<string>(CITIES);
 
@@ -114,13 +114,23 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
 
   const logo = form.get("logo");
   const logoFile = logo instanceof File && logo.size > 0 ? logo : null;
+  let logoData: Buffer | null = null;
+  let logoChecked: Extract<LogoValidation, { ok: true }> | null = null;
   if (logoFile) {
-    if (!LOGO_TYPES.has(logoFile.type)) {
-      return validationError("Formats de logo acceptés : PNG, JPG, WEBP ou SVG.");
-    }
     if (logoFile.size > LOGO_MAX_BYTES) {
       return validationError("Le logo ne doit pas dépasser 2 Mo.");
     }
+    logoData = Buffer.from(await logoFile.arrayBuffer());
+    // Type MIME en liste blanche + octets magiques ; extension dérivée du MIME validé.
+    const checked = validateLogoUpload(logoFile.type, logoData, { maxBytes: LOGO_MAX_BYTES });
+    if (!checked.ok) {
+      return validationError(
+        checked.error.startsWith("Formats acceptés")
+          ? "Formats de logo acceptés : PNG, JPG, WEBP ou SVG."
+          : checked.error,
+      );
+    }
+    logoChecked = checked;
   }
 
   try {
@@ -169,14 +179,14 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
       });
     }
 
-    if (logoFile) {
+    if (logoFile && logoData && logoChecked) {
       try {
         const stored = await getStorageService().put({
           category: "logos",
           organizationId: created.organizationId,
-          filename: logoFile.name || "logo.png",
-          data: Buffer.from(await logoFile.arrayBuffer()),
-          contentType: logoFile.type,
+          filename: logoChecked.filename,
+          data: logoData,
+          contentType: logoChecked.contentType,
         });
         await setOrganizationLogoUrl(created.organizationId, stored.url);
       } catch (error) {

@@ -9,6 +9,9 @@ import type { AppSessionUser, SessionUser } from "@/lib/auth/types";
 import type { AppRole } from "@/lib/rbac";
 import { writeAuditLog } from "@/lib/db/audit";
 
+/** Borne le coût de scrypt sur une entrée hostile. */
+export const MAX_PASSWORD_LENGTH = 200;
+
 type UserRow = {
   id: string;
   email: string | null;
@@ -30,6 +33,8 @@ type UserSessionState = {
   status: "ACTIVE" | "DISABLED";
   mustChangePassword: boolean;
   sessionVersion: number;
+  /** Rôle courant en base : prime sur celui du jeton (valable 30 jours). */
+  role: AppRole;
   orgStatus?: "ACTIVE" | "SUSPENDED" | "ARCHIVED";
 };
 
@@ -38,9 +43,10 @@ export async function getUserSessionState(userId: string): Promise<UserSessionSt
     status: "ACTIVE" | "DISABLED";
     mustChangePassword: boolean;
     sessionVersion: number;
+    role: AppRole;
     orgStatus: "ACTIVE" | "SUSPENDED" | "ARCHIVED";
   }>(
-    `SELECT u.status, u."mustChangePassword", u."sessionVersion", o.status AS "orgStatus"
+    `SELECT u.status, u."mustChangePassword", u."sessionVersion", u.role, o.status AS "orgStatus"
      FROM "User" u JOIN "Organization" o ON o.id = u."organizationId"
      WHERE u.id = $1`,
     [userId],
@@ -51,6 +57,7 @@ export async function getUserSessionState(userId: string): Promise<UserSessionSt
     status: row.status,
     mustChangePassword: Boolean(row.mustChangePassword),
     sessionVersion: Number(row.sessionVersion) || 0,
+    role: row.role,
     orgStatus: row.orgStatus,
   };
 }
@@ -178,87 +185,126 @@ export async function adminResetTemporaryPassword(opts: {
 }
 
 /**
- * Changement obligatoire (ou volontaire) du mot de passe par l'utilisateur connecté.
+ * Changement du mot de passe par l'utilisateur connecté.
+ *
+ * - `mustChangePassword = true` (mot de passe temporaire) : le mot de passe actuel n'est pas demandé.
+ * - Sinon : `currentPassword` est obligatoire et vérifié (un cookie volé ne suffit pas à prendre le compte).
+ *
+ * Lecture verrouillée, mise à jour, `sessionVersion + 1` et audit dans une seule transaction.
+ * La session renvoyée porte la nouvelle version : l'appelant ré-émet le cookie courant.
  */
 export async function changeOwnPassword(opts: {
   userId: string;
   organizationId: string;
   newPassword: string;
+  currentPassword?: string | null;
 }): Promise<AppSessionUser> {
-  if (opts.newPassword.length < 8) {
+  if (typeof opts.newPassword !== "string" || opts.newPassword.length < 8) {
     throw new Error("PASSWORD_TOO_SHORT");
   }
-
-  const { rows } = await pool.query<{
-    id: string;
-    email: string | null;
-    loginPhone: string | null;
-    firstName: string;
-    lastName: string;
-    role: AppRole;
-    passwordHash: string | null;
-    organizationId: string;
-    orgName: string;
-    orgSlug: string;
-    mustChangePassword: boolean;
-    sessionVersion: number;
-  }>(
-    `SELECT
-      u.id, u.email, u."loginPhone", u."firstName", u."lastName", u.role, u."passwordHash",
-      u."organizationId", u."mustChangePassword", u."sessionVersion",
-      o.name AS "orgName", o.slug AS "orgSlug"
-     FROM "User" u
-     JOIN "Organization" o ON o.id = u."organizationId"
-     WHERE u.id = $1 AND u."organizationId" = $2 AND u.status = 'ACTIVE'`,
-    [opts.userId, opts.organizationId],
-  );
-
-  const user = rows[0];
-  if (!user) throw new Error("USER_NOT_FOUND");
-
-  // Interdit de réutiliser le mot de passe temporaire (ou l'actuel)
-  if (user.passwordHash && verifyPassword(opts.newPassword, user.passwordHash)) {
-    throw new Error("PASSWORD_REUSE");
+  if (opts.newPassword.length > MAX_PASSWORD_LENGTH) {
+    throw new Error("PASSWORD_TOO_LONG");
   }
 
-  const passwordHash = hashPassword(opts.newPassword);
-  const { rows: updated } = await pool.query<{ sessionVersion: number }>(
-    `UPDATE "User"
-     SET "passwordHash" = $1,
-         "mustChangePassword" = false,
-         "sessionVersion" = "sessionVersion" + 1,
-         "updatedAt" = NOW()
-     WHERE id = $2
-     RETURNING "sessionVersion"`,
-    [passwordHash, opts.userId],
-  );
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-  await writeAuditLog({
-    organizationId: opts.organizationId,
-    actorId: opts.userId,
-    actorName: `${user.firstName} ${user.lastName}`.trim(),
-    entityType: "User",
-    entityId: opts.userId,
-    action: "PASSWORD_CHANGED",
-    after: { mustChangePassword: false },
-  }).catch(() => null);
+    const { rows } = await client.query<{
+      id: string;
+      email: string | null;
+      loginPhone: string | null;
+      firstName: string;
+      lastName: string;
+      role: AppRole;
+      passwordHash: string | null;
+      organizationId: string;
+      orgName: string;
+      orgSlug: string;
+      mustChangePassword: boolean;
+      sessionVersion: number;
+    }>(
+      `SELECT
+        u.id, u.email, u."loginPhone", u."firstName", u."lastName", u.role, u."passwordHash",
+        u."organizationId", u."mustChangePassword", u."sessionVersion",
+        o.name AS "orgName", o.slug AS "orgSlug"
+       FROM "User" u
+       JOIN "Organization" o ON o.id = u."organizationId"
+       WHERE u.id = $1 AND u."organizationId" = $2 AND u.status = 'ACTIVE'
+       FOR UPDATE OF u`,
+      [opts.userId, opts.organizationId],
+    );
 
-  return {
-    id: user.id,
-    email: user.email ?? "",
-    loginPhone: user.loginPhone ?? undefined,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role: user.role,
-    organizationId: user.organizationId,
-    orgName: user.orgName,
-    orgSlug: user.orgSlug,
-    orgLogoUrl: null,
-    scope: "app",
-    accountType: "ORGANIZATION",
-    mustChangePassword: false,
-    sessionVersion: Number(updated[0]?.sessionVersion) || user.sessionVersion + 1,
-  };
+    const user = rows[0];
+    if (!user) throw new Error("USER_NOT_FOUND");
+
+    const mustChange = Boolean(user.mustChangePassword);
+    if (!mustChange) {
+      const current = opts.currentPassword;
+      if (typeof current !== "string" || current.length === 0) {
+        throw new Error("CURRENT_PASSWORD_REQUIRED");
+      }
+      if (
+        current.length > MAX_PASSWORD_LENGTH ||
+        !user.passwordHash ||
+        !verifyPassword(current, user.passwordHash)
+      ) {
+        throw new Error("CURRENT_PASSWORD_INVALID");
+      }
+    }
+
+    // Interdit de réutiliser le mot de passe temporaire (ou l'actuel)
+    if (user.passwordHash && verifyPassword(opts.newPassword, user.passwordHash)) {
+      throw new Error("PASSWORD_REUSE");
+    }
+
+    const passwordHash = hashPassword(opts.newPassword);
+    const { rows: updated } = await client.query<{ sessionVersion: number }>(
+      `UPDATE "User"
+       SET "passwordHash" = $1,
+           "mustChangePassword" = false,
+           "sessionVersion" = "sessionVersion" + 1,
+           "updatedAt" = NOW()
+       WHERE id = $2
+       RETURNING "sessionVersion"`,
+      [passwordHash, opts.userId],
+    );
+
+    await writeAuditLog({
+      organizationId: opts.organizationId,
+      actorId: opts.userId,
+      actorName: `${user.firstName} ${user.lastName}`.trim(),
+      entityType: "User",
+      entityId: opts.userId,
+      action: "PASSWORD_CHANGED",
+      after: { mustChangePassword: false, verifiedCurrentPassword: !mustChange },
+      client,
+    });
+
+    await client.query("COMMIT");
+
+    return {
+      id: user.id,
+      email: user.email ?? "",
+      loginPhone: user.loginPhone ?? undefined,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      organizationId: user.organizationId,
+      orgName: user.orgName,
+      orgSlug: user.orgSlug,
+      orgLogoUrl: null,
+      scope: "app",
+      accountType: "ORGANIZATION",
+      mustChangePassword: false,
+      sessionVersion: Number(updated[0]?.sessionVersion) || user.sessionVersion + 1,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => null);
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export type OrgUserListItem = {

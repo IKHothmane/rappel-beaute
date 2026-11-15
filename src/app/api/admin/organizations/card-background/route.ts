@@ -4,6 +4,7 @@ import { getOrganizationById } from "@/lib/db/admin-organizations";
 import { setLoyaltyCardBackground } from "@/lib/db/loyalty";
 import { cardColorFromImage } from "@/lib/loyalty/card-color";
 import { getStorageService } from "@/lib/storage";
+import { normalizeImageMime, validateImageBytes } from "@/lib/storage/image-upload";
 import { platformRoute } from "@/lib/http/route-scope";
 
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -26,10 +27,15 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
 
     const file = form.get("background");
     if (!(file instanceof File) || file.size === 0) return adminError("Choisissez une image.", 400);
-    if (!ALLOWED.has(file.type)) return adminError("Formats acceptés : PNG, JPG ou WEBP.", 400);
+    const declaredType = normalizeImageMime(file.type);
+    if (!ALLOWED.has(declaredType)) return adminError("Formats acceptés : PNG, JPG ou WEBP.", 400);
     if (file.size > MAX_BYTES) return adminError("L'image ne doit pas dépasser 2 Mo.", 400);
 
     const bytes = Buffer.from(await file.arrayBuffer());
+    // Octets magiques cohérents avec le type annoncé (stockés tels quels, objet ou data URI).
+    const checked = validateImageBytes(declaredType, bytes, ALLOWED);
+    if (!checked.ok) return adminError(checked.error, 400);
+    const contentType = checked.contentType;
     // Sans stockage objet (S3/R2), un fichier local n'existerait pas sur le serveur de production :
     // l'image est alors conservée directement en base (data URI, 2 Mo max).
     const hasObjectStorage = Boolean(process.env.S3_BUCKET && process.env.S3_ENDPOINT);
@@ -40,10 +46,10 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
             organizationId,
             filename: file.name || "carte-fond.png",
             data: bytes,
-            contentType: file.type,
+            contentType,
           })
         ).url
-      : `data:${file.type};base64,${bytes.toString("base64")}`;
+      : `data:${contentType};base64,${bytes.toString("base64")}`;
     const program = await setLoyaltyCardBackground(
       organizationId,
       imageUrl,
@@ -51,7 +57,7 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
         id: auth.session.id,
         name: actorName(auth.session),
       },
-      cardColorFromImage(bytes, file.type),
+      cardColorFromImage(bytes, contentType),
     );
     return adminJson({ cardBackgroundUrl: program.cardBackgroundUrl });
   } catch (error) {

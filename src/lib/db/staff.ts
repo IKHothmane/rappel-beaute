@@ -176,30 +176,25 @@ export async function listStaff(
       params,
     );
 
-    const items: StaffAgendaContext[] = [];
-    for (const row of rows) {
-      const [schedules, breaks, leaves, overtimes, replacementsAsAbsent, replacementsAsSubstitute] = await Promise.all([
-        loadSchedules(row.id),
-        loadBreaks(row.id),
-        loadLeaves(row.id, organizationId),
-        loadOvertimes(row.id, organizationId),
-        loadReplacementsAsAbsent(row.id, organizationId),
-        loadReplacementsAsSubstitute(row.id, organizationId),
-      ]);
-      items.push({
-        id: row.id,
-        firstName: row.firstName,
-        lastName: row.lastName,
-        displayName: staffDisplayName(row.firstName, row.lastName),
-        status: row.status,
-        schedules,
-        breaks,
-        leaves: leaves.filter((l) => l.status === "APPROVED"),
-        overtimes,
-        replacementsAsAbsent,
-        replacementsAsSubstitute,
-      });
-    }
+    // Une requête par table enfant pour tout le lot (au lieu de 6 requêtes par employée) :
+    // évite de saturer le pool de connexions sur les agendas de grandes équipes.
+    const children = await loadAgendaChildren(
+      rows.map((r) => r.id),
+      organizationId,
+    );
+    const items: StaffAgendaContext[] = rows.map((row) => ({
+      id: row.id,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      displayName: staffDisplayName(row.firstName, row.lastName),
+      status: row.status,
+      schedules: children.schedules.get(row.id) ?? [],
+      breaks: children.breaks.get(row.id) ?? [],
+      leaves: children.leaves.get(row.id) ?? [],
+      overtimes: children.overtimes.get(row.id) ?? [],
+      replacementsAsAbsent: children.replacementsAsAbsent.get(row.id) ?? [],
+      replacementsAsSubstitute: children.replacementsAsSubstitute.get(row.id) ?? [],
+    }));
     return { items, total: items.length };
   }
 
@@ -245,6 +240,181 @@ export async function listStaff(
     items: listRes.rows.map(rowToListItem),
     total: countRes.rows[0]?.total ?? 0,
   };
+}
+
+function groupBy<T>(rows: T[], keyOf: (row: T) => string): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const row of rows) {
+    const key = keyOf(row);
+    const list = map.get(key);
+    if (list) list.push(row);
+    else map.set(key, [row]);
+  }
+  return map;
+}
+
+type AgendaChildren = {
+  schedules: Map<string, StaffAgendaContext["schedules"]>;
+  breaks: Map<string, StaffAgendaContext["breaks"]>;
+  leaves: Map<string, StaffLeaveItem[]>;
+  overtimes: Map<string, StaffAgendaContext["overtimes"]>;
+  replacementsAsAbsent: Map<string, StaffAgendaContext["replacementsAsAbsent"]>;
+  replacementsAsSubstitute: Map<string, StaffAgendaContext["replacementsAsSubstitute"]>;
+};
+
+/**
+ * Charge en 6 requêtes (quel que soit le nombre d'employées) les tables enfants de l'agenda.
+ * Mêmes filtres et tris que loadSchedules/loadBreaks/loadLeaves, et mêmes bornes [-7 j, +90 j] que les
+ * anciens chargeurs unitaires des heures supplémentaires et remplacements; seuls les congés APPROUVÉS
+ * sont conservés (comme avant).
+ * Les identifiants proviennent d'une liste déjà filtrée par organisation.
+ */
+async function loadAgendaChildren(staffIds: string[], organizationId: string): Promise<AgendaChildren> {
+  const out: AgendaChildren = {
+    schedules: new Map(),
+    breaks: new Map(),
+    leaves: new Map(),
+    overtimes: new Map(),
+    replacementsAsAbsent: new Map(),
+    replacementsAsSubstitute: new Map(),
+  };
+  if (staffIds.length === 0) return out;
+
+  const from = new Date();
+  from.setDate(from.getDate() - 7);
+  const to = new Date();
+  to.setDate(to.getDate() + 90);
+
+  const [schedRes, breakRes, leaveRes, overtimeRes, absentRes, substituteRes] = await Promise.all([
+    pool.query<{ staffId: string; id: string; dayOfWeek: number; startTime: string; endTime: string; active: boolean }>(
+      `SELECT "staffId", id, "dayOfWeek", "startTime", "endTime", active
+       FROM "StaffSchedule" WHERE "staffId" = ANY($1::text[]) ORDER BY "dayOfWeek"`,
+      [staffIds],
+    ),
+    pool.query<{ staffId: string; id: string; dayOfWeek: number; startTime: string; endTime: string }>(
+      `SELECT "staffId", id, "dayOfWeek", "startTime", "endTime"
+       FROM "StaffBreak" WHERE "staffId" = ANY($1::text[]) ORDER BY "dayOfWeek", "startTime"`,
+      [staffIds],
+    ),
+    pool.query<{
+      staffId: string;
+      id: string;
+      startAt: Date;
+      endAt: Date;
+      type: string;
+      reason: string | null;
+      status: string;
+      createdAt: Date;
+    }>(
+      `SELECT l."staffId", l.id, l."startAt", l."endAt", l.type::text, l.reason, l.status::text, l."createdAt"
+       FROM "StaffLeave" l
+       JOIN "Staff" st ON st.id = l."staffId"
+       WHERE l."staffId" = ANY($1::text[]) AND st."organizationId" = $2
+       ORDER BY l."startAt" DESC`,
+      [staffIds, organizationId],
+    ),
+    pool.query<{ staffId: string; id: string; startAt: Date; endAt: Date; reason: string | null }>(
+      `SELECT "staffId", id, "startAt", "endAt", reason FROM "StaffOvertime"
+       WHERE "staffId" = ANY($1::text[]) AND "organizationId" = $2
+         AND "endAt" >= $3 AND "startAt" <= $4
+       ORDER BY "startAt"`,
+      [staffIds, organizationId, from, to],
+    ),
+    pool.query<{
+      absentStaffId: string;
+      id: string;
+      startAt: Date;
+      endAt: Date;
+      substituteStaffId: string;
+      substituteName: string;
+    }>(
+      `SELECT r."absentStaffId", r.id, r."startAt", r."endAt", r."substituteStaffId",
+              CONCAT(s."firstName", ' ', s."lastName") AS "substituteName"
+       FROM "StaffReplacement" r
+       JOIN "Staff" s ON s.id = r."substituteStaffId"
+       WHERE r."absentStaffId" = ANY($1::text[]) AND r."organizationId" = $2 AND r.active = true
+         AND r."endAt" >= $3 AND r."startAt" <= $4
+       ORDER BY r."startAt"`,
+      [staffIds, organizationId, from, to],
+    ),
+    pool.query<{
+      substituteStaffId: string;
+      id: string;
+      startAt: Date;
+      endAt: Date;
+      absentStaffId: string;
+      absentName: string;
+    }>(
+      `SELECT r."substituteStaffId", r.id, r."startAt", r."endAt", r."absentStaffId",
+              CONCAT(a."firstName", ' ', a."lastName") AS "absentName"
+       FROM "StaffReplacement" r
+       JOIN "Staff" a ON a.id = r."absentStaffId"
+       WHERE r."substituteStaffId" = ANY($1::text[]) AND r."organizationId" = $2 AND r.active = true
+         AND r."endAt" >= $3 AND r."startAt" <= $4
+       ORDER BY r."startAt"`,
+      [staffIds, organizationId, from, to],
+    ),
+  ]);
+
+  for (const [id, list] of groupBy(schedRes.rows, (r) => r.staffId)) {
+    out.schedules.set(
+      id,
+      list.map((r) => ({ id: r.id, dayOfWeek: r.dayOfWeek, startTime: r.startTime, endTime: r.endTime, active: r.active })),
+    );
+  }
+  for (const [id, list] of groupBy(breakRes.rows, (r) => r.staffId)) {
+    out.breaks.set(
+      id,
+      list.map((r) => ({ id: r.id, dayOfWeek: r.dayOfWeek, startTime: r.startTime, endTime: r.endTime })),
+    );
+  }
+  for (const [id, list] of groupBy(leaveRes.rows, (r) => r.staffId)) {
+    out.leaves.set(
+      id,
+      list
+        .map((r) => ({
+          id: r.id,
+          startAt: r.startAt.toISOString(),
+          endAt: r.endAt.toISOString(),
+          type: r.type as StaffLeaveItem["type"],
+          reason: r.reason,
+          status: r.status as StaffLeaveItem["status"],
+          createdAt: r.createdAt.toISOString(),
+        }))
+        .filter((l) => l.status === "APPROVED"),
+    );
+  }
+  for (const [id, list] of groupBy(overtimeRes.rows, (r) => r.staffId)) {
+    out.overtimes.set(
+      id,
+      list.map((r) => ({ id: r.id, startAt: r.startAt.toISOString(), endAt: r.endAt.toISOString(), reason: r.reason })),
+    );
+  }
+  for (const [id, list] of groupBy(absentRes.rows, (r) => r.absentStaffId)) {
+    out.replacementsAsAbsent.set(
+      id,
+      list.map((r) => ({
+        id: r.id,
+        startAt: r.startAt.toISOString(),
+        endAt: r.endAt.toISOString(),
+        substituteStaffId: r.substituteStaffId,
+        substituteName: r.substituteName.trim(),
+      })),
+    );
+  }
+  for (const [id, list] of groupBy(substituteRes.rows, (r) => r.substituteStaffId)) {
+    out.replacementsAsSubstitute.set(
+      id,
+      list.map((r) => ({
+        id: r.id,
+        startAt: r.startAt.toISOString(),
+        endAt: r.endAt.toISOString(),
+        absentStaffId: r.absentStaffId,
+        absentName: r.absentName.trim(),
+      })),
+    );
+  }
+  return out;
 }
 
 async function loadSchedules(staffId: string) {
@@ -312,91 +482,6 @@ async function loadLeaves(staffId: string, organizationId: string): Promise<Staf
     reason: r.reason,
     status: r.status as StaffLeaveItem["status"],
     createdAt: r.createdAt.toISOString(),
-  }));
-}
-
-async function loadOvertimes(staffId: string, organizationId: string) {
-  const from = new Date();
-  from.setDate(from.getDate() - 7);
-  const to = new Date();
-  to.setDate(to.getDate() + 90);
-  const { rows } = await pool.query<{
-    id: string;
-    startAt: Date;
-    endAt: Date;
-    reason: string | null;
-  }>(
-    `SELECT id, "startAt", "endAt", reason FROM "StaffOvertime"
-     WHERE "staffId" = $1 AND "organizationId" = $2
-       AND "endAt" >= $3 AND "startAt" <= $4
-     ORDER BY "startAt"`,
-    [staffId, organizationId, from, to],
-  );
-  return rows.map((r) => ({
-    id: r.id,
-    startAt: r.startAt.toISOString(),
-    endAt: r.endAt.toISOString(),
-    reason: r.reason,
-  }));
-}
-
-async function loadReplacementsAsAbsent(staffId: string, organizationId: string) {
-  const from = new Date();
-  from.setDate(from.getDate() - 7);
-  const to = new Date();
-  to.setDate(to.getDate() + 90);
-  const { rows } = await pool.query<{
-    id: string;
-    startAt: Date;
-    endAt: Date;
-    substituteStaffId: string;
-    substituteName: string;
-  }>(
-    `SELECT r.id, r."startAt", r."endAt", r."substituteStaffId",
-            CONCAT(s."firstName", ' ', s."lastName") AS "substituteName"
-     FROM "StaffReplacement" r
-     JOIN "Staff" s ON s.id = r."substituteStaffId"
-     WHERE r."absentStaffId" = $1 AND r."organizationId" = $2 AND r.active = true
-       AND r."endAt" >= $3 AND r."startAt" <= $4
-     ORDER BY r."startAt"`,
-    [staffId, organizationId, from, to],
-  );
-  return rows.map((r) => ({
-    id: r.id,
-    startAt: r.startAt.toISOString(),
-    endAt: r.endAt.toISOString(),
-    substituteStaffId: r.substituteStaffId,
-    substituteName: r.substituteName.trim(),
-  }));
-}
-
-async function loadReplacementsAsSubstitute(staffId: string, organizationId: string) {
-  const from = new Date();
-  from.setDate(from.getDate() - 7);
-  const to = new Date();
-  to.setDate(to.getDate() + 90);
-  const { rows } = await pool.query<{
-    id: string;
-    startAt: Date;
-    endAt: Date;
-    absentStaffId: string;
-    absentName: string;
-  }>(
-    `SELECT r.id, r."startAt", r."endAt", r."absentStaffId",
-            CONCAT(a."firstName", ' ', a."lastName") AS "absentName"
-     FROM "StaffReplacement" r
-     JOIN "Staff" a ON a.id = r."absentStaffId"
-     WHERE r."substituteStaffId" = $1 AND r."organizationId" = $2 AND r.active = true
-       AND r."endAt" >= $3 AND r."startAt" <= $4
-     ORDER BY r."startAt"`,
-    [staffId, organizationId, from, to],
-  );
-  return rows.map((r) => ({
-    id: r.id,
-    startAt: r.startAt.toISOString(),
-    endAt: r.endAt.toISOString(),
-    absentStaffId: r.absentStaffId,
-    absentName: r.absentName.trim(),
   }));
 }
 

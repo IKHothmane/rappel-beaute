@@ -64,7 +64,7 @@ export default function OrganizationActionsPage() {
     {
       key: "view",
       label: "Voir",
-      description: "Fiche complète de l’institut",
+      description: "Détails de l’institut",
       href: adminHref(`/organizations/${id}/`),
     },
     {

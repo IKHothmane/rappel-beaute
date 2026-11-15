@@ -99,8 +99,10 @@ export async function requireAppSession(request: NextRequest): Promise<AppAuthRe
     };
   }
 
+  // Le rôle appliqué est celui de la base : une rétrogradation prend effet immédiatement.
   const session: AppSessionUser = {
     ...auth.session,
+    role: state.role ?? auth.session.role,
     mustChangePassword: state.mustChangePassword,
     sessionVersion: state.sessionVersion,
   };
@@ -123,7 +125,7 @@ export async function requireAppSession(request: NextRequest): Promise<AppAuthRe
 
 /**
  * Session back-office relue en base : un administrateur désactivé ou supprimé perd l'accès immédiatement
- * (le jeton signé reste valable 30 jours), et le rôle appliqué est celui de la base, pas celui du jeton.
+ * (le jeton signé reste valable 7 jours), et le rôle appliqué est celui de la base, pas celui du jeton.
  */
 export async function requirePlatformSession(
   request: NextRequest,
@@ -141,6 +143,18 @@ export async function requirePlatformSession(
     return {
       ok: false,
       response: NextResponse.json({ error: "Session expirée." }, { status: 401 }),
+    };
+  }
+  // Même requête d'état : un jeton émis avant un changement de mot de passe, une désactivation
+  // ou une réinitialisation est révoqué. Un ancien jeton sans version vaut 0 (voir session-payload).
+  const jwtVersion = auth.session.sessionVersion ?? 0;
+  if (jwtVersion !== (current.sessionVersion ?? 0)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Session invalidée. Reconnectez-vous.", code: "SESSION_REVOKED" },
+        { status: 401 },
+      ),
     };
   }
   return { ok: true, session: current };

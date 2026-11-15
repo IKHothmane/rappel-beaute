@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
-import { hashPassword } from "@/lib/auth/crypto";
+import type { PoolClient } from "pg";
+import { generateTemporaryPassword, hashPassword } from "@/lib/auth/crypto";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 import { writeAuditLog } from "@/lib/db/audit";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
@@ -24,6 +25,8 @@ async function auditSensitive(
     action: string;
     before?: unknown;
     after?: unknown;
+    /** Dans une transaction : les deux journaux sont écrits avec elle (tout ou rien). */
+    client?: PoolClient;
   },
 ) {
   const name = actorName(actor);
@@ -36,8 +39,9 @@ async function auditSensitive(
     action: opts.action,
     before: opts.before,
     after: opts.after,
+    client: opts.client,
   });
-  await writeAuditLog({
+  const orgAudit = writeAuditLog({
     organizationId: opts.organizationId,
     actorId: actor.id,
     actorName: `Super Admin · ${name}`,
@@ -46,7 +50,28 @@ async function auditSensitive(
     action: opts.action,
     before: opts.before,
     after: opts.after,
-  }).catch(() => null);
+    client: opts.client,
+  });
+  // Hors transaction, l'échec du journal institut reste non bloquant (comportement historique).
+  // Dans une transaction, une erreur doit faire échouer l'ensemble.
+  if (opts.client) await orgAudit;
+  else await orgAudit.catch(() => null);
+}
+
+/** Écritures liées + audits dans une transaction. */
+async function inTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => null);
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export function isOrgUserRole(role: string): role is OrgUserRole {
@@ -370,31 +395,33 @@ export async function setPlatformWideUserStatus(
     throw new Error("NOT_FOUND");
   }
 
-  await pool.query(
-    `UPDATE "User" SET status = $2::"OrgUserStatus", "updatedAt" = NOW() WHERE id = $1`,
-    [userId, status],
-  );
-
-  if (status === "DISABLED") {
-    await pool.query(
-      `UPDATE "User" SET "sessionVersion" = "sessionVersion" + 1, "updatedAt" = NOW() WHERE id = $1`,
-      [userId],
-    );
-  }
-
   const action =
     status === "DISABLED"
       ? opts?.asDelete
         ? "USER_DELETED"
         : "USER_DISABLED"
       : "USER_REACTIVATED";
+  const organizationId = user.organizationId;
 
-  await auditSensitive(actor, {
-    organizationId: user.organizationId,
-    entityId: userId,
-    action,
-    before: { status: user.status, email: user.email },
-    after: { status, email: user.email, softDeleted: Boolean(opts?.asDelete) },
+  // Statut, révocation des sessions et audits : tout ou rien.
+  await inTransaction(async (client) => {
+    await client.query(
+      `UPDATE "User"
+       SET status = $2::"OrgUserStatus",
+           "sessionVersion" = "sessionVersion" + CASE WHEN $2::text = 'DISABLED' THEN 1 ELSE 0 END,
+           "updatedAt" = NOW()
+       WHERE id = $1`,
+      [userId, status],
+    );
+
+    await auditSensitive(actor, {
+      organizationId,
+      entityId: userId,
+      action,
+      before: { status: user.status, email: user.email },
+      after: { status, email: user.email, softDeleted: Boolean(opts?.asDelete) },
+      client,
+    });
   });
 }
 
@@ -408,17 +435,28 @@ export async function setPlatformWideUserRole(
     throw new Error("NOT_FOUND");
   }
 
-  await pool.query(
-    `UPDATE "User" SET role = $2::"UserRole", "updatedAt" = NOW() WHERE id = $1`,
-    [userId, role],
-  );
+  const organizationId = user.organizationId;
 
-  await auditSensitive(actor, {
-    organizationId: user.organizationId,
-    entityId: userId,
-    action: "USER_ROLE_CHANGED",
-    before: { role: user.role, email: user.email },
-    after: { role, email: user.email },
+  // Le rôle et la révocation des sessions (sessionVersion + 1) changent ensemble : une rétrogradation
+  // coupe les jetons déjà émis (30 jours), et requireAppSession relit de toute façon le rôle en base.
+  await inTransaction(async (client) => {
+    await client.query(
+      `UPDATE "User"
+       SET role = $2::"UserRole",
+           "sessionVersion" = "sessionVersion" + 1,
+           "updatedAt" = NOW()
+       WHERE id = $1`,
+      [userId, role],
+    );
+
+    await auditSensitive(actor, {
+      organizationId,
+      entityId: userId,
+      action: "USER_ROLE_CHANGED",
+      before: { role: user.role, email: user.email },
+      after: { role, email: user.email, sessionsInvalidated: true },
+      client,
+    });
   });
 }
 
@@ -511,26 +549,30 @@ export async function platformResetUserPassword(
   }
   if (user.status !== "ACTIVE") throw new Error("USER_DISABLED");
 
-  /** Mot de passe temporaire fixe demandé pour le Super Admin. */
-  const temporaryPassword = "Beauty2026!";
+  // Mot de passe temporaire aléatoire, affiché une seule fois (jamais une valeur fixe présente dans le code).
+  const temporaryPassword = generateTemporaryPassword();
   const passwordHash = hashPassword(temporaryPassword);
+  const organizationId = user.organizationId;
 
-  await pool.query(
-    `UPDATE "User"
-     SET "passwordHash" = $1,
-         "mustChangePassword" = true,
-         "sessionVersion" = "sessionVersion" + 1,
-         "updatedAt" = NOW()
-     WHERE id = $2`,
-    [passwordHash, userId],
-  );
+  await inTransaction(async (client) => {
+    await client.query(
+      `UPDATE "User"
+       SET "passwordHash" = $1,
+           "mustChangePassword" = true,
+           "sessionVersion" = "sessionVersion" + 1,
+           "updatedAt" = NOW()
+       WHERE id = $2`,
+      [passwordHash, userId],
+    );
 
-  await auditSensitive(actor, {
-    organizationId: user.organizationId,
-    entityId: userId,
-    action: "USER_PASSWORD_RESET",
-    before: { email: user.email },
-    after: { mustChangePassword: true, temporaryPasswordIssued: true },
+    await auditSensitive(actor, {
+      organizationId,
+      entityId: userId,
+      action: "USER_PASSWORD_RESET",
+      before: { email: user.email },
+      after: { mustChangePassword: true, temporaryPasswordIssued: true },
+      client,
+    });
   });
 
   return {
@@ -550,19 +592,23 @@ export async function invalidateUserSessions(
     throw new Error("NOT_FOUND");
   }
 
-  await pool.query(
-    `UPDATE "User"
-     SET "sessionVersion" = "sessionVersion" + 1, "updatedAt" = NOW()
-     WHERE id = $1`,
-    [userId],
-  );
+  const organizationId = user.organizationId;
+  await inTransaction(async (client) => {
+    await client.query(
+      `UPDATE "User"
+       SET "sessionVersion" = "sessionVersion" + 1, "updatedAt" = NOW()
+       WHERE id = $1`,
+      [userId],
+    );
 
-  await auditSensitive(actor, {
-    organizationId: user.organizationId,
-    entityId: userId,
-    action: "USER_SESSIONS_INVALIDATED",
-    before: { email: user.email },
-    after: { sessionsInvalidated: true },
+    await auditSensitive(actor, {
+      organizationId,
+      entityId: userId,
+      action: "USER_SESSIONS_INVALIDATED",
+      before: { email: user.email },
+      after: { sessionsInvalidated: true },
+      client,
+    });
   });
 }
 
@@ -590,7 +636,9 @@ export async function listUserActivity(opts: {
   }
   if (opts.organizationId) {
     params.push(opts.organizationId);
-    conds.push(`a."organizationId" = $${params.length}`);
+    conds.push(
+      `(a."organizationId" = $${params.length} OR (a."organizationId" IS NULL AND a."organizationIdSnapshot" = $${params.length}))`,
+    );
   }
   params.push(limit);
   const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";

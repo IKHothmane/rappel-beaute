@@ -17,6 +17,8 @@ import {
 } from "@/types/platform";
 import type { SubscriptionStatus } from "@/types/subscription";
 import { pool } from "@/lib/db/pool";
+import { hashActivationToken } from "@/lib/db/activation";
+import { withTransaction } from "@/lib/db/transaction";
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;
@@ -386,7 +388,8 @@ export async function createOrganization(
     await client.query(
       `INSERT INTO "ActivationToken" (id, "userId", token, "expiresAt")
        VALUES ($1,$2,$3,$4)`,
-      [tokenId, ownerId, activationToken, tokenExpires],
+      // Seul le haché est stocké ; le lien envoyé contient le jeton en clair.
+      [tokenId, ownerId, hashActivationToken(activationToken), tokenExpires],
     );
 
     await seedOrgDefaults(client, orgId);
@@ -449,38 +452,50 @@ export async function updateOrganization(
     city?: string | null;
   },
 ) {
-  const before = await getOrganizationById(id);
-  if (!before) throw new Error("NOT_FOUND");
+  // Blank values never overwrite stored data (NULLIF), whatever the caller sent.
+  const clean = (value: string | null | undefined) => {
+    const trimmed = typeof value === "string" ? value.trim() : "";
+    return trimmed === "" ? null : trimmed;
+  };
+  await withTransaction(async (client) => {
+    const { rows } = await client.query<{ name: string; phone: string | null; email: string | null }>(
+      `SELECT name, phone, email FROM "Organization" WHERE id = $1 FOR UPDATE`,
+      [id],
+    );
+    const before = rows[0];
+    if (!before) throw new Error("NOT_FOUND");
 
-  await pool.query(
-    `UPDATE "Organization" SET
-      name = COALESCE($2, name),
-      phone = COALESCE($3, phone),
-      email = COALESCE($4, email),
-      address = COALESCE($5, address),
-      city = COALESCE($6, city),
-      "updatedAt" = NOW()
-     WHERE id = $1`,
-    [
-      id,
-      patch.name?.trim(),
-      patch.phone?.trim(),
-      patch.email?.trim()?.toLowerCase(),
-      patch.address,
-      patch.city,
-    ],
-  );
-
-  const after = await getOrganizationById(id);
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: id,
-    entityType: "Organization",
-    entityId: id,
-    action: "ORGANIZATION_UPDATED",
-    before: { name: before.name, phone: before.phone, email: before.email },
-    after: { name: after?.name, phone: after?.phone, email: after?.email },
+    const { rows: updated } = await client.query<{ name: string; phone: string | null; email: string | null }>(
+      `UPDATE "Organization" SET
+        name = COALESCE($2, name),
+        phone = COALESCE($3, phone),
+        email = COALESCE($4, email),
+        address = COALESCE($5, address),
+        city = COALESCE($6, city),
+        "updatedAt" = NOW()
+       WHERE id = $1
+       RETURNING name, phone, email`,
+      [
+        id,
+        clean(patch.name),
+        clean(patch.phone),
+        clean(patch.email)?.toLowerCase() ?? null,
+        clean(patch.address),
+        clean(patch.city),
+      ],
+    );
+    const after = updated[0];
+    await writePlatformAuditLog({
+      platformUserId: actor.id,
+      platformUserName: actorName(actor),
+      organizationId: id,
+      entityType: "Organization",
+      entityId: id,
+      action: "ORGANIZATION_UPDATED",
+      before: { name: before.name, phone: before.phone, email: before.email },
+      after: { name: after?.name, phone: after?.phone, email: after?.email },
+      client,
+    });
   });
 }
 
@@ -540,12 +555,25 @@ const ORG_DELETE_FIRST = [
 ] as const;
 
 export async function deleteOrganization(actor: PlatformSessionUser, id: string) {
-  const org = await getOrganizationById(id);
-  if (!org) throw new Error("NOT_FOUND");
+  await withTransaction(async (client) => {
+    // Lock first: a concurrent delete waits, then finds nothing and gets NOT_FOUND (no duplicate event).
+    const { rows } = await client.query<{
+      name: string; slug: string; status: string; city: string | null;
+    }>(`SELECT name, slug, status, city FROM "Organization" WHERE id = $1 FOR UPDATE`, [id]);
+    const org = rows[0];
+    if (!org) throw new Error("NOT_FOUND");
 
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
+    // The audit FK is ON DELETE SET NULL, so the institute link of every journal line is lost
+    // when the row goes away. Without a migration the only durable trace is this event: it keeps
+    // the institute identity, and the subscription ids that older Subscription lines refer to.
+    const { rows: subscriptions } = await client.query<{ id: string }>(
+      `SELECT id FROM "Subscription" WHERE "organizationId" = $1 ORDER BY "createdAt"`,
+      [id],
+    );
+    const { rows: logs } = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM "PlatformAuditLog" WHERE "organizationId" = $1`,
+      [id],
+    );
     await writePlatformAuditLog({
       platformUserId: actor.id,
       platformUserName: actorName(actor),
@@ -553,7 +581,13 @@ export async function deleteOrganization(actor: PlatformSessionUser, id: string)
       entityType: "Organization",
       entityId: id,
       action: "ORGANIZATION_DELETED",
-      before: { name: org.name, slug: org.slug, status: org.status, city: org.city },
+      before: { id, name: org.name, slug: org.slug, status: org.status, city: org.city },
+      after: {
+        organizationId: id,
+        organizationName: org.name,
+        subscriptionIds: subscriptions.map((row) => row.id),
+        detachedAuditLogs: Number(logs[0]?.count ?? 0),
+      },
       client,
     });
     for (const table of ORG_DELETE_FIRST) {
@@ -561,13 +595,7 @@ export async function deleteOrganization(actor: PlatformSessionUser, id: string)
     }
     const deleted = await client.query(`DELETE FROM "Organization" WHERE id = $1`, [id]);
     if (deleted.rowCount === 0) throw new Error("NOT_FOUND");
-    await client.query("COMMIT");
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 export async function archiveOrganization(actor: PlatformSessionUser, id: string) {
@@ -653,38 +681,46 @@ export async function resetOwnerAccess(
   actor: PlatformSessionUser,
   organizationId: string,
 ): Promise<{ activationToken: string; activationUrl: string }> {
-  const { rows } = await pool.query<{ id: string; email: string }>(
-    `SELECT id, email FROM "User"
-     WHERE "organizationId" = $1 AND role = 'OWNER'
-     ORDER BY "createdAt" ASC LIMIT 1`,
-    [organizationId],
-  );
-  const owner = rows[0];
-  if (!owner) throw new Error("OWNER_NOT_FOUND");
-
   const tokenId = newId("act");
   const activationToken = randomBytes(32).toString("hex");
   const tokenExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  await pool.query(`UPDATE "User" SET "passwordHash" = NULL, "updatedAt" = NOW() WHERE id = $1`, [
-    owner.id,
-  ]);
-  await pool.query(`UPDATE "ActivationToken" SET "usedAt" = NOW() WHERE "userId" = $1 AND "usedAt" IS NULL`, [
-    owner.id,
-  ]);
-  await pool.query(
-    `INSERT INTO "ActivationToken" (id, "userId", token, "expiresAt") VALUES ($1,$2,$3,$4)`,
-    [tokenId, owner.id, activationToken, tokenExpires],
-  );
+  // Transaction unique : mot de passe effacé, anciens jetons révoqués, nouveau jeton et audit
+  // sont appliqués ensemble ; le verrou sur le propriétaire sérialise deux réinitialisations
+  // concurrentes (un seul jeton actif à la fin).
+  await withTransaction(async (client) => {
+    const { rows } = await client.query<{ id: string; email: string }>(
+      `SELECT id, email FROM "User"
+       WHERE "organizationId" = $1 AND role = 'OWNER'
+       ORDER BY "createdAt" ASC LIMIT 1
+       FOR UPDATE`,
+      [organizationId],
+    );
+    const owner = rows[0];
+    if (!owner) throw new Error("OWNER_NOT_FOUND");
 
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId,
-    entityType: "User",
-    entityId: owner.id,
-    action: "OWNER_ACCESS_RESET",
-    after: { email: owner.email },
+    await client.query(`UPDATE "User" SET "passwordHash" = NULL, "updatedAt" = NOW() WHERE id = $1`, [
+      owner.id,
+    ]);
+    await client.query(`UPDATE "ActivationToken" SET "usedAt" = NOW() WHERE "userId" = $1 AND "usedAt" IS NULL`, [
+      owner.id,
+    ]);
+    await client.query(
+      `INSERT INTO "ActivationToken" (id, "userId", token, "expiresAt") VALUES ($1,$2,$3,$4)`,
+      // Seul le haché est stocké ; le lien envoyé contient le jeton en clair.
+      [tokenId, owner.id, hashActivationToken(activationToken), tokenExpires],
+    );
+
+    await writePlatformAuditLog({
+      platformUserId: actor.id,
+      platformUserName: actorName(actor),
+      organizationId,
+      entityType: "User",
+      entityId: owner.id,
+      action: "OWNER_ACCESS_RESET",
+      after: { email: owner.email },
+      client,
+    });
   });
 
   const baseUrl = publicAppOrigin() || "http://localhost:3000";

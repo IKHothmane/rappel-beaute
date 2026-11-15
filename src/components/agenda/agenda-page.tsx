@@ -88,6 +88,7 @@ export function AgendaPage() {
   const [view, setView] = useState<AgendaView>("week");
   const [date, setDate] = useState(() => new Date());
   const [drawer, setDrawer] = useState<DrawerMode>(null);
+  const [tutorialMode, setTutorialMode] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -371,6 +372,7 @@ export function AgendaPage() {
   async function handleCreate(
     data: CreateAppointmentInput,
   ): Promise<{ ok: true } | { ok: false; error: string }> {
+    if (tutorialMode) return { ok: false, error: "La création est désactivée pendant le tutoriel." };
     const code = data.promotionCode?.trim();
     const { promotionCode: _code, ...payload } = data;
     setSubmitting(true);
@@ -577,6 +579,8 @@ export function AgendaPage() {
           onNext={() => shiftDate(1)}
           onToday={() => setDate(new Date())}
           onCreate={() => openCreate()}
+          onTutorialCreate={() => { setTutorialMode(true); openCreate(); }}
+          onTutorialClose={() => { setTutorialMode(false); setDrawer(null); setCreateSeed(undefined); }}
           onAppointmentClick={openDetail}
         >
           {loading ? (
@@ -658,9 +662,11 @@ export function AgendaPage() {
       <NouveauRendezVousModal
         key={createSeed?.startAt ?? "new"}
         open={drawer === "create"}
+        tutorialMode={tutorialMode}
         onClose={() => {
           setDrawer(null);
           setCreateSeed(undefined);
+          setTutorialMode(false);
         }}
         appointments={appointments}
         services={services}

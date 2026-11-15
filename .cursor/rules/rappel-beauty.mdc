@@ -1,0 +1,6 @@
+---
+description: Project conventions and verification for Rappel Beauty
+alwaysApply: true
+---
+
+Read and follow `AGENTS.md` at the repository root. Use `.cursor/agents/` for scoped specialist work and `.agents/skills/` for task-matched upstream skills. Preserve existing user changes and report verified outcomes.

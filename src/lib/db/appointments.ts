@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db/pool";
+import { newId } from "@/lib/db/ids";
 import type { Appointment, AppointmentPaymentState, CreateAppointmentInput } from "@/types/appointment";
 
 function paymentState(amountDue: number, netPaid: number): AppointmentPaymentState {
@@ -275,7 +276,7 @@ export async function createAppointmentRow(
   input: CreateAppointmentInput,
 ): Promise<Appointment> {
   await assertAppointmentReferences(organizationId, input);
-  const id = `apt-${Date.now()}`;
+  const id = newId("apt", "-");
 
   let depositAmount = input.deposit ?? null;
   let depositState = "NOT_REQUIRED";

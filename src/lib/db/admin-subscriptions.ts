@@ -4,8 +4,14 @@ import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 import { getPlanByCode, getPlanById, listPlans } from "@/lib/subscriptions/plans";
 import { addMonths } from "@/lib/subscriptions/subscription-service";
-import type { PlanCode, SubscriptionStatus } from "@/types/subscription";
+import type { PlanCode, PlanDto, SubscriptionStatus } from "@/types/subscription";
 import { pool } from "@/lib/db/pool";
+import { withTransaction } from "@/lib/db/transaction";
+import {
+  assertPeriodEndNotBeforeStart,
+  assertReasonablePeriodEnd,
+  writePaymentChangedAudit,
+} from "@/lib/db/subscription-period-payment";
 
 function actorName(actor: PlatformSessionUser) {
   return `${actor.firstName} ${actor.lastName}`.trim();
@@ -286,7 +292,10 @@ export async function listSubscriptionHistory(subscriptionId: string, organizati
   }>(
     `SELECT id, "platformUserName", action, "before", "after", "createdAt"
      FROM "PlatformAuditLog"
-     WHERE ("entityId" = $1 OR ("organizationId" = $2 AND "entityType" = 'Subscription'))
+     WHERE ("entityId" = $1 OR (
+              ("organizationId" = $2 OR ("organizationId" IS NULL AND "organizationIdSnapshot" = $2))
+              AND "entityType" = 'Subscription'
+            ))
      ORDER BY "createdAt" DESC
      LIMIT 50`,
     [subscriptionId, organizationId],
@@ -301,45 +310,69 @@ export async function listSubscriptionHistory(subscriptionId: string, organizati
   }));
 }
 
-export async function changeSubscriptionPlan(
-  actor: PlatformSessionUser,
-  subscriptionId: string,
-  newPlanId: string,
-  opts?: { applyAt?: "now" | "next_period" },
-): Promise<void> {
-  const plan = await getPlanById(newPlanId);
-  if (!plan || !plan.active) throw new Error("PLAN_NOT_FOUND");
+type LockedSubscription = {
+  organizationId: string;
+  planId: string;
+  priceSnapshot: string;
+  currencySnapshot: string;
+  status: SubscriptionStatus;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  trialEndsAt: Date | null;
+  paid: boolean;
+  paidAt: Date | null;
+};
 
-  const { rows } = await pool.query<{
-    organizationId: string;
-    planId: string;
-    priceSnapshot: string;
-    status: SubscriptionStatus;
-    currentPeriodEnd: Date;
-  }>(
-    `SELECT "organizationId", "planId", "priceSnapshot"::text, status, "currentPeriodEnd"
-     FROM "Subscription" WHERE id = $1`,
+/** Reads and locks the subscription row for the rest of the transaction. */
+async function lockSubscription(client: PoolClient, subscriptionId: string): Promise<LockedSubscription> {
+  const { rows } = await client.query<LockedSubscription>(
+    `SELECT "organizationId", "planId", "priceSnapshot"::text, "currencySnapshot", status,
+            "currentPeriodStart", "currentPeriodEnd", "trialEndsAt", paid, "paidAt"
+     FROM "Subscription" WHERE id = $1 FOR UPDATE`,
     [subscriptionId],
   );
-  const sub = rows[0];
-  if (!sub) throw new Error("NOT_FOUND");
+  if (!rows[0]) throw new Error("NOT_FOUND");
+  return rows[0];
+}
 
-  const applyAt = opts?.applyAt ?? "now";
+function auditBase(actor: PlatformSessionUser, client: PoolClient, organizationId: string, subscriptionId: string) {
+  return {
+    client,
+    platformUserId: actor.id,
+    platformUserName: actorName(actor),
+    organizationId,
+    entityType: "Subscription",
+    entityId: subscriptionId,
+  };
+}
+
+function assertPositiveInt(value: unknown, max: number): asserts value is number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > max) {
+    throw new Error("INVALID_INPUT");
+  }
+}
+
+async function changePlanInTransaction(
+  client: PoolClient,
+  actor: PlatformSessionUser,
+  subscriptionId: string,
+  plan: PlanDto,
+  applyAt: "now" | "next_period",
+): Promise<void> {
+  const sub = await lockSubscription(client, subscriptionId);
+  const audit = auditBase(actor, client, sub.organizationId, subscriptionId);
+
   if (applyAt === "next_period") {
-    await pool.query(
+    await client.query(
       `UPDATE "Subscription" SET "planId" = $2, "priceSnapshot" = $3, "updatedAt" = NOW() WHERE id = $1`,
-      [subscriptionId, newPlanId, plan.price],
+      [subscriptionId, plan.id, plan.price],
     );
     await writePlatformAuditLog({
-      platformUserId: actor.id,
-      platformUserName: actorName(actor),
-      organizationId: sub.organizationId,
-      entityType: "Subscription",
-      entityId: subscriptionId,
+      ...audit,
       action: "SUBSCRIPTION_PLAN_CHANGE_SCHEDULED",
       before: { planId: sub.planId, priceSnapshot: parseFloat(sub.priceSnapshot) },
       after: {
-        planId: newPlanId,
+        planId: plan.id,
         priceSnapshot: plan.price,
         planCode: plan.code,
         applyAt: sub.currentPeriodEnd.toISOString(),
@@ -350,8 +383,7 @@ export async function changeSubscriptionPlan(
 
   const now = new Date();
   const periodEnd = addMonths(now, 1);
-
-  await pool.query(
+  await client.query(
     `UPDATE "Subscription" SET
       "planId" = $2,
       "priceSnapshot" = $3,
@@ -359,24 +391,37 @@ export async function changeSubscriptionPlan(
         WHEN status = 'TRIAL'::"SubscriptionStatus" THEN 'TRIAL'::"SubscriptionStatus"
         ELSE 'ACTIVE'::"SubscriptionStatus"
       END,
+      "cancelledAt" = CASE WHEN status = 'TRIAL'::"SubscriptionStatus" THEN "cancelledAt" ELSE NULL END,
       "currentPeriodStart" = $4,
       "currentPeriodEnd" = $5,
       "updatedAt" = NOW()
      WHERE id = $1`,
-    [subscriptionId, newPlanId, plan.price, now, periodEnd],
+    [subscriptionId, plan.id, plan.price, now, periodEnd],
   );
-
   await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: sub.organizationId,
-    entityType: "Subscription",
-    entityId: subscriptionId,
+    ...audit,
     action: "SUBSCRIPTION_CHANGED",
     before: { planId: sub.planId, priceSnapshot: parseFloat(sub.priceSnapshot) },
-    after: { planId: newPlanId, priceSnapshot: plan.price, planCode: plan.code },
+    after: { planId: plan.id, priceSnapshot: plan.price, planCode: plan.code },
   });
 }
+
+export async function changeSubscriptionPlan(
+  actor: PlatformSessionUser,
+  subscriptionId: string,
+  newPlanId: string,
+  opts?: { applyAt?: "now" | "next_period" },
+): Promise<void> {
+  const plan = await getPlanById(newPlanId);
+  if (!plan || !plan.active) throw new Error("PLAN_NOT_FOUND");
+  const applyAt = opts?.applyAt ?? "now";
+  if (applyAt !== "now" && applyAt !== "next_period") throw new Error("INVALID_INPUT");
+  await withTransaction((client) => changePlanInTransaction(client, actor, subscriptionId, plan, applyAt));
+}
+
+export const SUBSCRIPTION_STATUSES: readonly SubscriptionStatus[] = [
+  "TRIAL", "ACTIVE", "PAST_DUE", "PAUSED", "CANCELLED", "EXPIRED",
+];
 
 export async function setSubscriptionStatus(
   actor: PlatformSessionUser,
@@ -385,29 +430,24 @@ export async function setSubscriptionStatus(
   action: string,
   reason?: string,
 ): Promise<void> {
-  const { rows } = await pool.query<{ organizationId: string; status: SubscriptionStatus }>(
-    `SELECT "organizationId", status FROM "Subscription" WHERE id = $1`,
-    [subscriptionId],
-  );
-  const sub = rows[0];
-  if (!sub) throw new Error("NOT_FOUND");
-
-  await pool.query(
-    `UPDATE "Subscription" SET status = $2::"SubscriptionStatus", "updatedAt" = NOW(),
-      "cancelledAt" = CASE WHEN $2::text = 'CANCELLED' THEN NOW() ELSE "cancelledAt" END
-     WHERE id = $1`,
-    [subscriptionId, status],
-  );
-
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: sub.organizationId,
-    entityType: "Subscription",
-    entityId: subscriptionId,
-    action,
-    before: { status: sub.status },
-    after: { status, reason: reason ?? null },
+  if (!SUBSCRIPTION_STATUSES.includes(status)) throw new Error("INVALID_INPUT");
+  await withTransaction(async (client) => {
+    const sub = await lockSubscription(client, subscriptionId);
+    await client.query(
+      `UPDATE "Subscription" SET status = $2::"SubscriptionStatus", "updatedAt" = NOW(),
+        "cancelledAt" = CASE
+          WHEN $2::text = 'CANCELLED' THEN COALESCE("cancelledAt", NOW())
+          WHEN $2::text IN ('ACTIVE', 'TRIAL') THEN NULL
+          ELSE "cancelledAt" END
+       WHERE id = $1`,
+      [subscriptionId, status],
+    );
+    await writePlatformAuditLog({
+      ...auditBase(actor, client, sub.organizationId, subscriptionId),
+      action,
+      before: { status: sub.status },
+      after: { status, reason: reason ?? null },
+    });
   });
 }
 
@@ -416,35 +456,27 @@ export async function setSubscriptionPaid(
   subscriptionId: string,
   paid: boolean,
 ): Promise<void> {
-  const { rows } = await pool.query<{
-    organizationId: string;
-    paid: boolean;
-    paidAt: Date | null;
-  }>(
-    `SELECT "organizationId", paid, "paidAt" FROM "Subscription" WHERE id = $1`,
-    [subscriptionId],
-  );
-  const sub = rows[0];
-  if (!sub) throw new Error("NOT_FOUND");
-
-  await pool.query(
-    `UPDATE "Subscription" SET
-      paid = $2,
-      "paidAt" = CASE WHEN $2 THEN NOW() ELSE NULL END,
-      "updatedAt" = NOW()
-     WHERE id = $1`,
-    [subscriptionId, paid],
-  );
-
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: sub.organizationId,
-    entityType: "Subscription",
-    entityId: subscriptionId,
-    action: paid ? "SUBSCRIPTION_MARKED_PAID" : "SUBSCRIPTION_MARKED_UNPAID",
-    before: { paid: sub.paid, paidAt: sub.paidAt?.toISOString() ?? null },
-    after: { paid },
+  await withTransaction(async (client) => {
+    const sub = await lockSubscription(client, subscriptionId);
+    // Idempotent: repeating the same value neither rewrites paidAt nor adds a payment event.
+    if (Boolean(sub.paid) === paid) return;
+    await client.query(
+      `UPDATE "Subscription" SET paid = $2, "paidAt" = CASE WHEN $2::boolean THEN NOW() ELSE NULL END,
+        "updatedAt" = NOW() WHERE id = $1`,
+      [subscriptionId, paid],
+    );
+    await writePaymentChangedAudit(
+      client,
+      { platformUserId: actor.id, platformUserName: actorName(actor), organizationId: sub.organizationId, entityId: subscriptionId },
+      { paid: sub.paid, paidAt: sub.paidAt },
+      {
+        paid,
+        priceSnapshot: parseFloat(sub.priceSnapshot),
+        currency: sub.currencySnapshot,
+        periodStart: sub.currentPeriodStart.toISOString(),
+        periodEnd: sub.currentPeriodEnd.toISOString(),
+      },
+    );
   });
 }
 
@@ -453,32 +485,24 @@ export async function extendSubscriptionPeriod(
   subscriptionId: string,
   months = 1,
 ): Promise<{ newEnd: string }> {
-  const { rows } = await pool.query<{ organizationId: string; currentPeriodEnd: Date }>(
-    `SELECT "organizationId", "currentPeriodEnd" FROM "Subscription" WHERE id = $1`,
-    [subscriptionId],
-  );
-  const sub = rows[0];
-  if (!sub) throw new Error("NOT_FOUND");
-
-  const base = sub.currentPeriodEnd.getTime() < Date.now() ? new Date() : sub.currentPeriodEnd;
-  const newEnd = addMonths(base, months);
-  await pool.query(
-    `UPDATE "Subscription" SET "currentPeriodEnd" = $2, status = 'ACTIVE', "updatedAt" = NOW() WHERE id = $1`,
-    [subscriptionId, newEnd],
-  );
-
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: sub.organizationId,
-    entityType: "Subscription",
-    entityId: subscriptionId,
-    action: "SUBSCRIPTION_EXTENDED",
-    before: { currentPeriodEnd: sub.currentPeriodEnd.toISOString() },
-    after: { currentPeriodEnd: newEnd.toISOString(), months },
+  assertPositiveInt(months, 36);
+  return withTransaction(async (client) => {
+    const sub = await lockSubscription(client, subscriptionId);
+    const base = sub.currentPeriodEnd.getTime() < Date.now() ? new Date() : sub.currentPeriodEnd;
+    const newEnd = addMonths(base, months);
+    await client.query(
+      `UPDATE "Subscription" SET "currentPeriodEnd" = $2, status = 'ACTIVE', "cancelledAt" = NULL,
+        "updatedAt" = NOW() WHERE id = $1`,
+      [subscriptionId, newEnd],
+    );
+    await writePlatformAuditLog({
+      ...auditBase(actor, client, sub.organizationId, subscriptionId),
+      action: "SUBSCRIPTION_EXTENDED",
+      before: { currentPeriodEnd: sub.currentPeriodEnd.toISOString(), status: sub.status },
+      after: { currentPeriodEnd: newEnd.toISOString(), months, status: "ACTIVE" },
+    });
+    return { newEnd: newEnd.toISOString() };
   });
-
-  return { newEnd: newEnd.toISOString() };
 }
 
 export async function grantFreePeriod(
@@ -487,32 +511,24 @@ export async function grantFreePeriod(
   days: number,
   reason: string,
 ): Promise<{ newEnd: string }> {
-  const { rows } = await pool.query<{ organizationId: string; currentPeriodEnd: Date }>(
-    `SELECT "organizationId", "currentPeriodEnd" FROM "Subscription" WHERE id = $1`,
-    [subscriptionId],
-  );
-  const sub = rows[0];
-  if (!sub) throw new Error("NOT_FOUND");
-
-  const base = sub.currentPeriodEnd.getTime() < Date.now() ? new Date() : sub.currentPeriodEnd;
-  const newEnd = new Date(base.getTime() + days * 86400000);
-  await pool.query(
-    `UPDATE "Subscription" SET "currentPeriodEnd" = $2, status = 'ACTIVE', "updatedAt" = NOW() WHERE id = $1`,
-    [subscriptionId, newEnd],
-  );
-
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: sub.organizationId,
-    entityType: "Subscription",
-    entityId: subscriptionId,
-    action: "SUBSCRIPTION_TRIAL_GRANTED",
-    before: { currentPeriodEnd: sub.currentPeriodEnd.toISOString() },
-    after: { currentPeriodEnd: newEnd.toISOString(), days, reason },
+  assertPositiveInt(days, 3650);
+  return withTransaction(async (client) => {
+    const sub = await lockSubscription(client, subscriptionId);
+    const base = sub.currentPeriodEnd.getTime() < Date.now() ? new Date() : sub.currentPeriodEnd;
+    const newEnd = new Date(base.getTime() + days * 86400000);
+    await client.query(
+      `UPDATE "Subscription" SET "currentPeriodEnd" = $2, status = 'ACTIVE', "cancelledAt" = NULL,
+        "updatedAt" = NOW() WHERE id = $1`,
+      [subscriptionId, newEnd],
+    );
+    await writePlatformAuditLog({
+      ...auditBase(actor, client, sub.organizationId, subscriptionId),
+      action: "SUBSCRIPTION_TRIAL_GRANTED",
+      before: { currentPeriodEnd: sub.currentPeriodEnd.toISOString(), status: sub.status },
+      after: { currentPeriodEnd: newEnd.toISOString(), days, reason, status: "ACTIVE" },
+    });
+    return { newEnd: newEnd.toISOString() };
   });
-
-  return { newEnd: newEnd.toISOString() };
 }
 
 export async function grantDemoTrial(
@@ -520,62 +536,46 @@ export async function grantDemoTrial(
   subscriptionId: string,
   days = 7,
 ): Promise<{ newEnd: string }> {
-  const { rows } = await pool.query<{
-    organizationId: string;
-    status: SubscriptionStatus;
-    currentPeriodEnd: Date;
-    trialEndsAt: Date | null;
-  }>(
-    `SELECT "organizationId", status, "currentPeriodEnd", "trialEndsAt"
-     FROM "Subscription" WHERE id = $1`,
-    [subscriptionId],
-  );
-  const sub = rows[0];
-  if (!sub) throw new Error("NOT_FOUND");
+  assertPositiveInt(days, 365);
+  return withTransaction(async (client) => {
+    const sub = await lockSubscription(client, subscriptionId);
+    const now = new Date();
+    const newEnd = new Date(now.getTime() + days * 86400000);
 
-  const now = new Date();
-  const newEnd = new Date(now.getTime() + days * 86400000);
-
-  await pool.query(
-    `UPDATE "Subscription" SET
-      status = 'TRIAL',
-      "trialEndsAt" = $2,
-      "currentPeriodStart" = $3,
-      "currentPeriodEnd" = $2,
-      "cancelledAt" = NULL,
-      "updatedAt" = NOW()
-     WHERE id = $1`,
-    [subscriptionId, newEnd, now],
-  );
-
-  await pool.query(
-    `UPDATE "Organization" SET status = 'ACTIVE', "updatedAt" = NOW()
-     WHERE id = $1 AND status != 'ARCHIVED'`,
-    [sub.organizationId],
-  );
-
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: sub.organizationId,
-    entityType: "Subscription",
-    entityId: subscriptionId,
-    action: "SUBSCRIPTION_TRIAL_GRANTED",
-    before: {
-      status: sub.status,
-      currentPeriodEnd: sub.currentPeriodEnd.toISOString(),
-      trialEndsAt: sub.trialEndsAt?.toISOString() ?? null,
-    },
-    after: {
-      status: "TRIAL",
-      currentPeriodEnd: newEnd.toISOString(),
-      trialEndsAt: newEnd.toISOString(),
-      days,
-      mode: "demo",
-    },
+    await client.query(
+      `UPDATE "Subscription" SET
+        status = 'TRIAL',
+        "trialEndsAt" = $2,
+        "currentPeriodStart" = $3,
+        "currentPeriodEnd" = $2,
+        "cancelledAt" = NULL,
+        "updatedAt" = NOW()
+       WHERE id = $1`,
+      [subscriptionId, newEnd, now],
+    );
+    await client.query(
+      `UPDATE "Organization" SET status = 'ACTIVE', "updatedAt" = NOW()
+       WHERE id = $1 AND status != 'ARCHIVED'`,
+      [sub.organizationId],
+    );
+    await writePlatformAuditLog({
+      ...auditBase(actor, client, sub.organizationId, subscriptionId),
+      action: "SUBSCRIPTION_TRIAL_GRANTED",
+      before: {
+        status: sub.status,
+        currentPeriodEnd: sub.currentPeriodEnd.toISOString(),
+        trialEndsAt: sub.trialEndsAt?.toISOString() ?? null,
+      },
+      after: {
+        status: "TRIAL",
+        currentPeriodEnd: newEnd.toISOString(),
+        trialEndsAt: newEnd.toISOString(),
+        days,
+        mode: "demo",
+      },
+    });
+    return { newEnd: newEnd.toISOString() };
   });
-
-  return { newEnd: newEnd.toISOString() };
 }
 
 export async function setSubscriptionPrice(
@@ -587,30 +587,20 @@ export async function setSubscriptionPrice(
     throw new Error("INVALID_PRICE");
   }
   const next = Math.round(price * 100) / 100;
-  const { rows } = await pool.query<{ organizationId: string; priceSnapshot: string }>(
-    `SELECT "organizationId", "priceSnapshot"::text FROM "Subscription" WHERE id = $1`,
-    [subscriptionId],
-  );
-  const sub = rows[0];
-  if (!sub) throw new Error("NOT_FOUND");
-
-  await pool.query(
-    `UPDATE "Subscription" SET "priceSnapshot" = $2, "updatedAt" = NOW() WHERE id = $1`,
-    [subscriptionId, next],
-  );
-
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: sub.organizationId,
-    entityType: "Subscription",
-    entityId: subscriptionId,
-    action: "SUBSCRIPTION_PRICE_CHANGED",
-    before: { priceSnapshot: parseFloat(sub.priceSnapshot) },
-    after: { priceSnapshot: next },
+  return withTransaction(async (client) => {
+    const sub = await lockSubscription(client, subscriptionId);
+    await client.query(
+      `UPDATE "Subscription" SET "priceSnapshot" = $2, "updatedAt" = NOW() WHERE id = $1`,
+      [subscriptionId, next],
+    );
+    await writePlatformAuditLog({
+      ...auditBase(actor, client, sub.organizationId, subscriptionId),
+      action: "SUBSCRIPTION_PRICE_CHANGED",
+      before: { priceSnapshot: parseFloat(sub.priceSnapshot) },
+      after: { priceSnapshot: next },
+    });
+    return { price: next };
   });
-
-  return { price: next };
 }
 
 export async function setSubscriptionPeriodEnd(
@@ -618,42 +608,33 @@ export async function setSubscriptionPeriodEnd(
   subscriptionId: string,
   periodEnd: Date,
 ): Promise<{ newEnd: string }> {
-  const { rows } = await pool.query<{
-    organizationId: string;
-    currentPeriodEnd: Date;
-    status: SubscriptionStatus;
-  }>(
-    `SELECT "organizationId", "currentPeriodEnd", status FROM "Subscription" WHERE id = $1`,
-    [subscriptionId],
-  );
-  const sub = rows[0];
-  if (!sub) throw new Error("NOT_FOUND");
-  if (Number.isNaN(periodEnd.getTime())) throw new Error("INVALID_DATE");
-
-  await pool.query(
-    `UPDATE "Subscription" SET
-      "currentPeriodEnd" = $2,
-      status = CASE
-        WHEN status IN ('CANCELLED', 'EXPIRED') THEN 'ACTIVE'::"SubscriptionStatus"
-        ELSE status
-      END,
-      "updatedAt" = NOW()
-     WHERE id = $1`,
-    [subscriptionId, periodEnd],
-  );
-
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: sub.organizationId,
-    entityType: "Subscription",
-    entityId: subscriptionId,
-    action: "SUBSCRIPTION_EXTENDED",
-    before: { currentPeriodEnd: sub.currentPeriodEnd.toISOString(), status: sub.status },
-    after: { currentPeriodEnd: periodEnd.toISOString() },
+  if (!(periodEnd instanceof Date) || Number.isNaN(periodEnd.getTime())) throw new Error("INVALID_DATE");
+  return withTransaction(async (client) => {
+    const sub = await lockSubscription(client, subscriptionId);
+    const changed = periodEnd.getTime() !== sub.currentPeriodEnd.getTime();
+    if (changed) {
+      assertReasonablePeriodEnd(periodEnd);
+      // CHECK en base : fin >= début. L'erreur est métier (400), pas une violation 23514 (500).
+      assertPeriodEndNotBeforeStart(sub.currentPeriodStart, periodEnd);
+    }
+    const reactivated = changed && (sub.status === "CANCELLED" || sub.status === "EXPIRED");
+    await client.query(
+      `UPDATE "Subscription" SET
+        "currentPeriodEnd" = $2,
+        status = CASE WHEN $3::boolean THEN 'ACTIVE'::"SubscriptionStatus" ELSE status END,
+        "cancelledAt" = CASE WHEN $3::boolean THEN NULL ELSE "cancelledAt" END,
+        "updatedAt" = NOW()
+       WHERE id = $1`,
+      [subscriptionId, periodEnd, reactivated],
+    );
+    await writePlatformAuditLog({
+      ...auditBase(actor, client, sub.organizationId, subscriptionId),
+      action: "SUBSCRIPTION_EXTENDED",
+      before: { currentPeriodEnd: sub.currentPeriodEnd.toISOString(), status: sub.status },
+      after: { currentPeriodEnd: periodEnd.toISOString(), status: reactivated ? "ACTIVE" : sub.status },
+    });
+    return { newEnd: periodEnd.toISOString() };
   });
-
-  return { newEnd: periodEnd.toISOString() };
 }
 
 export async function createAdminSubscription(
@@ -661,55 +642,42 @@ export async function createAdminSubscription(
   opts: { organizationId: string; planCode: PlanCode },
 ): Promise<string> {
   const plan = await getPlanByCode(opts.planCode);
-  if (!plan) throw new Error("PLAN_NOT_FOUND");
+  if (!plan || !plan.active) throw new Error("PLAN_NOT_FOUND");
 
-  const { rows: existing } = await pool.query<{ id: string }>(
-    `SELECT id FROM "Subscription" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
-    [opts.organizationId],
-  );
-  if (existing[0]) {
-    await changeSubscriptionPlan(actor, existing[0].id, plan.id, { applyAt: "now" });
-    return existing[0].id;
-  }
+  return withTransaction(async (client) => {
+    // The institute row is the mutex: two concurrent creations queue here, and the
+    // second one then finds the first subscription and only changes its plan.
+    const { rows: org } = await client.query<{ id: string }>(
+      `SELECT id FROM "Organization" WHERE id = $1 FOR UPDATE`,
+      [opts.organizationId],
+    );
+    if (!org[0]) throw new Error("ORGANIZATION_NOT_FOUND");
 
-  const id = await startTrialSubscription(opts.organizationId, plan.id);
-  await pool.query(
-    `UPDATE "Subscription" SET status = 'ACTIVE', "trialEndsAt" = NULL, "updatedAt" = NOW() WHERE id = $1`,
-    [id],
-  );
-  await writePlatformAuditLog({
-    platformUserId: actor.id,
-    platformUserName: actorName(actor),
-    organizationId: opts.organizationId,
-    entityType: "Subscription",
-    entityId: id,
-    action: "SUBSCRIPTION_CREATED",
-    after: { planCode: opts.planCode, planId: plan.id },
+    const { rows: existing } = await client.query<{ id: string }>(
+      `SELECT id FROM "Subscription" WHERE "organizationId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+      [opts.organizationId],
+    );
+    if (existing[0]) {
+      await changePlanInTransaction(client, actor, existing[0].id, plan, "now");
+      return existing[0].id;
+    }
+
+    const now = new Date();
+    const id = `sub_${randomBytes(6).toString("hex")}`;
+    await client.query(
+      `INSERT INTO "Subscription" (
+        id, "organizationId", "planId", status, "priceSnapshot", "currencySnapshot",
+        "startedAt", "currentPeriodStart", "currentPeriodEnd", "trialEndsAt", "updatedAt"
+      ) VALUES ($1,$2,$3,'ACTIVE',$4,$5,$6,$6,$7,NULL,NOW())`,
+      [id, opts.organizationId, plan.id, plan.price, plan.currency, now, addMonths(now, 1)],
+    );
+    await writePlatformAuditLog({
+      ...auditBase(actor, client, opts.organizationId, id),
+      action: "SUBSCRIPTION_CREATED",
+      after: { planCode: opts.planCode, planId: plan.id },
+    });
+    return id;
   });
-  return id;
-}
-
-async function startTrialSubscription(
-  organizationId: string,
-  planId: string,
-  client?: PoolClient,
-): Promise<string> {
-  const plan = await getPlanById(planId);
-  if (!plan) throw new Error("PLAN_NOT_FOUND");
-  const c = client ?? pool;
-  const now = new Date();
-  const trialEnds = new Date(now.getTime() + plan.trialDays * 86400000);
-  const periodEnd = addMonths(now, 1);
-  const id = `sub_${randomBytes(6).toString("hex")}`;
-
-  await c.query(
-    `INSERT INTO "Subscription" (
-      id, "organizationId", "planId", status, "priceSnapshot", "currencySnapshot",
-      "startedAt", "currentPeriodStart", "currentPeriodEnd", "trialEndsAt", "updatedAt"
-    ) VALUES ($1,$2,$3,'TRIAL',$4,$5,$6,$6,$7,$8,NOW())`,
-    [id, organizationId, planId, plan.price, plan.currency, now, periodEnd, trialEnds],
-  );
-  return id;
 }
 
 export { listPlans };

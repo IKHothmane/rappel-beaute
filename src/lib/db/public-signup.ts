@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import type { PoolClient } from "pg";
 import { generateSignupPin, hashPassword } from "@/lib/auth/crypto";
 import { pool } from "@/lib/db/pool";
+import { bindPublicInstitute } from "@/lib/db/tenant-context";
 import { normalizeLoginPhone } from "@/lib/auth/login-identifier";
 import { newInstituteTrialEnd } from "@/lib/subscriptions/subscription-service";
 import { getPlanByCode, listPlans } from "@/lib/subscriptions/plans";
@@ -112,6 +113,9 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
   const now = new Date();
   const trialEnd = newInstituteTrialEnd(now);
 
+  // Avant la connexion : le contexte est posé à l'emprunt du client. Sans institut annoncé,
+  // rappel_public échoue WITH CHECK sur Subscription, les réglages et l'Organization elle-même.
+  bindPublicInstitute(orgId);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");

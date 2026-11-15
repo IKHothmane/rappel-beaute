@@ -11,12 +11,29 @@ import {
   setSubscriptionPeriodEnd,
   setSubscriptionPrice,
   setSubscriptionStatus,
+  SUBSCRIPTION_STATUSES,
 } from "@/lib/db/admin-subscriptions";
+import { readJsonObject } from "@/lib/admin/read-json-object";
 import { getPlanByCode, getPlanById, listPlans } from "@/lib/subscriptions/plans";
 import type { SubscriptionStatus } from "@/types/subscription";
 import { platformRoute } from "@/lib/http/route-scope";
+import { saveSubscriptionPeriodPayment, type PeriodPaymentInput } from "@/lib/db/subscription-period-payment";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:?\d{2})?)?$/;
+
+/** Domain errors thrown by the services, mapped to the right HTTP answer. */
+function mapSubscriptionError(error: unknown, fallback: string) {
+  const code = error instanceof Error ? error.message : "";
+  if (code === "NOT_FOUND") return adminError("Abonnement introuvable.", 404);
+  if (code === "INVALID_DATE") return adminError("Date de fin invalide, hors limites ou antérieure au début de la période.", 400);
+  if (code === "INVALID_PRICE") return adminError("Prix invalide.", 400);
+  if (code === "INVALID_INPUT") return adminError("Valeur invalide.", 400);
+  if (code === "PLAN_NOT_FOUND") return adminError("Plan invalide.", 400);
+  console.error("[admin/subscriptions/:id]", error);
+  return adminError(fallback, 500);
+}
 
 export const GET = platformRoute(async function GET(request: NextRequest, ctx: Ctx) {
   const auth = await requireAdmin(request);
@@ -39,20 +56,25 @@ export const PATCH = platformRoute(async function PATCH(request: NextRequest, ct
   if (!auth.ok) return auth.response;
 
   const { id } = await ctx.params;
-  const body = (await request.json()) as { status?: SubscriptionStatus; reason?: string };
-  if (!body.status) return adminError("Statut requis.", 400);
+  const body = await readJsonObject(request);
+  if (!body) return adminError("Corps JSON invalide.", 400);
+  if (typeof body.status !== "string" || !body.status) return adminError("Statut requis.", 400);
+  if (!SUBSCRIPTION_STATUSES.includes(body.status as SubscriptionStatus)) return adminError("Statut invalide.", 400);
+  if (body.reason !== undefined && (typeof body.reason !== "string" || body.reason.length > 500)) {
+    return adminError("Motif invalide.", 400);
+  }
 
   try {
     await setSubscriptionStatus(
       auth.session,
       id,
-      body.status,
+      body.status as SubscriptionStatus,
       "SUBSCRIPTION_STATUS_CHANGED",
-      body.reason,
+      body.reason as string | undefined,
     );
     return adminJson({ ok: true });
-  } catch {
-    return adminError("Mise à jour impossible.", 500);
+  } catch (error) {
+    return mapSubscriptionError(error, "Mise à jour impossible.");
   }
 });
 
@@ -61,8 +83,14 @@ export const POST = platformRoute(async function POST(request: NextRequest, ctx:
   if (!auth.ok) return auth.response;
 
   const { id } = await ctx.params;
-  const body = (await request.json()) as {
+  const raw = await readJsonObject(request);
+  if (!raw) return adminError("Corps JSON invalide.", 400);
+  if (raw.reason !== undefined && (typeof raw.reason !== "string" || raw.reason.length > 500)) {
+    return adminError("Motif invalide.", 400);
+  }
+  const body = raw as {
     action?: string;
+    quick?: string;
     planId?: string;
     planCode?: string;
     months?: number;
@@ -75,6 +103,23 @@ export const POST = platformRoute(async function POST(request: NextRequest, ctx:
   };
 
   try {
+    if (body.action === "save-period") {
+      if (typeof body.paid !== "boolean") return adminError("Sélectionnez Payé ou Non payé.", 400);
+      if (typeof body.price !== "number" || !Number.isFinite(body.price) || body.price < 0 || body.price > 1_000_000) {
+        return adminError("Prix invalide.", 400);
+      }
+      if (typeof body.quick !== "string" || !["", "m1", "y1", "t15"].includes(body.quick)) return adminError("Période invalide.", 400);
+      // The typed date only matters without a quick option; its range is checked against the stored
+      // period inside the transaction (an untouched far-past date must stay saveable for a price/payment edit).
+      if (body.quick === "" && (typeof body.periodEnd !== "string" || !ISO_DATE.test(body.periodEnd) || Number.isNaN(new Date(body.periodEnd).getTime()))) {
+        return adminError("Date de fin invalide.", 400);
+      }
+      const result = await saveSubscriptionPeriodPayment(auth.session, id, {
+        quick: body.quick as PeriodPaymentInput["quick"], paid: body.paid, price: body.price,
+        periodEnd: typeof body.periodEnd === "string" ? body.periodEnd : "",
+      });
+      return adminJson({ ok: true, ...result });
+    }
     if (body.action === "change-plan") {
       let planId = body.planId;
       if (!planId && body.planCode) {
@@ -127,20 +172,13 @@ export const POST = platformRoute(async function POST(request: NextRequest, ctx:
       if (!Number.isFinite(price) || price < 0 || price > 1_000_000) {
         return adminError("Indiquez un prix en dirhams, entre 0 et 1 000 000.", 400);
       }
-      try {
-        const result = await setSubscriptionPrice(auth.session, id, price);
-        return adminJson({ ok: true, ...result });
-      } catch (error) {
-        if (error instanceof Error && error.message === "NOT_FOUND") {
-          return adminError("Abonnement introuvable.", 404);
-        }
-        throw error;
-      }
+      const result = await setSubscriptionPrice(auth.session, id, price);
+      return adminJson({ ok: true, ...result });
     }
     if (body.action === "set-period") {
-      const raw = typeof body.periodEnd === "string" ? body.periodEnd : "";
-      const periodEnd = new Date(raw);
-      if (!raw || Number.isNaN(periodEnd.getTime())) {
+      const rawEnd = typeof body.periodEnd === "string" ? body.periodEnd : "";
+      const periodEnd = new Date(rawEnd);
+      if (!rawEnd || !ISO_DATE.test(rawEnd) || Number.isNaN(periodEnd.getTime())) {
         return adminError("Date de fin invalide.", 400);
       }
       const result = await setSubscriptionPeriodEnd(auth.session, id, periodEnd);
@@ -175,8 +213,7 @@ export const POST = platformRoute(async function POST(request: NextRequest, ctx:
       return adminJson({ ok: true, messageTemplate: message });
     }
     return adminError("Action invalide.", 400);
-  } catch (e) {
-    console.error("[POST /api/admin/subscriptions/:id]", e);
-    return adminError("Action impossible.", 500);
+  } catch (error) {
+    return mapSubscriptionError(error, "Action impossible.");
   }
 });

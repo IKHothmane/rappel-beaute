@@ -130,20 +130,25 @@ export function LoyaltyBoard({
 
   useEffect(() => { setPreviewOrigin(window.location.origin); }, []);
 
+  // Le sondage (12 s) fournit un nouvel objet `program` à chaque tour : on ne
+  // resynchronise le formulaire que si les valeurs changent réellement, et jamais
+  // tant que le panneau d'édition est ouvert (la saisie en cours est conservée).
+  const hasProgram = program !== null;
+  const programVisits = program?.visitsPerReward;
+  const programLabel = program?.rewardLabel;
+  const programKind = program?.rewardKind;
+  const programValue = program?.rewardValue;
+  const programDays = program?.rewardValidityDays;
   useEffect(() => {
-    if (!program) return;
-    setCfgVisits(String(program.visitsPerReward > 0 ? program.visitsPerReward : 5));
-    setCfgLabel(program.rewardLabel?.trim() || "Récompense");
+    if (!hasProgram || cfgOpen) return;
+    setCfgVisits(String(programVisits != null && programVisits > 0 ? programVisits : 5));
+    setCfgLabel(programLabel?.trim() || "Récompense");
     setCfgKind(
-      program.rewardKind === "DISCOUNT"
-        ? "DISCOUNT"
-        : program.rewardKind === "PERCENTAGE"
-          ? "PERCENTAGE"
-          : "FREE_SERVICE",
+      programKind === "DISCOUNT" ? "DISCOUNT" : programKind === "PERCENTAGE" ? "PERCENTAGE" : "FREE_SERVICE",
     );
-    setCfgValue(program.rewardValue != null ? String(program.rewardValue) : "");
-    setCfgDays(String(program.rewardValidityDays > 0 ? program.rewardValidityDays : 30));
-  }, [program]);
+    setCfgValue(programValue != null ? String(programValue) : "");
+    setCfgDays(String(programDays != null && programDays > 0 ? programDays : 30));
+  }, [hasProgram, cfgOpen, programVisits, programLabel, programKind, programValue, programDays]);
 
   const threshold = program?.visitsPerReward && program.visitsPerReward > 0 ? program.visitsPerReward : null;
   const focused = focusId ? visitCards.find((card) => card.customerId === focusId) ?? null : null;
@@ -210,8 +215,16 @@ export function LoyaltyBoard({
   }, [journal, recentClients]);
 
   useEffect(() => {
-    const timer = setInterval(() => onRefresh(), 12000);
-    return () => clearInterval(timer);
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      onRefresh();
+    };
+    const timer = setInterval(tick, 12000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [onRefresh]);
 
   useEffect(() => {

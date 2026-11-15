@@ -10,6 +10,7 @@ import { listOrganizationsForFilter } from "@/lib/db/admin-users";
 import { getShowcaseMonthlyPrice } from "@/lib/subscriptions/plans";
 import type { PlanCode, SubscriptionStatus } from "@/types/subscription";
 import { platformRoute } from "@/lib/http/route-scope";
+import { readJsonObject } from "@/lib/admin/read-json-object";
 
 export const GET = platformRoute(async function GET(request: NextRequest) {
   const auth = await requireAdmin(request);
@@ -37,22 +38,24 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
   const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
+  const body = await readJsonObject(request);
+  if (!body) return adminError("Corps JSON invalide.", 400);
+  const organizationId = typeof body.organizationId === "string" ? body.organizationId.trim() : "";
+  const planCode = typeof body.planCode === "string" ? body.planCode.trim() : "";
+  if (!organizationId || !planCode) {
+    return adminError("organizationId et planCode requis.", 400);
+  }
+
   try {
-    const body = (await request.json()) as {
-      organizationId?: string;
-      planCode?: PlanCode;
-    };
-    if (!body.organizationId || !body.planCode) {
-      return adminError("organizationId et planCode requis.", 400);
-    }
     const id = await createAdminSubscription(auth.session, {
-      organizationId: body.organizationId,
-      planCode: body.planCode,
+      organizationId,
+      planCode: planCode as PlanCode,
     });
     return adminJson({ ok: true, id }, 201);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (msg === "PLAN_NOT_FOUND") return adminError("Plan introuvable.", 404);
+    if (msg === "ORGANIZATION_NOT_FOUND") return adminError("Institut introuvable.", 404);
     console.error("[POST /api/admin/subscriptions]", e);
     return adminError("Création impossible.", 500);
   }

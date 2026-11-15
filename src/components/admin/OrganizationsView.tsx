@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell, MapPin, Plus, Search, Star, Store, Users } from "lucide-react";
 import { adminHref } from "@/lib/admin/href";
 import { cn } from "@/lib/utils";
 import type { OrganizationListItem, OrganizationStatus } from "@/types/platform";
-import { OrganizationDetailModal } from "./OrganizationDetailModal";
+import { OrganizationDetailModal, type OrganizationDetailTab } from "./OrganizationDetailModal";
 
 export type OrganizationCard = OrganizationListItem & {
   coverUrl: string | null;
@@ -92,13 +93,39 @@ function CardSkeleton() {
   );
 }
 
-export function OrganizationsView() {
+export function OrganizationsView({
+  initialOrganizationId,
+  initialEdit = false,
+  initialTab,
+  initialQuery,
+}: {
+  initialOrganizationId?: string;
+  initialEdit?: boolean;
+  initialTab?: OrganizationDetailTab;
+  initialQuery?: string;
+}) {
+  const router = useRouter();
   const [items, setItems] = useState<OrganizationCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
-  const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [query, setQuery] = useState(initialQuery ?? "");
+  const [selectedId, setSelectedId] = useState<string | null>(initialOrganizationId ?? null);
+
+  // Nouvelle recherche depuis l'en-tête admin alors que la liste est déjà ouverte.
+  useEffect(() => {
+    setQuery(initialQuery ?? "");
+  }, [initialQuery]);
+
+  useEffect(() => {
+    setSelectedId(initialOrganizationId ?? null);
+  }, [initialOrganizationId]);
+
+  // Référence stable : la modale en dépend pour son focus et sa touche Échap.
+  const closeDetails = useCallback(() => {
+    setSelectedId(null);
+    if (initialOrganizationId) router.replace(adminHref("/organizations/"), { scroll: false });
+  }, [initialOrganizationId, router]);
 
   const load = useCallback(async () => {
     setError(null);
@@ -302,10 +329,12 @@ export function OrganizationsView() {
         <OrganizationDetailModal
           organizationId={selectedId}
           fallback={items.find((o) => o.id === selectedId) ?? null}
-          onClose={() => setSelectedId(null)}
+          initialEdit={selectedId === initialOrganizationId ? initialEdit : false}
+          initialTab={selectedId === initialOrganizationId ? initialTab : undefined}
+          onClose={closeDetails}
           onChanged={() => void load()}
           onDeleted={() => {
-            setSelectedId(null);
+            closeDetails();
             void load();
           }}
         />

@@ -90,6 +90,45 @@ async function loadMaintenances(resourceId: string): Promise<ResourceMaintenance
   }));
 }
 
+/** Maintenances de plusieurs ressources en une requête (même tri que loadMaintenances), regroupées par ressource. */
+async function loadMaintenancesForResources(
+  resourceIds: string[],
+): Promise<Map<string, ResourceMaintenanceItem[]>> {
+  const byResource = new Map<string, ResourceMaintenanceItem[]>();
+  if (resourceIds.length === 0) return byResource;
+  const { rows } = await pool.query<{
+    resourceId: string;
+    id: string;
+    startAt: Date;
+    endAt: Date;
+    type: string;
+    reason: string | null;
+    status: string;
+    createdAt: Date;
+  }>(
+    `SELECT "resourceId", id, "startAt", "endAt", type::text, reason, status::text, "createdAt"
+     FROM "ResourceMaintenance"
+     WHERE "resourceId" = ANY($1::text[])
+     ORDER BY "startAt" DESC`,
+    [resourceIds],
+  );
+  for (const r of rows) {
+    const item: ResourceMaintenanceItem = {
+      id: r.id,
+      startAt: r.startAt.toISOString(),
+      endAt: r.endAt.toISOString(),
+      type: r.type as ResourceMaintenanceItem["type"],
+      reason: r.reason,
+      status: r.status as ResourceMaintenanceItem["status"],
+      createdAt: r.createdAt.toISOString(),
+    };
+    const list = byResource.get(r.resourceId);
+    if (list) list.push(item);
+    else byResource.set(r.resourceId, [item]);
+  }
+  return byResource;
+}
+
 async function syncServices(resourceId: string, serviceIds: string[], organizationId: string) {
   await pool.query(`DELETE FROM "ServiceResource" WHERE "resourceId" = $1`, [resourceId]);
   for (const serviceId of serviceIds) {
@@ -161,17 +200,14 @@ export async function listResources(
       params,
     );
 
-    const items: ResourceAgendaContext[] = [];
-    for (const row of rows) {
-      const maintenances = await loadMaintenances(row.id);
-      items.push({
-        id: row.id,
-        name: row.name,
-        type: row.type,
-        active: row.active,
-        maintenances: maintenances.filter((m) => isBlockingMaintenance(m.status)),
-      });
-    }
+    const maintenancesByResource = await loadMaintenancesForResources(rows.map((r) => r.id));
+    const items: ResourceAgendaContext[] = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      active: row.active,
+      maintenances: (maintenancesByResource.get(row.id) ?? []).filter((m) => isBlockingMaintenance(m.status)),
+    }));
     return { items, total: items.length };
   }
 

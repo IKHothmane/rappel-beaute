@@ -11,8 +11,8 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
 
   let tokenHint = "unknown";
   try {
-    const peek = (await request.clone().json()) as { token?: string };
-    if (peek.token?.trim()) tokenHint = identityHash(peek.token.trim());
+    const peek = (await request.clone().json()) as { token?: unknown };
+    if (typeof peek.token === "string" && peek.token.trim()) tokenHint = identityHash(peek.token.trim());
   } catch {
     /* corps relu plus bas */
   }
@@ -28,11 +28,11 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as { token?: string; password?: string };
-    const token = body.token?.trim();
-    const password = body.password;
+    const body = (await request.json()) as { token?: unknown; password?: unknown };
+    const token = typeof body.token === "string" ? body.token.trim() : "";
+    const password = typeof body.password === "string" ? body.password : "";
 
-    if (!token || !password || password.length < 8) {
+    if (!token || token.length > 256 || password.length < 8 || password.length > 200) {
       return NextResponse.json({ error: "Données invalides." }, { status: 400 });
     }
 

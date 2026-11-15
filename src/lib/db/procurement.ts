@@ -578,17 +578,27 @@ async function loadReceipts(purchaseId: string): Promise<PurchaseReceipt[]> {
     [purchaseId],
   );
 
+  if (rows.length === 0) return [];
+  // Une seule requête pour les lignes de tous les reçus (au lieu d une par reçu).
+  const lineRes = await pool.query(
+    `SELECT
+      rl."receiptId", rl.id, rl."purchaseItemId", rl."productId", p.name AS "productName",
+      rl.quantity::text, rl."lotNumber", rl."expiresAt", rl."inventoryMovementId"
+     FROM "PurchaseReceiptLine" rl
+     JOIN "Product" p ON p.id = rl."productId"
+     WHERE rl."receiptId" = ANY($1::text[])`,
+    [rows.map((r) => r.id)],
+  );
+  const linesByReceipt = new Map<string, typeof lineRes.rows>();
+  for (const l of lineRes.rows) {
+    const list = linesByReceipt.get(l.receiptId);
+    if (list) list.push(l);
+    else linesByReceipt.set(l.receiptId, [l]);
+  }
+
   const receipts: PurchaseReceipt[] = [];
   for (const r of rows) {
-    const lines = await pool.query(
-      `SELECT
-        rl.id, rl."purchaseItemId", rl."productId", p.name AS "productName",
-        rl.quantity::text, rl."lotNumber", rl."expiresAt", rl."inventoryMovementId"
-       FROM "PurchaseReceiptLine" rl
-       JOIN "Product" p ON p.id = rl."productId"
-       WHERE rl."receiptId" = $1`,
-      [r.id],
-    );
+    const lines = { rows: linesByReceipt.get(r.id) ?? [] };
     receipts.push({
       id: r.id,
       receivedAt: r.receivedAt.toISOString(),

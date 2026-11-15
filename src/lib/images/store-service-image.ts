@@ -1,5 +1,14 @@
 import type { OptimizedServiceImages } from "@/lib/images/service-image";
 import { getStorageService, type StorageCategory } from "@/lib/storage";
+import { validateImageBytes } from "@/lib/storage/image-upload";
+
+const SERVICE_IMAGE_MIME: ReadonlySet<string> = new Set(["image/webp"]);
+
+/** Refuse toute variante dont le type ou les octets magiques ne sont pas du WebP valide (avant tout stockage). */
+function assertServiceVariant(variant: { contentType: string; data: Buffer }): void {
+  const checked = validateImageBytes(variant.contentType, variant.data, SERVICE_IMAGE_MIME);
+  if (!checked.ok) throw new Error(`Image de prestation invalide : ${checked.error}`);
+}
 
 function slugify(value: string): string {
   return value
@@ -30,6 +39,9 @@ export async function storeOptimizedServiceImages(
   category: StorageCategory = "services",
   opts?: { stableId?: string },
 ): Promise<{ imageUrl: string; thumbUrl: string }> {
+  assertServiceVariant(variants.main);
+  assertServiceVariant(variants.thumb);
+
   if (!hasObjectStorage()) {
     return {
       imageUrl: toDataUri(variants.main.contentType, variants.main.data),

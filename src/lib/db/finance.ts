@@ -63,11 +63,22 @@ function mapPaymentRow(r: Record<string, unknown>): PaymentItem {
   };
 }
 
-/** Numéro de passage journalier JJ/MM-NNN (fuseau Africa/Casablanca). */
-export async function nextPaymentTicketNumber(
+export type PaymentTicket = {
+  /** Libellé affiché JJ/MM-NNN (sans année). */
+  ticketNumber: string;
+  /** Jour calendaire (YYYY-MM-DD, Africa/Casablanca) : l'année qui manque au libellé. */
+  ticketDay: string;
+};
+
+/**
+ * Numéro de passage journalier JJ/MM-NNN (fuseau Africa/Casablanca) et son jour calendaire.
+ * L'unicité en base porte sur (organizationId, ticketDay, ticketNumber) : le libellé seul se
+ * répète chaque année. À appeler dans la transaction qui insère le Payment.
+ */
+export async function nextPaymentTicket(
   organizationId: string,
   client: PoolClient,
-): Promise<string> {
+): Promise<PaymentTicket> {
   const { rows: dayRows } = await client.query<{ dayKey: string; dayLabel: string }>(
     `SELECT
        to_char((NOW() AT TIME ZONE 'Africa/Casablanca'), 'YYYY-MM-DD') AS "dayKey",
@@ -92,7 +103,15 @@ export async function nextPaymentTicketNumber(
     [organizationId, dayKey],
   );
   const seq = rows[0]?.lastValue ?? 1;
-  return `${dayLabel}-${String(seq).padStart(3, "0")}`;
+  return { ticketNumber: `${dayLabel}-${String(seq).padStart(3, "0")}`, ticketDay: dayKey };
+}
+
+/** Libellé seul. Préférer nextPaymentTicket, qui fournit aussi ticketDay à écrire avec le Payment. */
+export async function nextPaymentTicketNumber(
+  organizationId: string,
+  client: PoolClient,
+): Promise<string> {
+  return (await nextPaymentTicket(organizationId, client)).ticketNumber;
 }
 
 function mapCashTxn(r: Record<string, unknown>): CashTxnItem {
@@ -754,14 +773,14 @@ export async function createPayments(
         }
       }
 
-      const ticketNumber = await nextPaymentTicketNumber(organizationId, client);
+      const ticket = await nextPaymentTicket(organizationId, client);
       await client.query(
         `INSERT INTO "Payment" (
           id, "organizationId", "appointmentId", "customerId", amount, method, kind,
-          status, "giftCardId", "ticketNumber", notes, "userId", "idempotencyKey", "paidAt", "updatedAt"
+          status, "giftCardId", "ticketNumber", "ticketDay", notes, "userId", "idempotencyKey", "paidAt", "updatedAt"
         ) VALUES (
           $1,$2,$3,$4,$5,$6::"PaymentMethod",$7::"PaymentKind",
-          'COMPLETED'::"PaymentStatus",$8,$9,$10,$11,$12,NOW(),NOW()
+          'COMPLETED'::"PaymentStatus",$8,$9,$10::date,$11,$12,$13,NOW(),NOW()
         )`,
         [
           id,
@@ -772,7 +791,8 @@ export async function createPayments(
           line.method,
           line.kind ?? "PAYMENT",
           giftCardId,
-          ticketNumber,
+          ticket.ticketNumber,
+          ticket.ticketDay,
           input.notes ?? null,
           userId,
           key,
@@ -922,14 +942,14 @@ export async function refundPayment(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const ticketNumber = await nextPaymentTicketNumber(organizationId, client);
+    const ticket = await nextPaymentTicket(organizationId, client);
     await client.query(
       `INSERT INTO "Payment" (
         id, "organizationId", "appointmentId", "customerId", amount, method, kind,
-        status, "parentPaymentId", "ticketNumber", notes, "userId", "idempotencyKey", "paidAt", "updatedAt"
+        status, "parentPaymentId", "ticketNumber", "ticketDay", notes, "userId", "idempotencyKey", "paidAt", "updatedAt"
       ) VALUES (
         $1,$2,$3,$4,$5,$6::"PaymentMethod",'REFUND'::"PaymentKind",
-        'COMPLETED'::"PaymentStatus",$7,$8,$9,$10,$11,NOW(),NOW()
+        'COMPLETED'::"PaymentStatus",$7,$8,$9::date,$10,$11,$12,NOW(),NOW()
       )`,
       [
         id,
@@ -939,7 +959,8 @@ export async function refundPayment(
         input.amount,
         input.method,
         paymentId,
-        ticketNumber,
+        ticket.ticketNumber,
+        ticket.ticketDay,
         input.reason ?? "Remboursement",
         userId,
         input.idempotencyKey ?? null,

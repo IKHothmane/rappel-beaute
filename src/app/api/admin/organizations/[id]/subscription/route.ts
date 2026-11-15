@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
 import { getOrganizationById, updateSubscription } from "@/lib/db/admin-organizations";
 import type { SubscriptionPlan } from "@/types/platform";
+import { readJsonObject } from "@/lib/admin/read-json-object";
 import { platformRoute } from "@/lib/http/route-scope";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -21,9 +22,10 @@ export const PATCH = platformRoute(async function PATCH(request: NextRequest, ct
   if (!auth.ok) return auth.response;
 
   const { id } = await ctx.params;
-  const body = (await request.json()) as { plan?: string };
+  const body = await readJsonObject(request);
+  if (!body) return adminError("Corps JSON invalide.", 400);
   const plan = body.plan as SubscriptionPlan | undefined;
-  if (!plan || !["STARTER", "INSTITUT", "PREMIUM"].includes(plan)) {
+  if (typeof plan !== "string" || !["STARTER", "INSTITUT", "PREMIUM"].includes(plan)) {
     return adminError("Plan invalide.", 400);
   }
 
@@ -32,9 +34,10 @@ export const PATCH = platformRoute(async function PATCH(request: NextRequest, ct
     const org = await getOrganizationById(id);
     return adminJson({ subscription: org?.subscription ?? null });
   } catch (e) {
-    if (e instanceof Error && e.message === "SUB_NOT_FOUND") {
+    if (e instanceof Error && (e.message === "SUB_NOT_FOUND" || e.message === "NOT_FOUND")) {
       return adminError("Abonnement introuvable.", 404);
     }
+    if (e instanceof Error && e.message === "PLAN_NOT_FOUND") return adminError("Plan invalide.", 400);
     return adminError("Mise à jour impossible.", 500);
   }
 });

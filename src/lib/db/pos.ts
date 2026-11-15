@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
-import { nextPaymentTicketNumber } from "@/lib/db/finance";
+import { nextPaymentTicket } from "@/lib/db/finance";
 import { createInventoryMovement } from "@/lib/db/inventory";
 import type { PaymentMethod } from "@/types/finance";
 import type {
@@ -134,57 +134,43 @@ export async function searchPosCustomers(
   }));
 }
 
-async function loadSaleDetail(
-  organizationId: string,
-  saleId: string,
-): Promise<PosSaleDetail | null> {
-  const { rows } = await pool.query<{
-    id: string;
-    invoiceId: string;
-    invoiceNumber: string;
-    paymentId: string | null;
-    appointmentId: string | null;
-    customerId: string | null;
-    customerName: string | null;
-    status: string;
-    subtotal: string;
-    discountTotal: string;
-    total: string;
-    paymentMethod: string;
-    soldById: string | null;
-    notes: string | null;
-    createdAt: Date;
-  }>(
-    `SELECT s.id, s."invoiceId", i.number AS "invoiceNumber", s."paymentId",
+type SaleRow = {
+  id: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  paymentId: string | null;
+  appointmentId: string | null;
+  customerId: string | null;
+  customerName: string | null;
+  status: string;
+  subtotal: string;
+  discountTotal: string;
+  total: string;
+  paymentMethod: string;
+  soldById: string | null;
+  notes: string | null;
+  createdAt: Date;
+};
+
+type SaleItemRow = {
+  productId: string | null;
+  nameSnapshot: string;
+  unitPrice: string;
+  quantity: string;
+  total: string;
+  sku: string | null;
+  category: string | null;
+};
+
+const SALE_COLUMNS = `s.id, s."invoiceId", i.number AS "invoiceNumber", s."paymentId",
             i."appointmentId", s."customerId", i."customerNameSnapshot" AS "customerName",
             s.status::text, s.subtotal::text, s."discountTotal"::text, s.total::text,
-            s."paymentMethod"::text, s."soldById", s.notes, s."createdAt"
-     FROM "PosSale" s
-     JOIN "Invoice" i ON i.id = s."invoiceId"
-     WHERE s.id = $1 AND s."organizationId" = $2`,
-    [saleId, organizationId],
-  );
-  const sale = rows[0];
-  if (!sale) return null;
+            s."paymentMethod"::text, s."soldById", s.notes, s."createdAt"`;
 
-  const { rows: itemRows } = await pool.query<{
-    productId: string | null;
-    nameSnapshot: string;
-    unitPrice: string;
-    quantity: string;
-    total: string;
-    sku: string | null;
-    category: string | null;
-  }>(
-    `SELECT ii."productId", ii."nameSnapshot", ii."unitPriceSnapshot"::text AS "unitPrice",
-            ii.quantity::text, ii.total::text, p.sku, p.category::text
-     FROM "InvoiceItem" ii
-     LEFT JOIN "Product" p ON p.id = ii."productId"
-     WHERE ii."invoiceId" = $1
-     ORDER BY ii."sortOrder"`,
-    [sale.invoiceId],
-  );
+const SALE_ITEM_COLUMNS = `ii."productId", ii."nameSnapshot", ii."unitPriceSnapshot"::text AS "unitPrice",
+            ii.quantity::text, ii.total::text, p.sku, p.category::text`;
 
+function buildSaleDetail(sale: SaleRow, itemRows: SaleItemRow[]): PosSaleDetail {
   const lines: PosSaleLine[] = itemRows.map((r) => ({
     productId: r.productId ?? "",
     name: r.nameSnapshot,
@@ -213,6 +199,32 @@ async function loadSaleDetail(
     notes: sale.notes,
     createdAt: sale.createdAt.toISOString(),
   };
+}
+
+async function loadSaleDetail(
+  organizationId: string,
+  saleId: string,
+): Promise<PosSaleDetail | null> {
+  const { rows } = await pool.query<SaleRow>(
+    `SELECT ${SALE_COLUMNS}
+     FROM "PosSale" s
+     JOIN "Invoice" i ON i.id = s."invoiceId"
+     WHERE s.id = $1 AND s."organizationId" = $2`,
+    [saleId, organizationId],
+  );
+  const sale = rows[0];
+  if (!sale) return null;
+
+  const { rows: itemRows } = await pool.query<SaleItemRow>(
+    `SELECT ${SALE_ITEM_COLUMNS}
+     FROM "InvoiceItem" ii
+     LEFT JOIN "Product" p ON p.id = ii."productId"
+     WHERE ii."invoiceId" = $1
+     ORDER BY ii."sortOrder"`,
+    [sale.invoiceId],
+  );
+
+  return buildSaleDetail(sale, itemRows);
 }
 
 /**
@@ -428,15 +440,15 @@ export async function createPosSale(
       );
     }
 
-    const ticketNumber = await nextPaymentTicketNumber(organizationId, client);
+    const ticket = await nextPaymentTicket(organizationId, client);
     await client.query(
       `INSERT INTO "Payment" (
         id, "organizationId", "appointmentId", "customerId", "invoiceId",
-        amount, method, kind, status, "ticketNumber", notes, "userId", "idempotencyKey",
+        amount, method, kind, status, "ticketNumber", "ticketDay", notes, "userId", "idempotencyKey",
         "paidAt", "updatedAt"
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7::"PaymentMethod",'PAYMENT'::"PaymentKind",
-        'COMPLETED'::"PaymentStatus",$8,$9,$10,$11,NOW(),NOW()
+        'COMPLETED'::"PaymentStatus",$8,$9::date,$10,$11,$12,NOW(),NOW()
       )`,
       [
         paymentId,
@@ -446,7 +458,8 @@ export async function createPosSale(
         invoiceId,
         total,
         method,
-        ticketNumber,
+        ticket.ticketNumber,
+        ticket.ticketDay,
         input.notes ?? `Vente POS ${number}`,
         actor.id,
         `pospay:${input.idempotencyKey}`,
@@ -717,8 +730,10 @@ export async function listPosSales(
   const limit = Math.min(Math.max(opts?.limit ?? 50, 1), 200);
   params.push(limit);
 
-  const { rows } = await pool.query<{ id: string }>(
-    `SELECT s.id
+  // Two queries whatever the page size: the sales (tenant-scoped by s."organizationId"), then the
+  // lines of exactly those invoices, grouped here. Same fields and order as loadSaleDetail.
+  const { rows } = await pool.query<SaleRow>(
+    `SELECT ${SALE_COLUMNS}
      FROM "PosSale" s
      JOIN "Invoice" i ON i.id = s."invoiceId"
      WHERE ${clauses.join(" AND ")}
@@ -726,12 +741,23 @@ export async function listPosSales(
      LIMIT $${i}`,
     params,
   );
-  const out: PosSaleDetail[] = [];
-  for (const r of rows) {
-    const d = await loadSaleDetail(organizationId, r.id);
-    if (d) out.push(d);
+  if (rows.length === 0) return [];
+
+  const { rows: itemRows } = await pool.query<SaleItemRow & { invoiceId: string }>(
+    `SELECT ii."invoiceId", ${SALE_ITEM_COLUMNS}
+     FROM "InvoiceItem" ii
+     LEFT JOIN "Product" p ON p.id = ii."productId"
+     WHERE ii."invoiceId" = ANY($1::text[])
+     ORDER BY ii."invoiceId", ii."sortOrder", ii.id`,
+    [rows.map((r) => r.invoiceId)],
+  );
+  const itemsByInvoice = new Map<string, SaleItemRow[]>();
+  for (const item of itemRows) {
+    const bucket = itemsByInvoice.get(item.invoiceId);
+    if (bucket) bucket.push(item);
+    else itemsByInvoice.set(item.invoiceId, [item]);
   }
-  return out;
+  return rows.map((sale) => buildSaleDetail(sale, itemsByInvoice.get(sale.invoiceId) ?? []));
 }
 
 export async function getPosSalesKpis(

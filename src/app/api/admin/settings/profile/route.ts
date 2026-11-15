@@ -1,9 +1,6 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
-import {
-  changePlatformPassword,
-  updatePlatformProfile,
-} from "@/lib/db/platform-settings";
+import { updatePlatformProfile } from "@/lib/db/platform-settings";
 import { platformRoute } from "@/lib/http/route-scope";
 
 export const PATCH = platformRoute(async function PATCH(request: NextRequest) {

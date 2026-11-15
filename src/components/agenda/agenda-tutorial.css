@@ -1,0 +1,16 @@
+.driver-popover.agenda-tour-popover {
+  zoom: var(--agenda-tour-inverse-zoom, 1);
+  max-width: 360px;
+  border: 1px solid #f0d9e3;
+  border-radius: 16px;
+  padding: 20px;
+  color: #261524;
+  font-family: inherit;
+  box-shadow: 0 16px 60px rgb(38 21 36 / 20%);
+}
+.agenda-tour-popover .driver-popover-title { font-size: 18px; line-height: 1.4; }
+.agenda-tour-popover .driver-popover-description { color: #654254; font-size: 14px; line-height: 1.7; }
+.agenda-tour-popover .driver-popover-footer button { min-height: 40px; border-radius: 10px; padding: 8px 12px; font-size: 13px; text-shadow: none; }
+.agenda-tour-popover button.driver-popover-next-btn { border-color: #ac0e4c; background: #ac0e4c; color: white; }
+.agenda-tour-popover button.driver-popover-next-btn:hover { background: #820d39; }
+.agenda-tour-popover .driver-popover-progress-text { color: #765164; font-size: 12px; }

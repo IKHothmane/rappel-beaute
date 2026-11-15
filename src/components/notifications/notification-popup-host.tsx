@@ -58,7 +58,11 @@ export function NotificationPopupHost() {
     [dismiss],
   );
 
+  const pollingRef = useRef(false);
+
   const poll = useCallback(async () => {
+    if (document.visibilityState !== "visible" || pollingRef.current) return;
+    pollingRef.current = true;
     try {
       const res = await listNotifications({ limit: 12, category: "all" });
       const unread = res.data.filter((item) => !item.readAt);
@@ -74,6 +78,8 @@ export function NotificationPopupHost() {
       if (fresh.length > 0) enqueue(fresh);
     } catch {
       /* silencieux */
+    } finally {
+      pollingRef.current = false;
     }
   }, [enqueue]);
 
@@ -82,9 +88,11 @@ export function NotificationPopupHost() {
     const id = window.setInterval(() => void poll(), POLL_MS);
     const onFocus = () => void poll();
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
       for (const timer of timersRef.current.values()) window.clearTimeout(timer);
       timersRef.current.clear();
     };

@@ -578,7 +578,11 @@ export async function assertAppointmentBookable(params: {
   const [staffRes, resourceRes, appointments] = await Promise.all([
     listStaff(params.organizationId, { page: 1, limit: 500, agenda: true }),
     listResources(params.organizationId, { page: 1, limit: 500, agenda: true }),
-    listAppointmentsByOrg(params.organizationId),
+    // Requête bornée à la journée (la SQL utilise `< to`, le filtre JS `<= dayEnd`).
+    listAppointmentsByOrg(params.organizationId, {
+      from: dayStart,
+      to: new Date(dayEnd.getTime() + 1),
+    }),
   ]);
 
   const staffItems = staffRes.items as StaffAgendaContext[];

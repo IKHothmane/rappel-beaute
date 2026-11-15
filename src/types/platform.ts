@@ -92,6 +92,18 @@ type PlatformBillingUnpaid = {
   statusLabel: string;
 };
 
+export type OrganizationPaymentHistoryEntry = {
+  id: string;
+  paid: boolean;
+  recordedAt: string;
+  recordedBy: string | null;
+  /** Amount and period come from the recorded event; null on events written before they were stored. */
+  amount?: number | null;
+  currency?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+};
+
 export type PlatformBillingSnapshot = {
   mrr: number;
   arr: number;

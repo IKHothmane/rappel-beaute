@@ -4,7 +4,7 @@ import { MetricCard } from "@/components/ui/metric-card";
 /** Page fidélité prestige — desktop + mobile. */
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Cake,
   Gift,
@@ -57,7 +57,6 @@ import {
   createReward,
   formatPoints,
   getLoyaltyDashboard,
-  listPackages,
   redeemReward,
   updateProgram,
 } from "@/modules/loyalty/service";
@@ -70,7 +69,6 @@ import type {
   LoyaltyLevel,
   LoyaltyProgramConfig,
   LoyaltyRewardItem,
-  PackageListItem,
 } from "@/types/loyalty";
 import { LOYALTY_LEVEL_LABEL } from "@/types/loyalty";
 
@@ -100,7 +98,6 @@ export function LoyaltyPageView() {
   const [ranking, setRanking] = useState<LoyaltyAccountSummary[]>([]);
   const [rewards, setRewards] = useState<LoyaltyRewardItem[]>([]);
   const [program, setProgram] = useState<LoyaltyProgramConfig | null>(null);
-  const [packages, setPackages] = useState<PackageListItem[]>([]);
   const [journal, setJournal] = useState<LoyaltyJournalItem[]>([]);
   const [birthdays, setBirthdays] = useState<LoyaltyBirthdayItem[]>([]);
   const [tab, setTab] = useState<LoyaltyFilter>("all");
@@ -151,9 +148,17 @@ export function LoyaltyPageView() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const refresh = useCallback(async () => {
+  // Garde d'exécution : une seule requête à la fois (sondage de 12 s inclus). Une
+  // demande arrivée pendant un chargement en déclenche un seul rechargement ensuite,
+  // pour qu'une action (programme, récompense...) ne reste pas sur des données périmées.
+  const inFlightRef = useRef<Promise<void> | null>(null);
+  const rerunRef = useRef(false);
+  // L'erreur n'est signalée qu'une fois tant qu'elle persiste.
+  const errorShownRef = useRef(false);
+
+  const loadDashboard = useCallback(async () => {
     try {
-      const [dash, pkgs] = await Promise.all([getLoyaltyDashboard(), listPackages()]);
+      const dash = await getLoyaltyDashboard();
       setKpis(dash.kpis);
       setRanking(
         dash.ranking.map((r) => ({
@@ -187,11 +192,35 @@ export function LoyaltyPageView() {
       setProductsEligible(Boolean(dash.program.productsEligible));
       setStackRewards(dash.program.stackRewards !== false);
       setEligibleServiceIds(dash.program.eligibleServiceIds ?? []);
-      setPackages(pkgs);
+      errorShownRef.current = false;
     } catch {
-      toast("Impossible de charger la fidélité.", "error");
+      if (!errorShownRef.current) {
+        errorShownRef.current = true;
+        toast("Impossible de charger la fidélité.", "error");
+      }
     }
   }, [toast]);
+
+  const refresh = useCallback((): Promise<void> => {
+    if (inFlightRef.current) {
+      rerunRef.current = true;
+      return inFlightRef.current;
+    }
+    const run = (async () => {
+      do {
+        rerunRef.current = false;
+        await loadDashboard();
+      } while (rerunRef.current);
+    })().finally(() => {
+      inFlightRef.current = null;
+    });
+    inFlightRef.current = run;
+    return run;
+  }, [loadDashboard]);
+
+  const handleBoardRefresh = useCallback(() => {
+    void refresh();
+  }, [refresh]);
 
   useEffect(() => {
     setLoading(true);
@@ -364,7 +393,7 @@ export function LoyaltyPageView() {
         visitCards={visitCards}
         journal={journal}
         membersThisMonth={kpis?.membersThisMonth ?? 0}
-        onRefresh={() => void refresh()}
+        onRefresh={handleBoardRefresh}
       />
 
       <Drawer open={rewardOpen} onClose={() => setRewardOpen(false)} title="Nouvelle récompense">

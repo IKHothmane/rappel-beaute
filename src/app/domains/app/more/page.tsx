@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppPageHeader } from "@/components/app/AppUi";
+import { MoreMenuLink } from "@/components/layout/more-menu-link";
 import { getSession } from "@/lib/auth/session";
 import { isAppSession } from "@/lib/auth/types";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
@@ -8,7 +9,9 @@ import { scopedPage } from "@/lib/http/route-scope";
 
 export const metadata: Metadata = { title: "Menu" };
 
-const GROUPS = [
+type MoreLink = { href: string; label: string; planKey?: string };
+
+const GROUPS: { title: string; links: MoreLink[] }[] = [
   {
     title: "Gestion",
     links: [
@@ -31,6 +34,7 @@ const GROUPS = [
   {
     title: "Croissance",
     links: [
+      { href: "/post-visit/", label: "Post-prestation", planKey: "post-visit" },
       { href: "/loyalty/", label: "Fidélité" },
       { href: "/promotions/", label: "Promotions" },
       { href: "/reviews/", label: "Avis" },
@@ -78,12 +82,16 @@ export default scopedPage("public", async function MorePage() {
             <ul className="surface divide-y divide-line text-sm">
               {g.links.map((l) => (
                 <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className="block px-4 py-3.5 hover:bg-[#FBF4F6] sm:px-5"
-                  >
-                    {l.label}
-                  </Link>
+                  {l.planKey ? (
+                    <MoreMenuLink href={l.href} label={l.label} planKey={l.planKey} />
+                  ) : (
+                    <Link
+                      href={l.href}
+                      className="block px-4 py-3.5 hover:bg-[#FBF4F6] sm:px-5"
+                    >
+                      {l.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

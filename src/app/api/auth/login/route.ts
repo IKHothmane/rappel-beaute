@@ -5,7 +5,12 @@ import { authenticatePlatformUser } from "@/lib/db/platform-users";
 import { writeAuditLog } from "@/lib/db/audit";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { createSessionCookie } from "@/lib/auth/session";
-import { isAppSession, isPlatformSession, SESSION_MAX_AGE_SEC } from "@/lib/auth/types";
+import {
+  isAppSession,
+  isPlatformSession,
+  PLATFORM_SESSION_MAX_AGE_SEC,
+  SESSION_MAX_AGE_SEC,
+} from "@/lib/auth/types";
 import { stripOrganizationId } from "@/lib/auth/api-guard";
 import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
@@ -95,6 +100,9 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
         action: "LOGIN",
       }).catch((err) => logger.warn("platform LOGIN audit failed", { error: String(err) }));
 
+      // Le jeton porte la sessionVersion lue en base : un changement de mot de passe ou une
+      // désactivation ultérieurs le révoquent. Durée plateforme plus courte que celle d'un institut.
+      const platformMaxAge = remember ? PLATFORM_SESSION_MAX_AGE_SEC : null;
       const res = NextResponse.json({
         user: {
           id: session.id,
@@ -107,11 +115,11 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
         },
       });
       res.headers.set("Clear-Site-Data", '"cache"');
-      res.cookies.set(createSessionCookie(session, sessionMaxAge));
+      res.cookies.set(createSessionCookie(session, platformMaxAge));
       res.cookies.set(COOKIE_HOST, "admin", {
         path: "/",
         sameSite: "lax",
-        ...(sessionMaxAge == null ? {} : { maxAge: sessionMaxAge }),
+        ...(platformMaxAge == null ? {} : { maxAge: platformMaxAge }),
       });
       return res;
     }

@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { pool } from "@/lib/db/pool";
 import { logger } from "@/lib/logger";
 import { runAsJob } from "@/lib/db/tenant-context";
+import { aliasJoin } from "@/lib/loyalty/card-alias";
 import { cardSiteOrigin } from "@/lib/loyalty/public-origin";
 import { googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { addGoogleWalletTextMessage, googleWalletClassReviewStatus } from "@/lib/loyalty/google-wallet";
@@ -25,6 +26,8 @@ type Candidate = {
 
 type CardContext = {
   cardId: string;
+  /** Jeton de la carte effective ; différent du jeton demandé quand celui-ci est un alias fusionné. */
+  cardToken: string;
   organizationId: string;
   customerId: string;
   slug: string;
@@ -43,6 +46,7 @@ type CardContext = {
 async function loadCardContext(token: string): Promise<CardContext | null> {
   const { rows } = await pool.query<{
     cardId: string;
+    cardToken: string;
     organizationId: string;
     customerId: string;
     slug: string;
@@ -56,7 +60,7 @@ async function loadCardContext(token: string): Promise<CardContext | null> {
     reviewRequest: boolean | null;
     rewardExpiry: boolean | null;
   }>(
-    `SELECT lc.id AS "cardId", lc."organizationId", lc."customerId", o.slug,
+    `SELECT lc.id AS "cardId", lc."publicToken" AS "cardToken", lc."organizationId", lc."customerId", o.slug,
             COALESCE((
               SELECT SUM(e.points) FROM "LoyaltyEvent" e
               WHERE e."loyaltyCardId" = lc.id AND e.type = 'VISIT'
@@ -70,11 +74,12 @@ async function loadCardContext(token: string): Promise<CardContext | null> {
             p."revokedAt", p."consentedAt", p."loyaltyReward", p."loyaltyProgress",
             p."reviewRequest", p."rewardExpiry"
      FROM "LoyaltyCard" lc
+     ${aliasJoin("al", "lc")}
      JOIN "Organization" o ON o.id = lc."organizationId" AND o.status = 'ACTIVE'
      LEFT JOIN "LoyaltyProgram" lp ON lp."organizationId" = lc."organizationId"
      LEFT JOIN "NotificationPreference" p
        ON p."organizationId" = lc."organizationId" AND p."customerId" = lc."customerId"
-     WHERE lc."publicToken" = $1 AND lc.status = 'ACTIVE'`,
+     WHERE al."publicToken" = $1 AND lc.status = 'ACTIVE'`,
     [token.trim().toUpperCase()],
   );
   const row = rows[0];
@@ -84,6 +89,7 @@ async function loadCardContext(token: string): Promise<CardContext | null> {
   const remaining = cycle === 0 ? threshold : threshold - cycle;
   return {
     cardId: row.cardId,
+    cardToken: row.cardToken ?? token.trim().toUpperCase(),
     organizationId: row.organizationId,
     customerId: row.customerId,
     slug: row.slug,
@@ -176,8 +182,8 @@ async function remember(
   candidate: Candidate,
   status: "SENT" | "SKIPPED" | "FAILED" | "PENDING",
   error: string | null,
+  key: string,
 ) {
-  const key = walletIdempotencyKey(candidate.kind, candidate.entityId);
   await pool.query(
     `INSERT INTO "GoogleWalletMessage" (
        id, "organizationId", "customerId", "loyaltyCardId", kind, "idempotencyKey",
@@ -207,6 +213,9 @@ export async function deliverWalletMessagesForToken(token: string) {
   if (!googleWalletConfigured()) return { sent: 0 };
   const card = await loadCardContext(token);
   if (!card) return { sent: 0 };
+  // Le passe Wallet d'un alias (carte fusionnée) est un objet Google distinct de celui de la survivante :
+  // sa clé d'idempotence est propre au jeton pour que chaque passe reçoive son message une fois.
+  const keySuffix = token.trim().toUpperCase() === card.cardToken ? "" : `#${token.trim().toUpperCase().slice(-6)}`;
   const sentCount = await pool.query<{ total: number }>(
     `SELECT COUNT(*)::int AS total
      FROM "GoogleWalletMessage"
@@ -219,7 +228,7 @@ export async function deliverWalletMessagesForToken(token: string) {
   const reviewStatus = remainingQuota > 0 ? await googleWalletClassReviewStatus() : null;
   let sent = 0;
   for (const candidate of await candidatesFor(card)) {
-    const key = walletIdempotencyKey(candidate.kind, candidate.entityId);
+    const key = `${walletIdempotencyKey(candidate.kind, candidate.entityId)}${keySuffix}`;
     const existing = await pool.query<{ status: "SENT" | "SKIPPED" | "FAILED" | "PENDING"; attemptCount: number }>(
       `SELECT status, "attemptCount" FROM "GoogleWalletMessage"
        WHERE "organizationId" = $1 AND "idempotencyKey" = $2`,
@@ -229,7 +238,7 @@ export async function deliverWalletMessagesForToken(token: string) {
     if (stored !== "send") continue;
     const consent = walletMessageAllowed({ kind: candidate.kind, ...card });
     if (consent !== "send") {
-      await remember(card, candidate, "SKIPPED", consent);
+      await remember(card, candidate, "SKIPPED", consent, key);
       continue;
     }
     if (remainingQuota <= 0) continue;
@@ -243,30 +252,30 @@ export async function deliverWalletMessagesForToken(token: string) {
       });
     } catch (error) {
       logger.warn("google wallet message failed", { status: 0 });
-      await remember(card, candidate, "FAILED", error instanceof Error ? error.message.slice(0, 120) : "temporary");
+      await remember(card, candidate, "FAILED", error instanceof Error ? error.message.slice(0, 120) : "temporary", key);
       continue;
     }
     const outcome = notifyOutcome(httpStatus, reviewStatus);
     if (outcome === "sent") {
-      await remember(card, candidate, "SENT", null);
+      await remember(card, candidate, "SENT", null, key);
       sent += 1;
       remainingQuota -= 1;
       continue;
     }
     if (outcome === "quota" || outcome === "not_published" || outcome === "not_registered") {
-      await remember(card, candidate, "SKIPPED", outcome);
+      await remember(card, candidate, "SKIPPED", outcome, key);
       if (outcome === "quota") remainingQuota = 0;
       continue;
     }
-    await remember(card, candidate, "FAILED", `http_${httpStatus}`);
+    await remember(card, candidate, "FAILED", `http_${httpStatus}`, key);
   }
   return { sent };
 }
 
 async function deliverDueWalletMessages() {
   if (!googleWalletConfigured()) return { sent: 0, cards: 0 };
-  const { rows } = await pool.query<{ publicToken: string }>(
-    `SELECT lc."publicToken"
+  const { rows } = await pool.query<{ id: string; publicToken: string }>(
+    `SELECT lc.id, lc."publicToken"
      FROM "LoyaltyCard" lc
      WHERE lc.status = 'ACTIVE'
        AND (
@@ -296,8 +305,13 @@ async function deliverDueWalletMessages() {
   let sent = 0;
   for (const row of rows) {
     try {
-      const result = await deliverWalletMessagesForToken(row.publicToken);
-      sent += result.sent;
+      // Survivante d'abord, puis les alias : chaque passe Wallet installé reçoit sa notification.
+      const { walletTokensForCard } = await import("@/lib/loyalty/cards");
+      const family = await walletTokensForCard(pool, row.id);
+      for (const member of new Set([row.publicToken, ...family])) {
+        const result = await deliverWalletMessagesForToken(member);
+        sent += result.sent;
+      }
     } catch {
       logger.warn("google wallet card skipped");
     }

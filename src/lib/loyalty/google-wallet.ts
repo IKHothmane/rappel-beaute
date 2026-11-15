@@ -3,7 +3,8 @@ import { readFileSync } from "fs";
 import { logger } from "@/lib/logger";
 import type { CardProgress } from "@/lib/loyalty/cards";
 import { shortCardCode } from "@/lib/loyalty/card-code";
-import { getPublicCardByToken } from "@/lib/loyalty/cards";
+import { getPublicCardByToken, walletTokensForToken } from "@/lib/loyalty/cards";
+import { pool } from "@/lib/db/pool";
 import { loyaltyCardHex } from "@/lib/loyalty/card-color";
 import { cardArtwork, compactLogo, genericClassAppearance, genericObjectUpdate } from "@/lib/loyalty/google-wallet-view";
 import { cardSiteOrigin } from "@/lib/loyalty/public-origin";
@@ -229,13 +230,30 @@ async function syncGoogleWalletCard(token: string) {
   await deliverWalletMessagesForToken(normalized);
 }
 
-/** Après un passage déjà enregistré. Sans compte de service, ne fait rien. */
+function logWalletSyncFailure(error: unknown) {
+  const message = error instanceof Error ? error.message : "sync";
+  console.error("[google-wallet]", message.slice(0, 180));
+}
+
+/**
+ * Après un passage (ou une fusion de fiches) déjà enregistré. Sans compte de service, ne fait rien.
+ * Rafraîchit le jeton donné ET ceux de la même famille : la carte survivante et ses alias (cartes
+ * fusionnées) ont chacune leur passe Wallet, qui doit afficher la même progression.
+ */
 export function notifyGoogleWallet(token: string) {
   if (!googleWalletConfigured()) return;
-  void syncGoogleWalletCard(token).catch((error) => {
-    const message = error instanceof Error ? error.message : "sync";
-    console.error("[google-wallet]", message.slice(0, 180));
-  });
+  const given = token.trim().toUpperCase();
+  void (async () => {
+    let family: string[] = [];
+    try {
+      family = await walletTokensForToken(pool, given);
+    } catch (error) {
+      logWalletSyncFailure(error);
+    }
+    for (const member of new Set([given, ...family])) {
+      await syncGoogleWalletCard(member).catch(logWalletSyncFailure);
+    }
+  })();
 }
 
 let classStatusCache: { at: number; status: string | null } | null = null;

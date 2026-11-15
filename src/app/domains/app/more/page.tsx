@@ -5,6 +5,7 @@ import { MoreMenuLink } from "@/components/layout/more-menu-link";
 import { getSession } from "@/lib/auth/session";
 import { isAppSession } from "@/lib/auth/types";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
+import { isPostVisitUiEnabled } from "@/lib/post-visit/access";
 import { scopedPage } from "@/lib/http/route-scope";
 
 export const metadata: Metadata = { title: "Menu" };
@@ -63,7 +64,9 @@ export default scopedPage("public", async function MorePage() {
   const groups = GROUPS.map((g) => ({
     ...g,
     links: g.links.filter(
-      (l) => l.href !== "/salon-3d/" || salon3dOk,
+      (l) =>
+        (l.href !== "/salon-3d/" || salon3dOk) &&
+        (l.href !== "/post-visit/" || isPostVisitUiEnabled()),
     ),
   })).filter((g) => g.links.length > 0);
 

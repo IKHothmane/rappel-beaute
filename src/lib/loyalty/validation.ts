@@ -1,6 +1,7 @@
 import { createHash, randomInt } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
+import { aliasJoin } from "@/lib/loyalty/card-alias";
 import { shortCardCode } from "@/lib/loyalty/card-code";
 import { notifyGoogleWallet } from "@/lib/loyalty/google-wallet";
 import { isUniqueViolation } from "@/lib/db/loyalty";
@@ -14,6 +15,11 @@ import {
 } from "@/lib/loyalty/cards";
 import { pool } from "@/lib/db/pool";
 
+/** Fiche créée par le QR d'adhésion : Customer.phone = « WL » + 8 hexadécimaux, jamais un numéro saisi. */
+export function isAnonymousLoyaltyPhone(phone: string | null | undefined): boolean {
+  return typeof phone === "string" && phone.startsWith("WL");
+}
+
 type ScanReward = {
   id: string;
   name: string;
@@ -24,8 +30,11 @@ type ScanReward = {
 };
 
 type ScanPreview = {
+  /** Jeton de la carte effective (celui de la survivante si la carte scannée est un alias). */
   token: string;
   customerId: string;
+  /** Carte anonyme (adhésion par QR, aucun numéro saisi) : le personnel peut proposer le rattachement. */
+  anonymous: boolean;
   customerName: string;
   firstName: string;
   lastName: string;
@@ -68,8 +77,53 @@ type VisitInsert = {
   actorName?: string | null;
 };
 
+type LockedCard = { id: string; customerId: string; firstName: string; lastName: string; publicToken: string };
+
+/** Une fusion de fiches a transformé la carte visée en alias pendant l'opération : la rejouer. */
+class CardMovedError extends Error {
+  constructor() {
+    super("CARD_MOVED");
+  }
+}
+
+/**
+ * Carte effective d'un jeton (suivi d'alias), verrouillée FOR UPDATE. Un jeton d'alias résout vers la carte
+ * survivante. Si une fusion concurrente transforme la carte en alias entre la lecture et le verrou,
+ * PostgreSQL réévalue le filtre status = 'ACTIVE' : la requête est alors rejouée une fois et suit l'alias.
+ */
+async function lockCardByToken(client: PoolClient, organizationId: string, token: string): Promise<LockedCard | null> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const card = await client.query<LockedCard>(
+      `SELECT lc.id, lc."customerId", c."firstName", c."lastName", lc."publicToken"
+       FROM "LoyaltyCard" lc
+       ${aliasJoin("al", "lc")}
+       JOIN "Customer" c ON c.id = lc."customerId"
+       WHERE al."publicToken" = $1 AND al."organizationId" = $2 AND lc.status = 'ACTIVE'
+       FOR UPDATE OF lc`,
+      [token, organizationId],
+    );
+    if (card.rows[0]) return card.rows[0];
+  }
+  return null;
+}
+
+/**
+ * Verrouille une carte connue par id et vérifie qu'elle est encore ACTIVE et rattachée à la même fiche
+ * (sinon : CardMovedError). Une fusion en cas A rattache la carte de S à T : le passage doit alors être
+ * rejoué avec la fiche de T plutôt que d'écrire un événement au nom de S.
+ */
+async function lockActiveCardById(client: PoolClient, cardId: string, expectedCustomerId: string): Promise<void> {
+  const locked = await client.query<{ status: string; customerId: string }>(
+    `SELECT status, "customerId" FROM "LoyaltyCard" WHERE id = $1 FOR UPDATE`,
+    [cardId],
+  );
+  if (locked.rows[0]?.status !== "ACTIVE" || locked.rows[0].customerId !== expectedCustomerId) {
+    throw new CardMovedError();
+  }
+}
+
 /** Le code carte devient un code promo perso (1 usage), selon la récompense choisie par l’institut. */
-async function grantPersonalLoyaltyPromo(
+export async function grantPersonalLoyaltyPromo(
   db: Pool | PoolClient,
   opts: {
     organizationId: string;
@@ -295,11 +349,13 @@ export async function previewLoyaltyScan(
     firstName: string;
     lastName: string;
     phone: string | null;
+    publicToken?: string;
   }>(
-    `SELECT lc.id, lc."customerId", c."firstName", c."lastName", c.phone
+    `SELECT lc.id, lc."customerId", c."firstName", c."lastName", c.phone, lc."publicToken"
      FROM "LoyaltyCard" lc
+     ${aliasJoin("al", "lc")}
      JOIN "Customer" c ON c.id = lc."customerId"
-     WHERE lc."publicToken" = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'`,
+     WHERE al."publicToken" = $1 AND al."organizationId" = $2 AND lc.status = 'ACTIVE'`,
     [token, organizationId],
   );
   if (!card.rows[0]) throw new Error("CARD_NOT_FOUND");
@@ -333,8 +389,9 @@ export async function previewLoyaltyScan(
   const next = appointment.rows[0];
 
   return {
-    token,
+    token: card.rows[0].publicToken ?? token,
     customerId: card.rows[0].customerId,
+    anonymous: isAnonymousLoyaltyPhone(card.rows[0].phone),
     customerName: `${card.rows[0].firstName} ${card.rows[0].lastName}`.trim(),
     firstName: card.rows[0].firstName,
     lastName: card.rows[0].lastName,
@@ -420,20 +477,15 @@ export async function validateLoyaltyVisit(
   const program = await getVisitProgram(organizationId);
   if (!program.active) throw new Error("PROGRAM_DISABLED");
 
-  const token = rawToken.trim().toUpperCase();
+  const requestedToken = rawToken.trim().toUpperCase();
   const client = await pool.connect();
   let finished = false;
   try {
     await client.query("BEGIN");
-    const card = await client.query<{ id: string; customerId: string; firstName: string; lastName: string }>(
-      `SELECT lc.id, lc."customerId", c."firstName", c."lastName"
-       FROM "LoyaltyCard" lc
-       JOIN "Customer" c ON c.id = lc."customerId"
-       WHERE lc."publicToken" = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'
-       FOR UPDATE OF lc`,
-      [token, organizationId],
-    );
-    if (!card.rows[0]) throw new Error("CARD_NOT_FOUND");
+    const locked = await lockCardByToken(client, organizationId, requestedToken);
+    if (!locked) throw new Error("CARD_NOT_FOUND");
+    const card = { rows: [locked] };
+    const token = locked.publicToken;
 
     const appointment = await client.query<{
       id: string;
@@ -514,6 +566,20 @@ export async function creditVisitIfEligible(opts: {
   appointmentId: string;
   actorId?: string | null;
 }): Promise<{ credited: boolean }> {
+  try {
+    return await creditVisitIfEligibleOnce(opts);
+  } catch (error) {
+    // Fusion de fiches survenue entre la lecture du rendez-vous et le verrou de la carte : une seule reprise.
+    if (error instanceof CardMovedError) return creditVisitIfEligibleOnce(opts);
+    throw error;
+  }
+}
+
+async function creditVisitIfEligibleOnce(opts: {
+  organizationId: string;
+  appointmentId: string;
+  actorId?: string | null;
+}): Promise<{ credited: boolean }> {
   const program = await getVisitProgram(opts.organizationId);
   if (!program.active) return { credited: false };
 
@@ -558,7 +624,7 @@ export async function creditVisitIfEligible(opts: {
   let finished = false;
   try {
     await client.query("BEGIN");
-    await client.query(`SELECT id FROM "LoyaltyCard" WHERE id = $1 FOR UPDATE`, [card.rows[0].id]);
+    await lockActiveCardById(client, card.rows[0].id, appt.customerId);
     await insertVisitAndMaybeReward(client, {
       organizationId: opts.organizationId,
       cardId: card.rows[0].id,
@@ -600,6 +666,22 @@ export async function adjustLoyaltyVisit(opts: {
   actorId: string;
   actorName?: string | null;
 }): Promise<{ visits: number }> {
+  try {
+    return await adjustLoyaltyVisitOnce(opts);
+  } catch (error) {
+    if (error instanceof CardMovedError) return adjustLoyaltyVisitOnce(opts);
+    throw error;
+  }
+}
+
+async function adjustLoyaltyVisitOnce(opts: {
+  organizationId: string;
+  customerId: string;
+  delta: 1 | -1;
+  reason: string;
+  actorId: string;
+  actorName?: string | null;
+}): Promise<{ visits: number }> {
   const reason = opts.reason.trim();
   if (reason.length < 3) throw new Error("REASON_REQUIRED");
   if (opts.delta !== 1 && opts.delta !== -1) throw new Error("INVALID_DELTA");
@@ -607,19 +689,24 @@ export async function adjustLoyaltyVisit(opts: {
   const program = await getVisitProgram(opts.organizationId);
   if (!program.active) throw new Error("PROGRAM_DISABLED");
 
-  const card = await pool.query<{ id: string; publicToken: string }>(
-    `SELECT id, "publicToken" FROM "LoyaltyCard"
-     WHERE "organizationId" = $1 AND "customerId" = $2 AND status = 'ACTIVE'
+  // Un customerId de fiche fusionnée (alias) est résolu vers la fiche survivante ; sinon NO_CARD.
+  const card = await pool.query<{ id: string; publicToken: string; customerId: string }>(
+    `SELECT lc.id, lc."publicToken", lc."customerId"
+     FROM "LoyaltyCard" lc
+     ${aliasJoin("src", "lc")}
+     WHERE src."organizationId" = $1 AND src."customerId" = $2 AND lc.status = 'ACTIVE'
+     ORDER BY (src.id = lc.id) DESC
      LIMIT 1`,
     [opts.organizationId, opts.customerId],
   );
   if (!card.rows[0]) throw new Error("NO_CARD");
+  const customerId = card.rows[0].customerId;
 
   const client = await pool.connect();
   let finished = false;
   try {
     await client.query("BEGIN");
-    await client.query(`SELECT id FROM "LoyaltyCard" WHERE id = $1 FOR UPDATE`, [card.rows[0].id]);
+    await lockActiveCardById(client, card.rows[0].id, customerId);
     const current = await client.query<{ count: string }>(
       `SELECT COALESCE(SUM(points), 0)::text AS count
        FROM "LoyaltyEvent" WHERE "loyaltyCardId" = $1 AND type = 'VISIT'`,
@@ -631,7 +718,7 @@ export async function adjustLoyaltyVisit(opts: {
     const saved = await insertVisitAndMaybeReward(client, {
       organizationId: opts.organizationId,
       cardId: card.rows[0].id,
-      customerId: opts.customerId,
+      customerId,
       appointmentId: null,
       serviceId: null,
       amount: 0,
@@ -647,8 +734,8 @@ export async function adjustLoyaltyVisit(opts: {
       entityType: "LoyaltyEvent",
       entityId: saved.eventId,
       action: "LOYALTY_VISIT_ADJUSTED",
-      before: { visits: before, customerId: opts.customerId },
-      after: { visits: saved.visits, delta: opts.delta, reason, customerId: opts.customerId },
+      before: { visits: before, customerId },
+      after: { visits: saved.visits, delta: opts.delta, reason, customerId },
       client,
     });
     await client.query("COMMIT");
@@ -734,15 +821,9 @@ export async function creditVisitWithInstituteCode(opts: {
     );
     if (!consumed.rows[0]) throw new Error("CODE_INVALID");
 
-    const card = await client.query<{ id: string; customerId: string; firstName: string; lastName: string }>(
-      `SELECT lc.id, lc."customerId", c."firstName", c."lastName"
-       FROM "LoyaltyCard" lc
-       JOIN "Customer" c ON c.id = lc."customerId"
-       WHERE lc."publicToken" = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'
-       FOR UPDATE OF lc`,
-      [token, opts.organizationId],
-    );
-    if (!card.rows[0]) throw new Error("CARD_NOT_FOUND");
+    const lockedCard = await lockCardByToken(client, opts.organizationId, token);
+    if (!lockedCard) throw new Error("CARD_NOT_FOUND");
+    const card = { rows: [lockedCard] };
 
     const service = await client.query<{ id: string; name: string; price: string }>(
       `SELECT id, name, price::text AS price FROM "Service"
@@ -827,15 +908,9 @@ export async function creditVisitByCardCode(opts: {
   let finished = false;
   try {
     await client.query("BEGIN");
-    const card = await client.query<{ id: string; customerId: string; firstName: string; lastName: string }>(
-      `SELECT lc.id, lc."customerId", c."firstName", c."lastName"
-       FROM "LoyaltyCard" lc
-       JOIN "Customer" c ON c.id = lc."customerId"
-       WHERE lc."publicToken" = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'
-       FOR UPDATE OF lc`,
-      [token, opts.organizationId],
-    );
-    if (!card.rows[0]) throw new Error("CARD_NOT_FOUND");
+    const locked = await lockCardByToken(client, opts.organizationId, token);
+    if (!locked) throw new Error("CARD_NOT_FOUND");
+    const card = { rows: [locked] };
 
     let service: { id: string; name: string; price: string } | null = null;
     if (serviceId) {

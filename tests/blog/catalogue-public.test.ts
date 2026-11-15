@@ -1,113 +1,110 @@
-import { Client } from "pg";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BLOG_DRAFTS } from "@/lib/blog/articles";
+import { articleMetadata } from "@/lib/blog/seo";
+import type { BlogArticle } from "@/lib/blog/types";
+
+const editorial = vi.hoisted(() => ({ published: vi.fn() }));
+vi.mock("@/lib/db/blog", () => ({ listPublishedArticles: editorial.published }));
+
 import { publishedArticles } from "@/lib/blog/public";
-import { saveEditorialArticle } from "@/lib/db/blog";
-import { runInScope } from "@/lib/db/tenant-context";
-import type { BlogArticle, BlogContent } from "@/lib/blog/types";
 import sitemap from "@/app/sitemap";
 
-const WITHDRAWAL_SLUG = "circuit-retrait-editorial";
+beforeEach(() => {
+  editorial.published.mockReset();
+  editorial.published.mockResolvedValue([]);
+});
 
-function asContent(article: BlogArticle, slug: string): BlogContent {
+function publishedArticle(overrides: Partial<BlogArticle> = {}): BlogArticle {
   return {
-    slug,
-    title: article.title,
-    description: article.description,
-    category: article.category,
-    answer: article.answer,
-    sections: article.sections,
-    faqs: article.faqs,
-    links: article.links,
-    sources: article.sources,
+    ...BLOG_DRAFTS[0],
+    status: "published",
+    reviewedBy: "relecteur-authentifie",
+    publishedAt: "2026-11-15T12:00:00Z",
+    version: 1,
+    ...overrides,
   };
 }
 
-async function deleteWithdrawal(): Promise<void> {
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
-  try {
-    await client.query('DELETE FROM "BlogArticle" WHERE slug = $1', [WITHDRAWAL_SLUG]);
-  } finally {
-    await client.end();
-  }
-}
-
 describe("Catalogue public", () => {
-  it("n’expose aucun brouillon tant qu’un relecteur ne l’a pas publié", async () => {
+  it("rend les 110 guides du code accessibles sans article en base, sans inventer de relecture", async () => {
     const articles = await publishedArticles();
-    expect(articles.every((article) => article.status === "published" && article.reviewedBy)).toBe(
-      true,
-    );
-    expect(BLOG_DRAFTS.every((article) => article.status === "draft" && !article.reviewedBy)).toBe(
-      true,
-    );
-    const live = new Map(articles.map((article) => [article.slug, article]));
-    for (const draft of BLOG_DRAFTS) {
-      const published = live.get(draft.slug);
-      if (published) expect(published.reviewedBy).toBeTruthy();
+    expect(articles).toHaveLength(110);
+    expect(new Set(articles.map((article) => article.slug)).size).toBe(110);
+    for (const source of BLOG_DRAFTS) {
+      expect(articles.find((article) => article.slug === source.slug)).toEqual(source);
     }
+    expect(articles.every((article) => article.status === "draft")).toBe(true);
+    expect(articles.every((article) => article.reviewedBy === null)).toBe(true);
+    expect(articles.every((article) => article.publishedAt === null)).toBe(true);
   });
 
-  it("limite le sitemap aux articles réellement publiés, sans adresse privée", async () => {
-    const articles = await publishedArticles();
-    const entries = await sitemap();
-    const urls = entries.map((entry) => entry.url);
-    expect(new Set(urls).size).toBe(urls.length);
+  it("génère 130 URL uniques, dont les 110 guides, sans exposer de route privée", async () => {
+    const urls = (await sitemap()).map((entry) => entry.url);
+    expect(urls).toHaveLength(130);
+    expect(new Set(urls).size).toBe(130);
     expect(urls).toContain("https://rappelbeauty.com/blog/");
-    for (const article of articles) {
+    for (const article of BLOG_DRAFTS) {
       expect(urls).toContain(`https://rappelbeauty.com/blog/${article.slug}/`);
     }
-    const guides = urls.filter((url) => {
-      const path = new URL(url).pathname;
-      return path.startsWith("/blog/") && path !== "/blog/";
-    });
-    expect(guides).toHaveLength(articles.length);
-    for (const draft of BLOG_DRAFTS) {
-      const listed = urls.includes(`https://rappelbeauty.com/blog/${draft.slug}/`);
-      expect(listed).toBe(articles.some((article) => article.slug === draft.slug));
-    }
     expect(
-      urls.every((url) => !/[?#]/.test(url) && !/\/(?:admin|api|domains|connexion)\//.test(url)),
+      urls.filter(
+        (url) => new URL(url).pathname.startsWith("/blog/") && new URL(url).pathname !== "/blog/",
+      ),
+    ).toHaveLength(110);
+    expect(
+      urls.every(
+        (url) => !/[?#]/.test(url) && !/\/(?:admin|api|domains|connexion|agenda|carte)\//.test(url),
+      ),
     ).toBe(true);
   });
 
-  it.skipIf(!process.env.DATABASE_URL)(
-    "retire du blog public un article dépublié par l’administration",
-    async () => {
-      await deleteWithdrawal();
-      try {
-        const published = await runInScope({ kind: "platform", reason: "relecture de test" }, () =>
-          saveEditorialArticle(asContent(BLOG_DRAFTS[0], WITHDRAWAL_SLUG), "published", 0, "relecteur-test"),
-        );
-        expect(published?.status).toBe("published");
-        expect(published?.reviewedBy).toBe("relecteur-test");
-        expect((await publishedArticles()).some((article) => article.slug === WITHDRAWAL_SLUG)).toBe(
-          true,
-        );
-        expect((await sitemap()).some((entry) => entry.url.endsWith(`/blog/${WITHDRAWAL_SLUG}/`))).toBe(
-          true,
-        );
+  it("conserve les guides et leurs 130 URL si le stockage éditorial est indisponible", async () => {
+    editorial.published.mockRejectedValue(new Error("Stockage indisponible"));
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(await publishedArticles()).toHaveLength(110);
+      expect(await sitemap()).toHaveLength(130);
+    } finally {
+      warning.mockRestore();
+    }
+  });
 
-        const withdrawn = await runInScope({ kind: "platform", reason: "retrait de test" }, () =>
-          saveEditorialArticle(
-            asContent(BLOG_DRAFTS[0], WITHDRAWAL_SLUG),
-            "draft",
-            published!.version,
-            "relecteur-test",
-          ),
-        );
-        expect(withdrawn?.status).toBe("draft");
-        expect(withdrawn?.reviewedBy).toBeNull();
-        expect((await publishedArticles()).some((article) => article.slug === WITHDRAWAL_SLUG)).toBe(
-          false,
-        );
-        expect((await sitemap()).some((entry) => entry.url.endsWith(`/blog/${WITHDRAWAL_SLUG}/`))).toBe(
-          false,
-        );
-      } finally {
-        await deleteWithdrawal();
-      }
+  it("privilégie une version éditoriale publiée sans dupliquer son adresse", async () => {
+    const override = publishedArticle({
+      title: "Une version éditoriale mise à jour pour votre institut",
+    });
+    editorial.published.mockResolvedValue([override]);
+    const articles = await publishedArticles();
+    expect(articles).toHaveLength(110);
+    expect(articles.filter((article) => article.slug === override.slug)).toEqual([override]);
+    expect(
+      (await sitemap()).filter((entry) => entry.url.endsWith(`/blog/${override.slug}/`)),
+    ).toHaveLength(1);
+    expect(BLOG_DRAFTS[0].status).toBe("draft");
+    expect(BLOG_DRAFTS[0].reviewedBy).toBeNull();
+  });
+
+  it("retire un article éditorial supplémentaire quand le stockage public ne le retourne plus", async () => {
+    const extra = publishedArticle({ slug: "guide-editorial-supplementaire" });
+    editorial.published.mockResolvedValue([extra]);
+    expect(await publishedArticles()).toHaveLength(111);
+    expect((await sitemap()).map((entry) => entry.url)).toContain(
+      `https://rappelbeauty.com/blog/${extra.slug}/`,
+    );
+
+    editorial.published.mockResolvedValue([]);
+    expect(await publishedArticles()).toHaveLength(110);
+    const urls = (await sitemap()).map((entry) => entry.url);
+    expect(urls).toHaveLength(130);
+    expect(urls).not.toContain(`https://rappelbeauty.com/blog/${extra.slug}/`);
+  });
+
+  it.each(["draft", "published"] as const)(
+    "indexe un guide public même si ses métadonnées éditoriales indiquent %s",
+    (status) => {
+      const article = { ...BLOG_DRAFTS[0], status };
+      expect(articleMetadata(article).robots).toMatchObject({ index: true, follow: true });
+      expect(articleMetadata(article).alternates?.canonical).toBe(`/blog/${article.slug}/`);
     },
   );
 });

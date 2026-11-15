@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { pool } from "@/lib/db/pool";
 import { logger } from "@/lib/logger";
+import { aliasJoin } from "@/lib/loyalty/card-alias";
 import {
   decideDelivery,
   grantAllowsCard,
@@ -38,9 +39,10 @@ async function loadCard(token: string): Promise<CardBinding | null> {
     `SELECT lc."organizationId", lc."customerId", c.phone,
             (c."marketingWhatsapp" OR c."marketingEmail" OR c."marketingSms") AS "marketingOptIn"
      FROM "LoyaltyCard" lc
+     ${aliasJoin("al", "lc")}
      JOIN "Organization" o ON o.id = lc."organizationId" AND o.status = 'ACTIVE'
      JOIN "Customer" c ON c.id = lc."customerId" AND c."deletedAt" IS NULL
-     WHERE lc."publicToken" = $1 AND lc.status = 'ACTIVE'`,
+     WHERE al."publicToken" = $1 AND lc.status = 'ACTIVE'`,
     [token],
   );
   return rows[0] ?? null;

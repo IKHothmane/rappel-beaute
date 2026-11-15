@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http/client-ip";
-import { saveLoyaltyCardProfile } from "@/lib/loyalty/card-review";
+import {
+  MARKETING_WHATSAPP_CONSENT_INVALID_MESSAGE,
+  parseMarketingWhatsappConsent,
+  saveLoyaltyCardProfile,
+} from "@/lib/loyalty/card-review";
+import { LOYALTY_PHONE_ALREADY_KNOWN_CODE } from "@/lib/loyalty/profile-input";
 import { consumeDimensions } from "@/lib/rate-limit";
 import { publicRoute } from "@/lib/http/route-scope";
 
@@ -12,6 +17,7 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     firstName?: string;
     lastName?: string;
     phone?: string;
+    marketingWhatsappConsent?: unknown;
   } | null;
   if (!body?.token) return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
 
@@ -31,12 +37,21 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     );
   }
 
+  const consent = parseMarketingWhatsappConsent(body.marketingWhatsappConsent);
+  if (!consent.ok) return NextResponse.json({ error: MARKETING_WHATSAPP_CONSENT_INVALID_MESSAGE }, { status: 400 });
+
   const result = await saveLoyaltyCardProfile({
     cardToken: body.token,
     firstName: String(body.firstName ?? ""),
     lastName: String(body.lastName ?? ""),
     phone: String(body.phone ?? ""),
+    marketingWhatsappConsent: consent.value,
   });
-  if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+  if (!result.ok) {
+    if (result.code === LOYALTY_PHONE_ALREADY_KNOWN_CODE) {
+      return NextResponse.json({ error: result.error, code: result.code }, { status: 409 });
+    }
+    return NextResponse.json({ error: result.error }, { status: 400 });
+  }
   return NextResponse.json({ ok: true, code: result.code });
 });

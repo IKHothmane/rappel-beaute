@@ -34,7 +34,7 @@ export function isUniqueViolation(error: unknown): boolean {
   );
 }
 
-function levelFromLifetime(
+export function levelFromLifetime(
   lifetime: number,
   program: { bronzeMin: number; silverMin: number; goldMin: number; vipMin: number },
 ): LoyaltyLevel {
@@ -200,7 +200,7 @@ export async function updateLoyaltyProgram(
   return after;
 }
 
-async function getOrCreateAccount(
+export async function getOrCreateAccount(
   organizationId: string,
   customerId: string,
   client: PoolClient,
@@ -663,10 +663,12 @@ export async function listLoyaltyLeaderboard(
       activePackages: number;
     }>(
       `SELECT
-         (SELECT COUNT(*)::int FROM "LoyaltyAccount" WHERE "organizationId" = $1) AS "membersCount",
-         (SELECT COUNT(*)::int FROM "LoyaltyAccount"
-           WHERE "organizationId" = $1
-             AND "createdAt" >= date_trunc('month', timezone('Africa/Casablanca', now()))) AS "membersThisMonth",
+         (SELECT COUNT(*)::int FROM "LoyaltyAccount" la0 WHERE la0."organizationId" = $1
+            AND NOT EXISTS (SELECT 1 FROM "Customer" mc WHERE mc.id = la0."customerId" AND mc."mergedIntoCustomerId" IS NOT NULL)) AS "membersCount",
+         (SELECT COUNT(*)::int FROM "LoyaltyAccount" la1
+           WHERE la1."organizationId" = $1
+             AND la1."createdAt" >= date_trunc('month', timezone('Africa/Casablanca', now()))
+             AND NOT EXISTS (SELECT 1 FROM "Customer" mc WHERE mc.id = la1."customerId" AND mc."mergedIntoCustomerId" IS NOT NULL)) AS "membersThisMonth",
          COALESCE((SELECT SUM(points) FROM "LoyaltyTransaction" WHERE "organizationId" = $1 AND type = 'EARN'), 0)::text AS "pointsDistributed",
          COALESCE((SELECT SUM(ABS(points)) FROM "LoyaltyTransaction" WHERE "organizationId" = $1 AND type = 'REDEEM'), 0)::text AS "pointsRedeemed",
          COALESCE((SELECT SUM(balance) FROM "LoyaltyAccount" WHERE "organizationId" = $1), 0)::text AS "pointsActive",
@@ -674,13 +676,15 @@ export async function listLoyaltyLeaderboard(
          (
            SELECT COUNT(*)::int FROM "LoyaltyAccount" la
            WHERE la."organizationId" = $1
+             AND NOT EXISTS (SELECT 1 FROM "Customer" mc WHERE mc.id = la."customerId" AND mc."mergedIntoCustomerId" IS NOT NULL)
              AND la.balance >= COALESCE(
                (SELECT MIN("pointsCost") FROM "LoyaltyReward" WHERE "organizationId" = $1 AND active = true),
                2147483647
              )
          ) AS "rewardsReady",
          (SELECT COUNT(DISTINCT "customerId")::int FROM "LoyaltyTransaction"
-           WHERE "organizationId" = $1 AND "createdAt" >= NOW() - INTERVAL '30 days') AS "active30d",
+           WHERE "organizationId" = $1 AND "createdAt" >= NOW() - INTERVAL '30 days'
+             AND ("idempotencyKey" IS NULL OR "idempotencyKey" NOT LIKE 'merge:%')) AS "active30d",
          COALESCE((
            SELECT SUM(a.price) FROM "Appointment" a
            JOIN "LoyaltyAccount" la ON la."customerId" = a."customerId" AND la."organizationId" = a."organizationId"
@@ -700,8 +704,9 @@ export async function listLoyaltyLeaderboard(
     ),
     pool.query<{ level: string; n: number }>(
       `SELECT level::text, COUNT(*)::int AS n
-       FROM "LoyaltyAccount"
-       WHERE "organizationId" = $1
+       FROM "LoyaltyAccount" la
+       WHERE la."organizationId" = $1
+         AND NOT EXISTS (SELECT 1 FROM "Customer" mc WHERE mc.id = la."customerId" AND mc."mergedIntoCustomerId" IS NOT NULL)
        GROUP BY level`,
       [organizationId],
     ),

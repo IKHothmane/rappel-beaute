@@ -35,6 +35,7 @@ import {
 import { usePlanFeatures } from "@/components/subscriptions/plan-features-provider";
 import { OrgLogo } from "@/components/app/org-logo";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
+import { isPostVisitUiEnabled } from "@/lib/post-visit/access";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -141,7 +142,9 @@ export default function OwnerSidebar({
     .map((section) => ({
       ...section,
       items: section.items.filter(
-        (item) => item.key !== "salon-3d" || salon3dOk,
+        (item) =>
+          (item.key !== "salon-3d" || salon3dOk) &&
+          (item.key !== "post-visit" || isPostVisitUiEnabled()),
       ),
     }))
     .filter((section) => section.items.length > 0);

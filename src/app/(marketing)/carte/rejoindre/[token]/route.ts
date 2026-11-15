@@ -4,30 +4,28 @@ import { clientIp } from "@/lib/http/client-ip";
 import {
   cardTokenForJoinQr,
   enrollAnonymousFromJoinQr,
+  JOIN_SCAN_IP_LIMIT_PER_HOUR,
+  joinCreationRateLimits,
   previewJoinQr,
 } from "@/lib/loyalty/join-qr";
+import {
+  INVALID_QR_PAGE,
+  PROGRAM_DISABLED_PAGE,
+  RESOLVE_PAGE,
+  TECHNICAL_ERROR_PAGE,
+  tooManyRequestsPage,
+} from "./join-pages";
 import { loyaltyCardUrl, loyaltyPreviewUrl } from "@/lib/loyalty/public-origin";
 import { consumeDimensions } from "@/lib/rate-limit";
 import { publicRoute } from "@/lib/http/route-scope";
 
 const COOKIE = "rb_join_card";
 
-/** Page intermédiaire : envoie les cartes mémorisées par le navigateur, sinon demande une nouvelle carte. */
-const RESOLVE_PAGE = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>Ma carte de fidélité</title>
-<noscript><meta http-equiv="refresh" content="0;url=?n=1"></noscript></head>
-<body style="font-family:sans-serif;text-align:center;padding:48px;color:#43293A">
-<p>Chargement de votre carte…</p>
-<script>
-(function () {
-  var list = [];
-  try { list = JSON.parse(localStorage.getItem("rb_cards") || "[]"); } catch (e) {}
-  if (!Array.isArray(list)) list = [];
-  list = list.filter(function (t) { return typeof t === "string" && /^RBLOY_[A-Z2-9]{8,32}$/.test(t); }).slice(0, 5);
-  location.replace(list.length ? "?c=" + encodeURIComponent(list.join(",")) : "?n=1");
-})();
-</script></body></html>`;
+const HTML_HEADERS = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" };
+
+function page(body: string, status: number, headers?: Record<string, string>) {
+  return new NextResponse(body, { status, headers: { ...HTML_HEADERS, ...headers } });
+}
 
 function remember(response: NextResponse, cardToken: string, secure: boolean) {
   response.cookies.set(COOKIE, cardToken, {
@@ -53,10 +51,10 @@ export const GET = publicRoute(async function GET(
   const joinToken = params.token.trim().toUpperCase();
   const preview = await previewJoinQr(joinToken);
   if (!preview) {
-    return NextResponse.json({ error: "Ce QR n'est plus valable." }, { status: 404 });
+    return page(INVALID_QR_PAGE, 404);
   }
   if (!preview.active) {
-    return NextResponse.json({ error: "Le programme de fidélité est désactivé." }, { status: 400 });
+    return page(PROGRAM_DISABLED_PAGE, 400);
   }
 
   const saved = request.cookies.get(COOKIE)?.value ?? "";
@@ -73,26 +71,18 @@ export const GET = publicRoute(async function GET(
     }
   }
   if (!cardToken && !url.searchParams.has("c") && !url.searchParams.has("n")) {
-    return new NextResponse(RESOLVE_PAGE, {
-      headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
-    });
+    return page(RESOLVE_PAGE, 200);
   }
 
   if (!cardToken) {
     const ip = clientIp(request);
-    const limited = await consumeDimensions([
-      {
-        key: `loyalty:join:ip:${ip}`,
-        limit: 20,
-        windowMs: 60 * 60 * 1000,
-        sensitivity: "sensitive",
-      },
-    ]);
+    // 60/h par IP (Wi-Fi partagé du salon) + borne globale par QR d'inscription.
+    const limited = await consumeDimensions(joinCreationRateLimits(ip, joinToken, JOIN_SCAN_IP_LIMIT_PER_HOUR));
     if (!limited.allowed) {
-      return NextResponse.json(
-        { error: "Trop de demandes. Réessayez plus tard." },
-        { status: 429, headers: { "Retry-After": String(limited.retryAfterSec ?? 3600) } },
-      );
+      const retryAfterSec = limited.retryAfterSec ?? 3600;
+      return page(tooManyRequestsPage(retryAfterSec), 429, {
+        "Retry-After": String(retryAfterSec),
+      });
     }
 
     try {
@@ -101,16 +91,13 @@ export const GET = publicRoute(async function GET(
     } catch (error) {
       const code = error instanceof Error ? error.message : "";
       if (code === "JOIN_QR_INVALID") {
-        return NextResponse.json({ error: "Ce QR n'est plus valable." }, { status: 404 });
+        return page(INVALID_QR_PAGE, 404);
       }
       if (code === "PROGRAM_DISABLED") {
-        return NextResponse.json(
-          { error: "Le programme de fidélité est désactivé." },
-          { status: 400 },
-        );
+        return page(PROGRAM_DISABLED_PAGE, 400);
       }
       console.error("[GET /carte/rejoindre]", error);
-      return NextResponse.json({ error: "Impossible de créer la carte." }, { status: 500 });
+      return page(TECHNICAL_ERROR_PAGE, 500);
     }
   }
 

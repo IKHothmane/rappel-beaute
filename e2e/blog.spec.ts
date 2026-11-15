@@ -11,14 +11,13 @@ test("blog : parcours public et recherche sur mobile", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Le blog des professionnels de la beauté", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Les premiers guides sont en préparation", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator(".bl-library .bl-card")).toHaveCount(0);
+  await expect(page.locator(".bl-library .bl-card")).toHaveCount(110);
+  await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute("content", /noindex/);
   await page.getByLabel("Rechercher un guide").fill("fidélité");
   await page.getByLabel("Thème", { exact: true }).selectOption("fidelite");
   await page.getByRole("button", { name: "Rechercher", exact: true }).click();
   await expect(page).toHaveURL(/q=fid/);
+  await expect(page.locator(".bl-library .bl-card").first()).toBeVisible();
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
   expect(overflow).toBe(false);
@@ -31,12 +30,17 @@ test("blog : URL inconnue et API protégées", async ({ request }) => {
   expect((await request.post("/api/admin/blog/questions/", { data: {} })).status()).toBe(401);
 });
 
-test("les brouillons restent hors sitemap et répondent 404", async ({ request, page }) => {
+test("les 110 guides sont présents dans le sitemap et accessibles", async ({ request, page }) => {
   const xml = await (await request.get("/sitemap.xml")).text();
   expect(xml).toContain("/blog/");
-  for (const guide of BLOG_DRAFTS) expect(xml).not.toContain(`/blog/${guide.slug}/`);
+  expect(xml.match(/<loc>/g)).toHaveLength(130);
+  for (const guide of BLOG_DRAFTS) expect(xml).toContain(`/blog/${guide.slug}/`);
   for (const guide of [BLOG_DRAFTS[0], BLOG_DRAFTS[55], BLOG_DRAFTS[109]]) {
-    expect((await request.get(`/blog/${guide.slug}/`)).status()).toBe(404);
+    const response = await request.get(`/blog/${guide.slug}/`);
+    expect(response.status()).toBe(200);
+    const html = await response.text();
+    expect(html).toContain('"@type":"BlogPosting"');
+    expect(html).not.toMatch(/<meta[^>]+name="robots"[^>]+content="[^"]*noindex/);
   }
   await page.goto("/blog/");
   await expect(page.locator(".marketing-site > header")).toBeVisible();

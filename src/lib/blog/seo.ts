@@ -11,7 +11,7 @@ export function articleMetadata(article: BlogArticle): Metadata {
       description: article.description,
       canonical,
     }),
-    robots: { index: article.status === "published", follow: true },
+    robots: { index: true, follow: true },
     openGraph: {
       type: "article",
       title: article.title,

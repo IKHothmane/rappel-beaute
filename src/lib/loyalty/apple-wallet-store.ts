@@ -31,7 +31,12 @@ export async function ensureApplePass(serial: string): Promise<ApplePassRecord |
             p.id, p."authenticationToken", p."updatedAt"
      FROM "LoyaltyCard" c
      LEFT JOIN "AppleWalletPass" p ON p."loyaltyCardId" = c.id
-     WHERE c."publicToken" = $1 AND c.status = 'ACTIVE'
+     WHERE c."publicToken" = $1 AND c.status IN ('ACTIVE', 'MERGED')
+       AND EXISTS (
+         SELECT 1 FROM "LoyaltyCard" t
+         WHERE t.id = COALESCE(c."mergedIntoCardId", c.id) AND t."organizationId" = c."organizationId"
+           AND t.status = 'ACTIVE'
+       )
      LIMIT 1`,
     [normalized],
   );

@@ -488,6 +488,7 @@ model Organization {
   loyaltyRewards     LoyaltyReward[]
   loyaltyRedemptions LoyaltyRedemption[]
   loyaltyCards       LoyaltyCard[]
+  customerMerges     CustomerMerge[]
   loyaltyEvents      LoyaltyEvent[]
   loyaltyVisitRewards LoyaltyVisitReward[]
   loyaltyJoinQrs     LoyaltyJoinQr[]
@@ -590,6 +591,8 @@ model Customer {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   deletedAt         DateTime?
+  /// Fiche absorbante après une fusion confirmée (sans clé étrangère : pas de cycle). Index partiel WHERE NOT NULL en SQL.
+  mergedIntoCustomerId String?
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   appointments Appointment[]
@@ -1779,12 +1782,17 @@ model LoyaltyCard {
   organizationId String
   customerId     String
   publicToken    String   @unique
+  /// ACTIVE | MERGED. Une carte MERGED est un alias de la carte mergedIntoCardId
+  /// (CHECK LoyaltyCard_merged_requires_target_check dans la migration SQL).
   status         String   @default("ACTIVE")
+  mergedIntoCardId String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer     Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  mergedInto   LoyaltyCard?         @relation("LoyaltyCardMerge", fields: [mergedIntoCardId], references: [id], onDelete: SetNull)
+  mergedAliases LoyaltyCard[]       @relation("LoyaltyCardMerge")
   events       LoyaltyEvent[]
   visitRewards LoyaltyVisitReward[]
   googleWalletMessages GoogleWalletMessage[]
@@ -1793,6 +1801,35 @@ model LoyaltyCard {
   @@unique([organizationId, customerId])
   @@index([organizationId])
   @@index([customerId])
+  @@index([mergedIntoCardId])
+}
+
+/// Journal des fusions de fiches clientes (fidélité). Sans clé étrangère vers Customer, LoyaltyCard ou User :
+/// le journal survit à leur suppression. Index uniques partiel (source COMPLETED) en SQL.
+model CustomerMerge {
+  id               String    @id @default(cuid())
+  organizationId   String
+  sourceCustomerId String
+  targetCustomerId String
+  sourceCardId     String?
+  targetCardId     String?
+  survivingCardId  String?
+  actorId          String?
+  actorName        String?
+  idempotencyKey   String
+  /// COMPLETED | REVERTED (CHECK CustomerMerge_status_check)
+  status           String    @default("COMPLETED")
+  snapshotBefore   Json
+  moved            Json      @default("{}")
+  stats            Json      @default("{}")
+  createdAt        DateTime  @default(now())
+  revertedAt       DateTime?
+  revertedById     String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, createdAt(sort: Desc)])
 }
 
 /// Historique des messages Google Wallet. Distinct des notifications du personnel et du Web Push.

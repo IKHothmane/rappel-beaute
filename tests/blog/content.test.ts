@@ -147,9 +147,9 @@ describe("Bibliothèque éditoriale", () => {
     ).not.toBeNull();
     expect(validateEditorialQuestion("Le contact est cliente@example.com", true)).not.toBeNull();
   });
-  it("réserve les dates de publication et l’indexation aux versions publiées", () => {
+  it("indexe les guides publics sans statut requis et conserve les dates réelles", () => {
     const draft = BLOG_DRAFTS[0];
-    expect(articleMetadata(draft).robots).toMatchObject({ index: false });
+    expect(articleMetadata(draft).robots).toMatchObject({ index: true });
     expect(articleJsonLd(draft)).not.toHaveProperty("datePublished");
     const article = {
       ...draft,

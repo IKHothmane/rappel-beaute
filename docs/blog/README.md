@@ -1,21 +1,19 @@
 # Blog public Rappel Beauty
 
-Les 110 guides du code sont des **brouillons**. La vitrine et le sitemap ne lisent que les lignes `BlogArticle` au statut `published`, avec un `reviewedBy` renseigné et une date de publication atteinte. Retirer un article dans l’administration (retour au brouillon) le retire du blog public.
+Les 110 guides du catalogue sont affichés directement sur la vitrine et inclus dans le sitemap, sans condition de statut, de relecteur ou de date de publication.
 
-- `/blog/` affiche ces articles publiés, sans pagination, avec recherche et filtre parmi 11 thèmes. Sans article relu, la page indique que les guides sont en préparation et n’est pas indexée.
-- `/blog/[slug]/` affiche un guide publié, avec la navigation et le footer du site vitrine, ses sources, sa FAQ et des articles associés. Un brouillon répond 404.
-- Le menu principal et le footer proposent un accès au blog.
-- Le sitemap contient le blog et seulement les adresses publiées ; les variantes de recherche restent en `noindex`.
+- `/blog/` affiche tous les guides, sans pagination, avec recherche et filtre parmi 11 thèmes.
+- `/blog/[slug]/` affiche le contenu du guide et ses métadonnées indexables. Une adresse inconnue répond 404.
+- Le sitemap contient les 20 pages fixes et les 110 guides, soit 130 URL sans article supplémentaire en base. Les variantes de recherche restent en `noindex`.
+- Aucun statut de rédaction ou de relecture n’est affiché sur les pages publiques.
 
-`publishedArticles()` dans `src/lib/blog/public.ts` délègue à `listPublishedArticles()`. Les fichiers de `src/lib/blog/content/` préparent les propositions ; ils ne les publient pas. Aucun compte fictif de relecteur n’est attribué. Les exemples marocains restent explicitement fictifs et les comparaisons sont documentaires, sans classement indépendant revendiqué.
+`publishedArticles()` dans `src/lib/blog/public.ts` conserve son nom pour les consommateurs existants. Il construit le catalogue à partir de `BLOG_DRAFTS`, valide les contenus et fusionne par slug les versions éditoriales déjà publiques. Une version publique en base remplace le guide du même slug ; les articles supplémentaires déjà publics sont conservés. Le catalogue intégré reste visible sans base, en cas d’erreur de lecture et indépendamment de son statut interne. Les protections de l’API éditoriale et les règles d’isolation de la base restent inchangées.
 
-L’affichage administratif a été retiré : son entrée de menu et ses composants de rédaction/lecture ne sont plus utilisés. Les anciennes adresses `/content/blog/` et `/content/blog/[slug]/` redirigent vers la vitrine. La publication et le retrait passent par l’API éditoriale protégée, qui enregistre le relecteur authentifié. Modifier un guide visible se fait dans ce stockage, pas en redéployant un brouillon du code.
+Les anciennes adresses administratives `/content/blog/` et `/content/blog/[slug]/` redirigent vers la vitrine. Modifier le catalogue intégré se fait dans `src/lib/blog/content/`, puis par déploiement. Aucun relecteur ni date de publication fictifs ne sont attribués aux guides intégrés.
 
-`node scripts/blog/export-review.cjs` produit aussi une copie locale complète et 110 fichiers autonomes dans `.tmp/rappel-beauty-guides/`, accessibles via `index.html`. Ces copies sont des exports de relecture, distincts des pages publiques.
+`node scripts/blog/export-review.cjs` produit une copie locale et 110 fichiers autonomes dans `.tmp/rappel-beauty-guides/`, accessibles via `index.html`.
 
-Vérifications : `npm run typecheck`, `node node_modules/vitest/vitest.mjs run tests/blog`, et `e2e/blog.spec.ts` sur un serveur isolé. Les tests navigateur contrôlent la page d’attente tant qu’aucun guide n’est relu, l’absence des brouillons dans le sitemap, et la protection des API administratives.
-
-La publication reste progressive : un guide n’entre sur la vitrine qu’après relecture humaine. Aucun déploiement distant ni migration distante n’a été exécuté dans cette intervention.
+Vérifications : `npm run typecheck`, `node node_modules/vitest/vitest.mjs run tests/blog`, et `e2e/blog.spec.ts` sur un serveur isolé. Les tests couvrent le catalogue immédiat, les URL du sitemap, l’indexation, les pages inconnues et les API administratives protégées.
 
 ## Crawl de la vitrine
 

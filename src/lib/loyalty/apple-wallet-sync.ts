@@ -16,11 +16,16 @@ export async function publishApplePassUpdates() {
     `SELECT p.id,
             GREATEST(
               p."updatedAt",
-              COALESCE((SELECT MAX(e."validatedAt") FROM "LoyaltyEvent" e WHERE e."loyaltyCardId" = p."loyaltyCardId"), p."updatedAt"),
-              COALESCE((SELECT MAX(r."earnedAt") FROM "LoyaltyVisitReward" r WHERE r."loyaltyCardId" = p."loyaltyCardId"), p."updatedAt"),
-              COALESCE((SELECT MAX(r."usedAt") FROM "LoyaltyVisitReward" r WHERE r."loyaltyCardId" = p."loyaltyCardId"), p."updatedAt")
+              COALESCE((SELECT MAX(e."validatedAt") FROM "LoyaltyEvent" e WHERE e."loyaltyCardId" = eff.id), p."updatedAt"),
+              COALESCE((SELECT MAX(r."earnedAt") FROM "LoyaltyVisitReward" r WHERE r."loyaltyCardId" = eff.id), p."updatedAt"),
+              COALESCE((SELECT MAX(r."usedAt") FROM "LoyaltyVisitReward" r WHERE r."loyaltyCardId" = eff.id), p."updatedAt"),
+              -- une fusion modifie la carte effective (alias) : le passe de l'alias doit se rafraîchir
+              COALESCE(eff."updatedAt", p."updatedAt")
             ) AS "changedAt"
      FROM "AppleWalletPass" p
+     -- carte effective : COALESCE(mergedIntoCardId, id) de la carte porteuse du passe
+     LEFT JOIN "LoyaltyCard" pc ON pc.id = p."loyaltyCardId"
+     LEFT JOIN "LoyaltyCard" eff ON eff.id = COALESCE(pc."mergedIntoCardId", pc.id)
      WHERE EXISTS (SELECT 1 FROM "AppleWalletRegistration" r WHERE r."passId" = p.id)
      LIMIT 50`,
   );

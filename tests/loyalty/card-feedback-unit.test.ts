@@ -18,6 +18,7 @@ beforeEach(() => {
   query.mockImplementation(async (sql: string) => {
     if (sql.includes('FROM "LoyaltyCard" lc')) return { rows: [{ customerId: "customer_1", organizationId: "org_1" }] };
     if (sql.includes('SELECT id FROM "Staff"')) return { rows: [{ id: "staff_1" }] };
+    if (sql.includes('UPDATE "Customer"')) return { rows: [{ id: "customer_1" }] };
     return { rows: [] };
   });
 });
@@ -46,6 +47,7 @@ describe("Loyalty card feedback with staff ratings", () => {
     query.mockImplementation(async (sql: string, parameters: unknown[]) => {
       if (sql.includes('FROM "LoyaltyCard" lc')) return { rows: [{ customerId: "customer_1", organizationId: "org_1" }] };
       if (sql.includes('SELECT id FROM "Staff"')) return { rows: [{ id: parameters[0] }] };
+      if (sql.includes('UPDATE "Customer"')) return { rows: [{ id: "customer_1" }] };
       return { rows: [] };
     });
     const scores = [{ staffId: "staff_1", rating: 5 }, { staffId: "staff_2", rating: 3 }];
@@ -61,6 +63,7 @@ describe("Loyalty card feedback with staff ratings", () => {
     query.mockImplementation(async (sql: string, parameters: unknown[]) => {
       if (sql.includes('FROM "LoyaltyCard" lc')) return { rows: [{ customerId: "customer_1", organizationId: "org_1" }] };
       if (sql.includes('SELECT id FROM "Staff"')) return { rows: parameters[0] === "staff_1" ? [{ id: "staff_1" }] : [] };
+      if (sql.includes('UPDATE "Customer"')) return { rows: [{ id: "customer_1" }] };
       return { rows: [] };
     });
     expect((await submitLoyaltyCardFeedback({ ...feedback, staffRatings: [{ staffId: "staff_1", rating: 5 }, { staffId: "foreign", rating: 4 }] })).ok).toBe(false);
@@ -108,10 +111,14 @@ describe("Loyalty card feedback with staff ratings", () => {
     expect((await saveLoyaltyCardProfile({ cardToken: feedback.cardToken, firstName: "", lastName: "", phone: "" })).ok).toBe(true);
   });
 
-  it.each(["1234567", "+33 6 12 34 56 78", "+212 (612) 345-678"])("accepts flexible phone formats without truncation: %s", async (phone) => {
+  it.each([
+    ["1234567", "1234567"],
+    ["+33 6 12 34 56 78", "+33612345678"],
+    ["0033 6 12 34 56 78", "+33612345678"],
+    ["+212 (612) 345-678", "0612345678"],
+  ])("accepts flexible phone formats without truncation: %s", async (phone, expected) => {
     expect(await submitLoyaltyCardFeedback({ ...feedback, phone })).toEqual({ ok: true });
     const update = query.mock.calls.find(([sql]) => sql.includes('UPDATE "Customer"'));
-    const expected = `${phone.trim().startsWith("+") ? "+" : ""}${phone.replace(/\D/g, "")}`;
     expect(update?.[1][3]).toBe(expected);
   });
 
@@ -155,6 +162,7 @@ describe("Loyalty card feedback with staff ratings", () => {
       if (sql.includes('FROM "LoyaltyCard" lc')) return { rows: [{ customerId: "customer_1", organizationId: "org_1" }] };
       if (sql.includes('SELECT id FROM "Staff"')) return { rows: [{ id: "staff_1" }] };
       if (sql.includes('FROM "Appointment" a')) return { rows: [{ id: "appointment_1" }] };
+      if (sql.includes('UPDATE "Customer"')) return { rows: [{ id: "customer_1" }] };
       return { rows: [] };
     });
     expect(await submitLoyaltyCardFeedback(feedback)).toEqual({ ok: true });
@@ -167,6 +175,7 @@ describe("Loyalty card feedback with staff ratings", () => {
       if (sql.includes('FROM "LoyaltyCard" lc')) return { rows: [{ customerId: "customer_1", organizationId: "org_1" }] };
       if (sql.includes('SELECT id FROM "Staff"')) return { rows: [{ id: "staff_1" }] };
       if (sql.includes('SELECT id, status::text AS status')) return { rows: [{ id: "review_1", status: "PENDING" }] };
+      if (sql.includes('UPDATE "Customer"')) return { rows: [{ id: "customer_1" }] };
       return { rows: [] };
     });
     expect(await submitLoyaltyCardFeedback(feedback)).toEqual({ ok: true });

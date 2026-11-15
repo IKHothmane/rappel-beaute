@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
-import { type PoolClient } from "pg";
+import { type Pool, type PoolClient } from "pg";
 import { getOrCreateLoyaltyProgram } from "@/lib/db/loyalty";
+import { aliasJoin } from "@/lib/loyalty/card-alias";
 import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
 import { pool } from "@/lib/db/pool";
 
@@ -172,7 +173,7 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
   const program = await getVisitProgram(organizationId);
   const holders = await pool.query<{ customerId: string }>(
     `SELECT "customerId" FROM "LoyaltyCard"
-     WHERE "organizationId" = $1 AND status = 'ACTIVE'`,
+     WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "mergedIntoCardId" IS NULL`,
     [organizationId],
   );
   for (const holder of holders.rows) {
@@ -211,7 +212,8 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
             ) AS "lastActivityAt"
      FROM "LoyaltyCard" lc
      JOIN "Customer" c ON c.id = lc."customerId"
-     WHERE lc."organizationId" = $1 AND lc.status = 'ACTIVE' AND c."deletedAt" IS NULL
+     WHERE lc."organizationId" = $1 AND lc.status = 'ACTIVE' AND lc."mergedIntoCardId" IS NULL
+       AND c."deletedAt" IS NULL
      ORDER BY "lastActivityAt" DESC, lc."createdAt" DESC
      LIMIT 200`,
     [organizationId],
@@ -271,6 +273,10 @@ export type CardProgress = {
   cardBackgroundColor: string | null;
 };
 
+/**
+ * Progression d'une carte. Un id de carte alias (status MERGED) est résolu vers la carte survivante :
+ * les compteurs, récompenses et rendez-vous affichés sont toujours ceux de la fiche survivante.
+ */
 export async function loadCardProgress(
   cardId: string,
   organizationId: string,
@@ -278,25 +284,30 @@ export async function loadCardProgress(
 ): Promise<CardProgress | null> {
   const db = client ?? pool;
   const card = await db.query<{
+    effectiveCardId: string | null;
     organizationName: string;
     organizationLogoUrl: string | null;
     firstName: string;
     lastName: string;
     phone: string | null;
   }>(
-    `SELECT o.name AS "organizationName", o."logoUrl" AS "organizationLogoUrl", c."firstName", c."lastName", c.phone
+    `SELECT lc.id AS "effectiveCardId", o.name AS "organizationName", o."logoUrl" AS "organizationLogoUrl",
+            c."firstName", c."lastName", c.phone
      FROM "LoyaltyCard" lc
+     ${aliasJoin("src", "lc")}
      JOIN "Organization" o ON o.id = lc."organizationId"
      JOIN "Customer" c ON c.id = lc."customerId"
-     WHERE lc.id = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'`,
+     WHERE src.id = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'`,
     [cardId, organizationId],
   );
   if (!card.rows[0]) return null;
+  // Toutes les lectures suivantes portent sur la carte survivante.
+  const effectiveId = card.rows[0].effectiveCardId ?? cardId;
 
   const program = await getVisitProgram(organizationId);
   const visitsRow = await db.query<{ count: string }>(
     `SELECT COALESCE(SUM(points), 0)::text AS count FROM "LoyaltyEvent" WHERE "loyaltyCardId" = $1 AND type = 'VISIT'`,
-    [cardId],
+    [effectiveId],
   );
   const visits = Number(visitsRow.rows[0]?.count ?? 0);
   const threshold = program.visitsPerReward;
@@ -314,14 +325,14 @@ export async function loadCardProgress(
      WHERE e."loyaltyCardId" = $1
      ORDER BY e."validatedAt" DESC
      LIMIT 30`,
-    [cardId],
+    [effectiveId],
   );
   await db.query(
     `UPDATE "LoyaltyVisitReward"
      SET status = 'EXPIRED'
      WHERE "loyaltyCardId" = $1 AND status = 'AVAILABLE'
        AND "expiresAt" IS NOT NULL AND "expiresAt" < NOW()`,
-    [cardId],
+    [effectiveId],
   );
   const rewards = await db.query<{
     id: string;
@@ -336,13 +347,13 @@ export async function loadCardProgress(
      WHERE "loyaltyCardId" = $1
      ORDER BY "earnedAt" DESC
      LIMIT 20`,
-    [cardId],
+    [effectiveId],
   );
   const available = rewards.rows.filter((row) => row.status === "AVAILABLE").length;
 
   const owner = await db.query<{ customerId: string }>(
     `SELECT "customerId" FROM "LoyaltyCard" WHERE id = $1 AND "organizationId" = $2`,
-    [cardId, organizationId],
+    [effectiveId, organizationId],
   );
   const customerId = owner.rows[0]?.customerId;
   const appointments = customerId
@@ -414,14 +425,98 @@ export async function loadCardProgress(
   };
 }
 
-/** Jeton complet, lien, ou code affiché sous le QR (Cliente E4FB). */
+type Queryable = Pick<Pool | PoolClient, "query">;
+
+export type SurvivingCard = {
+  id: string;
+  organizationId: string;
+  customerId: string;
+  /** Jeton de la carte survivante (peut différer du jeton demandé si celui-ci est un alias). */
+  publicToken: string;
+  /** Vrai si le jeton demandé est celui d'un alias (carte fusionnée). */
+  viaAlias: boolean;
+};
+
+/**
+ * Résout un jeton public vers sa carte effective : la carte elle-même si elle est ACTIVE, sinon la carte
+ * survivante d'un alias MERGED (profondeur 1, même institut, survivante ACTIVE). `organizationId` null =
+ * lecture publique par jeton seul (le jeton est un secret de 12 caractères).
+ * Avec `lock`, verrouille la carte survivante (FOR UPDATE) ; si une fusion concurrente vient de la
+ * transformer en alias entre la lecture et le verrou, la résolution est rejouée une fois.
+ */
+export async function resolveSurvivingCard(
+  db: Queryable,
+  organizationId: string | null,
+  publicToken: string,
+  options: { lock?: boolean } = {},
+): Promise<SurvivingCard | null> {
+  const token = publicToken.trim().toUpperCase();
+  for (let attempt = 0; attempt < (options.lock ? 2 : 1); attempt += 1) {
+    const { rows } = await db.query<{
+      id: string;
+      organizationId: string;
+      customerId: string;
+      publicToken: string;
+      viaAlias: boolean;
+    }>(
+      `SELECT lc.id, lc."organizationId", lc."customerId", lc."publicToken", (lc.id <> al.id) AS "viaAlias"
+       FROM "LoyaltyCard" lc
+       ${aliasJoin("al", "lc")}
+       WHERE al."publicToken" = $1 AND ($2::text IS NULL OR al."organizationId" = $2)
+         AND lc.status = 'ACTIVE'
+       ${options.lock ? 'FOR UPDATE OF lc' : ""}`,
+      [token, organizationId],
+    );
+    if (rows[0]) return rows[0];
+  }
+  return null;
+}
+
+/**
+ * Jetons de toutes les cartes d'une même famille (survivante + alias) : à notifier après un passage pour
+ * que chaque passe Wallet déjà installé (y compris celui d'un alias) soit rafraîchi.
+ */
+export async function walletTokensForCard(db: Queryable, cardId: string): Promise<string[]> {
+  const { rows } = await db.query<{ publicToken: string }>(
+    `WITH root AS (
+       SELECT COALESCE(c."mergedIntoCardId", c.id) AS id FROM "LoyaltyCard" c WHERE c.id = $1
+     )
+     SELECT c."publicToken"
+     FROM "LoyaltyCard" c, root
+     WHERE c.id = root.id OR (c."mergedIntoCardId" = root.id AND c.status = 'MERGED')
+     ORDER BY (c.id = root.id) DESC, c."createdAt" ASC`,
+    [cardId],
+  );
+  return rows.map((row) => row.publicToken);
+}
+
+/** Même chose à partir d'un jeton (survivant ou alias). */
+export async function walletTokensForToken(db: Queryable, token: string): Promise<string[]> {
+  const { rows } = await db.query<{ publicToken: string }>(
+    `WITH root AS (
+       SELECT COALESCE(c."mergedIntoCardId", c.id) AS id FROM "LoyaltyCard" c WHERE c."publicToken" = $1
+     )
+     SELECT c."publicToken"
+     FROM "LoyaltyCard" c, root
+     WHERE c.id = root.id OR (c."mergedIntoCardId" = root.id AND c.status = 'MERGED')
+     ORDER BY (c.id = root.id) DESC, c."createdAt" ASC`,
+    [token.trim().toUpperCase()],
+  );
+  return rows.map((row) => row.publicToken);
+}
+
+/**
+ * Jeton complet, lien, ou code affiché sous le QR (Cliente E4FB). Renvoie le jeton de la carte
+ * SURVIVANTE : un jeton ou un code court d'alias (carte fusionnée) crédite la fiche qui a absorbé la carte.
+ */
 export async function resolveLoyaltyCardToken(organizationId: string, raw: string): Promise<string> {
   const upper = raw.trim().toUpperCase();
   const embedded = upper.match(/RBLOY_[A-Z2-9]{8,32}/);
   if (embedded) {
     const exact = await pool.query<{ publicToken: string }>(
-      `SELECT "publicToken" FROM "LoyaltyCard"
-       WHERE "publicToken" = $1 AND "organizationId" = $2 AND status = 'ACTIVE'`,
+      `SELECT lc."publicToken" FROM "LoyaltyCard" lc
+       ${aliasJoin("al", "lc")}
+       WHERE al."publicToken" = $1 AND al."organizationId" = $2 AND lc.status = 'ACTIVE'`,
       [embedded[0], organizationId],
     );
     if (!exact.rows[0]) throw new Error("CARD_NOT_FOUND");
@@ -430,9 +525,12 @@ export async function resolveLoyaltyCardToken(organizationId: string, raw: strin
 
   const suffix = upper.replace(/^CLIENTE\s+/, "").replace(/[^A-Z2-9]/g, "");
   if (suffix.length < 4 || suffix.length > 12) throw new Error("CARD_NOT_FOUND");
+  // Les alias comptent dans la recherche par suffixe, mais l'ambiguïté se mesure sur les cartes
+  // survivantes DISTINCTES : un alias et sa survivante qui partagent le même code ne sont pas ambigus.
   const matches = await pool.query<{ publicToken: string }>(
-    `SELECT "publicToken" FROM "LoyaltyCard"
-     WHERE "organizationId" = $1 AND status = 'ACTIVE' AND "publicToken" LIKE $2
+    `SELECT DISTINCT lc."publicToken" FROM "LoyaltyCard" lc
+     ${aliasJoin("al", "lc")}
+     WHERE al."organizationId" = $1 AND lc.status = 'ACTIVE' AND al."publicToken" LIKE $2
      LIMIT 2`,
     [organizationId, `%${suffix}`],
   );
@@ -441,6 +539,7 @@ export async function resolveLoyaltyCardToken(organizationId: string, raw: strin
   throw new Error("CARD_NOT_FOUND");
 }
 
+/** `app_public_card_by_token` (SQL) suit déjà l'alias : la carte renvoyée est la survivante. */
 export async function getPublicCardByToken(token: string): Promise<CardProgress | null> {
   const normalized = token.trim().toUpperCase();
   if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(normalized)) return null;

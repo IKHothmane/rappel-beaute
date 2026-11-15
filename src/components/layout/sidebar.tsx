@@ -35,6 +35,7 @@ import {
 import { usePlanFeatures } from "@/components/subscriptions/plan-features-provider";
 import { OrgLogo } from "@/components/app/org-logo";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
+import { isPostVisitUiEnabled } from "@/lib/post-visit/access";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -138,6 +139,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       ...section,
       items: section.items.filter((item) => {
         if (item.key === "salon-3d" && !salon3dOk) return false;
+        if (item.key === "post-visit" && !isPostVisitUiEnabled()) return false;
         if (item.key === "cash-register") {
           return canAccessNav(role, "cash-register") || canAccessNav(role, "payments");
         }

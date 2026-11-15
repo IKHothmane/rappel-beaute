@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { publishedArticles } from "@/lib/blog/public";
 import { articleMetadata, articleJsonLd } from "@/lib/blog/seo";
+import { getRelatedArticles, withInternalLinks } from "@/lib/blog/linking";
 import { ArticleBody } from "@/components/www/blog/ArticleBody";
 import { ArticleCard } from "@/components/www/blog/ArticleCard";
 import { JsonLd } from "@/components/www/JsonLd";
@@ -18,12 +19,7 @@ export default async function BlogArticlePage({ params }: Props) {
   const articles = await publishedArticles();
   const article = articles.find((a) => a.slug === params.slug);
   if (!article) notFound();
-  const related = articles
-    .filter((a) => a.slug !== article.slug)
-    .sort(
-      (a, b) => Number(b.category === article.category) - Number(a.category === article.category),
-    )
-    .slice(0, 3);
+  const related = getRelatedArticles(articles, article);
   return (
     <div className="bl">
       <div className="bl-wrap">
@@ -33,7 +29,7 @@ export default async function BlogArticlePage({ params }: Props) {
           <Link href="/blog/">Conseils & guides</Link>
         </nav>
         <JsonLd data={articleJsonLd(article)} />
-        <ArticleBody article={article} />
+        <ArticleBody article={withInternalLinks(article)} />
         {related.length > 0 && (
           <section className="bl-related">
             <h2>

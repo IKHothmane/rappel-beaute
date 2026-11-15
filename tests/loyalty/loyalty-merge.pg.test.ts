@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from "crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ensureSecondOrg, getSeedOrgId, insertTestAppointment, testId, testPool } from "../helpers/db";
 import { issueLoyaltyCard, loadCardProgress, resolveLoyaltyCardToken } from "@/lib/loyalty/cards";
+import { listLoyaltyLeaderboard } from "@/lib/db/loyalty";
 import { cardTokenForJoinQr } from "@/lib/loyalty/join-qr";
 import { saveLoyaltyCardProfile } from "@/lib/loyalty/card-review";
 import {
@@ -141,7 +142,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
       [org],
     );
     await testPool.query(
-      `INSERT INTO "LoyaltyJoinQr" (id, "organizationId", token, status, "updatedAt") VALUES ($1, $2, $3, 'ACTIVE', NOW())
+      `INSERT INTO "LoyaltyJoinQr" (id, "organizationId", token, status) VALUES ($1, $2, $3, 'ACTIVE')
        ON CONFLICT DO NOTHING`,
       [testId(`${PREFIX}_jq`), org, joinToken],
     ).catch(() => undefined);
@@ -172,7 +173,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
     const shown = await preview(source, target, target.phone.replace(/^0/, "+212 "));
     expect(shown.source.cardCode).toBe(source.card!.publicToken.slice(-4));
     expect(shown.result).toMatchObject({ totalVisits: 7, cycle: 2, cumulativeReward: true, cardMode: "ALIAS" });
-    expect(shown.result.moved.LoyaltyEvent).toBe(5);
+    expect(shown.result.moved.LoyaltyEvent).toBe(4);
     expect(shown.alerts.map((alert) => alert.code)).not.toContain("PHONE_FORMAT_VARIANT");
 
     const result = await merge(source, target);
@@ -215,12 +216,15 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
     expect(scan).toMatchObject({ token: target.card!.publicToken, customerId: target.id, anonymous: false });
     expect(scan.card.visits).toBe(7);
     expect((await loadCardProgress(source.card!.id, org))?.visits).toBe(7);
-    expect(await cardTokenForJoinQr(joinToken, source.card!.publicToken).catch(() => null)).toSatisfy((value: string | null) => value === null || value === target.card!.publicToken);
+    expect(await cardTokenForJoinQr(joinToken, source.card!.publicToken)).toBe(target.card!.publicToken);
 
     // Journal : chaque id déplacé avec son ancienne valeur ; audit dans la même transaction.
     const journal = await testPool.query(`SELECT moved, stats, "snapshotBefore", status, "survivingCardId" FROM "CustomerMerge" WHERE id = $1`, [result.mergeId]);
     expect(journal.rows[0].status).toBe("COMPLETED");
-    expect(journal.rows[0].moved.LoyaltyEvent.ids.sort()).toEqual([...sourceEvents, expired && undefined].filter(Boolean).length ? journal.rows[0].moved.LoyaltyEvent.ids.sort() : []);
+    // 3 passages + l'événement de la récompense EXPIRED de la fiche absorbée.
+    expect(journal.rows[0].moved.LoyaltyEvent.ids).toEqual(expect.arrayContaining(sourceEvents));
+    expect(journal.rows[0].moved.LoyaltyEvent.ids).toHaveLength(4);
+    expect(journal.rows[0].moved.LoyaltyVisitReward.ids).toEqual([expired]);
     expect(journal.rows[0].moved.LoyaltyEvent.from).toBe(source.id);
     expect(Object.values(journal.rows[0].moved.LoyaltyEvent.previousCardId)).toContain(source.card!.id);
     expect(journal.rows[0].snapshotBefore.source.customer.id).toBe(source.id);
@@ -286,11 +290,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
   it("déplace rendez-vous, notes, forfaits, points et promotions ; conserve les lignes à unicité sans les supprimer", async () => {
     const target = await mkCustomer("real");
     const source = await mkCustomer("anon");
-    const appointment = await insertTestAppointment({ organizationId: org, customerId: source.id, status: "COMPLETED", price: 200 });
-    await testPool.query(`UPDATE "Appointment" SET id = $2 WHERE id = $1`, [appointment, testId(`${PREFIX}_apt`)]).catch(() => undefined);
-    await testPool.query(
-      `INSERT INTO "CustomerNote" (id, "organizationId", customerId_placeholder) SELECT 1 WHERE false`,
-    ).catch(() => undefined);
+    await insertTestAppointment({ organizationId: org, customerId: source.id, status: "COMPLETED", price: 200 });
     await testPool.query(
       `INSERT INTO "CustomerNote" (id, "organizationId", "customerId", content, "updatedAt") VALUES ($1, $2, $3, 'allergie', NOW())`,
       [testId(`${PREFIX}_note`), org, source.id],
@@ -311,9 +311,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
     }
     // Campagne où T figure déjà : la ligne de S ne peut pas être déplacée (unicité) et reste en place.
     const campaignId = testId(`${PREFIX}_camp`);
-    await testPool.query(`INSERT INTO "Campaign" (id, "organizationId", name, status, "messageTemplate", "updatedAt") VALUES ($1, $2, 'C', 'DRAFT', 'x', NOW())`, [campaignId, org]).catch(async () => {
-      await testPool.query(`INSERT INTO "Campaign" (id, "organizationId", name, "updatedAt") VALUES ($1, $2, 'C', NOW())`, [campaignId, org]);
-    });
+    await testPool.query(`INSERT INTO "Campaign" (id, "organizationId", name, "messageTemplate", "segmentFilters", "updatedAt") VALUES ($1, $2, 'C', 'x', '{}'::jsonb, NOW())`, [campaignId, org]);
     for (const person of [source, target]) {
       await testPool.query(`INSERT INTO "CampaignRecipient" (id, "campaignId", "customerId", "messageSnapshot", "updatedAt") VALUES ($1, $2, $3, 'm', NOW())`, [testId(`${PREFIX}_rcp`), campaignId, person.id]);
     }
@@ -562,5 +560,17 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
     const failure = results.find((result) => result.status === "rejected") as PromiseRejectedResult;
     expect(["ALREADY_MERGED", "TARGET_MERGED", "STALE_PREVIEW"]).toContain((failure.reason as MergeError).code);
     expect(await count(`SELECT COUNT(*) AS n FROM "CustomerMerge" WHERE "sourceCustomerId" = ANY($1) AND status = 'COMPLETED'`, [[a.id, b.id]])).toBe(1);
+  });
+
+  it("les totaux du tableau fidélité ignorent le compte remis à zéro de la fiche absorbée", async () => {
+    const target = await mkCustomer("real");
+    const source = await mkCustomer("anon");
+    await setAccount(target, 10, 10);
+    await setAccount(source, 20, 20);
+    const before = (await listLoyaltyLeaderboard(org)).kpis;
+    await merge(source, target);
+    const after = (await listLoyaltyLeaderboard(org)).kpis;
+    expect(after.membersCount).toBe(before.membersCount - 1);
+    expect(Number(after.pointsActive)).toBe(Number(before.pointsActive));
   });
 });

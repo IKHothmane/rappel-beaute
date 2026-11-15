@@ -4,7 +4,18 @@ import { absoluteUrl } from "@/lib/seo";
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
-      userAgent: "*",
+      // Tous les robots partagent les restrictions des espaces privés.
+      userAgent: [
+        "*",
+        "OAI-SearchBot",
+        "ChatGPT-User",
+        "Claude-SearchBot",
+        "Claude-User",
+        "PerplexityBot",
+        "Perplexity-User",
+        "Googlebot",
+        "bingbot",
+      ],
       allow: "/",
       disallow: [
         "/api/",

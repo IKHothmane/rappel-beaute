@@ -76,3 +76,8 @@ next-env.d.ts
 
 # build d'audit typographique local (ne jamais versionner)
 /.next-typography-audit/
+
+# Journaux et captures générés par les outils d agents / navigateur
+.playwright-cli/
+firebase-debug.log
+*-debug.log

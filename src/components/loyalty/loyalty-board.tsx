@@ -24,6 +24,12 @@ import type { LoyaltyScanPreview } from "@/components/loyalty/loyalty-scan-page"
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { memberInitials } from "@/components/loyalty/loyalty-helpers";
 import { LoyaltyBrandCard } from "@/components/loyalty/loyalty-brand-card";
+import { LoyaltyAddPhone, useLoyaltyMergeAvailability } from "@/components/loyalty/loyalty-add-phone";
+import {
+  LoyaltyMergeDialog,
+  type LoyaltyMergeOutcome,
+  type MergeDialogSource,
+} from "@/components/loyalty/loyalty-merge-dialog";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { updateProgram } from "@/modules/loyalty/service";
@@ -41,8 +47,13 @@ function rewardSummary(program: LoyaltyProgramConfig | null) {
   return `${label} · soin offert`;
 }
 
+/** Carte anonyme (adhésion par QR) : le téléphone est un identifiant technique « WL… ». */
+function isAnonymousPhone(phone: string | null | undefined) {
+  return typeof phone === "string" && phone.startsWith("WL");
+}
+
 function phoneLabel(phone: string | null | undefined) {
-  if (!phone || phone.startsWith("WL")) return "Sans téléphone";
+  if (!phone || isAnonymousPhone(phone)) return "Sans téléphone";
   return phone;
 }
 
@@ -120,6 +131,8 @@ export function LoyaltyBoard({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const onScanRef = useRef<(value: string) => void>(() => {});
   const [scannedIds, setScannedIds] = useState<string[]>([]);
+  const [mergeSource, setMergeSource] = useState<MergeDialogSource | null>(null);
+  const [pendingSelectId, setPendingSelectId] = useState<string | null>(null);
   const [cfgVisits, setCfgVisits] = useState("5");
   const [cfgLabel, setCfgLabel] = useState("Récompense");
   const [cfgKind, setCfgKind] = useState<"FREE_SERVICE" | "DISCOUNT" | "PERCENTAGE">("FREE_SERVICE");
@@ -155,8 +168,11 @@ export function LoyaltyBoard({
   const cycleVisits = focused && threshold ? visitCycle(focused.visits, threshold) : 0;
   const filled = threshold ? Math.min(threshold, Math.max(0, cycleVisits)) : 0;
   const stampCount = threshold && threshold > 0 ? threshold : 0;
+  const focusedAnonymous = Boolean(focused && isAnonymousPhone(focused.phone));
+  const mergeAvailability = useLoyaltyMergeAvailability(canWrite && focusedAnonymous);
 
   function rememberScan(customerId: string) {
+    setPendingSelectId(null);
     setFocusId(customerId);
     setScannedIds((prev) => [customerId, ...prev.filter((id) => id !== customerId)]);
   }
@@ -379,6 +395,36 @@ export function LoyaltyBoard({
     if (code) setPassageToken(code);
   }
 
+  // Après une fusion, la fiche survivante n'est dans la liste qu'après le rafraîchissement : on la sélectionne alors.
+  useEffect(() => {
+    if (!pendingSelectId) return;
+    const card = visitCards.find((row) => row.customerId === pendingSelectId);
+    if (card) selectCustomer(card);
+  });
+
+  function handleMergeDone(outcome: LoyaltyMergeOutcome) {
+    setMergeSource(null);
+    rememberScan(outcome.customerId);
+    if (outcome.kind === "assigned") {
+      toast("Numéro enregistré sur la fiche.", "success");
+    } else {
+      setPendingSelectId(outcome.customerId);
+      const { result } = outcome;
+      const cycle = result.visitsPerReward > 0 ? ` · ${result.cycle} / ${result.visitsPerReward} dans le cycle` : "";
+      toast(
+        result.replayed
+          ? "Cette fusion était déjà enregistrée : fiche existante affichée."
+          : `Fiches fusionnées · ${result.totalVisits} passage${result.totalVisits > 1 ? "s" : ""}${cycle}${
+              result.cumulativeRewardId ? " · récompense créée" : ""
+            }.`,
+        "success",
+      );
+    }
+    onRefresh();
+    // Le bouton « Ajouter le numéro » a disparu : on ramène le focus sur la carte affichée.
+    window.requestAnimationFrame(() => document.getElementById("loyalty-active-card")?.focus());
+  }
+
   async function resolveScannedCode(raw: string) {
     const upper = raw.toUpperCase();
     const matched = upper.match(/RBLOY_[A-Z2-9]+/);
@@ -521,7 +567,11 @@ export function LoyaltyBoard({
 
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
           <div className="space-y-5 xl:col-span-8">
-                <section className="rounded-[26px] border border-[#F0E7EB] bg-white p-5 shadow-sm md:p-6">
+                <section
+                  id="loyalty-active-card"
+                  tabIndex={-1}
+                  className="rounded-[26px] border border-[#F0E7EB] bg-white p-5 shadow-sm outline-none md:p-6"
+                >
                   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-lg font-bold text-[#30202C]">Carte de fidélité active</h2>
                     <span
@@ -569,6 +619,19 @@ export function LoyaltyBoard({
                         <ExternalLink size={17} aria-hidden />
                         Voir la page cliente
                       </a>
+                    ) : null}
+
+                    {focused && mergeAvailability.available ? (
+                      <LoyaltyAddPhone
+                        name={focused.customerName}
+                        onOpen={() =>
+                          setMergeSource({
+                            customerId: focused.customerId,
+                            name: focused.customerName,
+                            cardCode: focused.cardCode || (focused.publicToken ? shortCardCode(focused.publicToken) : null),
+                          })
+                        }
+                      />
                     ) : null}
 
                     {stampCount > 0 ? (
@@ -920,6 +983,20 @@ export function LoyaltyBoard({
             </section>
           </aside>
         </div>
+
+      {mergeSource ? (
+        <LoyaltyMergeDialog
+          key={mergeSource.customerId}
+          source={mergeSource}
+          onClose={() => setMergeSource(null)}
+          onDone={handleMergeDone}
+          onUnavailable={() => {
+            mergeAvailability.markUnavailable();
+            setMergeSource(null);
+          }}
+          onStale={onRefresh}
+        />
+      ) : null}
     </div>
   );
 }

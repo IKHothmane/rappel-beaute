@@ -1,144 +1,82 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import {
-  requireFeatureRead,
   requireFeatureWrite,
   requireFeatureWriteLimited,
   stripOrganizationId,
 } from "@/lib/auth/api-guard";
 import {
   adjustLoyaltyVisit,
+  beginLoyaltyScan,
+  confirmLoyaltyScan,
   markVisitRewardUsed,
-  previewLoyaltyScan,
-  validateLoyaltyVisit,
 } from "@/lib/loyalty/validation";
 import { tenantRoute } from "@/lib/http/route-scope";
 
-function scanError(error: unknown) {
-  const code = error instanceof Error ? error.message : "";
-  if (code === "PROGRAM_DISABLED") {
-    return NextResponse.json(
-      { error: "Le programme de fidélité est désactivé dans cet institut." },
-      { status: 400 },
-    );
-  }
-  if (code === "CARD_NOT_FOUND") {
-    return NextResponse.json({ error: "Carte introuvable pour cet institut." }, { status: 404 });
-  }
-  if (code === "CARD_AMBIGUOUS") {
-    return NextResponse.json(
-      { error: "Plusieurs cartes correspondent. Saisissez le code complet de la carte." },
-      { status: 409 },
-    );
-  }
-  if (code === "NO_COMPLETED_APPOINTMENT") {
-    return NextResponse.json(
-      { error: "Aucun rendez-vous terminé à valider pour cette cliente." },
-      { status: 409 },
-    );
-  }
-  if (code === "ALREADY_VALIDATED") {
-    return NextResponse.json(
-      { error: "Ce rendez-vous a déjà un passage fidélité." },
-      { status: 409 },
-    );
-  }
-  if (code === "APPOINTMENT_NOT_COMPLETED" || code === "APPOINTMENT_MISMATCH") {
-    return NextResponse.json({ error: "Ce rendez-vous ne peut pas être validé." }, { status: 409 });
-  }
-  if (code === "REWARD_NOT_AVAILABLE") {
-    return NextResponse.json({ error: "Cette récompense n'est plus disponible." }, { status: 409 });
-  }
-  if (code === "SERVICE_NOT_ELIGIBLE") {
-    return NextResponse.json(
-      { error: "Cette prestation n'est pas éligible au programme de passages." },
-      { status: 409 },
-    );
-  }
-  if (code === "REASON_REQUIRED") {
-    return NextResponse.json(
-      { error: "Indiquez la raison de la correction (3 caractères minimum)." },
-      { status: 400 },
-    );
-  }
-  if (code === "NO_CARD") {
-    return NextResponse.json(
-      { error: "Cette cliente n'a pas encore de carte de passages." },
-      { status: 404 },
-    );
-  }
-  if (code === "VISIT_BELOW_ZERO") {
-    return NextResponse.json({ error: "Le nombre de passages ne peut pas passer sous 0." }, { status: 409 });
-  }
-  return null;
-}
-
-export const GET = tenantRoute(async function GET(request: NextRequest) {
-  const auth = await requireFeatureRead(request, "loyalty");
-  if (!auth.ok) return auth.response;
-  const token = new URL(request.url).searchParams.get("token") ?? "";
-  try {
-    const preview = await previewLoyaltyScan(auth.session.organizationId, token);
-    return NextResponse.json(preview);
-  } catch (error) {
-    const known = scanError(error);
-    if (known) return known;
-    console.error("[GET /api/loyalty/scan]", error);
-    return NextResponse.json({ error: "Impossible de lire la carte." }, { status: 500 });
-  }
-});
+const errors: Record<string, [string, number]> = {
+  PROGRAM_DISABLED: ["Le programme de fidélité est désactivé dans cet institut.", 400],
+  CARD_NOT_FOUND: ["Carte introuvable pour cet institut.", 404],
+  CARD_CHANGED: ["La fiche liée à cette carte a changé. Scannez à nouveau la carte.", 409],
+  SCAN_INVALID: ["Le QR code ou la validation est invalide.", 400],
+  SCAN_EXPIRED: ["Le scan a expiré. Scannez à nouveau la carte.", 409],
+  ALREADY_VALIDATED: ["Ce scan a déjà été confirmé.", 409],
+  REWARD_NOT_AVAILABLE: ["Cette récompense n'est plus disponible.", 409],
+  REASON_REQUIRED: ["Indiquez la raison de la correction (3 caractères minimum).", 400],
+  NO_CARD: ["Cette cliente n'a pas encore de carte de passages.", 404],
+  VISIT_BELOW_ZERO: ["Le nombre de passages ne peut pas passer sous 0.", 409],
+};
 
 export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "loyalty");
   if (!auth.ok) return auth.response;
+  const body: unknown = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+  }
+  const raw = stripOrganizationId(body as Record<string, unknown>);
+  const actor = {
+    organizationId: auth.session.organizationId,
+    actorId: auth.session.id,
+    actorName: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
+  };
+
   try {
-    const raw = stripOrganizationId((await request.json()) as Record<string, unknown>);
+    if (raw.action === "scan") {
+      if (typeof raw.token !== "string" || raw.token.length > 2048) throw new Error("SCAN_INVALID");
+      const preview = await beginLoyaltyScan({ ...actor, rawToken: raw.token });
+      return NextResponse.json(preview, { headers: { "Cache-Control": "no-store" } });
+    }
+    if (raw.action === "confirm") {
+      if (typeof raw.validationId !== "string") throw new Error("SCAN_INVALID");
+      const result = await confirmLoyaltyScan({ ...actor, validationId: raw.validationId });
+      return NextResponse.json({ ok: true, ...result });
+    }
     if (raw.action === "adjust-visit") {
       const write = await requireFeatureWrite(request, "loyalty");
       if (!write.ok) return write.response;
-      const customerId = String(raw.customerId ?? "");
-      const delta = Number(raw.delta);
-      const reason = String(raw.reason ?? "");
-      if (!customerId || (delta !== 1 && delta !== -1)) {
-        return NextResponse.json({ error: "Correction incomplète." }, { status: 400 });
+      if (raw.delta !== -1 || typeof raw.customerId !== "string" || !raw.customerId) {
+        return NextResponse.json({ error: "Correction invalide." }, { status: 400 });
       }
       const result = await adjustLoyaltyVisit({
-        organizationId: write.session.organizationId,
-        customerId,
-        delta,
-        reason,
-        actorId: write.session.id,
-        actorName: `${write.session.firstName} ${write.session.lastName}`.trim(),
+        ...actor,
+        customerId: raw.customerId,
+        delta: -1,
+        reason: typeof raw.reason === "string" ? raw.reason : "",
       });
       return NextResponse.json({ ok: true, visits: result.visits });
     }
     if (raw.action === "use-reward") {
-      const rewardId = String(raw.rewardId ?? "");
-      if (!rewardId) return NextResponse.json({ error: "Récompense manquante." }, { status: 400 });
-      await markVisitRewardUsed(
-        auth.session.organizationId,
-        rewardId,
-        auth.session.id,
-        `${auth.session.firstName} ${auth.session.lastName}`.trim(),
-      );
+      if (typeof raw.rewardId !== "string" || !raw.rewardId) {
+        return NextResponse.json({ error: "Récompense manquante." }, { status: 400 });
+      }
+      await markVisitRewardUsed(actor.organizationId, raw.rewardId, actor.actorId, actor.actorName);
       return NextResponse.json({ ok: true });
     }
-    const token = String(raw.token ?? "");
-    const appointmentId = String(raw.appointmentId ?? "");
-    if (!token || !appointmentId) {
-      return NextResponse.json({ error: "Scan incomplet." }, { status: 400 });
-    }
-    const result = await validateLoyaltyVisit(
-      auth.session.organizationId,
-      token,
-      appointmentId,
-      auth.session.id,
-    );
-    return NextResponse.json(result);
+    return NextResponse.json({ error: "Action inconnue." }, { status: 400 });
   } catch (error) {
-    const known = scanError(error);
-    if (known) return known;
+    const code = error instanceof Error ? error.message : "";
+    const known = errors[code];
+    if (known) return NextResponse.json({ error: known[0], code }, { status: known[1] });
     console.error("[POST /api/loyalty/scan]", error);
-    return NextResponse.json({ error: "Impossible de valider le passage." }, { status: 500 });
+    return NextResponse.json({ error: "Impossible de traiter la carte de fidélité." }, { status: 500 });
   }
 });

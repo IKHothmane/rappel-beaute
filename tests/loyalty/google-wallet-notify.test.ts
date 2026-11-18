@@ -107,7 +107,7 @@ describe("messages Google Wallet", () => {
 
   it("laisse l'échec Wallet en dehors du crédit de visite", () => {
     const source = readFileSync("src/lib/loyalty/validation.ts", "utf8");
-    const start = source.indexOf("export async function creditVisitIfEligible");
+    const start = source.indexOf("export async function confirmLoyaltyScan");
     const credit = source.slice(start);
     const next = credit.indexOf("\nexport async function", 20);
     const body = next > 0 ? credit.slice(0, next) : credit;

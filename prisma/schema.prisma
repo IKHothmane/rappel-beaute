@@ -493,6 +493,8 @@ model Organization {
   loyaltyVisitRewards LoyaltyVisitReward[]
   loyaltyJoinQrs     LoyaltyJoinQr[]
   loyaltyCreditCodes LoyaltyCreditCode[]
+  loyaltyVerificationRequests LoyaltyVerificationRequest[]
+  loyaltyCustomerSessions LoyaltyCustomerSession[]
   packages           Package[]
   packageSessions    PackageSession[]
   promotions         Promotion[]
@@ -602,6 +604,8 @@ model Customer {
   loyaltyCards   LoyaltyCard[]
   loyaltyEvents  LoyaltyEvent[]
   loyaltyVisitRewards LoyaltyVisitReward[]
+  loyaltyVerificationRequests LoyaltyVerificationRequest[]
+  loyaltyCustomerSessions LoyaltyCustomerSession[]
   packages     Package[]
   loyaltyRedemptions LoyaltyRedemption[]
   giftCardsBought GiftCard[] @relation("GiftCardBuyer")
@@ -1802,6 +1806,49 @@ model LoyaltyCard {
   @@index([organizationId])
   @@index([customerId])
   @@index([mergedIntoCardId])
+}
+
+model LoyaltyVerificationRequest {
+  id                       String    @id @default(cuid())
+  organizationId           String
+  code                     String
+  tokenHash                String    @unique
+  mode                     String
+  firstName                String
+  lastName                 String
+  phone                    String
+  marketingWhatsappConsent Boolean?
+  customerId               String?
+  approvedBy               String?
+  approvedAt               DateTime?
+  consumedAt               DateTime?
+  expiresAt                DateTime
+  createdAt                DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer?    @relation(fields: [customerId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([customerId, organizationId], map: "LoyaltyVerificationRequest_customer_org_idx")
+  @@index([expiresAt])
+}
+
+model LoyaltyCustomerSession {
+  id                String    @id @default(cuid())
+  organizationId    String
+  customerId        String
+  tokenHash         String    @unique
+  phoneSnapshot     String
+  expiresAt         DateTime
+  absoluteExpiresAt DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@index([customerId, organizationId], map: "LoyaltyCustomerSession_customer_org_idx")
+  @@index([expiresAt])
 }
 
 /// Journal des fusions de fiches clientes (fidélité). Sans clé étrangère vers Customer, LoyaltyCard ou User :

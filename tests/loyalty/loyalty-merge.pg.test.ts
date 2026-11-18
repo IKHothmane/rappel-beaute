@@ -14,7 +14,7 @@ import {
   type MergeActor,
   type MergePreview,
 } from "@/lib/loyalty/merge";
-import { creditVisitByCardCode, previewLoyaltyScan } from "@/lib/loyalty/validation";
+import { beginLoyaltyScan, confirmLoyaltyScan, previewLoyaltyScan } from "@/lib/loyalty/validation";
 
 /**
  * Fusion de fiches clientes : intégration PostgreSQL (DATABASE_TEST_URL, base locale jetable uniquement).
@@ -158,6 +158,35 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
         [org, savedProgram.visitsPerReward, savedProgram.stackRewards, savedProgram.active, savedProgram.rewardValidityDays],
       );
     }
+  });
+
+  it("révoque les sessions de la fiche absorbée sans transférer son identité", async () => {
+    const target = await mkCustomer("real");
+    const source = await mkCustomer("anon");
+    const sessionId = testId(`${PREFIX}_session`);
+    const targetSessionId = testId(`${PREFIX}_session`);
+    const requestId = testId(`${PREFIX}_request`);
+    await testPool.query(
+      `INSERT INTO "LoyaltyCustomerSession" (id, "organizationId", "customerId", "tokenHash", "phoneSnapshot", "expiresAt", "absoluteExpiresAt")
+       VALUES ($1, $2, $3, $1, $4, NOW() + interval '30 days', NOW() + interval '90 days'),
+              ($5, $2, $6, $5, $7, NOW() + interval '30 days', NOW() + interval '90 days')`,
+      [sessionId, org, source.id, `06${rand8()}`, targetSessionId, target.id, target.phone],
+    );
+    await testPool.query(
+      `INSERT INTO "LoyaltyVerificationRequest"
+         (id, "organizationId", "customerId", "tokenHash", code, mode, "firstName", "lastName", phone, "approvedBy", "approvedAt", "expiresAt")
+       VALUES ($1, $2, $3, $1, $1, 'recover', 'Nadia', 'Benali', $4, $5, NOW(), NOW() + interval '15 minutes')`,
+      [requestId, org, source.id, source.phone, ACTOR.id],
+    );
+
+    await merge(source, target);
+
+    const session = await testPool.query(`SELECT "customerId", "revokedAt" FROM "LoyaltyCustomerSession" WHERE id = $1`, [sessionId]);
+    expect(session.rows).toEqual([{ customerId: source.id, revokedAt: expect.any(Date) }]);
+    const survivingSession = await testPool.query(`SELECT "customerId", "revokedAt" FROM "LoyaltyCustomerSession" WHERE id = $1`, [targetSessionId]);
+    expect(survivingSession.rows).toEqual([{ customerId: target.id, revokedAt: null }]);
+    const request = await testPool.query(`SELECT "customerId", "consumedAt" FROM "LoyaltyVerificationRequest" WHERE id = $1`, [requestId]);
+    expect(request.rows).toEqual([{ customerId: source.id, consumedAt: expect.any(Date) }]);
   });
 
   it("cas B : additionne les passages sans rien perdre, l'alias résout partout vers la carte survivante", async () => {
@@ -514,6 +543,23 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
     await expect(merge(source, target)).resolves.toMatchObject({ totalVisits: 3 });
   });
 
+  it("le scan antérieur à une fusion doit être refait avec le même QR", async () => {
+    const target = await mkCustomer("real");
+    const source = await mkCustomer("anon");
+    const actorId = ACTOR.id!;
+    const begin = () => beginLoyaltyScan({ organizationId: org, rawToken: source.card!.publicToken, actorId });
+    const confirm = (validationId: string) => confirmLoyaltyScan({ organizationId: org, validationId, actorId });
+    const old = await begin();
+    expect(old.customerId).toBe(source.id);
+    await merge(source, target);
+    await expect(confirm(old.validationId)).rejects.toThrow("CARD_CHANGED");
+    expect(await visitsOf(target.card!.id)).toBe(0);
+
+    const next = await begin();
+    expect(next.customerId).toBe(target.id);
+    await expect(confirm(next.validationId)).resolves.toMatchObject({ customerId: target.id, visits: 1 });
+  });
+
   it("concurrence : un passage validé pendant la fusion n'est jamais perdu ni laissé sur la fiche absorbée", async () => {
     for (let round = 0; round < 4; round += 1) {
       const target = await mkCustomer("real");
@@ -529,12 +575,20 @@ describe.skipIf(!process.env.DATABASE_URL)("Fusion de fiches fidélité (Postgre
           previewVersion: shown.previewVersion,
           identityConfirmed: true,
         });
+      const actorId = ACTOR.id!;
+      const { validationId } = await beginLoyaltyScan({ organizationId: org, rawToken: source.card!.publicToken, actorId });
       const [mergeOutcome, credit] = await Promise.allSettled([
         attempt(),
-        creditVisitByCardCode({ organizationId: org, rawToken: source.card!.publicToken, actorId: ACTOR.id!, actorName: ACTOR.name }),
+        confirmLoyaltyScan({ organizationId: org, validationId, actorId, actorName: ACTOR.name }),
       ]);
-      expect(credit.status).toBe("fulfilled");
-      if (mergeOutcome.status === "rejected") {
+      if (credit.status === "rejected") {
+        expect(credit.reason).toMatchObject({ message: "CARD_CHANGED" });
+        expect(mergeOutcome.status).toBe("fulfilled");
+        expect(await visitsOf(target.card!.id)).toBe(2);
+        const rescanned = await beginLoyaltyScan({ organizationId: org, rawToken: source.card!.publicToken, actorId });
+        expect(rescanned.customerId).toBe(target.id);
+        await confirmLoyaltyScan({ organizationId: org, validationId: rescanned.validationId, actorId, actorName: ACTOR.name });
+      } else if (mergeOutcome.status === "rejected") {
         // Le passage a modifié l'état après l'aperçu : la fusion est refusée proprement, puis rejouée.
         expect((mergeOutcome.reason as MergeError).code).toBe("STALE_PREVIEW");
         await merge(source, target);

@@ -177,7 +177,6 @@ async function completeElapsedAppointments(organizationId: string): Promise<void
   if (rows.length === 0) return;
 
   const { onAppointmentCompleted } = await import("@/lib/db/invoices");
-  const { creditVisitIfEligible } = await import("@/lib/loyalty/validation");
   for (const row of rows) {
     if (row.serviceId) {
       try {
@@ -190,15 +189,6 @@ async function completeElapsedAppointments(organizationId: string): Promise<void
       } catch (e) {
         console.error("[completeElapsedAppointments]", row.id, e);
       }
-    }
-    try {
-      await creditVisitIfEligible({
-        organizationId,
-        appointmentId: row.id,
-        actorId: null,
-      });
-    } catch (e) {
-      console.error("[completeElapsedAppointments] loyalty visit", row.id, e);
     }
   }
 }
@@ -497,19 +487,6 @@ export async function updateAppointmentRow(
       });
     } catch (e) {
       console.error("[updateAppointmentRow] deposit policy", e);
-    }
-
-    if (patch.status === "COMPLETED" && previous.status !== "COMPLETED") {
-      try {
-        const { creditVisitIfEligible } = await import("@/lib/loyalty/validation");
-        await creditVisitIfEligible({
-          organizationId,
-          appointmentId: id,
-          actorId: opts?.actor?.id ?? null,
-        });
-      } catch (e) {
-        console.error("[updateAppointmentRow] loyalty visit", e);
-      }
     }
 
     if (patch.status === "CANCELLED" && previous.status !== "CANCELLED") {

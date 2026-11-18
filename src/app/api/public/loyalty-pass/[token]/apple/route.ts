@@ -3,13 +3,18 @@ import type { NextRequest } from "next/server";
 import { createAppleWalletPass } from "@/lib/loyalty/apple-wallet";
 import { appleWalletConfigured, readCardToken, walletUnavailable } from "@/lib/loyalty/wallet-config";
 import { publicRoute } from "@/lib/http/route-scope";
+import { getLoyaltyCardSession } from "@/lib/loyalty/customer-session";
 
 export const GET = publicRoute(async function GET(request: NextRequest, { params }: { params: { token: string } }) {
   const token = readCardToken(request, params.token);
   if (!token.ok) return token.response;
+  const session = await getLoyaltyCardSession(request, token.token);
+  if (!session) {
+    return NextResponse.json({ error: "Vérification en institut requise." }, { status: 401 });
+  }
   if (!appleWalletConfigured()) return walletUnavailable("apple");
   try {
-    const pass = await createAppleWalletPass(token.token);
+    const pass = await createAppleWalletPass(token.token, session.customerId);
     if (!pass) return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
     return new NextResponse(new Uint8Array(pass), {
       headers: {

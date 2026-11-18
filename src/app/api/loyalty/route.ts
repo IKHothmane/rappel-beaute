@@ -28,6 +28,24 @@ import {
 } from "@/lib/validation/loyalty";
 import { tenantRoute } from "@/lib/http/route-scope";
 
+const PIN_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+const MAX_PIN_IDS = 20;
+
+/** Valide `limit` et `pin` (liste séparée par virgules) ; valeurs invalides ignorées, jamais concaténées en SQL. */
+function parseVisitCardsQuery(url: URL): { limit?: number; pinIds: string[] } {
+  const rawLimit = url.searchParams.get("limit");
+  const parsedLimit = rawLimit && /^\d{1,5}$/.test(rawLimit) ? Number(rawLimit) : undefined;
+  const limit = parsedLimit === undefined ? undefined : Math.min(1000, Math.max(1, parsedLimit));
+  const pinIds: string[] = [];
+  for (const part of (url.searchParams.get("pin") ?? "").split(",")) {
+    const id = part.trim();
+    if (!PIN_ID_PATTERN.test(id) || pinIds.includes(id)) continue;
+    pinIds.push(id);
+    if (pinIds.length >= MAX_PIN_IDS) break;
+  }
+  return { limit, pinIds };
+}
+
 export const GET = tenantRoute(async function GET(request: NextRequest) {
   const auth = await requireFeatureRead(request, "loyalty");
   if (!auth.ok) return auth.response;
@@ -53,8 +71,12 @@ export const GET = tenantRoute(async function GET(request: NextRequest) {
 
     await syncLoyaltyPromoCodes(auth.session.organizationId);
     const data = await listLoyaltyLeaderboard(auth.session.organizationId);
-    const visitCards = await listVisitCards(auth.session.organizationId);
-    return NextResponse.json({ ...data, visitCards });
+    const { limit, pinIds } = parseVisitCardsQuery(url);
+    const { cards: visitCards, total: visitCardsTotal } = await listVisitCards(
+      auth.session.organizationId,
+      { limit, pinIds },
+    );
+    return NextResponse.json({ ...data, visitCards, visitCardsTotal });
   } catch (error) {
     console.error("[GET /api/loyalty]", error);
     return NextResponse.json({ error: "Impossible de charger la fidélité." }, { status: 500 });

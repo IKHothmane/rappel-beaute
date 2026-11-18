@@ -99,6 +99,8 @@ describe("garde-fous de la fusion", () => {
       "WebPushSubscription.customerId",
       "PushAccessGrant.customerId",
       "LoyaltyCard.customerId",
+      "LoyaltyCustomerSession.customerId",
+      "LoyaltyVerificationRequest.customerId",
     ]);
     const moved = new Set(MOVE_SPECS.map((spec) => `${spec.table}.${spec.column}`));
     const missing = [...found].filter((entry) => !moved.has(entry) && !handledApart.has(entry));

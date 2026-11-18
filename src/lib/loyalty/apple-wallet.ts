@@ -37,10 +37,10 @@ function passFields(token: string, card: CardProgress) {
 }
 
 /** .pkpass signé. Le numéro de série est le jeton public de la carte. */
-export async function createAppleWalletPass(token: string): Promise<Buffer | null> {
+export async function createAppleWalletPass(token: string, expectedCustomerId?: string): Promise<Buffer | null> {
   if (!appleWalletConfigured()) return null;
   const normalized = token.trim().toUpperCase();
-  const card = await getPublicCardByToken(normalized);
+  const card = await getPublicCardByToken(normalized, expectedCustomerId);
   if (!card) return null;
 
   const fields = passFields(normalized, card);
@@ -89,7 +89,7 @@ export async function createAppleWalletPass(token: string): Promise<Buffer | nul
   const code = shortCardCode(normalized);
   pass.setBarcodes({
     format: "PKBarcodeFormatQR",
-    message: code,
+    message: normalized,
     messageEncoding: "iso-8859-1",
     altText: code,
   });

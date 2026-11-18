@@ -84,23 +84,25 @@ type IssuedCard = {
 export async function issueLoyaltyCard(
   organizationId: string,
   customerId: string,
+  client?: PoolClient,
 ): Promise<IssuedCard> {
-  const customer = await pool.query<{ id: string; firstName: string; lastName: string }>(
+  const db = client ?? pool;
+  const customer = await db.query<{ id: string; firstName: string; lastName: string }>(
     `SELECT id, "firstName", "lastName"
      FROM "Customer"
      WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
     [customerId, organizationId],
   );
   if (!customer.rows[0]) throw new Error("CUSTOMER_NOT_FOUND");
-  await ensureLoyaltyAccount(organizationId, customerId);
+  await ensureLoyaltyAccount(organizationId, customerId, db);
 
-  const existing = await pool.query<{ id: string; publicToken: string }>(
+  const existing = await db.query<{ id: string; publicToken: string }>(
     `SELECT id, "publicToken" FROM "LoyaltyCard"
      WHERE "organizationId" = $1 AND "customerId" = $2`,
     [organizationId, customerId],
   );
   if (existing.rows[0]) {
-    await pool.query(`UPDATE "LoyaltyCard" SET "updatedAt" = NOW() WHERE id = $1`, [existing.rows[0].id]);
+    await db.query(`UPDATE "LoyaltyCard" SET "updatedAt" = NOW() WHERE id = $1`, [existing.rows[0].id]);
     return {
       id: existing.rows[0].id,
       publicToken: existing.rows[0].publicToken,
@@ -112,21 +114,19 @@ export async function issueLoyaltyCard(
 
   const id = newLoyaltyId("lcard");
   const publicToken = newPublicToken();
-  try {
-    await pool.query(
+  const inserted = await db.query(
       `INSERT INTO "LoyaltyCard" (id, "organizationId", "customerId", "publicToken", status, "updatedAt")
-       VALUES ($1, $2, $3, $4, 'ACTIVE', NOW())`,
+       VALUES ($1, $2, $3, $4, 'ACTIVE', NOW())
+       ON CONFLICT ("organizationId", "customerId") DO NOTHING`,
       [id, organizationId, customerId, publicToken],
-    );
-  } catch (error) {
-    const code = (error as { code?: string }).code;
-    if (code !== "23505") throw error;
-    const again = await pool.query<{ id: string; publicToken: string }>(
+  );
+  if (inserted.rowCount === 0) {
+    const again = await db.query<{ id: string; publicToken: string }>(
       `SELECT id, "publicToken" FROM "LoyaltyCard"
        WHERE "organizationId" = $1 AND "customerId" = $2`,
       [organizationId, customerId],
     );
-    if (!again.rows[0]) throw error;
+    if (!again.rows[0]) throw new Error("CARD_NOT_FOUND");
     return {
       id: again.rows[0].id,
       publicToken: again.rows[0].publicToken,
@@ -144,8 +144,8 @@ export async function issueLoyaltyCard(
   };
 }
 
-async function ensureLoyaltyAccount(organizationId: string, customerId: string) {
-  await pool.query(
+async function ensureLoyaltyAccount(organizationId: string, customerId: string, db: Pool | PoolClient = pool) {
+  await db.query(
     `INSERT INTO "LoyaltyAccount" (
       id, "organizationId", "customerId", balance, "lifetimePoints", level, "updatedAt"
     ) VALUES ($1, $2, $3, 0, 0, 'BRONZE', NOW())
@@ -164,12 +164,52 @@ type VisitCardListItem = {
   createdAt: string;
   /** Dernier scan / passage / création — pour tri « Clientes fidèles ». */
   lastActivityAt: string;
+  lastVisitAt: string | null;
   publicToken: string;
   cardCode: string;
   promoCode: string | null;
 };
 
-export async function listVisitCards(organizationId: string): Promise<VisitCardListItem[]> {
+const VISIT_CARDS_DEFAULT_LIMIT = 200;
+const VISIT_CARDS_MAX_LIMIT = 1000;
+const VISIT_CARDS_MAX_PINS = 20;
+
+export type ListVisitCardsOptions = {
+  /** Nombre maximal de cartes renvoyées (défaut 200, borné à [1, 1000]). */
+  limit?: number;
+  /** customerId à remonter en priorité (max 20). Sans effet sur l'isolation par institut. */
+  pinIds?: string[];
+};
+
+export type ListVisitCardsResult = {
+  cards: VisitCardListItem[];
+  /** Nombre total de cartes actives de l'institut (hors limite). */
+  total: number;
+};
+
+function normalizeVisitCardsLimit(limit: number | undefined): number {
+  if (typeof limit !== "number" || !Number.isFinite(limit)) return VISIT_CARDS_DEFAULT_LIMIT;
+  return Math.min(VISIT_CARDS_MAX_LIMIT, Math.max(1, Math.floor(limit)));
+}
+
+function normalizeVisitCardsPins(pinIds: string[] | undefined): string[] {
+  if (!Array.isArray(pinIds)) return [];
+  const unique = new Set<string>();
+  for (const value of pinIds) {
+    if (typeof value !== "string") continue;
+    const id = value.trim();
+    if (id) unique.add(id);
+    if (unique.size >= VISIT_CARDS_MAX_PINS) break;
+  }
+  return [...unique];
+}
+
+export async function listVisitCards(
+  organizationId: string,
+  opts: ListVisitCardsOptions = {},
+): Promise<ListVisitCardsResult> {
+  const limit = normalizeVisitCardsLimit(opts.limit);
+  const pinIds = normalizeVisitCardsPins(opts.pinIds);
   const program = await getVisitProgram(organizationId);
   const holders = await pool.query<{ customerId: string }>(
     `SELECT "customerId" FROM "LoyaltyCard"
@@ -190,12 +230,10 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
     rewardsReady: number;
     createdAt: Date;
     lastActivityAt: Date;
+    lastVisitAt: Date | null;
   }>(
     `SELECT lc.id, c.id AS "customerId", c."firstName", c."lastName", c.phone, lc."publicToken",
-            COALESCE((
-              SELECT SUM(e.points) FROM "LoyaltyEvent" e
-              WHERE e."loyaltyCardId" = lc.id AND e.type = 'VISIT'
-            ), 0)::int AS visits,
+            COALESCE(events.visits, 0)::int AS visits,
             COALESCE((
               SELECT COUNT(*) FROM "LoyaltyVisitReward" r
               WHERE r."loyaltyCardId" = lc.id AND r.status = 'AVAILABLE'
@@ -205,20 +243,34 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
             GREATEST(
               lc."createdAt",
               lc."updatedAt",
-              COALESCE((
-                SELECT MAX(e."validatedAt") FROM "LoyaltyEvent" e
-                WHERE e."loyaltyCardId" = lc.id
-              ), lc."createdAt")
-            ) AS "lastActivityAt"
+              COALESCE(events."lastEventAt", lc."createdAt")
+            ) AS "lastActivityAt",
+            events."lastVisitAt"
+     FROM "LoyaltyCard" lc
+     JOIN "Customer" c ON c.id = lc."customerId"
+     LEFT JOIN LATERAL (
+       SELECT SUM(e.points) FILTER (WHERE e.type = 'VISIT') AS visits,
+              MAX(e."validatedAt") AS "lastEventAt",
+              MAX(e."validatedAt") FILTER (WHERE e.type = 'VISIT' AND e.points > 0) AS "lastVisitAt"
+       FROM "LoyaltyEvent" e
+       WHERE e."loyaltyCardId" = lc.id
+     ) events ON TRUE
+     WHERE lc."organizationId" = $1 AND lc.status = 'ACTIVE' AND lc."mergedIntoCardId" IS NULL
+       AND c."deletedAt" IS NULL
+     ORDER BY (c.id = ANY($3::text[])) DESC, "lastActivityAt" DESC, lc."createdAt" DESC
+     LIMIT $2`,
+    [organizationId, limit, pinIds],
+  );
+  const totalResult = await pool.query<{ total: number }>(
+    `SELECT COUNT(*)::int AS total
      FROM "LoyaltyCard" lc
      JOIN "Customer" c ON c.id = lc."customerId"
      WHERE lc."organizationId" = $1 AND lc.status = 'ACTIVE' AND lc."mergedIntoCardId" IS NULL
-       AND c."deletedAt" IS NULL
-     ORDER BY "lastActivityAt" DESC, lc."createdAt" DESC
-     LIMIT 200`,
+       AND c."deletedAt" IS NULL`,
     [organizationId],
   );
-  return rows.map((row) => ({
+  const total = totalResult.rows[0]?.total ?? rows.length;
+  const cards = rows.map((row) => ({
     id: row.id,
     customerId: row.customerId,
     customerName: `${row.firstName} ${row.lastName}`.trim(),
@@ -227,10 +279,12 @@ export async function listVisitCards(organizationId: string): Promise<VisitCardL
     visitsPerReward: program.visitsPerReward,
     createdAt: row.createdAt.toISOString(),
     lastActivityAt: row.lastActivityAt.toISOString(),
+    lastVisitAt: row.lastVisitAt?.toISOString() ?? null,
     publicToken: row.publicToken,
     cardCode: shortCardCode(row.publicToken),
     promoCode: row.rewardsReady > 0 ? shortCardCode(row.publicToken) : null,
   }));
+  return { cards, total };
 }
 
 type CardAppointment = {
@@ -281,6 +335,8 @@ export async function loadCardProgress(
   cardId: string,
   organizationId: string,
   client?: PoolClient,
+  visitProgram?: VisitProgram,
+  expectedCustomerId?: string,
 ): Promise<CardProgress | null> {
   const db = client ?? pool;
   const card = await db.query<{
@@ -297,14 +353,15 @@ export async function loadCardProgress(
      ${aliasJoin("src", "lc")}
      JOIN "Organization" o ON o.id = lc."organizationId"
      JOIN "Customer" c ON c.id = lc."customerId"
-     WHERE src.id = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'`,
-    [cardId, organizationId],
+     WHERE src.id = $1 AND lc."organizationId" = $2 AND lc.status = 'ACTIVE'
+       AND ($3::text IS NULL OR (lc."customerId" = $3 AND c."deletedAt" IS NULL))`,
+    [cardId, organizationId, expectedCustomerId ?? null],
   );
   if (!card.rows[0]) return null;
   // Toutes les lectures suivantes portent sur la carte survivante.
   const effectiveId = card.rows[0].effectiveCardId ?? cardId;
 
-  const program = await getVisitProgram(organizationId);
+  const program = visitProgram ?? await getVisitProgram(organizationId);
   const visitsRow = await db.query<{ count: string }>(
     `SELECT COALESCE(SUM(points), 0)::text AS count FROM "LoyaltyEvent" WHERE "loyaltyCardId" = $1 AND type = 'VISIT'`,
     [effectiveId],
@@ -540,7 +597,7 @@ export async function resolveLoyaltyCardToken(organizationId: string, raw: strin
 }
 
 /** `app_public_card_by_token` (SQL) suit déjà l'alias : la carte renvoyée est la survivante. */
-export async function getPublicCardByToken(token: string): Promise<CardProgress | null> {
+export async function getPublicCardByToken(token: string, expectedCustomerId?: string): Promise<CardProgress | null> {
   const normalized = token.trim().toUpperCase();
   if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(normalized)) return null;
   const located = await pool.query<{ id: string; organizationId: string }>(
@@ -551,5 +608,5 @@ export async function getPublicCardByToken(token: string): Promise<CardProgress 
   if (located.rows[0]) bindPublicInstitute(located.rows[0].organizationId);
   const { rows } = located;
   if (!rows[0]) return null;
-  return loadCardProgress(rows[0].id, rows[0].organizationId);
+  return loadCardProgress(rows[0].id, rows[0].organizationId, undefined, undefined, expectedCustomerId);
 }

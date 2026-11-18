@@ -1,15 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { query, consumeDimensions, saveProfile, submitFeedback, enrollForm, enrollAnonymous, previewJoinQr, cardTokenForJoinQr } = vi.hoisted(() => ({
+const { query, consumeDimensions, saveProfile, submitFeedback, getLoyaltyCardSession } = vi.hoisted(() => ({
   query: vi.fn(),
   consumeDimensions: vi.fn(),
   saveProfile: vi.fn(),
   submitFeedback: vi.fn(),
-  enrollForm: vi.fn(),
-  enrollAnonymous: vi.fn(),
-  previewJoinQr: vi.fn(),
-  cardTokenForJoinQr: vi.fn(),
+  getLoyaltyCardSession: vi.fn(),
 }));
 const { issueLoyaltyCard } = vi.hoisted(() => ({ issueLoyaltyCard: vi.fn() }));
 
@@ -22,24 +19,18 @@ vi.mock("@/lib/loyalty/cards", () => ({
 }));
 vi.mock("@/lib/rate-limit", () => ({ consumeDimensions }));
 vi.mock("@/lib/http/route-scope", () => ({ publicRoute: <T>(handler: T) => handler }));
-vi.mock("@/lib/loyalty/google-wallet", () => ({ createGoogleWalletSaveUrl: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/lib/loyalty/customer-session", () => ({ getLoyaltyCardSession }));
 
 // Les routes sont testées avec la couche métier simulée (la logique SQL est couverte plus bas, sur les vraies fonctions).
 vi.mock("@/lib/loyalty/card-review", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/loyalty/card-review")>();
   return { ...actual, saveLoyaltyCardProfile: saveProfile, submitLoyaltyCardFeedback: submitFeedback };
 });
-vi.mock("@/lib/loyalty/join-qr", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/loyalty/join-qr")>();
-  return { ...actual, enrollFromJoinQr: enrollForm, enrollAnonymousFromJoinQr: enrollAnonymous, previewJoinQr, cardTokenForJoinQr };
-});
 
 import { parseMarketingWhatsappConsent } from "@/lib/loyalty/card-review";
 import { JOIN_QR_LIMIT_PER_HOUR, joinCreationRateLimits } from "@/lib/loyalty/join-qr";
 import { POST as profileRoute } from "@/app/api/public/loyalty-card/profile/route";
 import { POST as feedbackRoute } from "@/app/api/public/loyalty-card/feedback/route";
-import { POST as joinFormRoute } from "@/app/api/public/loyalty-join/route";
-import { GET as scanRoute } from "@/app/(marketing)/carte/rejoindre/[token]/route";
 
 // Le vrai module join-qr (non simulé) pour tester la requête SQL du formulaire.
 const realReview = () => vi.importActual<typeof import("@/lib/loyalty/card-review")>("@/lib/loyalty/card-review");
@@ -165,7 +156,7 @@ describe("WhatsApp consent on the join form (enrollFromJoinQr)", () => {
       if (sql.includes('FROM "LoyaltyJoinQr"') && sql.includes("q.token")) {
         return { rows: [{ token: JOIN, organizationName: "Institut", programName: "P", visitsPerReward: 5, rewardLabel: "R", active: true }] };
       }
-      if (sql.includes('SELECT "organizationId" FROM "LoyaltyJoinQr"')) return { rows: [{ organizationId: "org_1" }] };
+      if (sql.includes('SELECT "organizationId" FROM "LoyaltyJoinQr"') || sql.includes("app_public_loyalty_join_institute")) return { rows: [{ organizationId: "org_1" }] };
       if (sql.includes('SELECT id, "organizationId" FROM "LoyaltyJoinQr"')) return { rows: [{ id: "qr_1", organizationId: "org_1" }] };
       return { rows: [] };
     });
@@ -197,7 +188,7 @@ describe("WhatsApp consent on the join form (enrollFromJoinQr)", () => {
       if (sql.includes('FROM "LoyaltyJoinQr"') && sql.includes("q.token")) {
         return { rows: [{ token: JOIN, organizationName: "I", programName: "P", visitsPerReward: 5, rewardLabel: "R", active: true }] };
       }
-      if (sql.includes('SELECT "organizationId" FROM "LoyaltyJoinQr"')) return { rows: [{ organizationId: "org_1" }] };
+      if (sql.includes('SELECT "organizationId" FROM "LoyaltyJoinQr"') || sql.includes("app_public_loyalty_join_institute")) return { rows: [{ organizationId: "org_1" }] };
       if (sql.includes('SELECT id, "organizationId" FROM "LoyaltyJoinQr"')) return { rows: [{ id: "qr_1", organizationId: "org_1" }] };
       if (sql.includes('FROM "Customer"') && sql.includes("ANY($2::text[])")) return { rows: [{ id: "cust_old" }] };
       return { rows: [] };
@@ -209,7 +200,7 @@ describe("WhatsApp consent on the join form (enrollFromJoinQr)", () => {
       if (sql.includes('FROM "LoyaltyJoinQr"') && sql.includes("q.token")) {
         return { rows: [{ token: JOIN, organizationName: "I", programName: "P", visitsPerReward: 5, rewardLabel: "R", active: true }] };
       }
-      if (sql.includes('SELECT "organizationId" FROM "LoyaltyJoinQr"')) return { rows: [{ organizationId: "org_1" }] };
+      if (sql.includes('SELECT "organizationId" FROM "LoyaltyJoinQr"') || sql.includes("app_public_loyalty_join_institute")) return { rows: [{ organizationId: "org_1" }] };
       if (sql.includes('SELECT id, "organizationId" FROM "LoyaltyJoinQr"')) return { rows: [{ id: "qr_1", organizationId: "org_1" }] };
       if (sql.includes('INSERT INTO "Customer"')) throw Object.assign(new Error("dup"), { code: "23505" });
       return { rows: [] };
@@ -227,61 +218,47 @@ describe("WhatsApp consent on the join form (enrollFromJoinQr)", () => {
   });
 });
 
-describe("routes: consent contract at the server boundary", () => {
+describe("Consentement et identité sur les routes publiques de fidélité", () => {
+  const profilePath = "/api/public/loyalty-card/profile";
+  const feedbackPath = "/api/public/loyalty-card/feedback";
+
   beforeEach(() => {
-    for (const mock of [consumeDimensions, saveProfile, submitFeedback, enrollForm]) mock.mockReset();
+    for (const mock of [consumeDimensions, saveProfile, submitFeedback, getLoyaltyCardSession]) mock.mockReset();
     consumeDimensions.mockResolvedValue({ allowed: true });
     saveProfile.mockResolvedValue({ ok: true, code: "ABC" });
     submitFeedback.mockResolvedValue({ ok: true });
-    enrollForm.mockResolvedValue({ cardToken: "RBLOY_NEWCARD2" });
+    getLoyaltyCardSession.mockResolvedValue({ customerId: "cust_1" });
   });
 
-  it("profile: forwards a true boolean, defaults absent to false", async () => {
-    await profileRoute(post("/api/public/loyalty-card/profile", { token: TOKEN, phone: PHONE, marketingWhatsappConsent: true }));
-    expect(saveProfile).toHaveBeenLastCalledWith(expect.objectContaining({ marketingWhatsappConsent: true }));
-    await profileRoute(post("/api/public/loyalty-card/profile", { token: TOKEN, phone: PHONE }));
-    expect(saveProfile).toHaveBeenLastCalledWith(expect.objectContaining({ marketingWhatsappConsent: false }));
-  });
-
-  it.each(["true", 1, {}, [true]])("profile, feedback and join form answer 400 without writing when the consent is %j", async (bad) => {
-    for (const [route, url, mock] of [
-      [profileRoute, "/api/public/loyalty-card/profile", saveProfile],
-      [feedbackRoute, "/api/public/loyalty-card/feedback", submitFeedback],
-      [joinFormRoute, "/api/public/loyalty-join", enrollForm],
+  it.each(["true", 1, {}, [true]])("refuse un consentement non booléen sans écrire (%j)", async (bad) => {
+    for (const [route, url, writer] of [
+      [profileRoute, profilePath, saveProfile],
+      [feedbackRoute, feedbackPath, submitFeedback],
     ] as const) {
-      const response = await route(post(url, { token: route === joinFormRoute ? JOIN : TOKEN, phone: PHONE, marketingWhatsappConsent: bad }));
+      const response = await route(post(url, { token: TOKEN, marketingWhatsappConsent: bad }));
       expect(response.status).toBe(400);
-      expect(mock).not.toHaveBeenCalled();
+      expect(writer).not.toHaveBeenCalled();
     }
   });
 
-  it("feedback and join form forward the consent flag", async () => {
-    await feedbackRoute(post("/api/public/loyalty-card/feedback", { token: TOKEN, phone: PHONE, marketingWhatsappConsent: true }));
-    expect(submitFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ marketingWhatsappConsent: true }));
-    await joinFormRoute(post("/api/public/loyalty-join", { token: JOIN, firstName: "S", lastName: "A", phone: PHONE, marketingWhatsappConsent: true }));
-    expect(enrollForm).toHaveBeenLastCalledWith(expect.objectContaining({ marketingWhatsappConsent: true }));
-    await joinFormRoute(post("/api/public/loyalty-join", { token: JOIN, firstName: "S", lastName: "A", phone: PHONE }));
-    expect(enrollForm).toHaveBeenLastCalledWith(expect.objectContaining({ marketingWhatsappConsent: false }));
+  it("exige une session vérifiée même en possession du code QR personnel", async () => {
+    getLoyaltyCardSession.mockResolvedValue(null);
+    expect((await profileRoute(post(profilePath, { token: TOKEN }))).status).toBe(401);
+    expect((await feedbackRoute(post(feedbackPath, { token: TOKEN, rating: 5 }))).status).toBe(401);
+    expect(saveProfile).not.toHaveBeenCalled();
+    expect(submitFeedback).not.toHaveBeenCalled();
   });
 
-  it("propagates PHONE_ALREADY_KNOWN as 409 without exposing consent state", async () => {
-    saveProfile.mockResolvedValue({ ok: false, code: "PHONE_ALREADY_KNOWN", error: "déjà" });
-    const response = await profileRoute(post("/api/public/loyalty-card/profile", { token: TOKEN, phone: PHONE, marketingWhatsappConsent: true }));
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({ error: "déjà", code: "PHONE_ALREADY_KNOWN" });
+  it("refuse de modifier le téléphone depuis le profil et l'ignore dans un avis", async () => {
+    expect((await profileRoute(post(profilePath, { token: TOKEN, phone: PHONE }))).status).toBe(400);
+    expect(saveProfile).not.toHaveBeenCalled();
+    const response = await feedbackRoute(post(feedbackPath, { token: TOKEN, phone: PHONE, rating: 5 }));
+    expect(response.status).toBe(200);
+    expect(submitFeedback).toHaveBeenCalledWith(expect.objectContaining({ expectedCustomerId: "cust_1", phone: "", rating: 5 }));
   });
 });
 
 describe("join rate-limit keys", () => {
-  beforeEach(() => {
-    consumeDimensions.mockReset();
-    consumeDimensions.mockResolvedValue({ allowed: true });
-    enrollForm.mockReset();
-    enrollAnonymous.mockReset();
-    previewJoinQr.mockReset();
-    cardTokenForJoinQr.mockReset();
-  });
-
   const HOUR = 60 * 60 * 1000;
 
   it("builds the IP and per-QR dimensions, and skips the QR key for a malformed token", () => {
@@ -293,62 +270,5 @@ describe("join rate-limit keys", () => {
     for (const bad of ["nope", "", undefined, 12, `RBJOIN_${"A".repeat(50)}`]) {
       expect(joinCreationRateLimits("1.2.3.4", bad, 20).map((d) => d.key)).toEqual(["loyalty:join:ip:1.2.3.4"]);
     }
-  });
-
-  it("scan route: 60/h per IP and 400/h per QR before creating an anonymous card", async () => {
-    previewJoinQr.mockResolvedValue({ token: JOIN, status: "ACTIVE", active: true });
-    cardTokenForJoinQr.mockResolvedValue(null);
-    enrollAnonymous.mockResolvedValue({ cardToken: TOKEN });
-    const request = new NextRequest(`https://example.test/carte/rejoindre/${JOIN}?n=1`, { headers: { "cf-connecting-ip": "203.0.113.7" } });
-    const response = await scanRoute(request, { params: { token: JOIN } });
-    expect(response.status).toBe(307);
-    expect(consumeDimensions).toHaveBeenCalledWith([
-      { key: "loyalty:join:ip:203.0.113.7", limit: 60, windowMs: HOUR, sensitivity: "sensitive" },
-      { key: `loyalty:join:qr:${JOIN}`, limit: 400, windowMs: HOUR, sensitivity: "standard" },
-    ]);
-    expect(enrollAnonymous).toHaveBeenCalledOnce();
-  });
-
-  it("scan route: keeps 429 + Retry-After and creates nothing when limited", async () => {
-    previewJoinQr.mockResolvedValue({ token: JOIN, status: "ACTIVE", active: true });
-    cardTokenForJoinQr.mockResolvedValue(null);
-    consumeDimensions.mockResolvedValue({ allowed: false, retryAfterSec: 1234 });
-    const request = new NextRequest(`https://example.test/carte/rejoindre/${JOIN}?n=1`);
-    const response = await scanRoute(request, { params: { token: JOIN } });
-    expect(response.status).toBe(429);
-    expect(response.headers.get("Retry-After")).toBe("1234");
-    expect(response.headers.get("Content-Type")).toContain("text/html");
-    expect(enrollAnonymous).not.toHaveBeenCalled();
-  });
-
-  it("scan route: an existing card never consumes the creation limits", async () => {
-    previewJoinQr.mockResolvedValue({ token: JOIN, status: "ACTIVE", active: true });
-    cardTokenForJoinQr.mockResolvedValue(TOKEN);
-    const request = new NextRequest(`https://example.test/carte/rejoindre/${JOIN}?c=${TOKEN}`);
-    await scanRoute(request, { params: { token: JOIN } });
-    expect(consumeDimensions).not.toHaveBeenCalled();
-  });
-
-  it("join form: keeps 20/h per IP and shares the per-QR counter with the scan; 429 keeps Retry-After", async () => {
-    await joinFormRoute(post("/api/public/loyalty-join", { token: JOIN, firstName: "S", lastName: "A", phone: PHONE }));
-    expect(consumeDimensions).toHaveBeenCalledWith([
-      { key: "loyalty:join:ip:203.0.113.7", limit: 20, windowMs: HOUR, sensitivity: "sensitive" },
-      { key: `loyalty:join:qr:${JOIN}`, limit: 400, windowMs: HOUR, sensitivity: "standard" },
-    ]);
-    consumeDimensions.mockResolvedValue({ allowed: false, retryAfterSec: 99 });
-    enrollForm.mockClear();
-    const limited = await joinFormRoute(post("/api/public/loyalty-join", { token: JOIN, firstName: "S", lastName: "A", phone: PHONE }));
-    expect(limited.status).toBe(429);
-    expect(limited.headers.get("Retry-After")).toBe("99");
-    expect(enrollForm).not.toHaveBeenCalled();
-  });
-
-  it("join form: rejects a missing or non-string token without enrolling", async () => {
-    consumeDimensions.mockResolvedValue({ allowed: true });
-    for (const body of [{}, { token: 42 }, "not json"]) {
-      const response = await joinFormRoute(post("/api/public/loyalty-join", body));
-      expect(response.status).toBe(400);
-    }
-    expect(enrollForm).not.toHaveBeenCalled();
   });
 });

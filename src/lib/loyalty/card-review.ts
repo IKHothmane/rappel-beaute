@@ -167,6 +167,7 @@ async function updateCardCustomer(
 
 export async function saveLoyaltyCardProfile(input: {
   cardToken: string;
+  expectedCustomerId?: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -187,8 +188,9 @@ export async function saveLoyaltyCardProfile(input: {
      ${aliasJoin("al", "lc")}
      JOIN "Organization" o ON o.id = lc."organizationId" AND o.status = 'ACTIVE'
      JOIN "Customer" c ON c.id = lc."customerId" AND c."deletedAt" IS NULL
-     WHERE al."publicToken" = $1 AND lc.status = 'ACTIVE'`,
-    [token],
+     WHERE al."publicToken" = $1 AND lc.status = 'ACTIVE'
+       AND ($2::text IS NULL OR lc."customerId" = $2)`,
+    [token, input.expectedCustomerId ?? null],
   );
   const row = card.rows[0];
   if (!row) return { ok: false, error: "Carte introuvable." };
@@ -199,6 +201,7 @@ export async function saveLoyaltyCardProfile(input: {
 
 export async function submitLoyaltyCardFeedback(input: {
   cardToken: string;
+  expectedCustomerId?: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -271,8 +274,9 @@ export async function submitLoyaltyCardFeedback(input: {
      ${aliasJoin("al", "lc")}
      JOIN "Organization" o ON o.id = lc."organizationId" AND o.status = 'ACTIVE'
      JOIN "Customer" c ON c.id = lc."customerId" AND c."deletedAt" IS NULL
-     WHERE al."publicToken" = $1 AND lc.status = 'ACTIVE'`,
-    [token],
+     WHERE al."publicToken" = $1 AND lc.status = 'ACTIVE'
+       AND ($2::text IS NULL OR lc."customerId" = $2)`,
+    [token, input.expectedCustomerId ?? null],
   );
   const row = card.rows[0];
   if (!row) return { ok: false, error: "Carte introuvable." };

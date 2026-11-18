@@ -5,6 +5,7 @@ import { createGoogleWalletSaveUrl } from "@/lib/loyalty/google-wallet";
 import { appleWalletConfigured, googleWalletConfigured } from "@/lib/loyalty/wallet-config";
 import { loyaltyCardUrl, requestCardOrigin } from "@/lib/loyalty/public-origin";
 import { publicRoute } from "@/lib/http/route-scope";
+import { getLoyaltyCardSession } from "@/lib/loyalty/customer-session";
 
 const TOKEN = /^RBLOY_[A-Z2-9]{8,32}$/;
 
@@ -20,9 +21,11 @@ export const GET = publicRoute(async function GET(
   const token = params.token.trim().toUpperCase();
   const fallback = loyaltyCardUrl(token);
   if (!TOKEN.test(token)) return NextResponse.redirect(fallback);
+  const session = await getLoyaltyCardSession(request, token);
+  if (!session) return NextResponse.redirect(fallback);
   if (isApplePhone(request) && appleWalletConfigured()) {
     try {
-      const pass = await createAppleWalletPass(token);
+      const pass = await createAppleWalletPass(token, session.customerId);
       if (pass) {
         return new NextResponse(new Uint8Array(pass), {
           headers: {
@@ -43,7 +46,7 @@ export const GET = publicRoute(async function GET(
   if (!googleWalletConfigured()) return NextResponse.redirect(fallback);
   try {
     const publicOrigin = requestCardOrigin(request);
-    const save = await createGoogleWalletSaveUrl(token, publicOrigin);
+    const save = await createGoogleWalletSaveUrl(token, publicOrigin, session.customerId);
     if (save?.startsWith("https://pay.google.com/gp/v/save/")) {
       return NextResponse.redirect(save);
     }

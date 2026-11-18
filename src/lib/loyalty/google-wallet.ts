@@ -102,19 +102,19 @@ function genericObject(token: string, card: CardProgress, origin?: string) {
     ],
     barcode: {
       type: "QR_CODE",
-      value: code,
+      value: token,
       alternateText: code,
     },
   };
 }
 
 /** Lien officiel d'ajout. La classe est créée au premier scan si elle n'existe pas encore. */
-export async function createGoogleWalletSaveUrl(token: string, requestOrigin?: string): Promise<string | null> {
+export async function createGoogleWalletSaveUrl(token: string, requestOrigin?: string, expectedCustomerId?: string): Promise<string | null> {
   if (!googleWalletConfigured()) return null;
   const account = loadServiceAccount();
   if (!account) return null;
   const normalized = token.trim().toUpperCase();
-  const card = await getPublicCardByToken(normalized);
+  const card = await getPublicCardByToken(normalized, expectedCustomerId);
   if (!card) return null;
 
   const origin = cardSiteOrigin(requestOrigin);

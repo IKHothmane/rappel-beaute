@@ -9,6 +9,7 @@ import {
 import { LOYALTY_PHONE_ALREADY_KNOWN_CODE } from "@/lib/loyalty/profile-input";
 import { consumeDimensions } from "@/lib/rate-limit";
 import { publicRoute } from "@/lib/http/route-scope";
+import { getLoyaltyCardSession } from "@/lib/loyalty/customer-session";
 
 export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
@@ -19,7 +20,14 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     phone?: string;
     marketingWhatsappConsent?: unknown;
   } | null;
-  if (!body?.token) return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
+  if (typeof body?.token !== "string") return NextResponse.json({ error: "Carte introuvable." }, { status: 404 });
+  const session = await getLoyaltyCardSession(request, body.token);
+  if (!session) {
+    return NextResponse.json({ error: "Vérification en institut requise." }, { status: 401 });
+  }
+  if (body.phone) {
+    return NextResponse.json({ error: "Le changement de numéro doit être vérifié par votre institut." }, { status: 400 });
+  }
 
   const limited = await consumeDimensions([
     { key: `loyalty:profile:ip:${ip}`, limit: 15, windowMs: 60 * 60 * 1000, sensitivity: "sensitive" },
@@ -42,9 +50,10 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
 
   const result = await saveLoyaltyCardProfile({
     cardToken: body.token,
+    expectedCustomerId: session.customerId,
     firstName: String(body.firstName ?? ""),
     lastName: String(body.lastName ?? ""),
-    phone: String(body.phone ?? ""),
+    phone: "",
     marketingWhatsappConsent: consent.value,
   });
   if (!result.ok) {

@@ -47,6 +47,7 @@ function joinToken() {
 
 type JoinQrView = {
   token: string;
+  organizationId: string;
   status: "ACTIVE";
   organizationName: string;
   programName: string;
@@ -81,6 +82,7 @@ async function getActiveJoinQr(organizationId: string): Promise<JoinQrView | nul
   if (!row) return null;
   return {
     token: row.token,
+    organizationId,
     status: "ACTIVE",
     organizationName: row.organizationName,
     programName: row.programName,
@@ -127,10 +129,12 @@ export async function previewJoinQr(token: string): Promise<JoinQrView | null> {
   const normalized = token.trim().toUpperCase();
   if (!/^RBJOIN_[A-Z2-9]{8,32}$/.test(normalized)) return null;
   const { rows } = await pool.query<{ organizationId: string }>(
-    `SELECT "organizationId" FROM "LoyaltyJoinQr" WHERE token = $1 AND status = 'ACTIVE'`,
+    `SELECT "organizationId" FROM app_public_loyalty_join_institute($1)`,
     [normalized],
   );
   if (!rows[0]) return null;
+  const { bindPublicInstitute } = await import("@/lib/db/tenant-context");
+  bindPublicInstitute(rows[0].organizationId);
   return getActiveJoinQr(rows[0].organizationId);
 }
 

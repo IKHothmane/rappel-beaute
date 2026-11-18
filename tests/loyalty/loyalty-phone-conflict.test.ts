@@ -203,7 +203,7 @@ describe("enrollFromJoinQr phone handling", () => {
       if (sql.includes('FROM "LoyaltyJoinQr"') && sql.includes("q.token")) {
         return { rows: [{ token: JOIN, organizationName: "Institut", programName: "P", visitsPerReward: 5, rewardLabel: "R", active: true }] };
       }
-      if (sql.includes('SELECT "organizationId" FROM "LoyaltyJoinQr"')) return { rows: [{ organizationId: "org_1" }] };
+      if (sql.includes('SELECT "organizationId" FROM "LoyaltyJoinQr"') || sql.includes("app_public_loyalty_join_institute")) return { rows: [{ organizationId: "org_1" }] };
       if (sql.includes('SELECT id, "organizationId" FROM "LoyaltyJoinQr"')) return { rows: [{ id: "qr_1", organizationId: "org_1" }] };
       if (sql.includes('FROM "Customer"') && sql.includes("ANY($2::text[])")) return { rows: options.existing ? [{ id: "cust_old" }] : [] };
       if (sql.includes('INSERT INTO "Customer"') && options.insertError) throw Object.assign(new Error("dup"), { code: options.insertError });

@@ -4,6 +4,7 @@ import { writeAuditLog } from "@/lib/db/audit";
 import { getOrCreateLoyaltyProgram, levelFromLifetime } from "@/lib/db/loyalty";
 import { pool } from "@/lib/db/pool";
 import { newLoyaltyId } from "@/lib/loyalty/cards";
+import { revokeLoyaltyVerificationAccess } from "@/lib/loyalty/customer-verification";
 import { notifyGoogleWallet } from "@/lib/loyalty/google-wallet";
 import {
   loyaltyPhoneLookupVariants,
@@ -1271,6 +1272,8 @@ async function runMerge(
   }
 
   // --- Fiches ---
+  // Une vérification d'identité appartient à la fiche source et ne survit pas à sa fusion.
+  await revokeLoyaltyVerificationAccess(client, organizationId, sourceId);
   const notes = source.notes?.trim();
   const repointedCustomers = await client.query<{ id: string }>(
     `UPDATE "Customer" SET "mergedIntoCustomerId" = $3, "updatedAt" = NOW()

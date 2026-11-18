@@ -6,7 +6,7 @@ import { Check, Copy, Maximize2, X } from "lucide-react";
 type Props = {
   qr: string;
   alt: string;
-  /** Code court (4 caractères) saisi au comptoir si le scan ne fonctionne pas. */
+  /** Code court (4 caractères) servant de référence de la carte. */
   code?: string | null;
 };
 
@@ -108,7 +108,7 @@ export function LoyaltyCardQr({ qr, alt, code }: Props) {
             </button>
           </div>
           <p className="mt-2 text-xs text-[#6B5763]">
-            À donner à l’institut si le scan ne fonctionne pas.
+            Présentez le QR ci-dessus à l’institut pour valider un passage.
           </p>
           <p role="status" aria-live="polite" className="min-h-4 text-xs font-semibold text-[#14804A]">
             {copied === "done" ? "Code copié" : copied === "failed" ? "Copie impossible : le code est sélectionné." : ""}

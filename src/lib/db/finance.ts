@@ -839,20 +839,6 @@ export async function createPayments(
     /* facture optionnelle */
   }
 
-  // Fidélité : points sur montant réellement payé (idempotent par paymentId)
-  try {
-    const { creditVisitIfEligible } = await import("@/lib/loyalty/validation");
-    if (apt.rows[0].status === "COMPLETED" && summary.remaining <= 0.01) {
-      await creditVisitIfEligible({
-        organizationId,
-        appointmentId: input.appointmentId,
-        actorId: userId,
-      });
-    }
-  } catch (e) {
-    console.error("[createPayments] loyalty visit", e);
-  }
-
   try {
     const { earnPointsFromPayment } = await import("@/lib/db/loyalty");
     for (const p of payments) {

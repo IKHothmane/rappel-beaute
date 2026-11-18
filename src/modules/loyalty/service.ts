@@ -27,8 +27,15 @@ async function parseJson<T>(res: Response): Promise<T> {
   return data as T;
 }
 
-export async function getLoyaltyDashboard() {
-  const res = await fetch("/api/loyalty/", fetchOpts);
+export async function getLoyaltyDashboard(opts: { limit?: number; pin?: string[] } = {}) {
+  const params = new URLSearchParams();
+  if (typeof opts.limit === "number" && Number.isFinite(opts.limit)) {
+    params.set("limit", String(Math.floor(opts.limit)));
+  }
+  const pins = (opts.pin ?? []).filter(Boolean).slice(0, 20);
+  if (pins.length > 0) params.set("pin", pins.join(","));
+  const query = params.toString();
+  const res = await fetch(query ? `/api/loyalty/?${query}` : "/api/loyalty/", fetchOpts);
   return parseJson<{
     kpis: LoyaltyKpis;
     ranking: {
@@ -62,6 +69,7 @@ export async function getLoyaltyDashboard() {
       cardCode?: string;
       promoCode?: string | null;
     }[];
+    visitCardsTotal?: number;
     passages?: {
       id: string;
       customerId: string;

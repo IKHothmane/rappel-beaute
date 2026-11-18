@@ -1,8 +1,9 @@
-import { createHash, randomInt } from "crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { getSessionSecret } from "@/lib/auth/env";
 import { Pool, type PoolClient } from "pg";
 import { writeAuditLog } from "@/lib/db/audit";
 import { aliasJoin } from "@/lib/loyalty/card-alias";
-import { shortCardCode } from "@/lib/loyalty/card-code";
+import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
 import { notifyGoogleWallet } from "@/lib/loyalty/google-wallet";
 import { isUniqueViolation } from "@/lib/db/loyalty";
 import {
@@ -67,17 +68,13 @@ type VisitInsert = {
   organizationId: string;
   cardId: string;
   customerId: string;
-  appointmentId: string | null;
-  serviceId: string | null;
-  amount: number | string;
-  points: number;
-  validatedBy: string | null;
-  note: string | null;
+  validatedBy: string;
+  note: string;
   program: VisitProgram;
   actorName?: string | null;
-};
+} & ({ points: 1; eventId: string } | { points: -1; eventId?: never });
 
-type LockedCard = { id: string; customerId: string; firstName: string; lastName: string; publicToken: string };
+type LockedCard = { id: string; customerId: string; publicToken: string };
 
 /** Une fusion de fiches a transformé la carte visée en alias pendant l'opération : la rejouer. */
 class CardMovedError extends Error {
@@ -94,12 +91,13 @@ class CardMovedError extends Error {
 async function lockCardByToken(client: PoolClient, organizationId: string, token: string): Promise<LockedCard | null> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const card = await client.query<LockedCard>(
-      `SELECT lc.id, lc."customerId", c."firstName", c."lastName", lc."publicToken"
+      `SELECT lc.id, lc."customerId", lc."publicToken"
        FROM "LoyaltyCard" lc
        ${aliasJoin("al", "lc")}
-       JOIN "Customer" c ON c.id = lc."customerId"
+       JOIN "Customer" c ON c.id = lc."customerId" AND c."organizationId" = lc."organizationId"
        WHERE al."publicToken" = $1 AND al."organizationId" = $2 AND lc.status = 'ACTIVE'
-       FOR UPDATE OF lc`,
+         AND c."deletedAt" IS NULL
+       FOR UPDATE OF lc, al`,
       [token, organizationId],
     );
     if (card.rows[0]) return card.rows[0];
@@ -236,28 +234,28 @@ export async function syncLoyaltyPromoCodes(organizationId: string) {
 }
 
 async function insertVisitAndMaybeReward(client: PoolClient, input: VisitInsert) {
-  const eventId = newLoyaltyId("levt");
+  const eventId = input.eventId ?? newLoyaltyId("levt");
+  let validatedAt: Date;
   try {
-    await client.query(
+    const result = await client.query<{ validatedAt: Date }>(
       `INSERT INTO "LoyaltyEvent" (
         id, "organizationId", "customerId", "loyaltyCardId", type,
-        "appointmentId", "serviceId", amount, points, note, "validatedBy", "validatedAt"
-      ) VALUES ($1, $2, $3, $4, 'VISIT', $5, $6, $7, $8, $9, $10, NOW())`,
+        amount, points, note, "validatedBy", "validatedAt"
+      ) VALUES ($1, $2, $3, $4, 'VISIT', 0, $5, $6, $7, clock_timestamp())
+      RETURNING "validatedAt"`,
       [
         eventId,
         input.organizationId,
         input.customerId,
         input.cardId,
-        input.appointmentId,
-        input.serviceId,
-        input.amount,
         input.points,
         input.note,
         input.validatedBy,
       ],
     );
+    validatedAt = result.rows[0].validatedAt;
     // Remonte la carte en tête de « Clientes fidèles »
-    await client.query(`UPDATE "LoyaltyCard" SET "updatedAt" = NOW() WHERE id = $1`, [input.cardId]);
+    await client.query(`UPDATE "LoyaltyCard" SET "updatedAt" = clock_timestamp() WHERE id = $1`, [input.cardId]);
   } catch (error) {
     if (isUniqueViolation(error)) throw new Error("ALREADY_VALIDATED");
     throw error;
@@ -335,7 +333,7 @@ async function insertVisitAndMaybeReward(client: PoolClient, input: VisitInsert)
     }
   }
 
-  return { eventId, visits, rewardId };
+  return { eventId, visits, rewardId, validatedAt };
 }
 
 export async function previewLoyaltyScan(
@@ -354,8 +352,9 @@ export async function previewLoyaltyScan(
     `SELECT lc.id, lc."customerId", c."firstName", c."lastName", c.phone, lc."publicToken"
      FROM "LoyaltyCard" lc
      ${aliasJoin("al", "lc")}
-     JOIN "Customer" c ON c.id = lc."customerId"
-     WHERE al."publicToken" = $1 AND al."organizationId" = $2 AND lc.status = 'ACTIVE'`,
+     JOIN "Customer" c ON c.id = lc."customerId" AND c."organizationId" = lc."organizationId"
+     WHERE al."publicToken" = $1 AND al."organizationId" = $2 AND lc.status = 'ACTIVE'
+       AND c."deletedAt" IS NULL`,
     [token, organizationId],
   );
   if (!card.rows[0]) throw new Error("CARD_NOT_FOUND");
@@ -468,200 +467,191 @@ export async function markVisitRewardUsed(
   });
 }
 
-export async function validateLoyaltyVisit(
-  organizationId: string,
-  rawToken: string,
-  appointmentId: string,
-  validatedBy: string,
-): Promise<CardProgress & { customerName: string; serviceName: string; amount: number }> {
-  const program = await getVisitProgram(organizationId);
+const FULL_CARD_TOKEN = /^RBLOY_[A-Z2-9]{8,32}$/;
+const SCAN_LIFETIME_MS = 5 * 60 * 1000;
+
+type ScanActor = { organizationId: string; actorId: string };
+type ScanValidation = ScanActor & {
+  eventId: string;
+  token: string;
+  cardId: string;
+  customerId: string;
+  expiresAt: number;
+};
+
+function parseScannedCard(raw: string): string {
+  const value = raw.trim();
+  if (FULL_CARD_TOKEN.test(value.toUpperCase())) return value.toUpperCase();
+  try {
+    const url = new URL(value);
+    const token = url.pathname.toUpperCase().match(/^\/CARTE\/(RBLOY_[A-Z2-9]{8,32})\/?$/)?.[1];
+    if (token && (url.protocol === "https:" || url.protocol === "http:")) return token;
+  } catch {
+    // La valeur ne correspond ni à un jeton complet ni à un lien de carte.
+  }
+  throw new Error("SCAN_INVALID");
+}
+
+function signScan(payload: string): Buffer {
+  return createHmac("sha256", getSessionSecret()).update("loyalty-scan:v1:").update(payload).digest();
+}
+
+function readScanValidation(validationId: string, actor: ScanActor): ScanValidation {
+  if (!/^[A-Za-z0-9_-]{1,2048}\.[A-Za-z0-9_-]{43}$/.test(validationId)) {
+    throw new Error("SCAN_INVALID");
+  }
+  const [payload, signature] = validationId.split(".");
+  const candidate = Buffer.from(signature, "base64url");
+  if (!timingSafeEqual(candidate, signScan(payload))) throw new Error("SCAN_INVALID");
+
+  const validation = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as ScanValidation;
+  if (validation.organizationId !== actor.organizationId || validation.actorId !== actor.actorId) {
+    throw new Error("SCAN_INVALID");
+  }
+  if (validation.expiresAt <= Date.now()) throw new Error("SCAN_EXPIRED");
+  return validation;
+}
+
+export async function beginLoyaltyScan(opts: ScanActor & { rawToken: string }) {
+  const token = parseScannedCard(opts.rawToken);
+  const { rows } = await pool.query<{
+    id: string;
+    customerId: string;
+    firstName: string;
+    lastName: string;
+    organizationName: string;
+    visits: string;
+  }>(
+    `SELECT lc.id, lc."customerId", c."firstName", c."lastName", o.name AS "organizationName",
+            (
+              SELECT COALESCE(SUM(e.points), 0)::text
+              FROM "LoyaltyEvent" e
+              WHERE e."organizationId" = al."organizationId" AND e."loyaltyCardId" = lc.id AND e.type = 'VISIT'
+            ) AS visits
+     FROM "LoyaltyCard" lc
+     ${aliasJoin("al", "lc")}
+     JOIN "Customer" c ON c.id = lc."customerId" AND c."organizationId" = lc."organizationId"
+     JOIN "Organization" o ON o.id = lc."organizationId"
+     WHERE al."publicToken" = $1 AND al."organizationId" = $2 AND lc.status = 'ACTIVE'
+       AND c."deletedAt" IS NULL`,
+    [token, opts.organizationId],
+  );
+  const card = rows[0];
+  if (!card) throw new Error("CARD_NOT_FOUND");
+  const program = await getVisitProgram(opts.organizationId);
   if (!program.active) throw new Error("PROGRAM_DISABLED");
 
-  const requestedToken = rawToken.trim().toUpperCase();
-  const client = await pool.connect();
-  let finished = false;
-  try {
-    await client.query("BEGIN");
-    const locked = await lockCardByToken(client, organizationId, requestedToken);
-    if (!locked) throw new Error("CARD_NOT_FOUND");
-    const card = { rows: [locked] };
-    const token = locked.publicToken;
-
-    const appointment = await client.query<{
-      id: string;
-      customerId: string;
-      serviceId: string | null;
-      serviceName: string;
-      amount: string;
-      status: string;
-    }>(
-      `SELECT a.id, a."customerId", a."serviceId", a.status, a.price::text AS amount,
-              COALESCE(a."serviceNameSnapshot", s.name, 'Prestation') AS "serviceName"
-       FROM "Appointment" a
-       LEFT JOIN "Service" s ON s.id = a."serviceId"
-       WHERE a.id = $1 AND a."organizationId" = $2
-       FOR UPDATE OF a`,
-      [appointmentId, organizationId],
-    );
-    const appt = appointment.rows[0];
-    if (!appt || appt.customerId !== card.rows[0].customerId) throw new Error("APPOINTMENT_MISMATCH");
-    if (appt.status !== "COMPLETED") throw new Error("APPOINTMENT_NOT_COMPLETED");
-    if (
-      program.eligibleServiceIds.length > 0 &&
-      (!appt.serviceId || !program.eligibleServiceIds.includes(appt.serviceId))
-    ) {
-      throw new Error("SERVICE_NOT_ELIGIBLE");
-    }
-
-    await insertVisitAndMaybeReward(client, {
-      organizationId,
-      cardId: card.rows[0].id,
-      customerId: card.rows[0].customerId,
-      appointmentId: appt.id,
-      serviceId: appt.serviceId,
-      amount: appt.amount,
-      points: 1,
-      validatedBy,
-      note: null,
-      program,
-    });
-
-    await client.query("COMMIT");
-    const saved = {
-      cardId: card.rows[0].id,
-      customerName: `${card.rows[0].firstName} ${card.rows[0].lastName}`.trim(),
-      serviceName: appt.serviceName,
-      amount: Number(appt.amount),
-    };
-    finished = true;
-    client.release();
-    notifyGoogleWallet(token);
-    const progress = await loadCardProgress(saved.cardId, organizationId);
-    if (!progress) throw new Error("CARD_NOT_FOUND");
-    return {
-      ...progress,
-      customerName: saved.customerName,
-      serviceName: saved.serviceName,
-      amount: saved.amount,
-    };
-  } catch (error) {
-    if (!finished) {
-      try {
-        await client.query("ROLLBACK");
-      } catch {
-        /* transaction déjà terminée */
-      }
-      client.release();
-    }
-    throw error;
-  }
+  const visits = Number(card.visits);
+  const visitsPerReward = program.visitsPerReward;
+  const cycle = visitCycle(visits, visitsPerReward);
+  const validation: ScanValidation = {
+    eventId: `levt_scan_${randomUUID()}`,
+    organizationId: opts.organizationId,
+    actorId: opts.actorId,
+    token,
+    cardId: card.id,
+    customerId: card.customerId,
+    expiresAt: Date.now() + SCAN_LIFETIME_MS,
+  };
+  const payload = Buffer.from(JSON.stringify(validation), "utf8").toString("base64url");
+  return {
+    validationId: `${payload}.${signScan(payload).toString("base64url")}`,
+    customerId: card.customerId,
+    customerName: `${card.firstName} ${card.lastName}`.trim(),
+    card: {
+      organizationName: card.organizationName,
+      visits,
+      cycle,
+      visitsPerReward,
+      remaining: visitsPerReward - cycle,
+      rewardLabel: program.rewardLabel,
+    },
+  };
 }
 
-/**
- * +1 passage quand le rendez-vous est terminé, le paiement soldé et le service éligible.
- * Idempotent : un rendez-vous ne crée qu'un LoyaltyEvent.
- */
-export async function creditVisitIfEligible(opts: {
-  organizationId: string;
-  appointmentId: string;
-  actorId?: string | null;
-}): Promise<{ credited: boolean }> {
-  try {
-    return await creditVisitIfEligibleOnce(opts);
-  } catch (error) {
-    // Fusion de fiches survenue entre la lecture du rendez-vous et le verrou de la carte : une seule reprise.
-    if (error instanceof CardMovedError) return creditVisitIfEligibleOnce(opts);
-    throw error;
-  }
-}
+type ConfirmedScan = CardProgress & {
+  customerId: string;
+  customerName: string;
+  promoCode: string | null;
+  validatedAt: string;
+};
 
-async function creditVisitIfEligibleOnce(opts: {
-  organizationId: string;
-  appointmentId: string;
-  actorId?: string | null;
-}): Promise<{ credited: boolean }> {
+export async function confirmLoyaltyScan(
+  opts: ScanActor & { validationId: string; actorName?: string | null },
+): Promise<ConfirmedScan> {
+  const validation = readScanValidation(opts.validationId, opts);
   const program = await getVisitProgram(opts.organizationId);
-  if (!program.active) return { credited: false };
-
-  const appointment = await pool.query<{
-    customerId: string;
-    serviceId: string | null;
-    amount: string;
-    status: string;
-    netPaid: string;
-  }>(
-    `SELECT a."customerId", a."serviceId", a.price::text AS amount, a.status::text AS status,
-            COALESCE((
-              SELECT SUM(CASE WHEN p.kind = 'REFUND' THEN -p.amount ELSE p.amount END)
-              FROM "Payment" p
-              WHERE p."appointmentId" = a.id AND p.status = 'COMPLETED'
-            ), 0)::text AS "netPaid"
-     FROM "Appointment" a
-     WHERE a.id = $1 AND a."organizationId" = $2`,
-    [opts.appointmentId, opts.organizationId],
-  );
-  const appt = appointment.rows[0];
-  if (!appt || appt.status !== "COMPLETED") return { credited: false };
-  const price = Number(appt.amount) || 0;
-  const paid = Number(appt.netPaid) || 0;
-  if (paid + 0.009 < price) return { credited: false };
-  if (
-    program.eligibleServiceIds.length > 0 &&
-    (!appt.serviceId || !program.eligibleServiceIds.includes(appt.serviceId))
-  ) {
-    return { credited: false };
-  }
-
-  const card = await pool.query<{ id: string; publicToken: string }>(
-    `SELECT id, "publicToken" FROM "LoyaltyCard"
-     WHERE "organizationId" = $1 AND "customerId" = $2 AND status = 'ACTIVE'
-     LIMIT 1`,
-    [opts.organizationId, appt.customerId],
-  );
-  if (!card.rows[0]) return { credited: false };
+  if (!program.active) throw new Error("PROGRAM_DISABLED");
 
   const client = await pool.connect();
-  let finished = false;
+  let card: LockedCard;
+  let result: ConfirmedScan;
   try {
     await client.query("BEGIN");
-    await lockActiveCardById(client, card.rows[0].id, appt.customerId);
-    await insertVisitAndMaybeReward(client, {
-      organizationId: opts.organizationId,
-      cardId: card.rows[0].id,
-      customerId: appt.customerId,
-      appointmentId: opts.appointmentId,
-      serviceId: appt.serviceId,
-      amount: appt.amount,
-      points: 1,
-      validatedBy: opts.actorId ?? null,
-      note: null,
-      program,
-    });
-    await client.query("COMMIT");
-    finished = true;
-    notifyGoogleWallet(card.rows[0].publicToken);
-    return { credited: true };
-  } catch (error) {
-    if (error instanceof Error && error.message === "ALREADY_VALIDATED") {
-      return { credited: false };
+    // Même ordre de verrouillage que la fusion, qui peut déplacer un jeton vers une autre carte.
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('loyalty-merge:' || $1::text))", [
+      opts.organizationId,
+    ]);
+    if (validation.expiresAt <= Date.now()) throw new Error("SCAN_EXPIRED");
+    const previous = await client.query(
+      `SELECT 1 FROM "LoyaltyEvent" WHERE id = $1 AND "organizationId" = $2`,
+      [validation.eventId, opts.organizationId],
+    );
+    if (previous.rows.length) throw new Error("ALREADY_VALIDATED");
+    const locked = await lockCardByToken(client, opts.organizationId, validation.token);
+    if (!locked) throw new Error("CARD_NOT_FOUND");
+    if (locked.id !== validation.cardId || locked.customerId !== validation.customerId) {
+      throw new Error("CARD_CHANGED");
     }
+    card = locked;
+
+    // L'identifiant signé devient la clé primaire de l'événement. Un rejeu ne peut ni
+    // insérer un second passage ni déclencher à nouveau la récompense ou sa notification.
+    const saved = await insertVisitAndMaybeReward(client, {
+      eventId: validation.eventId,
+      organizationId: opts.organizationId,
+      cardId: card.id,
+      customerId: card.customerId,
+      points: 1,
+      validatedBy: opts.actorId,
+      note: "Passage",
+      program,
+      actorName: opts.actorName,
+    });
+    await writeAuditLog({
+      organizationId: opts.organizationId,
+      actorId: opts.actorId,
+      actorName: opts.actorName,
+      entityType: "LoyaltyEvent",
+      entityId: saved.eventId,
+      action: "LOYALTY_VISIT_CONFIRMED",
+      after: { customerId: card.customerId, visits: saved.visits },
+      client,
+    });
+    const progress = await loadCardProgress(card.id, opts.organizationId, client, program);
+    if (!progress) throw new Error("CARD_NOT_FOUND");
+    result = {
+      ...progress,
+      customerId: card.customerId,
+      customerName: `${progress.firstName} ${progress.lastName}`.trim(),
+      promoCode: saved.rewardId ? shortCardCode(card.publicToken) : null,
+      validatedAt: saved.validatedAt.toISOString(),
+    };
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
     throw error;
   } finally {
-    if (!finished) {
-      try {
-        await client.query("ROLLBACK");
-      } catch {
-        /* transaction déjà terminée */
-      }
-    }
     client.release();
   }
+  notifyGoogleWallet(card.publicToken);
+  return result;
 }
 
 export async function adjustLoyaltyVisit(opts: {
   organizationId: string;
   customerId: string;
-  delta: 1 | -1;
+  delta: -1;
   reason: string;
   actorId: string;
   actorName?: string | null;
@@ -677,14 +667,14 @@ export async function adjustLoyaltyVisit(opts: {
 async function adjustLoyaltyVisitOnce(opts: {
   organizationId: string;
   customerId: string;
-  delta: 1 | -1;
+  delta: -1;
   reason: string;
   actorId: string;
   actorName?: string | null;
 }): Promise<{ visits: number }> {
   const reason = opts.reason.trim();
   if (reason.length < 3) throw new Error("REASON_REQUIRED");
-  if (opts.delta !== 1 && opts.delta !== -1) throw new Error("INVALID_DELTA");
+  if (opts.delta !== -1) throw new Error("INVALID_DELTA");
 
   const program = await getVisitProgram(opts.organizationId);
   if (!program.active) throw new Error("PROGRAM_DISABLED");
@@ -719,9 +709,6 @@ async function adjustLoyaltyVisitOnce(opts: {
       organizationId: opts.organizationId,
       cardId: card.rows[0].id,
       customerId,
-      appointmentId: null,
-      serviceId: null,
-      amount: 0,
       points: opts.delta,
       validatedBy: opts.actorId,
       note: reason,
@@ -742,229 +729,6 @@ async function adjustLoyaltyVisitOnce(opts: {
     finished = true;
     notifyGoogleWallet(card.rows[0].publicToken);
     return { visits: saved.visits };
-  } catch (error) {
-    if (!finished) {
-      try {
-        await client.query("ROLLBACK");
-      } catch {
-        /* transaction déjà terminée */
-      }
-    }
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-const CREDIT_CODE_MS = 10 * 60 * 1000;
-
-function hashCreditCode(organizationId: string, code: string) {
-  return createHash("sha256").update(`${organizationId}:${code}`).digest("hex");
-}
-
-export async function issueLoyaltyCreditCode(opts: {
-  organizationId: string;
-  actorId: string;
-}): Promise<{ code: string; expiresAt: string }> {
-  const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
-  const expiresAt = new Date(Date.now() + CREDIT_CODE_MS);
-  await pool.query(
-    `INSERT INTO "LoyaltyCreditCode" (id, "organizationId", "codeHash", "expiresAt", "createdBy")
-     VALUES ($1, $2, $3, $4, $5)`,
-    [newLoyaltyId("lcode"), opts.organizationId, hashCreditCode(opts.organizationId, code), expiresAt, opts.actorId],
-  );
-  return { code, expiresAt: expiresAt.toISOString() };
-}
-
-export async function listCreditServices(organizationId: string) {
-  const { rows } = await pool.query<{ id: string; name: string }>(
-    `SELECT id, name FROM "Service"
-     WHERE "organizationId" = $1 AND active = true
-     ORDER BY name ASC
-     LIMIT 80`,
-    [organizationId],
-  );
-  return rows;
-}
-
-/** Passage exceptionnel : code institut à usage unique, jamais le QR public. */
-export async function creditVisitWithInstituteCode(opts: {
-  organizationId: string;
-  rawToken: string;
-  code: string;
-  serviceId: string;
-  actorId: string;
-  actorName?: string | null;
-}): Promise<CardProgress & { customerName: string; serviceName: string }> {
-  const program = await getVisitProgram(opts.organizationId);
-  if (!program.active) throw new Error("PROGRAM_DISABLED");
-  const token = await resolveLoyaltyCardToken(opts.organizationId, opts.rawToken);
-  const digits = opts.code.replace(/\s/g, "");
-  if (!/^\d{6}$/.test(digits)) throw new Error("CODE_INVALID");
-
-  const client = await pool.connect();
-  let finished = false;
-  try {
-    await client.query("BEGIN");
-    const locked = await client.query<{ id: string }>(
-      `SELECT id FROM "LoyaltyCreditCode"
-       WHERE "organizationId" = $1 AND "codeHash" = $2 AND "usedAt" IS NULL AND "expiresAt" > NOW()
-       ORDER BY "createdAt" DESC
-       LIMIT 1
-       FOR UPDATE`,
-      [opts.organizationId, hashCreditCode(opts.organizationId, digits)],
-    );
-    if (!locked.rows[0]) throw new Error("CODE_INVALID");
-    const consumed = await client.query<{ id: string }>(
-      `UPDATE "LoyaltyCreditCode" SET "usedAt" = NOW() WHERE id = $1 AND "usedAt" IS NULL RETURNING id`,
-      [locked.rows[0].id],
-    );
-    if (!consumed.rows[0]) throw new Error("CODE_INVALID");
-
-    const lockedCard = await lockCardByToken(client, opts.organizationId, token);
-    if (!lockedCard) throw new Error("CARD_NOT_FOUND");
-    const card = { rows: [lockedCard] };
-
-    const service = await client.query<{ id: string; name: string; price: string }>(
-      `SELECT id, name, price::text AS price FROM "Service"
-       WHERE id = $1 AND "organizationId" = $2 AND active = true`,
-      [opts.serviceId, opts.organizationId],
-    );
-    if (!service.rows[0]) throw new Error("SERVICE_NOT_FOUND");
-    if (
-      program.eligibleServiceIds.length > 0 &&
-      !program.eligibleServiceIds.includes(service.rows[0].id)
-    ) {
-      throw new Error("SERVICE_NOT_ELIGIBLE");
-    }
-
-    const saved = await insertVisitAndMaybeReward(client, {
-      organizationId: opts.organizationId,
-      cardId: card.rows[0].id,
-      customerId: card.rows[0].customerId,
-      appointmentId: null,
-      serviceId: service.rows[0].id,
-      amount: service.rows[0].price,
-      points: 1,
-      validatedBy: opts.actorId,
-      note: "Passage exceptionnel",
-      program,
-      actorName: opts.actorName,
-    });
-    await writeAuditLog({
-      organizationId: opts.organizationId,
-      actorId: opts.actorId,
-      actorName: opts.actorName,
-      entityType: "LoyaltyEvent",
-      entityId: saved.eventId,
-      action: "LOYALTY_VISIT_ADJUSTED",
-      before: { customerId: card.rows[0].customerId },
-      after: {
-        visits: saved.visits,
-        serviceId: service.rows[0].id,
-        creditCodeId: consumed.rows[0].id,
-        customerId: card.rows[0].customerId,
-      },
-      client,
-    });
-    await client.query("COMMIT");
-    finished = true;
-    notifyGoogleWallet(token);
-    const progress = await loadCardProgress(card.rows[0].id, opts.organizationId);
-    if (!progress) throw new Error("CARD_NOT_FOUND");
-    return {
-      ...progress,
-      customerName: `${card.rows[0].firstName} ${card.rows[0].lastName}`.trim(),
-      serviceName: service.rows[0].name,
-    };
-  } catch (error) {
-    if (!finished) {
-      try {
-        await client.query("ROLLBACK");
-      } catch {
-        /* transaction déjà terminée */
-      }
-    }
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-/** +1 passage depuis l'accueil, avec le code de la carte. Même calcul que les autres visites. */
-export async function creditVisitByCardCode(opts: {
-  organizationId: string;
-  rawToken: string;
-  serviceId?: string | null;
-  actorId: string;
-  actorName?: string | null;
-}): Promise<CardProgress & { customerName: string; serviceName: string; promoCode: string | null }> {
-  const program = await getVisitProgram(opts.organizationId);
-  if (!program.active) throw new Error("PROGRAM_DISABLED");
-  const token = await resolveLoyaltyCardToken(opts.organizationId, opts.rawToken);
-  const serviceId = opts.serviceId?.trim() || null;
-
-  const client = await pool.connect();
-  let finished = false;
-  try {
-    await client.query("BEGIN");
-    const locked = await lockCardByToken(client, opts.organizationId, token);
-    if (!locked) throw new Error("CARD_NOT_FOUND");
-    const card = { rows: [locked] };
-
-    let service: { id: string; name: string; price: string } | null = null;
-    if (serviceId) {
-      const found = await client.query<{ id: string; name: string; price: string }>(
-        `SELECT id, name, price::text AS price FROM "Service"
-         WHERE id = $1 AND "organizationId" = $2 AND active = true`,
-        [serviceId, opts.organizationId],
-      );
-      if (!found.rows[0]) throw new Error("SERVICE_NOT_FOUND");
-      if (program.eligibleServiceIds.length > 0 && !program.eligibleServiceIds.includes(found.rows[0].id)) {
-        throw new Error("SERVICE_NOT_ELIGIBLE");
-      }
-      service = found.rows[0];
-    }
-
-    const saved = await insertVisitAndMaybeReward(client, {
-      organizationId: opts.organizationId,
-      cardId: card.rows[0].id,
-      customerId: card.rows[0].customerId,
-      appointmentId: null,
-      serviceId: service?.id ?? null,
-      amount: service?.price ?? 0,
-      points: 1,
-      validatedBy: opts.actorId,
-      note: "Passage",
-      program,
-      actorName: opts.actorName,
-    });
-    await writeAuditLog({
-      organizationId: opts.organizationId,
-      actorId: opts.actorId,
-      actorName: opts.actorName,
-      entityType: "LoyaltyEvent",
-      entityId: saved.eventId,
-      action: "LOYALTY_VISIT_ADJUSTED",
-      before: { customerId: card.rows[0].customerId },
-      after: {
-        visits: saved.visits,
-        serviceId: service?.id ?? null,
-        customerId: card.rows[0].customerId,
-      },
-      client,
-    });
-    await client.query("COMMIT");
-    finished = true;
-    notifyGoogleWallet(token);
-    const progress = await loadCardProgress(card.rows[0].id, opts.organizationId);
-    if (!progress) throw new Error("CARD_NOT_FOUND");
-    return {
-      ...progress,
-      customerName: `${card.rows[0].firstName} ${card.rows[0].lastName}`.trim(),
-      serviceName: service?.name ?? "Passage",
-      promoCode: saved.rewardId ? shortCardCode(token) : null,
-    };
   } catch (error) {
     if (!finished) {
       try {

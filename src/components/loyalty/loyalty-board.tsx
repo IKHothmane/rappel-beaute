@@ -2,25 +2,24 @@
 import { MetricCard } from "@/components/ui/metric-card";
 import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import {
   Activity,
-  Camera,
   Check,
   CheckCircle2,
   Gift,
   ExternalLink,
   Percent,
-  Plus,
   Target,
   TrendingUp,
   Users,
 } from "lucide-react";
 import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
-import { loyaltyCardUrl, loyaltyJoinUrl, loyaltyPreviewUrl } from "@/lib/loyalty/public-origin";
-import type { LoyaltyScanPreview } from "@/components/loyalty/loyalty-scan-page";
+import { loyaltyJoinUrl, loyaltyPreviewUrl } from "@/lib/loyalty/public-origin";
+import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
+import { LoyaltyIdentityVerification } from "@/components/loyalty/loyalty-identity-verification";
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { memberInitials } from "@/components/loyalty/loyalty-helpers";
 import { LoyaltyBrandCard } from "@/components/loyalty/loyalty-brand-card";
@@ -30,6 +29,8 @@ import {
   type LoyaltyMergeOutcome,
   type MergeDialogSource,
 } from "@/components/loyalty/loyalty-merge-dialog";
+import { useCurrentUser } from "@/components/auth/session-provider";
+import { readRecentScans, rememberRecentScan } from "@/components/loyalty/recent-scans";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { updateProgram } from "@/modules/loyalty/service";
@@ -55,19 +56,6 @@ function isAnonymousPhone(phone: string | null | undefined) {
 function phoneLabel(phone: string | null | undefined) {
   if (!phone || isAnonymousPhone(phone)) return "Sans téléphone";
   return phone;
-}
-
-async function createQrDetector() {
-  const Native = (
-    window as unknown as {
-      BarcodeDetector?: new (opts: { formats: string[] }) => {
-        detect: (source: HTMLVideoElement) => Promise<{ rawValue?: string }[]>;
-      };
-    }
-  ).BarcodeDetector;
-  if (Native) return new Native({ formats: ["qr_code"] });
-  const mod = await import("barcode-detector/ponyfill");
-  return new mod.BarcodeDetector({ formats: ["qr_code"] });
 }
 
 function activityWhen(iso: string) {
@@ -103,33 +91,39 @@ function clientStatus(card: VisitCardRow) {
 export function LoyaltyBoard({
   orgName,
   canWrite,
+  canScan,
+  mergeEnabled,
   program,
   visitCards,
   journal = [],
   membersThisMonth = 0,
+  visitCardsTotal,
+  onShowMore,
   onRefresh,
 }: {
   orgName: string;
   canWrite: boolean;
+  canScan: boolean;
+  mergeEnabled: boolean;
   program: LoyaltyProgramConfig | null;
   visitCards: VisitCardRow[];
   journal?: LoyaltyJournalItem[];
   membersThisMonth?: number;
+  /** Nombre total de cartes de l'institut (peut dépasser les cartes chargées). */
+  visitCardsTotal?: number;
+  /** Charge davantage de cartes ; absent quand la limite maximale est atteinte. */
+  onShowMore?: () => Promise<void> | void;
   onRefresh: () => void;
 }) {
   const { toast } = useToast();
   const router = useRouter();
+  const { organizationId } = useCurrentUser();
+  const [showMoreBusy, setShowMoreBusy] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [joinImage, setJoinImage] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string | null>(null);
   const [previewOrigin, setPreviewOrigin] = useState<string | null>(null);
   const [joinBusy, setJoinBusy] = useState(false);
-  const [passageToken, setPassageToken] = useState("");
-  const [passageBusy, setPassageBusy] = useState(false);
-  const [passageNote, setPassageNote] = useState<string | null>(null);
-  const [cameraOn, setCameraOn] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const onScanRef = useRef<(value: string) => void>(() => {});
   const [scannedIds, setScannedIds] = useState<string[]>([]);
   const [mergeSource, setMergeSource] = useState<MergeDialogSource | null>(null);
   const [pendingSelectId, setPendingSelectId] = useState<string | null>(null);
@@ -169,12 +163,34 @@ export function LoyaltyBoard({
   const filled = threshold ? Math.min(threshold, Math.max(0, cycleVisits)) : 0;
   const stampCount = threshold && threshold > 0 ? threshold : 0;
   const focusedAnonymous = Boolean(focused && isAnonymousPhone(focused.phone));
-  const mergeAvailability = useLoyaltyMergeAvailability(canWrite && focusedAnonymous);
+  const mergeAvailability = useLoyaltyMergeAvailability(mergeEnabled && canWrite && focusedAnonymous);
 
   function rememberScan(customerId: string) {
     setPendingSelectId(null);
     setFocusId(customerId);
     setScannedIds((prev) => [customerId, ...prev.filter((id) => id !== customerId)]);
+    rememberRecentScan(organizationId, customerId);
+  }
+
+  // L'ordre des clientes scannées survit au rechargement : lu après le montage (jamais
+  // pendant le rendu serveur) puis fusionné derrière les cartes déjà repérées comme fraîches.
+  useEffect(() => {
+    const stored = readRecentScans(organizationId);
+    if (stored.length === 0) return;
+    setScannedIds((prev) => {
+      const merged = [...prev, ...stored.filter((id) => !prev.includes(id))];
+      return merged.length === prev.length ? prev : merged;
+    });
+  }, [organizationId]);
+
+  async function handleShowMore() {
+    if (!onShowMore || showMoreBusy) return;
+    setShowMoreBusy(true);
+    try {
+      await onShowMore();
+    } finally {
+      setShowMoreBusy(false);
+    }
   }
 
   const scannedList = useMemo(() => {
@@ -190,11 +206,13 @@ export function LoyaltyBoard({
   }, [visitCards, scannedIds]);
 
   const stats = useMemo(() => {
-    const totalCards = visitCards.length;
+    const loadedCards = visitCards.length;
+    // Le total serveur peut dépasser les cartes chargées (liste plafonnée).
+    const totalCards = Math.max(loadedCards, visitCardsTotal ?? 0);
     const totalVisits = visitCards.reduce((sum, card) => sum + card.visits, 0);
     const withVisits = visitCards.filter((card) => card.visits > 0).length;
     const rewards = visitCards.filter((card) => Boolean(card.promoCode)).length;
-    const engagement = totalCards > 0 ? Math.round((withVisits / totalCards) * 100) : 0;
+    const engagement = loadedCards > 0 ? Math.round((withVisits / loadedCards) * 100) : 0;
     const previousMembers = Math.max(0, totalCards - membersThisMonth);
     const monthGrowthPct =
       membersThisMonth > 0 && previousMembers > 0
@@ -203,8 +221,9 @@ export function LoyaltyBoard({
           ? 100
           : null;
     return { totalCards, totalVisits, withVisits, rewards, engagement, monthGrowthPct };
-  }, [visitCards, membersThisMonth]);
+  }, [visitCards, visitCardsTotal, membersThisMonth]);
 
+  const hasMoreCards = typeof visitCardsTotal === "number" && visitCardsTotal > visitCards.length;
   const recentClients = scannedList.slice(0, 8);
   const recentActivity = useMemo(() => {
     if (journal.length > 0) {
@@ -307,92 +326,8 @@ export function LoyaltyBoard({
     };
   }, [toast]);
 
-  async function addPassage() {
-    if (!passageToken.trim()) return;
-    setPassageBusy(true);
-    setPassageNote(null);
-    try {
-      const res = await fetch("/api/loyalty/credit-code/", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add", token: passageToken }),
-      });
-      const body = (await res.json()) as {
-        error?: string;
-        customerName?: string;
-        visits?: number;
-        visitsPerReward?: number;
-        promoCode?: string | null;
-      };
-      if (!res.ok) throw new Error(body.error || "Passage impossible.");
-      const matched = visitCards.find((card) => card.customerName === body.customerName);
-      if (matched) rememberScan(matched.customerId);
-      if (body.promoCode) {
-        const rewardText = rewardSummary(program);
-        setPassageNote(
-          `${body.customerName} · code promo ${body.promoCode} activé (${rewardText}). Compteur remis à 0.`,
-        );
-        toast(`Code promo ${body.promoCode} activé · ${rewardText}`, "success");
-      } else {
-        const limit = body.visitsPerReward ?? threshold ?? 0;
-        const shown = limit > 0 ? visitCycle(body.visits ?? 0, limit) : (body.visits ?? 0);
-        setPassageNote(`${body.customerName} · ${shown} / ${limit || "—"}`);
-      }
-      setPassageToken("");
-      onRefresh();
-    } catch (error) {
-      toast(error instanceof Error ? error.message : "Passage impossible.", "error");
-    } finally {
-      setPassageBusy(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!cameraOn) return;
-    const video = videoRef.current;
-    if (!video || !navigator.mediaDevices?.getUserMedia) return;
-    let stopped = false;
-    let stream: MediaStream | null = null;
-    void (async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        if (stopped) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        video.srcObject = stream;
-        await video.play();
-        const detector = await createQrDetector();
-        const tick = async () => {
-          if (stopped) return;
-          const codes = await detector.detect(video).catch(() => []);
-          const value = codes[0]?.rawValue;
-          if (value) {
-            stopped = true;
-            onScanRef.current(value);
-            return;
-          }
-          window.requestAnimationFrame(() => void tick());
-        };
-        void tick();
-      } catch {
-        if (!stopped) {
-          setCameraOn(false);
-          toast("Caméra indisponible. Saisissez le code de la carte.", "error");
-        }
-      }
-    })();
-    return () => {
-      stopped = true;
-      stream?.getTracks().forEach((track) => track.stop());
-    };
-  }, [cameraOn, toast]);
-
   function selectCustomer(card: VisitCardRow) {
     rememberScan(card.customerId);
-    const code = (card.cardCode || card.promoCode || (card.publicToken ? shortCardCode(card.publicToken) : "")).trim();
-    if (code) setPassageToken(code);
   }
 
   // Après une fusion, la fiche survivante n'est dans la liste qu'après le rafraîchissement : on la sélectionne alors.
@@ -423,43 +358,6 @@ export function LoyaltyBoard({
     onRefresh();
     // Le bouton « Ajouter le numéro » a disparu : on ramène le focus sur la carte affichée.
     window.requestAnimationFrame(() => document.getElementById("loyalty-active-card")?.focus());
-  }
-
-  async function resolveScannedCode(raw: string) {
-    const upper = raw.toUpperCase();
-    const matched = upper.match(/RBLOY_[A-Z2-9]+/);
-    const token = matched?.[0] ?? upper.trim();
-    setCameraOn(false);
-    if (!token) return;
-    if (token.startsWith("RBJOIN_")) {
-      toast("Ce code est le QR de l'institut. Scannez la carte cliente.", "error");
-      return;
-    }
-    try {
-      const res = await fetch(`/api/loyalty/scan/?token=${encodeURIComponent(token)}`);
-      const body = (await res.json()) as LoyaltyScanPreview & { error?: string };
-      if (!res.ok) throw new Error(body.error || "Code introuvable.");
-      rememberScan(body.customerId);
-      setPassageToken(shortCardCode(body.token));
-      toast(`${body.customerName} sélectionnée.`, "success");
-      onRefresh();
-    } catch (error) {
-      setPassageToken(token);
-      toast(error instanceof Error ? error.message : "Code introuvable.", "error");
-    }
-  }
-
-  onScanRef.current = (value: string) => {
-    void resolveScannedCode(value);
-  };
-
-  function startCamera() {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      document.getElementById("loyalty-passage-code")?.focus();
-      toast("Caméra indisponible. Saisissez le code de la carte.", "error");
-      return;
-    }
-    setCameraOn(true);
   }
 
   async function saveRewardConfig() {
@@ -532,14 +430,14 @@ export function LoyaltyBoard({
           {
             label: "Passages enregistrés",
             value: stats.totalVisits.toLocaleString("fr-FR"),
-            hint: "Tous cycles confondus",
+            hint: hasMoreCards ? `Sur ${visitCards.length} cartes chargées` : "Tous cycles confondus",
             hintTone: "muted",
             icon: Activity,
           },
           {
             label: "Récompenses offertes",
             value: stats.rewards.toLocaleString("fr-FR"),
-            hint: "Codes promo actifs",
+            hint: hasMoreCards ? `Sur ${visitCards.length} cartes chargées` : "Codes promo actifs",
             hintTone: "muted",
             icon: Gift,
           },
@@ -553,7 +451,7 @@ export function LoyaltyBoard({
           {
             label: "Taux d’engagement",
             value: `${stats.engagement} %`,
-            hint: "Clientes avec passages",
+            hint: hasMoreCards ? `Sur ${visitCards.length} cartes chargées` : "Clientes avec passages",
             hintTone: "muted",
             icon: TrendingUp,
           },
@@ -565,8 +463,31 @@ export function LoyaltyBoard({
         })}
       </section>
 
-      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
-          <div className="space-y-5 xl:col-span-8">
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12 xl:grid-rows-[auto_1fr]">
+          <div className="xl:col-span-4 xl:col-start-9 xl:row-start-1">
+            {canScan ? (
+              <LoyaltyScanPage
+                key={organizationId}
+                onIdentified={rememberScan}
+                onConfirmed={(customerId) => {
+                  rememberScan(customerId);
+                  onRefresh();
+                }}
+              />
+            ) : (
+              <p className="rounded-[26px] border border-[#F1E8EC] bg-white p-5 text-sm text-[#765E6B] shadow-sm">
+                Le scan de carte est r?serv? au personnel autoris?.
+              </p>
+            )}
+            {canWrite && (
+              <LoyaltyIdentityVerification
+                key={organizationId}
+                onApproved={onRefresh}
+                focusedCustomer={focused ? { id: focused.customerId, name: focused.customerName } : undefined}
+              />
+            )}
+          </div>
+          <div className="space-y-5 xl:col-span-8 xl:col-start-1 xl:row-span-2 xl:row-start-1">
                 <section
                   id="loyalty-active-card"
                   tabIndex={-1}
@@ -609,15 +530,15 @@ export function LoyaltyBoard({
                       }
                     />
 
-                    {focused?.publicToken || joinUrl ? (
+                    {joinUrl ? (
                       <a
-                        href={loyaltyPreviewUrl(focused?.publicToken ? loyaltyCardUrl(focused.publicToken) : joinUrl!, previewOrigin)}
+                        href={loyaltyPreviewUrl(joinUrl, previewOrigin)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#981C52] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#7d1643]"
                       >
                         <ExternalLink size={17} aria-hidden />
-                        Voir la page cliente
+                        Ouvrir la page d’inscription
                       </a>
                     ) : null}
 
@@ -715,7 +636,7 @@ export function LoyaltyBoard({
                         open={cfgOpen}
                         onClose={() => { if (!cfgBusy) setCfgOpen(false); }}
                         title="Récompense choisie par l’institut"
-                        description={`À ${cfgVisits || "5"} prestations, le code de la cliente devient un code promo.`}
+                        description={`À ${cfgVisits || "5"} passages confirm?s, le code de la cliente devient un code promo.`}
                       >
                       <form
                         className="space-y-4 rounded-2xl border border-[#F0DDE6] bg-[#FFF9FB] p-4 sm:p-5"
@@ -727,7 +648,7 @@ export function LoyaltyBoard({
                         <div className="grid gap-3 sm:grid-cols-2">
                           <label className="block space-y-1">
                             <span className="text-[11px] font-semibold uppercase tracking-wide text-[#765E6B]">
-                              Prestations requises
+                              Passages requis
                             </span>
                             <input
                               type="number"
@@ -813,8 +734,17 @@ export function LoyaltyBoard({
             <section className="overflow-hidden rounded-[26px] border border-[#F0E7EB] bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-[#F4EDF0] px-5 py-4">
                 <h2 className="text-lg font-bold text-[#30202C]">Clientes fidélité</h2>
-                <span className="rounded-full bg-[#FCE9F4] px-2.5 py-0.5 text-[11px] font-bold text-[#981C52]">
-                  {scannedList.length}
+                <span
+                  className="rounded-full bg-[#FCE9F4] px-2.5 py-0.5 text-[11px] font-bold text-[#981C52]"
+                  aria-label={
+                    hasMoreCards
+                      ? `${scannedList.length} clientes affichées sur ${visitCardsTotal}`
+                      : `${scannedList.length} clientes`
+                  }
+                >
+                  {hasMoreCards
+                    ? `${scannedList.length.toLocaleString("fr-FR")} / ${(visitCardsTotal ?? 0).toLocaleString("fr-FR")}`
+                    : scannedList.length}
                 </span>
               </div>
               {scannedList.length === 0 ? (
@@ -873,7 +803,7 @@ export function LoyaltyBoard({
                               </span>
                             </td>
                             <td className="px-5 py-3 text-[#765E6B]">
-                              {activityWhen(card.lastActivityAt || card.createdAt)}
+                              {card.lastVisitAt ? activityWhen(card.lastVisitAt) : "—"}
                             </td>
                           </tr>
                         );
@@ -882,86 +812,28 @@ export function LoyaltyBoard({
                   </table>
                 </div>
               )}
+              {hasMoreCards && onShowMore ? (
+                <div className="flex justify-center border-t border-[#F4EDF0] px-5 py-4">
+                  <button
+                    type="button"
+                    onClick={() => void handleShowMore()}
+                    disabled={showMoreBusy}
+                    aria-busy={showMoreBusy}
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#981C52] bg-white px-5 text-sm font-semibold text-[#981C52] transition hover:bg-[#FFF4F8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#981C52] disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+                  >
+                    {showMoreBusy ? "Chargement…" : "Afficher plus"}
+                    {!showMoreBusy ? (
+                      <span className="text-xs font-medium text-[#765E6B]">
+                        ({scannedList.length.toLocaleString("fr-FR")} sur {(visitCardsTotal ?? 0).toLocaleString("fr-FR")})
+                      </span>
+                    ) : null}
+                  </button>
+                </div>
+              ) : null}
             </section>
           </div>
 
-          <aside className="space-y-5 xl:col-span-4">
-              <div className="grid gap-4">
-                <section className="rounded-[26px] border border-[#F1E8EC] bg-white p-5 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFF1F6] text-[#981C52]">
-                      <Camera size={22} aria-hidden />
-                    </span>
-                    <div>
-                      <h3 className="text-base font-bold text-[#30202C]">Scanner</h3>
-                      <p className="text-sm text-[#765E6B]">QR carte cliente</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void startCamera()}
-                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#981C52] text-sm font-semibold text-white transition hover:bg-[#7d1643]"
-                  >
-                    <Camera size={18} aria-hidden />
-                    Ouvrir la caméra
-                  </button>
-                  {cameraOn ? (
-                    <video
-                      id="loyalty-camera"
-                      ref={videoRef}
-                      className="mt-3 aspect-video w-full rounded-xl bg-black object-cover"
-                      muted
-                      playsInline
-                      autoPlay
-                    />
-                  ) : null}
-                </section>
-
-                <section className="rounded-[26px] border border-[#D7F0E2] bg-[#F3FBF6] p-5 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#1B7F4E]">
-                      <Plus size={22} />
-                    </span>
-                    <div>
-                      <h3 className="text-base font-bold text-[#30202C]">Ajouter un passage</h3>
-                      <p className="text-sm text-[#765E6B]">
-                        Au {threshold ?? program?.visitsPerReward ?? 5}e passage → code promo client
-                      </p>
-                    </div>
-                  </div>
-                  {canWrite ? (
-                    <form
-                      className="mt-4 grid gap-3"
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        void addPassage();
-                      }}
-                    >
-                      <input
-                        id="loyalty-passage-code"
-                        className={cn(field, "h-12 text-base")}
-                        value={passageToken}
-                        onChange={(event) => setPassageToken(event.target.value)}
-                        placeholder="Code de la carte"
-                        autoComplete="off"
-                      />
-                      {passageNote ? (
-                        <p className="text-sm font-semibold text-[#1B7F4E]">{passageNote}</p>
-                      ) : null}
-                      <button
-                        type="submit"
-                        disabled={passageBusy || !passageToken.trim()}
-                        className="h-12 rounded-xl bg-[#1B7F4E] text-sm font-semibold text-white disabled:opacity-50"
-                      >
-                        Valider le passage
-                      </button>
-                    </form>
-                  ) : (
-                    <p className="mt-3 text-sm text-[#765E6B]">Réservé à l&apos;équipe autorisée.</p>
-                  )}
-                </section>
-              </div>
-
+          <aside className="xl:col-span-4 xl:col-start-9 xl:row-start-2">
             <section className="rounded-[26px] border border-[#F0E7EB] bg-white p-5 shadow-sm">
               <h3 className="text-base font-bold text-[#30202C]">Dernières activités</h3>
               <ul className="mt-4 space-y-4">

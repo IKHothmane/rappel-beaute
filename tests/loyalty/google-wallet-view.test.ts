@@ -44,7 +44,7 @@ describe("aperçu Google Wallet", () => {
       "object.textModulesData['progress']",
     );
 
-    const barcode = { type: "QR_CODE", value: "E4FB", alternateText: "E4FB" };
+    const barcode = { type: "QR_CODE", value: "RBLOY_AB23CDEF", alternateText: "CDEF" };
     const updated = genericObjectUpdate({
       cardTitle: { defaultValue: { language: "fr-FR", value: "Institut Royal" } },
       subheader: { defaultValue: { language: "fr-FR", value: "Carte fidélité" } },

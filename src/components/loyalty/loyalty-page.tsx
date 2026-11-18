@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import { LoyaltyBoard } from "@/components/loyalty/loyalty-board";
+import { readRecentScans } from "@/components/loyalty/recent-scans";
 import { type VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import {
   type LoyaltyFilter,
@@ -81,7 +82,11 @@ const LEVEL_TABS: { id: LoyaltyFilter; label: (k: LoyaltyKpis) => string }[] = [
   { id: "ready", label: (k) => `Prêts (${k.rewardsReady})` },
 ];
 
-export function LoyaltyPageView() {
+const CARDS_LIMIT_DEFAULT = 200;
+const CARDS_LIMIT_STEP = 200;
+const CARDS_LIMIT_MAX = 1000;
+
+export function LoyaltyPageView({ mergeEnabled }: { mergeEnabled: boolean }) {
   const { toast } = useToast();
   const user = useCurrentUser();
   const searchParams = useSearchParams();
@@ -135,6 +140,8 @@ export function LoyaltyPageView() {
   const [rewardValue, setRewardValue] = useState("50");
 
   const [visitCards, setVisitCards] = useState<VisitCardRow[]>([]);
+  const [visitCardsTotal, setVisitCardsTotal] = useState(0);
+  const [cardsLimit, setCardsLimit] = useState(CARDS_LIMIT_DEFAULT);
   const [customers, setCustomers] = useState<{ id: string; name: string }[]>([]);
   const [services, setServices] = useState<{ id: string; name: string }[]>([]);
   const [pkgCustomerId, setPkgCustomerId] = useState("");
@@ -156,9 +163,18 @@ export function LoyaltyPageView() {
   // L'erreur n'est signalée qu'une fois tant qu'elle persiste.
   const errorShownRef = useRef(false);
 
+  // Limite de cartes demandée : lue via une ref pour que le sondage (12 s) et les
+  // rechargements d'action conservent la limite choisie sans recréer `refresh`.
+  const cardsLimitRef = useRef(CARDS_LIMIT_DEFAULT);
+  const organizationIdRef = useRef(user.organizationId);
+  organizationIdRef.current = user.organizationId;
+
   const loadDashboard = useCallback(async () => {
     try {
-      const dash = await getLoyaltyDashboard();
+      const dash = await getLoyaltyDashboard({
+        limit: cardsLimitRef.current,
+        pin: readRecentScans(organizationIdRef.current),
+      });
       setKpis(dash.kpis);
       setRanking(
         dash.ranking.map((r) => ({
@@ -171,6 +187,9 @@ export function LoyaltyPageView() {
       setJournal(dash.journal ?? []);
       setBirthdays(dash.birthdays ?? []);
       setVisitCards(dash.visitCards ?? []);
+      setVisitCardsTotal(
+        typeof dash.visitCardsTotal === "number" ? dash.visitCardsTotal : (dash.visitCards ?? []).length,
+      );
       setMadPerPoint(String(dash.program.madPerPoint));
       setBronzeMin(String(dash.program.bronzeMin));
       setSilverMin(String(dash.program.silverMin));
@@ -220,6 +239,14 @@ export function LoyaltyPageView() {
 
   const handleBoardRefresh = useCallback(() => {
     void refresh();
+  }, [refresh]);
+
+  const handleShowMore = useCallback(async () => {
+    const next = Math.min(CARDS_LIMIT_MAX, cardsLimitRef.current + CARDS_LIMIT_STEP);
+    if (next === cardsLimitRef.current) return;
+    cardsLimitRef.current = next;
+    setCardsLimit(next);
+    await refresh();
   }, [refresh]);
 
   useEffect(() => {
@@ -389,8 +416,12 @@ export function LoyaltyPageView() {
       <LoyaltyBoard
         orgName={user.orgName}
         canWrite={canWrite}
+        canScan={canRedeemLoyalty(user.role)}
+        mergeEnabled={mergeEnabled}
         program={program}
         visitCards={visitCards}
+        visitCardsTotal={visitCardsTotal}
+        onShowMore={cardsLimit < CARDS_LIMIT_MAX ? handleShowMore : undefined}
         journal={journal}
         membersThisMonth={kpis?.membersThisMonth ?? 0}
         onRefresh={handleBoardRefresh}

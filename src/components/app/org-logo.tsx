@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { BrandLogo } from "@/components/www/BrandLogo";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +12,9 @@ type Props = {
 };
 
 export function OrgLogo({ url, name, size = 40, className }: Props) {
-  if (url) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  if (url && url !== failedUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -19,6 +22,8 @@ export function OrgLogo({ url, name, size = 40, className }: Props) {
         alt={name}
         width={size}
         height={size}
+        onLoad={() => setFailedUrl(null)}
+        onError={() => setFailedUrl(url)}
         className={cn("shrink-0 rounded-lg bg-[#FBF4F6] object-contain", className)}
         style={{ width: size, height: size }}
       />

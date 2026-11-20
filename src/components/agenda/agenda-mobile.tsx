@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { appointmentWhatsappMessage, whatsappHref } from "@/components/customers/customers-helpers";
+import { SendCustomerWhatsAppButton } from "@/components/customers/send-customer-whatsapp-button";
+import { canSendWhatsapp } from "@/lib/rbac";
 import type { AgendaView, Appointment, AppointmentStatus } from "@/types/appointment";
 import type { CustomerDetail } from "@/types/customer";
 import type { StaffAgendaContext } from "@/types/staff";
@@ -514,14 +516,18 @@ function MobileAptRow({
   const muted = apt.status === "CANCELLED" || apt.status === "NO_SHOW";
   const surface = agendaAppointmentSurface(color, muted, apt.status);
   const tone = statusTone(apt);
-  const phone = customer?.phone?.trim() || "";
+  const phone = customer?.id === apt.customerId ? customer.phone?.trim() ?? "" : "";
   const noShows = customer?.noShowCount ?? 0;
   const vip = customer?.segment === "VIP";
   const visits = customer?.visits ?? 0;
   const isNew = customer?.status === "NEW" || visits <= 1;
   const transitions = STATUS_TRANSITIONS[apt.status] ?? [];
   const firstName = apt.customerName.trim().split(/\s+/)[0] || "Cliente";
-  const waHref = phone
+  const canSendReminder =
+    canSendWhatsapp(user.role) &&
+    (apt.status === "PENDING" || apt.status === "CONFIRMED") &&
+    new Date(apt.startAt).getTime() > Date.now();
+  const waHref = /^\d{8,15}$/.test(phone.replace(/\D/g, ""))
     ? whatsappHref(
         phone,
         firstName,
@@ -532,7 +538,7 @@ function MobileAptRow({
           startAt: apt.startAt,
         }),
       )
-    : "/whatsapp/";
+    : null;
 
   return (
     <div className="flex items-start gap-2">
@@ -629,15 +635,25 @@ function MobileAptRow({
               </a>
             ) : null}
             <div className="grid grid-cols-2 gap-1.5">
-              <a
-                href={waHref}
-                target={phone ? "_blank" : undefined}
-                rel={phone ? "noreferrer" : undefined}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[11px] font-bold text-white"
-              >
-                <MessageCircle size={16} />
-                WhatsApp
-              </a>
+              {canSendReminder ? (
+                <SendCustomerWhatsAppButton
+                  appointmentId={apt.id}
+                  className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[11px] font-bold text-white disabled:opacity-50"
+                >
+                  <MessageCircle size={16} aria-hidden />
+                  Rappel WhatsApp
+                </SendCustomerWhatsAppButton>
+              ) : waHref ? (
+                <a
+                  href={waHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[11px] font-bold text-white"
+                >
+                  <MessageCircle size={16} aria-hidden />
+                  WhatsApp
+                </a>
+              ) : null}
               {apt.paymentState === "paid" ? (
                 <span className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-emerald-50 text-[11px] font-bold text-emerald-800">
                   Payé
@@ -652,6 +668,14 @@ function MobileAptRow({
                 </Link>
               )}
             </div>
+            {canSendReminder && waHref ? (
+              <a href={waHref} target="_blank" rel="noreferrer" className="text-center text-[11px] font-semibold text-emerald-800">
+                Ouvrir WhatsApp pour envoyer manuellement
+              </a>
+            ) : null}
+            {!waHref ? (
+              <p className="text-center text-[11px] text-ink/65">Numéro indisponible pour l’envoi manuel.</p>
+            ) : null}
             <button type="button" className="text-center text-[11px] font-semibold text-primary" onClick={onOpenDetail}>
               Fiche complète
             </button>

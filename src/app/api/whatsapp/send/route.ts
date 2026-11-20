@@ -3,9 +3,11 @@ import type { NextRequest } from "next/server";
 import { requireFeatureWriteLimited, stripOrganizationId } from "@/lib/auth/api-guard";
 import { canSendWhatsapp } from "@/lib/rbac";
 import {
-  isAutomaticWhatsAppEnabled,
+  AppointmentWhatsAppError,
+  canSendDirectWhatsAppViaMeta,
+  META_WHATSAPP_MANUAL_SEND_UNAVAILABLE,
+  sendAppointmentWhatsAppReminder,
   sendDirectWhatsAppTask,
-  WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
 } from "@/lib/whatsapp/send";
 import { createAIWhatsAppTask } from "@/lib/db/whatsapp";
 import { WHATSAPP_TASK_TYPES, type WhatsAppTaskType } from "@/types/whatsapp";
@@ -24,8 +26,7 @@ function allowsStaffOptInBypass(type: WhatsAppTaskType): boolean {
 
 /**
  * POST /api/whatsapp/send
- * Envoi via Meta Cloud API — désactivé par défaut (V1 manuel).
- * Réactivation : WHATSAPP_DIRECT_SEND_ENABLED=true + token Meta.
+ * Envoi via Meta Cloud API pour les instituts autorisés.
  */
 export const POST = tenantRoute(async function POST(request: NextRequest) {
   const auth = await requireFeatureWriteLimited(request, "whatsapp");
@@ -34,28 +35,46 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Accès refusé pour l'envoi WhatsApp." }, { status: 403 });
   }
 
-  if (!isAutomaticWhatsAppEnabled()) {
-    return NextResponse.json(
-      {
-        error: WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
-        disabled: true,
-        mode: "manual_wa_me",
-      },
-      { status: 503 },
-    );
+  if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
+    return NextResponse.json({ error: "Un corps JSON est requis." }, { status: 415 });
   }
 
   try {
-    const raw = stripOrganizationId((await request.json()) as Record<string, unknown>);
+    const body: unknown = await request.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Corps JSON invalide." }, { status: 400 });
+    }
+    const raw = stripOrganizationId(body as Record<string, unknown>);
     const actor = {
       id: auth.session.id,
       name: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
     };
 
+    if (raw.type === "APPOINTMENT_REMINDER") {
+      const appointmentId = typeof raw.appointmentId === "string" ? raw.appointmentId.trim() : "";
+      if (!appointmentId || appointmentId.length > 128) {
+        return NextResponse.json({ error: "Identifiant de rendez-vous invalide." }, { status: 400 });
+      }
+      try {
+        return NextResponse.json(await sendAppointmentWhatsAppReminder(auth.session.organizationId, appointmentId, actor));
+      } catch (error) {
+        if (error instanceof AppointmentWhatsAppError) throw error;
+        console.error("[POST /api/whatsapp/send] Erreur de traitement du rappel", error instanceof Error ? error.name : "UnknownError");
+        return NextResponse.json({ error: "Impossible de confirmer le traitement du rappel WhatsApp." }, { status: 500 });
+      }
+    }
+
+    if (!canSendDirectWhatsAppViaMeta(auth.session.organizationId)) {
+      return NextResponse.json(
+        { error: META_WHATSAPP_MANUAL_SEND_UNAVAILABLE, disabled: true, mode: "manual_wa_me" },
+        { status: 503 },
+      );
+    }
+
     // Cas 1 : Envoi d'une tâche existante
     if (typeof raw.taskId === "string" && raw.taskId.trim()) {
       const taskId = raw.taskId.trim();
-      const result = await sendDirectWhatsAppTask(auth.session.organizationId, taskId, actor);
+      const result = await sendDirectWhatsAppTask(auth.session.organizationId, taskId, actor, "meta");
       return NextResponse.json(result);
     }
 
@@ -95,10 +114,17 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
       auth.session.organizationId,
       createdTask.id,
       actor,
+      "meta",
     );
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof AppointmentWhatsAppError) {
+      return NextResponse.json(
+        { error: error.message, ...(error.disabled ? { disabled: true } : {}) },
+        { status: error.status },
+      );
+    }
     const code = error instanceof Error ? error.message : "";
     if (code === "CUSTOMER_NOT_FOUND") {
       return NextResponse.json({ error: "Cliente introuvable." }, { status: 404 });

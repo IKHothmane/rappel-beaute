@@ -74,15 +74,16 @@ export async function sendWhatsAppMessageViaTwilio(options: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body,
+        signal: AbortSignal.timeout(10_000),
       },
     );
     const data = (await response.json()) as { sid?: string; message?: string; code?: number };
     if (!response.ok || !data.sid) {
-      return { ok: false, error: twilioErrorMessage(data.message, response.status) };
+      return { ok: false, error: twilioErrorMessage(data.message, response.status), acceptanceUnknown: response.ok || response.status >= 500 };
     }
     return { ok: true, messageId: data.sid };
   } catch (error) {
     const message = error instanceof Error ? error.message : "réseau";
-    return { ok: false, error: `Échec d'envoi vers Twilio : ${message}` };
+    return { ok: false, error: `Échec d'envoi vers Twilio : ${message}`, acceptanceUnknown: true };
   }
 }

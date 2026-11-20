@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { appointmentWhatsappMessage, whatsappHref } from "@/components/customers/customers-helpers";
+import { SendCustomerWhatsAppButton } from "@/components/customers/send-customer-whatsapp-button";
+import { canSendWhatsapp } from "@/lib/rbac";
 import type { Appointment, AppointmentStatus, CreateAppointmentInput } from "@/types/appointment";
 import type { CustomerDetail } from "@/types/customer";
 import {
@@ -254,11 +256,15 @@ export function AppointmentDetails({
     .join("\n");
   const selectedProductIds = new Set(consoLines.map((line) => line.productId).filter(Boolean));
   const canDeductStock = consoLines.some((line) => line.productId && line.quantity > 0);
-  const phone = customer?.phone?.trim() || "";
+  const phone = customer?.id === appointment.customerId ? customer.phone?.trim() ?? "" : "";
   const noShows = customer?.noShowCount ?? 0;
   const vip = customer?.segment === "VIP";
+  const canSendReminder =
+    canSendWhatsapp(user.role) &&
+    (appointment.status === "PENDING" || appointment.status === "CONFIRMED") &&
+    new Date(appointment.startAt).getTime() > Date.now();
   const firstName = appointment.customerName.trim().split(/\s+/)[0] || "Cliente";
-  const waHref = phone
+  const waHref = /^\d{8,15}$/.test(phone.replace(/\D/g, ""))
     ? whatsappHref(
         phone,
         firstName,
@@ -269,7 +275,7 @@ export function AppointmentDetails({
           startAt: appointment.startAt,
         }),
       )
-    : "/whatsapp/";
+    : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -689,17 +695,27 @@ export function AppointmentDetails({
           </span>
           <CalendarClock size={14} className="text-emerald-700" />
         </div>
-        <p className="text-[12px] leading-relaxed text-ink/70">
-          Message prêt à l&apos;envoi avec l&apos;horaire du soin.
-        </p>
-        <a
-          href={waHref}
-          target={phone ? "_blank" : undefined}
-          rel={phone ? "noreferrer" : undefined}
-          className="flex items-center justify-center gap-2 rounded-lg bg-emerald-700 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
-        >
-          {phone ? "Ouvrir WhatsApp" : "Ouvrir le module WhatsApp"}
-        </a>
+        {canSendReminder ? (
+          <SendCustomerWhatsAppButton
+            key={appointment.id}
+            appointmentId={appointment.id}
+            className="flex items-center justify-center gap-2 rounded-lg bg-emerald-700 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+          >
+            Envoyer le rappel WhatsApp
+          </SendCustomerWhatsAppButton>
+        ) : null}
+        {waHref ? (
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+          >
+            Ouvrir WhatsApp pour envoyer manuellement
+          </a>
+        ) : (
+          <p className="text-xs text-emerald-800">Numéro indisponible pour l’envoi manuel.</p>
+        )}
       </div>
     </div>
   );

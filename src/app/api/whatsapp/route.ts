@@ -13,9 +13,9 @@ import {
   skipWhatsAppTask,
 } from "@/lib/db/whatsapp";
 import {
-  isAutomaticWhatsAppEnabled,
+  canSendDirectWhatsAppViaMeta,
+  META_WHATSAPP_MANUAL_SEND_UNAVAILABLE,
   sendDirectWhatsAppTask,
-  WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
 } from "@/lib/whatsapp/send";
 import { canSendWhatsapp } from "@/lib/rbac";
 import { parseWhatsAppAction, parseWhatsAppListQuery } from "@/lib/validation/whatsapp";
@@ -64,10 +64,10 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
     }
 
     if (parsed.action === "sendDirect") {
-      if (!isAutomaticWhatsAppEnabled()) {
+      if (!canSendDirectWhatsAppViaMeta(auth.session.organizationId)) {
         return NextResponse.json(
           {
-            error: WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE,
+            error: META_WHATSAPP_MANUAL_SEND_UNAVAILABLE,
             disabled: true,
             mode: "manual_wa_me",
           },
@@ -79,6 +79,7 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
           auth.session.organizationId,
           parsed.taskId,
           actor,
+          "meta",
         );
         return NextResponse.json({ ok: true, task, messageId });
       } catch (sendErr) {

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { normalizePhoneForWa } from "@/lib/db/whatsapp";
 import { writeAuditLog } from "@/lib/db/audit";
 import type { WhatsAppTaskItem } from "@/types/whatsapp";
@@ -9,10 +10,12 @@ import {
   twilioCredentialsPresent,
 } from "@/lib/whatsapp/twilio";
 import { pool } from "@/lib/db/pool";
+import { withTransaction } from "@/lib/db/transaction";
+import { formatBusinessDate, formatBusinessTime } from "@/lib/time/business-timezone";
 
 export type SendWhatsAppApiResult =
   | { ok: true; messageId: string; rawResponse?: unknown }
-  | { ok: false; error: string; details?: unknown };
+  | { ok: false; error: string; details?: unknown; acceptanceUnknown?: boolean };
 
 /**
  * Envoi automatique via Meta Cloud API.
@@ -42,7 +45,7 @@ export function getMetaWhatsAppConfig(): {
 } {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || null;
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN?.trim() || null;
-  const apiVersion = process.env.WHATSAPP_API_VERSION?.trim() || "v19.0";
+  const apiVersion = process.env.WHATSAPP_API_VERSION?.trim() || "v24.0";
 
   return {
     isConfigured: Boolean(phoneNumberId && accessToken),
@@ -50,6 +53,14 @@ export function getMetaWhatsAppConfig(): {
     accessToken,
     apiVersion,
   };
+}
+
+export const META_WHATSAPP_MANUAL_SEND_UNAVAILABLE =
+  "L’envoi direct via WhatsApp Business (Meta) n’est pas configuré pour cet institut.";
+
+export function canSendDirectWhatsAppViaMeta(organizationId: string): boolean {
+  const allowedOrganizations = process.env.WHATSAPP_META_ORG_IDS?.split(",").map((id) => id.trim());
+  return Boolean(allowedOrganizations?.includes(organizationId) && getMetaWhatsAppConfig().isConfigured);
 }
 
 /**
@@ -107,16 +118,20 @@ function formatMetaErrorMessage(status: number, errObj: Record<string, unknown> 
  * Envoie un message texte directement à un destinataire via l'API officielle WhatsApp Cloud de Meta.
  * Ne fait AUCUNE ouverture de navigateur ni de WhatsApp Web.
  */
-export async function sendWhatsAppMessageViaMetaApi(options: {
-  toPhone: string;
-  message: string;
-  previewUrl?: boolean;
-}): Promise<SendWhatsAppApiResult> {
+type MetaSendOptions = { toPhone: string } & (
+  | { message: string; previewUrl?: boolean }
+  | { template: { name: string; language: string; bodyParameters: string[] } }
+);
+
+export async function sendWhatsAppMessageViaMetaApi(options: MetaSendOptions): Promise<SendWhatsAppApiResult> {
   // Garde-fou : aucun appel graph.facebook.com/.../messages tant que le flag est off
   if (!isWhatsAppDirectSendEnabled()) {
     return { ok: false, error: WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE };
   }
+  return requestMetaWhatsAppMessage(options);
+}
 
+async function requestMetaWhatsAppMessage(options: MetaSendOptions): Promise<SendWhatsAppApiResult> {
   const config = getMetaWhatsAppConfig();
   if (!config.isConfigured || !config.phoneNumberId || !config.accessToken) {
     return {
@@ -136,15 +151,25 @@ export async function sendWhatsAppMessageViaMetaApi(options: {
 
   const endpoint = `https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/messages`;
 
+  const content = "template" in options ? {
+    type: "template",
+    template: {
+      name: options.template.name,
+      language: { code: options.template.language },
+      components: [{
+        type: "body",
+        parameters: options.template.bodyParameters.map((text) => ({ type: "text", text })),
+      }],
+    },
+  } : {
+    type: "text",
+    text: { preview_url: options.previewUrl ?? false, body: options.message },
+  };
   const payload = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
     to: normalizedPhone,
-    type: "text",
-    text: {
-      preview_url: options.previewUrl ?? false,
-      body: options.message,
-    },
+    ...content,
   };
 
   try {
@@ -155,24 +180,30 @@ export async function sendWhatsAppMessageViaMetaApi(options: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10_000),
     });
 
     const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
 
     if (!res.ok) {
-      const friendlyError = formatMetaErrorMessage(res.status, data);
-      console.error("[WhatsApp Cloud API Send Error]", res.status, data);
+      const metaCode = (data?.error as { code?: number } | undefined)?.code;
+      const friendlyError = "template" in options && [132000, 132001, 132012, 132015, 132016].includes(Number(metaCode))
+        ? "Le modèle de rappel WhatsApp n’est pas disponible ou ses paramètres ne correspondent pas au modèle Meta."
+        : formatMetaErrorMessage(res.status, data);
+      console.error("[WhatsApp Cloud API Send Error]", res.status, metaCode);
       return {
         ok: false,
         error: friendlyError,
         details: data,
+        acceptanceUnknown: res.status >= 500,
       };
     }
 
     const messages = (data?.messages as { id: string }[]) || [];
-    const messageId = messages[0]?.id || "unknown_wamid";
-
-    console.log(`[WhatsApp Cloud API] ✅ Message envoyé avec succès à ${normalizedPhone} (wamid: ${messageId})`);
+    const messageId = messages[0]?.id;
+    if (!messageId) {
+      return { ok: false, error: "Meta n’a pas confirmé la prise en charge du message.", acceptanceUnknown: true };
+    }
 
     return {
       ok: true,
@@ -185,8 +216,130 @@ export async function sendWhatsAppMessageViaMetaApi(options: {
     return {
       ok: false,
       error: `Échec d'envoi réseau vers Meta: ${message}`,
+      acceptanceUnknown: true,
     };
   }
+}
+
+export class AppointmentWhatsAppError extends Error {
+  constructor(message: string, public readonly status: number, public readonly disabled = false) {
+    super(message);
+  }
+}
+
+const REMINDER_SOURCE = "agenda_direct";
+const REMINDER_RESERVED_SOURCE = "agenda_direct_reserved";
+const REMINDER_FAILED_SOURCE = "agenda_direct_failed";
+const REMINDER_UNCONFIRMED = "Impossible de confirmer l’envoi du rappel. Vérifiez la conversation WhatsApp avant tout nouvel envoi.";
+
+export async function sendAppointmentWhatsAppReminder(
+  organizationId: string,
+  appointmentId: string,
+  actor: { id: string; name?: string | null },
+): Promise<{ alreadySent: boolean; messageId?: string }> {
+  const enabledOrganizations = process.env.WHATSAPP_APPOINTMENT_ORG_IDS?.split(",").map((id) => id.trim());
+  const templateName = process.env.WHATSAPP_APPOINTMENT_TEMPLATE_NAME?.trim();
+  const language = process.env.WHATSAPP_APPOINTMENT_TEMPLATE_LANGUAGE?.trim() || "fr";
+  if (!enabledOrganizations?.includes(organizationId) || !templateName || !getMetaWhatsAppConfig().isConfigured) {
+    throw new AppointmentWhatsAppError("L’envoi direct des rappels WhatsApp n’est pas configuré pour cet institut.", 503, true);
+  }
+
+  const reservation = await withTransaction(async (client) => {
+    const { rows: [appointment] } = await client.query<{
+      customerId: string; startAt: Date; status: string; phone: string | null;
+    }>(
+      `SELECT a."customerId", a."startAt", a.status, c.phone
+       FROM "Appointment" a
+       JOIN "Customer" c ON c.id = a."customerId" AND c."organizationId" = a."organizationId"
+       WHERE a.id = $1 AND a."organizationId" = $2 AND c."deletedAt" IS NULL
+       FOR SHARE OF a, c`,
+      [appointmentId, organizationId],
+    );
+    if (!appointment) throw new AppointmentWhatsAppError("Rendez-vous introuvable.", 404);
+    if (!["PENDING", "CONFIRMED"].includes(appointment.status) || appointment.startAt.getTime() <= Date.now()) {
+      throw new AppointmentWhatsAppError("Ce rendez-vous ne peut plus faire l’objet d’un rappel.", 409);
+    }
+    const phone = appointment.phone && normalizePhoneForWa(appointment.phone);
+    if (!phone || phone.length < 8 || phone.length > 15) {
+      throw new AppointmentWhatsAppError("Le numéro WhatsApp de cette cliente est invalide ou manquant.", 400);
+    }
+
+    const date = formatBusinessDate(appointment.startAt);
+    const time = formatBusinessTime(appointment.startAt);
+    const message = `Bonjour, nous vous rappelons votre rendez-vous le ${date} à ${time}. Merci de nous prévenir en cas d’empêchement.`;
+    // Même clé que le rappel planifié. L'insertion et le verrou sur la tâche sérialisent les deux chemins.
+    const day = appointment.startAt.toISOString().slice(0, 10);
+    const key = `wa:reminder:${appointmentId}:${day}`;
+    const { rows: [newTask] } = await client.query<{ id: string }>(
+      `INSERT INTO "WhatsAppTask" (
+         id, "organizationId", "customerId", "appointmentId", type, status,
+         "messageSnapshot", "phoneSnapshot", "scheduledFor", "idempotencyKey", "attributionSource", "updatedAt"
+       ) VALUES ($1, $2, $3, $4, 'APPOINTMENT_REMINDER', 'PENDING', $5, $6, NOW(), $7, $8, NOW())
+       ON CONFLICT ("organizationId", "idempotencyKey") DO NOTHING RETURNING id`,
+      [`wtask_${randomUUID()}`, organizationId, appointment.customerId, appointmentId, message, phone, key, REMINDER_SOURCE],
+    );
+    const { rows: [task] } = await client.query<{ id: string; status: string; attributionSource: string | null }>(
+      `SELECT id, status, "attributionSource" FROM "WhatsAppTask"
+       WHERE "organizationId" = $1 AND "idempotencyKey" = $2 FOR UPDATE`,
+      [organizationId, key],
+    );
+    if (!task) throw new AppointmentWhatsAppError("Impossible de préparer le rappel WhatsApp.", 409);
+    if (task.status === "SENT") return null;
+    if (task.attributionSource === REMINDER_RESERVED_SOURCE) throw new AppointmentWhatsAppError(REMINDER_UNCONFIRMED, 409);
+    if (task.status !== "PENDING" && task.attributionSource !== REMINDER_FAILED_SOURCE) {
+      throw new AppointmentWhatsAppError("Ce rappel WhatsApp est déjà clôturé.", 409);
+    }
+
+    // Réserver avant l’appel réseau. Une interruption laisse le rappel inexécutable par le cron.
+    await client.query(
+      `UPDATE "WhatsAppTask"
+       SET status = 'SKIPPED', "attributionSource" = $3, "updatedAt" = NOW()
+       WHERE id = $1 AND "organizationId" = $2`,
+      [task.id, organizationId, REMINDER_RESERVED_SOURCE],
+    );
+    await writeAuditLog({
+      client, organizationId, actorId: actor.id, actorName: actor.name,
+      entityType: "WhatsAppTask", entityId: task.id, action: "WHATSAPP_DIRECT_RESERVED",
+    });
+    return {
+      taskId: task.id, phone, date, time, message,
+      plannedTask: !newTask && task.status === "PENDING" ? { source: task.attributionSource } : null,
+    };
+  });
+  if (!reservation) return { alreadySent: true };
+
+  const sent = await requestMetaWhatsAppMessage({
+    toPhone: reservation.phone,
+    template: { name: templateName, language, bodyParameters: [reservation.date, reservation.time] },
+  });
+  await withTransaction(async (client) => {
+    const restorePlanned = !sent.ok && !sent.acceptanceUnknown ? reservation.plannedTask : null;
+    const status = sent.ok ? "SENT" : restorePlanned ? "PENDING" : "SKIPPED";
+    const source = sent.ok ? REMINDER_SOURCE
+      : restorePlanned ? restorePlanned.source
+      : sent.acceptanceUnknown ? REMINDER_RESERVED_SOURCE : REMINDER_FAILED_SOURCE;
+    const { rowCount } = await client.query(
+      `UPDATE "WhatsAppTask"
+       SET status = $3::"WhatsAppTaskStatus", "attributionSource" = $4,
+           "sentAt" = CASE WHEN $3 = 'SENT' THEN NOW() ELSE NULL END,
+           "sentById" = CASE WHEN $3 = 'SENT' THEN $5 ELSE NULL END,
+           "messageSnapshot" = COALESCE($7, "messageSnapshot"),
+           "phoneSnapshot" = COALESCE($8, "phoneSnapshot"), "updatedAt" = NOW()
+       WHERE id = $1 AND "organizationId" = $2 AND "attributionSource" = $6`,
+      [reservation.taskId, organizationId, status, source, actor.id, REMINDER_RESERVED_SOURCE,
+        sent.ok ? reservation.message : null, sent.ok ? reservation.phone : null],
+    );
+    if (rowCount !== 1) throw new AppointmentWhatsAppError(REMINDER_UNCONFIRMED, 409);
+    await writeAuditLog({
+      client, organizationId, actorId: actor.id, actorName: actor.name,
+      entityType: "WhatsAppTask", entityId: reservation.taskId,
+      action: sent.ok ? "WHATSAPP_DIRECT_SENT"
+        : sent.acceptanceUnknown ? "WHATSAPP_SEND_UNCONFIRMED" : "WHATSAPP_AGENDA_SEND_FAILED",
+      after: sent.ok ? { messageId: sent.messageId, directApi: true } : undefined,
+    });
+  });
+  if (!sent.ok) throw new AppointmentWhatsAppError(sent.acceptanceUnknown ? REMINDER_UNCONFIRMED : sent.error, 502);
+  return { alreadySent: false, messageId: sent.messageId };
 }
 
 /**
@@ -197,99 +350,75 @@ export async function sendDirectWhatsAppTask(
   organizationId: string,
   taskId: string,
   actor: { id: string; name?: string | null },
+  provider: "automatic" | "meta" = "automatic",
 ): Promise<{ task: WhatsAppTaskItem; messageId: string }> {
-  if (!isAutomaticWhatsAppEnabled()) {
+  if (provider === "meta" && !canSendDirectWhatsAppViaMeta(organizationId)) {
+    throw new Error(META_WHATSAPP_MANUAL_SEND_UNAVAILABLE);
+  }
+  if (provider === "automatic" && !isAutomaticWhatsAppEnabled()) {
     throw new Error(WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE);
   }
 
-  const instituteFrom = twilioCredentialsPresent()
+  const useTwilio = provider === "automatic" && twilioCredentialsPresent();
+  const instituteFrom = useTwilio
     ? await getOrganizationWhatsappFrom(organizationId)
     : null;
-  if (twilioCredentialsPresent() && !formatTwilioWhatsAppFrom(instituteFrom)) {
+  if (useTwilio && !formatTwilioWhatsAppFrom(instituteFrom)) {
     throw new Error(TWILIO_FROM_MISSING_MESSAGE);
   }
 
-  const { rows } = await pool.query<{
-    id: string;
-    organizationId: string;
-    customerId: string;
-    phoneSnapshot: string;
-    messageSnapshot: string;
-    status: string;
-  }>(
-    `SELECT id, "organizationId", "customerId", "phoneSnapshot", "messageSnapshot", status
-     FROM "WhatsAppTask"
-     WHERE id = $1 AND "organizationId" = $2`,
-    [taskId, organizationId],
-  );
+  const { sendResult, phoneSnapshot, reminderUnconfirmed } = await withTransaction(async (client) => {
+    const { rows: [task] } = await client.query<{
+      phoneSnapshot: string; messageSnapshot: string; status: string; type: string;
+    }>(
+      `SELECT "phoneSnapshot", "messageSnapshot", status, type FROM "WhatsAppTask"
+       WHERE id = $1 AND "organizationId" = $2 FOR UPDATE`,
+      [taskId, organizationId],
+    );
+    if (!task) throw new Error("Tâche WhatsApp introuvable.");
+    if (task.status !== "PENDING") throw new Error("Cette tâche WhatsApp n’est plus en attente.");
 
-  const taskRow = rows[0];
-  if (!taskRow) {
-    throw new Error("Tâche WhatsApp introuvable.");
+    const delivery = useTwilio
+      ? await sendWhatsAppMessageViaTwilio({
+          toPhone: task.phoneSnapshot, message: task.messageSnapshot, fromPhone: instituteFrom || "",
+        })
+      : await requestMetaWhatsAppMessage({ toPhone: task.phoneSnapshot, message: task.messageSnapshot });
+    const reminderUnconfirmed = !delivery.ok && Boolean(delivery.acceptanceUnknown) && task.type === "APPOINTMENT_REMINDER";
+
+    if (delivery.ok) {
+      await client.query(
+        `UPDATE "WhatsAppTask"
+         SET status = 'SENT', "sentAt" = NOW(), "sentById" = $3, "updatedAt" = NOW()
+         WHERE id = $1 AND "organizationId" = $2`,
+        [taskId, organizationId, actor.id],
+      );
+    } else if (reminderUnconfirmed) {
+      await client.query(
+        `UPDATE "WhatsAppTask" SET status = 'SKIPPED', "attributionSource" = $3, "updatedAt" = NOW()
+         WHERE id = $1 AND "organizationId" = $2`,
+        [taskId, organizationId, REMINDER_RESERVED_SOURCE],
+      );
+    }
+    return { sendResult: delivery, phoneSnapshot: task.phoneSnapshot, reminderUnconfirmed };
+  });
+
+  if (sendResult.ok) {
+    await pool.query(
+      `UPDATE "CampaignRecipient" r SET status = 'SENT', "updatedAt" = NOW()
+       FROM "Campaign" c WHERE c.id = r."campaignId" AND c."organizationId" = $2
+         AND r."whatsappTaskId" = $1 AND r.status = 'PENDING'`,
+      [taskId, organizationId],
+    ).catch(() => null);
   }
-
-  const sendResult = twilioCredentialsPresent()
-    ? await sendWhatsAppMessageViaTwilio({
-        toPhone: taskRow.phoneSnapshot,
-        message: taskRow.messageSnapshot,
-        fromPhone: instituteFrom || "",
-      })
-    : await sendWhatsAppMessageViaMetaApi({
-        toPhone: taskRow.phoneSnapshot,
-        message: taskRow.messageSnapshot,
-      });
-
-  if (!sendResult.ok) {
-    // Enregistrement de l'échec dans l'audit log pour traçabilité
-    await writeAuditLog({
-      organizationId,
-      actorId: actor.id,
-      actorName: actor.name,
-      entityType: "WhatsAppTask",
-      entityId: taskId,
-      action: "WHATSAPP_SEND_FAILED",
-      after: {
-        error: sendResult.error,
-        toPhone: taskRow.phoneSnapshot,
-      },
-    }).catch(() => null);
-
-    throw new Error(sendResult.error);
-  }
-
-  // Mise à jour de la tâche en DB avec statut SENT
-  await pool.query(
-    `UPDATE "WhatsAppTask"
-     SET status = 'SENT'::"WhatsAppTaskStatus",
-         "sentAt" = NOW(),
-         "sentById" = $3,
-         "updatedAt" = NOW()
-     WHERE id = $1 AND "organizationId" = $2`,
-    [taskId, organizationId, actor.id],
-  );
-
-  // Mise à jour récipient de campagne si existant
-  await pool.query(
-    `UPDATE "CampaignRecipient"
-     SET status = 'SENT'::"CampaignRecipientStatus", "updatedAt" = NOW()
-     WHERE "whatsappTaskId" = $1 AND status = 'PENDING'::"CampaignRecipientStatus"`,
-    [taskId],
-  ).catch(() => null);
-
-  // Audit log de succès
   await writeAuditLog({
-    organizationId,
-    actorId: actor.id,
-    actorName: actor.name,
-    entityType: "WhatsAppTask",
-    entityId: taskId,
-    action: "WHATSAPP_DIRECT_SENT",
-    after: {
-      messageId: sendResult.messageId,
-      toPhone: taskRow.phoneSnapshot,
-      directApi: true,
-    },
+    organizationId, actorId: actor.id, actorName: actor.name, entityType: "WhatsAppTask", entityId: taskId,
+    action: sendResult.ok ? "WHATSAPP_DIRECT_SENT"
+      : reminderUnconfirmed ? "WHATSAPP_SEND_UNCONFIRMED" : "WHATSAPP_SEND_FAILED",
+    after: sendResult.ok
+      ? { messageId: sendResult.messageId, toPhone: phoneSnapshot, directApi: true }
+      : { error: sendResult.error, toPhone: phoneSnapshot },
   }).catch(() => null);
+  if (!sendResult.ok) throw new Error(reminderUnconfirmed ? REMINDER_UNCONFIRMED : sendResult.error);
 
   // Récupérer la tâche complète mise à jour
   const { getWhatsAppTaskById } = await import("@/lib/db/whatsapp");

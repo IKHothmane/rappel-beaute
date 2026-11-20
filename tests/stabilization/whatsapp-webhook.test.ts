@@ -196,6 +196,7 @@ describe("WhatsApp Meta Cloud API — Envoi direct sans WhatsApp Web", () => {
   it("envoie avec succès via fetch vers Meta Graph API", async () => {
     process.env.WHATSAPP_PHONE_NUMBER_ID = "123456789";
     process.env.WHATSAPP_ACCESS_TOKEN = "EAABtest_token";
+    vi.stubEnv("WHATSAPP_API_VERSION", "");
 
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: true,
@@ -218,9 +219,10 @@ describe("WhatsApp Meta Cloud API — Envoi direct sans WhatsApp Web", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const calledUrl = fetchMock.mock.calls[0][0];
-    expect(calledUrl).toContain("graph.facebook.com/v19.0/123456789/messages");
+    expect(calledUrl).toContain("graph.facebook.com/v24.0/123456789/messages");
 
     fetchMock.mockRestore();
+    vi.unstubAllEnvs();
   });
 
   it("traduit l'erreur 131030 (numéro non autorisé en dev) en message compréhensible", async () => {

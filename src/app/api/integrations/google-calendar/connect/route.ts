@@ -6,7 +6,8 @@ import {
   googleAuthorizeUrl,
   googleRedirectUri,
   isGoogleCalendarConfigured,
-  signGoogleOAuthState,
+  setGoogleCalendarCookie,
+  startGoogleOAuthFlow,
 } from "@/lib/google/calendar";
 import { tenantRoute } from "@/lib/http/route-scope";
 
@@ -37,12 +38,17 @@ export const GET = tenantRoute(async function GET(request: NextRequest) {
   }
 
   const redirectUri = googleRedirectUri(request.nextUrl.origin);
-  const state = signGoogleOAuthState({
-    purpose: "gcal",
+  // State à usage unique, lié au navigateur par un cookie court (nonce + verifier PKCE).
+  const flow = startGoogleOAuthFlow({
     orgId: auth.session.organizationId,
     userId: auth.session.id,
     redirectUri,
   });
 
-  return NextResponse.redirect(googleAuthorizeUrl({ redirectUri, state }));
+  const res = NextResponse.redirect(
+    googleAuthorizeUrl({ redirectUri, state: flow.state, codeChallenge: flow.codeChallenge }),
+  );
+  res.headers.set("Cache-Control", "no-store");
+  setGoogleCalendarCookie(res, flow.cookieValue);
+  return res;
 });

@@ -4,6 +4,13 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Store } from "lucide-react";
+import {
+  GoogleButton,
+  googleLoginErrorMessage,
+  stripQueryParam,
+  useAuthConfig,
+} from "@/components/auth/google-auth";
+import { loginDestination, useInstituteSignupHref } from "@/components/auth/auth-ui";
 
 function LoginFormFields() {
   const searchParams = useSearchParams();
@@ -13,11 +20,30 @@ function LoginFormFields() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const nextPath = searchParams.get("next");
+  const { phoneLoginEnabled, loaded: configLoaded } = useAuthConfig();
+  const signupHref = useInstituteSignupHref();
+  // Libellé actuel tant que la configuration n'est pas lue : le champ est le même élément dans les deux cas.
+  const emailOnly = !phoneLoginEnabled;
+  const identifierLabel = emailOnly ? "Adresse e-mail" : "E-mail professionnel";
 
   useEffect(() => {
-    const fromEmail =
-      searchParams.get("identifier")?.trim() || searchParams.get("email")?.trim() || "";
-    if (fromEmail) setEmail(fromEmail);
+    const message = googleLoginErrorMessage(searchParams.get("google_error"));
+    if (message) {
+      setGoogleError(message);
+      stripQueryParam("google_error");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    // `identifier` (ancien lien d'inscription par téléphone) n'est repris que si le téléphone est un identifiant.
+    const identifier = configLoaded && phoneLoginEnabled ? searchParams.get("identifier")?.trim() : "";
+    const fromEmail = identifier || searchParams.get("email")?.trim() || "";
+    if (fromEmail) setEmail((current) => current || fromEmail);
+  }, [searchParams, configLoaded, phoneLoginEnabled]);
+
+  useEffect(() => {
     // Un secret n'est jamais lu depuis l'URL : on efface seulement ceux d'anciens liens.
     if (searchParams.has("password") || searchParams.has("pin")) {
       const url = new URL(window.location.href);
@@ -33,6 +59,7 @@ function LoginFormFields() {
     if (loading) return;
     setError(null);
     setLoading(true);
+    let redirecting = false;
 
     try {
       const res = await fetch("/api/auth/login/", {
@@ -43,20 +70,10 @@ function LoginFormFields() {
       });
 
       if (res.ok) {
-        const data = (await res.json().catch(() => null)) as {
-          user?: { scope?: string; accountType?: string };
-          mustChangePassword?: boolean;
-        } | null;
-        const isPlatform =
-          data?.user?.scope === "platform" || data?.user?.accountType === "PLATFORM";
-        // `auth=1` contourne un éventuel 308 mis en cache sur /dashboard/?__host=app.
-        if (isPlatform) {
-          window.location.replace("/dashboard/?__host=admin&auth=1");
-        } else if (data?.mustChangePassword) {
-          window.location.replace("/changer-mot-de-passe/?__host=app&auth=1");
-        } else {
-          window.location.replace("/dashboard/?__host=app&auth=1");
-        }
+        const data = (await res.json().catch(() => null)) as Parameters<typeof loginDestination>[0];
+        // Le bouton reste bloqué jusqu'au changement de page.
+        window.location.replace(loginDestination(data));
+        redirecting = true;
         return;
       }
 
@@ -76,33 +93,51 @@ function LoginFormFields() {
     } catch {
       setError("Connexion impossible. Vérifiez votre connexion et réessayez.");
     } finally {
-      setLoading(false);
+      if (!redirecting) setLoading(false);
     }
   }
 
   return (
     <div className="rb-login-content">
       <h1>
-        Connectez-<em>vous</em>
+        Bienvenue sur <em>Rappel Beauty</em>
       </h1>
       <p className="rb-login-intro">
         Accédez à votre espace et gérez votre institut en toute simplicité.
       </p>
-      <form className="rb-login-form" onSubmit={onSubmit}>
+      {googleError && (
+        <p className="rb-login-error rb-login-google-error" role="alert">
+          {googleError}
+        </p>
+      )}
+      <GoogleButton
+        intent="login"
+        next={nextPath}
+        className="rb-login-google"
+        after={
+          <div className="rb-login-or" aria-hidden="true">
+            <span>ou</span>
+          </div>
+        }
+      >
+        Continuer avec Google
+      </GoogleButton>
+      <form className="rb-login-form" method="post" action="/connexion/" onSubmit={onSubmit}>
         <div>
           <label className="sr-only" htmlFor="email">
-            E-mail professionnel
+            {identifierLabel}
           </label>
           <div className="rb-login-input">
             <Mail aria-hidden="true" />
             <input
-              autoComplete="username"
+              autoComplete={emailOnly ? "email" : "username"}
               id="email"
               name="email"
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="E-mail professionnel"
+              placeholder={identifierLabel}
               required
-              type="text"
+              type={emailOnly ? "email" : "text"}
+              inputMode={emailOnly ? "email" : undefined}
               maxLength={254}
               value={email}
               disabled={loading}
@@ -170,9 +205,9 @@ function LoginFormFields() {
       </form>
       <div className="rb-login-signup">
         <p>Vous n’avez pas encore de compte ?</p>
-        <Link href="/professionnel/">
+        <Link href={signupHref}>
           <Store aria-hidden="true" />
-          Inscrire votre institut
+          Créer mon institut
           <ArrowRight aria-hidden="true" />
         </Link>
       </div>

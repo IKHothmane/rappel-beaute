@@ -640,3 +640,204 @@
 .pro-form {
   margin-top: 0.75rem;
 }
+.pro-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 2.5rem;
+  margin: 0.6rem 0 0.7rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid #dadce0;
+  border-radius: var(--vt-size-999px);
+  background: #fff;
+  color: #3c4043;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: var(--vt-leading-1p4);
+  text-decoration: none;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+.pro-google:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px #3c40434d;
+}
+.pro-google[aria-busy="true"] {
+  cursor: wait;
+  opacity: 0.75;
+}
+.pro-google:focus-visible {
+  outline: 3px solid #e774a7;
+  outline-offset: 3px;
+}
+.pro-or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+  color: var(--vt-muted-soft);
+  font-size: var(--vt-text-13px);
+}
+.pro-or::before,
+.pro-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--vt-line-strong);
+}
+.pro-google-note {
+  margin: 0.6rem 0 0.7rem;
+  font-size: var(--vt-text-13px);
+  line-height: 1.35;
+  color: var(--vt-muted-soft);
+}
+.pro-notice {
+  margin-bottom: 0.7rem;
+  padding: var(--vt-space-12px);
+  border: 1px solid #e9a8ad;
+  border-radius: var(--vt-size-10px);
+  background: #fff0f0;
+  color: #9c1730;
+  font-size: var(--vt-text-14px);
+}
+.pro-notice .pro-google {
+  margin: 0.6rem 0 0;
+}
+.pro-form-loading {
+  min-height: 12rem;
+}
+.pro-input-readonly {
+  background: #f6eef3;
+}
+.pro-input-readonly input {
+  color: #6b5563;
+  cursor: not-allowed;
+}
+.pro-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Inscription par e-mail : mot de passe, écran « Vérifiez votre boîte e-mail », liens secondaires. */
+.pro-label-like {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: var(--vt-text-14px);
+  font-weight: 650;
+  line-height: var(--vt-leading-1p4);
+}
+.pro-eye {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: 0.15rem;
+  border: 0;
+  border-radius: var(--vt-size-10px);
+  background: transparent;
+  color: var(--vt-muted-soft);
+  cursor: pointer;
+}
+.pro-eye svg {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+.pro-eye:hover {
+  color: var(--vt-ink-dark);
+}
+.pro-eye:focus-visible,
+.pro-link:focus-visible,
+.pro-secondary:focus-visible {
+  outline: 3px solid #e774a7;
+  outline-offset: 2px;
+}
+.pro-link {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+}
+.pro-field-error {
+  margin-top: 0.25rem;
+  color: #9c1730;
+  font-size: var(--vt-text-13px);
+}
+.pro-input[data-invalid="true"] {
+  border-color: #c8374d;
+}
+.pro-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  width: 100%;
+  padding: 0.4rem 1rem;
+  border: 1px solid #c9b1c0;
+  border-radius: var(--vt-size-999px);
+  background: #fff;
+  color: var(--vt-ink-dark);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pro-secondary:hover:not(:disabled) {
+  background: #faf3f7;
+}
+.pro-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.pro-check-mail {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: var(--vt-space-20px, 1.25rem);
+}
+.pro-check-mail h2 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: var(--vt-text-24px);
+  font-weight: 500;
+  line-height: var(--vt-leading-1p3);
+  color: var(--vt-ink-deep);
+}
+.pro-check-mail:focus,
+.pro-check-mail h2:focus {
+  outline: none;
+}
+.pro-check-mail p {
+  color: var(--vt-muted-soft);
+  font-size: var(--vt-text-14px);
+  line-height: 1.45;
+}
+.pro-check-mail strong {
+  color: var(--vt-ink-dark);
+  overflow-wrap: anywhere;
+}
+.pro-ok {
+  padding: var(--vt-space-12px);
+  border: 1px solid #a9d8bf;
+  border-radius: var(--vt-size-10px);
+  background: #effaf3;
+  color: #1f6b44;
+  font-size: var(--vt-text-14px);
+}
+@media (max-width: 800px) {
+  .pro-eye {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+/* Le bouton « afficher » est fourni par le formulaire : on masque celui d'Edge pour éviter un doublon. */
+.pro-input input::-ms-reveal,
+.pro-input input::-ms-clear {
+  display: none;
+}

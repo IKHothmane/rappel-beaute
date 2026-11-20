@@ -9,6 +9,7 @@ import type {
   PlatformUsersKpis,
 } from "@/types/platform";
 import { pool } from "@/lib/db/pool";
+import { emailOwner, isUserEmailUniqueViolation, lockEmailKey } from "@/lib/db/email-uniqueness";
 
 const ORG_ROLES = ["OWNER", "MANAGER", "STAFF", "CASHIER", "ACCOUNTANT"] as const;
 type OrgUserRole = (typeof ORG_ROLES)[number];
@@ -473,14 +474,33 @@ export async function updatePlatformWideUserProfile(
   const firstName = input.firstName?.trim() || user.firstName;
   const lastName = input.lastName?.trim() || user.lastName;
   const email = input.email?.trim().toLowerCase() || user.email;
+  const emailChanged = email.trim().toLowerCase() !== (user.email ?? "").trim().toLowerCase();
 
-  await pool.query(
-    `UPDATE "User"
-     SET "firstName" = $2, "lastName" = $3, email = $4,
-         phone = COALESCE($5, phone), "updatedAt" = NOW()
-     WHERE id = $1`,
-    [userId, firstName, lastName, email, input.phone ?? null],
-  );
+  // Contrôle d'unicité (insensible à la casse, comptes institut et plateforme) et écriture dans la même
+  // transaction ; une nouvelle adresse n'est jamais vérifiée (emailVerifiedAt remis à NULL).
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    if (emailChanged) {
+      await lockEmailKey(client, email);
+      if ((await emailOwner(client, email, userId)) !== "free") throw new Error("EMAIL_TAKEN");
+    }
+    await client.query(
+      `UPDATE "User"
+       SET "firstName" = $2, "lastName" = $3, email = $4,
+           phone = COALESCE($5, phone), "updatedAt" = NOW()${emailChanged ? `, "emailVerifiedAt" = NULL` : ""}
+       WHERE id = $1`,
+      [userId, firstName, lastName, email, input.phone ?? null],
+    );
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    // Index d'unicité globale de l'e-mail (migration en attente) : erreur métier générique.
+    if (isUserEmailUniqueViolation(error)) throw new Error("EMAIL_TAKEN");
+    throw error;
+  } finally {
+    client.release();
+  }
 
   await writePlatformAuditLog({
     platformUserId: actor.id,

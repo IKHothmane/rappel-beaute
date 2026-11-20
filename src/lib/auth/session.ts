@@ -1,15 +1,20 @@
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
-import { getSessionSecret, signJwt, verifyJwt } from "@/lib/auth/crypto";
+import { randomBytes } from "crypto";
+import { getSessionSecret, signSessionJwt, verifyJwt } from "@/lib/auth/crypto";
+import { legacySessionKeyAccepted } from "@/lib/auth/env";
 import { payloadToSession } from "@/lib/auth/session-payload";
 import { PLATFORM_SESSION_MAX_AGE_SEC, SESSION_COOKIE, SESSION_MAX_AGE_SEC, type AppSessionUser, type PlatformSessionUser, type SessionPayload, type SessionUser } from "@/lib/auth/types";
 
 function buildToken(user: SessionUser, maxAgeSec: number): string {
-  return signJwt(user, getSessionSecret(), maxAgeSec);
+  return signSessionJwt(user, maxAgeSec);
 }
 
 export function parseSessionToken(token: string): SessionUser | null {
-  const payload = verifyJwt<SessionPayload>(token, getSessionSecret());
+  // Double clé : les jetons signés avec la clé historique restent valables jusqu'à leur expiration.
+  const payload = verifyJwt<SessionPayload>(token, getSessionSecret(), {
+    allowLegacy: legacySessionKeyAccepted(),
+  });
   if (!payload) return null;
   return payloadToSession(payload);
 }
@@ -27,7 +32,7 @@ export async function getSession(): Promise<SessionUser | null> {
   return parseSessionToken(token);
 }
 
-function cookieSecure(): boolean {
+export function cookieSecure(): boolean {
   // E2E / next start en HTTP : Secure empêcherait le navigateur d'envoyer le cookie.
   if (process.env.COOKIE_SECURE === "false") return false;
   if (process.env.COOKIE_SECURE === "true") return true;
@@ -52,9 +57,21 @@ function sessionCookieOptions(token: string, maxAgeSec: number | null = SESSION_
  */
 export function createSessionCookie(user: SessionUser, maxAgeSec: number | null = SESSION_MAX_AGE_SEC) {
   const ceiling = user.scope === "platform" ? PLATFORM_SESSION_MAX_AGE_SEC : SESSION_MAX_AGE_SEC;
-  const effective = maxAgeSec == null ? null : Math.min(maxAgeSec, ceiling);
-  const token = buildToken(user, effective ?? ceiling);
+  const now = Math.floor(Date.now() / 1000);
+  // `jti` et `authAt` traversent les renouvellements : la session garde son identifiant et son échéance absolue.
+  const authAt = user.authAt ?? now;
+  const jti = user.jti ?? randomBytes(16).toString("hex");
+  const remaining = Math.max(60, authAt + ceiling - now);
+  const effective = maxAgeSec == null ? null : Math.min(maxAgeSec, ceiling, remaining);
+  const token = buildToken({ ...user, jti, authAt }, Math.min(effective ?? ceiling, remaining));
   return sessionCookieOptions(token, effective);
+}
+
+/** Échéance absolue (au plus tard) d'une session : sert d'expiration à son enregistrement de révocation. */
+export function sessionAbsoluteExpiry(user: Pick<SessionUser, "scope" | "authAt">): Date {
+  const ceiling = user.scope === "platform" ? PLATFORM_SESSION_MAX_AGE_SEC : SESSION_MAX_AGE_SEC;
+  const authAt = user.authAt ?? Math.floor(Date.now() / 1000);
+  return new Date((authAt + ceiling) * 1000);
 }
 
 export function clearSessionCookie() {

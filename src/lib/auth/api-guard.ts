@@ -42,6 +42,18 @@ function isMustChangePasswordAllowed(pathname: string): boolean {
   );
 }
 
+const SESSION_REVOKED_BODY = { error: "Session invalidée. Reconnectez-vous.", code: "SESSION_REVOKED" } as const;
+
+/**
+ * Session déconnectée (jti inscrit en base). Seuls les jetons porteurs d'un `jti` sont concernés ; les anciens
+ * jetons expirent naturellement. Import différé : aucun accès base pour un jeton sans `jti`.
+ */
+export async function isSessionTokenRevoked(session: { jti?: string }): Promise<boolean> {
+  if (!session.jti) return false;
+  const { isSessionRevoked } = await import("@/lib/db/session-revocation");
+  return isSessionRevoked(session.jti);
+}
+
 export function requireSession(request: NextRequest): AuthResult {
   const session = getSessionFromRequest(request);
   if (!session) {
@@ -68,6 +80,10 @@ export async function requireAppSession(request: NextRequest): Promise<AppAuthRe
 
   // Avant toute lecture en base : l'institut vient du jeton signé.
   bindOrganization(auth.session.organizationId);
+
+  if (await isSessionTokenRevoked(auth.session)) {
+    return { ok: false, response: NextResponse.json(SESSION_REVOKED_BODY, { status: 401 }) };
+  }
 
   const state = await getUserSessionState(auth.session.id);
   if (!state || state.status !== "ACTIVE") {
@@ -138,6 +154,9 @@ export async function requirePlatformSession(
       response: NextResponse.json({ error: "Accès réservé à la plateforme." }, { status: 403 }),
     };
   }
+  if (await isSessionTokenRevoked(auth.session)) {
+    return { ok: false, response: NextResponse.json(SESSION_REVOKED_BODY, { status: 401 }) };
+  }
   const current = await getPlatformUserById(auth.session.id);
   if (!current) {
     return {
@@ -157,7 +176,15 @@ export async function requirePlatformSession(
       ),
     };
   }
-  return { ok: true, session: current };
+  // jti et authAt suivent la session : un cookie ré-émis garde son identifiant et son échéance absolue.
+  return {
+    ok: true,
+    session: {
+      ...current,
+      ...(auth.session.jti ? { jti: auth.session.jti } : {}),
+      ...(auth.session.authAt ? { authAt: auth.session.authAt } : {}),
+    },
+  };
 }
 
 async function enforcePlanForAppFeature(

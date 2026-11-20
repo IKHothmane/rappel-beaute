@@ -3,6 +3,7 @@ import { clearSessionCookie, createSessionCookie, getSessionFromRequest } from "
 import { isAppSession, SESSION_MAX_AGE_SEC, toPublicSession } from "@/lib/auth/types";
 import { COOKIE_HOST } from "@/lib/domain";
 import { getUserSessionState } from "@/lib/db/users";
+import { getEmailSetupRequired } from "@/lib/db/account-security";
 import { getPlatformUserById } from "@/lib/db/platform-users";
 import { getOrganizationLogoUrl } from "@/lib/db/organization";
 import type { NextRequest } from "next/server";
@@ -12,6 +13,16 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request);
   if (!session) {
     return NextResponse.json({ user: null }, { status: 401 });
+  }
+
+  // Session déconnectée : ni profil ni renouvellement (le jeton ne se ressuscite pas lui-même).
+  if (session.jti) {
+    const { isSessionRevoked } = await import("@/lib/db/session-revocation");
+    if (await isSessionRevoked(session.jti)) {
+      const res = NextResponse.json({ user: null, code: "SESSION_REVOKED" }, { status: 401 });
+      res.cookies.set(clearSessionCookie());
+      return res;
+    }
   }
 
   if (isAppSession(session)) {
@@ -37,7 +48,11 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
       mustChangePassword: state.mustChangePassword,
       sessionVersion: state.sessionVersion,
     };
-    const res = NextResponse.json({ user: toPublicSession(refreshed) });
+    // Champ additif, hors du jeton signé : « Sécuriser mon compte » tant que l'e-mail est absent ou non vérifié.
+    const emailSetupRequired = await getEmailSetupRequired(session.id);
+    const res = NextResponse.json({
+      user: { ...toPublicSession(refreshed), ...(emailSetupRequired === undefined ? {} : { emailSetupRequired }) },
+    });
     res.cookies.set(createSessionCookie(refreshed));
     res.cookies.set(COOKIE_HOST, "app", {
       path: "/",
@@ -67,7 +82,13 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
   }
 
   // Profil et rôle viennent de la base ; la version courante est écrite dans le jeton ré-émis.
-  const refreshed = { ...current, sessionVersion: current.sessionVersion ?? 0 };
+  // jti et authAt sont conservés : le renouvellement ne prolonge jamais la durée absolue de la session.
+  const refreshed = {
+    ...current,
+    sessionVersion: current.sessionVersion ?? 0,
+    ...(session.jti ? { jti: session.jti } : {}),
+    ...(session.authAt ? { authAt: session.authAt } : {}),
+  };
   const res = NextResponse.json({ user: toPublicSession(refreshed) });
   res.cookies.set(createSessionCookie(refreshed));
   res.cookies.set(COOKIE_HOST, "admin", {

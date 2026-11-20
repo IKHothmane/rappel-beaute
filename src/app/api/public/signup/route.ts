@@ -9,13 +9,13 @@ import {
   PublicSignupError,
   createPublicSignup,
 } from "@/lib/db/public-signup";
-import { setOrganizationLogoUrl } from "@/lib/db/organization";
-import { getStorageService } from "@/lib/storage";
+import { storeSignupLogo } from "@/lib/auth/signup-form";
 import { validateLogoUpload, type LogoValidation } from "@/lib/storage/image-upload";
 import { CITIES } from "@/lib/site";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
 import { publicRoute } from "@/lib/http/route-scope";
+import { phoneLoginEnabled } from "@/lib/auth/env";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
@@ -54,7 +54,23 @@ function validationError(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
 }
 
+/**
+ * POST /api/public/signup : inscription HISTORIQUE par téléphone (WhatsApp) + mot de passe provisoire.
+ *
+ * Remplacée par l'inscription e-mail vérifiée (/api/auth/signup/email/) et par Google. Dès que
+ * AUTH_PHONE_LOGIN_ENABLED est faux, cette route répond 410 sans rien lire ni créer. Tant que la variable n'est
+ * pas fausse (défaut : vrai), le comportement historique est CONSERVÉ, y compris le renvoi unique du mot de passe
+ * provisoire (`credentials`) : sans adresse e-mail vérifiée, c'est le seul moyen de remettre l'accès à la
+ * personne qui s'inscrit. Cette exception disparaît avec le drapeau ; aucune route d'inscription par e-mail ou
+ * Google ne renvoie jamais de mot de passe.
+ */
 export const POST = publicRoute(async function POST(request: NextRequest) {
+  if (!phoneLoginEnabled()) {
+    return NextResponse.json(
+      { error: "Inscription par téléphone désactivée, utilisez e-mail ou Google", code: "PHONE_SIGNUP_DISABLED" },
+      { status: 410, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   const ip = clientIp(request);
 
 
@@ -180,22 +196,9 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     }
 
     if (logoFile && logoData && logoChecked) {
-      try {
-        const stored = await getStorageService().put({
-          category: "logos",
-          organizationId: created.organizationId,
-          filename: logoChecked.filename,
-          data: logoData,
-          contentType: logoChecked.contentType,
-        });
-        await setOrganizationLogoUrl(created.organizationId, stored.url);
-      } catch (error) {
-        logger.warn("public signup logo skipped", {
-          route: "/api/public/signup",
-          organizationId: created.organizationId,
-          error: error instanceof Error ? error.message : "unknown",
-        });
-      }
+      // Même stockage (catégorie "logos") et même tolérance qu'avant ; l'enregistrement de l'URL passe par la
+      // portée de l'institut créé (voir storeSignupLogo : rappel_public ne peut pas modifier Organization).
+      await storeSignupLogo(created.organizationId, { data: logoData, checked: logoChecked, name: logoFile.name }, "/api/public/signup");
     }
 
     return NextResponse.json({ ok: true, credentials: { identifier: created.phone, temporaryPassword: created.temporaryPassword } }, { headers: { "Cache-Control": "no-store", Pragma: "no-cache" } });

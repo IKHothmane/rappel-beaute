@@ -53,6 +53,12 @@ function get(path: string, cookie?: string) {
   return new NextRequest(`${SITE}${path}`, { headers: cookie ? { cookie } : {} });
 }
 
+/** Le Location peut être relatif (résolu sur l'origine de la requête) : on compare l'URL résolue. */
+function redirectedTo(response: Response): string | null {
+  const location = response.headers.get("location");
+  return location ? new URL(location, SITE).toString() : null;
+}
+
 function cookieFrom(response: NextResponse, kind: "request" | "session") {
   const cookie = response.cookies.getAll().find(({ name }) => name.startsWith(`__Host-rb-loyalty-${kind}-`));
   expect(cookie).toMatchObject({ httpOnly: true, secure: true, sameSite: "lax", path: "/" });
@@ -174,7 +180,7 @@ describe.skipIf(!adminUrl)("Vérification en institut, session et carte permanen
     expect(persisted.rows[0].marketingWhatsapp).toBe(true);
     for (let scanCount = 0; scanCount < 2; scanCount++) {
       const reply = await scan(0, card.cookie);
-      expect(reply.headers.get("location")).toBe(`${SITE}${card.cardPath}`);
+      expect(redirectedTo(reply)).toBe(`${SITE}${card.cardPath}`);
     }
     expect((await testPool.query(`SELECT 1 FROM "LoyaltyEvent" WHERE "customerId" = $1 AND type = 'VISIT'`, [card.customerId])).rowCount).toBe(0);
   });
@@ -184,8 +190,8 @@ describe.skipIf(!adminUrl)("Vérification en institut, session et carte permanen
     const a = await activated(0, phone);
     const b = await activated(1, phone);
     const combined = `${a.cookie}; ${b.cookie}`;
-    expect((await scan(0, combined)).headers.get("location")).toBe(`${SITE}${a.cardPath}`);
-    expect((await scan(1, combined)).headers.get("location")).toBe(`${SITE}${b.cardPath}`);
+    expect(redirectedTo((await scan(0, combined)))).toBe(`${SITE}${a.cardPath}`);
+    expect(redirectedTo((await scan(1, combined)))).toBe(`${SITE}${b.cardPath}`);
     expect((await scan(1, a.cookie)).headers.get("location")).toBeNull();
     const transplanted = `${b.cookie.split("=")[0]}=${a.cookie.split("=")[1]}`;
     expect((await scan(1, transplanted)).headers.get("location")).toBeNull();
@@ -204,7 +210,7 @@ describe.skipIf(!adminUrl)("Vérification en institut, session et carte permanen
       `UPDATE "LoyaltyCustomerSession" SET "expiresAt" = NOW() + interval '1 day', "absoluteExpiresAt" = NOW() + interval '4 days' WHERE "customerId" = $1`,
       [a.customerId],
     );
-    expect((await scan(0, a.cookie)).headers.get("location")).toBe(`${SITE}${a.cardPath}`);
+    expect(redirectedTo((await scan(0, a.cookie)))).toBe(`${SITE}${a.cardPath}`);
     const { rows } = await testPool.query(
       `SELECT "expiresAt" = "absoluteExpiresAt" AS capped FROM "LoyaltyCustomerSession" WHERE "customerId" = $1`,
       [a.customerId],
@@ -230,7 +236,7 @@ describe.skipIf(!adminUrl)("Vérification en institut, session et carte permanen
     expect(recovered.cardPath).toBe(a.cardPath);
     expect(recovered.customerId).toBe(a.customerId);
     expect((await scan(0, a.cookie)).headers.get("location")).toBeNull();
-    expect((await scan(0, recovered.cookie)).headers.get("location")).toBe(`${SITE}${a.cardPath}`);
+    expect(redirectedTo((await scan(0, recovered.cookie)))).toBe(`${SITE}${a.cardPath}`);
     expect((await testPool.query(`SELECT phone FROM "Customer" WHERE id = $1`, [a.customerId])).rows[0].phone).toBe(replacement);
     expect((await testPool.query(`SELECT points FROM "LoyaltyEvent" WHERE "customerId" = $1 AND type = 'VISIT'`, [a.customerId])).rows).toEqual([{ points: 1 }]);
   });

@@ -1,0 +1,94 @@
+{
+  "pages": {
+    "/global-error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/global-error.js"
+    ],
+    "/(marketing)/connexion/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/connexion/page.css",
+      "static/chunks/app/(marketing)/connexion/page.js"
+    ],
+    "/(marketing)/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/layout.css",
+      "static/chunks/app/(marketing)/layout.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
+    ],
+    "/error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/error.js"
+    ],
+    "/not-found": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/not-found.css",
+      "static/chunks/app/not-found.js"
+    ],
+    "/domains/app/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/domains/app/login/page.css",
+      "static/chunks/app/domains/app/login/page.js"
+    ],
+    "/domains/app/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/domains/app/layout.css",
+      "static/chunks/app/domains/app/layout.js"
+    ],
+    "/domains/app/not-found": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/domains/app/not-found.js"
+    ],
+    "/(marketing)/professionnel/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(marketing)/professionnel/page.css",
+      "static/chunks/app/(marketing)/professionnel/page.js"
+    ],
+    "/domains/app/verify-email/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/domains/app/verify-email/page.css",
+      "static/chunks/app/domains/app/verify-email/page.js"
+    ],
+    "/domains/app/security/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/domains/app/security/page.css",
+      "static/chunks/app/domains/app/security/page.js"
+    ],
+    "/domains/app/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/domains/app/dashboard/page.css",
+      "static/chunks/app/domains/app/dashboard/page.js"
+    ],
+    "/domains/app/dashboard/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/domains/app/dashboard/layout.js"
+    ],
+    "/domains/app/support/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/domains/app/support/page.js"
+    ],
+    "/domains/app/more/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/domains/app/more/page.js"
+    ]
+  }
+}

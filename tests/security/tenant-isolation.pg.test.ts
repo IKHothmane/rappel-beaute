@@ -435,7 +435,16 @@ describe.skipIf(!localOnly)("isolation sur PostgreSQL réel", () => {
       expect(definers.rows.map((row) => row.proname)).toEqual([
         "app_public_card_by_token",
         "app_public_customer_by_phone",
+        // Authentification (Google, e-mail) : lectures ciblées et création liée à une inscription en cours.
+        "app_public_identity_create_for_signup",
+        "app_public_identity_login",
+        "app_public_identity_touch",
+        // Fidélité : résolution de l'institut d'un QR d'adhésion actif.
+        "app_public_loyalty_join_institute",
         "app_public_price",
+        // Purges planifiées (rôles job/plateforme uniquement).
+        "app_purge_expired_auth_data",
+        "app_purge_expired_auth_state",
         "app_scope_granted",
         "org_proof_ok",
       ]);

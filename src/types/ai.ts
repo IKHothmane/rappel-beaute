@@ -204,7 +204,7 @@ export type AICommitWhatsAppInput = {
   message: string;
   kind: AIMessageKind;
   appointmentId?: string | null;
-  /** @deprecated V1 : envoi Meta désactivé. Ignoré sauf si WHATSAPP_DIRECT_SEND_ENABLED=true */
+  /** Demande un envoi Meta si l’institut figure dans WHATSAPP_META_ORG_IDS. */
   sendDirect?: boolean;
 };
 

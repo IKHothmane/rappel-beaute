@@ -460,6 +460,7 @@ model Organization {
   updatedAt DateTime           @updatedAt
 
   users              User[]
+  pendingSignups     AuthPendingSignup[]
   customers          Customer[]
   staff              Staff[]
   services           Service[]
@@ -555,6 +556,8 @@ model User {
   role           UserRole      @default(STAFF)
   status         OrgUserStatus @default(ACTIVE)
   passwordHash   String?
+  /// Date de vérification de l'e-mail (NULL = non vérifié ; aucune valeur rétroactive)
+  emailVerifiedAt DateTime?    @db.Timestamptz(6)
   /// Force un changement de MDP à la prochaine connexion (reset admin temporaire)
   mustChangePassword Boolean   @default(false)
   /// Incrémente à chaque reset/changement de MDP pour invalider les JWT existants
@@ -565,11 +568,17 @@ model User {
   organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   notifications     Notification[]
   activationTokens  ActivationToken[]
+  identities        UserIdentity[]
+  oauthStates       AuthOAuthState[]
+  emailVerificationTokens EmailVerificationToken[]
   supportTicketsCreated SupportTicket[] @relation("SupportTicketCreator")
   supportMessages       SupportMessage[] @relation("SupportMessageOrgUser")
   customerNotes         CustomerNote[]
   aiConversations       AIConversation[]
 
+  // Unicité globale d'e-mail (index d'expression LOWER(BTRIM(email)), non modélisable par Prisma) :
+  // migration en attente prisma/pending-migrations/20261120090000_user_email_global_unique, à ne déplacer
+  // dans prisma/migrations qu'après audit (scripts/ops/auth-accounts-audit.sql). Volontairement aucun @@unique ici.
   @@unique([organizationId, email])
   @@index([organizationId])
   @@index([organizationId, status])
@@ -2760,6 +2769,89 @@ model ActivationToken {
   @@index([expiresAt])
 }
 
+/// Identité externe d'un compte (connexion Google). Une identité = un seul User = un seul institut.
+/// RLS enfant de User ; le callback public passe par app_public_identity_login / _touch (SQL).
+model UserIdentity {
+  id              String    @id @default(cuid())
+  userId          String
+  /// 'google' (CHECK UserIdentity_provider_check)
+  provider        String
+  providerSubject String
+  email           String
+  emailVerified   Boolean   @default(false)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  lastLoginAt     DateTime? @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@unique([userId, provider])
+}
+
+/// État d'un aller-retour OAuth (hors institut : rôles public / plateforme). Consommation atomique :
+/// UPDATE ... SET "consumedAt" = NOW() WHERE "stateHash" = $1 AND "consumedAt" IS NULL AND "expiresAt" > NOW().
+/// CHECK : intent IN ('login','signup','link'), link => userId, redirectAfter relatif borné (SQL).
+model AuthOAuthState {
+  id              String    @id @default(cuid())
+  stateHash       String    @unique
+  nonceHash       String
+  intent          String
+  userId          String?
+  /// Verrou PKCE chiffré par l'application
+  codeVerifierEnc String
+  redirectAfter   String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt       DateTime  @db.Timestamptz(6)
+  consumedAt      DateTime? @db.Timestamptz(6)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+/// Inscription en attente : aucun User n'est créé ici. organizationId = institut créé (idempotence).
+/// Index SQL non modélisés : UNIQUE partiel (provider, providerSubject) WHERE consumedAt IS NULL AND
+/// providerSubject IS NOT NULL ; index sur LOWER(email).
+model AuthPendingSignup {
+  id              String    @id @default(cuid())
+  tokenHash       String    @unique
+  /// 'google' | 'email' (CHECK AuthPendingSignup_provider_check)
+  provider        String
+  providerSubject String?
+  email           String
+  emailVerified   Boolean   @default(false)
+  name            String
+  /// Haché, jamais en clair (inscription e-mail)
+  passwordHash    String?
+  expiresAt       DateTime  @db.Timestamptz(6)
+  consumedAt      DateTime? @db.Timestamptz(6)
+  organizationId  String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+
+  organization Organization?            @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  verificationTokens EmailVerificationToken[]
+
+  @@index([expiresAt])
+}
+
+/// Jeton haché de vérification d'e-mail : pour un User (changement d'e-mail) OU une inscription en attente
+/// (CHECK EmailVerificationToken_target_check : exactement l'un des deux).
+model EmailVerificationToken {
+  id              String    @id @default(cuid())
+  userId          String?
+  pendingSignupId String?
+  newEmail        String
+  tokenHash       String    @unique
+  expiresAt       DateTime  @db.Timestamptz(6)
+  usedAt          DateTime? @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+
+  user          User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pendingSignup AuthPendingSignup? @relation(fields: [pendingSignupId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
 model SupportSession {
   id             String    @id @default(cuid())
   platformUserId String
@@ -3207,4 +3299,18 @@ model AssistantAction {
   @@unique([organizationId, idempotencyKey])
   @@index([conversationId, status])
   @@index([organizationId, status])
+}
+
+/// Révocation de session par `jti` (déconnexion). Table additive : voir la migration
+/// 20261120100000_auth_session_revocation (RLS, purge par expiration).
+model SessionRevocation {
+  jti            String   @id
+  kind           String   @default("session")
+  scope          String   @default("app")
+  userId         String
+  organizationId String?
+  expiresAt      DateTime @db.Timestamptz(6)
+  revokedAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([expiresAt])
 }

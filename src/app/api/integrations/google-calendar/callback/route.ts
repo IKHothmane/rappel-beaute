@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getSessionFromRequest } from "@/lib/auth/session";
-import { isAppSession } from "@/lib/auth/types";
+import { requireAppSession } from "@/lib/auth/api-guard";
 import { writeAuditLog } from "@/lib/db/audit";
 import {
   getGoogleCalendarConnection,
   getOrganizationName,
   upsertGoogleCalendarConnection,
 } from "@/lib/db/google-calendar";
+import { consumeOneTimeToken } from "@/lib/db/session-revocation";
+import { canManageGoogleCalendar } from "@/lib/rbac";
 import {
+  clearGoogleCalendarCookie,
   exchangeGoogleCode,
   fetchGoogleAccountEmail,
   listGoogleCalendars,
+  matchGoogleCalendarCookie,
   pickDefaultGoogleCalendar,
   verifyGoogleOAuthState,
 } from "@/lib/google/calendar";
-import { publicRoute } from "@/lib/http/route-scope";
+import { tenantRoute } from "@/lib/http/route-scope";
 
 function agendaRedirect(
   origin: string,
@@ -31,7 +34,11 @@ function agendaRedirect(
   if (extra) {
     for (const [key, value] of Object.entries(extra)) url.searchParams.set(key, value);
   }
-  return NextResponse.redirect(url);
+  const res = NextResponse.redirect(url);
+  res.headers.set("Cache-Control", "no-store");
+  // Le cookie lié au state sert une seule fois : effacé quelle que soit l'issue.
+  clearGoogleCalendarCookie(res);
+  return res;
 }
 
 /** Retour vers le site qui a lancé OAuth. En local, ne pas suivre NEXT_PUBLIC_APP_URL (staging). */
@@ -48,7 +55,7 @@ function returnOrigin(request: NextRequest, callbackUri?: string): string {
   return (process.env.NEXT_PUBLIC_APP_URL || here).replace(/\/$/, "");
 }
 
-export const GET = publicRoute(async function GET(request: NextRequest) {
+export const GET = tenantRoute(async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const error = sp.get("error");
   const code = sp.get("code");
@@ -69,13 +76,46 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
   }
 
   const origin = returnOrigin(request, state.redirectUri);
-  const session = getSessionFromRequest(request);
-  if (!session || !isAppSession(session) || session.organizationId !== state.orgId) {
+
+  // Même contrôle que les routes métier : version de session, jeton non révoqué, utilisateur et institut actifs,
+  // rôle courant lu en base.
+  const auth = await requireAppSession(request);
+  if (!auth.ok) {
+    return agendaRedirect(origin, "error", { reason: "session" });
+  }
+  const session = auth.session;
+  if (!canManageGoogleCalendar(session.role)) {
+    return agendaRedirect(origin, "error", { reason: "forbidden" });
+  }
+  // Le state a été émis pour CET utilisateur et CET institut.
+  if (session.id !== state.userId || session.organizationId !== state.orgId) {
     return agendaRedirect(origin, "error", { reason: "session" });
   }
 
+  // Lié au navigateur : le nonce du cookie doit correspondre au state (anti injection / session fixation OAuth).
+  const codeVerifier = matchGoogleCalendarCookie(request, state);
+  if (!codeVerifier) {
+    return agendaRedirect(origin, "error", { reason: "state" });
+  }
+
+  // Usage unique : seul le premier retour avec ce state passe, un rejeu est refusé.
+  let firstUse = false;
   try {
-    const tokens = await exchangeGoogleCode(code, state.redirectUri);
+    firstUse = await consumeOneTimeToken({
+      jti: state.jti,
+      userId: session.id,
+      organizationId: session.organizationId,
+      expiresAt: new Date(state.exp * 1000),
+    });
+  } catch (e) {
+    console.error("[google-calendar callback] state consume", e);
+  }
+  if (!firstUse) {
+    return agendaRedirect(origin, "error", { reason: "state" });
+  }
+
+  try {
+    const tokens = await exchangeGoogleCode(code, state.redirectUri, state.pkce ? codeVerifier : undefined);
     const account = await fetchGoogleAccountEmail(tokens.accessToken);
     const existing = await getGoogleCalendarConnection(state.orgId);
     const orgName = await getOrganizationName(state.orgId);

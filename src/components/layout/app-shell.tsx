@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useSession } from "@/components/auth/session-provider";
@@ -28,7 +29,7 @@ export function AppShell({ children }: AppShellProps) {
   const path = normalize(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const { user, loading } = useSession();
+  const { user, loading, emailSetupRequired } = useSession();
 
   const bare =
     path.startsWith("/login") ||
@@ -37,6 +38,7 @@ export function AppShell({ children }: AppShellProps) {
     path.startsWith("/reset-password") ||
     path.startsWith("/changer-mot-de-passe") ||
     path.startsWith("/activate") ||
+    path.startsWith("/verify-email") ||
     path.startsWith("/book");
 
   const fullBleed = path.startsWith("/salon-3d") || path.startsWith("/ai");
@@ -106,6 +108,21 @@ export function AppShell({ children }: AppShellProps) {
               : "px-3 pb-28 pt-4 sm:px-4 lg:px-5 lg:pb-6 xl:px-6",
           )}
         >
+          {emailSetupRequired && !path.startsWith("/security") ? (
+            <div
+              role="region"
+              aria-label="Sécuriser mon compte"
+              className="mb-4 flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <p>
+                <span className="font-semibold">Sécurisez votre compte.</span> Confirmez votre adresse e-mail pour
+                récupérer votre accès en cas de besoin.
+              </p>
+              <Link href="/security/#email" className="shrink-0 font-semibold underline underline-offset-2">
+                Sécuriser mon compte
+              </Link>
+            </div>
+          ) : null}
           <div className="w-full min-w-0 max-w-none">
             <StaffColorProvider>
               <PlanFeatureRouteGuard>{children}</PlanFeatureRouteGuard>

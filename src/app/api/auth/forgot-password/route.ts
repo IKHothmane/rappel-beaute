@@ -1,36 +1,36 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { issuePasswordResetToken } from "@/lib/db/activation";
-import { sendTransactionalEmail } from "@/lib/email/send";
+import { scheduleResetRequest } from "@/lib/auth/password-reset-task";
 import { getClientIp } from "@/lib/http/client-ip";
-import { logger } from "@/lib/logger";
+import { checkAuthPostOrigin } from "@/lib/http/json-same-origin";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
-import { publicAppOrigin, SITE } from "@/lib/site";
 import { publicRoute } from "@/lib/http/route-scope";
 
 const GENERIC = {
   message: "Si ce compte existe, un lien de réinitialisation a été envoyé.",
 };
 
-function appBase(requestOrigin: string): string {
-  return publicAppOrigin() || requestOrigin.replace(/\/$/, "");
-}
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Réponse et durée identiques que le compte existe, que l'adresse soit mal formée ou inconnue : seule une
+ * limitation de débit (indépendante de l'existence du compte, clé = adresse saisie) change le statut. Le travail
+ * réel (recherche, jeton, e-mail) part en tâche détachée.
+ */
 export const POST = publicRoute(async function POST(request: NextRequest) {
+  const csrf = checkAuthPostOrigin(request);
+  if (csrf) return csrf;
+
   const ip = getClientIp(request);
-  let email = "";
+  let submitted = "";
   try {
-    const body = (await request.json()) as { email?: string };
-    email = body.email?.trim().toLowerCase() ?? "";
+    const body = (await request.json()) as { email?: unknown };
+    submitted = typeof body?.email === "string" ? body.email.trim().toLowerCase().slice(0, 320) : "";
   } catch {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: "Adresse e-mail invalide." }, { status: 400 });
-  }
-
-  const account = emailKey(email);
+  const account = emailKey(submitted);
   const rl = await consumeDimensions([
     { key: `auth:forgot:ip:${ip}`, ...RATE_POLICIES.forgotPassword.ip, sensitivity: "sensitive" },
     {
@@ -46,22 +46,8 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     );
   }
 
-  try {
-    const token = await issuePasswordResetToken(email);
-    if (token) {
-      const link = `${appBase(request.nextUrl.origin)}/activate/?token=${token}`;
-      await sendTransactionalEmail({
-        to: email,
-        subject: `Réinitialisation du mot de passe — ${SITE.name}`,
-        text: `Bonjour,\n\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 1 heure) :\n${link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.\n`,
-        html: `<p>Pour choisir un nouveau mot de passe, ouvrez ce lien (valable 1 heure)&nbsp;:</p><p><a href="${link}">Réinitialiser mon mot de passe</a></p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>`,
-      });
-    }
-  } catch (error) {
-    logger.error("forgot-password send failed", {
-      route: "/api/auth/forgot-password",
-      error: error instanceof Error ? error.message : "unknown",
-    });
+  if (submitted && submitted.length <= 254 && EMAIL_RE.test(submitted)) {
+    scheduleResetRequest(submitted, request.nextUrl.origin);
   }
 
   return NextResponse.json(GENERIC);

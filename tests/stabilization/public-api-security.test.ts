@@ -48,6 +48,8 @@ describe("Sécurité API — routes publiques booking", () => {
         src.includes("previewJoinQr") ||
         src.includes("previewPublicReview") ||
         src.includes("createPublicSignup") ||
+        // Demande de devis marketing : aucune donnée d'institut, simple e-mail interne.
+        src.includes("websiteQuoteEmail") ||
         src.includes("vapidPublicConfig");
       expect(bound, file).toBe(true);
     }

@@ -8,7 +8,7 @@ import {
 import { requireFeatureWriteLimited } from "@/lib/auth/api-guard";
 import { createAIWhatsAppTask } from "@/lib/db/whatsapp";
 import {
-  isWhatsAppDirectSendEnabled,
+  canSendDirectWhatsAppViaMeta,
   sendDirectWhatsAppTask,
 } from "@/lib/whatsapp/send";
 import { canSendWhatsapp } from "@/lib/rbac";
@@ -18,7 +18,7 @@ import { tenantRoute } from "@/lib/http/route-scope";
 
 /**
  * Valide un brouillon IA et crée une WhatsAppTask (PENDING).
- * L'envoi Meta (sendDirect) est désactivé par défaut — réactivation via WHATSAPP_DIRECT_SEND_ENABLED.
+ * L'envoi Meta (sendDirect) est disponible pour les instituts autorisés.
  */
 export const POST = tenantRoute(async function POST(request: NextRequest) {
   const aiAuth = await requireAIWrite(request);
@@ -55,13 +55,13 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
       actor,
     );
 
-    // Envoi Meta optionnel — uniquement si flag explicitement activé
-    if (parsed.data.sendDirect && isWhatsAppDirectSendEnabled()) {
+    if (parsed.data.sendDirect && canSendDirectWhatsAppViaMeta(waAuth.session.organizationId)) {
       try {
         const directResult = await sendDirectWhatsAppTask(
           waAuth.session.organizationId,
           task.id,
           actor,
+          "meta",
         );
         return NextResponse.json({
           task: directResult.task,

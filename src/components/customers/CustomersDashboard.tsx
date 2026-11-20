@@ -1,5 +1,6 @@
 "use client";
 import { MetricCard } from "@/components/ui/metric-card";
+import { SendCustomerWhatsAppButton } from "@/components/customers/send-customer-whatsapp-button";
 
 import {
   useEffect,
@@ -88,6 +89,8 @@ type Props = {
   onNewAppointment?: (customer: Customer) => void;
   onPayment?: (customer: Customer) => void;
   onWhatsApp?: (customer: Customer) => void;
+  canSendWhatsApp?: boolean;
+  orgName?: string | null;
   onRefresh?: () => void | Promise<void>;
   loading?: boolean;
   canCreate?: boolean;
@@ -194,12 +197,15 @@ function ActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled || !onClick}
-      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${styles[variant]}`}
+      className={`${actionButtonClass} ${styles[variant]}`}
     >
       {children}
     </button>
   );
 }
+
+const actionButtonClass =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-45";
 
 export default function CustomersDashboard({
   customers,
@@ -224,6 +230,8 @@ export default function CustomersDashboard({
   onNewAppointment,
   onPayment,
   onWhatsApp,
+  canSendWhatsApp = false,
+  orgName,
   onRefresh,
   loading = false,
   canCreate = false,
@@ -619,20 +627,43 @@ export default function CustomersDashboard({
                     Nouveau RDV
                   </ActionButton>
 
-                  <ActionButton
-                    variant="green"
-                    disabled={!selected.phone}
-                    onClick={selected.phone ? () => onWhatsApp?.(selected) : undefined}
-                  >
-                    <MessageCircle size={15} aria-hidden />
-                    WhatsApp
-                  </ActionButton>
+                  {canSendWhatsApp ? (
+                    <SendCustomerWhatsAppButton
+                      key={selected.id}
+                      customerId={selected.id}
+                      firstName={selected.name.trim().split(/\s+/)[0] || selected.name}
+                      orgName={orgName}
+                      disabled={!selected.phone?.trim()}
+                      className={`${actionButtonClass} bg-[#07975b] text-white hover:bg-[#087848]`}
+                    >
+                      <MessageCircle size={15} aria-hidden />
+                      WhatsApp
+                    </SendCustomerWhatsAppButton>
+                  ) : (
+                    <ActionButton
+                      variant="green"
+                      disabled={!selected.phone}
+                      onClick={selected.phone ? () => onWhatsApp?.(selected) : undefined}
+                    >
+                      <MessageCircle size={15} aria-hidden />
+                      WhatsApp
+                    </ActionButton>
+                  )}
 
                   <ActionButton onClick={() => onPayment?.(selected)}>
                     <CreditCard size={15} aria-hidden />
                     Encaisser
                   </ActionButton>
                 </div>
+                {canSendWhatsApp && selected.phone?.trim() && onWhatsApp ? (
+                  <button
+                    type="button"
+                    className="mt-2 rounded-md px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
+                    onClick={() => onWhatsApp(selected)}
+                  >
+                    Ouvrir WhatsApp pour envoyer manuellement
+                  </button>
+                ) : null}
               </div>
 
               <div className="grid grid-cols-2 border-y border-[#f4e4eb] bg-[#fffafd]">

@@ -76,6 +76,9 @@ export const PATCH = platformRoute(async function PATCH(request: NextRequest, ct
     if (e instanceof Error && e.message === "NOT_FOUND") {
       return adminError("Utilisateur introuvable.", 404);
     }
+    if (e instanceof Error && e.message === "EMAIL_TAKEN") {
+      return adminError("Cet e-mail est déjà utilisé.", 409);
+    }
     console.error("[PATCH /api/admin/users/:id]", e);
     return adminError("Mise à jour impossible.", 500);
   }

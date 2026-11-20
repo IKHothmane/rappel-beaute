@@ -15,7 +15,7 @@ import {
   whatsappHref,
 } from "@/components/customers/customers-helpers";
 import { useToast } from "@/components/ui/toast";
-import { canEditCustomerMarketing, canReadAnalytics, canWriteFeatureLimited } from "@/lib/rbac";
+import { canEditCustomerMarketing, canReadAnalytics, canSendWhatsapp, canWriteFeatureLimited } from "@/lib/rbac";
 import { getAnalyticsOverview } from "@/modules/analytics/service";
 import {
   createCustomer,
@@ -313,6 +313,7 @@ export function CustomersPageView() {
     <div className="flex flex-col gap-5 pb-8">
       <CustomersMobile
         orgName={user.orgName}
+        canSendWhatsApp={canSendWhatsapp(user.role)}
         roleLabel={ROLE_LABEL[user.role] ?? user.role}
         kpis={kpis}
         overview={overview}
@@ -376,6 +377,8 @@ export function CustomersPageView() {
           onNewAppointment={(customer) => router.push(`/agenda/?customerId=${customer.id}`)}
           onPayment={(customer) => router.push(`/cash-register/?customerId=${customer.id}`)}
           onWhatsApp={openCustomerWhatsApp}
+          canSendWhatsApp={canSendWhatsapp(user.role)}
+          orgName={user.orgName}
           onRefresh={refresh}
         />
       </div>

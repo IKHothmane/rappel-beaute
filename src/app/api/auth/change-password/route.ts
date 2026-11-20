@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireSession } from "@/lib/auth/api-guard";
+import { isSessionTokenRevoked, requireSession } from "@/lib/auth/api-guard";
 import { isAppSession } from "@/lib/auth/types";
 import { createSessionCookie } from "@/lib/auth/session";
+import { checkAuthPostOrigin } from "@/lib/http/json-same-origin";
 import { changeOwnPassword, getUserSessionState, MAX_PASSWORD_LENGTH } from "@/lib/db/users";
 import { clientIp } from "@/lib/http/client-ip";
 import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit";
@@ -14,6 +15,9 @@ import { publicRoute } from "@/lib/http/route-scope";
  * Accessible même si mustChangePassword = true.
  */
 export const POST = publicRoute(async function POST(request: NextRequest) {
+  const csrf = checkAuthPostOrigin(request);
+  if (csrf) return csrf;
+
   const auth = requireSession(request);
   if (!auth.ok) return auth.response;
   if (!isAppSession(auth.session)) {
@@ -33,7 +37,13 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     );
   }
 
-  // Vérifie que la session n'a pas été révoquée
+  // Vérifie que la session n'a pas été révoquée (déconnexion, puis changement de version)
+  if (await isSessionTokenRevoked(auth.session)) {
+    return NextResponse.json(
+      { error: "Session invalidée. Reconnectez-vous.", code: "SESSION_REVOKED" },
+      { status: 401 },
+    );
+  }
   const state = await getUserSessionState(auth.session.id);
   if (!state || state.status !== "ACTIVE") {
     return NextResponse.json({ error: "Session expirée." }, { status: 401 });
@@ -95,7 +105,14 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
         mustChangePassword: false,
       },
     });
-    res.cookies.set(createSessionCookie(session));
+    // La session garde son identifiant et son échéance absolue ; seule sessionVersion change.
+    res.cookies.set(
+      createSessionCookie({
+        ...session,
+        ...(auth.session.jti ? { jti: auth.session.jti } : {}),
+        ...(auth.session.authAt ? { authAt: auth.session.authAt } : {}),
+      }),
+    );
     return res;
   } catch (error) {
     const code = error instanceof Error ? error.message : "";

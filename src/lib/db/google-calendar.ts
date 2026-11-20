@@ -49,7 +49,7 @@ export async function upsertGoogleCalendarConnection(input: {
   let existingRefresh: string | null = null;
   if (!input.tokens.refreshToken && input.existingRefreshEnc) {
     try {
-      existingRefresh = decryptSecret(input.existingRefreshEnc);
+      existingRefresh = decryptSecret(input.existingRefreshEnc, input.organizationId);
     } catch {
       existingRefresh = null;
     }
@@ -59,8 +59,9 @@ export async function upsertGoogleCalendarConnection(input: {
     throw new Error("GOOGLE_REFRESH_MISSING");
   }
 
-  const refreshTokenEnc = encryptSecret(refreshPlain);
-  const accessTokenEnc = encryptSecret(input.tokens.accessToken);
+  // AAD = institut : une valeur chiffrée recopiée vers un autre institut ne se déchiffre pas (formats v2).
+  const refreshTokenEnc = encryptSecret(refreshPlain, input.organizationId);
+  const accessTokenEnc = encryptSecret(input.tokens.accessToken, input.organizationId);
   const calendarId = input.calendarId || "primary";
   const calendarName = input.calendarName ?? null;
   const existing = await getGoogleCalendarConnection(input.organizationId);
@@ -134,7 +135,7 @@ export async function deleteGoogleCalendarConnection(organizationId: string): Pr
   if (!existing) return null;
   let refresh: string | null = null;
   try {
-    refresh = decryptSecret(existing.refreshTokenEnc);
+    refresh = decryptSecret(existing.refreshTokenEnc, organizationId);
   } catch {
     refresh = null;
   }
@@ -144,9 +145,9 @@ export async function deleteGoogleCalendarConnection(organizationId: string): Pr
   return refresh;
 }
 
-export function googleConnectionNeedsReconnect(refreshTokenEnc: string): boolean {
+export function googleConnectionNeedsReconnect(refreshTokenEnc: string, organizationId?: string): boolean {
   try {
-    decryptSecret(refreshTokenEnc);
+    decryptSecret(refreshTokenEnc, organizationId);
     return false;
   } catch {
     return true;
@@ -167,7 +168,7 @@ export async function getValidGoogleAccessToken(
   if (stillValid && conn.accessTokenEnc) {
     try {
       return {
-        accessToken: decryptSecret(conn.accessTokenEnc),
+        accessToken: decryptSecret(conn.accessTokenEnc, organizationId),
         calendarId: conn.calendarId,
       };
     } catch {
@@ -177,7 +178,7 @@ export async function getValidGoogleAccessToken(
 
   let refreshToken: string;
   try {
-    refreshToken = decryptSecret(conn.refreshTokenEnc);
+    refreshToken = decryptSecret(conn.refreshTokenEnc, organizationId);
   } catch {
     throw new Error("GOOGLE_RECONNECT");
   }
@@ -190,9 +191,9 @@ export async function getValidGoogleAccessToken(
          "updatedAt" = NOW()
      WHERE id = $4`,
     [
-      encryptSecret(tokens.accessToken),
+      encryptSecret(tokens.accessToken, organizationId),
       tokens.expiresAt,
-      encryptSecret(tokens.refreshToken ?? refreshToken),
+      encryptSecret(tokens.refreshToken ?? refreshToken, organizationId),
       conn.id,
     ],
   );

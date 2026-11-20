@@ -18,6 +18,10 @@ export type AppSessionUser = {
   mustChangePassword: boolean;
   /** Doit correspondre à User.sessionVersion sinon session invalidée */
   sessionVersion: number;
+  /** Identifiant de session (révocation à la déconnexion). Absent d'un ancien jeton. */
+  jti?: string;
+  /** Instant (s) de l'authentification d'origine : borne la durée ABSOLUE de la session, renouvellements compris. */
+  authAt?: number;
 };
 
 export type PlatformSessionUser = {
@@ -33,6 +37,10 @@ export type PlatformSessionUser = {
    * Absent d'un ancien jeton : traité comme 0 (voir session-payload).
    */
   sessionVersion?: number;
+  /** Identifiant de session (révocation à la déconnexion). Absent d'un ancien jeton. */
+  jti?: string;
+  /** Instant (s) de l'authentification d'origine : borne la durée ABSOLUE de la session. */
+  authAt?: number;
 };
 
 export type SessionUser = AppSessionUser | PlatformSessionUser;
@@ -50,8 +58,10 @@ export const PLATFORM_SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7;
 
 export type PublicSession = SessionUser;
 
+/** Le profil renvoyé au navigateur ne porte ni l'identifiant de session ni la date d'authentification. */
 export function toPublicSession(user: SessionUser): PublicSession {
-  return { ...user };
+  const { jti: _jti, authAt: _authAt, ...rest } = user;
+  return rest as PublicSession;
 }
 
 export function isPlatformSession(session: SessionUser): session is PlatformSessionUser {

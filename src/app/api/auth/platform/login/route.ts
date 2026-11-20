@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { authenticatePlatformUser } from "@/lib/db/platform-users";
-import { createSessionCookie, clearSessionCookie, getSessionFromRequest } from "@/lib/auth/session";
+import {
+  createSessionCookie,
+  clearSessionCookie,
+  getSessionFromRequest,
+  sessionAbsoluteExpiry,
+} from "@/lib/auth/session";
 import { SESSION_MAX_AGE_SEC } from "@/lib/auth/types";
 import { COOKIE_HOST } from "@/lib/domain";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
@@ -9,6 +14,7 @@ import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { publicRoute } from "@/lib/http/route-scope";
+import { checkAuthPostOrigin } from "@/lib/http/json-same-origin";
 
 function errorDetails(error: unknown) {
   if (error instanceof Error) {
@@ -23,6 +29,9 @@ function errorDetails(error: unknown) {
 
 export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
+
+  const csrf = checkAuthPostOrigin(request);
+  if (csrf) return csrf;
 
   try {
     let body: { email?: string; password?: string; remember?: boolean };
@@ -43,11 +52,17 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     }
 
     const account = emailKey(email);
-    const rl = await consumeDimensions([
+    // IP puis couple IP+compte d'abord ; le compteur du compte n'est alimenté que si ceux-ci laissent passer
+    // (une seule IP ne peut pas épuiser le plafond du compte).
+    let rl = await consumeDimensions([
       { key: `auth:platform-login:ip:${ip}`, ...RATE_POLICIES.login.ip, sensitivity: "sensitive" },
-      { key: `auth:platform-login:account:${account}`, ...RATE_POLICIES.login.account, sensitivity: "sensitive" },
       { key: `auth:platform-login:ip-account:${ip}:${account}`, ...RATE_POLICIES.login.pair, sensitivity: "sensitive" },
     ]);
+    if (rl.allowed) {
+      rl = await consumeDimensions([
+        { key: `auth:platform-login:account:${account}`, ...RATE_POLICIES.login.account, sensitivity: "sensitive" },
+      ]);
+    }
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Trop de tentatives. Réessayez plus tard." },
@@ -90,14 +105,14 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
       route: "/api/auth/platform/login",
       ...errorDetails(error),
     });
-    const msg = error instanceof Error ? error.message : String(error);
-    if (
-      msg.includes("AggregateError") ||
-      msg.includes("ECONNREFUSED") ||
-      msg.includes("P1001") ||
-      msg.includes("connect") ||
-      msg.includes("SESSION_SECRET")
-    ) {
+    if ((error as { code?: unknown } | null)?.code === "AUTH_BUSY") {
+      return NextResponse.json(
+        { error: "Service momentanément indisponible. Réessayez." },
+        { status: 503, headers: { "Retry-After": "5" } },
+      );
+    }
+    const msg = error instanceof Error ? `${error.name} ${error.message}` : String(error);
+    if (/(AggregateError|ECONNREFUSED|ETIMEDOUT|P1001|SESSION_SECRET)/.test(msg)) {
       return NextResponse.json(
         { error: "Service indisponible. Réessayez plus tard." },
         { status: 503 },
@@ -108,6 +123,9 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
 });
 
 export const DELETE = publicRoute(async function DELETE(request: NextRequest) {
+  const csrf = checkAuthPostOrigin(request, { requireJson: false });
+  if (csrf) return csrf;
+
   const session = getSessionFromRequest(request);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(clearSessionCookie());
@@ -115,6 +133,21 @@ export const DELETE = publicRoute(async function DELETE(request: NextRequest) {
   res.cookies.set({ name: COOKIE_HOST, value: "", path: "/", sameSite: "lax", maxAge: 0 });
 
   if (session?.scope === "platform") {
+    // La déconnexion révoque réellement la session courante ; le cookie est effacé même si l'écriture échoue.
+    if (session.jti) {
+      try {
+        const { revokeSession } = await import("@/lib/db/session-revocation");
+        await revokeSession({
+          jti: session.jti,
+          userId: session.id,
+          organizationId: null,
+          scope: "platform",
+          expiresAt: sessionAbsoluteExpiry(session),
+        });
+      } catch (error) {
+        logger.warn("platform session revocation failed", { error: error instanceof Error ? error.name : "unknown" });
+      }
+    }
     await writePlatformAuditLog({
       platformUserId: session.id,
       platformUserName: `${session.firstName} ${session.lastName}`.trim(),

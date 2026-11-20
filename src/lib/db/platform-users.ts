@@ -1,6 +1,13 @@
 import { randomBytes } from "crypto";
 import type { PoolClient } from "pg";
-import { hashPassword, verifyPassword } from "@/lib/auth/crypto";
+import {
+  burnPasswordCheck,
+  checkPasswordUniform,
+  hashPasswordAsync,
+  passwordNeedsRehash,
+  verifyPasswordAsync,
+} from "@/lib/auth/crypto";
+import { logger } from "@/lib/logger";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 import { pool } from "@/lib/db/pool";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
@@ -47,8 +54,29 @@ export async function authenticatePlatformUser(
   );
 
   const user = rows[0];
-  if (!user || user.status !== "ACTIVE") return null;
-  if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) return null;
+  // Compte absent, désactivé ou sans mot de passe : vérification factice de même coût (aucune différence de durée).
+  if (!user || user.status !== "ACTIVE" || !user.passwordHash) {
+    await burnPasswordCheck(password);
+    return null;
+  }
+  if (!(await checkPasswordUniform(password, user.passwordHash))) return null;
+
+  // Re-hachage transparent (coût relevé), sans toucher à sessionVersion ; n'échoue jamais la connexion.
+  try {
+    if (passwordNeedsRehash(user.passwordHash)) {
+      const upgraded = await hashPasswordAsync(password);
+      await pool.query(`UPDATE "PlatformUser" SET "passwordHash" = $1 WHERE id = $2 AND "passwordHash" = $3`, [
+        upgraded,
+        user.id,
+        user.passwordHash,
+      ]);
+    }
+  } catch (error) {
+    logger.warn("re-hachage du mot de passe plateforme ignoré", {
+      route: "db/platform-users",
+      error: error instanceof Error ? error.name : "unknown",
+    });
+  }
 
   return toSession(user);
 }
@@ -91,7 +119,7 @@ export async function changePlatformUserPassword(input: {
   ) {
     throw new Error("PASSWORD_TOO_LONG");
   }
-  const nextHash = hashPassword(input.newPassword);
+  const nextHash = await hashPasswordAsync(input.newPassword);
 
   return withTransaction(async (client) => {
     const { rows } = await client.query<{
@@ -100,7 +128,7 @@ export async function changePlatformUserPassword(input: {
     }>(`SELECT "passwordHash", status FROM "PlatformUser" WHERE id = $1 FOR UPDATE`, [input.id]);
     const current = rows[0];
     if (!current || current.status !== "ACTIVE") throw new Error("NOT_FOUND");
-    if (!current.passwordHash || !verifyPassword(input.currentPassword, current.passwordHash)) {
+    if (!current.passwordHash || !(await verifyPasswordAsync(input.currentPassword, current.passwordHash))) {
       throw new Error("BAD_PASSWORD");
     }
 
@@ -190,7 +218,7 @@ export async function resetPlatformUserPassword(
 ): Promise<void> {
   if (newPassword.length < PLATFORM_MIN_PASSWORD_LENGTH) throw new Error("WEAK_PASSWORD");
   if (newPassword.length > PLATFORM_MAX_PASSWORD_LENGTH) throw new Error("PASSWORD_TOO_LONG");
-  const nextHash = hashPassword(newPassword);
+  const nextHash = await hashPasswordAsync(newPassword);
   await withTransaction(async (client) => {
     const user = await lockPlatformUser(client, userId);
     if (user.status !== "ACTIVE") throw new Error("USER_DISABLED");

@@ -22,7 +22,7 @@ export const GET = tenantRoute(async function GET(request: NextRequest) {
       orgName: auth.session.orgName,
       connectedAt: conn?.connectedAt.toISOString() ?? null,
       canManage: canManageGoogleCalendar(auth.session.role),
-      needsReconnect: conn ? googleConnectionNeedsReconnect(conn.refreshTokenEnc) : false,
+      needsReconnect: conn ? googleConnectionNeedsReconnect(conn.refreshTokenEnc, conn.organizationId) : false,
     };
     return NextResponse.json(payload);
   } catch (error) {

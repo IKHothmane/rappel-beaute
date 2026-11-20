@@ -1,21 +1,18 @@
-import { randomBytes } from "crypto";
 import type { PoolClient } from "pg";
 import { generateSignupPin, hashPassword } from "@/lib/auth/crypto";
 import { pool } from "@/lib/db/pool";
 import { bindPublicInstitute } from "@/lib/db/tenant-context";
 import { normalizeLoginPhone } from "@/lib/auth/login-identifier";
-import { newInstituteTrialEnd } from "@/lib/subscriptions/subscription-service";
-import { getPlanByCode, listPlans } from "@/lib/subscriptions/plans";
+import { isUserEmailUniqueViolation, lockEmailKey, normalizeEmail } from "@/lib/db/email-uniqueness";
+import {
+  PublicSignupError,
+  createInstituteWithOwner,
+  newId,
+  resolveSignupPlan,
+  splitPersonName,
+} from "@/lib/db/institute-create";
 
-export class PublicSignupError extends Error {
-  constructor(
-    public code: "EMAIL_TAKEN" | "PHONE_TAKEN" | "PLAN_NOT_FOUND" | "INVALID",
-    message: string,
-  ) {
-    super(message);
-    this.name = "PublicSignupError";
-  }
-}
+export { PublicSignupError };
 
 type PublicSignupInput = {
   personName: string;
@@ -36,69 +33,8 @@ type PublicSignupCreated = {
   temporaryPassword: string;
 };
 
-function newId(prefix: string) {
-  return `${prefix}_${randomBytes(6).toString("hex")}`;
-}
-
-function splitPersonName(full: string): { firstName: string; lastName: string } {
-  const parts = full.trim().split(/\s+/).filter(Boolean);
-  const firstName = parts[0] ?? "Propriétaire";
-  const lastName = parts.slice(1).join(" ") || firstName;
-  return { firstName, lastName };
-}
-
-function slugifyInstitut(name: string): string {
-  const base = name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
-  return base || "institut";
-}
-
-async function uniqueSlug(client: PoolClient, base: string): Promise<string> {
-  let slug = base;
-  for (let i = 0; i < 12; i++) {
-    const { rows } = await client.query(`SELECT 1 FROM "Organization" WHERE slug = $1 LIMIT 1`, [
-      slug,
-    ]);
-    if (rows.length === 0) return slug;
-    slug = `${base}-${randomBytes(2).toString("hex")}`;
-  }
-  throw new PublicSignupError("INVALID", "Impossible de générer un identifiant d'institut.");
-}
-
-async function resolveSignupPlan() {
-  const preferred = await getPlanByCode("INSTITUT");
-  if (preferred?.active) return preferred;
-  const plans = await listPlans(true);
-  const first = plans[0];
-  if (!first) throw new PublicSignupError("PLAN_NOT_FOUND", "Aucune formule disponible.");
-  return first;
-}
-
-async function seedOrgDefaults(client: PoolClient, organizationId: string) {
-  await client.query(
-    `INSERT INTO "ReactivationSettings" (id, "organizationId", "updatedAt")
-     VALUES ($1, $2, NOW()) ON CONFLICT ("organizationId") DO NOTHING`,
-    [newId("rset"), organizationId],
-  );
-  await client.query(
-    `INSERT INTO "ReviewSettings" (id, "organizationId", "updatedAt")
-     VALUES ($1, $2, NOW()) ON CONFLICT ("organizationId") DO NOTHING`,
-    [newId("rvset"), organizationId],
-  );
-  await client.query(
-    `INSERT INTO "LoyaltyProgram" (id, "organizationId", "updatedAt")
-     VALUES ($1, $2, NOW()) ON CONFLICT ("organizationId") DO NOTHING`,
-    [newId("loy"), organizationId],
-  );
-}
-
 export async function createPublicSignup(input: PublicSignupInput): Promise<PublicSignupCreated> {
-  const email = input.email?.trim().toLowerCase() || null;
+  const email = input.email?.trim() ? normalizeEmail(input.email) : null;
   const phone = normalizeLoginPhone(input.phone);
   if (!phone) throw new PublicSignupError("INVALID", "Indiquez un numéro WhatsApp valide.");
   const institut = input.institut.trim();
@@ -109,69 +45,50 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
 
   const orgId = newId("org");
   const ownerId = newId("u");
-  const subId = newId("sub");
   const now = new Date();
-  const trialEnd = newInstituteTrialEnd(now);
 
   // Avant la connexion : le contexte est posé à l'emprunt du client. Sans institut annoncé,
   // rappel_public échoue WITH CHECK sur Subscription, les réglages et l'Organization elle-même.
   bindPublicInstitute(orgId);
-  const client = await pool.connect();
+  const client: PoolClient = await pool.connect();
   try {
     await client.query("BEGIN");
     const phoneCheck = await client.query(`SELECT id FROM "User" WHERE "loginPhone" = $1 LIMIT 1`, [phone]);
     if (phoneCheck.rows.length) throw new PublicSignupError("PHONE_TAKEN", "Ce numéro WhatsApp possède déjà un compte. Connectez-vous avec ce numéro.");
 
-    const { rows: emailCheck } = await client.query(
-      `SELECT id FROM "User" WHERE LOWER(email) = $1 LIMIT 1`,
-      [email],
-    );
-    const { rows: platformCheck } = await client.query(
-      `SELECT id FROM "PlatformUser" WHERE LOWER(email) = $1 LIMIT 1`,
-      [email],
-    );
-    if (emailCheck.length > 0 || platformCheck.length > 0) {
-      throw new PublicSignupError(
-        "EMAIL_TAKEN",
-        "Cet e-mail a déjà un compte. Connectez-vous ou réinitialisez le mot de passe.",
+    // Vérification applicative (insensible à la casse et aux espaces de bord) dans la transaction ; sans e-mail
+    // (inscription par téléphone) il n'y a rien à comparer.
+    if (email) {
+      await lockEmailKey(client, email);
+      const { rows: emailCheck } = await client.query(
+        `SELECT id FROM "User" WHERE LOWER(BTRIM(email)) = $1 LIMIT 1`,
+        [email],
       );
+      const { rows: platformCheck } = await client.query(
+        `SELECT id FROM "PlatformUser" WHERE LOWER(BTRIM(email)) = $1 LIMIT 1`,
+        [email],
+      );
+      if (emailCheck.length > 0 || platformCheck.length > 0) {
+        throw new PublicSignupError(
+          "EMAIL_TAKEN",
+          "Cet e-mail a déjà un compte. Connectez-vous ou réinitialisez le mot de passe.",
+        );
+      }
     }
 
-    const slug = await uniqueSlug(client, slugifyInstitut(institut));
-
-    await client.query(
-      `INSERT INTO "Organization" (
-        id, name, slug, address, city, phone, email, website, status, "updatedAt"
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'ACTIVE',NOW())`,
-      [
-        orgId,
-        institut,
-        slug,
-        input.address.trim() || null,
-        input.city.trim() || null,
-        phone,
-        email,
-        input.website,
-      ],
-    );
-
-    await client.query(
-      `INSERT INTO "User" (
-        id, "organizationId", email, "firstName", "lastName", phone, role, status, "loginPhone",
-        "passwordHash", "mustChangePassword", "updatedAt"
-      ) VALUES ($1,$2,$3,$4,$5,$6,'OWNER','ACTIVE',$6,$7,true,NOW())`,
-      [ownerId, orgId, email, firstName, lastName, phone, passwordHash],
-    );
-
-    await client.query(
-      `INSERT INTO "Subscription" (
-        id, "organizationId", "planId", status, "priceSnapshot", "currencySnapshot",
-        "startedAt", "currentPeriodStart", "currentPeriodEnd", "trialEndsAt", "updatedAt"
-      ) VALUES ($1,$2,$3,'TRIAL',$4,$5,$6,$6,$7,$7,NOW())`,
-      [subId, orgId, plan.id, plan.price, plan.currency, now, trialEnd],
-    );
-
-    await seedOrgDefaults(client, orgId);
+    await createInstituteWithOwner(client, {
+      orgId,
+      ownerId,
+      institut,
+      address: input.address.trim() || null,
+      city: input.city.trim() || null,
+      phone,
+      email,
+      website: input.website,
+      owner: { firstName, lastName, email, phone, passwordHash, mustChangePassword: true, emailVerifiedAt: null },
+      plan,
+      now,
+    });
     await client.query("COMMIT");
 
     return {
@@ -184,6 +101,13 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
     };
   } catch (error) {
     await client.query("ROLLBACK");
+    // Index d'unicité globale de l'e-mail (migration en attente) : même erreur métier que la vérification ci-dessus.
+    if (isUserEmailUniqueViolation(error)) {
+      throw new PublicSignupError(
+        "EMAIL_TAKEN",
+        "Cet e-mail a déjà un compte. Connectez-vous ou réinitialisez le mot de passe.",
+      );
+    }
     if (typeof error === "object" && error && "code" in error && error.code === "23505" && "constraint" in error && error.constraint === "User_loginPhone_key") {
       throw new PublicSignupError("PHONE_TAKEN", "Ce numéro WhatsApp possède déjà un compte.");
     }
@@ -192,4 +116,3 @@ export async function createPublicSignup(input: PublicSignupInput): Promise<Publ
     client.release();
   }
 }
-

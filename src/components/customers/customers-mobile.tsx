@@ -57,6 +57,7 @@ const SEGMENTS: CustomerSegment[] = ["ALL", "ACTIVE", "AT_RISK", "VIP", "NEW"];
 
 type CustomersMobileProps = {
   orgName: string;
+  canSendWhatsApp: boolean;
   roleLabel: string;
   kpis: CustomerKpis;
   overview: AnalyticsOverview | null;
@@ -84,6 +85,7 @@ type CustomersMobileProps = {
 
 export function CustomersMobile({
   orgName,
+  canSendWhatsApp,
   roleLabel,
   kpis,
   overview,
@@ -306,6 +308,7 @@ export function CustomersMobile({
                 key={c.id}
                 customer={c}
                 orgName={orgName}
+                canSendWhatsApp={canSendWhatsApp}
                 onOpen={() => openFocus(c.id)}
               />
             ))
@@ -345,6 +348,7 @@ export function CustomersMobile({
           customerId={selected.id}
           fallback={selected}
           orgName={orgName}
+          canSendWhatsApp={canSendWhatsApp}
           canWrite={canWrite}
           onEdit={() => onEdit(selected.id)}
         />
@@ -384,10 +388,12 @@ function KpiCard({
 function CustomerListCard({
   customer: c,
   orgName,
+  canSendWhatsApp,
   onOpen,
 }: {
   customer: CustomerListItem;
   orgName: string;
+  canSendWhatsApp: boolean;
   onOpen: () => void;
 }) {
   const badge = segmentBadge(c.segment);
@@ -440,6 +446,7 @@ function CustomerListCard({
           customerId={c.id}
           firstName={c.firstName}
           orgName={orgName}
+          disabled={!canSendWhatsApp || !c.phone?.trim()}
           className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[12px] font-semibold text-white shadow-sm disabled:opacity-60"
         >
           <MessageCircle size={14} />
@@ -462,12 +469,14 @@ function CustomerFocusMobile({
   customerId,
   fallback,
   orgName,
+  canSendWhatsApp,
   canWrite,
   onEdit,
 }: {
   customerId: string;
   fallback: CustomerListItem;
   orgName: string;
+  canSendWhatsApp: boolean;
   canWrite: boolean;
   onEdit: () => void;
 }) {
@@ -631,6 +640,7 @@ function CustomerFocusMobile({
             customerId={person.id}
             firstName={person.firstName}
             orgName={orgName}
+            disabled={!canSendWhatsApp || !person.phone?.trim()}
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[12px] font-semibold text-white shadow-sm disabled:opacity-60"
           >
             <MessageCircle size={16} />
@@ -705,6 +715,7 @@ function CustomerFocusMobile({
             customerId={person.id}
             firstName={person.firstName}
             orgName={orgName}
+            disabled={!canSendWhatsApp || !person.phone?.trim()}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-white text-[12px] font-semibold text-primary shadow-sm disabled:opacity-60"
           >
             <MessageCircle size={14} />

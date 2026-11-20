@@ -11,6 +11,23 @@ export class EmailSendError extends Error {
   }
 }
 
+/** `sara@example.com` -> `s***@e***.com` : les journaux ne contiennent jamais un destinataire en clair. */
+export function maskEmail(value: string): string {
+  const at = value.lastIndexOf("@");
+  if (at < 1) return "***";
+  const local = value.slice(0, at);
+  const domain = value.slice(at + 1);
+  const dot = domain.lastIndexOf(".");
+  const host = dot > 0 ? domain.slice(0, dot) : domain;
+  const tld = dot > 0 ? domain.slice(dot) : "";
+  return `${local[0]}***@${host[0] ?? ""}***${tld}`;
+}
+
+/** Retire toute adresse e-mail d'un texte (corps d'erreur du fournisseur qui peut citer le destinataire). */
+export function scrubEmails(text: string): string {
+  return text.replace(/[A-Za-z0-9._%+'-]+@[A-Za-z0-9.-]+.[A-Za-z]{2,}/g, "[email]");
+}
+
 export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim());
 }
@@ -34,7 +51,7 @@ export async function sendTransactionalEmail(opts: {
   const from = mailFromAddress();
   logger.info("resend send start", {
     route: "email/send",
-    to: opts.to,
+    to: maskEmail(opts.to),
     from,
     subject: opts.subject,
   });
@@ -63,7 +80,7 @@ export async function sendTransactionalEmail(opts: {
         : error instanceof Error
           ? error.message
           : "unknown";
-    logger.error("resend network error", { route: "email/send", detail: cause });
+    logger.error("resend network error", { route: "email/send", detail: scrubEmails(cause) });
     throw new EmailSendError(
       "EMAIL_NETWORK",
       "Impossible de joindre le service e-mail. Vérifiez la connexion puis réessayez.",
@@ -75,7 +92,7 @@ export async function sendTransactionalEmail(opts: {
     logger.error("resend send failed", {
       route: "email/send",
       status: res.status,
-      detail: raw,
+      detail: scrubEmails(raw),
     });
     let userMessage = "Impossible d'envoyer l'e-mail. Réessayez.";
     try {
@@ -98,7 +115,7 @@ export async function sendTransactionalEmail(opts: {
   const messageId = payload?.id ?? null;
   logger.info("resend send ok", {
     route: "email/send",
-    to: opts.to,
+    to: maskEmail(opts.to),
     from,
     messageId,
   });

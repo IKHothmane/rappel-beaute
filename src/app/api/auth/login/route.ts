@@ -16,8 +16,12 @@ import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { consumeDimensions, emailKey, RATE_POLICIES } from "@/lib/rate-limit";
 import { COOKIE_HOST } from "@/lib/domain";
-import { normalizeLoginIdentifier } from "@/lib/auth/login-identifier";
+import { looksLikeEmail, normalizeLoginIdentifier } from "@/lib/auth/login-identifier";
+import { phoneLoginEnabled } from "@/lib/auth/env";
+import { burnPasswordCheck } from "@/lib/auth/crypto";
+import { getEmailSetupRequired } from "@/lib/db/account-security";
 import { publicRoute } from "@/lib/http/route-scope";
+import { checkAuthPostOrigin } from "@/lib/http/json-same-origin";
 
 async function readLoginBody(request: NextRequest): Promise<{
   identifier?: string;
@@ -37,24 +41,27 @@ async function readLoginBody(request: NextRequest): Promise<{
       remember?: boolean;
     };
   } catch {
-    // Fallback si le corps arrive en form-urlencoded (certains clients / proxies).
-    try {
-      const params = new URLSearchParams(raw);
-      if (!params.has("email") && !params.has("identifier") && !params.has("password")) return null;
-      return {
-        identifier: params.get("identifier") ?? undefined,
-        email: params.get("email") ?? undefined,
-        password: params.get("password") ?? undefined,
-        remember: params.get("remember") !== "false",
-      };
-    } catch {
-      return null;
-    }
+    // JSON uniquement (le repli application/x-www-form-urlencoded est retiré : aucun formulaire ne l'utilise).
+    return null;
   }
+}
+
+/** Seules les pannes de connexion à la base donnent un 503 ; le message reste générique. */
+function isDatabaseUnavailable(error: unknown): boolean {
+  const code = typeof error === "object" && error !== null ? (error as { code?: unknown }).code : undefined;
+  if (typeof code === "string" && ["ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", "57P01", "57P03", "08001", "08006"].includes(code)) {
+    return true;
+  }
+  const name = error instanceof Error ? error.name : "";
+  const message = error instanceof Error ? error.message : "";
+  return name === "AggregateError" || /(ECONNREFUSED|P1001)/.test(message);
 }
 
 export const POST = publicRoute(async function POST(request: NextRequest) {
   const ip = clientIp(request);
+
+  const csrf = checkAuthPostOrigin(request);
+  if (csrf) return csrf;
 
   try {
     const body = await readLoginBody(request);
@@ -72,17 +79,31 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     }
 
     const account = emailKey(email);
-    const rl = await consumeDimensions([
+    // 1) IP et couple IP+compte. Refus : on s'arrête ici, le compteur du compte n'est PAS alimenté (sinon une seule
+    //    IP pourrait épuiser le plafond du compte et bloquer son propriétaire).
+    // 2) Plafond du compte seul, contre une attaque répartie sur plusieurs IP.
+    let rl = await consumeDimensions([
       { key: `auth:login:ip:${ip}`, ...RATE_POLICIES.login.ip, sensitivity: "sensitive" },
-      { key: `auth:login:account:${account}`, ...RATE_POLICIES.login.account, sensitivity: "sensitive" },
       { key: `auth:login:ip-account:${ip}:${account}`, ...RATE_POLICIES.login.pair, sensitivity: "sensitive" },
     ]);
+    if (rl.allowed) {
+      rl = await consumeDimensions([
+        { key: `auth:login:account:${account}`, ...RATE_POLICIES.login.account, sensitivity: "sensitive" },
+      ]);
+    }
     if (!rl.allowed) {
       logger.warn("login rate limited", { route: "/api/auth/login", method: "POST" });
       return NextResponse.json(
         { error: "Trop de tentatives. Réessayez plus tard." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfterSec ?? 900) } },
       );
+    }
+
+    // Téléphone désactivé : un identifiant qui n'est pas une adresse e-mail est refusé après les limites de débit,
+    // avec le même message et le même coût (une vérification factice) qu'un refus ordinaire.
+    if (!phoneLoginEnabled() && !looksLikeEmail(email)) {
+      await burnPasswordCheck(String(password));
+      return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
     }
 
     const session =
@@ -139,6 +160,8 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
       logger.warn("audit LOGIN failed", { userId: session.id, error: String(err) });
     });
 
+    // Champ additif : l'interface propose « Sécuriser mon compte » tant que l'e-mail est absent ou non vérifié.
+    const emailSetupRequired = await getEmailSetupRequired(session.id);
     const res = NextResponse.json({
       user: {
         id: session.id,
@@ -151,6 +174,7 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
         accountType: session.accountType,
         scope: session.scope,
         mustChangePassword: session.mustChangePassword,
+        ...(emailSetupRequired === undefined ? {} : { emailSetupRequired }),
       },
       mustChangePassword: session.mustChangePassword,
     });
@@ -165,17 +189,15 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     return res;
   } catch (error) {
     logger.error("login error", { route: "/api/auth/login", error: String(error) });
-    const msg = error instanceof Error ? `${error.name} ${error.message}` : String(error);
-    if (
-      msg.includes("ECONNREFUSED") ||
-      msg.includes("AggregateError") ||
-      msg.includes("P1001") ||
-      msg.includes("connect")
-    ) {
+    if ((error as { code?: unknown } | null)?.code === "AUTH_BUSY") {
+      // File de vérification des mots de passe pleine : surcharge, indépendante du compte visé.
       return NextResponse.json(
-        { error: "Base de données indisponible. Démarrez PostgreSQL puis réessayez." },
-        { status: 503 },
+        { error: "Service momentanément indisponible. Réessayez." },
+        { status: 503, headers: { "Retry-After": "5" } },
       );
+    }
+    if (isDatabaseUnavailable(error)) {
+      return NextResponse.json({ error: "Service momentanément indisponible. Réessayez." }, { status: 503 });
     }
     return NextResponse.json({ error: "Identifiants invalides." }, { status: 401 });
   }

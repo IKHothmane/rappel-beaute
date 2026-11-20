@@ -1,0 +1,6 @@
+{
+  "/domains/app/security/page": "app/domains/app/security/page.js",
+  "/(marketing)/professionnel/page": "app/(marketing)/professionnel/page.js",
+  "/domains/app/verify-email/page": "app/domains/app/verify-email/page.js",
+  "/domains/app/more/page": "app/domains/app/more/page.js"
+}

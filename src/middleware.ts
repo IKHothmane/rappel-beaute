@@ -105,6 +105,9 @@ const APP_PUBLIC_PATHS = [
   "/forgot-password",
   "/reset-password",
   "/activate",
+  // Lien de vérification d'e-mail (inscription ou changement d'adresse) : ouvert sans session, y compris depuis
+  // un autre appareil. Les API /api/auth/** ne passent pas par cette liste (voir le traitement de /api/ ci-dessus).
+  "/verify-email",
 ];
 const ADMIN_PUBLIC_PATHS = ["/login", "/403"];
 const CHANGE_PASSWORD_PATH = "/changer-mot-de-passe";
@@ -250,6 +253,13 @@ export async function middleware(request: NextRequest) {
   if (path === "/api/integrations/google-calendar/callback") {
     const url = request.nextUrl.clone();
     url.pathname = "/api/integrations/google-calendar/callback/";
+    return withFrameDeny(NextResponse.rewrite(url));
+  }
+
+  // Connexion Google : l'URI enregistrée porte le slash final ; sans lui, trailingSlash répondrait par un 308.
+  if (path === "/api/auth/google/callback") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/auth/google/callback/";
     return withFrameDeny(NextResponse.rewrite(url));
   }
 

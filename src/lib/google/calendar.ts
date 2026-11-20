@@ -1,4 +1,7 @@
-import { getSessionSecret, signJwt, verifyJwt } from "@/lib/auth/crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
+import type { NextRequest, NextResponse } from "next/server";
+import { getSessionSecret, signJwtDerived, verifyJwt } from "@/lib/auth/crypto";
+import { cookieSecure } from "@/lib/auth/session";
 import { publicAppOrigin, SITE } from "@/lib/site";
 import { BUSINESS_TZ } from "@/lib/time/business-timezone";
 
@@ -14,6 +17,12 @@ type GoogleOAuthState = {
   orgId: string;
   userId: string;
   redirectUri: string;
+  /** Identifiant à usage unique du state (consommé en base au retour de Google). */
+  jti: string;
+  /** SHA-256 (hex) du nonce posé dans le cookie du navigateur qui a lancé le flux. */
+  nonceHash: string;
+  /** PKCE S256 utilisé pour ce flux (GOOGLE_CALENDAR_PKCE=off le désactive si Google le refusait). */
+  pkce: boolean;
 };
 
 export type GoogleTokenSet = {
@@ -92,21 +101,92 @@ export function googleRedirectUri(origin: string): string {
   return `${withPath}/`;
 }
 
-export function signGoogleOAuthState(payload: GoogleOAuthState): string {
-  return signJwt(payload, getSessionSecret(), 10 * 60);
+/** Durée de vie du state et du cookie qui le lie au navigateur. */
+export const GOOGLE_OAUTH_STATE_TTL_SEC = 10 * 60;
+
+/**
+ * Cookie court posé au départ du flux : `<nonce>.<code_verifier PKCE>`. `__Host-` (Secure, sans Domain, Path=/)
+ * dès que les cookies sont Secure ; en HTTP de développement le préfixe est omis, comme pour la session.
+ * Le state (dans l'URL) ne porte que le hachage du nonce : le nonce et le verifier ne quittent jamais le navigateur.
+ */
+export function googleCalendarCookieName(): string {
+  return cookieSecure() ? "__Host-rb_gcal" : "rb_gcal";
 }
 
-export function verifyGoogleOAuthState(token: string): GoogleOAuthState | null {
-  const payload = verifyJwt<GoogleOAuthState & Record<string, unknown>>(
+function cookieOptions(maxAge: number) {
+  return { httpOnly: true, sameSite: "lax" as const, secure: cookieSecure(), path: "/", maxAge };
+}
+
+const sha256Hex = (value: string) => createHash("sha256").update(value).digest("hex");
+
+export type GoogleOAuthFlow = { state: string; cookieValue: string; codeChallenge?: string };
+
+function pkceEnabled(): boolean {
+  return process.env.GOOGLE_CALENDAR_PKCE?.trim().toLowerCase() !== "off";
+}
+
+/** Nouveau flux : state signé à usage unique, nonce lié au navigateur, verifier / challenge PKCE (S256). */
+export function startGoogleOAuthFlow(input: { orgId: string; userId: string; redirectUri: string }): GoogleOAuthFlow {
+  const nonce = randomBytes(24).toString("base64url");
+  const codeVerifier = randomBytes(32).toString("base64url");
+  const pkce = pkceEnabled();
+  const state = signGoogleOAuthState({
+    purpose: "gcal",
+    orgId: input.orgId,
+    userId: input.userId,
+    redirectUri: input.redirectUri,
+    jti: randomBytes(16).toString("hex"),
+    nonceHash: sha256Hex(nonce),
+    pkce,
+  });
+  return {
+    state,
+    cookieValue: `${nonce}.${codeVerifier}`,
+    codeChallenge: pkce ? createHash("sha256").update(codeVerifier).digest("base64url") : undefined,
+  };
+}
+
+export function setGoogleCalendarCookie(res: NextResponse, value: string): void {
+  res.cookies.set(googleCalendarCookieName(), value, cookieOptions(GOOGLE_OAUTH_STATE_TTL_SEC));
+}
+
+export function clearGoogleCalendarCookie(res: NextResponse): void {
+  res.cookies.set(googleCalendarCookieName(), "", cookieOptions(0));
+}
+
+/** Le nonce du cookie doit correspondre au hachage porté par le state ; renvoie le verifier PKCE, sinon null. */
+export function matchGoogleCalendarCookie(request: NextRequest, state: GoogleOAuthState): string | null {
+  const raw = request.cookies.get(googleCalendarCookieName())?.value;
+  if (!raw) return null;
+  const [nonce, verifier, extra] = raw.split(".");
+  if (!nonce || !verifier || extra !== undefined || verifier.length < 43 || verifier.length > 128) return null;
+  const expected = Buffer.from(state.nonceHash, "utf8");
+  const actual = Buffer.from(sha256Hex(nonce), "utf8");
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
+  return verifier;
+}
+
+export function signGoogleOAuthState(payload: GoogleOAuthState): string {
+  // Clé dérivée « oauth-state » : un state ne peut ni servir de jeton de session ni l'inverse.
+  return signJwtDerived(payload, getSessionSecret(), "oauth-state", GOOGLE_OAUTH_STATE_TTL_SEC);
+}
+
+export function verifyGoogleOAuthState(token: string): (GoogleOAuthState & { exp: number }) | null {
+  const payload = verifyJwt<GoogleOAuthState & { exp: number } & Record<string, unknown>>(
     token,
     getSessionSecret(),
+    { purpose: "oauth-state", allowLegacy: false },
   );
   if (
     !payload ||
     payload.purpose !== "gcal" ||
     !payload.orgId ||
     !payload.userId ||
-    !payload.redirectUri
+    !payload.redirectUri ||
+    typeof payload.jti !== "string" ||
+    payload.jti.length < 16 ||
+    typeof payload.nonceHash !== "string" ||
+    typeof payload.pkce !== "boolean"
   ) {
     return null;
   }
@@ -115,10 +195,14 @@ export function verifyGoogleOAuthState(token: string): GoogleOAuthState | null {
     orgId: payload.orgId,
     userId: payload.userId,
     redirectUri: payload.redirectUri,
+    jti: payload.jti,
+    nonceHash: payload.nonceHash,
+    pkce: payload.pkce,
+    exp: payload.exp,
   };
 }
 
-export function googleAuthorizeUrl(opts: { redirectUri: string; state: string }): string {
+export function googleAuthorizeUrl(opts: { redirectUri: string; state: string; codeChallenge?: string }): string {
   const params = new URLSearchParams({
     client_id: clientId(),
     redirect_uri: opts.redirectUri,
@@ -129,6 +213,10 @@ export function googleAuthorizeUrl(opts: { redirectUri: string; state: string })
     include_granted_scopes: "false",
     state: opts.state,
   });
+  if (opts.codeChallenge) {
+    params.set("code_challenge", opts.codeChallenge);
+    params.set("code_challenge_method", "S256");
+  }
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
@@ -151,17 +239,23 @@ async function parseTokenResponse(res: Response): Promise<GoogleTokenSet> {
   };
 }
 
-export async function exchangeGoogleCode(code: string, redirectUri: string): Promise<GoogleTokenSet> {
+export async function exchangeGoogleCode(
+  code: string,
+  redirectUri: string,
+  codeVerifier?: string,
+): Promise<GoogleTokenSet> {
+  const body = new URLSearchParams({
+    code,
+    client_id: clientId(),
+    client_secret: clientSecret(),
+    redirect_uri: redirectUri,
+    grant_type: "authorization_code",
+  });
+  if (codeVerifier) body.set("code_verifier", codeVerifier);
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code,
-      client_id: clientId(),
-      client_secret: clientSecret(),
-      redirect_uri: redirectUri,
-      grant_type: "authorization_code",
-    }),
+    body,
   });
   return parseTokenResponse(res);
 }

@@ -1,10 +1,15 @@
 import { pool } from "@/lib/db/pool";
-import { normalizeLoginIdentifier, normalizeLoginPhone } from "@/lib/auth/login-identifier";
+import { looksLikeEmail, normalizeLoginIdentifier, normalizeLoginPhone } from "@/lib/auth/login-identifier";
+import { phoneLoginEnabled } from "@/lib/auth/env";
 import {
+  burnPasswordCheck,
+  checkPasswordUniform,
   generateTemporaryPassword,
-  hashPassword,
-  verifyPassword,
+  hashPasswordAsync,
+  passwordNeedsRehash,
+  verifyPasswordAsync,
 } from "@/lib/auth/crypto";
+import { logger } from "@/lib/logger";
 import type { AppSessionUser, SessionUser } from "@/lib/auth/types";
 import type { AppRole } from "@/lib/rbac";
 import { writeAuditLog } from "@/lib/db/audit";
@@ -62,18 +67,53 @@ export async function getUserSessionState(userId: string): Promise<UserSessionSt
   };
 }
 
+/**
+ * Re-hachage transparent : un haché au format historique ou de coût inférieur est remplacé par le haché courant
+ * dès que le mot de passe vient d'être vérifié. Comparaison-échange sur l'ancien haché (un changement de mot de
+ * passe concurrent n'est jamais écrasé), sans toucher à sessionVersion : aucune session n'est déconnectée.
+ * Ne fait jamais échouer la connexion.
+ */
+async function upgradePasswordHash(userId: string, oldHash: string, plain: string): Promise<void> {
+  try {
+    if (!passwordNeedsRehash(oldHash)) return;
+    const next = await hashPasswordAsync(plain);
+    await pool.query(`UPDATE "User" SET "passwordHash" = $1 WHERE id = $2 AND "passwordHash" = $3`, [
+      next,
+      userId,
+      oldHash,
+    ]);
+  } catch (error) {
+    logger.warn("re-hachage du mot de passe ignoré", {
+      route: "db/users",
+      error: error instanceof Error ? error.name : "unknown",
+    });
+  }
+}
+
 export async function authenticateUser(
   email: string,
   password: string,
 ): Promise<SessionUser | null> {
+  if (typeof password !== "string" || password.length > MAX_PASSWORD_LENGTH) return null;
   const normalized = normalizeLoginIdentifier(email);
-  const phone = normalizeLoginPhone(email);
+  // Téléphone désactivé (AUTH_PHONE_LOGIN_ENABLED faux) : loginPhone n'est jamais interrogé et un identifiant qui
+  // n'est pas une adresse e-mail est refusé avec le même coût qu'un autre refus.
+  const phoneAllowed = phoneLoginEnabled();
+  if (!phoneAllowed && !looksLikeEmail(normalized)) {
+    await burnPasswordCheck(password);
+    return null;
+  }
+  const phone = phoneAllowed ? normalizeLoginPhone(email) : null;
 
   const { rows: platformRows } = await pool.query(
     `SELECT id FROM "PlatformUser" WHERE LOWER(email) = $1 LIMIT 1`,
     [normalized],
   );
-  if (platformRows.length > 0) return null;
+  if (platformRows.length > 0) {
+    // Le compte plateforme est vérifié par authenticatePlatformUser : même coût ici pour ne pas le trahir.
+    await burnPasswordCheck(password);
+    return null;
+  }
 
   const { rows } = await pool.query<UserRow>(
     `SELECT
@@ -98,13 +138,17 @@ export async function authenticateUser(
     [normalized, phone],
   );
 
-  if (rows.length !== 1) return null;
-  const user = rows[0];
-  if (user.userStatus !== "ACTIVE") return null;
-  if (user.orgStatus !== "ACTIVE") return null;
-  if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) {
+  // Compte absent, ambigu, désactivé, institut inactif ou sans mot de passe : opérations factices de même coût
+  // qu'un refus réel (une de classe historique et une de classe courante, voir checkPasswordUniform).
+  const user = rows.length === 1 ? rows[0] : undefined;
+  if (!user || user.userStatus !== "ACTIVE" || user.orgStatus !== "ACTIVE" || !user.passwordHash) {
+    await burnPasswordCheck(password);
     return null;
   }
+  if (!(await checkPasswordUniform(password, user.passwordHash))) {
+    return null;
+  }
+  await upgradePasswordHash(user.id, user.passwordHash, password);
 
   return {
     id: user.id,
@@ -151,7 +195,7 @@ export async function adminResetTemporaryPassword(opts: {
   if (user.status !== "ACTIVE") throw new Error("USER_DISABLED");
 
   const temporaryPassword = generateTemporaryPassword();
-  const passwordHash = hashPassword(temporaryPassword);
+  const passwordHash = await hashPasswordAsync(temporaryPassword);
 
   await pool.query(
     `UPDATE "User"
@@ -206,6 +250,9 @@ export async function changeOwnPassword(opts: {
     throw new Error("PASSWORD_TOO_LONG");
   }
 
+  // Calculé avant la transaction : le verrou de ligne n'est pas tenu pendant le hachage.
+  const nextPasswordHash = await hashPasswordAsync(opts.newPassword);
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -247,18 +294,18 @@ export async function changeOwnPassword(opts: {
       if (
         current.length > MAX_PASSWORD_LENGTH ||
         !user.passwordHash ||
-        !verifyPassword(current, user.passwordHash)
+        !(await verifyPasswordAsync(current, user.passwordHash))
       ) {
         throw new Error("CURRENT_PASSWORD_INVALID");
       }
     }
 
     // Interdit de réutiliser le mot de passe temporaire (ou l'actuel)
-    if (user.passwordHash && verifyPassword(opts.newPassword, user.passwordHash)) {
+    if (user.passwordHash && (await verifyPasswordAsync(opts.newPassword, user.passwordHash))) {
       throw new Error("PASSWORD_REUSE");
     }
 
-    const passwordHash = hashPassword(opts.newPassword);
+    const passwordHash = nextPasswordHash;
     const { rows: updated } = await client.query<{ sessionVersion: number }>(
       `UPDATE "User"
        SET "passwordHash" = $1,

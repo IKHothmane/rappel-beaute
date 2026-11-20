@@ -17,6 +17,8 @@ import { logoutDestination } from "@/lib/auth/logout-destination";
 type SessionContextValue = {
   user: PublicSession | null;
   loading: boolean;
+  /** Vrai tant que l'e-mail du compte est absent ou non vérifié (champ additif de /api/auth/session/). */
+  emailSetupRequired: boolean;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -26,18 +28,22 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PublicSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [emailSetupRequired, setEmailSetupRequired] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/session/", { credentials: "include" });
       if (!res.ok) {
         setUser(null);
+        setEmailSetupRequired(false);
         return;
       }
-      const data = (await res.json()) as { user: PublicSession };
+      const data = (await res.json()) as { user: PublicSession & { emailSetupRequired?: boolean } };
       setUser(data.user);
+      setEmailSetupRequired(data.user?.emailSetupRequired === true);
     } catch {
       setUser(null);
+      setEmailSetupRequired(false);
     }
   }, []);
 
@@ -53,8 +59,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, refresh, logout }),
-    [user, loading, refresh, logout],
+    () => ({ user, loading, emailSetupRequired, refresh, logout }),
+    [user, loading, emailSetupRequired, refresh, logout],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -30,3 +30,29 @@ describe("Phone signup API", () => {
     expect(JSON.stringify(Object.values(mocks.logger).flatMap((method) => method.mock.calls))).not.toContain("123456");
   });
 });
+
+describe("Phone signup API : drapeau AUTH_PHONE_LOGIN_ENABLED", () => {
+  it.each(["false", "0", "off", "OFF", "no"])("%s : 410 sans rien lire ni créer, sans mot de passe dans la réponse", async (value) => {
+    vi.stubEnv("AUTH_PHONE_LOGIN_ENABLED", value);
+    try {
+      const response = await POST(request());
+      expect(response.status).toBe(410);
+      const text = JSON.stringify(await response.json());
+      expect(text).toContain("Inscription par téléphone désactivée, utilisez e-mail ou Google");
+      expect(text).not.toMatch(/credentials|temporaryPassword|123456/);
+      expect(mocks.create).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("vrai par défaut (variable absente ou vide) : comportement historique conservé", async () => {
+    vi.stubEnv("AUTH_PHONE_LOGIN_ENABLED", "");
+    try {
+      expect((await POST(request())).status).toBe(200);
+      expect(mocks.create).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});

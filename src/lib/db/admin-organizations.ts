@@ -19,6 +19,7 @@ import type { SubscriptionStatus } from "@/types/subscription";
 import { pool } from "@/lib/db/pool";
 import { hashActivationToken } from "@/lib/db/activation";
 import { withTransaction } from "@/lib/db/transaction";
+import { emailOwner, isUserEmailUniqueViolation, lockEmailKey } from "@/lib/db/email-uniqueness";
 
 function newId(prefix: string) {
   return `${prefix}_${randomBytes(6).toString("hex")}`;
@@ -342,11 +343,9 @@ export async function createOrganization(
   try {
     await client.query("BEGIN");
 
-    const { rows: emailCheck } = await client.query(
-      `SELECT id FROM "User" WHERE LOWER(email) = $1 LIMIT 1`,
-      [ownerEmail],
-    );
-    if (emailCheck.length > 0) throw new Error("OWNER_EMAIL_TAKEN");
+    // Insensible à la casse et aux espaces de bord, contre les comptes institut ET les administrateurs plateforme.
+    await lockEmailKey(client, ownerEmail);
+    if ((await emailOwner(client, ownerEmail)) !== "free") throw new Error("OWNER_EMAIL_TAKEN");
 
     await client.query(
       `INSERT INTO "Organization" (
@@ -435,6 +434,8 @@ export async function createOrganization(
     };
   } catch (e) {
     await client.query("ROLLBACK");
+    // Index d'unicité globale de l'e-mail (migration en attente) : même erreur métier que le contrôle ci-dessus.
+    if (isUserEmailUniqueViolation(e)) throw new Error("OWNER_EMAIL_TAKEN");
     throw e;
   } finally {
     client.release();

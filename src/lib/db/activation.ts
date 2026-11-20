@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "crypto";
-import { hashPassword } from "@/lib/auth/crypto";
+import { hashPasswordAsync } from "@/lib/auth/crypto";
 import { writeAuditLog } from "@/lib/db/audit";
 import { pool } from "@/lib/db/pool";
+import { bindPublicInstitute } from "@/lib/db/tenant-context";
 
 /** Borne le coût de scrypt sur une entrée hostile. */
 const MAX_PASSWORD_LENGTH = 200;
@@ -11,32 +12,54 @@ const HASHED_PREFIX = "sha256:";
 
 /**
  * Forme stockée d'un jeton de réinitialisation. Seul le haché est conservé en base :
- * une fuite de la table ne donne pas de lien utilisable. Aucune migration : la colonne `token`
- * est un texte unique, et les lignes antérieures (clair, émises aussi par la création d'institut)
- * restent reconnues par `activateAccount`.
+ * une fuite de la table ne donne pas de lien utilisable. Les lignes antérieures (jetons en clair) restent
+ * reconnues par `activateAccount` le temps de la transition : la fonction de purge planifiée
+ * (app_purge_expired_auth_data, migration 20261120100000) les remplace sur place par leur haché sans invalider
+ * les liens en attente, et supprime les jetons expirés. La branche « clair » pourra alors être retirée.
  */
 export function hashActivationToken(token: string): string {
   return `${HASHED_PREFIX}${createHash("sha256").update(token).digest("hex")}`;
 }
 
-/** Lien d'activation existant, réutilisé pour la réinitialisation. null si compte inconnu. */
+/**
+ * Lien d'activation existant, réutilisé pour la réinitialisation. null si compte inconnu.
+ * Un nouveau jeton invalide les précédents du même compte : la ligne du compte est verrouillée, les jetons
+ * encore ouverts sont consommés et le nouveau est inséré dans la même transaction (deux demandes simultanées
+ * ne laissent jamais deux liens valides).
+ */
 export async function issuePasswordResetToken(email: string): Promise<string | null> {
   const normalized = email.trim().toLowerCase();
-  const { rows } = await pool.query<{ id: string }>(
-    `SELECT id FROM "User" WHERE LOWER(email) = $1 AND status = 'ACTIVE' LIMIT 1`,
-    [normalized],
-  );
-  const user = rows[0];
-  if (!user) return null;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query<{ id: string }>(
+      `SELECT id FROM "User" WHERE LOWER(email) = $1 AND status = 'ACTIVE' LIMIT 1 FOR UPDATE`,
+      [normalized],
+    );
+    const user = rows[0];
+    if (!user) {
+      await client.query("ROLLBACK");
+      return null;
+    }
 
-  const token = randomBytes(32).toString("hex");
-  const expires = new Date(Date.now() + 60 * 60 * 1000);
-  await pool.query(
-    `INSERT INTO "ActivationToken" (id, "userId", token, "expiresAt")
-     VALUES ($1, $2, $3, $4)`,
-    [`act_${randomBytes(6).toString("hex")}`, user.id, hashActivationToken(token), expires],
-  );
-  return token;
+    await client.query(`UPDATE "ActivationToken" SET "usedAt" = NOW() WHERE "userId" = $1 AND "usedAt" IS NULL`, [
+      user.id,
+    ]);
+    const token = randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
+    await client.query(
+      `INSERT INTO "ActivationToken" (id, "userId", token, "expiresAt")
+       VALUES ($1, $2, $3, $4)`,
+      [`act_${randomBytes(6).toString("hex")}`, user.id, hashActivationToken(token), expires],
+    );
+    await client.query("COMMIT");
+    return token;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => null);
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function activateAccount(token: string, password: string): Promise<{ email: string }> {
@@ -50,6 +73,14 @@ export async function activateAccount(token: string, password: string): Promise<
   ) {
     throw new Error("TOKEN_INVALID");
   }
+
+  // Le rôle public n'écrit l'audit de l'institut (AuditLog) que si l'institut est annoncé AVANT l'emprunt de la
+  // connexion : on lit donc l'institut du jeton d'abord (lecture seule), sans rien révéler s'il est inconnu.
+  const { rows: owner } = await pool.query<{ organizationId: string }>(
+    `SELECT u."organizationId" FROM "ActivationToken" t JOIN "User" u ON u.id = t."userId" WHERE t.token = ANY($1::text[]) LIMIT 1`,
+    [[hashActivationToken(token), token]],
+  );
+  if (owner[0]) bindPublicInstitute(owner[0].organizationId);
 
   const client = await pool.connect();
   try {
@@ -80,7 +111,7 @@ export async function activateAccount(token: string, password: string): Promise<
     // Un jeton ne réactive jamais un compte désactivé.
     if (row.userStatus === "DISABLED") throw new Error("TOKEN_INVALID");
 
-    const passwordHash = hashPassword(password);
+    const passwordHash = await hashPasswordAsync(password);
     const { rowCount } = await client.query(
       `UPDATE "User"
        SET "passwordHash" = $1,

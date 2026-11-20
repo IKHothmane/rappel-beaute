@@ -94,6 +94,54 @@
   line-height: 1.35;
   color: #594452;
 }
+.rb-login-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 2.5rem;
+  margin-top: 0.85rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid #dadce0;
+  border-radius: var(--vt-size-999px);
+  background: #fff;
+  color: #3c4043;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: var(--vt-leading-1p4);
+  text-decoration: none;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+.rb-login-google:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px #3c40434d;
+}
+.rb-login-google[aria-busy="true"] {
+  cursor: wait;
+  opacity: 0.75;
+}
+.rb-login-or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  color: #7a586a;
+  font-size: var(--vt-fs-caption);
+}
+.rb-login-or::before,
+.rb-login-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e8d0df;
+}
+.rb-login .rb-login-google-error {
+  margin-top: 0.75rem;
+}
 .rb-login-form {
   display: grid;
   gap: 0.55rem;

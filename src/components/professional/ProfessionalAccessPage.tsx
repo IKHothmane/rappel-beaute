@@ -43,6 +43,10 @@ type Props = {
   loading?: boolean;
   error?: string | null;
   credentials?: ProfessionalCredentials | null;
+  /** Affiché au-dessus du formulaire (ex. bouton Google + séparateur). */
+  topSlot?: ReactNode;
+  /** Remplace le formulaire classique (ex. formulaire d'institut après connexion Google). */
+  formOverride?: ReactNode;
 };
 const initialValues: ProfessionalFormData = {
   fullName: "",
@@ -61,7 +65,7 @@ const MODULES = [
   { icon: ChartNoAxesCombined, label: "Statistiques" },
 ];
 
-function CitySelect({
+export function CitySelect({
   id,
   groups,
   value,
@@ -147,7 +151,7 @@ function CitySelect({
   );
 }
 
-function Field({
+export function Field({
   id,
   label,
   required,
@@ -175,6 +179,8 @@ export default function ProfessionalAccessPage({
   loading = false,
   error = null,
   credentials = null,
+  topSlot = null,
+  formOverride = null,
 }: Props) {
   const [form, setForm] = useState(initialValues);
   function update(key: keyof ProfessionalFormData, value: string | boolean) {
@@ -297,140 +303,143 @@ export default function ProfessionalAccessPage({
             </div>
           ) : (
             <>
-              <form
-                onSubmit={handleSubmit}
-                className="pro-form"
-                aria-label="Inscription de votre institut"
-              >
-                <fieldset disabled={loading}>
-                  <legend className="sr-only">
-                    Informations de votre institut et de votre compte
-                  </legend>
-                  <Field id="pro-name" label="Votre prénom et nom" required>
-                    <div className="pro-input">
-                      <UserRound aria-hidden="true" />
-                      <input
-                        id="pro-name"
-                        name="name"
-                        autoComplete="name"
-                        placeholder="Ex. : Kenza Berrada"
-                        required
-                        minLength={2}
-                        maxLength={L.name}
-                        value={form.fullName}
-                        onChange={(e) => update("fullName", e.target.value)}
-                      />
-                    </div>
-                  </Field>
-                  <Field id="pro-institut" label="Nom de l’institut" required>
-                    <div className="pro-input">
-                      <Store aria-hidden="true" />
-                      <input
-                        id="pro-institut"
-                        name="institut"
-                        placeholder="Ex. : Institut Belle Femme"
-                        autoComplete="organization"
-                        required
-                        minLength={2}
-                        maxLength={L.institut}
-                        value={form.instituteName}
-                        onChange={(e) => update("instituteName", e.target.value)}
-                      />
-                    </div>
-                  </Field>
-                  <div className="pro-row">
-                    <Field id="pro-city" label="Ville" required>
-                      <CitySelect
-                        id="pro-city"
-                        groups={cityGroups}
-                        value={form.city}
-                        onChange={(city) => update("city", city)}
-                      />
-                    </Field>
-                    <Field id="pro-phone" label="Téléphone WhatsApp" required>
+              {topSlot}
+              {formOverride ?? (
+                <form
+                  onSubmit={handleSubmit}
+                  className="pro-form"
+                  aria-label="Inscription de votre institut"
+                >
+                  <fieldset disabled={loading}>
+                    <legend className="sr-only">
+                      Informations de votre institut et de votre compte
+                    </legend>
+                    <Field id="pro-name" label="Votre prénom et nom" required>
                       <div className="pro-input">
-                        <Phone aria-hidden="true" />
+                        <UserRound aria-hidden="true" />
                         <input
-                          id="pro-phone"
-                          name="phone"
-                          type="tel"
-                          autoComplete="tel"
-                          inputMode="numeric"
-                          placeholder="06 12 34 56 78"
+                          id="pro-name"
+                          name="name"
+                          autoComplete="name"
+                          placeholder="Ex. : Kenza Berrada"
                           required
-                          pattern="[0-9]{8,10}"
-                          title="Saisissez entre 8 et 10 chiffres."
-                          maxLength={PHONE_MAX_DIGITS}
-                          value={form.whatsapp}
-                          onChange={(e) => update("whatsapp", limitPhoneDigits(e.target.value))}
+                          minLength={2}
+                          maxLength={L.name}
+                          value={form.fullName}
+                          onChange={(e) => update("fullName", e.target.value)}
                         />
                       </div>
                     </Field>
-                  </div>
-                  <Field id="pro-email" label="E-mail professionnel" required>
-                    <div className="pro-input">
-                      <Mail aria-hidden="true" />
-                      <input
-                        id="pro-email"
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="contact@moninstitut.ma"
-                        required
-                        maxLength={L.email}
-                        value={form.email}
-                        onChange={(e) => update("email", e.target.value)}
-                      />
-                    </div>
-                  </Field>
-                  <div className="pro-website">
-                    <Field id="pro-website" label="Site web (facultatif)">
+                    <Field id="pro-institut" label="Nom de l’institut" required>
                       <div className="pro-input">
-                        <Globe aria-hidden="true" />
+                        <Store aria-hidden="true" />
                         <input
-                          id="pro-website"
-                          name="website"
-                          type="text"
-                          inputMode="url"
-                          autoComplete="url"
-                          placeholder="https://www.moninstitut.ma"
-                          maxLength={L.website}
-                          value={form.website}
-                          onChange={(e) => update("website", e.target.value)}
+                          id="pro-institut"
+                          name="institut"
+                          placeholder="Ex. : Institut Belle Femme"
+                          autoComplete="organization"
+                          required
+                          minLength={2}
+                          maxLength={L.institut}
+                          value={form.instituteName}
+                          onChange={(e) => update("instituteName", e.target.value)}
                         />
                       </div>
                     </Field>
-                  </div>
-                  <Field id="pro-needs" label="Précisions et besoins (facultatif)">
-                    <textarea
-                      id="pro-needs"
-                      name="message"
-                      placeholder="Parlez-nous de votre institut et de vos besoins…"
-                      maxLength={L.message}
-                      value={form.needs}
-                      onChange={(e) => update("needs", e.target.value)}
-                    />
-                    <span className="pro-counter">
-                      {form.needs.length}/{L.message}
-                    </span>
-                  </Field>
-                  <p className="pro-help">
-                    Votre numéro WhatsApp servira d’identifiant. Un mot de passe temporaire
-                    s’affichera une fois votre compte créé.
-                  </p>
-                  {error && (
-                    <p role="alert" className="pro-error">
-                      {error}
+                    <div className="pro-row">
+                      <Field id="pro-city" label="Ville" required>
+                        <CitySelect
+                          id="pro-city"
+                          groups={cityGroups}
+                          value={form.city}
+                          onChange={(city) => update("city", city)}
+                        />
+                      </Field>
+                      <Field id="pro-phone" label="Téléphone WhatsApp" required>
+                        <div className="pro-input">
+                          <Phone aria-hidden="true" />
+                          <input
+                            id="pro-phone"
+                            name="phone"
+                            type="tel"
+                            autoComplete="tel"
+                            inputMode="numeric"
+                            placeholder="06 12 34 56 78"
+                            required
+                            pattern="[0-9]{8,10}"
+                            title="Saisissez entre 8 et 10 chiffres."
+                            maxLength={PHONE_MAX_DIGITS}
+                            value={form.whatsapp}
+                            onChange={(e) => update("whatsapp", limitPhoneDigits(e.target.value))}
+                          />
+                        </div>
+                      </Field>
+                    </div>
+                    <Field id="pro-email" label="E-mail professionnel" required>
+                      <div className="pro-input">
+                        <Mail aria-hidden="true" />
+                        <input
+                          id="pro-email"
+                          name="email"
+                          type="email"
+                          autoComplete="email"
+                          placeholder="contact@moninstitut.ma"
+                          required
+                          maxLength={L.email}
+                          value={form.email}
+                          onChange={(e) => update("email", e.target.value)}
+                        />
+                      </div>
+                    </Field>
+                    <div className="pro-website">
+                      <Field id="pro-website" label="Site web (facultatif)">
+                        <div className="pro-input">
+                          <Globe aria-hidden="true" />
+                          <input
+                            id="pro-website"
+                            name="website"
+                            type="text"
+                            inputMode="url"
+                            autoComplete="url"
+                            placeholder="https://www.moninstitut.ma"
+                            maxLength={L.website}
+                            value={form.website}
+                            onChange={(e) => update("website", e.target.value)}
+                          />
+                        </div>
+                      </Field>
+                    </div>
+                    <Field id="pro-needs" label="Précisions et besoins (facultatif)">
+                      <textarea
+                        id="pro-needs"
+                        name="message"
+                        placeholder="Parlez-nous de votre institut et de vos besoins…"
+                        maxLength={L.message}
+                        value={form.needs}
+                        onChange={(e) => update("needs", e.target.value)}
+                      />
+                      <span className="pro-counter">
+                        {form.needs.length}/{L.message}
+                      </span>
+                    </Field>
+                    <p className="pro-help">
+                      Votre numéro WhatsApp servira d’identifiant. Un mot de passe temporaire
+                      s’affichera une fois votre compte créé.
                     </p>
-                  )}
-                  <div className="pro-actions">
-                    <button className="pro-primary" type="submit" aria-busy={loading}>
-                      {loading ? "Création du compte…" : "Créer mon institut"}
-                      {!loading && <ArrowRight aria-hidden="true" />}
-                    </button>
-                  </div>
-                </fieldset>
-              </form>
+                    {error && (
+                      <p role="alert" className="pro-error">
+                        {error}
+                      </p>
+                    )}
+                    <div className="pro-actions">
+                      <button className="pro-primary" type="submit" aria-busy={loading}>
+                        {loading ? "Création du compte…" : "Créer mon institut"}
+                        {!loading && <ArrowRight aria-hidden="true" />}
+                      </button>
+                    </div>
+                  </fieldset>
+                </form>
+              )}
               <div className="pro-trust">
                 <div>
                   <Gift aria-hidden="true" />

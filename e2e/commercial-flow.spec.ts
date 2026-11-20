@@ -5,7 +5,11 @@ const PLATFORM = { email: "admin@rappelbeaute.ma", password: "demo1234" };
 
 test.describe("Parcours commercial — seed Institut Royal", () => {
   test("OWNER login → dashboard", async ({ page }) => {
+    // La lecture de /api/auth/config/ part d'un effet React : sa réponse prouve que le formulaire est hydraté
+    // (sinon un envoi trop précoce déclenche la soumission native du navigateur, sans appel à l'API).
+    const hydrated = page.waitForResponse((r) => r.url().includes("/api/auth/config/"));
     await page.goto("/login/?__host=app", { waitUntil: "domcontentloaded" });
+    await hydrated;
     // /login/ sur le domaine public renvoie vers /connexion/, qui a aussi
     // le champ e-mail du pied de page. On vise uniquement le formulaire.
     const form = page.locator("form.rb-login-form");
@@ -14,7 +18,9 @@ test.describe("Parcours commercial — seed Institut Royal", () => {
     await email.fill(OWNER.email);
     await form.locator('input[name="password"]').fill(OWNER.password);
     await form.locator('button[type="submit"]').click();
-    await page.waitForURL(/dashboard/, { timeout: 15_000 });
+    // Un compte avec e-mail (même non vérifié) arrive sur le tableau de bord ; seul un compte SANS e-mail
+    // est guidé vers « Sécuriser mon compte ».
+    await page.waitForURL(/dashboard/, { timeout: 30_000 });
     await expect(page.locator("body")).toContainText(/Institut|Dashboard|Tableau/i);
   });
 

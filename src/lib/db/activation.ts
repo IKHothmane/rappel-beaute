@@ -32,13 +32,16 @@ export async function issuePasswordResetToken(email: string): Promise<string | n
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // Même normalisation que l'unicité globale (LOWER(BTRIM(email))). Si plusieurs comptes partagent cet
+    // e-mail (doublons historiques), on n'émet rien : le lien pourrait ouvrir le mauvais compte.
     const { rows } = await client.query<{ id: string }>(
-      `SELECT id FROM "User" WHERE LOWER(email) = $1 AND status = 'ACTIVE' LIMIT 1 FOR UPDATE`,
+      `SELECT id FROM "User" WHERE LOWER(BTRIM(email)) = $1 AND status = 'ACTIVE' LIMIT 2 FOR UPDATE`,
       [normalized],
     );
-    const user = rows[0];
+    const user = rows.length === 1 ? rows[0] : undefined;
     if (!user) {
       await client.query("ROLLBACK");
+      if (rows.length > 1) console.warn("[password-reset] e-mail partagé par plusieurs comptes : aucun lien émis");
       return null;
     }
 

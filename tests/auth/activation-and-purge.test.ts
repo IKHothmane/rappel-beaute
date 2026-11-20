@@ -69,7 +69,7 @@ describe("issuePasswordResetToken : un nouveau jeton invalide les précédents",
     expect(token).toMatch(/^[0-9a-f]{64}$/);
     const statements = sql();
     expect(statements[0]).toBe("BEGIN");
-    expect(statements[1]).toMatch(/SELECT id FROM "User" WHERE LOWER\(email\) = \$1 AND status = 'ACTIVE' LIMIT 1 FOR UPDATE/);
+    expect(statements[1]).toMatch(/SELECT id FROM "User" WHERE LOWER\(BTRIM\(email\)\) = \$1 AND status = 'ACTIVE' LIMIT 2 FOR UPDATE/);
     expect(statements[2]).toBe(`UPDATE "ActivationToken" SET "usedAt" = NOW() WHERE "userId" = $1 AND "usedAt" IS NULL`);
     expect(statements[3]).toMatch(/^INSERT INTO "ActivationToken"/);
     expect(statements[4]).toBe("COMMIT");

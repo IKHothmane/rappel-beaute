@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
               </p>
             </div>
 
-            <form className="space-y-5" onSubmit={onSubmit}>
+            <form className="space-y-5" method="post" action="/login/" onSubmit={onSubmit}>
               <div>
                 <label
                   className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/80"

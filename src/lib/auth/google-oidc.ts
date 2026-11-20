@@ -7,7 +7,7 @@ import {
   type JsonWebKey as NodeJsonWebKey,
   type KeyObject,
 } from "node:crypto";
-import { publicAppOrigin, SITE } from "@/lib/site";
+import { appEnvironment, publicAppOrigin, SITE } from "@/lib/site";
 
 /**
  * Connexion Google (OpenID Connect, flux code + PKCE S256), sans dépendance externe.
@@ -73,6 +73,14 @@ export function isGoogleAuthAvailable(): boolean {
  */
 export const FOLDED_AUTH_HOSTS = new Set(["app.rappelbeauty.com", "www.rappelbeauty.com"]);
 
+/** Hôtes de production : apex SITE.url, SITE.appUrl et les hôtes repliés (app.*, www.*). */
+export function isProductionAuthHost(hostname: string): boolean {
+  const host = hostname.trim().toLowerCase().split(":")[0];
+  if (!host) return false;
+  if (FOLDED_AUTH_HOSTS.has(host)) return true;
+  return [SITE.url, SITE.appUrl].some((url) => new URL(url).hostname === host);
+}
+
 /**
  * URI de retour Google, identique (slash final inclus) à celle enregistrée dans la console Google.
  *
@@ -83,8 +91,13 @@ export const FOLDED_AUTH_HOSTS = new Set(["app.rappelbeauty.com", "www.rappelbea
  * Une URI explicite (GOOGLE_AUTH_REDIRECT_URI) vers app.* ou www.* est donc ramenée au domaine racine ; en
  * production, une URI pointant vers localhost est ignorée. Le cookie lié au state est propre à un hôte : le
  * départ (start/, link/start/) doit avoir lieu sur cet hôte.
+ *
+ * ISOLATION STAGING / HÔTES TIERS : en staging (APP_ENV=staging) ou quand l'hôte public de la requête
+ * (`requestHost`, voir `requestPublicHost`) n'est pas un hôte de SITE, aucun repli vers l'apex de production
+ * n'est permis : si l'URI calculée vise un hôte de production, on renvoie "" (les routes répondent alors par
+ * le 404 générique) au lieu de rediriger vers rappelbeauty.com.
  */
-export function googleAuthRedirectUri(origin: string): string {
+export function googleAuthRedirectUri(origin: string, requestHost?: string): string {
   const explicit = process.env.GOOGLE_AUTH_REDIRECT_URI?.trim();
   const isLoopback = (url: string) => /localhost|127\.0\.0\.1/i.test(url);
   const prodLike = process.env.NODE_ENV === "production" || process.env.APP_ENV === "production";
@@ -98,10 +111,16 @@ export function googleAuthRedirectUri(origin: string): string {
   }
   if (!base) return "";
 
+  const staging = appEnvironment() === "staging";
+  const foreignRequest = Boolean(requestHost) && !isProductionAuthHost(requestHost as string);
   try {
     const parsed = new URL(base.startsWith("http") ? base : `https://${base}`);
-    if (FOLDED_AUTH_HOSTS.has(parsed.hostname.toLowerCase())) {
-      base = `${SITE.url.replace(/\/$/, "")}${parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "")}`;
+    if (isProductionAuthHost(parsed.hostname)) {
+      // Jamais de repli vers la production depuis le staging ou un hôte qui n'est pas celui du site.
+      if (staging || foreignRequest) return "";
+      if (FOLDED_AUTH_HOSTS.has(parsed.hostname.toLowerCase())) {
+        base = `${SITE.url.replace(/\/$/, "")}${parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "")}`;
+      }
     }
   } catch {
     /* base conservée telle quelle */

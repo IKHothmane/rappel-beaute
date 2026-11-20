@@ -125,7 +125,7 @@ export default function ChangePasswordPage() {
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={onSubmit}>
+          <form className="space-y-5" method="post" action="/changer-mot-de-passe/" onSubmit={onSubmit}>
             {!mustChange ? (
               <div>
                 <label

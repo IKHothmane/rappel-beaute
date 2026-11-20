@@ -266,6 +266,27 @@ describe("configuration", () => {
     vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://staging.example.test/api/auth/google/callback");
     expect(googleAuthRedirectUri("http://localhost:3000")).toBe("https://staging.example.test/api/auth/google/callback/");
   });
+
+  it("staging ou hôte de requête hors SITE : aucun repli vers un hôte de production (chaîne vide)", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    vi.stubEnv("APP_URL", "");
+    vi.stubEnv("APP_BASE_URL", "");
+    vi.stubEnv("APP_ENV", "");
+    // Repli production (SITE.appUrl) depuis un hôte tiers : refusé ; depuis un hôte du site : ramené à l'apex.
+    expect(googleAuthRedirectUri("https://x.example.test", "x.example.test")).toBe("");
+    expect(googleAuthRedirectUri("https://app.rappelbeauty.com", "app.rappelbeauty.com")).toBe("https://rappelbeauty.com/api/auth/google/callback/");
+    // Staging explicite : une URI configurée vers la production est refusée même sans hôte de requête.
+    vi.stubEnv("APP_ENV", "staging");
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://www.rappelbeauty.com/api/auth/google/callback/");
+    expect(googleAuthRedirectUri("https://x.example.test")).toBe("");
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://rappelbeauty.com/api/auth/google/callback/");
+    expect(googleAuthRedirectUri("https://x.example.test")).toBe("");
+    // Staging correctement configuré : conservé.
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://staging.example.test/api/auth/google/callback/");
+    expect(googleAuthRedirectUri("https://staging.example.test", "staging.example.test")).toBe("https://staging.example.test/api/auth/google/callback/");
+  });
 });
 
 describe("redirectAfter (liste blanche de chemins relatifs)", () => {

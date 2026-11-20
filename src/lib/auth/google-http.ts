@@ -52,9 +52,25 @@ export const CHANGE_PASSWORD_LANDING = "/changer-mot-de-passe/?__host=app&auth=1
 // Requêtes
 // ---------------------------------------------------------------------------
 
+/** Hôte public de la requête (en-têtes proxy résolus), sans port. */
+export function requestPublicHost(request: NextRequest): string {
+  return (
+    resolvePublicHostname(
+      request.headers.get("host"),
+      request.headers.get("x-forwarded-host"),
+      request.headers.get("x-rappel-public-host"),
+    ) || request.nextUrl.hostname.toLowerCase()
+  );
+}
+
+/** URI de retour Google pour cette requête (vide : indisponible, jamais de repli vers un hôte de production). */
+export function googleRedirectUriFor(request: NextRequest): string {
+  return googleAuthRedirectUri(request.nextUrl.origin, requestPublicHost(request));
+}
+
 /** Origine publique de l'application : celle de l'URI de retour Google, sinon celle de la requête. */
 export function appOrigin(request: NextRequest): string {
-  const redirectUri = googleAuthRedirectUri(request.nextUrl.origin);
+  const redirectUri = googleRedirectUriFor(request);
   try {
     if (redirectUri) return new URL(redirectUri).origin;
   } catch {
@@ -119,12 +135,7 @@ export function checkJsonSameOrigin(request: NextRequest, options: { allowMultip
  */
 export function canonicalAuthHostMismatch(request: NextRequest, redirectUri: string): URL | null {
   const target = new URL(redirectUri);
-  const currentHost =
-    resolvePublicHostname(
-      request.headers.get("host"),
-      request.headers.get("x-forwarded-host"),
-      request.headers.get("x-rappel-public-host"),
-    ) || request.nextUrl.hostname.toLowerCase();
+  const currentHost = requestPublicHost(request);
   return target.hostname.toLowerCase() === currentHost ? null : target;
 }
 

@@ -8,9 +8,8 @@ import {
   buildGoogleAuthorizationUrl,
   generatePkceMaterial,
   googleAuthCredentials,
-  googleAuthRedirectUri,
 } from "@/lib/auth/google-oidc";
-import { canonicalAuthHostMismatch, googleAuthUnavailable, sanitizeRedirectAfter, setOAuthCookie } from "@/lib/auth/google-http";
+import { canonicalAuthHostMismatch, googleAuthUnavailable, googleRedirectUriFor, sanitizeRedirectAfter, setOAuthCookie } from "@/lib/auth/google-http";
 import { createOAuthState } from "@/lib/db/auth-oauth-state";
 
 /**
@@ -40,7 +39,7 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
   }
 
   const credentials = googleAuthCredentials();
-  const redirectUri = googleAuthRedirectUri(request.nextUrl.origin);
+  const redirectUri = googleRedirectUriFor(request);
   if (!credentials || !redirectUri) return new NextResponse(null, { status: 404, headers: { "Cache-Control": "no-store" } });
 
   // Le cookie lié au state est propre à un hôte : le départ doit avoir lieu sur l'hôte de l'URI de retour.

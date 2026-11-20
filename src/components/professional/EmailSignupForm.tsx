@@ -70,7 +70,7 @@ export function EmailSignupForm({ onSent }: { onSent: (info: { email: string; me
   const errorId = "pro-s-error";
   const bad = (key: FieldKey) => error?.field === key;
   return (
-    <form onSubmit={onSubmit} className="pro-form" aria-label="Inscription par e-mail">
+    <form onSubmit={onSubmit} method="post" action="/professionnel/" className="pro-form" aria-label="Inscription par e-mail">
       <fieldset disabled={loading}>
         <legend className="sr-only">Créer votre compte avec une adresse e-mail</legend>
         <Field id="pro-s-name" label="Votre prénom et nom" required>

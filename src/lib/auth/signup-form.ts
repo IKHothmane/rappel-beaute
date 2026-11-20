@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { CITIES } from "@/lib/site";
 import { logger } from "@/lib/logger";
+import { readBodyBytesCapped } from "@/lib/auth/auth-route-utils";
 import { runInScope } from "@/lib/db/tenant-context";
 import { localPhoneDigits, PHONE_MAX_DIGITS } from "@/lib/validation/customer";
 import { PROFESSIONAL_SIGNUP_LIMITS as L } from "@/lib/validation/professional-signup";
@@ -30,11 +31,16 @@ const invalid = (error = "Requête invalide.", status = 400): { ok: false; statu
 export async function readSignupRequest(request: NextRequest): Promise<SignupRequest> {
   const contentType = request.headers.get("content-type") ?? "";
   if (/^multipart\/form-data\b/i.test(contentType)) {
-    const length = Number(request.headers.get("content-length"));
-    if (Number.isFinite(length) && length > MULTIPART_MAX_BYTES) return invalid("Le logo ne doit pas dépasser 2 Mo.", 413);
+    // Content-Length obligatoire et valide : sans lui (Transfer-Encoding: chunked), le plafond ne serait pas
+    // vérifiable avant lecture. Les octets sont de toute façon plafonnés pendant la lecture.
+    const declared = request.headers.get("content-length")?.trim() ?? "";
+    if (!/^\d+$/.test(declared)) return invalid("Longueur du formulaire requise.", 411);
+    if (Number(declared) > MULTIPART_MAX_BYTES) return invalid("Le logo ne doit pas dépasser 2 Mo.", 413);
+    const bytes = await readBodyBytesCapped(request, MULTIPART_MAX_BYTES);
+    if (!bytes) return invalid("Le logo ne doit pas dépasser 2 Mo.", 413);
     let form: FormData;
     try {
-      form = await request.formData();
+      form = await new Response(bytes as BodyInit, { headers: { "content-type": contentType } }).formData();
     } catch {
       return invalid("Formulaire invalide.");
     }
@@ -44,9 +50,9 @@ export async function readSignupRequest(request: NextRequest): Promise<SignupReq
     return { ok: true, fields, logoFile: logo instanceof File && logo.size > 0 ? logo : null };
   }
   try {
-    const raw = await request.text();
-    if (raw.length > SIGNUP_BODY_MAX_BYTES) return invalid();
-    const parsed: unknown = JSON.parse(raw);
+    const bytes = await readBodyBytesCapped(request, SIGNUP_BODY_MAX_BYTES);
+    if (!bytes) return invalid();
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return invalid();
     return { ok: true, fields: parsed as Record<string, unknown>, logoFile: null };
   } catch {

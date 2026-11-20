@@ -25,18 +25,27 @@ export type EmailOwner = "user" | "platform" | "free";
 /**
  * Qui possède déjà cette adresse (insensible à la casse et aux espaces de bord, comme l'index d'unicité) ?
  * "user" : un compte institut (hors `excludeUserId`, utile au changement d'e-mail du compte lui-même) ;
+ * `excludePlatformUserId` fait de même pour le changement d'e-mail d'un administrateur plateforme ;
  * "platform" : un administrateur de la plateforme ; "free" : personne.
  * À appeler avec une connexion qui voit tous les instituts (portée publique ou plateforme), jamais sous la RLS
  * d'un institut : elle masquerait les comptes des autres instituts.
  */
-export async function emailOwner(db: Queryable, email: string, excludeUserId?: string): Promise<EmailOwner> {
+export async function emailOwner(
+  db: Queryable,
+  email: string,
+  excludeUserId?: string,
+  excludePlatformUserId?: string,
+): Promise<EmailOwner> {
   const normalized = normalizeEmail(email);
   const { rows: users } = await db.query(
     `SELECT 1 FROM "User" WHERE LOWER(BTRIM(email)) = $1 AND ($2::text IS NULL OR id <> $2) LIMIT 1`,
     [normalized, excludeUserId ?? null],
   );
   if (users.length > 0) return "user";
-  const { rows: platform } = await db.query(`SELECT 1 FROM "PlatformUser" WHERE LOWER(BTRIM(email)) = $1 LIMIT 1`, [normalized]);
+  const { rows: platform } = await db.query(
+    `SELECT 1 FROM "PlatformUser" WHERE LOWER(BTRIM(email)) = $1 AND ($2::text IS NULL OR id <> $2) LIMIT 1`,
+    [normalized, excludePlatformUserId ?? null],
+  );
   return platform.length > 0 ? "platform" : "free";
 }
 

@@ -5,12 +5,12 @@ import { clientIp } from "@/lib/http/client-ip";
 import { logger } from "@/lib/logger";
 import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit";
 import { getSessionFromRequest } from "@/lib/auth/session";
+import { isSessionTokenRevoked } from "@/lib/auth/api-guard";
 import { isAppSession } from "@/lib/auth/types";
 import {
   exchangeGoogleCode,
   GoogleOidcError,
   googleAuthCredentials,
-  googleAuthRedirectUri,
   verifyGoogleIdToken,
   type GoogleIdentityClaims,
 } from "@/lib/auth/google-oidc";
@@ -21,6 +21,7 @@ import {
   applyAppSession,
   clearOAuthCookie,
   googleAuthUnavailable,
+  googleRedirectUriFor,
   linkResultRedirect,
   loginErrorRedirect,
   oauthCookieMatches,
@@ -85,6 +86,11 @@ async function handleLink(request: NextRequest, claims: GoogleIdentityClaims, st
   if (!session || !isAppSession(session) || !state.userId || session.id !== state.userId) {
     return linkResultRedirect(request, "failed", state.redirectAfter);
   }
+  // Session déconnectée (jti révoqué) : même contrôle que les routes protégées. sessionVersion, statut du compte
+  // et de l'institut sont revérifiés sous verrou dans linkGoogleIdentity.
+  if (await isSessionTokenRevoked(session)) {
+    return linkResultRedirect(request, "failed", state.redirectAfter);
+  }
   const result = await linkGoogleIdentity({
     userId: session.id,
     organizationId: session.organizationId,
@@ -141,7 +147,7 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
     hint = { intent: state.intent, redirectAfter: state.redirectAfter };
 
     const credentials = googleAuthCredentials();
-    const redirectUri = googleAuthRedirectUri(request.nextUrl.origin);
+    const redirectUri = googleRedirectUriFor(request);
     if (!credentials || !redirectUri) return fail(request, hint, "unavailable");
 
     let claims: GoogleIdentityClaims;

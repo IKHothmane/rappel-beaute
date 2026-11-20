@@ -1,19 +1,57 @@
 import type { NextRequest } from "next/server";
 import { jsonNoStore } from "@/lib/auth/google-http";
 
-/** Corps JSON objet, borné ; null si invalide ou trop gros. */
+/**
+ * Lit le corps en flux et s'arrête dès que `maxBytes` est dépassé (jamais le corps entier en mémoire).
+ * Renvoie null si le plafond est dépassé (Content-Length annoncé ou octets réellement reçus) ou si la lecture échoue.
+ */
+export async function readBodyBytesCapped(request: Request, maxBytes: number): Promise<Uint8Array | null> {
+  const declared = request.headers.get("content-length");
+  if (declared !== null && /^\d+$/.test(declared.trim()) && Number(declared) > maxBytes) return null;
+  if (!request.body) return new Uint8Array(0);
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return null;
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
+}
+
+/** Corps JSON objet, borné en octets pendant la lecture ; null si invalide ou trop gros. */
 export async function readJsonObject(request: NextRequest, maxBytes = 8 * 1024): Promise<Record<string, unknown> | null> {
   try {
-    const raw = await request.text();
-    if (raw.length > maxBytes) return null;
-    const parsed: unknown = JSON.parse(raw);
+    const bytes = await readBodyBytesCapped(request, maxBytes);
+    if (!bytes) return null;
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
   } catch {
     return null;
   }
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * Forme d'adresse acceptée : partie locale et domaine sans espace ni caractère de contrôle ou de liste
+ * (, ; < > " ( ) [ ] \ :), un seul « @ », au moins un point dans le domaine (IDN attendus en ASCII/punycode).
+ */
+const EMAIL_RE = /^[^\s@,;:<>"()[\]\\]+@[^\s@,;:<>"()[\]\\]+\.[^\s@,;:<>"()[\]\\]+$/;
 export const EMAIL_MAX_LENGTH = 254;
 
 /** Adresse normalisée (espaces de bord retirés, minuscules) ou null si la forme est invalide. */

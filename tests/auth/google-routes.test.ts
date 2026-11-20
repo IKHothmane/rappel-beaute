@@ -33,6 +33,7 @@ const m = vi.hoisted(() => {
     unlinkGoogleIdentity: vi.fn(),
     getLinkContext: vi.fn(),
     requireAppSession: vi.fn(),
+    isSessionTokenRevoked: vi.fn(),
     sendEmail: vi.fn(),
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   };
@@ -47,7 +48,7 @@ vi.mock("@/lib/logger", () => ({ logger: m.logger }));
 vi.mock("@/lib/db/pool", () => ({ pool: { query: vi.fn(), connect: vi.fn() } }));
 vi.mock("@/lib/db/users", () => ({ MAX_PASSWORD_LENGTH: 200 }));
 vi.mock("@/lib/db/institute-create", () => ({ PublicSignupError: m.PublicSignupErrorStub }));
-vi.mock("@/lib/auth/api-guard", () => ({ requireAppSession: m.requireAppSession }));
+vi.mock("@/lib/auth/api-guard", () => ({ requireAppSession: m.requireAppSession, isSessionTokenRevoked: m.isSessionTokenRevoked }));
 vi.mock("@/lib/email/send", () => ({ isEmailConfigured: () => true, sendTransactionalEmail: m.sendEmail }));
 vi.mock("@/lib/db/auth-oauth-state", () => ({ createOAuthState: m.createOAuthState, consumeOAuthState: m.consumeOAuthState, peekOAuthState: m.peekOAuthState }));
 vi.mock("@/lib/auth/google-oidc", async (original) => ({
@@ -103,6 +104,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.consume.mockResolvedValue({ allowed: true });
   m.peekOAuthState.mockResolvedValue(null);
+  m.isSessionTokenRevoked.mockResolvedValue(false);
   vi.stubEnv("AUTH_GOOGLE_ENABLED", "true");
   vi.stubEnv("GOOGLE_AUTH_CLIENT_ID", "client.apps.googleusercontent.com");
   vi.stubEnv("GOOGLE_AUTH_CLIENT_SECRET", "secret-de-test");
@@ -177,11 +179,14 @@ describe("GET /api/auth/google/start", () => {
 
   it("renvoie vers l'hôte canonique de l'URI de retour (le cookie est propre à un hôte), sans boucle", async () => {
     vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://rappelbeauty.com/api/auth/google/callback/");
-    const res = await start(req("/api/auth/google/start/?intent=login"));
+    // Depuis un hôte du site (app.*) uniquement : un hôte tiers n'est jamais renvoyé vers la production.
+    const onApp = (query: string) =>
+      new NextRequest(`https://app.rappelbeauty.com/api/auth/google/start/?${query}`, { headers: { host: "app.rappelbeauty.com" } });
+    const res = await start(onApp("intent=login"));
     expect(res.status).toBe(307);
     expect(location(res).origin).toBe("https://rappelbeauty.com");
     expect(location(res).searchParams.get("canon")).toBe("1");
-    const looped = await start(req("/api/auth/google/start/?intent=login&canon=1"));
+    const looped = await start(onApp("intent=login&canon=1"));
     expect(looped.status).toBe(404);
     expect(m.createOAuthState).not.toHaveBeenCalled();
   });
@@ -295,6 +300,76 @@ describe("GET /api/auth/google/callback", () => {
     );
     expect(location(mismatch).searchParams.get("google_link")).toBe("failed");
     expect(m.linkGoogleIdentity).not.toHaveBeenCalled();
+  });
+
+  it("liaison : une session révoquée (jti déconnecté) ne peut pas lier Google", async () => {
+    m.consumeOAuthState.mockResolvedValue(consumed({ intent: "link", userId: "u_1" }));
+    m.linkGoogleIdentity.mockResolvedValue("linked");
+    m.isSessionTokenRevoked.mockResolvedValue(true);
+    const { createSessionCookie } = await import("@/lib/auth/session");
+    const jwt = createSessionCookie({ ...SESSION, jti: "jti-1" } as never).value;
+    const res = await callback(
+      req(`/api/auth/google/callback/?code=abc&state=${STATE}`, { cookies: { [oauthCookieName()]: STATE, rappel_session: jwt } }),
+    );
+    expect(m.isSessionTokenRevoked).toHaveBeenCalled();
+    expect(location(res).searchParams.get("google_link")).toBe("failed");
+    expect(m.linkGoogleIdentity).not.toHaveBeenCalled();
+  });
+});
+
+describe("isolation staging : jamais de repli ni de redirection vers l'hôte de production", () => {
+  const startOn = (host: string) =>
+    start(new NextRequest(`https://${host}/api/auth/google/start/?intent=login`, { headers: { host } }));
+
+  it("staging (APP_ENV=staging) dont l'URI de retour vise la production : 404 générique, aucun 307 vers rappelbeauty.com", async () => {
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://app.rappelbeauty.com/api/auth/google/callback/");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("APP_ENV", "staging");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    vi.stubEnv("APP_URL", "");
+    vi.stubEnv("APP_BASE_URL", "");
+    const res = await startOn("staging.example.test");
+    expect(res.status).not.toBe(307);
+    expect(res.headers.get("location")).toBeNull();
+    expect(m.createOAuthState).not.toHaveBeenCalled();
+  });
+
+  it("hôte hors SITE avec APP_ENV non renseigné (staging NODE_ENV=production) : 404, pas de repli vers l'apex", async () => {
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("APP_ENV", "");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    vi.stubEnv("APP_URL", "");
+    vi.stubEnv("APP_BASE_URL", "");
+    const res = await startOn("rb-staging.up-other.example");
+    expect(res.status).toBe(404);
+    expect(res.headers.get("location")).toBeNull();
+    expect(m.createOAuthState).not.toHaveBeenCalled();
+  });
+
+  it("URI explicite de production demandée depuis un hôte tiers : 404, et le callback n'échange rien", async () => {
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://rappelbeauty.com/api/auth/google/callback/");
+    const res = await startOn("staging.example.test");
+    expect(res.status).toBe(404);
+    expect(res.headers.get("location")).toBeNull();
+    m.consumeOAuthState.mockResolvedValue(consumed());
+    const cb = await callback(
+      new NextRequest(`https://staging.example.test/api/auth/google/callback/?code=abc&state=${STATE}`, {
+        headers: { host: "staging.example.test", cookie: `${oauthCookieName()}=${STATE}` },
+      }),
+    );
+    expect(m.exchange).not.toHaveBeenCalled();
+    expect(location(cb).hostname).not.toMatch(/rappelbeauty\.com$/);
+  });
+
+  it("production inchangée : app.* est ramené à l'apex (307 vers l'hôte canonique)", async () => {
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("APP_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://app.rappelbeauty.com");
+    const res = await startOn("app.rappelbeauty.com");
+    expect(res.status).toBe(307);
+    expect(location(res).origin).toBe("https://rappelbeauty.com");
   });
 });
 
@@ -532,13 +607,29 @@ describe("liaison et déliaison (session institut)", () => {
   it("la liaison démarrée depuis un autre hôte que celui du retour Google est refusée clairement (409 WRONG_HOST)", async () => {
     vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://rappelbeauty.com/api/auth/google/callback/");
     m.requireAppSession.mockResolvedValue({ ok: true, session: SESSION });
-    const res = await linkStart(req("/api/auth/google/link/start/", { method: "POST", headers: postHeaders, body: { password: "x" } }));
+    // Depuis app.* (hôte de production) : indication de l'hôte canonique.
+    const res = await linkStart(
+      new NextRequest("https://app.rappelbeauty.com/api/auth/google/link/start/", {
+        method: "POST",
+        headers: { ...postHeaders, origin: "https://app.rappelbeauty.com" },
+        body: JSON.stringify({ password: "x" }),
+      }),
+    );
     expect(res.status).toBe(409);
     const data = await res.json();
     expect(data.code).toBe("WRONG_HOST");
     expect(data.error).toContain("rappelbeauty.com");
     expect(m.createOAuthState).not.toHaveBeenCalled();
     expect(res.cookies.get(oauthCookieName())).toBeUndefined();
+  });
+
+  it("depuis un hôte hors SITE (staging) : service indisponible, jamais d'invitation vers l'hôte de production", async () => {
+    vi.stubEnv("GOOGLE_AUTH_REDIRECT_URI", "https://rappelbeauty.com/api/auth/google/callback/");
+    m.requireAppSession.mockResolvedValue({ ok: true, session: SESSION });
+    const res = await linkStart(req("/api/auth/google/link/start/", { method: "POST", headers: postHeaders, body: { password: "x" } }));
+    expect(res.status).toBe(503);
+    expect((await res.json()).code).not.toBe("WRONG_HOST");
+    expect(m.createOAuthState).not.toHaveBeenCalled();
   });
 
   const link = (password: unknown) =>
@@ -577,13 +668,62 @@ describe("liaison et déliaison (session institut)", () => {
     expect(res.cookies.get(oauthCookieName())?.value).toBe(new URL(url).searchParams.get("state"));
   });
 
+  const doUnlink = (body: unknown = {}, session = SESSION) => {
+    m.requireAppSession.mockResolvedValue({ ok: true, session });
+    return unlink(req("/api/auth/google/unlink/", { method: "POST", headers: postHeaders, body }));
+  };
+  const nowSec = () => Math.floor(Date.now() / 1000);
+
   it("déliaison : refusée quand elle supprimerait le dernier moyen de connexion", async () => {
+    m.getLinkContext.mockResolvedValue({ passwordHash: hashPassword("bon-mot-de-passe"), linked: true });
     m.unlinkGoogleIdentity.mockResolvedValue("last_login_method");
-    const refused = await unlink(req("/api/auth/google/unlink/", { method: "POST", headers: postHeaders, body: {} }));
+    const refused = await doUnlink({ password: "bon-mot-de-passe" });
     expect(refused.status).toBe(409);
     m.unlinkGoogleIdentity.mockResolvedValue("unlinked");
-    const ok = await unlink(req("/api/auth/google/unlink/", { method: "POST", headers: postHeaders, body: {} }));
+    const ok = await doUnlink({ password: "bon-mot-de-passe" });
     expect(ok.status).toBe(200);
     expect(m.unlinkGoogleIdentity).toHaveBeenLastCalledWith({ userId: "u_1", organizationId: "org_1" });
+  });
+
+  it("déliaison avec mot de passe : exige le mot de passe actuel (absent 400, faux 403) avant toute écriture", async () => {
+    m.getLinkContext.mockResolvedValue({ passwordHash: hashPassword("bon-mot-de-passe"), linked: true });
+    m.unlinkGoogleIdentity.mockResolvedValue("unlinked");
+    const missing = await doUnlink({});
+    expect(missing.status).toBe(400);
+    expect((await missing.json()).code).toBe("CURRENT_PASSWORD_REQUIRED");
+    expect((await doUnlink({ password: "mauvais" })).status).toBe(403);
+    expect((await doUnlink({ password: 12345 })).status).toBe(400);
+    expect((await doUnlink({ password: "x".repeat(201) })).status).toBe(400);
+    expect(m.unlinkGoogleIdentity).not.toHaveBeenCalled();
+    expect((await doUnlink({ password: "bon-mot-de-passe" })).status).toBe(200);
+    expect(m.unlinkGoogleIdentity).toHaveBeenCalledTimes(1);
+  });
+
+  it("déliaison sans mot de passe : connexion récente exigée (REAUTH_REQUIRED sinon), sans écriture", async () => {
+    m.getLinkContext.mockResolvedValue({ passwordHash: null, linked: true });
+    m.unlinkGoogleIdentity.mockResolvedValue("unlinked");
+    const stale = await doUnlink({}, { ...SESSION, authAt: nowSec() - 3600 } as never);
+    expect(stale.status).toBe(401);
+    expect((await stale.json()).code).toBe("REAUTH_REQUIRED");
+    const noAuthAt = await doUnlink({}, SESSION);
+    expect((await noAuthAt.json()).code).toBe("REAUTH_REQUIRED");
+    expect(m.unlinkGoogleIdentity).not.toHaveBeenCalled();
+    const fresh = await doUnlink({}, { ...SESSION, authAt: nowSec() - 30 } as never);
+    expect(fresh.status).toBe(200);
+    expect(m.unlinkGoogleIdentity).toHaveBeenCalledTimes(1);
+  });
+
+  it("déliaison : surcharge de la file scrypt (AUTH_BUSY) => 503 sans écriture", async () => {
+    const crypto = await import("@/lib/auth/crypto");
+    m.getLinkContext.mockResolvedValue({ passwordHash: hashPassword("bon-mot-de-passe"), linked: true });
+    const spy = vi.spyOn(crypto, "verifyPasswordAsync").mockRejectedValue(Object.assign(new Error("busy"), { code: "AUTH_BUSY" }));
+    try {
+      expect((await doUnlink({ password: "bon-mot-de-passe" })).status).toBe(503);
+      expect((await link("bon-mot-de-passe")).status).toBe(503);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(m.unlinkGoogleIdentity).not.toHaveBeenCalled();
+    expect(m.createOAuthState).not.toHaveBeenCalled();
   });
 });

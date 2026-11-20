@@ -47,6 +47,27 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
   const wrongHost = authHostMismatch(request);
   if (wrongHost) return wrongHostResponse(wrongHost, "La création de votre institut");
 
+  // Avant toute lecture du corps : cookie d'inscription présent, puis quota par IP (un corps volumineux ou
+  // invalide ne coûte rien tant que ces deux contrôles échouent).
+  const token = request.cookies.get(pendingCookieName())?.value;
+  if (!token) return jsonNoStore(EXPIRED, 400);
+
+  const ipLimit = {
+    key: `auth:signup-email:complete:ip:${clientIp(request)}`,
+    ...RATE_POLICIES.emailSignup.completeIp,
+    sensitivity: "sensitive" as const,
+  };
+  try {
+    const ipGate = await consumeDimensions([ipLimit]);
+    if (!ipGate.allowed) return tooManyRequests(ipGate.retryAfterSec);
+  } catch (error) {
+    if ((error as { code?: unknown } | null)?.code === "AUTH_BUSY") {
+      return jsonNoStore({ error: "Service momentanément indisponible. Réessayez." }, 503, { "Retry-After": "5" });
+    }
+    logger.error("email signup complete failed", { route: ROUTE, error: error instanceof Error ? error.name : "unknown" });
+    return jsonNoStore({ error: "Impossible de créer le compte. Réessayez." }, 500);
+  }
+
   const parsed = await readSignupRequest(request);
   if (!parsed.ok) return jsonNoStore({ error: parsed.error }, parsed.status);
   const { fields } = parsed;
@@ -61,28 +82,17 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
   const logo = await prepareLogo(parsed.logoFile);
   if (!logo.ok) return badRequest(logo.error);
 
-  const token = request.cookies.get(pendingCookieName())?.value;
-  if (!token) return jsonNoStore(EXPIRED, 400);
-
-  const ipLimit = {
-    key: `auth:signup-email:complete:ip:${clientIp(request)}`,
-    ...RATE_POLICIES.emailSignup.completeIp,
-    sensitivity: "sensitive" as const,
-  };
   try {
     const state = await getEmailPendingState(token);
     const dead = !state || (state.consumed ? !state.replayable : state.expired);
     if (dead) {
-      // Un cookie inconnu ou périmé est un échec : il compte contre l'IP (sondage de cookies).
-      const probe = await consumeDimensions([ipLimit]);
-      if (!probe.allowed) return tooManyRequests(probe.retryAfterSec);
+      // Un cookie inconnu ou périmé est un échec : il a déjà compté contre l'IP (sondage de cookies).
       const res = jsonNoStore(EXPIRED, 400);
       clearPendingCookie(res);
       return res;
     }
-    // Par IP et par inscription (borne aussi les essais du mot de passe, rejeu compris).
+    // Par inscription (borne aussi les essais du mot de passe, rejeu compris) ; l'IP a déjà été comptée.
     const limited = await consumeDimensions([
-      ipLimit,
       {
         key: `auth:signup-email:complete:pending:${identityHash(`email-pending:${token}`)}`,
         ...RATE_POLICIES.emailSignup.completeSubject,

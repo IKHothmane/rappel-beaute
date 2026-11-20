@@ -167,6 +167,8 @@ function InstituteSignupForm({ mode, pending, cityGroups, onExpired }: Props & {
   return (
     <form
       onSubmit={onSubmit}
+      method="post"
+      action="/professionnel/"
       className="pro-form"
       aria-label={mode === "google" ? "Finaliser votre inscription avec Google" : "Finaliser votre inscription"}
     >

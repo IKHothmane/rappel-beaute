@@ -336,10 +336,15 @@ describe("POST /api/auth/signup/email/complete/", () => {
 
   const multipart = (extra: Record<string, string | Blob> = {}) => {
     const form = new FormData();
-    for (const [k, v] of Object.entries({ ...fields, ...extra })) form.set(k, v as string);
+    let size = 512;
+    for (const [k, v] of Object.entries({ ...fields, ...extra })) {
+      form.set(k, v as string);
+      size += k.length + (typeof v === "string" ? v.length : (v as Blob).size) + 128;
+    }
+    // Un navigateur envoie Content-Length pour un FormData : la route l'exige désormais (411 sinon).
     return new NextRequest(`${ORIGIN}/api/auth/signup/email/complete/`, {
       method: "POST",
-      headers: { origin: ORIGIN, "sec-fetch-site": "same-origin", cookie: `${pendingCookieName()}=cookie-token-123` },
+      headers: { origin: ORIGIN, "sec-fetch-site": "same-origin", "content-length": String(size), cookie: `${pendingCookieName()}=cookie-token-123` },
       body: form,
     });
   };

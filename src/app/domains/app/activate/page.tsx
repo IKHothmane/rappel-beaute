@@ -34,15 +34,15 @@ function ActivateForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="surface mx-auto mt-16 max-w-md p-8">
+    <form onSubmit={onSubmit} method="post" action="/activate/" className="surface mx-auto mt-16 max-w-md p-8">
       <h1 className="font-display text-2xl font-semibold">Activer votre compte</h1>
-      <p className="mt-2 text-sm text-ink/60">Choisissez votre mot de passe (8 caractères minimum).</p>
+      <p className="mt-2 text-sm text-ink/60">Choisissez votre mot de passe (10 caractères minimum).</p>
       <label className="mt-6 block text-sm">
         <span className="mb-1.5 block font-medium">Mot de passe</span>
         <input
           type="password"
           required
-          minLength={8}
+          minLength={10}
           className="ac-input w-full"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

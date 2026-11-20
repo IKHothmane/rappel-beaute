@@ -13,9 +13,7 @@ export default function SecurityPage() {
       <AccountSecurityPanel />
       <div className="surface mt-4 max-w-md space-y-2 p-5 text-sm text-ink/65">
         <p className="font-medium text-ink">Sessions</p>
-        <p>Dernière connexion : aujourd’hui 18:12</p>
-        <button type="button" className="btn-ghost mt-2">Déconnecter tous les appareils</button>
-        <p className="pt-2 text-xs text-ink/40">2FA — à activer en sprint Auth.</p>
+        <p>Pour fermer les sessions ouvertes sur vos autres appareils, changez votre mot de passe : seule la session en cours est conservée.</p>
       </div>
     </>
   );

@@ -2,19 +2,20 @@ import type { NextRequest } from "next/server";
 import { tenantRoute } from "@/lib/http/route-scope";
 import { clientIp } from "@/lib/http/client-ip";
 import { requireAppSession } from "@/lib/auth/api-guard";
-import { verifyPassword } from "@/lib/auth/crypto";
+import { verifyPasswordAsync } from "@/lib/auth/crypto";
+import { authBusy, isAuthBusy } from "@/lib/auth/auth-route-utils";
 import { MAX_PASSWORD_LENGTH } from "@/lib/db/users";
 import { consumeDimensions, RATE_POLICIES } from "@/lib/rate-limit";
 import {
   buildGoogleAuthorizationUrl,
   generatePkceMaterial,
   googleAuthCredentials,
-  googleAuthRedirectUri,
 } from "@/lib/auth/google-oidc";
 import {
   canonicalAuthHostMismatch,
   checkJsonSameOrigin,
   googleAuthUnavailable,
+  googleRedirectUriFor,
   jsonNoStore,
   sanitizeRedirectAfter,
   setOAuthCookie,
@@ -38,7 +39,7 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
   // Le cookie lié au state est propre à un hôte, et la session aussi : la liaison n'est possible que depuis
   // l'hôte de l'URI de retour. Ailleurs, le retour de Google n'y retrouverait ni ce cookie ni la session.
   const credentials = googleAuthCredentials();
-  const redirectUri = googleAuthRedirectUri(request.nextUrl.origin);
+  const redirectUri = googleRedirectUriFor(request);
   if (!credentials || !redirectUri) return jsonNoStore({ error: "Service indisponible." }, 503);
   const canonical = canonicalAuthHostMismatch(request, redirectUri);
   if (canonical) {
@@ -79,7 +80,14 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
       400,
     );
   }
-  if (!verifyPassword(password, context.passwordHash)) {
+  let passwordOk: boolean;
+  try {
+    passwordOk = await verifyPasswordAsync(password, context.passwordHash);
+  } catch (error) {
+    if (isAuthBusy(error)) return authBusy();
+    throw error;
+  }
+  if (!passwordOk) {
     return jsonNoStore({ error: "Mot de passe incorrect.", code: "INVALID_PASSWORD" }, 403);
   }
   if (context.linked) {

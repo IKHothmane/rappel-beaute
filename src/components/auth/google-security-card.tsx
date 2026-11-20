@@ -235,8 +235,10 @@ export function GoogleSecurityCard() {
     }
   }
 
-  async function unlink() {
-    if (busyRef.current) return;
+  async function unlink(e?: FormEvent<HTMLFormElement>) {
+    e?.preventDefault();
+    const needsPassword = Boolean(status && status !== "hidden" && status.hasPassword);
+    if (busyRef.current || (needsPassword && !password)) return;
     busyRef.current = true;
     setBusy(true);
     setDialogError(null);
@@ -244,8 +246,27 @@ export function GoogleSecurityCard() {
       const res = await fetch("/api/auth/google/unlink/", {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(needsPassword ? { password } : {}),
       });
       const data = (await res.json().catch(() => ({}))) as { code?: string; error?: string };
+      if (data.code === "INVALID_PASSWORD" || data.code === "CURRENT_PASSWORD_REQUIRED") {
+        setDialogError(
+          data.code === "CURRENT_PASSWORD_REQUIRED" ? "Saisissez votre mot de passe actuel." : "Mot de passe incorrect.",
+        );
+        busyRef.current = false;
+        setBusy(false);
+        // État périmé côté client : recharger pour afficher le champ mot de passe.
+        if (data.code === "CURRENT_PASSWORD_REQUIRED") void load();
+        return;
+      }
+      if (data.code === "REAUTH_REQUIRED") {
+        setDialogError("Pour votre sécurité, reconnectez-vous puis réessayez.");
+        busyRef.current = false;
+        setBusy(false);
+        return;
+      }
+      setPassword("");
       if (res.ok) {
         setNotice({ tone: "success", text: "Google a été délié de votre compte." });
       } else if (data.code === "NOT_LINKED") {
@@ -356,7 +377,7 @@ export function GoogleSecurityCard() {
 
       {dialog === "link" ? (
         <Dialog title="Lier mon compte Google" onClose={closeDialog} busy={busy}>
-          <form onSubmit={startLink} className="mt-3 space-y-4">
+          <form onSubmit={startLink} method="post" action="/security/" className="mt-3 space-y-4">
             <p className="text-sm text-ink/65">
               Saisissez votre mot de passe actuel, puis vous serez redirigé vers Google pour
               confirmer.
@@ -414,10 +435,29 @@ export function GoogleSecurityCard() {
 
       {dialog === "unlink" ? (
         <Dialog title="Délier Google ?" onClose={closeDialog} busy={busy}>
+          <form onSubmit={unlink} method="post" action="/security/">
           <p className="mt-3 text-sm text-ink/65">
             Vous ne pourrez plus vous connecter avec Google. Vous garderez votre e-mail et votre mot
             de passe.
           </p>
+          {status?.hasPassword ? (
+            <label className="mt-3 block text-sm">
+              <span className="mb-1.5 block font-medium">Mot de passe actuel</span>
+              <input
+                data-autofocus
+                type="password"
+                name="current-password"
+                autoComplete="current-password"
+                required
+                maxLength={200}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                readOnly={busy}
+                aria-invalid={Boolean(dialogError)}
+                className="w-full rounded-lg border border-line px-3 py-2.5 outline-none focus:border-primary"
+              />
+            </label>
+          ) : null}
           {dialogError ? (
             <p
               role="alert"
@@ -429,7 +469,7 @@ export function GoogleSecurityCard() {
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
-              data-autofocus
+              data-autofocus={status?.hasPassword ? undefined : true}
               className="btn-ghost"
               onClick={closeDialog}
               disabled={busy}
@@ -437,15 +477,15 @@ export function GoogleSecurityCard() {
               Annuler
             </button>
             <button
-              type="button"
+              type="submit"
               className="btn-primary"
-              onClick={() => void unlink()}
-              disabled={busy}
+              disabled={busy || Boolean(status?.hasPassword && !password)}
               aria-busy={busy}
             >
               {busy ? "Déliaison…" : "Délier Google"}
             </button>
           </div>
+          </form>
         </Dialog>
       ) : null}
     </section>

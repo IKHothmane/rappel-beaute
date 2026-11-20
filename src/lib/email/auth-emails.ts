@@ -11,6 +11,8 @@ const escapeHtml = (value: string) =>
 
 const greeting = (name?: string | null) => {
   const first = (name ?? "").trim().split(/\s+/)[0] ?? "";
+  // Le nom est saisi librement : seul un prénom fait de lettres, apostrophes et traits d'union est repris.
+  if (!/^[\p{L}\p{M}'’-]{1,60}$/u.test(first)) return "Bonjour,";
   return first ? `Bonjour ${first},` : "Bonjour,";
 };
 

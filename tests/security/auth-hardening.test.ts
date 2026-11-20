@@ -168,6 +168,22 @@ describe("jeton de réinitialisation", () => {
     expect(String(insert.params[2])).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
 
+  it("recherche l'e-mail comme l'unicité globale (LOWER(BTRIM)) et normalise l'entrée", async () => {
+    db.responders.push({ match: /SELECT id FROM "User"/, reply: () => ({ rows: [{ id: "u_1" }] }) });
+    await issuePasswordResetToken("  U@T.test ");
+    const select = clientCalls().find((c) => sqlOf(c).startsWith('SELECT id FROM "User"'))!;
+    expect(sqlOf(select)).toContain("LOWER(BTRIM(email)) = $1");
+    expect(select.params).toEqual(["u@t.test"]);
+  });
+
+  it("e-mail partagé par plusieurs comptes : n'émet aucun jeton et n'écrit rien", async () => {
+    db.responders.push({ match: /SELECT id FROM "User"/, reply: () => ({ rows: [{ id: "u_1" }, { id: "u_2" }] }) });
+    expect(await issuePasswordResetToken("dup@t.test")).toBeNull();
+    const sql = clientCalls().map(sqlOf);
+    expect(sql.some((s) => s.includes('"ActivationToken"'))).toBe(false);
+    expect(sql.at(-1)).toBe("ROLLBACK");
+  });
+
   const row = (over: Record<string, unknown> = {}) => ({
     id: "act_1",
     userId: "u_1",
@@ -371,8 +387,11 @@ describe("POST /api/whatsapp/send : opt-in marketing dérivé côté serveur", (
     vi.doMock("@/lib/rbac", () => ({ canSendWhatsapp: () => true }));
     vi.doMock("@/lib/whatsapp/send", () => ({
       isAutomaticWhatsAppEnabled: () => true,
+      canSendDirectWhatsAppViaMeta: () => true,
       sendDirectWhatsAppTask: sendTask,
       WHATSAPP_DIRECT_SEND_DISABLED_MESSAGE: "off",
+      // La route (commit « envoi direct du rappel de rendez-vous ») teste `instanceof AppointmentWhatsAppError`.
+      AppointmentWhatsAppError: class AppointmentWhatsAppError extends Error {},
     }));
     vi.doMock("@/lib/db/whatsapp", () => ({ createAIWhatsAppTask: createTask }));
     return (await import("@/app/api/whatsapp/send/route")).POST;

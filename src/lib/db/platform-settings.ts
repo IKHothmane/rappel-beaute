@@ -1,6 +1,7 @@
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { isAutomaticWhatsAppEnabled, getMetaWhatsAppConfig } from "@/lib/whatsapp/send";
 import { pool } from "@/lib/db/pool";
+import { emailOwner, lockEmailKey } from "@/lib/db/email-uniqueness";
 
 export type PlatformSettingsData = {
   platform: {
@@ -256,18 +257,30 @@ export async function updatePlatformProfile(input: {
 
   if (!firstName || !lastName || !email) throw new Error("INVALID_INPUT");
 
+  const emailChanged = email !== existing.email.trim().toLowerCase();
+  const client = await pool.connect();
   try {
-    await pool.query(
+    await client.query("BEGIN");
+    if (emailChanged) {
+      // Même verrou et même contrôle que les autres écrivains d'adresse : ni doublon plateforme, ni e-mail d'institut.
+      await lockEmailKey(client, email);
+      if ((await emailOwner(client, email, undefined, input.id)) !== "free") throw new Error("EMAIL_TAKEN");
+    }
+    await client.query(
       `UPDATE "PlatformUser"
        SET "firstName" = $1, "lastName" = $2, email = $3, phone = $4,
            locale = $5, timezone = $6, "updatedAt" = NOW()
        WHERE id = $7`,
       [firstName, lastName, email, phone, locale, timezone, input.id],
     );
+    await client.query("COMMIT");
   } catch (e) {
+    await client.query("ROLLBACK").catch(() => undefined);
     const msg = e instanceof Error ? e.message : "";
-    if (msg.includes("unique") || msg.includes("duplicate")) throw new Error("EMAIL_TAKEN");
+    if (msg === "EMAIL_TAKEN" || msg.includes("unique") || msg.includes("duplicate")) throw new Error("EMAIL_TAKEN");
     throw e;
+  } finally {
+    client.release();
   }
 
   await writePlatformAuditLog({

@@ -8,6 +8,8 @@ export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F3F4F6] px-4">
       <form
+        method="post"
+        action="/reset-password/"
         className="surface w-full max-w-md p-8"
         onSubmit={(e) => {
           e.preventDefault();

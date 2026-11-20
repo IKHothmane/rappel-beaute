@@ -6,6 +6,7 @@ import { consumeDimensions, identityHash, RATE_POLICIES } from "@/lib/rate-limit
 import { logger } from "@/lib/logger";
 import { publicRoute } from "@/lib/http/route-scope";
 import { checkAuthPostOrigin } from "@/lib/http/json-same-origin";
+import { checkPasswordPolicy, PASSWORD_POLICY_MESSAGES } from "@/lib/auth/password-policy";
 
 export const POST = publicRoute(async function POST(request: NextRequest) {
   const csrf = checkAuthPostOrigin(request);
@@ -36,9 +37,13 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     const token = typeof body.token === "string" ? body.token.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
 
-    if (!token || token.length > 256 || password.length < 8 || password.length > 200) {
+    if (!token || token.length > 256 || password.length > 200) {
       return NextResponse.json({ error: "Données invalides." }, { status: 400 });
     }
+    // Politique des nouveaux mots de passe (10 caractères, mots courants) : elle s'applique à la DÉFINITION du mot
+    // de passe, jamais à la connexion des comptes existants.
+    const policy = checkPasswordPolicy(password);
+    if (policy) return NextResponse.json({ error: PASSWORD_POLICY_MESSAGES[policy], code: policy }, { status: 400 });
 
     const result = await activateAccount(token, password);
     return NextResponse.json({ ok: true, email: result.email });

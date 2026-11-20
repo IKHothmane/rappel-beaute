@@ -1506,6 +1506,8 @@ export function AdminUsersView() {
       {createOpen ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0F172A]/45 p-4">
           <form
+            method="post"
+            action="/users/"
             className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
             onSubmit={(e) => {
               e.preventDefault();

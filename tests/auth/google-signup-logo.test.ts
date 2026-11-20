@@ -61,9 +61,11 @@ function multipart(logo?: File, extra: Record<string, string> = {}, headers: Rec
   const form = new FormData();
   for (const [k, v] of Object.entries({ ...FIELDS, ...extra })) form.set(k, v);
   if (logo) form.set("logo", logo);
+  // Un navigateur envoie Content-Length pour un FormData : la route l'exige désormais (411 sinon).
+  const size = 1024 + (logo?.size ?? 0);
   return new NextRequest(`${ORIGIN}/api/auth/google/signup/`, {
     method: "POST",
-    headers: { origin: ORIGIN, "sec-fetch-site": "same-origin", cookie: `${pendingCookieName()}=pending-token`, ...headers },
+    headers: { origin: ORIGIN, "sec-fetch-site": "same-origin", "content-length": String(size), cookie: `${pendingCookieName()}=pending-token`, ...headers },
     body: form,
   });
 }

@@ -115,7 +115,7 @@ function EmailCard({ security }: { security: Security }) {
           ? "Pour utiliser une autre adresse, indiquez-la ci-dessous : elle ne remplace l'actuelle qu'une fois confirmée."
           : "Votre adresse e-mail permet de récupérer votre accès et de recevoir vos notifications. Nous vous envoyons un lien de confirmation."}
       </p>
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} method="post" action="/security/" className="space-y-3">
         <label className="block">
           <span className="mb-1.5 block font-medium">{changing ? "Nouvelle adresse e-mail" : "Adresse e-mail"}</span>
           <input
@@ -264,7 +264,7 @@ function PasswordCard({ security, onChanged }: { security: Security; onChanged: 
           </a>
         </p>
       ) : null}
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} method="post" action="/security/" className="space-y-3">
         <fieldset disabled={blockedByEmail || busy} className="space-y-3 disabled:opacity-60">
           <legend className="sr-only">{security.hasPassword ? "Changer le mot de passe" : "Définir un mot de passe"}</legend>
           {security.hasPassword ? (

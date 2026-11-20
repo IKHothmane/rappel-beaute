@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
 import { AUTH_ERROR_MESSAGES, type AuthErrorCode } from "@/lib/auth/auth-errors";
+import { sanitizeRedirectAfter } from "@/lib/auth/redirect-after";
 import { PASSWORD_MIN_LENGTH, checkPasswordPolicy } from "@/lib/auth/password-policy";
 import "./auth-ui.css";
 
@@ -17,7 +18,7 @@ export function authMessage(
 
 /** Chemin interne sûr (jamais une URL absolue ni `//hôte`) ; sinon le repli. */
 export function safeInternalPath(value: unknown, fallback: string): string {
-  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") ? value : fallback;
+  return sanitizeRedirectAfter(value) ?? fallback;
 }
 
 export type WrongHost = { host: string; origin: string };

@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Bug,
   Headphones,
-  Lightbulb,
   Send,
 } from "lucide-react";
 import {
@@ -51,24 +50,14 @@ export function SupportMobile({ vm }: { vm: SupportViewModel }) {
             >
               + Nouveau Ticket Métier
             </button>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => vm.onOpenModal("bug")}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-surface-container text-[11px] font-semibold text-on-surface"
-              >
-                <Bug className="h-4 w-4 text-error" />
-                Signaler Bug
-              </button>
-              <button
-                type="button"
-                onClick={() => vm.onOpenModal("feature")}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-surface-container text-[11px] font-semibold text-on-surface"
-              >
-                <Lightbulb className="h-4 w-4 text-secondary" />
-                Suggérer
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => vm.onOpenModal("bug")}
+              className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-surface-container text-[12px] font-semibold text-on-surface"
+            >
+              <Bug className="h-4 w-4 text-error" />
+              Signaler un bug
+            </button>
           </div>
         ) : null}
       </section>

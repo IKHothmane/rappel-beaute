@@ -12,7 +12,10 @@ import {
 } from "@/modules/support/service";
 import type { SupportTicketCategory } from "@/lib/db/support-tickets";
 
-const CATEGORIES = Object.keys(SUPPORT_CATEGORY_LABEL) as SupportTicketCategory[];
+// Les propositions d'évolution ne sont plus acceptées (l'ancien libellé reste lisible sur les tickets existants).
+const CATEGORIES = (Object.keys(SUPPORT_CATEGORY_LABEL) as SupportTicketCategory[]).filter(
+  (c) => c !== "FEATURE_REQUEST",
+);
 
 export function SupportNewView() {
   const router = useRouter();

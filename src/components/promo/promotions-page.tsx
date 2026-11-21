@@ -45,7 +45,6 @@ import { PromotionsMobile } from "@/components/promo/promotions-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
-import { Select } from "@/components/ui/select";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { canAccessNav, canWritePromotions } from "@/lib/rbac";
@@ -63,7 +62,8 @@ import { createPromotion, listPromotions, setPromotionStatus } from "@/modules/p
 import { listServices } from "@/modules/services/service";
 import type { CustomerListItem } from "@/types/customer";
 import type { PromotionKpis, PromotionListItem, PromotionType } from "@/types/promo";
-import { PROMOTION_TYPE_LABEL, PROMOTION_TYPES } from "@/types/promo";
+import { PROMOTION_CREATABLE_TYPES, PROMOTION_TYPE_LABEL, PROMOTION_TYPES } from "@/types/promo";
+import { PromoTypePicker, ServicePicker } from "@/components/promo/promo-pickers";
 import type { ServiceListItem } from "@/types/service";
 
 export function PromotionsPageView() {
@@ -424,7 +424,9 @@ export function PromotionsPageView() {
   <span className="block text-xs font-semibold text-ink/60">Type de promotion</span>
   <Dropdown ariaLabel="Type de promotion" value={typeFilter} onChange={(value) => setTypeFilter(value as PromoTypeFilter)} options={[
     { value: "all", label: "Tous les types" },
-    ...PROMOTION_TYPES.map((value) => ({ value, label: PROMOTION_TYPE_LABEL[value] })),
+    ...PROMOTION_TYPES.filter(
+      (value) => PROMOTION_CREATABLE_TYPES.includes(value) || rowsRaw.some((p) => p.type === value),
+    ).map((value) => ({ value, label: PROMOTION_TYPE_LABEL[value] })),
   ]} />
 </div>
           </div>
@@ -802,16 +804,10 @@ function PromoForm({
             placeholder="RENTREE20"
           />
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Type</span>
-          <Select value={type} onChange={(e) => setType(e.target.value as PromotionType)}>
-            {PROMOTION_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {PROMOTION_TYPE_LABEL[t]}
-              </option>
-            ))}
-          </Select>
-        </label>
+      </div>
+      <div className="block text-sm">
+        <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Type</span>
+        <PromoTypePicker value={type} onChange={setType} />
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block text-sm">
@@ -826,17 +822,10 @@ function PromoForm({
             maxLength={PRICE_MAX_DIGITS}
           />
         </label>
-        <label className="block text-sm">
+        <div className="block text-sm">
           <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider">Prestation (optionnel)</span>
-          <Select value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-            <option value="">Toutes / catégorie libre</option>
-            {services.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
-        </label>
+          <ServicePicker value={serviceId} onChange={setServiceId} services={services} />
+        </div>
       </div>
       <div>
         <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider">Utilisation</p>

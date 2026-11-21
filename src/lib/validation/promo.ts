@@ -4,7 +4,7 @@ import type {
   PromotionStatus,
   PromotionType,
 } from "@/types/promo";
-import { PROMOTION_TYPES } from "@/types/promo";
+import { PROMOTION_CREATABLE_TYPES } from "@/types/promo";
 
 function str(v: unknown): string | undefined {
   if (typeof v !== "string") return undefined;
@@ -42,7 +42,7 @@ export function validateCreatePromotion(
   const name = str(raw.name);
   const type = str(raw.type) as PromotionType | undefined;
   if (!name) errors.push("name");
-  if (!type || !PROMOTION_TYPES.includes(type)) errors.push("type");
+  if (!type || !PROMOTION_CREATABLE_TYPES.includes(type)) errors.push("type");
   if (errors.length || !name || !type) return { ok: false, errors };
   return {
     ok: true,

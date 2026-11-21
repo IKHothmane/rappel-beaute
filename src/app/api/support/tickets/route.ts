@@ -48,6 +48,13 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
     const message = String(raw.message ?? "").trim();
     const priority = parsePriority(raw.priority) ?? "NORMAL";
 
+    if (category === "FEATURE_REQUEST") {
+      return NextResponse.json(
+        { error: "Les propositions d'évolution ne sont plus acceptées par ce formulaire." },
+        { status: 400 },
+      );
+    }
+
     if (!category || !subject || !message) {
       return NextResponse.json(
         { error: "Sujet, catégorie et message requis." },

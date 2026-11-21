@@ -14,7 +14,10 @@ export function escapeHtml(value: string): string {
  * Message envoyé au propriétaire. Toutes les valeurs saisies sont échappées dans le HTML ;
  * le sujet ne contient que l'institut, déjà validé sans retour à la ligne.
  */
-export function websiteQuoteEmail(input: WebsiteQuoteInput): { subject: string; html: string; text: string } {
+export function websiteQuoteEmail(
+  input: WebsiteQuoteInput,
+  source = "la page Création de site web",
+): { subject: string; html: string; text: string } {
   const subject = `Demande de site web — ${input.institute}`;
   const rows: Array<[string, string]> = [
     ["Nom", input.name],
@@ -51,7 +54,7 @@ export function websiteQuoteEmail(input: WebsiteQuoteInput): { subject: string; 
         <td>
           <p style="margin:0 0 8px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#b0894d;">${escapeHtml(SITE.name)}</p>
           <h1 style="margin:0 0 16px;font-size:22px;">Demande de site web</h1>
-          <p style="margin:0 0 16px;line-height:1.5;">Une demande de devis vient d'être envoyée depuis la page Création de site web.</p>
+          <p style="margin:0 0 16px;line-height:1.5;">Une demande de devis vient d'être envoyée depuis ${escapeHtml(source)}.</p>
           <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;font-size:15px;line-height:1.45;">${htmlRows}</table>
           <p style="margin:20px 0 6px;color:#6b635e;font-size:13px;">Message</p>
           <p style="margin:0;line-height:1.55;font-size:15px;">${htmlMessage}</p>

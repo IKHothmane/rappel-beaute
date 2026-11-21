@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ROLE_LABEL, useCurrentUser } from "@/components/auth/session-provider";
 import { SupportDesktop } from "@/components/support/support-desktop";
+import { CreateTicketModal } from "@/components/support/create-ticket-modal";
 import {
-  CREATE_CATEGORIES,
-  SUPPORT_CATEGORY_LABEL,
   avgFirstResponseMinutes,
   buildSupportCounters,
   filterTickets,
@@ -27,7 +26,6 @@ import {
   type SupportMessageItem,
   type SupportTicketListItem,
 } from "@/modules/support/service";
-import { Send } from "lucide-react";
 
 export function SupportPageView() {
   const { toast } = useToast();
@@ -191,142 +189,5 @@ export function SupportPageView() {
         />
       ) : null}
     </>
-  );
-}
-
-function CreateTicketModal({
-  orgName,
-  mode,
-  creating,
-  onClose,
-  onCreate,
-}: {
-  orgName: string;
-  mode: CreateModalMode;
-  creating: boolean;
-  onClose: () => void;
-  onCreate: (input: {
-    subject: string;
-    category: SupportTicketCategory;
-    message: string;
-    priority: string;
-  }) => Promise<void>;
-}) {
-  const [subject, setSubject] = useState(
-    mode === "bug"
-      ? "Anomalie technique / Bug"
-      : mode === "feature"
-        ? "Proposition d'évolution métier"
-        : "",
-  );
-  const [category, setCategory] = useState<SupportTicketCategory>(
-    mode === "bug" ? "BUG" : mode === "feature" ? "FEATURE_REQUEST" : "TECHNICAL",
-  );
-  const [priority, setPriority] = useState(
-    mode === "bug" ? "HIGH" : mode === "feature" ? "LOW" : "NORMAL",
-  );
-  const [message, setMessage] = useState("");
-
-  const title =
-    mode === "bug"
-      ? "Signaler une Anomalie Technique / Bug"
-      : mode === "feature"
-        ? "Proposer une Évolution Métier"
-        : "Ouvrir un Nouveau Ticket d'Assistance";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/60 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-surface-container-lowest shadow-2xl">
-        <div className="flex items-center justify-between bg-surface-container px-6 py-4">
-          <div>
-            <h3 className="text-lg font-bold text-on-surface">{title}</h3>
-            <p className="text-[13px] text-on-surface-variant">{orgName}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg bg-surface-container-lowest px-3 py-1 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high"
-          >
-            Fermer
-          </button>
-        </div>
-        <form
-          className="flex flex-1 flex-col space-y-4 overflow-y-auto p-6"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            await onCreate({ subject, category, message, priority });
-          }}
-        >
-          <label className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold uppercase text-on-surface">Sujet *</span>
-            <input
-              required
-              maxLength={200}
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="h-11 rounded-lg bg-surface-container-low px-3 text-[13px] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </label>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold uppercase text-on-surface">Catégorie *</span>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as SupportTicketCategory)}
-                className="h-11 cursor-pointer rounded-lg bg-surface-container-low px-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {CREATE_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {SUPPORT_CATEGORY_LABEL[c]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold uppercase text-on-surface">Priorité *</span>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="h-11 cursor-pointer rounded-lg bg-surface-container-low px-3 text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="NORMAL">Normale</option>
-                <option value="HIGH">Haute</option>
-                <option value="URGENT">Urgente</option>
-                <option value="LOW">Faible</option>
-              </select>
-            </label>
-          </div>
-          <label className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold uppercase text-on-surface">Description *</span>
-            <textarea
-              required
-              maxLength={5000}
-              rows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Décrivez la situation, les étapes et l'impact…"
-              className="rounded-lg bg-surface-container-low p-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </label>
-          <div className="flex items-center justify-end gap-2 border-t border-surface-container pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={creating}
-              className="flex items-center gap-2 rounded-lg bg-primary-container px-6 py-2.5 text-sm font-bold text-on-primary-container shadow-sm hover:bg-primary disabled:opacity-50"
-            >
-              <Send className="h-[18px] w-[18px]" />
-              {creating ? "Envoi…" : "Créer le ticket"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   );
 }

@@ -224,7 +224,6 @@ export const CREATE_CATEGORIES: SupportTicketCategory[] = [
   "WHATSAPP",
   "CUSTOMERS",
   "BUG",
-  "FEATURE_REQUEST",
   "TECHNICAL",
   "OTHER",
 ];
@@ -245,7 +244,7 @@ type DiagnosticAction = {
   href: string;
 };
 
-export type CreateModalMode = "ticket" | "bug" | "feature";
+export type CreateModalMode = "ticket" | "bug";
 
 export type SupportViewModel = {
   orgName: string;

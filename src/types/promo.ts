@@ -15,6 +15,20 @@ export const PROMOTION_TYPES: PromotionType[] = [
   "HAPPY_HOUR",
 ];
 
+/**
+ * Types proposables à la création. « Forfait » et « Happy Hour » sont retirés de l'offre ; les promotions
+ * déjà enregistrées avec ces types restent lisibles et applicables (PROMOTION_TYPES ci-dessus).
+ */
+export const PROMOTION_CREATABLE_TYPES: PromotionType[] = ["PERCENTAGE", "FIXED_AMOUNT", "FREE_SERVICE"];
+
+export const PROMOTION_TYPE_HINT: Record<PromotionType, string> = {
+  PERCENTAGE: "Un pourcentage de remise sur le prix",
+  FIXED_AMOUNT: "Une remise en dirhams, déduite du total",
+  FREE_SERVICE: "Une prestation offerte à la cliente",
+  PACKAGE: "Ancien type, n'est plus proposé",
+  HAPPY_HOUR: "Ancien type, n'est plus proposé",
+};
+
 export const PROMOTION_TYPE_LABEL: Record<PromotionType, string> = {
   PERCENTAGE: "Pourcentage",
   FIXED_AMOUNT: "Montant fixe",

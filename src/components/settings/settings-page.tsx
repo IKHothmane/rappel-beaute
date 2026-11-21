@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Building2,
   CreditCard,
+  Globe,
   KeyRound,
   LogOut,
   UserRound,
@@ -13,6 +14,8 @@ import {
 import { ROLE_LABEL, useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { InstituteLogoField } from "@/components/settings/institute-logo-field";
 import { InstituteSettingsForm } from "@/components/settings/institute-settings-form";
+import { WebsiteOffersSection } from "@/components/settings/website-offers";
+import { describeSubscription } from "@/lib/subscriptions/status-display";
 import type { SubscriptionDto } from "@/types/subscription";
 
 export function SettingsPageView() {
@@ -50,6 +53,7 @@ export function SettingsPageView() {
 
   const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase() || "U";
   const canEditInstitute = user.role === "OWNER";
+  const display = sub ? describeSubscription(sub) : null;
 
   return (
     <div className="min-w-0 space-y-5 pb-10 text-[#261524]">
@@ -131,6 +135,14 @@ export function SettingsPageView() {
           </div>
         </SettingsCard>
 
+        <SettingsCard
+          icon={Globe}
+          title="Site web de votre institut"
+          subtitle="Choisissez le type de site, nous vous répondons par e-mail"
+        >
+          <WebsiteOffersSection canRequest={canEditInstitute} />
+        </SettingsCard>
+
         <SettingsCard icon={CreditCard} title="Abonnement" subtitle="Formule et renouvellement">
           <div className="space-y-4">
             {subLoading ? (
@@ -157,17 +169,17 @@ export function SettingsPageView() {
                       </span>
                     </p>
                   </div>
-                  <span className="rounded-full bg-[#FCCA66] px-3 py-1 text-[11px] font-extrabold text-[#261900]">
-                    {sub.status === "ACTIVE" || sub.status === "TRIAL" ? "Actif" : sub.status}
+                  <span
+                    className={
+                      display?.tone === "ok" || display?.tone === "trial"
+                        ? "rounded-full bg-[#FCCA66] px-3 py-1 text-[11px] font-extrabold text-[#261900]"
+                        : "rounded-full bg-white px-3 py-1 text-[11px] font-extrabold text-[#B3261E]"
+                    }
+                  >
+                    {display?.badge}
                   </span>
                 </div>
-                <p className="mt-4 text-[13px] text-white/75">
-                  Renouvellement le{" "}
-                  {new Date(sub.currentPeriodEnd).toLocaleDateString("fr-FR")}
-                  {sub.trialEndsAt
-                    ? ` · essai jusqu’au ${new Date(sub.trialEndsAt).toLocaleDateString("fr-FR")}`
-                    : ""}
-                </p>
+                <p className="mt-4 text-[13px] text-white/75">{display?.line}</p>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-[#EAD5E0] bg-[#FFF9FB] px-4 py-8 text-center">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppPageHeader } from "@/components/app/AppUi";
 import { PLAN_FEATURE_LABELS, type PlanFeatureKey, type SubscriptionDto, type UsageDto } from "@/types/subscription";
 import { SITE } from "@/lib/site";
+import { describeSubscription } from "@/lib/subscriptions/status-display";
 
 export default function SubscriptionSettingsPage() {
   const [sub, setSub] = useState<SubscriptionDto | null>(null);
@@ -45,14 +46,8 @@ export default function SubscriptionSettingsPage() {
           {sub.priceSnapshot.toLocaleString("fr-MA")} {sub.currencySnapshot} / mois
         </p>
         <p className="mt-1 text-sm text-ink/60">
-          Statut : {sub.status} · Renouvellement le{" "}
-          {new Date(sub.currentPeriodEnd).toLocaleDateString("fr-FR")}
+          {describeSubscription(sub).badge} · {describeSubscription(sub).line}
         </p>
-        {sub.trialEndsAt ? (
-          <p className="mt-1 text-sm text-amber-700">
-            Essai jusqu&apos;au {new Date(sub.trialEndsAt).toLocaleDateString("fr-FR")}
-          </p>
-        ) : null}
       </section>
 
       {usage ? (

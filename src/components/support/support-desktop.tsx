@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Bug,
   Headphones,
-  Lightbulb,
   Paperclip,
   Plus,
   Search,
@@ -63,14 +62,6 @@ export function SupportDesktop({ vm }: { vm: SupportViewModel }) {
             >
               <Bug size={17} aria-hidden />
               Signaler un bug
-            </button>
-            <button
-              type="button"
-              onClick={() => vm.onOpenModal("feature")}
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#E7B9CD] bg-white px-5 text-sm font-semibold text-[#831D4A] transition hover:bg-[#FFF7FA]"
-            >
-              <Lightbulb size={17} aria-hidden />
-              Proposer une idée
             </button>
           </div>
         ) : null}

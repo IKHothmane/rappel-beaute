@@ -24,6 +24,7 @@ import { CustomerReviews } from "@/components/dashboard/customer-reviews";
 import { PremiumKpiCard } from "@/components/dashboard/premium-kpi-card";
 import { QuickActionsDrawer, useQuickActions } from "@/components/dashboard/quick-actions-drawer";
 import { SaasDashboardMobile } from "@/components/dashboard/saas-dashboard-mobile";
+import { RestartTutorialButton } from "@/components/tutorial/RestartTutorialButton";
 import { listResources } from "@/modules/resources/service";
 import { APPOINTMENT_STATUS_LABEL } from "@/modules/appointments/constants";
 import { listAppointments } from "@/modules/appointments/service";
@@ -297,6 +298,9 @@ export function SaasDashboard() {
   const revenueChange = overview?.revenue.changePercent ?? null;
   const appointmentsChange = overview?.appointments.changePercent ?? null;
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "période";
+  const tutorialAction = user.role === "OWNER" ? (
+    <RestartTutorialButton className="inline-flex min-h-11 items-center justify-center self-start rounded-xl border border-[#E7B9CD] bg-white px-4 text-sm font-semibold text-[#831D4A] transition hover:bg-[#FFF7FA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#A40E49]" />
+  ) : null;
 
   return (
     <div className="flex flex-col gap-5 pb-8 lg:gap-5 lg:pb-24">
@@ -304,6 +308,7 @@ export function SaasDashboard() {
         firstName={user.firstName}
         orgName={user.orgName}
         todayLabel={todayLabel}
+        tutorialAction={tutorialAction}
         period={period}
         onPeriodChange={setPeriod}
         loading={loading}
@@ -350,6 +355,7 @@ export function SaasDashboard() {
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {tutorialAction}
               <div
                 className="flex items-center rounded-xl bg-[#F8F0F4] p-1"
                 role="group"

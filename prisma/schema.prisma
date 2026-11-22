@@ -460,6 +460,8 @@ model Organization {
   updatedAt DateTime           @updatedAt
 
   users              User[]
+  tutorialAutoEligible Boolean @default(true)
+  userTutorialStates UserTutorialState[]
   pendingSignups     AuthPendingSignup[]
   customers          Customer[]
   staff              Staff[]
@@ -571,6 +573,7 @@ model User {
   identities        UserIdentity[]
   oauthStates       AuthOAuthState[]
   emailVerificationTokens EmailVerificationToken[]
+  tutorialState     UserTutorialState?
   supportTicketsCreated SupportTicket[] @relation("SupportTicketCreator")
   supportMessages       SupportMessage[] @relation("SupportMessageOrgUser")
   customerNotes         CustomerNote[]
@@ -2807,6 +2810,27 @@ model AuthOAuthState {
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+}
+
+/// État du tutoriel de première connexion, une ligne par utilisateur (clé primaire = userId).
+/// RLS d'institut sur organizationId (politique tenant_isolation, SQL) ; rappel_app ne peut pas modifier
+/// userId / organizationId. CHECK SQL : status IN ('NOT_STARTED','IN_PROGRESS','COMPLETED','SKIPPED'), lastStep <= 40.
+model UserTutorialState {
+  userId         String    @id
+  organizationId String
+  status         String    @default("NOT_STARTED")
+  lastStep       String?
+  version        Int       @default(1)
+  startedAt      DateTime? @db.Timestamptz(6)
+  completedAt    DateTime? @db.Timestamptz(6)
+  skippedAt      DateTime? @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }
 
 /// Inscription en attente : aucun User n'est créé ici. organizationId = institut créé (idempotence).

@@ -126,6 +126,7 @@ export function ResourcesMobile({
             <button
               type="button"
               onClick={onCreate}
+              data-tour="resources-add"
               className="inline-flex h-12 items-center justify-center gap-1.5 rounded-xl bg-primary text-[13px] font-semibold text-white shadow-md active:scale-[0.98]"
             >
               <Plus size={18} />

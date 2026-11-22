@@ -93,6 +93,7 @@ export function TeamWorkspace() {
             <button
               type="button"
               className="rb-team-hero-btn rb-team-hero-btn-primary"
+              data-tour="staff-add"
               onClick={() => {
                 if (tab !== "staff") changeTab("staff");
                 setCreateSignal((n) => n + 1);
@@ -127,6 +128,7 @@ export function TeamWorkspace() {
               key={item.id}
               type="button"
               onClick={() => changeTab(item.id)}
+              data-tour={item.id === "planning" ? "staff-planning-tab" : undefined}
               aria-current={active ? "page" : undefined}
               className={cn("rb-team-tab", active && "rb-team-tab-active")}
             >

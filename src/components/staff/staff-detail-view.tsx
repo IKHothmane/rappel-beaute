@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Tabs } from "@/components/app/AppUi";
+import { notifyTutorialRefresh } from "@/lib/tutorial-events";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { StaffForm } from "@/components/staff/staff-form";
 import { StaffScheduleForm } from "@/components/staff/staff-schedule-form";
@@ -108,6 +109,7 @@ export function StaffDetailView({ staffId }: { staffId: string }) {
       return;
     }
     toast("Planning enregistré.", "success");
+    notifyTutorialRefresh();
     refresh();
   }
 

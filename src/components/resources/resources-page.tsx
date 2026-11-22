@@ -49,6 +49,7 @@ import type {
   ResourceType,
 } from "@/types/resource";
 import { MAINTENANCE_STATUS_LABEL, MAINTENANCE_TYPE_LABEL, RESOURCE_TYPE_LABEL, RESOURCE_TYPES } from "@/types/resource";
+import { notifyTutorialRefresh } from "@/lib/tutorial-events";
 
 
 export function ResourcesPageView() {
@@ -233,6 +234,7 @@ export function ResourcesPageView() {
     setDrawerOpen(false);
     setEditing(null);
     toast(editing ? "Ressource mise à jour." : "Ressource créée.", "success");
+    if (!editing) notifyTutorialRefresh();
     refresh();
   }
 

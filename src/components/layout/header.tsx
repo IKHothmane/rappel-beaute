@@ -5,6 +5,7 @@ import { OrgLogo } from "@/components/app/org-logo";
 import { useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { TrialBadge } from "@/components/layout/trial-badge";
+import { clearTutorialDeferral } from "@/components/tutorial/events";
 
 type HeaderProps = {
   onMenuOpen: () => void;
@@ -51,7 +52,10 @@ export function Header({ onMenuOpen }: HeaderProps) {
             </div>
             <button
               type="button"
-              onClick={() => void logout()}
+              onClick={() => {
+                if (user.role === "OWNER") clearTutorialDeferral(user.id);
+                void logout();
+              }}
               className="rounded-xl p-2 text-ink/55 transition hover:bg-[#FBF4F6] hover:text-primary"
               aria-label="Se déconnecter"
               title="Se déconnecter"

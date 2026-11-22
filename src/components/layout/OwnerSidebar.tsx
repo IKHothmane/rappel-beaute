@@ -17,6 +17,7 @@ import {
   Megaphone,
   MessageCircle,
   Package,
+  PlayCircle,
   ReceiptText,
   Settings,
   ShoppingCart,
@@ -36,6 +37,7 @@ import { usePlanFeatures } from "@/components/subscriptions/plan-features-provid
 import { OrgLogo } from "@/components/app/org-logo";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
 import { isPostVisitUiEnabled } from "@/lib/post-visit/access";
+import { clearTutorialDeferral, restartTutorial } from "@/components/tutorial/events";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -233,6 +235,7 @@ export default function OwnerSidebar({
                     <Link
                       key={item.key}
                       href={item.href}
+                      data-tour={`nav-${item.key}`}
                       onClick={onClose}
                       title={collapsed ? item.label : undefined}
                       className={cn(
@@ -264,6 +267,30 @@ export default function OwnerSidebar({
                     </Link>
                   );
                 })}
+                {section.title === "Pilotage" ? (
+                  <button
+                    type="button"
+                    data-tour="help-tutorial"
+                    title={collapsed ? "Revoir le tutoriel" : undefined}
+                    aria-label="Revoir le tutoriel"
+                    onClick={() => {
+                      onClose();
+                      restartTutorial();
+                    }}
+                    className={cn(
+                      "group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink/60 transition-all duration-200 hover:bg-[#FBF4F6] hover:text-ink",
+                      collapsed && "lg:justify-center lg:px-0",
+                    )}
+                  >
+                    <PlayCircle
+                      size={18}
+                      strokeWidth={1.8}
+                      className="shrink-0 text-ink/35 transition-transform duration-200 group-hover:scale-110"
+                      aria-hidden
+                    />
+                    <span className={cn(collapsed && "lg:hidden")}>Revoir le tutoriel</span>
+                  </button>
+                ) : null}
               </div>
             </div>
           ))}
@@ -291,7 +318,10 @@ export default function OwnerSidebar({
           </Link>
           <button
             type="button"
-            onClick={() => void logout()}
+            onClick={() => {
+              clearTutorialDeferral(user.id);
+              void logout();
+            }}
             title="Se déconnecter"
             className={cn(
               "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-ink/60 transition hover:bg-[#FBF4F6] hover:text-primary",

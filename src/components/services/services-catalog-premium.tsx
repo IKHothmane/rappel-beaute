@@ -376,6 +376,7 @@ export default function ServicesCatalogPremium({
           <button
             type="button"
             onClick={onCreate}
+            data-tour="services-add"
             className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
           >
             <Plus size={18} />

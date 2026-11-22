@@ -16,6 +16,7 @@ import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
+import { notifyTutorialRefresh } from "@/lib/tutorial-events";
 import {
   filterAppointmentsForDates,
   getMonthGrid,
@@ -389,9 +390,11 @@ export function AgendaPage() {
       setCreateSeed(undefined);
       if (!promo.ok) {
         toast(`Rendez-vous créé. ${promo.error}`, "error");
+        notifyTutorialRefresh();
         return { ok: true };
       }
       toast("Rendez-vous créé. Code promo appliqué sur une prestation.", "success");
+      notifyTutorialRefresh();
       return { ok: true };
     }
     setSubmitting(false);
@@ -399,6 +402,7 @@ export function AgendaPage() {
     setDrawer(null);
     setCreateSeed(undefined);
     toast("Rendez-vous créé.", "success");
+    notifyTutorialRefresh();
     return { ok: true };
   }
 
@@ -655,6 +659,8 @@ export function AgendaPage() {
             onAppointmentClick={openDetail}
             onCreate={(seed) => openCreate(seed)}
             onStatusChange={(id, status) => void handleStatus(status, id)}
+            onTutorialCreate={() => { setTutorialMode(true); openCreate(); }}
+            onTutorialClose={() => { setTutorialMode(false); setDrawer(null); setCreateSeed(undefined); }}
           />
         )}
       </div>

@@ -20,6 +20,10 @@ const CHILD_TABLES = [
   "AIMessage", "PublicWidgetOrigin", "AssistantMessage", "AppleWalletRegistration", "ReviewStaffRating",
 ];
 const EXCLUDED = new Set(["PlatformAuditLog"]);
+const TUTORIAL_TABLE = '"UserTutorialState"';
+const TUTORIAL_UPDATE_COLUMNS = ["status", "lastStep", "version", "startedAt", "completedAt", "skippedAt", "updatedAt"];
+const TUTORIAL_INSERT_COLUMNS = ["userId", "organizationId", ...TUTORIAL_UPDATE_COLUMNS, "createdAt"];
+const quotedColumns = (columns: string[]) => columns.map((column) => `"${column}"`).join(", ");
 
 async function restore(db: Client): Promise<void> {
   await db.query(`DO $$
@@ -64,6 +68,12 @@ async function restore(db: Client): Promise<void> {
   await db.query(`REVOKE ALL ON TABLE "PlatformAuditLog" FROM ${ROLE}, rappel_public, rappel_job, rappel_platform`);
   await db.query(`GRANT SELECT, INSERT ON TABLE "PlatformAuditLog" TO rappel_platform`);
   await db.query(`GRANT INSERT ON TABLE "PlatformAuditLog" TO rappel_public`);
+  if ((await db.query(`SELECT to_regclass($1) AS table`, [TUTORIAL_TABLE])).rows[0].table) {
+    await db.query(`REVOKE ALL ON TABLE ${TUTORIAL_TABLE} FROM PUBLIC, ${ROLE}, ${TRANSVERSAL.join(", ")}`);
+    await db.query(`GRANT SELECT, INSERT (${quotedColumns(TUTORIAL_INSERT_COLUMNS)}),
+      UPDATE (${quotedColumns(TUTORIAL_UPDATE_COLUMNS)}) ON TABLE ${TUTORIAL_TABLE} TO ${ROLE}`);
+    await db.query(`GRANT SELECT ON TABLE ${TUTORIAL_TABLE} TO rappel_platform`);
+  }
   await db.query(`DO $$
     BEGIN
       IF to_regprocedure('app_private.org_proof_ok()') IS NOT NULL THEN
@@ -120,6 +130,20 @@ async function verify(db: Client): Promise<string[]> {
 
   for (const { t } of rows) {
     if (t === "PlatformAuditLog") continue;
+    if (t === "UserTutorialState") {
+      const { rows: grants } = await db.query<{ role: string; valid: boolean }>(
+        `SELECT role, has_table_privilege(role, $1, 'SELECT') = (role IN ('rappel_app', 'rappel_platform'))
+          AND NOT has_table_privilege(role, $1, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+          AND (SELECT bool_and(
+            has_column_privilege(role, $1, column_name, 'INSERT') = (role = 'rappel_app' AND column_name = ANY($2::text[]))
+            AND has_column_privilege(role, $1, column_name, 'UPDATE') = (role = 'rappel_app' AND column_name = ANY($3::text[]))
+          ) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'UserTutorialState') AS valid
+         FROM unnest($4::text[]) AS roles(role)`,
+        [TUTORIAL_TABLE, TUTORIAL_INSERT_COLUMNS, TUTORIAL_UPDATE_COLUMNS, [ROLE, ...TRANSVERSAL]],
+      );
+      for (const grant of grants) if (!grant.valid) problems.push(`table ${t} : droits incorrects pour ${grant.role}`);
+      continue;
+    }
     if (t === "_prisma_migrations") {
       const { rows: p } = await db.query(`SELECT has_table_privilege($1, '"_prisma_migrations"', 'SELECT') ok`, [ROLE]);
       if (p[0].ok) problems.push(`${ROLE} peut lire _prisma_migrations`);
@@ -160,7 +184,14 @@ async function main() {
   await db.connect();
   try {
     if (!process.argv.includes("--verify")) {
-      await restore(db);
+      await db.query("BEGIN");
+      try {
+        await restore(db);
+        await db.query("COMMIT");
+      } catch (error) {
+        await db.query("ROLLBACK");
+        throw error;
+      }
       console.log("Rôle et permissions rétablis.");
     }
     const problems = await verify(db);

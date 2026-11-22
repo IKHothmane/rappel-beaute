@@ -60,7 +60,7 @@ export function StaffScheduleForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" data-tour="staff-schedule">
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">Horaires hebdomadaires</h3>
         {schedules.map((s) => (

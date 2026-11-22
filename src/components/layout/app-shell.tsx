@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
@@ -13,6 +14,11 @@ import { PlanFeatureRouteGuard } from "@/components/subscriptions/PlanFeatureRou
 import { StaffColorProvider } from "@/components/agenda/staff-color-provider";
 import { NotificationPopupHost } from "@/components/notifications/notification-popup-host";
 import { cn } from "@/lib/utils";
+
+// Chargé à la demande, jamais rendu côté serveur : le tutoriel ne concerne que le propriétaire connecté.
+const TutorialHost = dynamic(() => import("@/components/tutorial/tutorial-host").then((m) => m.TutorialHost), {
+  ssr: false,
+});
 
 type AppShellProps = {
   children: ReactNode;
@@ -133,6 +139,7 @@ export function AppShell({ children }: AppShellProps) {
 
       <MobileNav />
       <NotificationPopupHost />
+      {isOwner ? <TutorialHost /> : null}
     </div>
   );
 }

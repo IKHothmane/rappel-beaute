@@ -51,6 +51,7 @@ import {
   getAnalyticsStaff,
 } from "@/modules/analytics/service";
 import { createStaff, getStaff, listStaff, updateStaff } from "@/modules/staff/service";
+import { notifyTutorialRefresh } from "@/lib/tutorial-events";
 import type { AnalyticsOverview, ReviewAnalytics, StaffAnalyticsRow } from "@/types/analytics";
 import type { StaffDetail, StaffListItem, StaffStatus } from "@/types/staff";
 import { STAFF_STATUS_LABEL } from "@/types/staff";
@@ -308,6 +309,7 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
     setDrawerOpen(false);
     setEditing(null);
     toast(editing ? "Profil mis à jour." : "Collaboratrice créée.", "success");
+    if (!editing) notifyTutorialRefresh();
     void refresh();
   }
 

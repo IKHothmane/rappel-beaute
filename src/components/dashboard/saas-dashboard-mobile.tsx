@@ -1,4 +1,5 @@
 "use client";
+import type { ReactNode } from "react";
 import { CustomerReviews } from "@/components/dashboard/customer-reviews";
 import type { ReviewKpis } from "@/types/review";
 import type { ReviewAnalytics } from "@/types/analytics";
@@ -44,6 +45,7 @@ type SaasDashboardMobileProps = {
   firstName: string;
   orgName: string;
   todayLabel: string;
+  tutorialAction: ReactNode;
   period: DashboardPeriodKey;
   onPeriodChange: (p: DashboardPeriodKey) => void;
   loading: boolean;
@@ -72,6 +74,7 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
     firstName,
     orgName,
     todayLabel,
+    tutorialAction,
     period,
     onPeriodChange,
     loading,
@@ -138,6 +141,8 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
             Direct
           </span>
         </div>
+
+        {tutorialAction}
 
         <div className="flex items-center justify-between rounded-xl bg-[#FFF1F6] p-3 shadow-sm">
           <div className="flex min-w-0 items-center gap-2">

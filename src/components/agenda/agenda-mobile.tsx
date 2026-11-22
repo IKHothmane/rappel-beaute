@@ -34,6 +34,7 @@ import { agendaAppointmentSurface, staffColor } from "@/components/agenda/staff-
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { AppointmentPayBadge } from "@/components/agenda/appointment-pay-badge";
 import { GoogleCalendarConnect } from "@/components/agenda/google-calendar-connect";
+import { AgendaTutorial } from "@/components/agenda/agenda-tutorial";
 import { cn } from "@/lib/utils";
 import type { AgendaKpis } from "@/components/agenda/agenda-toolbar";
 
@@ -56,6 +57,9 @@ type AgendaMobileProps = {
   onAppointmentClick: (id: string) => void;
   onCreate: (seed?: { startAt: string; endAt: string; staffId?: string }) => void;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
+  /** Ouvre le formulaire en mode démonstration (aucune écriture) pendant la visite guidée. */
+  onTutorialCreate: () => void;
+  onTutorialClose: () => void;
 };
 
 const MOBILE_VIEWS: { id: AgendaView; label: string }[] = [
@@ -116,6 +120,8 @@ export function AgendaMobile({
   onAppointmentClick,
   onCreate,
   onStatusChange,
+  onTutorialCreate,
+  onTutorialClose,
 }: AgendaMobileProps) {
   const palette = useStaffPalette();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -245,7 +251,7 @@ export function AgendaMobile({
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[22px] font-semibold tracking-tight text-ink">Agenda institut</h1>
+              <h1 data-agenda-tour="intro" className="text-[22px] font-semibold tracking-tight text-ink">Agenda institut</h1>
               <span className="inline-flex items-center gap-1 rounded-full bg-[#F0DDE9] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-primary">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
                 Direct cabines
@@ -318,12 +324,14 @@ export function AgendaMobile({
           <button
             type="button"
             onClick={() => onCreate()}
+            data-agenda-tour="create"
             className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white shadow-[0_4px_16px_rgba(227,28,95,0.25)] active:scale-[0.98]"
           >
             <Plus size={18} />
             Nouveau RDV
           </button>
-          <div className="col-span-2">
+          <div className="col-span-2 flex flex-col gap-2 sm:flex-row">
+            <AgendaTutorial onOpenCreate={onTutorialCreate} onCloseCreate={onTutorialClose} className="[&>button]:w-full [&>button]:justify-center sm:shrink-0" />
             <GoogleCalendarConnect className="h-11 w-full max-w-none justify-center rounded-xl bg-white shadow-sm" />
           </div>
         </div>
@@ -348,7 +356,7 @@ export function AgendaMobile({
           ))}
         </div>
 
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div data-agenda-tour="dates" className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {ribbonDates.map((d) => {
             const selected = sameDay(d, date);
             const today = sameDay(d, new Date());
@@ -396,7 +404,7 @@ export function AgendaMobile({
           })}
         </div>
 
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div data-agenda-tour="filters" className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => onStaffFilter("ALL")}

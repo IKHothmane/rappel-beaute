@@ -66,6 +66,7 @@ import type {
 } from "@/types/planning";
 import type { LeaveType, StaffAgendaContext, StaffScheduleSlot } from "@/types/staff";
 import { DAY_LABELS, LEAVE_STATUS_LABEL, LEAVE_TYPE_LABEL } from "@/types/staff";
+import { notifyTutorialRefresh } from "@/lib/tutorial-events";
 import {
   appointmentsInRange,
   breaksForEditor,
@@ -439,6 +440,7 @@ export function PlanningPageView() {
       return;
     }
     toast("Horaires enregistrés.", "success");
+    notifyTutorialRefresh();
     setScheduleOpen(false);
     await refresh();
   }
@@ -474,6 +476,7 @@ export function PlanningPageView() {
     }
     setSavingSchedule(false);
     toast("Horaires d’ouverture enregistrés.", "success");
+    notifyTutorialRefresh();
     setHoursOpen(false);
     await refresh();
   }
@@ -1845,7 +1848,7 @@ export function PlanningPageView() {
           </div>
         }
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3" data-tour="staff-schedule">
           {weekDraft
             .slice()
             .sort((a, b) => ((a.dayOfWeek + 6) % 7) - ((b.dayOfWeek + 6) % 7))

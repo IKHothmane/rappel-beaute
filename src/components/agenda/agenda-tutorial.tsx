@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { BookOpen } from "lucide-react";
 import type { Driver, DriveStep } from "driver.js";
 import "driver.js/dist/driver.css";
-import "./agenda-tutorial.css";
+import "@/components/tutorial/tutorial.css";
+import { applyInverseZoom, TargetUnavailableError, findVisibleTarget, waitForVisibleTarget } from "@/components/tutorial/dom";
+import { AGENDA_TUTORIAL_REQUEST_EVENT, AGENDA_TUTORIAL_STATE_EVENT } from "@/components/tutorial/events";
+import { acquireTourLock, releaseTourLock } from "@/components/tutorial/lock";
 
 const STEPS = [
   { target: "intro", title: "Découvrir votre agenda", description: "Nous allons parcourir l’agenda, puis ouvrir le formulaire pour vous montrer comment ajouter un rendez-vous. Aucun rendez-vous ne sera enregistré pendant cette démonstration." },
-  { target: "dates", title: "1. Choisir la période", description: "Les flèches changent de période. Aujourd’hui revient à la date du jour. Choisissez Jour, Semaine ou Mois pour adapter l’affichage." },
+  { target: "dates", title: "1. Choisir la période", description: "Les flèches changent de période. Aujourd’hui revient à la date du jour. Choisissez le mode d’affichage proposé (jour, semaine…) pour adapter le planning." },
   { target: "filters", title: "2. Filtrer le planning", description: "Affichez les rendez-vous d’une praticienne, d’un service, d’une cabine ou d’un statut. Les filtres restent inchangés pendant cette visite." },
   { target: "create", title: "3. Ajouter un rendez-vous", description: "Ce bouton ouvre le formulaire d’ajout. Cliquez sur Voir le formulaire pour le découvrir en mode démonstration." },
   { target: "customer", title: "4. Choisir la cliente", description: "Recherchez une cliente existante, ou utilisez Nouvelle cliente pour renseigner son nom et son téléphone. En utilisation normale, vous pouvez aussi créer un rendez-vous pour une cliente de passage.", form: true },
@@ -21,37 +24,32 @@ const STEPS = [
   { target: "save", title: "11. Enregistrer le rendez-vous", description: "En utilisation normale, cliquez sur Créer le rendez-vous après avoir vérifié la cliente, les prestations, la date et l’horaire. Le bouton est désactivé ici : Terminer fermera simplement la démonstration.", form: true },
 ] as const;
 
+const LOCK_ID = "agenda-tour";
+const MIN_TOUR_WIDTH = "(min-width: 768px)";
+
+function selectorFor(target: string) {
+  return `[data-agenda-tour="${target}"]`;
+}
+
 function targetElement(target: string): HTMLElement | undefined {
-  return Array.from(document.querySelectorAll<HTMLElement>(`[data-agenda-tour="${target}"]`))
-    .find(element => element.getClientRects().length > 0);
+  return findVisibleTarget([selectorFor(target)]);
 }
 
 /** Wait for React and the side panel's slide animation before measuring the field. */
-function waitForTarget(target: string, signal: AbortSignal): Promise<HTMLElement> {
-  return new Promise((resolve, reject) => {
-    const started = performance.now();
-    let previous = "";
-    let stable = 0;
-    let scrolled: HTMLElement | undefined;
-    const frame = () => {
-      if (signal.aborted) { reject(new Error("Visite fermée.")); return; }
-      const element = targetElement(target);
-      if (element) {
-        if (scrolled !== element) { element.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" }); scrolled = element; }
-        const rect = element.getBoundingClientRect();
-        const bounds = [rect.x, rect.y, rect.width, rect.height].map(Math.round).join(",");
-        stable = bounds === previous ? stable + 1 : 0;
-        previous = bounds;
-        if (stable >= 6) { resolve(element); return; }
-      }
-      if (performance.now() - started > 6000) { reject(new Error("La zone du tutoriel n’est pas disponible. Fermez la visite puis réessayez.")); return; }
-      requestAnimationFrame(frame);
-    };
-    frame();
-  });
+async function waitForTarget(target: string, signal: AbortSignal): Promise<HTMLElement> {
+  try {
+    return await waitForVisibleTarget([selectorFor(target)], signal, true);
+  } catch (cause) {
+    if (cause instanceof TargetUnavailableError) throw new Error("La zone du tutoriel n’est pas disponible. Fermez la visite puis réessayez.");
+    throw new Error("Visite fermée.");
+  }
 }
 
-export function AgendaTutorial({ onOpenCreate, onCloseCreate }: { onOpenCreate: () => void; onCloseCreate: () => void }) {
+function notifyState(active: boolean) {
+  window.dispatchEvent(new CustomEvent(AGENDA_TUTORIAL_STATE_EVENT, { detail: { active } }));
+}
+
+export function AgendaTutorial({ onOpenCreate, onCloseCreate, className }: { onOpenCreate: () => void; onCloseCreate: () => void; className?: string }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const tourRef = useRef<Driver | null>(null);
   const callbacks = useRef({ onOpenCreate, onCloseCreate });
@@ -59,27 +57,42 @@ export function AgendaTutorial({ onOpenCreate, onCloseCreate }: { onOpenCreate: 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(false);
+  const startRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
     mounted.current = true;
-    const media = window.matchMedia("(min-width: 1024px)");
-    const resize = () => { if (!media.matches) tourRef.current?.destroy(); };
+    // Mobile et tablette/desktop n'affichent pas les mêmes zones : on referme la visite si la mise en page bascule.
+    const media = window.matchMedia(MIN_TOUR_WIDTH);
+    const resize = () => { tourRef.current?.destroy(); };
     media.addEventListener("change", resize);
     return () => { mounted.current = false; media.removeEventListener("change", resize); tourRef.current?.destroy(); };
   }, []);
 
+  // « Visite détaillée » demandée depuis le parcours de première connexion.
+  useEffect(() => {
+    // L'agenda monte la mise en page mobile et la mise en page large : seule l'instance visible répond.
+    const request = () => {
+      if ((triggerRef.current?.getClientRects().length ?? 0) > 0) void startRef.current();
+    };
+    window.addEventListener(AGENDA_TUTORIAL_REQUEST_EVENT, request);
+    return () => window.removeEventListener(AGENDA_TUTORIAL_REQUEST_EVENT, request);
+  }, []);
+
   async function start() {
-    if (loading || tourRef.current?.isActive() || !window.matchMedia("(min-width: 1024px)").matches) return;
+    if (loading || tourRef.current?.isActive()) return;
     setLoading(true);
     setError(null);
+    let locked = false;
     try {
       const { driver } = await import("driver.js");
-      if (!mounted.current || !window.matchMedia("(min-width: 1024px)").matches) return;
+      if (!mounted.current) return;
+      // Une seule visite à la fois (le parcours de première connexion libère le verrou avant de nous céder la place).
+      locked = acquireTourLock(LOCK_ID);
+      if (!locked) return;
       const abort = new AbortController();
       // The app renders at html zoom: 0.8; Driver positions popovers in viewport pixels.
-      const previousZoom = document.body.style.getPropertyValue("--agenda-tour-inverse-zoom");
-      const rootZoom = Number.parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
-      document.body.style.setProperty("--agenda-tour-inverse-zoom", String(1 / rootZoom));
+      const restoreZoom = applyInverseZoom();
+      const wide = window.matchMedia("(min-width: 1024px)").matches;
       let formOpen = false;
       let moving = false;
       const navigate = async (index: number) => {
@@ -105,32 +118,39 @@ export function AgendaTutorial({ onOpenCreate, onCloseCreate }: { onOpenCreate: 
         disableActiveInteraction: true,
         popover: {
           title: step.title, description: step.description,
-          side: "form" in step ? "left" : "bottom", align: "center",
+          side: "form" in step && wide ? "left" : "bottom", align: "center",
           nextBtnText: index === 3 ? "Voir le formulaire" : index === STEPS.length - 1 ? "Terminer" : "Suivant",
         },
       }));
       tourRef.current = driver({
         steps, animate: false, smoothScroll: false, stagePadding: 6, stageRadius: 12,
-        overlayOpacity: 0.55, overlayClickBehavior: "none", popoverClass: "agenda-tour-popover",
+        overlayOpacity: 0.55, overlayClickBehavior: "none", popoverClass: "app-tour-popover",
         showProgress: true, progressText: "Étape {{current}} sur {{total}}", nextBtnText: "Suivant", prevBtnText: "Précédent", doneBtnText: "Terminer", closeBtnLabel: "Fermer le tutoriel",
         onNextClick: () => { void navigate((tourRef.current?.getActiveIndex() ?? 0) + 1); },
         onPrevClick: () => { void navigate((tourRef.current?.getActiveIndex() ?? 0) - 1); },
         onDestroyed: () => {
           abort.abort();
-          if (previousZoom) document.body.style.setProperty("--agenda-tour-inverse-zoom", previousZoom);
-          else document.body.style.removeProperty("--agenda-tour-inverse-zoom");
+          restoreZoom();
+          releaseTourLock(LOCK_ID);
+          notifyState(false);
           if (formOpen) callbacks.current.onCloseCreate();
           tourRef.current = null;
           if (mounted.current) triggerRef.current?.focus({ preventScroll: true });
         },
       });
+      notifyState(true);
       tourRef.current.drive();
+      locked = false; // le verrou est désormais porté par la visite (libéré dans onDestroyed)
     } catch {
       if (mounted.current) setError("Impossible de démarrer le tutoriel. Réessayez.");
-    } finally { if (mounted.current) setLoading(false); }
+    } finally {
+      if (locked) releaseTourLock(LOCK_ID);
+      if (mounted.current) setLoading(false);
+    }
   }
+  startRef.current = start;
 
-  return <div className="hidden lg:block">
+  return <div className={className}>
     <button ref={triggerRef} type="button" disabled={loading} onClick={() => void start()}
       className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#F0D9E3] bg-white/90 px-3 text-sm font-semibold text-[#7D3152] shadow-sm hover:bg-white disabled:opacity-60">
       <BookOpen size={17} aria-hidden /> {loading ? "Chargement…" : "Tutoriel"}

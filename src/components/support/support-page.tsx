@@ -15,6 +15,7 @@ import {
   type TicketFilter,
 } from "@/components/support/support-helpers";
 import { SupportMobile } from "@/components/support/support-mobile";
+import { RestartTutorialButton } from "@/components/tutorial/RestartTutorialButton";
 import { useToast } from "@/components/ui/toast";
 import type { SupportTicketCategory } from "@/lib/db/support-tickets";
 import { canWriteFeatureLimited } from "@/lib/rbac";
@@ -177,6 +178,11 @@ export function SupportPageView() {
 
   return (
     <>
+      {user.role === "OWNER" ? (
+        <div className="mb-3 flex justify-end">
+          <RestartTutorialButton className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#E7B9CD] bg-white px-4 text-sm font-semibold text-[#831D4A] transition hover:bg-[#FFF7FA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#A40E49]" />
+        </div>
+      ) : null}
       <SupportMobile vm={vm} />
       <SupportDesktop vm={vm} />
       {modalOpen ? (

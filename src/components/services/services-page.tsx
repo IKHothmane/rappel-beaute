@@ -8,6 +8,7 @@ import { ServicesMobile } from "@/components/services/services-mobile";
 import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { useToast } from "@/components/ui/toast";
 import { canEditServicePrice, canWriteFeature } from "@/lib/rbac";
+import { notifyTutorialRefresh } from "@/lib/tutorial-events";
 import { formatMad, getAnalyticsOverview, getAnalyticsServices } from "@/modules/analytics/service";
 import {
   createService,
@@ -156,6 +157,7 @@ export function ServicesPageView() {
     setDrawerOpen(false);
     setEditing(null);
     toast(editing ? "Service mis à jour." : "Service créé.", "success");
+    if (!editing) notifyTutorialRefresh();
     void refresh();
   }
 

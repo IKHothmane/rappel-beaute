@@ -3,6 +3,8 @@ import { pool } from "@/lib/db/pool";
 import { isEmailConfigured, sendTransactionalEmail } from "@/lib/email/send";
 import { logger } from "@/lib/logger";
 import { formatPrice, PUBLIC_OFFER, publicAppOrigin, SITE } from "@/lib/site";
+import { PROFESSIONAL_SIGNUP_NOTIFY_EMAIL } from "@/lib/email/signup-lead";
+import { trialFeedbackUrl } from "@/lib/subscriptions/trial-feedback";
 
 const DAY_MS = 86_400_000;
 
@@ -48,6 +50,8 @@ export function buildTrialReminder(input: {
   orgName: string;
   trialEndsAt: Date;
   now?: Date;
+  /** Lien du formulaire d'avis (e-mail de fin d'essai uniquement). */
+  feedbackUrl?: string;
 }): TrialReminderContent {
   const { stage, orgName, trialEndsAt } = input;
   const firstName = input.firstName.trim() || "Bonjour";
@@ -66,10 +70,15 @@ export function buildTrialReminder(input: {
     title = "Dernier jour d'essai";
     lead = `L'essai gratuit de ${orgName} se termine le ${endLabel}. Après cette date, l'accès à l'application sera suspendu.`;
   } else {
-    subject = "Votre essai Rappel Beauty est terminé";
-    title = "Votre essai est terminé";
-    lead = `L'essai gratuit de ${orgName} s'est terminé le ${endLabel}, et l'accès à l'application est suspendu.`;
+    subject = "Merci d'avoir essayé Rappel Beauty : votre essai est terminé";
+    title = "Merci d'avoir essayé Rappel Beauty";
+    lead = `Merci d'avoir testé Rappel Beauty avec ${orgName}. L'essai gratuit s'est terminé le ${endLabel}, et l'accès à l'application est suspendu.`;
   }
+  const thanks =
+    stage === "EXPIRED"
+      ? "Votre avis nous aide à améliorer la plateforme : dites-nous ce qui vous a plu et ce que nous pouvons faire mieux. Cela prend une minute."
+      : null;
+  const feedbackUrl = stage === "EXPIRED" ? input.feedbackUrl : undefined;
 
   const price = `${PUBLIC_OFFER.monthlyPrice} DH par mois, ou ${formatPrice(PUBLIC_OFFER.annualPrice)} DH par an`;
   const cta =
@@ -86,6 +95,8 @@ export function buildTrialReminder(input: {
     `Bonjour ${firstName},`,
     "",
     lead,
+    ...(thanks ? ["", thanks, ...(feedbackUrl ? [`Donner mon avis : ${feedbackUrl}`] : [])] : []),
+    "",
     cta,
     offer,
     "",
@@ -105,6 +116,8 @@ export function buildTrialReminder(input: {
 <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;">${esc(title)}</h1>
 <p style="margin:0 0 12px;line-height:1.55;">Bonjour ${esc(firstName)},</p>
 <p style="margin:0 0 12px;line-height:1.55;">${esc(lead)}</p>
+${thanks ? `<p style="margin:0 0 12px;line-height:1.55;">${esc(thanks)}</p>` : ""}
+${feedbackUrl ? `<p style="margin:0 0 20px;"><a href="${esc(feedbackUrl)}" style="display:inline-block;background:#B90058;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:bold;">Donner mon avis</a></p>` : ""}
 <p style="margin:0 0 12px;line-height:1.55;">${esc(cta)}</p>
 <p style="margin:0 0 20px;line-height:1.55;">${esc(offer)}</p>
 <p style="margin:0 0 20px;"><a href="${esc(waLink)}" style="display:inline-block;background:#B90058;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:bold;">Écrire sur WhatsApp</a></p>
@@ -135,6 +148,8 @@ type TrialReminderResult = {
   emailed: number;
   alreadySent: number;
   failures: number;
+  /** E-mails « fin d'essai » envoyés à l'équipe. */
+  adminNotified: number;
   /** Uniquement en dryRun : ce qui serait envoyé (adresses masquées). */
   plan?: { organization: string; stage: TrialReminderStage; to: string }[];
 };
@@ -147,6 +162,8 @@ type Row = {
   userId: string;
   email: string | null;
   firstName: string;
+  lastName: string;
+  orgPhone: string | null;
 };
 
 /**
@@ -159,13 +176,13 @@ export async function sendTrialReminders(opts: { dryRun?: boolean; now?: Date } 
   const now = opts.now ?? new Date();
   const emailConfigured = isEmailConfigured();
   const result: TrialReminderResult = {
-    dryRun, emailConfigured, considered: 0, notified: 0, emailed: 0, alreadySent: 0, failures: 0,
+    dryRun, emailConfigured, considered: 0, notified: 0, emailed: 0, alreadySent: 0, failures: 0, adminNotified: 0,
     ...(dryRun ? { plan: [] } : {}),
   };
 
   const { rows } = await pool.query<Row>(
     `SELECT s.id AS "subscriptionId", s."organizationId", s."trialEndsAt", o.name AS "orgName",
-            u.id AS "userId", u.email, u."firstName"
+            u.id AS "userId", u.email, u."firstName", u."lastName", o.phone AS "orgPhone"
      FROM "Subscription" s
      JOIN "Organization" o ON o.id = s."organizationId" AND o.status = 'ACTIVE'
      JOIN "User" u ON u."organizationId" = s."organizationId" AND u.role = 'OWNER' AND u.status = 'ACTIVE'
@@ -183,7 +200,14 @@ export async function sendTrialReminders(opts: { dryRun?: boolean; now?: Date } 
     result.considered++;
 
     const key = `trial:${row.subscriptionId}:${stage}:${row.userId}`;
-    const content = buildTrialReminder({ stage, firstName: row.firstName, orgName: row.orgName, trialEndsAt, now });
+    const content = buildTrialReminder({
+      stage,
+      firstName: row.firstName,
+      orgName: row.orgName,
+      trialEndsAt,
+      now,
+      feedbackUrl: stage === "EXPIRED" ? trialFeedbackUrl({ subscriptionId: row.subscriptionId, orgName: row.orgName }) : undefined,
+    });
 
     if (dryRun) {
       const exists = await pool.query(`SELECT 1 FROM "Notification" WHERE "organizationId"=$1 AND "idempotencyKey"=$2`, [row.organizationId, key]);
@@ -204,20 +228,82 @@ export async function sendTrialReminders(opts: { dryRun?: boolean; now?: Date } 
     if (!ins.rowCount) { result.alreadySent++; continue; }
     result.notified++;
 
-    if (!emailConfigured || !row.email) continue;
-    try {
-      await sendTransactionalEmail({ to: row.email, subject: content.subject, html: content.html, text: content.text });
-      result.emailed++;
-    } catch (e) {
-      result.failures++;
-      logger.error("trial reminder email failed", {
-        route: "cron/trial-reminders", organizationId: row.organizationId, stage,
-        detail: e instanceof Error ? e.message : String(e),
-      });
-      // Libère le verrou : le prochain passage retentera l'envoi.
-      await pool.query(`DELETE FROM "Notification" WHERE id=$1`, [notifId]).catch(() => null);
-      result.notified--;
+    if (!emailConfigured) continue;
+    let clientEmailed = false;
+    if (row.email) {
+      try {
+        await sendTransactionalEmail({ to: row.email, subject: content.subject, html: content.html, text: content.text });
+        result.emailed++;
+        clientEmailed = true;
+      } catch (e) {
+        result.failures++;
+        logger.error("trial reminder email failed", {
+          route: "cron/trial-reminders", organizationId: row.organizationId, stage,
+          detail: e instanceof Error ? e.message : String(e),
+        });
+        // Libère le verrou : le prochain passage retentera l'envoi (et l'avis à l'équipe partira alors).
+        await pool.query(`DELETE FROM "Notification" WHERE id=$1`, [notifId]).catch(() => null);
+        result.notified--;
+        continue;
+      }
+    }
+
+    // Fin d'essai : l'équipe reçoit aussi un e-mail, une seule fois (même verrou que l'e-mail du propriétaire).
+    if (stage === "EXPIRED") {
+      try {
+        const notice = buildTrialEndedAdminNotice({
+          orgName: row.orgName,
+          ownerName: `${row.firstName} ${row.lastName}`.trim(),
+          ownerEmail: row.email,
+          orgPhone: row.orgPhone,
+          trialEndsAt,
+          ownerEmailed: clientEmailed,
+        });
+        await sendTransactionalEmail({ to: TRIAL_END_NOTIFY_EMAIL, replyTo: row.email ?? undefined, ...notice });
+        result.adminNotified++;
+      } catch (e) {
+        // Le propriétaire a déjà été prévenu : on ne relance pas l'envoi (pas de doublon chez le client).
+        logger.error("trial end admin notice failed", {
+          route: "cron/trial-reminders", organizationId: row.organizationId,
+          detail: e instanceof Error ? e.message : String(e),
+        });
+      }
     }
   }
   return result;
+}
+
+/** Adresse qui reçoit un e-mail à chaque fin d'essai (la même que les nouvelles inscriptions). */
+export const TRIAL_END_NOTIFY_EMAIL = PROFESSIONAL_SIGNUP_NOTIFY_EMAIL;
+
+/** E-mail interne : un essai vient de se terminer, avec les coordonnées pour relancer l'institut. */
+export function buildTrialEndedAdminNotice(input: {
+  orgName: string;
+  ownerName: string;
+  ownerEmail: string | null;
+  orgPhone: string | null;
+  trialEndsAt: Date;
+  ownerEmailed: boolean;
+}): { subject: string; html: string; text: string } {
+  const rows: Array<[string, string]> = [
+    ["Institut", input.orgName],
+    ["Propriétaire", input.ownerName || "—"],
+    ["E-mail", input.ownerEmail || "Non renseigné"],
+    ["Téléphone de l'institut", input.orgPhone || "Non renseigné"],
+    ["Fin de l'essai", frDate(input.trialEndsAt)],
+    ["E-mail de remerciement", input.ownerEmailed ? "Envoyé (avec le lien pour donner son avis)" : "Non envoyé (pas d'adresse e-mail)"],
+  ];
+  const subject = `Fin d'essai — ${input.orgName}`;
+  const text = ["L'essai gratuit d'un institut vient de se terminer.", "", ...rows.map(([label, value]) => `${label} : ${value}`)].join("\n");
+  const htmlRows = rows
+    .map(([label, value]) => `<tr><td style="padding:6px 12px 6px 0;color:#6b635e;vertical-align:top;">${esc(label)}</td><td style="padding:6px 0;font-weight:700;">${esc(value)}</td></tr>`)
+    .join("");
+  const html = `<!doctype html><html lang="fr"><body style="margin:0;padding:24px;background:#f6f3f1;font-family:Arial,Helvetica,sans-serif;color:#1f1a1a;">
+<table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;"><tr><td>
+<p style="margin:0 0 8px;font-size:13px;color:#8a7f7f;">Rappel Beauty · interne</p>
+<h1 style="margin:0 0 16px;font-size:20px;">Fin d'essai : ${esc(input.orgName)}</h1>
+<table role="presentation" style="width:100%;font-size:15px;line-height:1.45;">${htmlRows}</table>
+<p style="margin:16px 0 0;font-size:13px;color:#6b635e;">Répondez à cet e-mail pour écrire au propriétaire.</p>
+</td></tr></table></body></html>`;
+  return { subject, html, text };
 }

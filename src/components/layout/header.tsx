@@ -4,6 +4,7 @@ import { LogOut, Menu } from "lucide-react";
 import { OrgLogo } from "@/components/app/org-logo";
 import { useCurrentUser, useSession } from "@/components/auth/session-provider";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { TrialBadge } from "@/components/layout/trial-badge";
 
 type HeaderProps = {
   onMenuOpen: () => void;
@@ -35,6 +36,7 @@ export function Header({ onMenuOpen }: HeaderProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-4">
+          <TrialBadge />
           <NotificationBell />
 
           <div className="hidden h-7 w-px bg-line sm:block" />

@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Eye, EyeOff, Globe, KeyRound, Lock, MapPin, Phone, Store, UserRound } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Globe, KeyRound, Lock, Phone, Store, UserRound } from "lucide-react";
 import { CitySelect, Field } from "@/components/professional/ProfessionalAccessPage";
 import { GoogleButton, useGoogleEnabled } from "@/components/auth/google-auth";
 import {
-  LogoField,
   WrongHostNotice,
   authMessage,
   readWrongHost,
@@ -32,8 +31,8 @@ const ENDPOINT: Record<Mode, string> = {
 
 /**
  * Formulaire d'institut après authentification : Google (POST /api/auth/google/signup/, sans mot de passe) ou e-mail
- * vérifié (POST /api/auth/signup/email/complete/, mot de passe de l'inscription redemandé). JSON sans logo ;
- * multipart/form-data (champ `logo`) avec un logo.
+ * vérifié (POST /api/auth/signup/email/complete/, mot de passe de l'inscription redemandé). JSON, sans logo
+ * (les routes acceptent toujours un champ `logo` en multipart, mais ce formulaire ne l'envoie plus).
  */
 function InstituteSignupForm({ mode, pending, cityGroups, onExpired }: Props & { mode: Mode }) {
   const p = mode === "google" ? "pro-g" : "pro-e";
@@ -43,10 +42,8 @@ function InstituteSignupForm({ mode, pending, cityGroups, onExpired }: Props & {
   const [institut, setInstitut] = useState("");
   const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
   const [website, setWebsite] = useState("");
   const [needs, setNeeds] = useState("");
-  const [logo, setLogo] = useState<File | null>(null);
   const [trap, setTrap] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,28 +80,17 @@ function InstituteSignupForm({ mode, pending, cityGroups, onExpired }: Props & {
         hp: trap,
       };
       if (mode === "email") values.password = password;
-      if (address.trim()) values.localisation = address.trim();
       if (website.trim()) values.website = website.trim();
       else values.no_website = "1";
       if (needs.trim()) values.message = needs.trim().slice(0, L.message);
 
-      let init: RequestInit;
-      if (logo) {
-        // Pas de Content-Type manuel : le navigateur ajoute la frontière multipart.
-        const body = new FormData();
-        for (const [key, value] of Object.entries(values)) body.set(key, value);
-        body.set("logo", logo);
-        init = { method: "POST", credentials: "include", body };
-      } else {
-        init = {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        };
-      }
-
-      const res = await fetch(ENDPOINT[mode], init);
+      // Le logo n'est plus demandé à l'inscription : il se règle ensuite dans Paramètres > Institut.
+      const res = await fetch(ENDPOINT[mode], {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
       const payload = (await res.json().catch(() => ({}))) as {
         error?: string;
         code?: string;
@@ -281,20 +267,6 @@ function InstituteSignupForm({ mode, pending, cityGroups, onExpired }: Props & {
             </div>
           </Field>
         </div>
-        <Field id={`${p}-address`} label="Adresse (facultatif)">
-          <div className="pro-input">
-            <MapPin aria-hidden="true" />
-            <input
-              id={`${p}-address`}
-              name="localisation"
-              autoComplete="street-address"
-              placeholder="Quartier, rue…"
-              maxLength={L.address}
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-            />
-          </div>
-        </Field>
         <Field id={`${p}-website`} label="Site web (facultatif)">
           <div className="pro-input">
             <Globe aria-hidden="true" />
@@ -324,10 +296,6 @@ function InstituteSignupForm({ mode, pending, cityGroups, onExpired }: Props & {
             {needs.length}/{L.message}
           </span>
         </Field>
-        <div className="pro-field">
-          <span className="pro-label-like">Logo de l’institut (facultatif)</span>
-          <LogoField file={logo} onChange={setLogo} disabled={loading} />
-        </div>
         {/* Leurre anti-robot : invisible, jamais rempli par une personne. */}
         <div className="pro-hp" aria-hidden="true">
           <label htmlFor={`${p}-hp`}>Ne pas remplir</label>

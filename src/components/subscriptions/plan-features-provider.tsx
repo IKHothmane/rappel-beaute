@@ -18,6 +18,8 @@ type PlanFeaturesContextValue = {
   features: PlanFeatures | null;
   planName: string | null;
   planCode: string | null;
+  /** Données d'abonnement utiles à l'affichage (essai en cours ou terminé). */
+  subscription: { status: string; startedAt: string | null; trialEndsAt: string | null } | null;
   loading: boolean;
   refresh: () => Promise<void>;
   isEnabled: (key: PlanFeatureKey | string) => boolean;
@@ -31,6 +33,7 @@ export function PlanFeaturesProvider({ children }: { children: ReactNode }) {
   const [features, setFeatures] = useState<PlanFeatures | null>(null);
   const [planName, setPlanName] = useState<string | null>(null);
   const [planCode, setPlanCode] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<PlanFeaturesContextValue["subscription"]>(null);
   const [loading, setLoading] = useState(true);
 
   const orgId = user && isAppSession(user) ? user.organizationId : undefined;
@@ -40,6 +43,7 @@ export function PlanFeaturesProvider({ children }: { children: ReactNode }) {
       setFeatures(null);
       setPlanName(null);
       setPlanCode(null);
+      setSubscription(null);
       setLoading(false);
       return;
     }
@@ -50,12 +54,24 @@ export function PlanFeaturesProvider({ children }: { children: ReactNode }) {
       ]);
       if (subRes.ok) {
         const subData = (await subRes.json()) as {
-          subscription?: { planName: string; planCode: string; features: PlanFeatures };
+          subscription?: {
+            planName: string;
+            planCode: string;
+            features: PlanFeatures;
+            status: string;
+            startedAt?: string | null;
+            trialEndsAt?: string | null;
+          };
         };
         if (subData.subscription) {
           setPlanName(subData.subscription.planName);
           setPlanCode(subData.subscription.planCode);
           setFeatures(subData.subscription.features);
+          setSubscription({
+            status: subData.subscription.status,
+            startedAt: subData.subscription.startedAt ?? null,
+            trialEndsAt: subData.subscription.trialEndsAt ?? null,
+          });
           setLoading(false);
           return;
         }
@@ -88,6 +104,7 @@ export function PlanFeaturesProvider({ children }: { children: ReactNode }) {
       features,
       planName,
       planCode,
+      subscription,
       loading: sessionLoading || loading,
       refresh,
       isEnabled: (key) => {
@@ -96,7 +113,7 @@ export function PlanFeaturesProvider({ children }: { children: ReactNode }) {
       },
       isNavEnabled: (navKey) => isPlanFeatureEnabled(features ?? undefined, navKey),
     }),
-    [features, planName, planCode, sessionLoading, loading, refresh],
+    [features, planName, planCode, subscription, sessionLoading, loading, refresh],
   );
 
   return (

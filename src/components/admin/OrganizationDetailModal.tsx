@@ -285,6 +285,8 @@ export function OrganizationDetailModal({
   const [resetResult, setResetResult] = useState<ResetResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [subEdit, setSubEdit] = useState(false);
+  /** Ce qui est parti par e-mail après le dernier enregistrement de période (ou pourquoi rien n'est parti). */
+  const [periodMailNotice, setPeriodMailNotice] = useState<string | null>(null);
   const [subForm, setSubForm] = useState<SubForm>({ price: "", periodEnd: "", quick: "", payment: "" });
   const [sectionError, setSectionError] = useState<{ section: "owner" | "sub"; message: string } | null>(null);
   const [users, setUsers] = useState<OrgUser[] | null>(null);
@@ -459,11 +461,11 @@ export function OrganizationDetailModal({
       return;
     }
     const post = (body: Record<string, unknown>) =>
-      api(`/api/admin/subscriptions/${sub.id}/`, { method: "POST", body: JSON.stringify(body) });
+      api<{ emailNotice?: string }>(`/api/admin/subscriptions/${sub.id}/`, { method: "POST", body: JSON.stringify(body) });
     void runSection(
       "sub",
       async () => {
-        await post({
+        const saved = await post({
           action: "save-period",
           quick: subForm.quick,
           paid: subForm.payment === "paid",
@@ -472,6 +474,7 @@ export function OrganizationDetailModal({
             ? sub.renewAt
             : new Date(`${subForm.periodEnd}T23:59:59`).toISOString(),
         });
+        setPeriodMailNotice(saved.emailNotice ?? null);
       },
       async () => {
         setSubEdit(false);
@@ -852,6 +855,19 @@ export function OrganizationDetailModal({
                   ) : null
                 }
               >
+                {periodMailNotice && !subEdit ? (
+                  <p
+                    role="status"
+                    className={cn(
+                      "mb-3 rounded-xl px-3.5 py-2.5 text-sm",
+                      periodMailNotice.startsWith("E-mail envoyé")
+                        ? "bg-emerald-50 text-emerald-800"
+                        : "bg-amber-50 text-amber-800",
+                    )}
+                  >
+                    {periodMailNotice}
+                  </p>
+                ) : null}
                 {subEdit && org.subscription ? (
                   <form onSubmit={saveSubscription} className="mt-1 space-y-3">
                     <label className="block">

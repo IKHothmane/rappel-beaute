@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { adminError, adminJson, requireAdmin } from "@/lib/admin/api-helpers";
+import { notifyPeriodChange } from "@/lib/subscriptions/period-change-notice";
 import {
   createAdminSubscription,
   getAdminSubscriptionsKpis,
@@ -51,7 +52,14 @@ export const POST = platformRoute(async function POST(request: NextRequest) {
       organizationId,
       planCode: planCode as PlanCode,
     });
-    return adminJson({ ok: true, id }, 201);
+    // Nouvelle période : le propriétaire et l'équipe sont prévenus par e-mail (sans jamais faire échouer la création).
+    const notice = await notifyPeriodChange({
+      subscriptionId: id,
+      action: "Nouvel abonnement ajouté",
+      actorName: `${auth.session.firstName} ${auth.session.lastName}`.trim(),
+      before: null,
+    });
+    return adminJson({ ok: true, id, emailNotice: notice.message }, 201);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (msg === "PLAN_NOT_FOUND") return adminError("Plan introuvable.", 404);

@@ -14,12 +14,32 @@ import {
   SUBSCRIPTION_STATUSES,
 } from "@/lib/db/admin-subscriptions";
 import { readJsonObject } from "@/lib/admin/read-json-object";
+import { notifyPeriodChange, snapshotPeriod } from "@/lib/subscriptions/period-change-notice";
 import { getPlanByCode, getPlanById, listPlans } from "@/lib/subscriptions/plans";
 import type { SubscriptionStatus } from "@/types/subscription";
 import { platformRoute } from "@/lib/http/route-scope";
 import { saveSubscriptionPeriodPayment, type PeriodPaymentInput } from "@/lib/db/subscription-period-payment";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+/**
+ * Exécute une modification de période puis prévient le propriétaire et l'équipe par e-mail (seulement si la fin de
+ * période ou le statut ont changé). L'e-mail ne fait jamais échouer l'action déjà enregistrée.
+ */
+async function withPeriodNotice<T extends object>(
+  actor: { firstName: string; lastName: string },
+  subscriptionId: string,
+  action: string,
+  run: () => Promise<T>,
+): Promise<T & { emailNotice: string }> {
+  const before = await snapshotPeriod(subscriptionId);
+  const result = await run();
+  const notice = await notifyPeriodChange({
+    subscriptionId, action, before, actorName: `${actor.firstName} ${actor.lastName}`.trim(),
+  });
+  // `emailNotice` : phrase affichée à l'équipe (ce qui est parti, ou pourquoi rien n'est parti).
+  return { ...result, emailNotice: notice.message };
+}
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:?\d{2})?)?$/;
 
@@ -114,10 +134,12 @@ export const POST = platformRoute(async function POST(request: NextRequest, ctx:
       if (body.quick === "" && (typeof body.periodEnd !== "string" || !ISO_DATE.test(body.periodEnd) || Number.isNaN(new Date(body.periodEnd).getTime()))) {
         return adminError("Date de fin invalide.", 400);
       }
-      const result = await saveSubscriptionPeriodPayment(auth.session, id, {
-        quick: body.quick as PeriodPaymentInput["quick"], paid: body.paid, price: body.price,
-        periodEnd: typeof body.periodEnd === "string" ? body.periodEnd : "",
-      });
+      const result = await withPeriodNotice(auth.session, id, "Période, prix ou paiement modifié", () =>
+        saveSubscriptionPeriodPayment(auth.session, id, {
+          quick: body.quick as PeriodPaymentInput["quick"], paid: body.paid as boolean, price: body.price as number,
+          periodEnd: typeof body.periodEnd === "string" ? body.periodEnd : "",
+        }),
+      );
       return adminJson({ ok: true, ...result });
     }
     if (body.action === "change-plan") {
@@ -159,7 +181,9 @@ export const POST = platformRoute(async function POST(request: NextRequest, ctx:
       return adminJson({ ok: true });
     }
     if (body.action === "extend") {
-      const result = await extendSubscriptionPeriod(auth.session, id, body.months ?? 1);
+      const result = await withPeriodNotice(auth.session, id, `Période prolongée de ${body.months ?? 1} mois`, () =>
+        extendSubscriptionPeriod(auth.session, id, body.months ?? 1),
+      );
       return adminJson({ ok: true, ...result });
     }
     if (body.action === "set-paid") {
@@ -181,21 +205,22 @@ export const POST = platformRoute(async function POST(request: NextRequest, ctx:
       if (!rawEnd || !ISO_DATE.test(rawEnd) || Number.isNaN(periodEnd.getTime())) {
         return adminError("Date de fin invalide.", 400);
       }
-      const result = await setSubscriptionPeriodEnd(auth.session, id, periodEnd);
+      const result = await withPeriodNotice(auth.session, id, "Date de fin de période modifiée", () =>
+        setSubscriptionPeriodEnd(auth.session, id, periodEnd),
+      );
       return adminJson({ ok: true, ...result });
     }
     if (body.action === "demo-trial") {
       const days = body.days ?? 7;
-      const result = await grantDemoTrial(auth.session, id, days);
+      const result = await withPeriodNotice(auth.session, id, `Essai de démonstration de ${days} jours`, () =>
+        grantDemoTrial(auth.session, id, days),
+      );
       return adminJson({ ok: true, ...result });
     }
     if (body.action === "grant-trial") {
       const days = body.days ?? 30;
-      const result = await grantFreePeriod(
-        auth.session,
-        id,
-        days,
-        body.reason?.trim() || "Offre commerciale",
+      const result = await withPeriodNotice(auth.session, id, `Période offerte de ${days} jours`, () =>
+        grantFreePeriod(auth.session, id, days, body.reason?.trim() || "Offre commerciale"),
       );
       return adminJson({ ok: true, ...result });
     }

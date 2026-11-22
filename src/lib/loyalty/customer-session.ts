@@ -43,6 +43,45 @@ export function applyLoyaltySession(response: NextResponse, organizationId: stri
   applyCookie(response, organizationId, "session", session);
 }
 
+/**
+ * Session d'appareil pour une carte que l'appareil vient de créer lui-même (QR d'institut, carte directe).
+ * Même durée et même liaison au numéro que la session obtenue après validation par l'équipe.
+ */
+export async function createLoyaltyCustomerSession(
+  organizationId: string,
+  customerId: string,
+  phone: string,
+): Promise<Session> {
+  const token = loyaltySecretToken();
+  const expiresAt = new Date(Date.now() + CUSTOMER_SESSION_IDLE_MS);
+  bindPublicInstitute(organizationId);
+  await pool.query(
+    `INSERT INTO "LoyaltyCustomerSession"
+       (id,"organizationId","customerId","tokenHash","phoneSnapshot","expiresAt","absoluteExpiresAt")
+     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [
+      `lcss_${randomBytes(8).toString("hex")}`,
+      organizationId,
+      customerId,
+      loyaltySecretHash(token),
+      normalizeLoyaltyPhone(phone),
+      expiresAt,
+      new Date(Date.now() + CUSTOMER_SESSION_MAX_MS),
+    ],
+  );
+  return { token, expiresAt };
+}
+
+/** Révoque les sessions d'appareil de cette cliente, sauf celle dont le jeton est donné (déjà émise). */
+export async function revokeLoyaltySessionsExcept(organizationId: string, customerId: string, keepToken: string) {
+  bindPublicInstitute(organizationId);
+  await pool.query(
+    `UPDATE "LoyaltyCustomerSession" SET "revokedAt" = NOW()
+     WHERE "organizationId" = $1 AND "customerId" = $2 AND "revokedAt" IS NULL AND "tokenHash" <> $3`,
+    [organizationId, customerId, loyaltySecretHash(keepToken)],
+  );
+}
+
 export function applyLoyaltyVerificationRequest(response: NextResponse, organizationId: string, request: Session) {
   applyCookie(response, organizationId, "request", request);
 }

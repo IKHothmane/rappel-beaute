@@ -153,7 +153,7 @@ export async function enrollFromJoinQr(input: {
   email?: string;
   /** Case WhatsApp cochée explicitement (booléen strict) ; absent/false n'écrit jamais de consentement. */
   marketingWhatsappConsent?: boolean;
-}): Promise<{ cardToken: string }> {
+}): Promise<{ cardToken: string; customerId: string; organizationId: string; phone: string }> {
   const preview = await previewJoinQr(input.token);
   if (!preview) throw new Error("JOIN_QR_INVALID");
   if (!preview.active) throw new Error("PROGRAM_DISABLED");
@@ -227,7 +227,7 @@ export async function enrollFromJoinQr(input: {
 
   try {
     const card = await issueLoyaltyCard(organizationId, customerId);
-    return { cardToken: card.publicToken };
+    return { cardToken: card.publicToken, customerId, organizationId, phone };
   } catch (error) {
     // Évite une fiche orpheline qui bloquerait le numéro (PHONE_ALREADY_KNOWN) au nouvel essai de la cliente.
     await pool
@@ -252,8 +252,126 @@ export async function enrollFromJoinQr(input: {
   }
 }
 
+/** Fiche sans numéro réel : carte créée anonymement (numéro provisoire « WL… ») ou sans téléphone. */
+export function isPlaceholderPhone(phone: string | null | undefined): boolean {
+  return !phone || phone.startsWith("WL");
+}
+
+const CARD_RECOVERED_BY_PHONE_ACTION = "LOYALTY_CARD_RECOVERED_BY_PHONE";
+
+/**
+ * Numéro déjà connu de l'institut : la cliente retrouve directement sa carte (choix produit : pas de validation par
+ * l'équipe) et son prénom/nom saisis remplacent ceux de la fiche. Le téléphone et le consentement WhatsApp ne sont
+ * jamais modifiés ; une carte est émise si la fiche n'en avait pas. Chaque récupération laisse une trace d'audit
+ * (avec l'ancien nom en cas de changement) que l'institut peut relire.
+ */
+export async function recoverCardByPhoneFromJoinQr(input: {
+  token: string;
+  phone: string;
+  /** Nom saisi par la cliente : il remplace le prénom et le nom de la fiche existante. */
+  firstName: string;
+  lastName: string;
+}): Promise<{ cardToken: string; customerId: string; organizationId: string; phone: string } | null> {
+  const preview = await previewJoinQr(input.token);
+  if (!preview || !preview.active) return null;
+  const qr = await pool.query<{ id: string; organizationId: string }>(
+    `SELECT id, "organizationId" FROM "LoyaltyJoinQr" WHERE token = $1 AND status = 'ACTIVE'`,
+    [input.token.trim().toUpperCase()],
+  );
+  const organizationId = qr.rows[0]?.organizationId;
+  if (!organizationId) return null;
+
+  const found = await pool.query<{
+    id: string; phone: string; cardToken: string | null; firstName: string; lastName: string;
+  }>(
+    `SELECT c.id, c.phone, c."firstName", c."lastName", lc."publicToken" AS "cardToken"
+     FROM "Customer" c
+     LEFT JOIN "LoyaltyCard" lc ON lc."customerId" = c.id AND lc."organizationId" = c."organizationId"
+       AND lc.status = 'ACTIVE' AND lc."mergedIntoCardId" IS NULL
+     WHERE c."organizationId" = $1 AND c.phone = ANY($2::text[]) AND c."deletedAt" IS NULL
+     ORDER BY (lc.id IS NOT NULL) DESC, c."createdAt" ASC
+     LIMIT 1`,
+    [organizationId, loyaltyPhoneLookupVariants(normalizeLoyaltyPhone(input.phone))],
+  );
+  const customer = found.rows[0];
+  if (!customer) return null;
+  const cardToken = customer.cardToken ?? (await issueLoyaltyCard(organizationId, customer.id)).publicToken;
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  const renamed = firstName !== customer.firstName || lastName !== customer.lastName;
+  if (renamed) {
+    await pool.query(
+      `UPDATE "Customer" SET "firstName" = $3, "lastName" = $4, "updatedAt" = NOW()
+       WHERE id = $1 AND "organizationId" = $2 AND "deletedAt" IS NULL`,
+      [customer.id, organizationId, firstName, lastName],
+    );
+  }
+  await pool.query(
+    `INSERT INTO "AuditLog" (id, "organizationId", "actorId", "actorName", "entityType", "entityId", action, after)
+     VALUES ($1, $2, NULL, 'Fidélité (public)', 'Customer', $3, $4, $5::jsonb)`,
+    [`aud_${randomBytes(8).toString("hex")}`, organizationId, customer.id, CARD_RECOVERED_BY_PHONE_ACTION,
+      JSON.stringify({
+        source: "join_form",
+        ...(renamed ? { renamedFrom: { firstName: customer.firstName, lastName: customer.lastName }, renamedTo: { firstName, lastName } } : {}),
+      })],
+  );
+  return { cardToken, customerId: customer.id, organizationId, phone: customer.phone };
+}
+
+/**
+ * Carte déjà créée par ce même appareil mais sans informations (numéro provisoire) : le formulaire complète la
+ * fiche au lieu d'en créer une seconde. Refusé (null) si le numéro appartient déjà à une autre fiche.
+ */
+export async function completePlaceholderProfile(input: {
+  organizationId: string;
+  customerId: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  marketingWhatsappConsent?: boolean;
+}): Promise<boolean> {
+  const phone = normalizeLoyaltyPhone(input.phone);
+  if (!validLoyaltyPhone(input.phone) || !/^\d{8,10}$/.test(phone)) throw new Error("INVALID_PHONE");
+  const consent = input.marketingWhatsappConsent === true;
+  try {
+    const result = await pool.query(
+      `WITH upd AS (
+         UPDATE "Customer" c
+         SET "firstName" = $3, "lastName" = $4, phone = $5, "marketingWhatsapp" = $6::boolean, "updatedAt" = NOW()
+         WHERE c.id = $1 AND c."organizationId" = $2 AND c."deletedAt" IS NULL
+           AND (c.phone IS NULL OR c.phone LIKE 'WL%')
+           AND NOT EXISTS (
+             SELECT 1 FROM "Customer" other
+             WHERE other."organizationId" = $2 AND other.id <> $1 AND other."deletedAt" IS NULL
+               AND other.phone = ANY($7::text[])
+           )
+         RETURNING c.id
+       ), consent_audit AS (
+         INSERT INTO "AuditLog" (id, "organizationId", "actorId", "actorName", "entityType", "entityId", action, after)
+         SELECT $8, $2, NULL, 'Fidélité (public)', 'Customer', upd.id, '${MARKETING_WHATSAPP_CONSENT_ACTION}', $9::jsonb
+         FROM upd WHERE $6::boolean
+         RETURNING 1
+       )
+       SELECT id FROM upd`,
+      [
+        input.customerId, input.organizationId, input.firstName, input.lastName, phone, consent,
+        loyaltyPhoneLookupVariants(phone), `aud_${randomBytes(8).toString("hex")}`, MARKETING_WHATSAPP_CONSENT_AUDIT,
+      ],
+    );
+    if (!result.rows[0]) return false;
+  } catch (error) {
+    if ((error as { code?: string }).code === "23505") return false;
+    throw error;
+  }
+  // Les sessions d'appareil sont liées au numéro (phoneSnapshot, non modifiable par le rôle public) : l'appelant
+  // émet une nouvelle session pour ce numéro et révoque l'ancienne.
+  return true;
+}
+
 /** Carte anonyme à 0 passage, sans nom ni téléphone saisis par la cliente. */
-export async function enrollAnonymousFromJoinQr(token: string): Promise<{ cardToken: string }> {
+export async function enrollAnonymousFromJoinQr(
+  token: string,
+): Promise<{ cardToken: string; customerId: string; organizationId: string; phone: string }> {
   const preview = await previewJoinQr(token);
   if (!preview) throw new Error("JOIN_QR_INVALID");
   if (!preview.active) throw new Error("PROGRAM_DISABLED");
@@ -266,9 +384,10 @@ export async function enrollAnonymousFromJoinQr(token: string): Promise<{ cardTo
   if (!organizationId) throw new Error("JOIN_QR_INVALID");
 
   let customerId = "";
+  let phone = "";
   for (let attempt = 0; attempt < 3; attempt += 1) {
     customerId = `cust_${randomBytes(6).toString("hex")}`;
-    const phone = `WL${randomBytes(4).toString("hex")}`;
+    phone = `WL${randomBytes(4).toString("hex")}`;
     try {
       await pool.query(
         `INSERT INTO "Customer" (
@@ -291,7 +410,7 @@ export async function enrollAnonymousFromJoinQr(token: string): Promise<{ cardTo
     card.publicToken.slice(-4),
     customerId,
   ]);
-  return { cardToken: card.publicToken };
+  return { cardToken: card.publicToken, customerId, organizationId, phone };
 }
 
 export async function cardTokenForJoinQr(joinToken: string, cardToken: string): Promise<string | null> {

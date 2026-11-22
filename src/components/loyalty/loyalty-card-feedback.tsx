@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { ChevronDown, Info, Star, UserRound } from "lucide-react";
 import { LOYALTY_NAME_MAX_LENGTH, LOYALTY_PHONE_MAX_LENGTH, LOYALTY_COMMENT_MAX_LENGTH, validLoyaltyPhone } from "@/lib/loyalty/profile-input";
 import { LoyaltyStaffPicker } from "@/components/loyalty/loyalty-staff-picker";
@@ -42,10 +42,27 @@ export function LoyaltyCardFeedback({
   const [phoneInvalid, setPhoneInvalid] = useState(false);
   const [phoneConflict, setPhoneConflict] = useState<"profile" | "feedback" | null>(null);
   const [marketingConsent, setMarketingConsent] = useState(false);
+  // Lien d'avis Google de l'institut, renvoyé par le serveur seulement pour 4 ou 5 étoiles.
+  const [googleUrl, setGoogleUrl] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(true);
   const phoneRef = useRef<HTMLInputElement>(null);
   const phoneErrorId = useId();
   const phoneConflictId = useId();
   const showConsent = collectProfile && profilePhone.trim().length > 0;
+
+  // 4 ou 5 étoiles : après un court message de remerciement, la cliente est envoyée sur la page d'avis Google.
+  useEffect(() => {
+    if (!done || !googleUrl || !redirecting) return;
+    copyComment();
+    const timer = window.setTimeout(() => window.location.assign(googleUrl), 2500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done, googleUrl, redirecting]);
+
+  function copyComment() {
+    const text = comment.trim();
+    if (text && typeof navigator !== "undefined" && navigator.clipboard) void navigator.clipboard.writeText(text).catch(() => undefined);
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -77,7 +94,7 @@ export function LoyaltyCardFeedback({
           ...(Object.keys(staffRatings).length ? { staffRatings: Object.entries(staffRatings).map(([staffId, score]) => ({ staffId, ...(score > 0 ? { rating: score } : {}) })) } : {}),
         }),
       });
-      const body = (await res.json()) as { error?: string; code?: string };
+      const body = (await res.json()) as { error?: string; code?: string; googleReviewUrl?: string };
       if (res.status === 409 && body.code === "PHONE_ALREADY_KNOWN") {
         // Rien n'a été créé côté serveur : on garde la saisie (avis compris) et on guide la cliente vers l'accueil.
         setPhoneConflict(profileOnly ? "profile" : "feedback");
@@ -87,6 +104,12 @@ export function LoyaltyCardFeedback({
       }
       if (!res.ok) throw new Error(body.error || "Envoi impossible.");
       if (profileOnly) { window.location.reload(); return; }
+      if (typeof body.googleReviewUrl === "string" && body.googleReviewUrl.startsWith("https://")) {
+        setGoogleUrl(body.googleReviewUrl);
+        setRedirecting(true);
+      } else {
+        setGoogleUrl(null);
+      }
       setDone(true);
       onSaved?.();
     } catch (err) {
@@ -94,6 +117,34 @@ export function LoyaltyCardFeedback({
     } finally {
       setBusy(false);
     }
+  }
+
+  if (done && googleUrl) {
+    return (
+      <section role="status" className="rounded-2xl border border-[#E8C56B] bg-[#FFFBEF] p-4 text-center sm:p-5">
+        <p className="text-base font-extrabold text-[#43293A]">{profileFirstName ? `Merci ${profileFirstName} !` : "Merci !"}</p>
+        <p className="mt-1 text-sm text-[#6B5763]">
+          Votre avis est enregistré. Il compte beaucoup pour {organizationName} : partagez-le aussi sur Google.
+        </p>
+        <a
+          href={googleUrl}
+          onClick={copyComment}
+          rel="noopener noreferrer"
+          className={`mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-[#A83E70] px-4 text-sm font-semibold text-white transition hover:bg-[#8F3360] ${FOCUS}`}
+        >
+          Publier mon avis sur Google
+        </a>
+        {redirecting ? (
+          <>
+            <p className="mt-3 text-xs text-[#6B5763]">Redirection vers Google dans un instant…</p>
+            <button type="button" onClick={() => setRedirecting(false)} className={`mt-1 min-h-11 px-3 text-xs font-semibold text-[#8F3360] underline ${FOCUS}`}>
+              Rester sur ma carte
+            </button>
+          </>
+        ) : null}
+        {comment.trim() ? <p className="mt-2 text-xs text-[#6B5763]">Votre commentaire est copié : collez-le sur Google.</p> : null}
+      </section>
+    );
   }
 
   if (done) {

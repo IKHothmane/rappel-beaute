@@ -19,7 +19,7 @@ import {
 import { shortCardCode, visitCycle } from "@/lib/loyalty/card-code";
 import { loyaltyJoinUrl, loyaltyPreviewUrl } from "@/lib/loyalty/public-origin";
 import { LoyaltyScanPage } from "@/components/loyalty/loyalty-scan-page";
-import { LoyaltyIdentityVerification } from "@/components/loyalty/loyalty-identity-verification";
+import { LoyaltyManualVisit } from "@/components/loyalty/loyalty-manual-visit";
 import type { VisitCardRow } from "@/components/loyalty/visit-cards-list";
 import { memberInitials } from "@/components/loyalty/loyalty-helpers";
 import { LoyaltyBrandCard } from "@/components/loyalty/loyalty-brand-card";
@@ -479,10 +479,15 @@ export function LoyaltyBoard({
                 Le scan de carte est r?serv? au personnel autoris?.
               </p>
             )}
-            {canWrite && (
-              <LoyaltyIdentityVerification
+            {canScan && (
+              <LoyaltyManualVisit
                 key={organizationId}
-                onApproved={onRefresh}
+                onIdentified={rememberScan}
+                onConfirmed={(customerId) => {
+                  rememberScan(customerId);
+                  onRefresh();
+                }}
+                canRevoke={canWrite}
                 focusedCustomer={focused ? { id: focused.customerId, name: focused.customerName } : undefined}
               />
             )}

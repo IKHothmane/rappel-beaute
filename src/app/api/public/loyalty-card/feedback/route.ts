@@ -69,5 +69,5 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, ...(result.googleReviewUrl ? { googleReviewUrl: result.googleReviewUrl } : {}) });
 });

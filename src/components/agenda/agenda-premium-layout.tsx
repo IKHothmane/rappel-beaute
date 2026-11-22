@@ -247,7 +247,8 @@ export function AgendaPremiumLayout({
   children,
 }: AgendaPremiumLayoutProps) {
   const palette = useStaffPalette();
-  const upcoming = useMemo(() => {
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const allUpcoming = useMemo(() => {
     const now = Date.now();
     return appointments
       .filter(
@@ -256,9 +257,12 @@ export function AgendaPremiumLayout({
           a.status !== "CANCELLED" &&
           a.status !== "NO_SHOW",
       )
-      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
-      .slice(0, 5);
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }, [appointments]);
+  const UPCOMING_PREVIEW = 5;
+  const UPCOMING_MAX = 50;
+  const canExpand = allUpcoming.length > UPCOMING_PREVIEW;
+  const upcoming = allUpcoming.slice(0, showAllUpcoming ? UPCOMING_MAX : UPCOMING_PREVIEW);
 
   return (
     <div className="min-w-0 space-y-4 pb-8">
@@ -511,10 +515,13 @@ export function AgendaPremiumLayout({
               </h3>
               <button
                 type="button"
-                onClick={onToday}
-                className="text-[11px] font-bold text-[#AC0E4C] hover:underline"
+                onClick={() => setShowAllUpcoming((value) => !value)}
+                disabled={!canExpand}
+                aria-expanded={showAllUpcoming}
+                title={canExpand ? undefined : "Toutes les prestations à venir sont déjà affichées"}
+                className="text-[11px] font-bold text-[#AC0E4C] hover:underline disabled:cursor-default disabled:text-[#C9A9B8] disabled:no-underline"
               >
-                Voir tout
+                {showAllUpcoming ? "Voir moins" : canExpand ? `Voir tout (${allUpcoming.length})` : "Voir tout"}
               </button>
             </div>
 
@@ -524,7 +531,7 @@ export function AgendaPremiumLayout({
                 <p className="mt-2 text-xs text-[#876879]">Aucune prestation à venir.</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className={`space-y-2 ${showAllUpcoming ? "max-h-[28rem] overflow-y-auto pr-1" : ""}`}>
                 {upcoming.map((apt) => {
                   const badge = statusBadge(apt.status);
                   return (
@@ -537,6 +544,9 @@ export function AgendaPremiumLayout({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-[#9E1548]">
+                            {new Date(apt.startAt).toDateString() !== new Date().toDateString()
+                              ? `${new Date(apt.startAt).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} · `
+                              : ""}
                             {new Date(apt.startAt).toLocaleTimeString("fr-FR", {
                               hour: "2-digit",
                               minute: "2-digit",

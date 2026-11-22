@@ -241,6 +241,119 @@ describe.skipIf(!adminUrl)("Vérification en institut, session et carte permanen
     expect((await testPool.query(`SELECT points FROM "LoyaltyEvent" WHERE "customerId" = $1 AND type = 'VISIT'`, [a.customerId])).rows).toEqual([{ points: 1 }]);
   });
 
+  it("crée la carte directement au scan une fois le profil rempli, sans code, et la lie à l'appareil", async () => {
+    const before = Number((await testPool.query(`SELECT COUNT(*)::int AS n FROM "Customer" WHERE "organizationId" = $1`, [tenants[0]])).rows[0].n);
+    const phone = makePhone();
+    // Profil incomplet : refusé, aucune fiche créée.
+    expect((await publicJoin(post(publicPath, { action: "enroll", token: joins[0] }))).status).toBe(400);
+    expect((await publicJoin(post(publicPath, { action: "enroll", token: joins[0], firstName: "Sara", lastName: "Alami", phone: "12" }))).status).toBe(400);
+    // Champs limités : 10 chiffres maximum, nom en lettres et 40 caractères maximum.
+    expect((await publicJoin(post(publicPath, { action: "enroll", token: joins[0], firstName: "Sara", lastName: "Alami", phone: "06123456789" }))).status).toBe(400);
+    expect((await publicJoin(post(publicPath, { action: "enroll", token: joins[0], firstName: "Sara1", lastName: "Alami", phone }))).status).toBe(400);
+    expect((await publicJoin(post(publicPath, { action: "enroll", token: joins[0], firstName: "Sara", lastName: "A".repeat(41), phone }))).status).toBe(400);
+    expect((await publicJoin(post(publicPath, { action: "enroll", token: joins[0], firstName: "S", lastName: "Alami", phone }))).status).toBe(400);
+    const created = await publicJoin(post(publicPath, { action: "enroll", token: joins[0], firstName: "Sara", lastName: "Alami", phone }));
+    expect(created.status).toBe(201);
+    const { cardPath } = await created.json();
+    expect(cardPath).toMatch(/^\/carte\/RBLOY_[A-Z2-9]{8,32}\/$/);
+    const cookie = cookieFrom(created, "session");
+    const token = cardPath.split("/")[2] as string;
+
+    // L'appareil retrouve sa carte au scan suivant ; un autre institut ou un autre appareil ne la voit pas.
+    expect(redirectedTo(await scan(0, cookie))).toBe(`${SITE}${cardPath}`);
+    expect((await scan(1, cookie)).headers.get("location")).toBeNull();
+    expect((await scan(0)).headers.get("location")).toBeNull();
+    // Carte à 0 passage, une seule fiche créée avec le profil saisi.
+    expect((await testPool.query(`SELECT 1 FROM "LoyaltyEvent" e JOIN "LoyaltyCard" c ON c."customerId" = e."customerId" WHERE c."publicToken" = $1 AND e.type = 'VISIT'`, [token])).rowCount).toBe(0);
+    const after = Number((await testPool.query(`SELECT COUNT(*)::int AS n FROM "Customer" WHERE "organizationId" = $1`, [tenants[0]])).rows[0].n);
+    expect(after).toBe(before + 1);
+    const customer = await testPool.query<{ phone: string; firstName: string; lastName: string }>(
+      `SELECT c.phone, c."firstName", c."lastName" FROM "Customer" c JOIN "LoyaltyCard" lc ON lc."customerId" = c.id WHERE lc."publicToken" = $1`, [token]);
+    expect(customer.rows[0]).toMatchObject({ phone, firstName: "Sara", lastName: "Alami" });
+    // Numéro déjà connu : la carte existante est retrouvée directement (autre appareil), sans modifier la fiche ni en créer une.
+    const known = await publicJoin(post(publicPath, { action: "enroll", token: joins[0], firstName: "Autre", lastName: "Personne", phone }));
+    expect(known.status).toBe(200);
+    expect(await known.json()).toMatchObject({ cardPath, recovered: true });
+    const otherDevice = cookieFrom(known, "session");
+    expect(redirectedTo(await scan(0, otherDevice))).toBe(`${SITE}${cardPath}`);
+    expect(Number((await testPool.query(`SELECT COUNT(*)::int AS n FROM "Customer" WHERE "organizationId" = $1`, [tenants[0]])).rows[0].n)).toBe(before + 1);
+    // Le nom saisi remplace celui de la fiche ; le numéro reste inchangé ; l'ancien nom est conservé dans l'audit.
+    expect((await testPool.query(
+      `SELECT c."firstName", c."lastName", c.phone FROM "Customer" c JOIN "LoyaltyCard" lc ON lc."customerId" = c.id WHERE lc."publicToken" = $1`, [token])).rows[0])
+      .toEqual({ firstName: "Autre", lastName: "Personne", phone });
+    const audit = await testPool.query<{ after: { renamedFrom?: { firstName: string; lastName: string } } }>(
+      `SELECT after FROM "AuditLog" WHERE "organizationId" = $1 AND action = 'LOYALTY_CARD_RECOVERED_BY_PHONE' ORDER BY "createdAt" DESC LIMIT 1`, [tenants[0]]);
+    expect(audit.rows[0].after.renamedFrom).toEqual({ firstName: "Sara", lastName: "Alami" });
+    // Le même numéro dans un autre institut ne donne accès à rien : une nouvelle fiche y est créée.
+    const elsewhere = await publicJoin(post(publicPath, { action: "enroll", token: joins[1], firstName: "Sara", lastName: "Alami", phone }));
+    expect(elsewhere.status).toBe(201);
+    expect((await elsewhere.json()).cardPath).not.toBe(cardPath);
+    // Le numéro ne se change pas depuis la carte.
+    expect((await updateProfile(post("/api/public/loyalty-card/profile", { token, phone: makePhone() }, cookie))).status).toBe(400);
+  });
+
+  it("carte sans informations : le scan ouvre le formulaire, qui complète la fiche sans doublon", async () => {
+    // Carte créée avec un numéro provisoire (ancien parcours anonyme).
+    const { enrollAnonymousFromJoinQr } = await import("@/lib/loyalty/join-qr");
+    const { createLoyaltyCustomerSession, applyLoyaltySession } = await import("@/lib/loyalty/customer-session");
+    const { runInScope } = await import("@/lib/db/tenant-context");
+    const { anon, session } = await runInScope({ kind: "public", reason: "test" }, async () => {
+      const created = await enrollAnonymousFromJoinQr(joins[0]);
+      return { anon: created, session: await createLoyaltyCustomerSession(created.organizationId, created.customerId, created.phone) };
+    });
+    const carrier = NextResponse.json({});
+    applyLoyaltySession(carrier, anon.organizationId, session);
+    const cookie = cookieFrom(carrier, "session");
+
+    const reply = await scan(0, cookie);
+    expect(reply.status).toBe(200);
+    expect(reply.headers.get("location")).toBeNull();
+    expect(await reply.text()).toContain('name="phone"');
+
+    const customersBefore = Number((await testPool.query(`SELECT COUNT(*)::int AS n FROM "Customer" WHERE "organizationId" = $1`, [tenants[0]])).rows[0].n);
+    const phone = makePhone();
+    const done = await publicJoin(post(publicPath, { action: "enroll", token: joins[0], firstName: "Nora", lastName: "Idrissi", phone, marketingWhatsappConsent: true }, cookie));
+    expect(done.status).toBe(200);
+    expect(await done.json()).toMatchObject({ cardPath: `/carte/${anon.cardToken}/` });
+    expect(Number((await testPool.query(`SELECT COUNT(*)::int AS n FROM "Customer" WHERE "organizationId" = $1`, [tenants[0]])).rows[0].n)).toBe(customersBefore);
+    expect((await testPool.query(`SELECT "firstName", phone, "marketingWhatsapp" FROM "Customer" WHERE id = $1`, [anon.customerId])).rows[0])
+      .toMatchObject({ firstName: "Nora", phone, marketingWhatsapp: true });
+    // Nouvelle session liée au numéro saisi ; l'ancienne (numéro provisoire) est révoquée.
+    const renewed = cookieFrom(done, "session");
+    expect(renewed).not.toBe(cookie);
+    expect(redirectedTo(await scan(0, renewed))).toBe(`${SITE}/carte/${anon.cardToken}/`);
+    expect((await scan(0, cookie)).headers.get("location")).toBeNull();
+  });
+
+  it("renvoie le lien d'avis Google de l'institut seulement pour 4 ou 5 étoiles", async () => {
+    const card = await activated(0);
+    const feedback = async (rating: number) => {
+      const response = await submitFeedback(post("/api/public/loyalty-card/feedback", { token: card.token, rating, comment: "Super accueil" }, card.cookie));
+      expect(response.status).toBe(200);
+      return (await response.json()) as { ok: boolean; googleReviewUrl?: string };
+    };
+    const setUrl = (url: string | null) => testPool.query(
+      `INSERT INTO "ReviewSettings" (id, "organizationId", "googleReviewUrl", "updatedAt") VALUES ($1, $2, $3, NOW())
+       ON CONFLICT ("organizationId") DO UPDATE SET "googleReviewUrl" = EXCLUDED."googleReviewUrl"`,
+      [testId("rset"), tenants[0], url],
+    );
+
+    await setUrl("https://search.google.com/local/writereview?placeid=TEST123");
+    expect((await feedback(5)).googleReviewUrl).toBe("https://search.google.com/local/writereview?placeid=TEST123");
+    expect((await feedback(4)).googleReviewUrl).toContain("writereview");
+    // Une note plus basse reste privée : aucun lien Google.
+    for (const rating of [3, 2, 1]) expect(await feedback(rating)).toEqual({ ok: true });
+    // Jamais de lien non sécurisé ni de lien vide.
+    await setUrl("http://exemple.ma/avis");
+    expect(await feedback(5)).toEqual({ ok: true });
+    await setUrl(null);
+    expect(await feedback(5)).toEqual({ ok: true });
+  });
+
+  it("refuse la création directe sur un QR inconnu ou révoqué", async () => {
+    expect((await publicJoin(post(publicPath, { action: "enroll", token: "RBJOIN_INCONNU23" }))).status).toBe(404);
+  });
+
   it("révoque explicitement la session sans modifier la carte", async () => {
     const a = await activated(0);
     const response = await staffVerification(post(staffPath, { action: "revoke", customerId: a.customerId }));

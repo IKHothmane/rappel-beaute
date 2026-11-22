@@ -445,14 +445,13 @@ export function PromotionsPageView() {
                 <span className="text-[12px] text-[#765E6B]">Calcul serveur · snapshots facture</span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[880px] text-left text-[13px]">
+                <table className="w-full min-w-[760px] text-left text-[13px]">
                   <thead>
                     <tr className="text-[11px] font-bold uppercase tracking-wider text-ink/40">
                       <th className="px-4 py-3">Promotion & code</th>
                       <th className="px-3 py-3">Cible</th>
                       <th className="px-3 py-3">Validité</th>
                       <th className="px-3 py-3">Usage</th>
-                      <th className="px-3 py-3">CA / effort</th>
                       <th className="px-3 py-3">Conv.</th>
                       <th className="px-3 py-3">Statut</th>
                       <th className="px-4 py-3 text-right">Actions</th>
@@ -461,13 +460,13 @@ export function PromotionsPageView() {
                   <tbody className="divide-y divide-[#F4EDF0]">
                     {loading ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-ink/45">
+                        <td colSpan={7} className="px-4 py-8 text-ink/45">
                           Chargement…
                         </td>
                       </tr>
                     ) : pageRows.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-ink/50">
+                        <td colSpan={7} className="px-4 py-8 text-ink/50">
                           Aucune promotion sur ce filtre.
                         </td>
                       </tr>
@@ -524,14 +523,6 @@ export function PromotionsPageView() {
                               ) : (
                                 <span className="text-[12px] text-ink/55">{p.usageCount} · ∞</span>
                               )}
-                            </td>
-                            <td className="px-3 py-3.5">
-                              <p className="font-bold">
-                                {p.monthRevenue > 0 ? formatMad(p.monthRevenue) : "—"}
-                              </p>
-                              <p className="text-[11px] text-ink/40">
-                                Remise {p.monthDiscount > 0 ? formatMad(p.monthDiscount) : "—"}
-                              </p>
                             </td>
                             <td className="px-3 py-3.5 font-bold text-primary">
                               {f.pct != null ? `${f.pct} %` : "—"}

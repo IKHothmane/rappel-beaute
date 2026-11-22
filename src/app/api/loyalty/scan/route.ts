@@ -10,11 +10,13 @@ import {
   confirmLoyaltyScan,
   markVisitRewardUsed,
 } from "@/lib/loyalty/validation";
+import { pool } from "@/lib/db/pool";
 import { tenantRoute } from "@/lib/http/route-scope";
 
 const errors: Record<string, [string, number]> = {
   PROGRAM_DISABLED: ["Le programme de fidélité est désactivé dans cet institut.", 400],
   CARD_NOT_FOUND: ["Carte introuvable pour cet institut.", 404],
+  CARD_AMBIGUOUS: ["Plusieurs cartes portent ce code. Saisissez plus de caractères ou cherchez par nom.", 409],
   CARD_CHANGED: ["La fiche liée à cette carte a changé. Scannez à nouveau la carte.", 409],
   SCAN_INVALID: ["Le QR code ou la validation est invalide.", 400],
   SCAN_EXPIRED: ["Le scan a expiré. Scannez à nouveau la carte.", 409],
@@ -41,8 +43,22 @@ export const POST = tenantRoute(async function POST(request: NextRequest) {
 
   try {
     if (raw.action === "scan") {
-      if (typeof raw.token !== "string" || raw.token.length > 2048) throw new Error("SCAN_INVALID");
-      const preview = await beginLoyaltyScan({ ...actor, rawToken: raw.token });
+      let rawToken = raw.token;
+      if (typeof raw.customerId === "string" && raw.customerId && raw.token === undefined) {
+        // Passage validé à la main depuis la fiche cliente : on part de la carte active de cette cliente, puis le
+        // parcours est identique au scan (aperçu, puis confirmation séparée).
+        if (raw.customerId.length > 160) throw new Error("SCAN_INVALID");
+        const { rows } = await pool.query<{ publicToken: string }>(
+          `SELECT "publicToken" FROM "LoyaltyCard"
+           WHERE "organizationId" = $1 AND "customerId" = $2 AND status = 'ACTIVE' AND "mergedIntoCardId" IS NULL
+           LIMIT 1`,
+          [actor.organizationId, raw.customerId],
+        );
+        if (!rows[0]) throw new Error("NO_CARD");
+        rawToken = rows[0].publicToken;
+      }
+      if (typeof rawToken !== "string" || rawToken.length > 2048) throw new Error("SCAN_INVALID");
+      const preview = await beginLoyaltyScan({ ...actor, rawToken });
       return NextResponse.json(preview, { headers: { "Cache-Control": "no-store" } });
     }
     if (raw.action === "confirm") {

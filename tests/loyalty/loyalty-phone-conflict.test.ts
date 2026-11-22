@@ -220,7 +220,7 @@ describe("enrollFromJoinQr phone handling", () => {
 
   it("creates the customer with the canonical phone and issues a card when the number is free", async () => {
     mockJoin();
-    expect(await enrollFromJoinQr(form)).toEqual({ cardToken: "RBLOY_NEWCARD2" });
+    expect(await enrollFromJoinQr(form)).toMatchObject({ cardToken: "RBLOY_NEWCARD2", phone: "0612345678" });
     const insert = query.mock.calls.find(([sql]) => sql.includes('INSERT INTO "Customer"'));
     expect(insert?.[1][4]).toBe("0612345678");
     const lookup = query.mock.calls.find(([sql]) => sql.includes("ANY($2::text[])"));

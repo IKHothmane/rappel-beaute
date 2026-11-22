@@ -211,7 +211,7 @@ export async function submitLoyaltyCardFeedback(input: {
   staffId?: string;
   staffRating?: number;
   staffRatings?: { staffId: string; rating?: number | null }[];
-}): Promise<{ ok: true } | LoyaltyProfileFailure> {
+}): Promise<{ ok: true; googleReviewUrl?: string } | LoyaltyProfileFailure> {
   const token = input.cardToken.trim().toUpperCase();
   if (!/^RBLOY_[A-Z2-9]{8,32}$/.test(token)) {
     return { ok: false, error: "Carte introuvable." };
@@ -327,7 +327,7 @@ export async function submitLoyaltyCardFeedback(input: {
           staffJson,
         ],
       );
-      return { ok: true };
+      return { ok: true, ...(await googleReviewRedirect(row.organizationId, rating)) };
     } catch (error) {
       const code = typeof error === "object" && error && "code" in error ? String((error as { code: string }).code) : "";
       // Another submission may have claimed the appointment; retain this as a card review.
@@ -351,5 +351,29 @@ export async function submitLoyaltyCardFeedback(input: {
       staffJson,
     ],
   );
-  return { ok: true };
+  return { ok: true, ...(await googleReviewRedirect(row.organizationId, rating)) };
+}
+
+/** Note à partir de laquelle la cliente est invitée à publier son avis sur Google. */
+export const GOOGLE_REVIEW_MIN_RATING = 4;
+
+/**
+ * Lien d'avis Google de l'institut, renvoyé seulement pour une note de 4 ou 5 étoiles (jamais pour un avis plus
+ * faible : celui-ci reste privé, visible de l'institut). Seul un lien https valide est accepté. Une lecture qui
+ * échoue ne doit jamais faire échouer l'enregistrement de l'avis, déjà fait à ce stade.
+ */
+async function googleReviewRedirect(organizationId: string, rating: number | null): Promise<{ googleReviewUrl?: string }> {
+  if (rating == null || rating < GOOGLE_REVIEW_MIN_RATING) return {};
+  try {
+    const { rows } = await pool.query<{ googleReviewUrl: string | null }>(
+      `SELECT "googleReviewUrl" FROM "ReviewSettings" WHERE "organizationId" = $1`,
+      [organizationId],
+    );
+    const raw = rows[0]?.googleReviewUrl?.trim();
+    if (!raw) return {};
+    const url = new URL(raw);
+    return url.protocol === "https:" ? { googleReviewUrl: url.toString() } : {};
+  } catch {
+    return {};
+  }
 }

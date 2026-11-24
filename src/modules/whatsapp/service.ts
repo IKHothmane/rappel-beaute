@@ -37,44 +37,6 @@ export async function getWhatsAppDashboard(view: "pending" | "sent" = "pending")
   return { items: body.data ?? body.items ?? [], kpis: body.kpis };
 }
 
-export async function sendIndividualWhatsApp(
-  input:
-    | { type: "REACTIVATION"; customerId: string; message: string }
-    | { type: "APPOINTMENT_REMINDER"; appointmentId: string },
-) {
-  try {
-    const res = await fetch("/api/whatsapp/send/", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    const data = (await res.json().catch(() => null)) as {
-      alreadySent?: boolean;
-      error?: string;
-      messageId?: string;
-    } | null;
-    if (!res.ok || !(data?.messageId || data?.alreadySent === true)) {
-      return { ok: false as const, error: data?.error ?? "Échec d’envoi WhatsApp." };
-    }
-    return { ok: true as const, alreadySent: data.alreadySent === true };
-  } catch {
-    return { ok: false as const, error: "Impossible de confirmer l’envoi WhatsApp. Vérifiez la connexion." };
-  }
-}
-
-export async function sendDirectWhatsApp(taskId: string) {
-  const res = await fetch("/api/whatsapp/", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "sendDirect", taskId }),
-  });
-  const data = await res.json();
-  if (!res.ok) return { ok: false as const, error: data.error ?? "Échec d'envoi WhatsApp API" };
-  return { ok: true as const, task: data.task as WhatsAppTaskItem, messageId: data.messageId as string };
-}
-
 export async function markWhatsAppSent(taskId: string) {
   const res = await fetch("/api/whatsapp/", {
     method: "POST",

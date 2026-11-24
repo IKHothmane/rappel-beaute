@@ -1,7 +1,7 @@
 "use client";
 import { MetricCard } from "@/components/ui/metric-card";
 
-import { useMemo, useState, type ElementType } from "react";
+import { useMemo, useState, type ElementType, type ReactNode } from "react";
 import {
   BadgeCheck,
   CalendarDays,
@@ -42,6 +42,8 @@ type Props = {
   onToggle?: (id: string) => void;
   onDelete?: (id: string) => void;
   onRefresh?: () => void | Promise<void>;
+  /** Bouton « Tutoriel » affiché à côté de « Nouveau service ». */
+  guide?: ReactNode;
 };
 
 const PAGE_SIZE = 12;
@@ -147,20 +149,27 @@ function StaffAvatars({ names }: { names: string[] }) {
 function ServiceCard({
   service,
   canWrite,
+  tourFirst = false,
   onEdit,
   onToggle,
   onDelete,
 }: {
   service: Service;
   canWrite: boolean;
+  /** Première carte : elle porte les repères de la visite guidée. */
+  tourFirst?: boolean;
   onEdit: (id: string) => void;
   onToggle?: (id: string) => void;
   onDelete?: (id: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const tour = (target: string) => (tourFirst ? target : undefined);
 
   return (
-    <article className="group min-w-0 overflow-visible rounded-[20px] border border-[#EFDAE3] bg-white shadow-[0_8px_24px_rgba(76,20,45,0.07)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(76,20,45,0.13)]">
+    <article
+      data-services-tour={tour("svc-card")}
+      className="group min-w-0 overflow-visible rounded-[20px] border border-[#EFDAE3] bg-white shadow-[0_8px_24px_rgba(76,20,45,0.07)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(76,20,45,0.13)]"
+    >
       <div className="relative overflow-hidden rounded-t-[19px]">
         <ServicePhoto
           key={`${service.id}:${service.imageUrl ?? ""}`}
@@ -169,6 +178,7 @@ function ServiceCard({
         />
 
         <span
+          data-services-tour={tour("svc-card-status")}
           className={`absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold shadow-sm ${
             service.active ? "bg-[#C8F3CF] text-[#15753D]" : "bg-white text-[#776775]"
           }`}
@@ -183,6 +193,7 @@ function ServiceCard({
               type="button"
               aria-label={`Options de ${service.name}`}
               aria-expanded={menuOpen}
+              data-services-tour={tour("svc-card-menu")}
               onClick={() => setMenuOpen(!menuOpen)}
               className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/95 text-[#49192E] shadow-sm hover:bg-white"
             >
@@ -247,7 +258,7 @@ function ServiceCard({
           {service.description || "Découvrez cette prestation proposée par notre institut."}
         </p>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2" data-services-tour={tour("svc-card-meta")}>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF0F6] px-3 py-1.5 text-xs font-semibold text-[#51253B]">
             <Clock3 size={14} />
             {duration(service.durationMin)}
@@ -259,11 +270,14 @@ function ServiceCard({
         </div>
 
         <div className="mt-auto pt-4">
-          <StaffAvatars names={service.staffNames} />
+          <div data-services-tour={tour("svc-card-staff")}>
+            <StaffAvatars names={service.staffNames} />
+          </div>
           <div className="mt-3">
             {canWrite ? (
               <button
                 type="button"
+                data-services-tour={tour("svc-card-edit")}
                 onClick={() => onEdit(service.id)}
                 className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#951341] to-[#B91656] text-xs font-bold text-white transition hover:brightness-110"
               >
@@ -274,6 +288,7 @@ function ServiceCard({
               <button
                 type="button"
                 disabled
+                data-services-tour={tour("svc-card-edit")}
                 className="h-10 w-full rounded-xl bg-[#F6EEF2] text-xs text-[#9F8794]"
               >
                 Lecture seule
@@ -299,6 +314,7 @@ export default function ServicesCatalogPremium({
   onToggle,
   onDelete,
   onRefresh,
+  guide,
 }: Props) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -364,7 +380,7 @@ export default function ServicesCatalogPremium({
           backgroundSize: "cover",
         }}
       >
-        <div className="relative z-10 min-w-0">
+        <div className="relative z-10 min-w-0" data-services-tour="svc-intro">
           <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
             Services & Prestations
           </h1>
@@ -372,20 +388,24 @@ export default function ServicesCatalogPremium({
             Gérez vos soins, vos tarifs, leur durée et les membres de votre équipe depuis un seul espace.
           </p>
         </div>
-        {canWrite ? (
-          <button
-            type="button"
-            onClick={onCreate}
-            data-tour="services-add"
-            className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
-          >
-            <Plus size={18} />
-            Nouveau service
-          </button>
-        ) : null}
+        <div className="relative z-10 flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {guide}
+          {canWrite ? (
+            <button
+              type="button"
+              onClick={onCreate}
+              data-tour="services-add"
+              data-services-tour="svc-add"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
+            >
+              <Plus size={18} />
+              Nouveau service
+            </button>
+          ) : null}
+        </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5 rb-metric-row">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5 rb-metric-row" data-services-tour="svc-metrics">
         <StatCard
           label="Catalogue"
           value={services.length}
@@ -425,7 +445,10 @@ export default function ServicesCatalogPremium({
       </div>
 
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-        <div className="flex min-w-[220px] items-center gap-3 rounded-2xl border border-[#EAD9E1] bg-white px-4 shadow-sm xl:w-80 xl:shrink-0">
+        <div
+          className="flex min-w-[220px] items-center gap-3 rounded-2xl border border-[#EAD9E1] bg-white px-4 shadow-sm xl:w-80 xl:shrink-0"
+          data-services-tour="svc-search"
+        >
           <Search size={19} className="text-[#A01C50]" />
           <input
             aria-label="Rechercher un service"
@@ -439,7 +462,7 @@ export default function ServicesCatalogPremium({
             className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#AA96A1]"
           />
         </div>
-      <nav aria-label="Catégories de services" className="flex min-w-0 flex-wrap items-center gap-2">
+      <nav aria-label="Catégories de services" data-services-tour="svc-categories" className="flex min-w-0 flex-wrap items-center gap-2">
         {chips.map((chip) => (
           <button
             key={chip.id}
@@ -472,12 +495,13 @@ export default function ServicesCatalogPremium({
           ))}
         </div>
       ) : visible.length ? (
-        <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {visible.map((service) => (
+        <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 xl:grid-cols-3" data-services-tour="svc-list">
+          {visible.map((service, index) => (
             <ServiceCard
               key={service.id}
               service={service}
               canWrite={canWrite}
+              tourFirst={index === 0}
               onEdit={onEdit}
               onToggle={onToggle}
               onDelete={onDelete}

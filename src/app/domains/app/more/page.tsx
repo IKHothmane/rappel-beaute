@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AppPageHeader } from "@/components/app/AppUi";
 import { MoreMenuLink } from "@/components/layout/more-menu-link";
+import { RestartTutorialButton } from "@/components/tutorial/RestartTutorialButton";
 import { getSession } from "@/lib/auth/session";
 import { isAppSession } from "@/lib/auth/types";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
@@ -11,6 +12,9 @@ import { scopedPage } from "@/lib/http/route-scope";
 export const metadata: Metadata = { title: "Menu" };
 
 type MoreLink = { href: string; label: string; planKey?: string };
+
+/** Entrée réservée au propriétaire : sa progression n'existe pas pour les autres rôles. */
+const OWNER_ONLY_HREFS = new Set(["/onboarding/"]);
 
 const GROUPS: { title: string; links: MoreLink[] }[] = [
   {
@@ -49,7 +53,7 @@ const GROUPS: { title: string; links: MoreLink[] }[] = [
       { href: "/support/", label: "Aide & Support" },
       { href: "/settings/", label: "Paramètres" },
       { href: "/settings/users/", label: "Utilisateurs" },
-      { href: "/onboarding/", label: "Onboarding" },
+      { href: "/onboarding/", label: "Configuration de l’institut" },
       { href: "/profile/", label: "Mon profil" },
       { href: "/security/", label: "Sécurité" },
       { href: "/book/institut-royal/", label: "Réservation publique" },
@@ -60,11 +64,15 @@ const GROUPS: { title: string; links: MoreLink[] }[] = [
 export default scopedPage("public", async function MorePage() {
   const session = await getSession();
   const orgSlug = session && isAppSession(session) ? session.orgSlug : null;
+  // Rôle lu côté serveur : « Revoir le tutoriel » et « Configuration de l’institut » ne sont jamais rendus pour un
+  // autre rôle que le propriétaire.
+  const isOwner = session && isAppSession(session) ? session.role === "OWNER" : false;
   const salon3dOk = isSalon3dEnabledForOrg(orgSlug);
   const groups = GROUPS.map((g) => ({
     ...g,
     links: g.links.filter(
       (l) =>
+        (isOwner || !OWNER_ONLY_HREFS.has(l.href)) &&
         (l.href !== "/salon-3d/" || salon3dOk) &&
         (l.href !== "/post-visit/" || isPostVisitUiEnabled()),
     ),
@@ -97,6 +105,13 @@ export default scopedPage("public", async function MorePage() {
                   )}
                 </li>
               ))}
+              {isOwner && g.title === "Pilotage" ? (
+                <li>
+                  <RestartTutorialButton className="block min-h-11 w-full px-4 py-3.5 text-left hover:bg-[#FBF4F6] sm:px-5">
+                    Revoir le tutoriel
+                  </RestartTutorialButton>
+                </li>
+              ) : null}
             </ul>
           </section>
         ))}

@@ -13,6 +13,8 @@ import type { CreateProductInput, ProductDetail } from "@/types/inventory";
 type ProductFormProps = {
   initial?: Partial<ProductDetail>;
   submitting?: boolean;
+  /** Visite guidée : le formulaire s'affiche pour la démonstration, rien n'est enregistré. */
+  tutorialMode?: boolean;
   onSubmit: (data: CreateProductInput) => void;
   onCancel: () => void;
 };
@@ -48,11 +50,14 @@ function AmountField({
   value,
   onChange,
   hint,
+  tourTarget,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   hint?: string;
+  /** Repère de la visite guidée (data-products-tour). */
+  tourTarget?: string;
 }) {
   function step(delta: number) {
     const current = parseDecimal(value);
@@ -60,7 +65,7 @@ function AmountField({
   }
 
   return (
-    <label className="block text-sm">
+    <label className="block text-sm" data-products-tour={tourTarget}>
       <span className="mb-1.5 block font-medium">{label}</span>
       <div className="flex items-center gap-2">
         <button
@@ -101,7 +106,7 @@ function generateSku(name: string) {
   return `${slug || "PRD"}-${Date.now().toString(36).toUpperCase()}`;
 }
 
-export function ProductForm({ initial, submitting, onSubmit, onCancel }: ProductFormProps) {
+export function ProductForm({ initial, submitting, tutorialMode = false, onSubmit, onCancel }: ProductFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [purchasePrice, setPurchasePrice] = useState(displayAmount(initial?.purchasePrice, "0"));
   const [salePrice, setSalePrice] = useState(displayAmount(initial?.salePrice));
@@ -112,6 +117,7 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (tutorialMode) return;
     const trimmed = name.trim();
     onSubmit({
       name: trimmed,
@@ -133,7 +139,7 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <label className="block text-sm">
+      <label className="block text-sm" data-products-tour="prd-form-name">
         <span className="mb-1.5 block font-medium">Nom *</span>
         <Input
           value={name}
@@ -144,12 +150,12 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
         />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
-        <AmountField label="Prix achat (MAD)" value={purchasePrice} onChange={setPurchasePrice} />
-        <AmountField label="Prix vente (MAD)" value={salePrice} onChange={setSalePrice} />
+        <AmountField label="Prix achat (MAD)" value={purchasePrice} onChange={setPurchasePrice} tourTarget="prd-form-purchase" />
+        <AmountField label="Prix vente (MAD)" value={salePrice} onChange={setSalePrice} tourTarget="prd-form-sale" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <AmountField label="Stock minimum" value={minStock} onChange={setMinStock} />
-        <AmountField label="Stock maximum" value={maxStock} onChange={setMaxStock} />
+        <AmountField label="Stock minimum" value={minStock} onChange={setMinStock} tourTarget="prd-form-min" />
+        <AmountField label="Stock maximum" value={maxStock} onChange={setMaxStock} tourTarget="prd-form-max" />
       </div>
       {!initial?.id ? (
         <AmountField
@@ -157,9 +163,10 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
           value={initialStock}
           onChange={setInitialStock}
           hint="Créera un mouvement Achat."
+          tourTarget="prd-form-initial"
         />
       ) : null}
-      <label className="block text-sm">
+      <label className="block text-sm" data-products-tour="prd-form-supplier">
         <span className="mb-1.5 block font-medium">Fournisseur</span>
         <Input
           value={supplierName}
@@ -171,7 +178,13 @@ export function ProductForm({ initial, submitting, onSubmit, onCancel }: Product
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" className="w-full sm:flex-1" disabled={submitting}>
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full sm:flex-1"
+          disabled={submitting || tutorialMode}
+          data-products-tour="prd-form-save"
+        >
           {submitting ? "Enregistrement…" : initial?.id ? "Enregistrer" : "Créer le produit"}
         </Button>
       </div>

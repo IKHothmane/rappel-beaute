@@ -90,7 +90,10 @@ export function ResourceFocusPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-4 overflow-hidden rounded-[22px] border border-[#EFDCE4] bg-white shadow-lg">
+      <div
+        className="flex flex-col gap-4 overflow-hidden rounded-[22px] border border-[#EFDCE4] bg-white shadow-lg"
+        data-resources-tour="res-focus"
+      >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-[#FDE3ED] via-[#F8CEDF] to-[#F0B8D0]">
           {resource.imageUrl && !imageFailed ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -249,7 +252,7 @@ export function ResourceFocusPanel({
           </div>
 
           {canWrite ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2" data-resources-tour="res-focus-actions">
               <button
                 type="button"
                 onClick={onEdit}

@@ -20,6 +20,8 @@ type Props = {
   status: LiveStatus;
   selected: boolean;
   canWrite: boolean;
+  /** Première carte : elle porte les repères de la visite guidée. */
+  tourFirst?: boolean;
   onSelect: () => void;
   onEdit: () => void;
 };
@@ -29,9 +31,11 @@ export function ResourcePremiumCard({
   status,
   selected,
   canWrite,
+  tourFirst = false,
   onSelect,
   onEdit,
 }: Props) {
+  const tour = (target: string) => (tourFirst ? target : undefined);
   const Icon = resourceTypeIcon(resource.type);
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -44,6 +48,7 @@ export function ResourcePremiumCard({
 
   return (
     <article
+      data-resources-tour={tour("res-card")}
       className={`group overflow-hidden rounded-[20px] border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl ${
         selected
           ? "border-[#A71350] bg-[#FFE8F1] shadow-[0_12px_28px_rgba(167,19,80,0.18)] ring-2 ring-[#A71350]/35"
@@ -78,6 +83,7 @@ export function ResourcePremiumCard({
           )}
 
           <span
+            data-resources-tour={tour("res-card-status")}
             className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-sm ${statusStyle}`}
           >
             {status === "available" ? (
@@ -127,6 +133,7 @@ export function ResourcePremiumCard({
           <button
             type="button"
             onClick={onEdit}
+            data-resources-tour={tour("res-card-edit")}
             className={`flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition ${
               selected
                 ? "bg-[#A71350] text-white hover:bg-[#801037]"

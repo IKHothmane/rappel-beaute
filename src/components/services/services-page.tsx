@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { ServiceForm } from "@/components/services/service-form";
 import ServicesCatalogPremium from "@/components/services/services-catalog-premium";
+import { ServicesGuide } from "@/components/services/services-guide";
 import { ServicesMobile } from "@/components/services/services-mobile";
 import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { useToast } from "@/components/ui/toast";
@@ -43,6 +44,12 @@ export function ServicesPageView() {
   const [editing, setEditing] = useState<ServiceDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
+  // Formulaire de création ouvert en démonstration par le tutoriel (aucune écriture) ; piloté par ServicesGuide.
+  const [demo, setDemo] = useState(false);
+  const demoRef = useRef(false);
+  // Visite guidée active (dès son démarrage, y compris pendant ses chargements) : aucune écriture ni tiroir réel.
+  const tourActiveRef = useRef(false);
+  const [analyticsReady, setAnalyticsReady] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -77,12 +84,20 @@ export function ServicesPageView() {
   }, [refresh]);
 
   useEffect(() => {
-    getAnalyticsOverview({ preset: "month", compare: true })
+    let cancelled = false;
+    const overviewDone = getAnalyticsOverview({ preset: "month", compare: true })
       .then(setOverview)
       .catch(() => setOverview(null));
-    getAnalyticsServices({ preset: "month" })
+    const statsDone = getAnalyticsServices({ preset: "month" })
       .then((res) => setServiceStats(res.items))
       .catch(() => setServiceStats([]));
+    // Le tutoriel attend (au plus quelques secondes) que les indicateurs soient chargés avant de les mettre en avant.
+    void Promise.all([overviewDone, statsDone]).then(() => {
+      if (!cancelled) setAnalyticsReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const statsById = useMemo(() => {
@@ -120,24 +135,54 @@ export function ServicesPageView() {
     return opts;
   }
 
+  /** Tutoriel : charge les options du formulaire (lecture seule) ; faux si le formulaire ne peut pas être présenté. */
+  async function prepareDemoForm() {
+    try {
+      await ensureOptions();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Vrai pendant toute la visite guidée (étapes de page comprises) : écritures et tiroirs réels refusés. */
+  const tutorialBusy = () => demoRef.current || tourActiveRef.current;
+
+  function handleDemoChange(open: boolean) {
+    demoRef.current = open;
+    if (open) setMenuId(null);
+    setDemo(open);
+  }
+
+  function handleActiveChange(active: boolean) {
+    tourActiveRef.current = active;
+    if (active) setMenuId(null);
+  }
+
   async function openCreate() {
+    if (tutorialBusy()) return;
     try {
       await ensureOptions();
     } catch {
       toast("Impossible de charger les options.", "error");
       return;
     }
+    // La visite a pu démarrer pendant le chargement des options.
+    if (tutorialBusy()) return;
     setEditing(null);
     setDrawerOpen(true);
   }
 
   async function openEdit(id: string) {
+    if (tutorialBusy()) return;
     try {
       const [detail, opts] = await Promise.all([
         getService(id),
         options ? Promise.resolve(options) : getServiceFormOptions(),
       ]);
       setOptions(opts);
+      // La visite a pu démarrer pendant le chargement : on n'ouvre pas le tiroir réel sous la démonstration.
+      if (tutorialBusy()) return;
       setEditing(detail);
       setDrawerOpen(true);
       setMenuId(null);
@@ -147,6 +192,7 @@ export function ServicesPageView() {
   }
 
   async function handleSubmit(data: Parameters<typeof createService>[0]) {
+    if (tutorialBusy()) return;
     setSubmitting(true);
     const result = editing ? await updateService(editing.id, data) : await createService(data);
     setSubmitting(false);
@@ -162,7 +208,7 @@ export function ServicesPageView() {
   }
 
   async function toggleActive(row: ServiceListItem) {
-    if (!canWrite) return;
+    if (!canWrite || tutorialBusy()) return;
     const result = await updateService(row.id, { active: !row.active });
     if (!result.ok) {
       toast(result.error, "error");
@@ -174,7 +220,7 @@ export function ServicesPageView() {
   }
 
   async function confirmDelete(row: ServiceListItem) {
-    if (!canWrite) return;
+    if (!canWrite || tutorialBusy()) return;
     const ok = window.confirm(
       `Supprimer « ${row.name} » ? Le service disparaît du catalogue. Les rendez-vous déjà pris conservent le nom du soin.`,
     );
@@ -209,9 +255,24 @@ export function ServicesPageView() {
         ? "Aucun soin terminé"
         : null;
 
+  const guide = (
+    <ServicesGuide
+      canWrite={canWrite}
+      prepareForm={prepareDemoForm}
+      onDemoChange={handleDemoChange}
+      onActiveChange={handleActiveChange}
+      dataReady={analyticsReady}
+    />
+  );
+
   return (
-    <div className="flex flex-col gap-5 pb-8">
+    <div
+      className="flex flex-col gap-5 pb-8"
+      data-services-tour="svc-root"
+      data-loading={loading ? "true" : "false"}
+    >
       <ServicesMobile
+        guide={guide}
         orgName={user.orgName}
         catalogCount={catalog.length}
         activeCount={activeCount}
@@ -257,30 +318,36 @@ export function ServicesPageView() {
             if (row) void confirmDelete(row);
           }}
           onRefresh={refresh}
+          guide={guide}
         />
       </div>
 
       <PremiumSidePanel
-        open={drawerOpen}
+        open={drawerOpen || demo}
         onClose={() => {
+          // Pendant la visite guidée, c'est elle qui ferme le formulaire.
+          if (demoRef.current) return;
           setDrawerOpen(false);
           setEditing(null);
         }}
-        title={editing ? "Modifier le service" : "Nouveau service"}
+        title={editing && !demo ? "Modifier le service" : "Nouveau service"}
         description={
-          editing
-            ? "Mettez à jour la prestation de votre catalogue."
-            : "Ajoutez une prestation à votre catalogue."
+          demo
+            ? "Mode tutoriel : aucun service ne sera enregistré."
+            : editing
+              ? "Mettez à jour la prestation de votre catalogue."
+              : "Ajoutez une prestation à votre catalogue."
         }
       >
         {options ? (
           <ServiceForm
-            key={editing?.id ?? "new"}
-            initial={editing ?? { active: true }}
+            key={demo ? "tutorial" : editing?.id ?? "new"}
+            initial={demo ? { active: true } : editing ?? { active: true }}
             options={options}
             extraCategories={categories}
             canEditPrice={canPrice}
             submitting={submitting}
+            tutorialMode={demo}
             onSubmit={handleSubmit}
             onCancel={() => {
               setDrawerOpen(false);

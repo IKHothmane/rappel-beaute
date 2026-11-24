@@ -68,7 +68,10 @@ export function ProductFocusPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col overflow-hidden rounded-[22px] border border-[#F0DDE4] bg-white shadow-lg">
+      <div
+        className="flex flex-col overflow-hidden rounded-[22px] border border-[#F0DDE4] bg-white shadow-lg"
+        data-products-tour="prd-focus"
+      >
         <div className="flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -102,6 +105,7 @@ export function ProductFocusPanel({
               type="button"
               onClick={onEdit}
               title="Modifier"
+              data-products-tour="prd-focus-edit"
               className="rounded-xl border border-[#EAD4DE] bg-white p-2 text-[#765164] hover:bg-[#FFF0F6] hover:text-[#AC0E4C]"
             >
               <Pencil size={16} />
@@ -109,7 +113,7 @@ export function ProductFocusPanel({
           ) : null}
         </div>
 
-        <div className="rounded-2xl bg-[#FFF0F6] p-4">
+        <div className="rounded-2xl bg-[#FFF0F6] p-4" data-products-tour="prd-focus-stock">
           <div className="flex items-end justify-between gap-2">
             <div>
               <p className="text-[11px] uppercase text-[#846A79]">Stock disponible</p>
@@ -128,7 +132,7 @@ export function ProductFocusPanel({
             />
           </div>
           {canWrite ? (
-            <div className="mt-3 grid grid-cols-3 gap-1.5">
+            <div className="mt-3 grid grid-cols-3 gap-1.5" data-products-tour="prd-focus-actions">
               <button
                 type="button"
                 onClick={onIn}
@@ -158,6 +162,7 @@ export function ProductFocusPanel({
           ) : (
             <Link
               href="/stock/"
+              data-products-tour="prd-focus-actions"
               className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-xl border border-[#EAD4DE] bg-white text-[12px] font-semibold text-[#AC0E4C]"
             >
               Voir les mouvements
@@ -166,7 +171,7 @@ export function ProductFocusPanel({
         </div>
 
         {!financeHidden ? (
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-2 text-center" data-products-tour="prd-focus-prices">
             <div className="rounded-2xl bg-[#FFF0F6] p-3">
               <span className="block text-[11px] text-[#846A79]">Achat</span>
               <span className="text-[13px] font-bold text-[#43182D]">{formatMad(product.purchasePrice)}</span>
@@ -186,7 +191,7 @@ export function ProductFocusPanel({
           </div>
         ) : null}
 
-        <div>
+        <div data-products-tour="prd-focus-services">
           <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ink/40">
             Prestations liées
           </p>
@@ -212,7 +217,7 @@ export function ProductFocusPanel({
         </div>
 
         {preferred.length > 0 ? (
-          <div>
+          <div data-products-tour="prd-focus-suppliers">
             <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ink/40">
               Fournisseurs
             </p>
@@ -238,7 +243,7 @@ export function ProductFocusPanel({
           <p className="text-[12px] text-ink/55">Fournisseur : {product.supplierName}</p>
         ) : null}
 
-        <div>
+        <div data-products-tour="prd-focus-movements">
           <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ink/40">
             Derniers mouvements
           </p>

@@ -39,7 +39,7 @@ export function InventoryPremiumHeader({
 }: Props) {
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5 rb-metric-row">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5 rb-metric-row" data-products-tour="prd-metrics">
         <StatCard label="Références" value={String(total)} icon={Package} tone="pink" />
         <StatCard label="En stock" value={String(inStock)} icon={CheckCircle2} tone="green" />
         <StatCard
@@ -64,7 +64,9 @@ export function InventoryPremiumHeader({
         />
       </div>
 
-      <InventoryPremiumCharts categories={categories} financeHidden={financeHidden} />
+      <div data-products-tour="prd-charts">
+        <InventoryPremiumCharts categories={categories} financeHidden={financeHidden} />
+      </div>
     </div>
   );
 }

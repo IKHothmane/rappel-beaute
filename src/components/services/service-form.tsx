@@ -29,6 +29,8 @@ type ServiceFormProps = {
   extraCategories?: string[];
   canEditPrice?: boolean;
   submitting?: boolean;
+  /** Visite guidée : le formulaire s'affiche pour la démonstration, rien n'est enregistré. */
+  tutorialMode?: boolean;
   onSubmit: (data: CreateServiceInput) => void;
   onCancel: () => void;
 };
@@ -44,6 +46,7 @@ export function ServiceForm({
   options,
   canEditPrice = true,
   submitting,
+  tutorialMode = false,
   onSubmit,
   onCancel,
 }: ServiceFormProps) {
@@ -95,6 +98,7 @@ export function ServiceForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (tutorialMode) return;
     const trimmedName = name.trim();
     onSubmit({
       name: trimmedName,
@@ -133,7 +137,7 @@ export function ServiceForm({
         </div>
       ) : null}
 
-      <div className="block text-sm">
+      <div className="block text-sm" data-services-tour="svc-form-name">
         <span className="mb-1.5 block font-medium">Nom *</span>
         <div ref={nameBox} className="relative">
           <Input
@@ -186,7 +190,7 @@ export function ServiceForm({
         <p className="mt-1 text-[12px] text-ink/45">Choisissez dans la liste, ou saisissez un autre nom.</p>
       </div>
 
-      <label className="block text-sm">
+      <label className="block text-sm" data-services-tour="svc-form-description">
         <span className="mb-1.5 block font-medium">Description</span>
         <Textarea
           value={description}
@@ -197,7 +201,7 @@ export function ServiceForm({
         />
       </label>
 
-      <label className="block text-sm">
+      <label className="block text-sm" data-services-tour="svc-form-price">
         <span className="mb-1.5 block font-medium">Prix (MAD) *</span>
         <Input
           type="text"
@@ -210,7 +214,7 @@ export function ServiceForm({
         />
       </label>
 
-      <label className="block text-sm">
+      <label className="block text-sm" data-services-tour="svc-form-duration">
         <span className="mb-1.5 block font-medium">Durée *</span>
         <div className="mb-2 flex flex-wrap gap-1.5">
           {DURATION_PRESETS.map((min) => (
@@ -239,7 +243,7 @@ export function ServiceForm({
         />
       </label>
 
-      <div>
+      <div data-services-tour="svc-form-staff">
         <span className="mb-1.5 block text-sm font-medium">Employées</span>
         <p className="mb-2 text-[12px] leading-5 text-ink/50">
           Toutes les employées de l’institut. Cochez celles qui réalisent ce soin.
@@ -247,7 +251,7 @@ export function ServiceForm({
         <ServiceStaffSelector options={options.staff} value={staffIds} onChange={setStaffIds} />
       </div>
 
-      <div>
+      <div data-services-tour="svc-form-products">
         <span className="mb-1.5 block text-sm font-medium">Produits consommés</span>
         <p className="mb-2 text-[12px] leading-5 text-ink/50">
           Quantités retirées du stock automatiquement quand le rendez-vous est marqué Terminé.
@@ -259,7 +263,7 @@ export function ServiceForm({
         />
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-xl bg-[#FFEFF8] p-3">
+      <div className="flex items-center justify-between gap-3 rounded-xl bg-[#FFEFF8] p-3" data-services-tour="svc-form-status">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink">Statut du service</p>
           <p className="text-[12px] font-semibold text-ink">{active ? "Actif" : "Inactif"}</p>
@@ -289,7 +293,13 @@ export function ServiceForm({
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" className="w-full sm:flex-1" disabled={submitting}>
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full sm:flex-1"
+          disabled={submitting || tutorialMode}
+          data-services-tour="svc-form-save"
+        >
           {submitting ? "Enregistrement…" : initial?.id ? "Enregistrer" : "Créer le service"}
         </Button>
       </div>

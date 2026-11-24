@@ -1,5 +1,6 @@
 import { PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL } from "@/modules/finance/service";
 import type { PaymentItem, PaymentMethod } from "@/types/finance";
+import { formatMad } from "@/lib/utils";
 
 export type PaymentTab = "all" | "paid" | "pending" | "deposit" | "refunded" | "failed";
 export type PaymentPeriod = "all" | "today" | "yesterday" | "7d" | "month";
@@ -483,12 +484,39 @@ export function staffOptions(rows: PaymentItem[]) {
   );
 }
 
-export function waMeLink(phone: string | null) {
+/** Lien WhatsApp vers la cliente ; `message` pré-remplit la conversation (elle reste libre de le modifier avant l'envoi). */
+export function waMeLink(phone: string | null, message?: string | null) {
   if (!phone) return null;
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 8) return null;
   const intl = digits.startsWith("212") ? digits : digits.replace(/^0/, "212");
-  return `https://wa.me/${intl}`;
+  const text = message?.trim();
+  return text ? `https://wa.me/${intl}?text=${encodeURIComponent(text)}` : `https://wa.me/${intl}`;
+}
+
+/** Message WhatsApp adapté à la situation du paiement (merci, reste à régler, acompte, remboursement, échec). */
+export function paymentWhatsappMessage(p: PaymentItem, orgName?: string | null): string {
+  const firstName = (p.customerName ?? "").trim().split(/\s+/)[0];
+  const hello = firstName ? `Bonjour ${firstName},` : "Bonjour,";
+  const org = orgName?.trim() || "notre institut";
+  const amount = formatMad(Math.abs(p.amount));
+  const ticket = p.ticketNumber?.trim();
+  const service = p.serviceName?.trim();
+  const forService = service ? ` pour « ${service} »` : "";
+
+  let body: string;
+  if (isUnpaidDue(p) || p.status === "PENDING") {
+    body = `Il reste ${amount} à régler${forService} chez ${org}. Merci de passer le régler dès que possible.`;
+  } else if (p.status === "FAILED") {
+    body = `Votre paiement de ${amount}${forService} n'a pas pu être enregistré chez ${org}. Pouvez-vous nous contacter pour le régulariser ?`;
+  } else if (p.kind === "REFUND") {
+    body = `Votre remboursement de ${amount}${forService} a bien été effectué chez ${org}${ticket ? ` (ticket ${ticket})` : ""}.`;
+  } else if (p.kind === "DEPOSIT") {
+    body = `Nous avons bien reçu votre acompte de ${amount}${forService} chez ${org}${ticket ? ` (ticket ${ticket})` : ""}. Merci !`;
+  } else {
+    body = `Merci pour votre visite chez ${org} ! Nous avons bien reçu votre paiement de ${amount}${forService}${ticket ? ` (ticket ${ticket})` : ""}. À très bientôt.`;
+  }
+  return `${hello}\n\n${body}\n\n${org}`;
 }
 
 export function formatPaymentDateTime(iso: string) {

@@ -1,6 +1,7 @@
 "use client";
 import { MetricCard } from "@/components/ui/metric-card";
 
+import type { ReactNode } from "react";
 import {
   CalendarClock,
   CheckCircle2,
@@ -16,6 +17,8 @@ type Props = {
   maintenance: number;
   canWrite: boolean;
   onCreate: () => void;
+  /** Bouton « Tutoriel » affiché à côté de « Nouvelle ressource ». */
+  guide?: ReactNode;
 };
 
 export function ResourcesPremiumHeader({
@@ -25,6 +28,7 @@ export function ResourcesPremiumHeader({
   maintenance,
   canWrite,
   onCreate,
+  guide,
 }: Props) {
   const stats = [
     {
@@ -64,7 +68,7 @@ export function ResourcesPremiumHeader({
           backgroundSize: "cover",
         }}
       >
-        <div className="relative z-10 min-w-0">
+        <div className="relative z-10 min-w-0" data-resources-tour="res-intro">
           <h1 className="font-serif text-2xl font-bold tracking-tight text-[#58152F] sm:text-3xl">
             Ressources
           </h1>
@@ -72,20 +76,24 @@ export function ResourcesPremiumHeader({
             Gérez vos salles, cabines, fauteuils et équipements depuis un seul espace.
           </p>
         </div>
-        {canWrite ? (
-          <button
-            type="button"
-            onClick={onCreate}
-            data-tour="resources-add"
-            className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
-          >
-            <Plus size={18} />
-            Nouvelle ressource
-          </button>
-        ) : null}
+        <div className="relative z-10 flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {guide}
+          {canWrite ? (
+            <button
+              type="button"
+              onClick={onCreate}
+              data-tour="resources-add"
+              data-resources-tour="res-add"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#A40E49] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#801035]"
+            >
+              <Plus size={18} />
+              Nouvelle ressource
+            </button>
+          ) : null}
+        </div>
       </header>
 
-      <div className="rb-metric-row">
+      <div className="rb-metric-row" data-resources-tour="res-metrics">
         {stats.map((stat) => {
           const Icon = stat.icon;
 

@@ -13,6 +13,8 @@ type ResourceFormProps = {
   initial?: Partial<ResourceDetail>;
   submitting?: boolean;
   services?: { id: string; name: string }[];
+  /** Visite guidée : le formulaire s'affiche pour la démonstration, rien n'est enregistré. */
+  tutorialMode?: boolean;
   onSubmit: (data: CreateResourceInput) => void;
   onCancel: () => void;
 };
@@ -21,6 +23,7 @@ export function ResourceForm({
   initial,
   submitting,
   services,
+  tutorialMode = false,
   onSubmit,
   onCancel,
 }: ResourceFormProps) {
@@ -59,6 +62,7 @@ export function ResourceForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (tutorialMode) return;
     onSubmit({
       name: name.trim(),
       type,
@@ -87,7 +91,7 @@ export function ResourceForm({
         </div>
       ) : null}
 
-      <label className="block text-sm">
+      <label className="block text-sm" data-resources-tour="res-form-name">
         <span className="mb-1.5 block font-medium">Nom *</span>
         <Input
           value={name}
@@ -98,7 +102,7 @@ export function ResourceForm({
         />
       </label>
 
-      <label className="block text-sm">
+      <label className="block text-sm" data-resources-tour="res-form-type">
         <span className="mb-1.5 block font-medium">Type</span>
         <Select value={type} onChange={(e) => setType(e.target.value as ResourceType)}>
           {RESOURCE_TYPES.map((t) => (
@@ -110,7 +114,7 @@ export function ResourceForm({
       </label>
 
       {services && services.length > 0 ? (
-        <div>
+        <div data-resources-tour="res-form-services">
           <p className="mb-1.5 text-sm font-medium">Prestations associées</p>
           <div className="grid max-h-40 grid-cols-1 gap-1.5 overflow-y-auto rounded-lg bg-[#FFEFF8] p-2 sm:grid-cols-2">
             {services.map((s) => (
@@ -138,7 +142,13 @@ export function ResourceForm({
         <Button type="button" variant="ghost" className="w-full sm:flex-1" onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" className="w-full sm:flex-1" disabled={submitting}>
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full sm:flex-1"
+          disabled={submitting || tutorialMode}
+          data-resources-tour="res-form-save"
+        >
           {submitting ? "Enregistrement…" : initial?.id ? "Enregistrer" : "Créer la ressource"}
         </Button>
       </div>

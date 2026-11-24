@@ -11,6 +11,7 @@ import { isAppSession } from "@/lib/auth/types";
 import { getTutorial, patchTutorial, type TutorialAction, type TutorialSnapshot, type TutorialStepId } from "./api";
 import {
   applyInverseZoom,
+  findVisibleTarget,
   isDesktopNav,
   isModalOpen,
   normalizeAppPath,
@@ -23,7 +24,19 @@ import {
   TUTORIAL_RESTART_EVENT,
   tutorialDeferralKey,
 } from "./events";
-import { acquireTourLock, releaseTourLock } from "./lock";
+import { acquireTourLock, isTourLockAvailable, releaseTourLock } from "./lock";
+import {
+  decideNavigation,
+  emptyNavState,
+  LOCK_BUSY_MESSAGE,
+  NAV_FAILED_MESSAGE,
+  NAV_LEFT_MESSAGE,
+  shouldReleaseExternal,
+  startOutcome,
+  trackPush,
+  type ActAck,
+  type NavState,
+} from "./logic";
 import { applicableSteps, isTourStepId, type TourStep } from "./steps";
 import { TutorialDialog } from "./tutorial-dialog";
 import { TutorialNotice, type TutorialNoticeAction } from "./tutorial-notice";
@@ -43,6 +56,12 @@ type Actions = {
 
 const LOCK_ID = "onboarding";
 const NOTICE_AUTO_DISMISS_MS = 9000;
+/** Délai laissé à une navigation de l'hôte avant de la déclarer échouée (redirection vers une autre page, réseau). */
+const PUSH_TIMEOUT_MS = 12000;
+/** Après une demande de visite externe : délai avant de vérifier qu'elle a bien démarré (puis reprise si le verrou est libre). */
+const EXTERNAL_FALLBACK_MS = 10000;
+/** Temps laissé à la cible principale d'une étape avant de se contenter de sa cible de repli (onglet qui change). */
+const PRIMARY_TARGET_GRACE_MS = 1500;
 
 /** Première étape non réussie (ou reprise à la dernière étape mémorisée). */
 function pickStart(list: TourStep[], snapshot: TutorialSnapshot | null, resumeFrom?: string | null): TourStep | undefined {
@@ -76,6 +95,7 @@ export function TutorialHost() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [external, setExternal] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [announcement, setAnnouncement] = useState("");
   const [tick, setTick] = useState(0);
 
   const steps = useMemo(() => (planLoading ? [] : applicableSteps(isNavEnabled)), [planLoading, isNavEnabled]);
@@ -92,7 +112,10 @@ export function TutorialHost() {
   const pendingWrite = useRef<Promise<void>>(Promise.resolve());
   const actionInProgress = useRef(false);
   const skipNav = useRef(false);
-  const attempts = useRef<Record<string, number>>({});
+  const nav = useRef<NavState>(emptyNavState());
+  const pushTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lockBlocked = useRef(false);
+  const lastTarget = useRef<HTMLElement | null>(null);
   const agendaActive = useRef(false);
   const snapRef = useRef(snap);
   const stepsRef = useRef(steps);
@@ -100,7 +123,6 @@ export function TutorialHost() {
   const presentRef = useRef<(signal: AbortSignal) => Promise<void>>(async () => {});
   const actionsRef = useRef<Actions | null>(null);
   const phaseRef = useRef<Phase>(phase);
-  const pushedFor = useRef<string | null>(null);
   phaseRef.current = phase;
   snapRef.current = snap;
   stepsRef.current = steps;
@@ -134,19 +156,20 @@ export function TutorialHost() {
   }, []);
 
   // --- Appels serveur (tolérants : un échec ne lève jamais) ----------------------------------------------------
+  // `ok` : l'écriture a abouti. Sinon (409, réseau, 503), `snapshot` est l'état relu par GET (nul si le GET échoue aussi).
   const act = useCallback((action: TutorialAction, step?: TutorialStepId) => {
-    const request = pendingWrite.current.then(async () => {
-      if (!mounted.current) return null;
+    const request = pendingWrite.current.then(async (): Promise<ActAck> => {
+      if (!mounted.current) return { ok: false, snapshot: null };
       const result = await patchTutorial(action, step);
-      if (!mounted.current) return result;
+      if (!mounted.current) return { ok: !!result, snapshot: result };
       if (result) {
         setSnap(result);
-      } else {
-        // Le serveur a pu avancer depuis le dernier affichage.
-        const fresh = await getTutorial();
-        if (fresh && mounted.current) setSnap(fresh);
+        return { ok: true, snapshot: result };
       }
-      return result;
+      // Le serveur a pu avancer depuis le dernier affichage.
+      const fresh = await getTutorial();
+      if (fresh && mounted.current) setSnap(fresh);
+      return { ok: false, snapshot: fresh };
     });
     pendingWrite.current = request.then(() => undefined, () => undefined);
     return request;
@@ -157,7 +180,7 @@ export function TutorialHost() {
       if (persisted.current === id) return;
       persisted.current = id;
       void act("step", id).then((result) => {
-        if (!result && persisted.current === id) persisted.current = null;
+        if (!result.ok && persisted.current === id) persisted.current = null;
       });
     },
     [act],
@@ -168,6 +191,18 @@ export function TutorialHost() {
     restoreZoom.current?.();
     restoreZoom.current = null;
     releaseTourLock(LOCK_ID);
+  }, []);
+
+  /** Rend le focus à la zone qui était mise en avant (la bulle, qui le portait, vient d'être détruite). */
+  const restoreFocus = useCallback(() => {
+    const target = lastTarget.current;
+    lastTarget.current = null;
+    if (target?.isConnected) target.focus({ preventScroll: true });
+  }, []);
+
+  const clearPushTimer = useCallback(() => {
+    clearTimeout(pushTimer.current);
+    pushTimer.current = undefined;
   }, []);
 
   /** Détruit le driver sans changer l'état serveur (changement d'étape, panneau ouvert, navigation…). */
@@ -186,7 +221,10 @@ export function TutorialHost() {
     cleanupDriver();
   }, [cleanupDriver]);
 
-  useEffect(() => () => destroyDriver(), [destroyDriver]);
+  useEffect(() => () => {
+    destroyDriver();
+    clearTimeout(pushTimer.current);
+  }, [destroyDriver]);
 
   // --- Actions du parcours -------------------------------------------------------------------------------------
   const showNotice = useCallback((next: Notice | null) => setNotice(next), []);
@@ -196,16 +234,71 @@ export function TutorialHost() {
     autoDismiss: true,
   }), [showNotice]);
 
+  /** La page de l'étape n'a pas pu s'afficher (cause inconnue : on ne l'attribue ni au forfait ni aux droits). */
+  const showNavFailure = useCallback(
+    (step: TourStep) => {
+      const list = stepsRef.current;
+      const last = list[list.length - 1]?.id === step.id;
+      showNotice({
+        message: NAV_FAILED_MESSAGE,
+        tone: "warning",
+        actions: [
+          {
+            label: "Réessayer",
+            primary: true,
+            onClick: () => {
+              nav.current.blocked = null;
+              nav.current.pending = null;
+              setNotice(null);
+              setTick((value) => value + 1);
+            },
+          },
+          { label: last ? "Terminer le tutoriel" : "Passer cette étape", onClick: () => actionsRef.current?.skipStep(step.id) },
+        ],
+      });
+    },
+    [showNotice],
+  );
+
+  /**
+   * Navigation demandée par l'hôte. Elle n'est suivie (`pending`) que si le pathname change : une simple query
+   * (équipe -> planning) ne se « reçoit » jamais et resterait périmée. Un délai déclare l'échec d'une navigation
+   * qui n'aboutit pas (redirection, réseau) sans qu'aucun changement de page ne relance l'effet d'affichage.
+   */
+  const pushRoute = useCallback(
+    (step: TourStep) => {
+      const from = normalizeAppPath(window.location.pathname);
+      const pending = trackPush(step.id, from, step.pathname);
+      nav.current.pending = pending;
+      clearPushTimer();
+      if (pending) {
+        pushTimer.current = setTimeout(() => {
+          pushTimer.current = undefined;
+          const state = nav.current;
+          if (!mounted.current || state.pending?.stepId !== step.id) return;
+          if (activeIdRef.current !== step.id || phaseRef.current !== "touring") return;
+          state.pending = null;
+          state.blocked = step.id;
+          showNavFailure(step);
+        }, PUSH_TIMEOUT_MS);
+      }
+      router.push(step.route);
+    },
+    [clearPushTimer, router, showNavFailure],
+  );
+
   const beginTour = useCallback(
     (step: TourStep) => {
       skipNav.current = false;
-      attempts.current = {};
+      nav.current = emptyNavState();
+      lockBlocked.current = false;
+      clearPushTimer();
       setNotice(null);
       setActiveId(step.id);
       setPhase("touring");
       persistStep(step.id);
     },
-    [persistStep],
+    [clearPushTimer, persistStep],
   );
 
   const goTo = useCallback(
@@ -213,17 +306,16 @@ export function TutorialHost() {
       if (actionInProgress.current) return;
       destroyDriver();
       skipNav.current = true; // on navigue nous-mêmes : pas de détour par la sidebar
-      attempts.current = {};
+      nav.current = emptyNavState();
+      lockBlocked.current = false;
+      clearPushTimer();
       setNotice(null);
       persistStep(target.id);
       setActiveId(target.id);
       const here = `${normalizeAppPath(window.location.pathname)}${window.location.search}`;
-      if (here !== target.route) {
-        pushedFor.current = target.id; // l'effet d'affichage ne doit pas re-pousser avant l'arrivée sur la page
-        router.push(target.route);
-      }
+      if (here !== target.route) pushRoute(target);
     },
-    [destroyDriver, persistStep, router],
+    [clearPushTimer, destroyDriver, persistStep, pushRoute],
   );
 
   const finish = useCallback(async () => {
@@ -232,8 +324,9 @@ export function TutorialHost() {
     const result = await act("complete");
     actionInProgress.current = false;
     if (!mounted.current) return;
-    if (!result) { showUnavailable(); return; }
+    if (!result.ok) { showUnavailable(); return; }
     destroyDriver();
+    restoreFocus();
     setPhase("idle");
     setActiveId(null);
     showNotice({
@@ -241,7 +334,7 @@ export function TutorialHost() {
       tone: "info",
       autoDismiss: true,
     });
-  }, [act, destroyDriver, showNotice, showUnavailable]);
+  }, [act, destroyDriver, restoreFocus, showNotice, showUnavailable]);
 
   const skipAll = useCallback(async () => {
     if (actionInProgress.current) return;
@@ -249,8 +342,9 @@ export function TutorialHost() {
     const result = await act("skip");
     actionInProgress.current = false;
     if (!mounted.current) return;
-    if (!result) { showUnavailable(); return; }
+    if (!result.ok) { showUnavailable(); return; }
     destroyDriver();
+    restoreFocus();
     setPhase("idle");
     setActiveId(null);
     setDismissed(true);
@@ -259,11 +353,13 @@ export function TutorialHost() {
       tone: "info",
       autoDismiss: true,
     });
-  }, [act, destroyDriver, setDismissed, showNotice, showUnavailable]);
+  }, [act, destroyDriver, restoreFocus, setDismissed, showNotice, showUnavailable]);
 
   const pauseTour = useCallback(() => {
     if (actionInProgress.current) return;
     destroyDriver();
+    restoreFocus();
+    nav.current.shownOn = null; // « Reprendre » doit renaviguer vers l'étape si l'on a changé de page entre-temps
     setPhase("paused");
     setDismissed(true);
     const id = activeIdRef.current;
@@ -284,7 +380,33 @@ export function TutorialHost() {
         },
       ],
     });
-  }, [act, destroyDriver, setDismissed, showNotice]);
+  }, [act, destroyDriver, restoreFocus, setDismissed, showNotice]);
+
+  /** Navigation qui ne vient pas de l'hôte (retour navigateur, lien) : une pause, pas une erreur. Rien n'est écrit. */
+  const pauseForNavigation = useCallback(
+    (step: TourStep) => {
+      destroyDriver();
+      lastTarget.current = null;
+      nav.current.shownOn = null;
+      setPhase("paused");
+      showNotice({
+        message: NAV_LEFT_MESSAGE,
+        tone: "info",
+        actions: [
+          {
+            label: "Reprendre",
+            primary: true,
+            onClick: () => {
+              setNotice(null);
+              setPhase("touring");
+              actionsRef.current?.goTo(step);
+            },
+          },
+        ],
+      });
+    },
+    [destroyDriver, showNotice],
+  );
 
   const skipStep = useCallback(
     (id: string) => {
@@ -306,7 +428,7 @@ export function TutorialHost() {
     actionInProgress.current = false;
     if (!mounted.current) return;
     const list = stepsRef.current;
-    if (!result || list.length === 0) {
+    if (!result.ok || list.length === 0) {
       showUnavailable();
       setTick((value) => value + 1);
       return;
@@ -324,12 +446,15 @@ export function TutorialHost() {
     const kind = phaseRef.current;
     if (list.length === 0 || !current) return;
     actionInProgress.current = true;
-    const latest = kind === "welcome" ? await act("start") : current;
+    const ack: ActAck = kind === "welcome" ? await act("start") : { ok: true, snapshot: current };
     actionInProgress.current = false;
     if (!mounted.current) return;
     if (kind !== phaseRef.current) return;
-    if (!latest) { showUnavailable(); return; }
-    const first = pickStart(list, latest, kind === "resume" ? current.tutorial?.lastStep : null);
+    // 409 (déjà démarré ailleurs) : `act` a relu l'état par GET, on s'en sert au lieu d'annoncer « indisponible ».
+    const outcome = startOutcome(ack);
+    if (outcome === "unavailable" || !ack.snapshot) { showUnavailable(); return; }
+    if (outcome === "close") { setPhase("idle"); return; }
+    const first = pickStart(list, ack.snapshot, ack.snapshot.tutorial?.lastStep);
     if (first) beginTour(first);
   }, [act, beginTour, showUnavailable]);
 
@@ -376,17 +501,33 @@ export function TutorialHost() {
     };
     const onRestart = () => void actionsRef.current?.restart();
     const onAgendaState = (event: Event) => {
+      // Visite externe (agenda, équipe) démarrée ou terminée : c'est elle qui fait foi, pas un délai.
       const active = (event as CustomEvent<{ active?: boolean }>).detail?.active === true;
       agendaActive.current = active;
+      clearTimeout(agendaTimer);
       setExternal(active);
+      if (!active && lockBlocked.current) {
+        // Nous attendions la fin de cette visite (verrou occupé) : on reprend sans que l'utilisatrice ait à cliquer.
+        lockBlocked.current = false;
+        setNotice((current) => (current?.message === LOCK_BUSY_MESSAGE ? null : current));
+        setTick((value) => value + 1);
+      }
     };
-    const onAgendaRequest = () => {
-      // Émis par notre propre bouton : on cède la place, avec un filet si l'agenda ne répond pas.
-      setExternal(true);
+    const armExternalFallback = () => {
       clearTimeout(agendaTimer);
       agendaTimer = setTimeout(() => {
-        if (!agendaActive.current) setExternal(false);
-      }, 3000);
+        const release = shouldReleaseExternal({
+          externalActive: agendaActive.current,
+          lockAvailable: isTourLockAvailable(LOCK_ID),
+        });
+        if (release) setExternal(false);
+        else if (!agendaActive.current) armExternalFallback(); // verrou tenu : l'autre visite charge encore driver.js
+      }, EXTERNAL_FALLBACK_MS);
+    };
+    const onAgendaRequest = () => {
+      // Émis par notre propre bouton : on cède la place, avec un filet si l'agenda ne répond jamais.
+      setExternal(true);
+      armExternalFallback();
     };
     window.addEventListener(TUTORIAL_REFRESH_EVENT, onRefresh);
     window.addEventListener(TUTORIAL_RESTART_EVENT, onRestart);
@@ -437,45 +578,55 @@ export function TutorialHost() {
     wasPanelOpen.current = panelOpen;
   }, [panelOpen, phase]);
 
+  // L'annonce de réussite passe par une région aria-live présente en permanence : un texte inséré en même temps que
+  // son conteneur (la bulle driver.js) n'est pas annoncé de façon fiable.
+  useEffect(() => {
+    setAnnouncement(phase === "touring" && satisfied && activeStep ? activeStep.successText : "");
+  }, [phase, satisfied, activeStep]);
+
   // --- Affichage de l'étape active ----------------------------------------------------------------------------
   presentRef.current = async (signal: AbortSignal) => {
     const step = activeStep;
     if (!step) return;
     const index = steps.findIndex((item) => item.id === step.id);
     const desktop = isDesktopNav();
-    const onRoute = path === step.pathname;
     let mode: Mode = "page";
 
-    if (!onRoute) {
-      if (desktop && !skipNav.current) {
-        mode = "nav";
-      } else if (pushedFor.current === step.id) {
-        pushedFor.current = null; // navigation déjà demandée : on attend le changement de page
-        return;
-      } else {
-        attempts.current[step.id] = (attempts.current[step.id] ?? 0) + 1;
-        if (attempts.current[step.id] > 2) {
-          showNotice({
-            message: `La page « ${step.navLabel} » n’est pas accessible avec votre forfait ou vos droits. Vous pouvez passer cette étape.`,
-            tone: "warning",
-            actions: [{ label: "Passer cette étape", primary: true, onClick: () => actionsRef.current?.skipStep(step.id) }],
-          });
-          return;
-        }
-        router.push(step.route);
-        return;
-      }
+    const decision = decideNavigation({ stepId: step.id, stepPath: step.pathname, path, nav: nav.current });
+    if (decision === "on-route") {
+      // Arrivée : plus rien à attendre, et c'est désormais une navigation hors de cette page qui sera une pause.
+      clearPushTimer();
+      nav.current.pending = null;
+      nav.current.blocked = null;
+      nav.current.shownOn = step.id;
+    } else if (desktop && !skipNav.current) {
+      mode = "nav";
+      nav.current.shownOn = null;
+    } else if (decision === "wait" || decision === "blocked") {
+      return; // navigation en cours (on ne la relance pas, on ne compte aucun échec) ou déjà signalée
+    } else if (decision === "failed") {
+      clearPushTimer();
+      nav.current.pending = null;
+      nav.current.blocked = step.id;
+      showNavFailure(step);
+      return;
+    } else if (decision === "left") {
+      pauseForNavigation(step);
+      return;
+    } else {
+      pushRoute(step);
+      return;
     }
 
     const selectors = mode === "nav" ? [`[data-tour="${step.navTarget}"]`] : step.targets;
     let target: HTMLElement;
     try {
-      target = await waitForVisibleTarget(selectors, signal, mode === "page");
+      target = await resolveTarget(selectors, mode, signal);
     } catch {
       if (signal.aborted) return;
       if (mode === "nav") {
         skipNav.current = true;
-        router.push(step.route);
+        pushRoute(step);
         return;
       }
       const last = index === steps.length - 1;
@@ -502,12 +653,36 @@ export function TutorialHost() {
 
     const { driver } = await import("driver.js");
     if (signal.aborted || !mounted.current) return;
-    if (!acquireTourLock(LOCK_ID)) return;
+    if (!acquireTourLock(LOCK_ID)) {
+      // Une autre visite (agenda, équipe) tient le verrou : on le dit, on réessaie à sa fin ou sur demande.
+      lockBlocked.current = true;
+      showNotice({
+        message: LOCK_BUSY_MESSAGE,
+        tone: "warning",
+        actions: [
+          {
+            label: "Réessayer",
+            primary: true,
+            onClick: () => {
+              lockBlocked.current = false;
+              setNotice(null);
+              setTick((value) => value + 1);
+            },
+          },
+        ],
+      });
+      return;
+    }
+    lockBlocked.current = false;
     setNotice((current) => (current?.tone === "warning" ? null : current));
+    lastTarget.current = target;
 
     const last = index === steps.length - 1;
+    // Texte de repli quand seule une cible secondaire est visible (ex. aucune employée : pas de bouton d'horaires).
+    const usingFallback = mode === "page" && !!step.fallbackDescription && !target.matches(step.targets[0]);
     const title = mode === "nav" ? `Ouvrez « ${step.navLabel} »` : step.title;
-    const description = mode === "nav" ? step.navDescription : step.description;
+    const description =
+      mode === "nav" ? step.navDescription : usingFallback ? (step.fallbackDescription ?? step.description) : step.description;
     const nextText = mode === "nav" ? `Ouvrir ${step.navLabel}` : last ? "Terminer" : satisfied ? "Étape suivante" : "Suivant";
     const actions = () => actionsRef.current;
 
@@ -515,7 +690,7 @@ export function TutorialHost() {
       if (mode === "nav") {
         destroyDriver();
         skipNav.current = true;
-        router.push(step.route);
+        pushRoute(step);
         return;
       }
       const next = steps[index + 1];
@@ -530,7 +705,8 @@ export function TutorialHost() {
     const driveSteps: DriveStep[] = steps.map((item, position) =>
       position === index
         ? {
-            element: target,
+            // Réévaluée à chaque affichage : la cible capturée plus haut peut avoir été remplacée par React entre-temps.
+            element: () => findVisibleTarget(selectors, mode === "page") ?? target,
             popover: {
               title,
               description,
@@ -612,6 +788,9 @@ export function TutorialHost() {
 
   return (
     <>
+      <div className="sr-only" aria-live="polite" aria-atomic="true" data-rb-tutorial>
+        {announcement}
+      </div>
       {phase === "welcome" || phase === "resume" ? (
         <TutorialDialog
           kind={phase}
@@ -634,6 +813,29 @@ export function TutorialHost() {
   );
 }
 
+/**
+ * Cible de l'étape. Quand une étape a une cible principale et un repli (ex. bouton « Modifier les horaires » sinon
+ * onglet Planning), on laisse d'abord un court délai à la principale : après un changement d'onglet, le repli est
+ * déjà visible alors que la principale n'est pas encore montée.
+ */
+async function resolveTarget(selectors: readonly string[], mode: Mode, signal: AbortSignal): Promise<HTMLElement> {
+  if (mode === "page" && selectors.length > 1) {
+    const grace = new AbortController();
+    const forward = () => grace.abort();
+    signal.addEventListener("abort", forward, { once: true });
+    const timer = setTimeout(forward, PRIMARY_TARGET_GRACE_MS);
+    try {
+      return await waitForVisibleTarget([selectors[0]], grace.signal, true);
+    } catch {
+      if (signal.aborted) throw new DOMException("Annulé", "AbortError");
+    } finally {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", forward);
+    }
+  }
+  return waitForVisibleTarget(selectors, signal, mode === "page");
+}
+
 type DecorateOptions = {
   satisfiedText: string | null;
   agenda: boolean;
@@ -650,7 +852,6 @@ function decoratePopover(popover: PopoverDOM, options: DecorateOptions) {
   if (options.satisfiedText) {
     const success = document.createElement("p");
     success.className = "app-tour-success";
-    success.setAttribute("role", "status");
     success.textContent = options.satisfiedText;
     popover.description.insertAdjacentElement("afterend", success);
   }

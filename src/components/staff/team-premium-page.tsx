@@ -108,7 +108,14 @@ function StatusBadge({ status }: { status: StaffStatus }) {
   );
 }
 
-export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number }) {
+export function TeamPremiumPage({
+  createSignal = 0,
+  demoForm = false,
+}: {
+  createSignal?: number;
+  /** Tutoriel : ouvre le formulaire d'ajout en démonstration (aucune écriture). */
+  demoForm?: boolean;
+}) {
   const { toast } = useToast();
   const user = useCurrentUser();
   const canWrite = canWriteStaff(user.role);
@@ -135,6 +142,7 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
   const [editing, setEditing] = useState<StaffDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const demoOpened = useRef(false);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 250);
@@ -288,6 +296,19 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
     setDrawerOpen(true);
   }, [createSignal, canWrite]);
 
+  // Tutoriel : le formulaire s'ouvre et se ferme sous le contrôle de la visite guidée.
+  useEffect(() => {
+    if (demoForm) {
+      demoOpened.current = true;
+      setEditing(null);
+      setDrawerOpen(true);
+    } else if (demoOpened.current) {
+      demoOpened.current = false;
+      setDrawerOpen(false);
+      setEditing(null);
+    }
+  }, [demoForm]);
+
   async function openEdit(id: string) {
     try {
       const staff = await getStaff(id);
@@ -299,6 +320,7 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
   }
 
   async function handleSubmit(data: Parameters<typeof createStaff>[0]) {
+    if (demoForm) return;
     setSubmitting(true);
     const result = editing ? await updateStaff(editing.id, data) : await createStaff(data);
     setSubmitting(false);
@@ -314,8 +336,15 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
   }
 
   return (
-    <div className="space-y-5 text-[#401126]">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row">
+    <div
+      className="space-y-5 text-[#401126]"
+      data-staff-tour="team-root"
+      data-loading={loading ? "true" : "false"}
+    >
+      <div
+        className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 rb-metric-row"
+        data-staff-tour="team-metrics"
+      >
         <Metric
           title="Équipe totale"
           value={loading ? "…" : String(catalog.length)}
@@ -396,7 +425,10 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
 
       <section className="rounded-2xl border border-[#efd8e2] bg-white p-3 shadow-sm">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[#efd8e2] bg-[#fff9fc] px-4 py-3">
+          <div
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[#efd8e2] bg-[#fff9fc] px-4 py-3"
+            data-staff-tour="team-search"
+          >
             <Search size={18} className="shrink-0 text-[#b52d65]" aria-hidden />
             <input
               ref={searchRef}
@@ -415,13 +447,14 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
           <button
             type="button"
             onClick={() => setShowFilters((v) => !v)}
+            data-staff-tour="team-poste"
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#edcfdb] px-4 py-3 text-sm font-semibold"
           >
             <Filter size={16} aria-hidden />
             Filtres
           </button>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-staff-tour="team-status">
             {(
               [
                 ["all", `Toutes (${catalog.length})`],
@@ -477,18 +510,25 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
           </h3>
 
           {loading ? (
-            <div className="rounded-2xl border border-[#f0dce5] bg-white p-10 text-center text-sm text-[#947784]">
+            <div
+              className="rounded-2xl border border-[#f0dce5] bg-white p-10 text-center text-sm text-[#947784]"
+              data-staff-tour="team-list"
+            >
               Chargement de l&apos;équipe…
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-2xl border border-[#f0dce5] bg-white p-10 text-center text-sm text-[#947784]">
+            <div
+              className="rounded-2xl border border-[#f0dce5] bg-white p-10 text-center text-sm text-[#947784]"
+              data-staff-tour="team-list"
+            >
               Aucun collaborateur ne correspond aux filtres.
             </div>
           ) : (
-            filtered.map((employee) => (
+            filtered.map((employee, rowIndex) => (
               <button
                 key={employee.id}
                 type="button"
+                data-staff-tour={rowIndex === 0 ? "team-list" : undefined}
                 onClick={() => setSelectedId(employee.id)}
                 className={cn(
                   "w-full rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
@@ -584,7 +624,7 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3" data-staff-tour="team-actions">
                 <Link
                   href="/staff/?tab=planning"
                   className="flex items-center justify-center gap-2 rounded-xl bg-[#fce5ef] px-3 py-3 text-xs font-semibold text-[#94164a]"
@@ -622,7 +662,7 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
                 )}
               </div>
 
-              <div className="mt-5 rounded-2xl bg-[#fff0f6] p-4">
+              <div className="mt-5 rounded-2xl bg-[#fff0f6] p-4" data-staff-tour="team-contact">
                 <h4 className="mb-3 text-sm font-bold">Contact &amp; identité</h4>
                 <div className="space-y-3 text-xs text-[#795366]">
                   <p className="flex items-center gap-2 break-all">
@@ -650,7 +690,7 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
                 </div>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-5" data-staff-tour="team-skills">
                 <h4 className="text-sm font-bold">Habilitations</h4>
                 <p className="mt-1 text-xs text-[#987d89]">
                   Services autorisés pour cette praticienne.
@@ -680,7 +720,7 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
                 </div>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-5" data-staff-tour="team-perf">
                 <h4 className="text-sm font-bold">
                   Performance{usingMonthly ? " (30 derniers jours)" : ""}
                 </h4>
@@ -721,6 +761,7 @@ export function TeamPremiumPage({ createSignal = 0 }: { createSignal?: number })
         }}
         initial={editing ?? undefined}
         submitting={submitting}
+        tutorialMode={demoForm}
         onSubmit={handleSubmit}
       />
     </div>

@@ -297,16 +297,13 @@ export function CustomersPageView() {
   }
 
   function openCustomerWhatsApp(customer: Customer) {
-    if (!customer.phone) {
-      toast("Aucun téléphone pour cette cliente.", "error");
+    const firstName = customer.name.trim().split(/\s+/)[0] || customer.name;
+    const href = whatsappHref(customer.phone, firstName, customerWhatsappMessage(firstName, user.orgName));
+    if (!href) {
+      toast("Numéro WhatsApp manquant ou invalide.", "error");
       return;
     }
-    const firstName = customer.name.split(/\s+/)[0] || customer.name;
-    window.open(
-      whatsappHref(customer.phone, firstName, customerWhatsappMessage(firstName, user.orgName)),
-      "_blank",
-      "noopener,noreferrer",
-    );
+    window.open(href, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -377,8 +374,6 @@ export function CustomersPageView() {
           onNewAppointment={(customer) => router.push(`/agenda/?customerId=${customer.id}`)}
           onPayment={(customer) => router.push(`/cash-register/?customerId=${customer.id}`)}
           onWhatsApp={openCustomerWhatsApp}
-          canSendWhatsApp={canSendWhatsapp(user.role)}
-          orgName={user.orgName}
           onRefresh={refresh}
         />
       </div>

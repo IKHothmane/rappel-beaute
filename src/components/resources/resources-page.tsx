@@ -13,6 +13,7 @@ import { useCurrentUser } from "@/components/auth/session-provider";
 import { ResourceFocusPanel } from "@/components/resources/resource-focus-panel";
 import { ResourceForm } from "@/components/resources/resource-form";
 import { ResourcePremiumCard } from "@/components/resources/resource-premium-card";
+import { ResourcesGuide } from "@/components/resources/resources-guide";
 import {
   liveStatus,
   nextAppointment,
@@ -75,6 +76,12 @@ export function ResourcesPageView() {
   const [editing, setEditing] = useState<ResourceDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
+  // Formulaire de création ouvert en démonstration par le tutoriel (aucune écriture) ; piloté par ResourcesGuide.
+  const [demo, setDemo] = useState(false);
+  const demoRef = useRef(false);
+  // Visite guidée active (dès son démarrage, y compris pendant ses chargements) : aucune écriture, sélection ni tiroir réel.
+  const tourActiveRef = useRef(false);
+  const [extrasReady, setExtrasReady] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [nowTick, setNowTick] = useState(() => Date.now());
 
@@ -118,19 +125,34 @@ export function ResourcesPageView() {
   }, [refresh]);
 
   useEffect(() => {
-    listServices({ limit: 100, active: true })
-      .then((r) => setServiceOptions(r.data.map((s) => ({ id: s.id, name: s.name }))))
-      .catch(() => {});
+    let cancelled = false;
+    const pending: Promise<unknown>[] = [
+      listServices({ limit: 100, active: true })
+        .then((r) => setServiceOptions(r.data.map((s) => ({ id: s.id, name: s.name }))))
+        .catch(() => {}),
+    ];
     if (!financeHidden) {
-      getAnalyticsOverview({ preset: "month", compare: true })
-        .then(setOverview)
-        .catch(() => setOverview(null));
+      pending.push(
+        getAnalyticsOverview({ preset: "month", compare: true })
+          .then(setOverview)
+          .catch(() => setOverview(null)),
+      );
     }
     if (canAgenda) {
-      listAppointments()
-        .then(setAppointments)
-        .catch(() => setAppointments([]));
+      pending.push(
+        listAppointments()
+          .then(setAppointments)
+          .catch(() => setAppointments([])),
+      );
     }
+    // Le tutoriel attend (au plus quelques secondes) les prestations associables, les indicateurs et les rendez-vous
+    // (disponibilité en direct) avant de les mettre en avant ; chaque requête est comptée même en échec.
+    void Promise.all(pending).then(() => {
+      if (!cancelled) setExtrasReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [financeHidden, canAgenda]);
 
   const currentOf = useCallback(
@@ -206,15 +228,40 @@ export function ResourcesPageView() {
         ? "Des rendez-vous sont prévus aujourd’hui, mais peu sont encore rattachés à une cabine."
         : "Pas encore assez de rendez-vous pour comparer l’occupation des espaces.";
 
+  /** Vrai pendant toute la visite guidée (étapes de page comprises) : écritures, sélection et tiroirs réels refusés. */
+  const tutorialBusy = () => demoRef.current || tourActiveRef.current;
+
+  function handleDemoChange(open: boolean) {
+    demoRef.current = open;
+    if (open) setMenuId(null);
+    setDemo(open);
+  }
+
+  function handleActiveChange(active: boolean) {
+    tourActiveRef.current = active;
+    if (active) setMenuId(null);
+  }
+
+  /** Sélection d'une ressource : neutralisée pendant la visite (le repère de statut est dans le bouton de la carte). */
+  function selectResource(id: string) {
+    if (tutorialBusy()) return;
+    setSelectedId(id);
+    setMenuId(null);
+  }
+
   async function openCreate() {
+    if (tutorialBusy()) return;
     setEditing(null);
     setDrawerOpen(true);
     setMenuId(null);
   }
 
   async function openEdit(id: string) {
+    if (tutorialBusy()) return;
     try {
       const detail = await getResource(id);
+      // La visite a pu démarrer pendant le chargement : on n'ouvre pas le tiroir réel sous la démonstration.
+      if (tutorialBusy()) return;
       setEditing(detail);
       setDrawerOpen(true);
       setMenuId(null);
@@ -224,6 +271,7 @@ export function ResourcesPageView() {
   }
 
   async function handleSubmit(data: Parameters<typeof createResource>[0]) {
+    if (tutorialBusy()) return;
     setSubmitting(true);
     const result = editing ? await updateResource(editing.id, data) : await createResource(data);
     setSubmitting(false);
@@ -239,7 +287,7 @@ export function ResourcesPageView() {
   }
 
   async function handleToggle(row: ResourceListItem) {
-    if (!canWrite) return;
+    if (!canWrite || tutorialBusy()) return;
     const result = await updateResource(row.id, { active: !row.active });
     if (!result.ok) {
       toast(result.error, "error");
@@ -251,7 +299,7 @@ export function ResourcesPageView() {
   }
 
   async function handleDelete(row: ResourceListItem) {
-    if (!canWrite) return;
+    if (!canWrite || tutorialBusy()) return;
     const ok = window.confirm(`Supprimer « ${row.name} » ? Elle disparaîtra du catalogue.`);
     if (!ok) {
       setMenuId(null);
@@ -270,6 +318,7 @@ export function ResourcesPageView() {
   }
 
   function openMaintenance() {
+    if (tutorialBusy()) return;
     if (!selected) {
       toast("Sélectionnez d’abord une ressource.", "info");
       return;
@@ -291,7 +340,7 @@ export function ResourcesPageView() {
   }
 
   async function finishMaintenance(item: ResourceMaintenanceItem) {
-    if (!selected) return;
+    if (!selected || tutorialBusy()) return;
     setSubmitting(true);
     const result = await updateResourceMaintenance(selected.id, item.id, {
       status: "COMPLETED",
@@ -309,9 +358,24 @@ export function ResourcesPageView() {
     setMaintenanceOpen(true);
   }
 
+  const guide = (
+    <ResourcesGuide
+      canWrite={canWrite}
+      hasServiceOptions={serviceOptions.length > 0}
+      onDemoChange={handleDemoChange}
+      onActiveChange={handleActiveChange}
+      dataReady={extrasReady}
+    />
+  );
+
   return (
-    <div className="flex flex-col gap-5 pb-8">
+    <div
+      className="flex flex-col gap-5 pb-8"
+      data-resources-tour="res-root"
+      data-loading={loading ? "true" : "false"}
+    >
       <ResourcesMobile
+        guide={guide}
         orgName={user.orgName}
         catalogCount={catalog.length}
         activeCount={activeCount}
@@ -331,7 +395,7 @@ export function ResourcesPageView() {
         filtered={filtered}
         loading={loading}
         selectedId={selected?.id ?? null}
-        onSelect={setSelectedId}
+        onSelect={selectResource}
         selected={selected}
         currentOf={currentOf}
         nextOf={nextOf}
@@ -353,10 +417,10 @@ export function ResourcesPageView() {
           maintenance={maintenanceCount}
           canWrite={canWrite}
           onCreate={() => void openCreate()}
+          guide={guide}
         />
-
         <div className="flex flex-col gap-3 rounded-xl border border-[#EFDCE4] bg-white p-3 shadow-sm xl:flex-row xl:items-center">
-            <div className="relative min-w-[240px] xl:w-80 xl:shrink-0">
+            <div className="relative min-w-[240px] xl:w-80 xl:shrink-0" data-resources-tour="res-search">
               <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/35" />
               <input
                 ref={searchRef}
@@ -369,7 +433,7 @@ export function ResourcesPageView() {
                 ⌘K
               </span>
             </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5" data-resources-tour="res-filters">
             <FilterPill active={typeFilter === ""} onClick={() => setTypeFilter("")}>
               Toutes ({catalog.length})
             </FilterPill>
@@ -398,18 +462,16 @@ export function ResourcesPageView() {
             ) : filtered.length === 0 ? (
               <p className="py-12 text-center text-sm text-ink/45">Aucune ressource trouvée.</p>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {filtered.map((resource) => (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" data-resources-tour="res-list">
+                {filtered.map((resource, index) => (
                   <ResourcePremiumCard
                     key={resource.id}
                     resource={resource}
+                    tourFirst={index === 0}
                     status={statusOf(resource)}
                     selected={selected?.id === resource.id}
                     canWrite={canWrite}
-                    onSelect={() => {
-                      setSelectedId(resource.id);
-                      setMenuId(null);
-                    }}
+                    onSelect={() => selectResource(resource.id)}
                     onEdit={() => void openEdit(resource.id)}
                   />
                 ))}
@@ -439,23 +501,28 @@ export function ResourcesPageView() {
       </div>
 
       <PremiumSidePanel
-        open={drawerOpen}
+        open={drawerOpen || demo}
         onClose={() => {
+          // Pendant la visite guidée, c'est elle qui ferme le formulaire.
+          if (demoRef.current) return;
           setDrawerOpen(false);
           setEditing(null);
         }}
-        title={editing ? "Modifier la ressource" : "Ajouter une ressource"}
+        title={editing && !demo ? "Modifier la ressource" : "Ajouter une ressource"}
         description={
-          editing
-            ? "Mettez à jour la cabine ou l’équipement."
-            : "Ajoutez une cabine ou un équipement à l’institut."
+          demo
+            ? "Mode tutoriel : aucune ressource ne sera enregistrée."
+            : editing
+              ? "Mettez à jour la cabine ou l’équipement."
+              : "Ajoutez une cabine ou un équipement à l’institut."
         }
       >
         <ResourceForm
-          key={editing?.id ?? "new"}
-          initial={editing ?? undefined}
+          key={demo ? "tutorial" : editing?.id ?? "new"}
+          initial={demo ? undefined : editing ?? undefined}
           services={serviceOptions}
           submitting={submitting}
+          tutorialMode={demo}
           onSubmit={(data) => void handleSubmit(data)}
           onCancel={() => {
             setDrawerOpen(false);
@@ -588,6 +655,7 @@ export function ResourcesPageView() {
                   }
                 }}
                 onSubmit={async (input) => {
+                  if (tutorialBusy()) return;
                   setSubmitting(true);
                   const result = editingMaintenance
                     ? await updateResourceMaintenance(selected.id, editingMaintenance.id, input)

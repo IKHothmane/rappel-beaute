@@ -50,6 +50,8 @@ type NouveauCollaborateurModalProps = {
   onClose: () => void;
   initial?: Partial<StaffDetail>;
   submitting?: boolean;
+  /** Visite guidée : le formulaire s'affiche pour la démonstration, rien n'est enregistré. */
+  tutorialMode?: boolean;
   onSubmit: (data: CreateStaffInput) => void | Promise<void>;
 };
 
@@ -58,6 +60,7 @@ export default function NouveauCollaborateurModal({
   onClose,
   initial,
   submitting,
+  tutorialMode = false,
   onSubmit,
 }: NouveauCollaborateurModalProps) {
   const isEdit = Boolean(initial?.id);
@@ -155,6 +158,7 @@ export default function NouveauCollaborateurModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (tutorialMode) return;
     if (!firstName.trim()) {
       setFormError("Le prénom est obligatoire.");
       return;
@@ -219,9 +223,11 @@ export default function NouveauCollaborateurModal({
                     {isEdit ? "Modifier la collaboratrice" : "Nouveau collaborateur"}
                   </h2>
                   <p className="mt-1 max-w-md text-sm leading-5 text-[#654254]">
-                    {isEdit
-                      ? "Mettez à jour le profil de l’équipe."
-                      : "Ajoutez une collaboratrice à votre équipe."}
+                    {tutorialMode
+                      ? "Mode tutoriel : aucune collaboratrice ne sera enregistrée."
+                      : isEdit
+                        ? "Mettez à jour le profil de l’équipe."
+                        : "Ajoutez une collaboratrice à votre équipe."}
                   </p>
                 </div>
                 <button
@@ -237,7 +243,7 @@ export default function NouveauCollaborateurModal({
 
             <form noValidate onSubmit={(e) => void handleSubmit(e)} className="flex min-h-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2" data-staff-tour="form-identity">
                   <label className="block space-y-1.5">
                     <span className={label}>
                       Prénom <span className="text-[#B60050]">*</span>
@@ -265,7 +271,7 @@ export default function NouveauCollaborateurModal({
                   </label>
                 </div>
 
-                <label className="block space-y-1.5">
+                <label className="block space-y-1.5" data-staff-tour="form-phone">
                   <span className={label}>Téléphone</span>
                   <input
                     type="tel"
@@ -278,7 +284,7 @@ export default function NouveauCollaborateurModal({
                   />
                 </label>
 
-                <label className="block space-y-1.5">
+                <label className="block space-y-1.5" data-staff-tour="form-email">
                   <span className={label}>E-mail</span>
                   <input
                     type="email"
@@ -290,7 +296,7 @@ export default function NouveauCollaborateurModal({
                   />
                 </label>
 
-                <label className="block space-y-1.5">
+                <label className="block space-y-1.5" data-staff-tour="form-position">
                   <span className={label}>Poste</span>
                   <input
                     value={position}
@@ -302,7 +308,7 @@ export default function NouveauCollaborateurModal({
                 </label>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="block space-y-1.5">
+                  <div className="block space-y-1.5" data-staff-tour="form-status">
                     <span className={label}>Statut</span>
                     <div ref={statusRef} className="relative">
                       <button
@@ -357,7 +363,7 @@ export default function NouveauCollaborateurModal({
                     </div>
                   </div>
 
-                  <label className="block space-y-1.5">
+                  <label className="block space-y-1.5" data-staff-tour="form-hire">
                     <span className={label}>Date d&apos;embauche</span>
                     <input
                       type="text"
@@ -377,7 +383,7 @@ export default function NouveauCollaborateurModal({
                   </label>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5" data-staff-tour="form-services">
                   <div className="flex items-center justify-between gap-2">
                     <span className={label}>Services qu&apos;elle peut réaliser</span>
                     {serviceIds.length > 0 ? (
@@ -454,7 +460,8 @@ export default function NouveauCollaborateurModal({
                   </button>
                   <button
                     type="submit"
-                    disabled={submitting}
+                    data-staff-tour="form-save"
+                    disabled={submitting || tutorialMode}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
                   >
                     <UserPlus size={18} aria-hidden />

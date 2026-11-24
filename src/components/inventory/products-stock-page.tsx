@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
@@ -13,7 +13,11 @@ import {
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { InventoryPageView } from "@/components/inventory/inventory-page";
 import { InventoryPremiumHeader } from "@/components/inventory/inventory-premium-header";
+import { ProductForm } from "@/components/inventory/product-form";
 import { ProductsPageView } from "@/components/inventory/products-page";
+import { ProductsGuide } from "@/components/products/products-guide";
+import { AGENDA_TUTORIAL_STATE_EVENT } from "@/components/tutorial/events";
+import { PremiumSidePanel } from "@/components/ui/premium-side-panel";
 import { canReadAnalytics, canWriteStock } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 import { formatMad, listProducts } from "@/modules/inventory/service";
@@ -50,6 +54,19 @@ export function ProductsStockPage() {
   const [catalog, setCatalog] = useState<ProductListItem[]>([]);
   const [kpis, setKpis] = useState<StockKpis | null>(null);
   const [total, setTotal] = useState(0);
+  // Visite guidée : formulaire de création ouvert en démonstration (aucune écriture) et écritures neutralisées.
+  const [demo, setDemo] = useState(false);
+  const tourRef = useRef(false);
+  const [overviewLoading, setOverviewLoading] = useState(true);
+  const [catalogueLoading, setCatalogueLoading] = useState(true);
+
+  useEffect(() => {
+    const onState = (event: Event) => {
+      tourRef.current = Boolean((event as CustomEvent<{ active?: boolean }>).detail?.active);
+    };
+    window.addEventListener(AGENDA_TUTORIAL_STATE_EVENT, onState);
+    return () => window.removeEventListener(AGENDA_TUTORIAL_STATE_EVENT, onState);
+  }, []);
 
   const refreshOverview = useCallback(async () => {
     try {
@@ -63,7 +80,7 @@ export function ProductsStockPage() {
   }, []);
 
   useEffect(() => {
-    void refreshOverview();
+    void refreshOverview().finally(() => setOverviewLoading(false));
   }, [refreshOverview]);
 
   const optimalCount = useMemo(
@@ -91,6 +108,7 @@ export function ProductsStockPage() {
   }, [catalog]);
 
   function setTab(tab: ProductsStockTab, extra?: { alert?: string | null }) {
+    if (tourRef.current) return;
     const params = new URLSearchParams(searchParams.toString());
     if (tab === "catalogue") params.delete("tab");
     else params.set("tab", tab);
@@ -101,24 +119,32 @@ export function ProductsStockPage() {
   }
 
   function handleCreateProduct() {
+    if (tourRef.current) return;
     if (currentTab !== "catalogue") setTab("catalogue");
     setCreateRequestId((n) => n + 1);
   }
 
   function handleLowStock() {
+    if (tourRef.current) return;
     const next = searchParams.get("alert") === "LOW" ? null : "LOW";
     setTab("catalogue", { alert: next });
   }
 
   function handleOutOfStock() {
+    if (tourRef.current) return;
     const next = searchParams.get("alert") === "OUT" ? null : "OUT";
     setTab("catalogue", { alert: next });
   }
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <div
+      className="w-full min-w-0 space-y-6"
+      data-products-tour="prd-root"
+      data-loading={overviewLoading || (currentTab === "catalogue" && catalogueLoading) ? "true" : "false"}
+    >
       <header
-        className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm sm:min-h-[108px] sm:px-7"
+        data-products-tour="prd-intro"
+        className="relative flex min-h-[96px] items-center justify-between gap-4 overflow-hidden rounded-[20px] border border-[#EFD9E1] bg-[#F9E8E7] px-5 py-4 shadow-sm max-sm:flex-col max-sm:items-stretch sm:min-h-[108px] sm:px-7"
         style={{
           backgroundImage:
             'linear-gradient(90deg,rgba(255,247,247,.92) 0%,rgba(255,239,239,.55) 42%,rgba(255,239,239,.15) 100%),url("/marketing/hero-background.png")',
@@ -136,16 +162,24 @@ export function ProductsStockPage() {
           </p>
         </div>
 
-        {canWrite ? (
-          <button
-            type="button"
-            onClick={handleCreateProduct}
-            className="relative z-10 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#AC0E4C] px-5 text-sm font-semibold text-white shadow-lg shadow-[#AC0E4C]/15 transition hover:bg-[#850F3C]"
-          >
-            <Plus size={17} />
-            Nouveau produit
-          </button>
-        ) : null}
+        <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-2 max-sm:w-full max-sm:flex-col max-sm:items-stretch">
+          <ProductsGuide
+            canWrite={canWrite}
+            financeLocked={financeHidden || !canExport}
+            onDemoChange={setDemo}
+          />
+          {canWrite ? (
+            <button
+              type="button"
+              onClick={handleCreateProduct}
+              data-products-tour="prd-add"
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#AC0E4C] px-5 text-sm font-semibold text-white shadow-lg shadow-[#AC0E4C]/15 transition hover:bg-[#850F3C] max-sm:w-full"
+            >
+              <Plus size={17} />
+              Nouveau produit
+            </button>
+          ) : null}
+        </div>
       </header>
 
       <div className="hidden lg:block">
@@ -164,7 +198,10 @@ export function ProductsStockPage() {
         />
       </div>
 
-      <nav className="flex flex-wrap gap-1.5 rounded-2xl border border-[#F1E8EC] bg-white p-2 shadow-sm">
+      <nav
+        className="flex flex-wrap gap-1.5 rounded-2xl border border-[#F1E8EC] bg-white p-2 shadow-sm"
+        data-products-tour="prd-tabs"
+      >
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const active = currentTab === tab.id;
@@ -190,6 +227,8 @@ export function ProductsStockPage() {
           createRequestId={createRequestId}
           hideOverview
           onCatalogChanged={refreshOverview}
+          tutorialRef={tourRef}
+          onLoadingChange={setCatalogueLoading}
         />
       ) : (
         <InventoryPageView
@@ -206,6 +245,17 @@ export function ProductsStockPage() {
           }
         />
       )}
+
+      <PremiumSidePanel
+        open={demo}
+        onClose={() => {
+          // Pendant la visite guidée, c'est elle qui ferme le formulaire.
+        }}
+        title="Nouveau produit"
+        description="Mode tutoriel : aucun produit ne sera enregistré."
+      >
+        <ProductForm key="tutorial" tutorialMode onSubmit={() => {}} onCancel={() => {}} />
+      </PremiumSidePanel>
     </div>
   );
 }

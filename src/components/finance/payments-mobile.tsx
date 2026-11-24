@@ -24,6 +24,7 @@ import {
   paymentStatusChip,
   signedPaymentAmount,
   waMeLink,
+  paymentWhatsappMessage,
 } from "@/components/finance/payment-helpers";
 import { cn } from "@/lib/utils";
 import { formatMad, PAYMENT_METHOD_LABEL } from "@/modules/finance/service";
@@ -118,7 +119,7 @@ export function PaymentsMobile({
   ];
 
   if (view === "focus" && selected) {
-    const wa = waMeLink(selected.customerPhone);
+    const wa = waMeLink(selected.customerPhone, paymentWhatsappMessage(selected, orgName));
     const chip = paymentStatusChip(selected);
     const signed = signedPaymentAmount(selected);
     return (

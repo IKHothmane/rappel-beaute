@@ -63,12 +63,18 @@ type ProductsPageViewProps = {
   createRequestId?: number;
   hideOverview?: boolean;
   onCatalogChanged?: () => void;
+  /** Visite guidée en cours : aucune écriture (création, modification, suppression, mouvement de stock) n'est exécutée. */
+  tutorialRef?: { readonly current: boolean };
+  /** Signale la fin du chargement du catalogue (la visite guidée attend les données). */
+  onLoadingChange?: (loading: boolean) => void;
 };
 
 export function ProductsPageView({
   createRequestId = 0,
   hideOverview = false,
   onCatalogChanged,
+  tutorialRef,
+  onLoadingChange,
 }: ProductsPageViewProps) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -153,6 +159,12 @@ export function ProductsPageView({
     setLoading(true);
     refresh().finally(() => setLoading(false));
   }, [refresh]);
+
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
+
+  useEffect(() => () => onLoadingChange?.(false), [onLoadingChange]);
 
   useEffect(() => {
     if (!financeHidden) {
@@ -247,7 +259,11 @@ export function ProductsPageView({
     return "Pas encore assez de ventes produits ce mois pour comparer les sorties.";
   }, [inventory, catalog]);
 
+  /** Pendant la visite guidée, aucune écriture : les fonctions d'écriture sortent immédiatement. */
+  const inTutorial = () => tutorialRef?.current === true;
+
   async function openCreate() {
+    if (inTutorial()) return;
     setEditing(null);
     setDrawerOpen(true);
     setMenuId(null);
@@ -258,6 +274,7 @@ export function ProductsPageView({
   }, [createRequestId]);
 
   async function openEdit(id: string) {
+    if (inTutorial()) return;
     try {
       const detail = await getProduct(id);
       setEditing(detail);
@@ -269,6 +286,7 @@ export function ProductsPageView({
   }
 
   async function handleSubmit(data: Parameters<typeof createProduct>[0]) {
+    if (inTutorial()) return;
     setSubmitting(true);
     const result = editing ? await updateProduct(editing.id, data) : await createProduct(data);
     setSubmitting(false);
@@ -285,7 +303,7 @@ export function ProductsPageView({
   }
 
   async function handleToggle(row: ProductListItem) {
-    if (!canWrite) return;
+    if (!canWrite || inTutorial()) return;
     const result = await updateProduct(row.id, { active: !row.active });
     if (!result.ok) {
       toast(result.error, "error");
@@ -297,7 +315,7 @@ export function ProductsPageView({
   }
 
   async function handleDelete(row: ProductListItem) {
-    if (!canWrite) return;
+    if (!canWrite || inTutorial()) return;
     const ok = window.confirm(`Supprimer « ${row.name} » ? Il disparaîtra du catalogue.`);
     if (!ok) {
       setMenuId(null);
@@ -316,6 +334,7 @@ export function ProductsPageView({
   }
 
   function openStock(mode: "IN" | "OUT", productId?: string) {
+    if (inTutorial()) return;
     const id = productId ?? selected?.id;
     if (!id) {
       toast("Sélectionnez d’abord un produit.", "info");
@@ -327,6 +346,7 @@ export function ProductsPageView({
   }
 
   async function applyStock(mode: "IN" | "OUT", productId?: string) {
+    if (inTutorial()) return;
     const id = productId ?? selected?.id;
     if (!id) return;
     const row = catalogRef.current.find((p) => p.id === id);
@@ -428,7 +448,10 @@ export function ProductsPageView({
         ) : null}
 
         <div className="flex flex-col gap-3 rounded-[22px] border border-[#F0DDE4] bg-white p-3 shadow-sm">
-          <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div
+            className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            data-products-tour="prd-categories"
+          >
             <FilterPill active={category === ""} onClick={() => setCategory("")}>
               Tous ({catalog.length})
             </FilterPill>
@@ -439,7 +462,7 @@ export function ProductsPageView({
             ))}
           </div>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-            <div className="relative min-w-[240px] flex-1">
+            <div className="relative min-w-[240px] flex-1" data-products-tour="prd-search">
               <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/35" />
               <input
                 ref={searchRef}
@@ -452,7 +475,7 @@ export function ProductsPageView({
                 ⌘K
               </span>
             </div>
-            <div className="min-w-0 space-y-1.5 lg:w-48">
+            <div className="min-w-0 space-y-1.5 lg:w-48" data-products-tour="prd-usage">
               <span className="block text-xs font-semibold text-ink/60">Usage</span>
               <Dropdown ariaLabel="Usage" value={usage} onChange={(value) => setUsage(value as UsageFilter)} options={[
                 { value: "all", label: "Tous les usages" },
@@ -461,7 +484,7 @@ export function ProductsPageView({
                 { value: "hybrid", label: "Hybride" },
               ]} />
             </div>
-            <div className="min-w-0 space-y-1.5 lg:w-44">
+            <div className="min-w-0 space-y-1.5 lg:w-44" data-products-tour="prd-stock-filter">
               <span className="block text-xs font-semibold text-ink/60">Stock</span>
               <Dropdown ariaLabel="Stock" value={alert} onChange={(value) => setAlert(value as StockAlertLevel | "")} options={[
                 { value: "", label: "Tous les stocks" },
@@ -473,7 +496,7 @@ export function ProductsPageView({
               ]} />
             </div>
             {suppliers.length > 1 ? (
-              <div className="min-w-0 space-y-1.5 lg:w-52">
+              <div className="min-w-0 space-y-1.5 lg:w-52" data-products-tour="prd-supplier">
                 <span className="block text-xs font-semibold text-ink/60">Fournisseur</span>
                 <Dropdown ariaLabel="Fournisseur" value={supplier} onChange={setSupplier} options={[
                   { value: "", label: "Tous les fournisseurs" },
@@ -481,7 +504,7 @@ export function ProductsPageView({
                 ]} />
               </div>
             ) : null}
-            <div className="flex rounded-lg bg-[#FFEFF8] p-1">
+            <div className="flex rounded-lg bg-[#FFEFF8] p-1" data-products-tour="prd-view">
               <button
                 type="button"
                 title="Vue tableau"
@@ -519,10 +542,11 @@ export function ProductsPageView({
             ) : filtered.length === 0 ? (
               <p className="py-12 text-center text-sm text-ink/45">Aucun produit trouvé.</p>
             ) : viewMode === "grid" ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {filtered.map((p) => (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" data-products-tour="prd-list">
+                {filtered.map((p, index) => (
                   <ProductPremiumCard
                     key={p.id}
+                    tourFirst={index === 0}
                     product={p}
                     selected={selected?.id === p.id}
                     canWrite={canWrite}
@@ -547,7 +571,10 @@ export function ProductsPageView({
                 ))}
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-[22px] border border-[#F0DDE4] bg-white shadow-sm">
+              <div
+                className="overflow-x-auto rounded-[22px] border border-[#F0DDE4] bg-white shadow-sm"
+                data-products-tour="prd-list"
+              >
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-[#F0DDE4] bg-[#FFF0F6] text-[11px] uppercase tracking-wider text-[#74334E]">
@@ -565,11 +592,13 @@ export function ProductsPageView({
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((p) => {
+                    {filtered.map((p, index) => {
                       const margin = productMargin(p);
+                      const tour = (target: string) => (index === 0 ? target : undefined);
                       return (
                         <tr
                           key={p.id}
+                          data-products-tour={tour("prd-card")}
                           onClick={() => {
                             setSelectedId(p.id);
                             setMenuId(null);
@@ -599,7 +628,7 @@ export function ProductsPageView({
                               {PRODUCT_CATEGORY_LABEL[p.category]}
                             </span>
                           </td>
-                          <td className="px-3 py-3">
+                          <td className="px-3 py-3" data-products-tour={tour("prd-card-stock")}>
                             <p className="text-[12px] font-semibold text-[#43182D]">
                               {formatQty(p.stock, p.unit)}
                               <span className="ml-1 font-normal text-[#846A79]">/ {p.minStock}</span>
@@ -642,6 +671,7 @@ export function ProductsPageView({
                               <button
                                 type="button"
                                 aria-label="Actions"
+                                data-products-tour={tour("prd-card-menu")}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setMenuId(menuId === p.id ? null : p.id);
@@ -693,6 +723,7 @@ export function ProductsPageView({
       <PremiumSidePanel
         open={drawerOpen}
         onClose={() => {
+          if (inTutorial()) return;
           setDrawerOpen(false);
           setEditing(null);
         }}
@@ -729,6 +760,7 @@ export function ProductsPageView({
             submitting={submitting}
             onCancel={() => setAdjustOpen(false)}
             onSubmit={async (quantity) => {
+              if (inTutorial()) return;
               setSubmitting(true);
               const result = await createMovement({
                 productId: selected.id,

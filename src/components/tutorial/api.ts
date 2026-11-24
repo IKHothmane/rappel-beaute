@@ -24,14 +24,6 @@ export type TutorialSnapshot = {
 const ENDPOINT = "/api/onboarding/tutorial/";
 const STATUSES: readonly string[] = ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "SKIPPED"];
 
-export const EMPTY_PROGRESS: TutorialProgress = {
-  services: 0,
-  staff: 0,
-  staffWithSchedule: 0,
-  resources: 0,
-  appointments: 0,
-};
-
 function count(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
 }

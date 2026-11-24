@@ -1,7 +1,7 @@
 "use client";
 import { MetricCard } from "@/components/ui/metric-card";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Brain,
   CalendarCheck,
@@ -21,6 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import { staffColor, type StaffColor } from "@/components/agenda/staff-colors";
+import type { TourDemo } from "@/components/staff/staff-guide";
 import { useStaffPalette } from "@/components/agenda/staff-color-provider";
 import { AgendaSkeleton } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,8 @@ import {
   type PlanningView,
 } from "@/components/planning/planning-helpers";
 
+const TUTORIAL_PANEL_NOTE = "Mode tutoriel : aucune donnée ne sera enregistrée.";
+
 function Card({
   children,
   className,
@@ -162,8 +165,11 @@ function ShiftChip({
   );
 }
 
-export function PlanningPageView() {
+export function PlanningPageView({ demo = null }: { demo?: TourDemo | null } = {}) {
   const { toast } = useToast();
+  // Tutoriel : panneaux ouverts en démonstration, aucune écriture.
+  const tutorialMode = demo !== null;
+  const demoOpened = useRef<TourDemo | null>(null);
   const [loading, setLoading] = useState(true);
   const [staff, setStaff] = useState<StaffAgendaContext[]>([]);
   const [positions, setPositions] = useState<Record<string, string>>({});
@@ -416,8 +422,44 @@ export function PlanningPageView() {
     if (view === "day") setAnchor(date);
   }
 
+  // Tutoriel : ouvre et ferme les panneaux sous le contrôle de la visite guidée (les mêmes que l'usage normal).
+  useEffect(() => {
+    const previous = demoOpened.current;
+    if (previous === demo) return;
+    demoOpened.current = demo;
+    if (previous === "schedule") setScheduleOpen(false);
+    else if (previous === "hours") setHoursOpen(false);
+    else if (previous === "leave") {
+      setLeaveOpen(false);
+      setEditingLeaveId(null);
+    } else if (previous === "overtime" || previous === "replacement") {
+      setExtraOpen(null);
+      setEditingOtId(null);
+      setEditingRepId(null);
+    }
+    if (demo === "schedule") openScheduleEditor();
+    else if (demo === "hours") openHoursEditor();
+    else if (demo === "leave") {
+      if (selected) setLeaveStaff(selected.id);
+      setEditingLeaveId(null);
+      setLeaveReason("");
+      setLeaveOpen(true);
+    } else if (demo === "overtime") {
+      if (selected) setOtStaff(selected.id);
+      setEditingOtId(null);
+      setOtReason("");
+      setExtraOpen("overtime");
+    } else if (demo === "replacement") {
+      if (selected) setRepAbsent(selected.id);
+      setEditingRepId(null);
+      setRepReason("");
+      setExtraOpen("replacement");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demo]);
+
   async function saveSchedule() {
-    if (!selected) return;
+    if (tutorialMode || !selected) return;
     if (weekDraft.some((d) => d.active && d.startTime >= d.endTime)) {
       toast("L’heure de fin doit être après l’heure de début.", "error");
       return;
@@ -446,6 +488,7 @@ export function PlanningPageView() {
   }
 
   async function saveOpeningHours() {
+    if (tutorialMode) return;
     if (hoursDraft.some((d) => d.open && d.start >= d.end)) {
       toast("L’heure de fin doit être après l’heure de début.", "error");
       return;
@@ -524,6 +567,7 @@ export function PlanningPageView() {
   }
 
   async function addLeave() {
+    if (tutorialMode) return;
     try {
       const payload = {
         startAt: new Date(`${leaveStart}T00:00:00`).toISOString(),
@@ -550,6 +594,7 @@ export function PlanningPageView() {
   }
 
   async function removeLeave(staffId: string, leaveId: string) {
+    if (tutorialMode) return;
     if (!window.confirm("Supprimer cette absence ?")) return;
     const result = await updateStaffLeave(staffId, leaveId, { status: "CANCELLED" });
     if (!result.ok) {
@@ -561,6 +606,7 @@ export function PlanningPageView() {
   }
 
   async function addOt() {
+    if (tutorialMode) return;
     try {
       const payload = {
         staffId: otStaff,
@@ -581,6 +627,7 @@ export function PlanningPageView() {
   }
 
   async function removeOvertime(id: string) {
+    if (tutorialMode) return;
     if (!window.confirm("Supprimer ces heures supplémentaires ?")) return;
     try {
       await deletePlanningItemApi("overtime", id);
@@ -592,6 +639,7 @@ export function PlanningPageView() {
   }
 
   async function addRep() {
+    if (tutorialMode) return;
     try {
       const payload = {
         absentStaffId: repAbsent,
@@ -613,6 +661,7 @@ export function PlanningPageView() {
   }
 
   async function removeReplacement(id: string) {
+    if (tutorialMode) return;
     if (!window.confirm("Supprimer ce remplacement ?")) return;
     try {
       await deletePlanningItemApi("replacement", id);
@@ -626,8 +675,8 @@ export function PlanningPageView() {
   if (loading) return <AgendaSkeleton />;
 
   return (
-    <div className="space-y-6 pb-8">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 rb-metric-row">
+    <div className="space-y-6 pb-8" data-staff-tour="pl-root">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 rb-metric-row" data-staff-tour="pl-kpis">
         <KpiCard
           icon={<Users size={16} />}
           label="Équipe active"
@@ -662,8 +711,11 @@ export function PlanningPageView() {
         />
       </div>
 
-      <div className="flex flex-col justify-between gap-3 rounded-2xl border border-line bg-white px-5 py-3.5 sm:flex-row sm:items-center">
-        <div className="flex flex-wrap items-center gap-2">
+      <div
+        className="flex flex-col justify-between gap-3 rounded-2xl border border-line bg-white px-5 py-3.5 sm:flex-row sm:items-center"
+        data-tour="staff-planning-controls"
+      >
+        <div className="flex flex-wrap items-center gap-2" data-staff-tour="pl-nav">
           <button
             type="button"
             onClick={() => shift(-1)}
@@ -693,7 +745,7 @@ export function PlanningPageView() {
           <span className="ml-1 text-base font-black tracking-tight text-ink">{periodTitle}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex rounded-xl bg-[#F7EDF1] p-1 text-xs font-bold text-ink/60">
+          <div className="flex rounded-xl bg-[#F7EDF1] p-1 text-xs font-bold text-ink/60" data-staff-tour="pl-views">
             {(["day", "week", "month"] as const).map((key) => (
               <button
                 key={key}
@@ -708,7 +760,7 @@ export function PlanningPageView() {
               </button>
             ))}
           </div>
-          <div className="relative" data-staff-filter>
+          <div className="relative" data-staff-filter data-staff-tour="pl-filter">
             <button
               type="button"
               aria-haspopup="listbox"
@@ -823,7 +875,7 @@ export function PlanningPageView() {
                   {conflicts.length ? `${conflicts.length} conflit${conflicts.length > 1 ? "s" : ""}` : "0 conflit détecté"}
                 </span>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" data-staff-tour="pl-calendar">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
                     <tr className="border-b border-line bg-[#FCF7F9] text-[11px] font-extrabold text-ink/70">
@@ -919,7 +971,7 @@ export function PlanningPageView() {
             <Card>
               <h2 className="mb-1 text-sm font-extrabold text-ink">{periodTitle}</h2>
               <p className="mb-4 text-[11px] text-ink/50">Congés, absences et fermetures</p>
-              <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-ink/45">
+              <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-ink/45" data-staff-tour="pl-calendar">
                 {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((d) => (
                   <div key={d} className="py-1">{d}</div>
                 ))}
@@ -1173,7 +1225,7 @@ export function PlanningPageView() {
                   <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#947c89]">
                     Planning de la semaine
                   </p>
-                  <div className="space-y-1.5 text-xs">
+                  <div className="space-y-1.5 text-xs" data-staff-tour="pl-week">
                     {[1, 2, 3, 4, 5, 6, 0].map((day) => {
                       const label = DAY_LABELS[day];
                       const date = weekDates.find((d) => d.getDay() === day) ?? weekDates[0];
@@ -1239,6 +1291,8 @@ export function PlanningPageView() {
                   <button
                     type="button"
                     onClick={openScheduleEditor}
+                    data-tour="staff-schedule-edit"
+                    data-staff-tour="pl-edit"
                     className="mt-3 w-full rounded-xl bg-[#a9004e] px-3 py-2.5 text-xs font-bold text-white shadow-sm"
                   >
                     Modifier les horaires
@@ -1246,7 +1300,7 @@ export function PlanningPageView() {
                 </div>
 
                 <div className="border-t border-[#f0dce5] pt-4">
-                  <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="mb-3 flex items-center justify-between gap-2" data-staff-tour="pl-leaves">
                     <h4 className="font-serif text-sm font-bold text-[#54112f]">Congés &amp; absences</h4>
                     <button
                       type="button"
@@ -1286,7 +1340,7 @@ export function PlanningPageView() {
                 </div>
 
                 <div className="border-t border-[#f0dce5] pt-4">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2" data-staff-tour="pl-extra">
                     <h4 className="font-serif text-sm font-bold text-[#54112f]">
                       Heures supp. &amp; remplacements
                     </h4>
@@ -1442,7 +1496,7 @@ export function PlanningPageView() {
           ) : null}
 
           <Card className="space-y-4">
-            <div className="flex items-center justify-between gap-3 border-b border-[#f0dce5] pb-3">
+            <div className="flex items-center justify-between gap-3 border-b border-[#f0dce5] pb-3" data-tour="staff-opening-hours" data-staff-tour="pl-opening">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fce7f1] text-[#a7084b]">
                   <Clock3 size={18} aria-hidden />
@@ -1483,7 +1537,7 @@ export function PlanningPageView() {
           </Card>
 
           <Card id="planning-history" className="space-y-4">
-            <div className="flex items-start gap-3 border-b border-[#f0dce5] pb-3">
+            <div className="flex items-start gap-3 border-b border-[#f0dce5] pb-3" data-staff-tour="pl-history">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fce7f1] text-[#a7084b]">
                 <CalendarDays size={18} aria-hidden />
               </div>
@@ -1661,7 +1715,7 @@ export function PlanningPageView() {
           setEditingLeaveId(null);
         }}
         title={editingLeaveId ? "Modifier l’absence" : "Ajouter une absence"}
-        description="Bloquez les créneaux agenda pendant le congé ou l’absence."
+        description={tutorialMode ? TUTORIAL_PANEL_NOTE : "Bloquez les créneaux agenda pendant le congé ou l’absence."}
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <button
@@ -1676,7 +1730,8 @@ export function PlanningPageView() {
             </button>
             <button
               type="button"
-              disabled={!leaveStaff || !leaveStart || !leaveEnd}
+              disabled={tutorialMode || !leaveStaff || !leaveStart || !leaveEnd}
+              data-staff-tour="lv-save"
               onClick={() => void addLeave()}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
             >
@@ -1686,31 +1741,35 @@ export function PlanningPageView() {
         }
       >
         <div className="space-y-4">
-          <PremiumListSelect
-            label="Employée"
-            value={leaveStaff}
-            options={staffOptions}
-            onChange={setLeaveStaff}
-            placeholder="Choisir une employée"
-          />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div data-staff-tour="lv-staff">
+            <PremiumListSelect
+              label="Employée"
+              value={leaveStaff}
+              options={staffOptions}
+              onChange={setLeaveStaff}
+              placeholder="Choisir une employée"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" data-staff-tour="lv-dates">
             <DualDateField label="Début" value={leaveStart} onChange={setLeaveStart} />
             <DualDateField label="Fin" value={leaveEnd} onChange={setLeaveEnd} />
           </div>
-          <PremiumListSelect
-            label="Type"
-            value={leaveType}
-            options={leaveTypeOptions}
-            onChange={(v) => setLeaveType(v as LeaveType)}
-          />
-          <LimitedTextField
-            label="Motif"
-            optional
-            placeholder="Ex. Congé annuel"
-            maxLength={NOTES_MAX}
-            value={leaveReason}
-            onChange={(v) => setLeaveReason(limitNotes(v))}
-          />
+          <div className="space-y-4" data-staff-tour="lv-type">
+            <PremiumListSelect
+              label="Type"
+              value={leaveType}
+              options={leaveTypeOptions}
+              onChange={(v) => setLeaveType(v as LeaveType)}
+            />
+            <LimitedTextField
+              label="Motif"
+              optional
+              placeholder="Ex. Congé annuel"
+              maxLength={NOTES_MAX}
+              value={leaveReason}
+              onChange={(v) => setLeaveReason(limitNotes(v))}
+            />
+          </div>
         </div>
       </PremiumSidePanel>
 
@@ -1721,7 +1780,7 @@ export function PlanningPageView() {
           setEditingOtId(null);
         }}
         title={editingOtId ? "Modifier les heures supplémentaires" : "Heures supplémentaires"}
-        description="Ajoutez une plage hors planning habituel pour une employée."
+        description={tutorialMode ? TUTORIAL_PANEL_NOTE : "Ajoutez une plage hors planning habituel pour une employée."}
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <button
@@ -1736,7 +1795,8 @@ export function PlanningPageView() {
             </button>
             <button
               type="button"
-              disabled={!otStaff || !otStart || !otEnd}
+              disabled={tutorialMode || !otStaff || !otStart || !otEnd}
+              data-staff-tour="ot-save"
               onClick={() => void addOt()}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
             >
@@ -1746,22 +1806,26 @@ export function PlanningPageView() {
         }
       >
         <div className="space-y-4">
-          <PremiumListSelect
-            label="Employée"
-            value={otStaff}
-            options={staffOptions}
-            onChange={setOtStaff}
-            placeholder="Choisir une employée"
-          />
-          <DualDateTimeField label="Début" value={otStart} onChange={setOtStart} />
-          <DualDateTimeField label="Fin" value={otEnd} onChange={setOtEnd} />
-          <LimitedTextField
-            label="Motif"
-            placeholder="Ex. Affluence samedi"
-            maxLength={NOTES_MAX}
-            value={otReason}
-            onChange={(v) => setOtReason(limitNotes(v))}
-          />
+          <div data-staff-tour="ot-staff">
+            <PremiumListSelect
+              label="Employée"
+              value={otStaff}
+              options={staffOptions}
+              onChange={setOtStaff}
+              placeholder="Choisir une employée"
+            />
+          </div>
+          <div className="space-y-4" data-staff-tour="ot-dates">
+            <DualDateTimeField label="Début" value={otStart} onChange={setOtStart} />
+            <DualDateTimeField label="Fin" value={otEnd} onChange={setOtEnd} />
+            <LimitedTextField
+              label="Motif"
+              placeholder="Ex. Affluence samedi"
+              maxLength={NOTES_MAX}
+              value={otReason}
+              onChange={(v) => setOtReason(limitNotes(v))}
+            />
+          </div>
         </div>
       </PremiumSidePanel>
 
@@ -1772,7 +1836,7 @@ export function PlanningPageView() {
           setEditingRepId(null);
         }}
         title={editingRepId ? "Modifier le remplacement" : "Remplacement"}
-        description="Indiquez qui remplace qui, et sur quelle plage horaire."
+        description={tutorialMode ? TUTORIAL_PANEL_NOTE : "Indiquez qui remplace qui, et sur quelle plage horaire."}
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <button
@@ -1787,7 +1851,8 @@ export function PlanningPageView() {
             </button>
             <button
               type="button"
-              disabled={!repAbsent || !repSub || !repStart || !repEnd}
+              disabled={tutorialMode || !repAbsent || !repSub || !repStart || !repEnd}
+              data-staff-tour="rp-save"
               onClick={() => void addRep()}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
             >
@@ -1797,29 +1862,33 @@ export function PlanningPageView() {
         }
       >
         <div className="space-y-4">
-          <PremiumListSelect
-            label="Absente"
-            value={repAbsent}
-            options={staffOptions}
-            onChange={setRepAbsent}
-            placeholder="Employée absente"
-          />
-          <PremiumListSelect
-            label="Remplaçante"
-            value={repSub}
-            options={staffOptions.filter((o) => o.value !== repAbsent)}
-            onChange={setRepSub}
-            placeholder="Employée remplaçante"
-          />
-          <DualDateTimeField label="Début" value={repStart} onChange={setRepStart} />
-          <DualDateTimeField label="Fin" value={repEnd} onChange={setRepEnd} />
-          <LimitedTextField
-            label="Motif"
-            placeholder="Ex. Remplacement congé"
-            maxLength={NOTES_MAX}
-            value={repReason}
-            onChange={(v) => setRepReason(limitNotes(v))}
-          />
+          <div className="space-y-4" data-staff-tour="rp-people">
+            <PremiumListSelect
+              label="Absente"
+              value={repAbsent}
+              options={staffOptions}
+              onChange={setRepAbsent}
+              placeholder="Employée absente"
+            />
+            <PremiumListSelect
+              label="Remplaçante"
+              value={repSub}
+              options={staffOptions.filter((o) => o.value !== repAbsent)}
+              onChange={setRepSub}
+              placeholder="Employée remplaçante"
+            />
+          </div>
+          <div className="space-y-4" data-staff-tour="rp-dates">
+            <DualDateTimeField label="Début" value={repStart} onChange={setRepStart} />
+            <DualDateTimeField label="Fin" value={repEnd} onChange={setRepEnd} />
+            <LimitedTextField
+              label="Motif"
+              placeholder="Ex. Remplacement congé"
+              maxLength={NOTES_MAX}
+              value={repReason}
+              onChange={(v) => setRepReason(limitNotes(v))}
+            />
+          </div>
         </div>
       </PremiumSidePanel>
 
@@ -1827,7 +1896,7 @@ export function PlanningPageView() {
         open={scheduleOpen}
         onClose={() => setScheduleOpen(false)}
         title={selected ? `Modifier le planning de ${selected.firstName}` : "Modifier le planning"}
-        description="Définissez les jours et horaires de travail de l’employée."
+        description={tutorialMode ? TUTORIAL_PANEL_NOTE : "Définissez les jours et horaires de travail de l’employée."}
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <button
@@ -1839,7 +1908,8 @@ export function PlanningPageView() {
             </button>
             <button
               type="button"
-              disabled={savingSchedule}
+              disabled={savingSchedule || tutorialMode}
+              data-staff-tour="sch-save"
               onClick={() => void saveSchedule()}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
             >
@@ -1848,7 +1918,7 @@ export function PlanningPageView() {
           </div>
         }
       >
-        <div className="flex flex-col gap-3" data-tour="staff-schedule">
+        <div className="flex flex-col gap-3" data-tour="staff-schedule" data-staff-tour="sch-days">
           {weekDraft
             .slice()
             .sort((a, b) => ((a.dayOfWeek + 6) % 7) - ((b.dayOfWeek + 6) % 7))
@@ -1914,7 +1984,7 @@ export function PlanningPageView() {
         open={hoursOpen}
         onClose={() => setHoursOpen(false)}
         title="Horaires d’ouverture"
-        description="Ces horaires s’appliquent à toutes les employées actives."
+        description={tutorialMode ? TUTORIAL_PANEL_NOTE : "Ces horaires s’appliquent à toutes les employées actives."}
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <button
@@ -1926,7 +1996,8 @@ export function PlanningPageView() {
             </button>
             <button
               type="button"
-              disabled={savingSchedule}
+              disabled={savingSchedule || tutorialMode}
+              data-staff-tour="oh-save"
               onClick={() => void saveOpeningHours()}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-[#75133D] px-5 text-sm font-semibold text-white shadow-md transition hover:bg-[#5c0f30] disabled:opacity-60"
             >
@@ -1935,7 +2006,7 @@ export function PlanningPageView() {
           </div>
         }
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3" data-staff-tour="oh-days">
           {hoursDraft.map((row) => (
             <div key={row.day} className="rounded-xl border border-line bg-[#FFEFF8]/50 p-3">
               <label className="flex items-center gap-2 text-sm font-semibold text-ink">

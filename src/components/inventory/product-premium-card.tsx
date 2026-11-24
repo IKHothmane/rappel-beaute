@@ -33,6 +33,8 @@ type Props = {
   onSelect: () => void;
   onMenu: () => void;
   menu: ReactNode;
+  /** Première carte : elle porte les repères de la visite guidée. */
+  tourFirst?: boolean;
 };
 
 export function ProductPremiumCard({
@@ -44,11 +46,14 @@ export function ProductPremiumCard({
   onSelect,
   onMenu,
   menu,
+  tourFirst = false,
 }: Props) {
   const margin = productMargin(product);
+  const tour = (target: string) => (tourFirst ? target : undefined);
 
   return (
     <article
+      data-products-tour={tour("prd-card")}
       onClick={onSelect}
       className={cn(
         "group relative cursor-pointer overflow-hidden rounded-[22px] border bg-white shadow-[0_8px_24px_rgba(75,18,45,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-xl",
@@ -78,6 +83,7 @@ export function ProductPremiumCard({
             <button
               type="button"
               aria-label="Actions"
+              data-products-tour={tour("prd-card-menu")}
               onClick={(e) => {
                 e.stopPropagation();
                 onMenu();
@@ -104,7 +110,7 @@ export function ProductPremiumCard({
           </span>
         </div>
 
-        <div>
+        <div data-products-tour={tour("prd-card-stock")}>
           <div className="mb-1.5 flex items-center justify-between text-xs">
             <span className="font-semibold text-[#43182D]">{formatQty(product.stock, product.unit)}</span>
             <span className="text-[#846A79]">min {product.minStock}</span>
@@ -118,7 +124,10 @@ export function ProductPremiumCard({
         </div>
 
         {!financeHidden ? (
-          <div className="grid grid-cols-3 gap-2 border-t border-[#F2E5EA] pt-3 text-center">
+          <div
+            className="grid grid-cols-3 gap-2 border-t border-[#F2E5EA] pt-3 text-center"
+            data-products-tour={tour("prd-card-prices")}
+          >
             <div>
               <p className="text-[10px] text-[#846A79]">Achat</p>
               <p className="text-xs font-bold text-[#43182D]">{formatMad(product.purchasePrice)}</p>

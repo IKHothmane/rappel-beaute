@@ -443,7 +443,7 @@ function CustomerListCard({
       </div>
       <div className="flex items-center gap-2">
         <SendCustomerWhatsAppButton
-          customerId={c.id}
+          phone={c.phone}
           firstName={c.firstName}
           orgName={orgName}
           disabled={!canSendWhatsApp || !c.phone?.trim()}
@@ -637,7 +637,7 @@ function CustomerFocusMobile({
             Nouveau RDV
           </Link>
           <SendCustomerWhatsAppButton
-            customerId={person.id}
+            phone={person.phone}
             firstName={person.firstName}
             orgName={orgName}
             disabled={!canSendWhatsApp || !person.phone?.trim()}
@@ -712,7 +712,7 @@ function CustomerFocusMobile({
             ) : null}
           </p>
           <SendCustomerWhatsAppButton
-            customerId={person.id}
+            phone={person.phone}
             firstName={person.firstName}
             orgName={orgName}
             disabled={!canSendWhatsApp || !person.phone?.trim()}

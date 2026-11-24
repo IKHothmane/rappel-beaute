@@ -50,6 +50,8 @@ type ServicesMobileProps = {
   onEdit: (id: string) => void;
   onToggle: (service: ServiceListItem) => void;
   onDelete: (service: ServiceListItem) => void;
+  /** Bouton « Tutoriel » affiché sous l'en-tête. */
+  guide?: ReactNode;
 };
 
 export function ServicesMobile({
@@ -76,11 +78,12 @@ export function ServicesMobile({
   onEdit,
   onToggle,
   onDelete,
+  guide,
 }: ServicesMobileProps) {
 
   return (
     <div className="flex flex-col gap-3 lg:hidden">
-      <section className="flex flex-col gap-2">
+      <section className="flex flex-col gap-2" data-services-tour="svc-intro">
         <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#FFEFF8] px-2 py-0.5 text-[#7B5900]">
           <Store size={12} />
           <span className="text-[11px] font-bold uppercase tracking-wider">
@@ -96,22 +99,24 @@ export function ServicesMobile({
             {catalogCount !== 1 ? "prestations" : "prestation"}
           </p>
         </div>
-        {canWrite ? (
-          <div className="grid grid-cols-2 gap-2 pt-1">
+        <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
+          {canWrite ? (
             <button
               type="button"
               onClick={onCreate}
               data-tour="services-add"
+              data-services-tour="svc-add"
               className="inline-flex h-12 items-center justify-center gap-1.5 rounded-xl bg-primary text-[13px] font-semibold text-white shadow-md active:scale-[0.98]"
             >
               <Plus size={18} />
               Nouveau service
             </button>
-          </div>
-        ) : null}
+          ) : null}
+          {guide}
+        </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-2 rb-metric-row">
+      <section className="grid grid-cols-2 gap-2 rb-metric-row" data-services-tour="svc-metrics">
         <KpiTile
           label="Catalogue"
           value={String(catalogCount)}
@@ -161,7 +166,7 @@ export function ServicesMobile({
       </section>
 
       <section className="flex flex-col gap-2">
-        <div className="relative">
+        <div className="relative" data-services-tour="svc-search">
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" />
           <input
             ref={searchRef}
@@ -171,7 +176,7 @@ export function ServicesMobile({
             className="h-11 w-full rounded-xl bg-white pl-10 pr-11 text-[13px] text-ink shadow-sm outline-none placeholder:text-ink/35 focus:ring-2 focus:ring-primary/20"
           />
         </div>
-        <div className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 py-0.5">
+        <div className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 py-0.5" data-services-tour="svc-status">
           <Pill
             active={activeFilter === "all"}
             onClick={() => onActiveFilterChange("all")}
@@ -193,7 +198,7 @@ export function ServicesMobile({
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3" data-services-tour={!loading && filtered.length > 0 ? "svc-list" : undefined}>
         {loading ? (
           <p className="rounded-2xl bg-white py-10 text-center text-sm text-ink/40 shadow-sm">Chargement…</p>
         ) : filtered.length === 0 ? (
@@ -201,10 +206,11 @@ export function ServicesMobile({
             Aucun service trouvé.
           </p>
         ) : (
-          filtered.map((s) => (
+          filtered.map((s, index) => (
             <MobileServiceCard
               key={s.id}
               service={s}
+              tourFirst={index === 0}
               stats={statsById.get(s.id)}
               financeHidden={financeHidden}
               canWrite={canWrite}
@@ -262,6 +268,7 @@ function Pill({
 
 function MobileServiceCard({
   service: s,
+  tourFirst,
   stats,
   financeHidden,
   canWrite,
@@ -273,6 +280,8 @@ function MobileServiceCard({
   onDelete,
 }: {
   service: ServiceListItem;
+  /** Première carte : elle porte les repères de la visite guidée. */
+  tourFirst: boolean;
   stats?: ServiceAnalyticsRow;
   financeHidden: boolean;
   canWrite: boolean;
@@ -286,9 +295,11 @@ function MobileServiceCard({
   const Icon = categoryIcon(s.category);
   const rdv = stats?.appointments ?? 0;
   const ca = stats?.revenue ?? 0;
+  const tour = (target: string) => (tourFirst ? target : undefined);
 
   return (
     <article
+      data-services-tour={tour("svc-card")}
       className={cn(
         "relative flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-sm",
         !s.active && "opacity-60",
@@ -297,6 +308,7 @@ function MobileServiceCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <span
+            data-services-tour={tour("svc-card-status")}
             className={cn(
               "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold",
               s.active ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-ink/50",
@@ -316,7 +328,7 @@ function MobileServiceCard({
             </span>
           ) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1" data-services-tour={canWrite ? tour("svc-card-menu") : undefined}>
           {canWrite ? (
             <button
               type="button"
@@ -388,7 +400,7 @@ function MobileServiceCard({
         )}
         <div className="flex min-w-0 flex-col justify-center">
           <h2 className="truncate text-[16px] font-bold leading-snug text-ink">{s.name}</h2>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5" data-services-tour={tour("svc-card-meta")}>
             <span className="text-[22px] font-bold leading-7 text-primary">
               {s.price.toLocaleString("fr-MA", { maximumFractionDigits: 0 })}{" "}
               <span className="text-[14px] font-normal">MAD</span>
@@ -401,7 +413,10 @@ function MobileServiceCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-xl bg-[#FFEFF8]/80 p-2 text-[12px] text-ink/55">
+      <div
+        className="flex items-center justify-between rounded-xl bg-[#FFEFF8]/80 p-2 text-[12px] text-ink/55"
+        data-services-tour={tour("svc-card-staff")}
+      >
         <div className="flex min-w-0 items-center gap-1.5">
           {rdv > 0 ? (
             <>
@@ -440,6 +455,7 @@ function MobileServiceCard({
           <button
             type="button"
             onClick={onEdit}
+            data-services-tour={tour("svc-card-edit")}
             className="inline-flex h-9 items-center gap-1 rounded-lg bg-[#F6E3EF] px-4 text-[13px] font-semibold text-primary"
           >
             <Pencil size={14} />

@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { AppSessionUser, PublicSession } from "@/lib/auth/types";
@@ -13,6 +14,7 @@ import { isAppSession } from "@/lib/auth/types";
 import type { AppRole } from "@/lib/rbac";
 import { canAccessNav, isAppRole, ROLE_LABEL } from "@/lib/rbac";
 import { logoutDestination } from "@/lib/auth/logout-destination";
+import { clearTutorialDeferral } from "@/components/tutorial/events";
 
 type SessionContextValue = {
   user: PublicSession | null;
@@ -51,8 +53,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     refresh().finally(() => setLoading(false));
   }, [refresh]);
 
+  const userIdRef = useRef<string | null>(null);
+  userIdRef.current = user?.id ?? null;
+
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
+    // Le report « Plus tard » du tutoriel s'arrête avec la session, quel que soit le bouton de déconnexion utilisé.
+    if (userIdRef.current) clearTutorialDeferral(userIdRef.current);
     setUser(null);
     // `signed_out=1` évite un 308 en cache sur /connexion/ (boucle login/logout).
     window.location.replace(logoutDestination(window.location.origin));

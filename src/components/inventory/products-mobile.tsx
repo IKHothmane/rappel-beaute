@@ -139,7 +139,7 @@ export function ProductsMobile({
         )}
       </section>
 
-      <div className="rounded-xl bg-[#FFEFF8] p-3.5">
+      <div className="rounded-xl bg-[#FFEFF8] p-3.5" data-products-tour="prd-insight-m">
         <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-primary">
           <Sparkles size={14} />
           Insight catalogue
@@ -147,7 +147,7 @@ export function ProductsMobile({
         <p className="mt-1 text-[13px] leading-relaxed text-ink">{insight}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 rb-metric-row">
+      <div className="grid grid-cols-2 gap-2 rb-metric-row" data-products-tour="prd-kpis-m">
         <Kpi label="Valeur stock" value={financeHidden || !kpis ? "—" : formatMad(kpis.totalStockValue)} hint="Valorisation achat" />
         <Kpi
           label="CA revente"
@@ -187,7 +187,7 @@ export function ProductsMobile({
         ) : null}
       </div>
 
-      <div className="relative">
+      <div className="relative" data-products-tour="prd-search">
         <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/35" />
         <input
           ref={searchRef}
@@ -206,7 +206,10 @@ export function ProductsMobile({
         </button>
       </div>
 
-      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-products-tour="prd-links-m"
+      >
         <Pill active href="/products/">
           Catalogue ({catalogCount})
         </Pill>
@@ -215,7 +218,10 @@ export function ProductsMobile({
         <LinkPill href="/stock/">Mouvements</LinkPill>
       </div>
 
-      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-products-tour="prd-categories-m"
+      >
         <Pill active={category === ""} onClick={() => onCategory("")}>
           Tous ({catalogCount})
         </Pill>
@@ -226,7 +232,10 @@ export function ProductsMobile({
         ))}
       </div>
 
-      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-products-tour="prd-filters-m"
+      >
         <Pill active={usage === "all"} onClick={() => onUsage("all")}>
           Tous usages
         </Pill>
@@ -247,7 +256,7 @@ export function ProductsMobile({
         </Pill>
       </div>
 
-      <div className="flex items-center rounded-xl bg-[#F6E3EF] p-1">
+      <div className="flex items-center rounded-xl bg-[#F6E3EF] p-1" data-products-tour="prd-switch-m">
         <button
           type="button"
           onClick={() => setView("list")}
@@ -273,15 +282,19 @@ export function ProductsMobile({
       </div>
 
       {view === "list" ? (
-        <div className="flex flex-col gap-2">
+        <div
+          className="flex flex-col gap-2"
+          data-products-tour={!loading && filtered.length > 0 ? "prd-list" : undefined}
+        >
           {loading ? (
             <p className="py-10 text-center text-sm text-ink/40">Chargement…</p>
           ) : filtered.length === 0 ? (
             <p className="py-10 text-center text-sm text-ink/45">Aucun produit trouvé.</p>
           ) : (
-            filtered.map((p) => (
+            filtered.map((p, index) => (
               <ProductCard
                 key={p.id}
+                tourFirst={index === 0}
                 product={p}
                 selected={p.id === selectedId}
                 financeHidden={financeHidden}
@@ -315,6 +328,7 @@ export function ProductsMobile({
 
 function ProductCard({
   product: p,
+  tourFirst,
   selected,
   financeHidden,
   canWrite,
@@ -326,6 +340,8 @@ function ProductCard({
   onOut,
 }: {
   product: ProductListItem;
+  /** Première carte : elle porte les repères de la visite guidée. */
+  tourFirst: boolean;
   selected: boolean;
   financeHidden: boolean;
   canWrite: boolean;
@@ -338,8 +354,12 @@ function ProductCard({
 }) {
   const margin = productMargin(p);
   const [menuOpen, setMenuOpen] = useState(false);
+  const tour = (target: string) => (tourFirst ? target : undefined);
   return (
-    <article className={cn("relative rounded-xl bg-white p-3.5 shadow-sm", selected && "ring-1 ring-primary/25")}>
+    <article
+      data-products-tour={tour("prd-card")}
+      className={cn("relative rounded-xl bg-white p-3.5 shadow-sm", selected && "ring-1 ring-primary/25")}
+    >
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={onOpen} className="min-w-0 text-left">
           <p className="truncate text-[16px] font-bold text-ink">{p.name}</p>
@@ -355,6 +375,7 @@ function ProductCard({
             <button
               type="button"
               aria-label="Actions"
+              data-products-tour={tour("prd-card-menu")}
               onClick={() => setMenuOpen((open) => !open)}
               className="rounded-lg p-1.5 text-ink/40"
             >
@@ -397,21 +418,27 @@ function ProductCard({
           </button>
         </div>
       ) : null}
-      <div className="mt-2 flex items-center justify-between text-[12px] text-ink/55">
+      <div
+        className="mt-2 flex items-center justify-between text-[12px] text-ink/55"
+        data-products-tour={tour("prd-card-stock")}
+      >
         <span>
           {formatQty(p.stock, p.unit)} / min {p.minStock}
         </span>
         <span>{usageLabel(p)}</span>
       </div>
       {!financeHidden ? (
-        <div className="mt-1 flex items-center justify-between text-[12px]">
+        <div
+          className="mt-1 flex items-center justify-between text-[12px]"
+          data-products-tour={tour("prd-card-prices")}
+        >
           <span className="font-semibold text-ink">{p.salePrice != null ? formatMad(p.salePrice) : "—"}</span>
           <span className={cn("font-semibold", isLowMargin(p) ? "text-red-700" : "text-ink/45")}>
             {margin ? `${margin.pct.toFixed(0)} %` : "Consommable"}
           </span>
         </div>
       ) : null}
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="mt-2 grid grid-cols-2 gap-2" data-products-tour={tour("prd-card-moves")}>
         {canWrite ? (
           <>
             <button

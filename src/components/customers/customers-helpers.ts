@@ -1,5 +1,6 @@
 import { AT_RISK_DAYS } from "@/types/customer";
 import type { CustomerAppointmentHistory, CustomerSegment } from "@/types/customer";
+import { formatBusinessDate, formatBusinessTime } from "@/lib/time/business-timezone";
 
 export function customerInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -39,20 +40,24 @@ export function appointmentWhatsappMessage(input: {
   startAt: string;
 }) {
   const start = new Date(input.startAt);
-  const date = start.toLocaleDateString("fr-FR");
-  const time = start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const date = formatBusinessDate(start);
+  const time = formatBusinessTime(start);
   const institute = input.orgName?.trim();
   const who = institute ? `C'est ${institute}. ` : "";
   return `Bonjour ${input.firstName} 👋\n\n${who}Votre rendez-vous ${input.serviceName} est prévu le ${date} à ${time}.\n\nMerci de nous confirmer votre présence.`;
 }
 
-export function whatsappHref(phone: string, firstName: string, message?: string) {
+export function whatsappHref(phone: string | null | undefined, firstName: string, message?: string) {
+  if (!phone) return undefined;
   const digits = phone.replace(/\D/g, "");
-  const normalized = digits.startsWith("212")
-    ? digits
-    : digits.startsWith("0")
-      ? `212${digits.slice(1)}`
-      : digits;
+  let normalized = digits;
+  if (digits.startsWith("00")) {
+    normalized = digits.slice(2);
+  } else if (!phone.trim().startsWith("+")) {
+    if (digits.length === 10 && digits.startsWith("0")) normalized = `212${digits.slice(1)}`;
+    else if (digits.length === 9) normalized = `212${digits}`;
+  }
+  if (!/^[1-9]\d{7,14}$/.test(normalized)) return undefined;
   const text = encodeURIComponent(message?.trim() || `Bonjour ${firstName} 👋`);
   return `https://wa.me/${normalized}?text=${text}`;
 }

@@ -15,8 +15,6 @@ import {
 } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { appointmentWhatsappMessage, whatsappHref } from "@/components/customers/customers-helpers";
-import { SendCustomerWhatsAppButton } from "@/components/customers/send-customer-whatsapp-button";
-import { canSendWhatsapp } from "@/lib/rbac";
 import type { AgendaView, Appointment, AppointmentStatus } from "@/types/appointment";
 import type { CustomerDetail } from "@/types/customer";
 import type { StaffAgendaContext } from "@/types/staff";
@@ -531,22 +529,16 @@ function MobileAptRow({
   const isNew = customer?.status === "NEW" || visits <= 1;
   const transitions = STATUS_TRANSITIONS[apt.status] ?? [];
   const firstName = apt.customerName.trim().split(/\s+/)[0] || "Cliente";
-  const canSendReminder =
-    canSendWhatsapp(user.role) &&
-    (apt.status === "PENDING" || apt.status === "CONFIRMED") &&
-    new Date(apt.startAt).getTime() > Date.now();
-  const waHref = /^\d{8,15}$/.test(phone.replace(/\D/g, ""))
-    ? whatsappHref(
-        phone,
-        firstName,
-        appointmentWhatsappMessage({
-          firstName,
-          orgName: user.orgName,
-          serviceName: apt.serviceName,
-          startAt: apt.startAt,
-        }),
-      )
-    : null;
+  const waHref = whatsappHref(
+    phone,
+    firstName,
+    appointmentWhatsappMessage({
+      firstName,
+      orgName: user.orgName,
+      serviceName: apt.serviceName,
+      startAt: apt.startAt,
+    }),
+  );
 
   return (
     <div className="flex items-start gap-2">
@@ -643,15 +635,7 @@ function MobileAptRow({
               </a>
             ) : null}
             <div className="grid grid-cols-2 gap-1.5">
-              {canSendReminder ? (
-                <SendCustomerWhatsAppButton
-                  appointmentId={apt.id}
-                  className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-[11px] font-bold text-white disabled:opacity-50"
-                >
-                  <MessageCircle size={16} aria-hidden />
-                  Rappel WhatsApp
-                </SendCustomerWhatsAppButton>
-              ) : waHref ? (
+              {waHref ? (
                 <a
                   href={waHref}
                   target="_blank"
@@ -676,11 +660,6 @@ function MobileAptRow({
                 </Link>
               )}
             </div>
-            {canSendReminder && waHref ? (
-              <a href={waHref} target="_blank" rel="noreferrer" className="text-center text-[11px] font-semibold text-emerald-800">
-                Ouvrir WhatsApp pour envoyer manuellement
-              </a>
-            ) : null}
             {!waHref ? (
               <p className="text-center text-[11px] text-ink/65">Numéro indisponible pour l’envoi manuel.</p>
             ) : null}

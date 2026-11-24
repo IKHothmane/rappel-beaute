@@ -7,6 +7,7 @@ import { CalendarDays, Plus, UsersRound } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { canAccessNav, canWriteStaff } from "@/lib/rbac";
 import { TeamPremiumPage } from "@/components/staff/team-premium-page";
+import { StaffGuide, type TourDemo } from "@/components/staff/staff-guide";
 import { PlanningPageView } from "@/components/planning/planning-page";
 import { cn } from "@/lib/utils";
 import "./team-workspace.css";
@@ -37,6 +38,8 @@ export function TeamWorkspace() {
   const canPlanning = canAccessNav(user.role, "planning");
   const canWrite = canWriteStaff(user.role);
   const [createSignal, setCreateSignal] = useState(0);
+  // Formulaire ouvert en démonstration par le tutoriel (aucune écriture) ; piloté par StaffGuide.
+  const [demo, setDemo] = useState<TourDemo | null>(null);
 
   const requestedTab = useMemo<Tab>(
     () => (searchParams.get("tab") === "planning" ? "planning" : "staff"),
@@ -76,11 +79,11 @@ export function TeamWorkspace() {
   );
 
   return (
-    <main className="rb-team-workspace">
+    <main className="rb-team-workspace" data-staff-tab={tab}>
       <header className="rb-team-hero">
         <div className="rb-team-hero-glow" aria-hidden />
 
-        <div className="rb-team-hero-content">
+        <div className="rb-team-hero-content" data-staff-tour="team-intro">
           <h1>Équipe &amp; Planning</h1>
           <p>
             Gérez vos collaboratrices, leurs horaires, leurs absences et leurs performances depuis un
@@ -89,11 +92,20 @@ export function TeamWorkspace() {
         </div>
 
         <div className="rb-team-hero-actions">
+          <StaffGuide
+            tab={tab}
+            onTabChange={changeTab}
+            canStaff={canStaff}
+            canPlanning={canPlanning}
+            canWriteStaff={canWrite}
+            onDemoChange={setDemo}
+          />
           {canWrite && canStaff ? (
             <button
               type="button"
               className="rb-team-hero-btn rb-team-hero-btn-primary"
               data-tour="staff-add"
+              data-staff-tour="team-add"
               onClick={() => {
                 if (tab !== "staff") changeTab("staff");
                 setCreateSignal((n) => n + 1);
@@ -128,7 +140,7 @@ export function TeamWorkspace() {
               key={item.id}
               type="button"
               onClick={() => changeTab(item.id)}
-              data-tour={item.id === "planning" ? "staff-planning-tab" : undefined}
+              data-tour={item.id === "planning" ? "staff-planning-tab" : "staff-team-tab"}
               aria-current={active ? "page" : undefined}
               className={cn("rb-team-tab", active && "rb-team-tab-active")}
             >
@@ -146,8 +158,8 @@ export function TeamWorkspace() {
       </nav>
 
       <section className="rb-team-content">
-        {tab === "staff" && canStaff ? <TeamPremiumPage createSignal={createSignal} /> : null}
-        {tab === "planning" && canPlanning ? <PlanningPageView /> : null}
+        {tab === "staff" && canStaff ? <TeamPremiumPage createSignal={createSignal} demoForm={demo === "staff-form"} /> : null}
+        {tab === "planning" && canPlanning ? <PlanningPageView demo={demo === "staff-form" ? null : demo} /> : null}
       </section>
     </main>
   );

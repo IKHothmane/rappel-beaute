@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppPageHeader, Kpi, Tabs } from "@/components/app/AppUi";
 import { useCurrentUser } from "@/components/auth/session-provider";
 import { AIMessageComposer } from "@/components/ai/ai-message-composer";
+import { whatsappHref } from "@/components/customers/customers-helpers";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,6 @@ import {
   listWhatsAppTemplates,
   markWhatsAppSent,
   recordWhatsAppOutcome,
-  sendDirectWhatsApp,
   skipWhatsAppTask,
   updateWhatsAppTemplate,
   WHATSAPP_OUTCOME_LABEL,
@@ -35,6 +35,17 @@ import type {
   WhatsAppTemplateItem,
 } from "@/types/whatsapp";
 import { WHATSAPP_TASK_TYPES } from "@/types/whatsapp";
+
+function OpenWhatsAppLink({ task, className }: { task: WhatsAppTaskItem; className: string }) {
+  const href = whatsappHref(task.phoneSnapshot, task.customerName, task.messageSnapshot);
+  if (!href) return null;
+
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className={className}>
+      Ouvrir WhatsApp
+    </a>
+  );
+}
 
 function typeBadgeClass(type: WhatsAppTaskType): string {
   if (type.includes("REMINDER") || type.includes("CONFIRMATION")) return "text-red-600";
@@ -84,20 +95,6 @@ export function WhatsappPageView() {
     setLoading(true);
     refresh().finally(() => setLoading(false));
   }, [refresh]);
-
-  async function handleSend(task: WhatsAppTaskItem) {
-    if (!canSend) return;
-    setSubmitting(true);
-    const result = await sendDirectWhatsApp(task.id);
-    setSubmitting(false);
-    if (!result.ok) {
-      toast(result.error, "error");
-      return;
-    }
-    toast("Message envoyé.", "success");
-    setPreview(null);
-    refresh();
-  }
 
   async function handleMarkSent(task: WhatsAppTaskItem) {
     if (!canSend) return;
@@ -182,7 +179,7 @@ export function WhatsappPageView() {
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
       <AppPageHeader
         title="WhatsApp"
-        description="Manuel assisté V1 — le message est préparé, vous ouvrez WhatsApp et validez l'envoi."
+        description="Ouvrez le message préparé dans WhatsApp, puis envoyez-le depuis la conversation."
         action={
           canEditTemplates && tab === "Modèles" ? (
             <Button onClick={openCreateTemplate}>Nouveau modèle</Button>
@@ -293,14 +290,10 @@ export function WhatsappPageView() {
                 </button>
                 {canSend && task.status === "PENDING" ? (
                   <>
-                    <button
-                      type="button"
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
-                      disabled={submitting}
-                      onClick={() => handleSend(task)}
-                    >
-                      Envoyer
-                    </button>
+                    <OpenWhatsAppLink
+                      task={task}
+                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
+                    />
                     <button
                       type="button"
                       className="btn-ghost"
@@ -373,9 +366,10 @@ export function WhatsappPageView() {
             {canSend ? (
               <div className="flex flex-col gap-2 sm:flex-row">
                 {preview.status === "PENDING" ? (
-                  <Button disabled={submitting} onClick={() => handleSend(preview)}>
-                    Envoyer
-                  </Button>
+                  <OpenWhatsAppLink
+                    task={preview}
+                    className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                  />
                 ) : null}
                 {preview.status === "PENDING" ? (
                   <Button

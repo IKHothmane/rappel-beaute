@@ -40,6 +40,7 @@ import {
   staffOptions,
   matchesPaymentTab,
   waMeLink,
+  paymentWhatsappMessage,
 } from "@/components/finance/payment-helpers";
 import { PaymentsMobile } from "@/components/finance/payments-mobile";
 import { PaymentTicketModal } from "@/components/finance/payment-ticket";
@@ -515,22 +516,11 @@ export function PaymentsPageView({
               ) : null}
             </div>
           </section>
-        ) : canWrite ? (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => openPay()}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-[14px] font-semibold text-white shadow-sm"
-            >
-              <Plus size={18} />
-              Nouveau paiement
-            </button>
-          </div>
         ) : null}
 
         <section className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
           <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-2 lg:grid-cols-12">
-            <div className={cn("relative", embedded ? "md:col-span-2 lg:col-span-6" : "lg:col-span-4")}>
+            <div className={cn("relative", embedded ? (canWrite ? "md:col-span-2 lg:col-span-4" : "md:col-span-2 lg:col-span-6") : "lg:col-span-4")}>
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
               <input
                 value={search}
@@ -609,6 +599,18 @@ export function PaymentsPageView({
               </Select>
               )}
             </div>
+            {embedded && canWrite ? (
+              <div className="lg:col-span-2 lg:self-end">
+                <button
+                  type="button"
+                  onClick={() => openPay()}
+                  className="inline-flex h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-4 text-[14px] font-semibold text-white shadow-sm"
+                >
+                  <Plus size={18} />
+                  Nouveau paiement
+                </button>
+              </div>
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {tabs
@@ -870,6 +872,7 @@ export function PaymentsPageView({
             {selected ? (
               <PaymentInspect
                 payment={selected}
+                orgName={user.orgName}
                 remaining={remaining}
                 canWrite={canWrite}
                 canCustomers={canCustomers}
@@ -1199,6 +1202,7 @@ function Kpi({
 
 function PaymentInspect({
   payment,
+  orgName,
   remaining,
   canWrite,
   canCustomers,
@@ -1210,6 +1214,7 @@ function PaymentInspect({
   onCollect,
 }: {
   payment: PaymentItem;
+  orgName: string;
   remaining: AppointmentPaymentSummary | null;
   canWrite: boolean;
   canCustomers: boolean;
@@ -1222,7 +1227,7 @@ function PaymentInspect({
 }) {
   const chip = paymentStatusChip(payment);
   const signed = signedPaymentAmount(payment);
-  const wa = waMeLink(payment.customerPhone);
+  const wa = waMeLink(payment.customerPhone, paymentWhatsappMessage(payment, orgName));
   const origin = paymentOrigin(payment);
   const due = isUnpaidDue(payment);
 

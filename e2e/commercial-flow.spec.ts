@@ -1,43 +1,55 @@
 import { test, expect } from "@playwright/test";
 
-const OWNER = { email: "app@beauty.ma", password: "demo1234" };
-const PLATFORM = { email: "admin@rappelbeaute.ma", password: "demo1234" };
+// Identifiants fournis par l'environnement : aucun mot de passe dans ce dépôt public.
+// Sur une base seedée, utiliser le mot de passe choisi via SEED_DEMO_PASSWORD.
+const OWNER =
+  process.env.E2E_OWNER_EMAIL && process.env.E2E_OWNER_PASSWORD
+    ? { email: process.env.E2E_OWNER_EMAIL, password: process.env.E2E_OWNER_PASSWORD }
+    : null;
+const PLATFORM =
+  process.env.E2E_PLATFORM_EMAIL && process.env.E2E_PLATFORM_PASSWORD
+    ? { email: process.env.E2E_PLATFORM_EMAIL, password: process.env.E2E_PLATFORM_PASSWORD }
+    : null;
 
 test.describe("Parcours commercial — seed Institut Royal", () => {
-  test("OWNER login → dashboard", async ({ page }) => {
-    // La lecture de /api/auth/config/ part d'un effet React : sa réponse prouve que le formulaire est hydraté
-    // (sinon un envoi trop précoce déclenche la soumission native du navigateur, sans appel à l'API).
-    const hydrated = page.waitForResponse((r) => r.url().includes("/api/auth/config/"));
-    await page.goto("/login/?__host=app", { waitUntil: "domcontentloaded" });
-    await hydrated;
-    // /login/ sur le domaine public renvoie vers /connexion/, qui a aussi
-    // le champ e-mail du pied de page. On vise uniquement le formulaire.
-    const form = page.locator("form.rb-login-form");
-    const email = form.locator('input[name="email"]');
-    await expect(email).toBeVisible({ timeout: 15_000 });
-    await email.fill(OWNER.email);
-    await form.locator('input[name="password"]').fill(OWNER.password);
-    await form.locator('button[type="submit"]').click();
-    // Un compte avec e-mail (même non vérifié) arrive sur le tableau de bord ; seul un compte SANS e-mail
-    // est guidé vers « Sécuriser mon compte ».
-    await page.waitForURL(/dashboard/, { timeout: 30_000 });
-    await expect(page.locator("body")).toContainText(/Institut|Dashboard|Tableau/i);
-  });
+  test.describe("OWNER institut", () => {
+    test.skip(!OWNER, "E2E_OWNER_EMAIL / E2E_OWNER_PASSWORD non configurés");
 
-  test("API métier après login OWNER", async ({ request }) => {
-    const login = await request.post("/api/auth/login/", {
-      data: OWNER,
+    test("OWNER login → dashboard", async ({ page }) => {
+      // La lecture de /api/auth/config/ part d'un effet React : sa réponse prouve que le formulaire est hydraté
+      // (sinon un envoi trop précoce déclenche la soumission native du navigateur, sans appel à l'API).
+      const hydrated = page.waitForResponse((r) => r.url().includes("/api/auth/config/"));
+      await page.goto("/login/?__host=app", { waitUntil: "domcontentloaded" });
+      await hydrated;
+      // /login/ sur le domaine public renvoie vers /connexion/, qui a aussi
+      // le champ e-mail du pied de page. On vise uniquement le formulaire.
+      const form = page.locator("form.rb-login-form");
+      const email = form.locator('input[name="email"]');
+      await expect(email).toBeVisible({ timeout: 15_000 });
+      await email.fill(OWNER!.email);
+      await form.locator('input[name="password"]').fill(OWNER!.password);
+      await form.locator('button[type="submit"]').click();
+      // Un compte avec e-mail (même non vérifié) arrive sur le tableau de bord ; seul un compte SANS e-mail
+      // est guidé vers « Sécuriser mon compte ».
+      await page.waitForURL(/dashboard/, { timeout: 30_000 });
+      await expect(page.locator("body")).toContainText(/Institut|Dashboard|Tableau/i);
     });
-    expect(login.ok()).toBeTruthy();
 
-    const customers = await request.get("/api/customers/");
-    expect(customers.ok()).toBeTruthy();
+    test("API métier après login OWNER", async ({ request }) => {
+      const login = await request.post("/api/auth/login/", {
+        data: OWNER!,
+      });
+      expect(login.ok()).toBeTruthy();
 
-    const appointments = await request.get("/api/appointments/");
-    expect(appointments.ok()).toBeTruthy();
+      const customers = await request.get("/api/customers/");
+      expect(customers.ok()).toBeTruthy();
 
-    const subscription = await request.get("/api/subscription/");
-    expect(subscription.ok()).toBeTruthy();
+      const appointments = await request.get("/api/appointments/");
+      expect(appointments.ok()).toBeTruthy();
+
+      const subscription = await request.get("/api/subscription/");
+      expect(subscription.ok()).toBeTruthy();
+    });
   });
 
   test("Booking public institut-royal accessible", async ({ page }) => {
@@ -51,25 +63,32 @@ test.describe("Parcours commercial — seed Institut Royal", () => {
     });
   });
 
-  test("Platform SUPER_ADMIN login", async ({ request }) => {
-    const login = await request.post("/api/auth/platform/login/", {
-      data: PLATFORM,
-    });
-    expect(login.ok()).toBeTruthy();
+  test.describe("Back-office plateforme", () => {
+    test.skip(!PLATFORM, "E2E_PLATFORM_EMAIL / E2E_PLATFORM_PASSWORD non configurés");
 
-    const orgs = await request.get("/api/admin/organizations/");
-    expect(orgs.ok()).toBeTruthy();
+    test("Platform SUPER_ADMIN login", async ({ request }) => {
+      const login = await request.post("/api/auth/platform/login/", {
+        data: PLATFORM!,
+      });
+      expect(login.ok()).toBeTruthy();
+
+      const orgs = await request.get("/api/admin/organizations/");
+      expect(orgs.ok()).toBeTruthy();
+    });
   });
 });
 
 test.describe("Plan STARTER — feature guard stock", () => {
-  test.skip(!process.env.E2E_STARTER_EMAIL, "Configurer E2E_STARTER_EMAIL pour institut STARTER");
+  test.skip(
+    !process.env.E2E_STARTER_EMAIL || !process.env.E2E_STARTER_PASSWORD,
+    "E2E_STARTER_EMAIL / E2E_STARTER_PASSWORD non configurés",
+  );
 
   test("403 FEATURE_NOT_INCLUDED sur /api/products/", async ({ request }) => {
     const login = await request.post("/api/auth/login/", {
       data: {
         email: process.env.E2E_STARTER_EMAIL,
-        password: process.env.E2E_STARTER_PASSWORD ?? "demo1234",
+        password: process.env.E2E_STARTER_PASSWORD,
       },
     });
     expect(login.ok()).toBeTruthy();

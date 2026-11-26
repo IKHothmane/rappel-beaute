@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { expect, test, type BrowserContext, type Page, type Route } from "@playwright/test";
 import { Client } from "pg";
 import { hashPassword } from "../src/lib/auth/crypto";
@@ -20,7 +20,6 @@ import { enforceTestDatabase } from "../tests/helpers/test-database";
 const ENDPOINT = "/api/onboarding/tutorial/";
 const WELCOME = "Bienvenue sur Rappel Beauty !";
 const RESUME = "Reprenons votre configuration";
-const SEEDED_PASSWORD = "E2e-tutorial-spec-1234";
 
 const seeded = Boolean(process.env.DATABASE_TEST_URL?.trim());
 const fromEnv = Boolean(process.env.E2E_OWNER_EMAIL && process.env.E2E_OWNER_PASSWORD);
@@ -89,13 +88,14 @@ async function seedAccounts(): Promise<Accounts> {
   const db = new Client({ connectionString: env.DATABASE_URL });
   await db.connect();
   const orgId = `tutorial-spec-${randomUUID()}`;
+  const password = `Qa9!${randomBytes(18).toString("hex")}`;
   try {
     await db.query(`INSERT INTO "Organization" (id, name, slug, "updatedAt") VALUES ($1, 'Institut tutoriel spec', $1, now())`, [orgId]);
     const user = (suffix: string, role: string, first: string) =>
       db.query(
         `INSERT INTO "User" (id, "organizationId", email, "firstName", "lastName", role, "passwordHash", "emailVerifiedAt", "updatedAt")
          VALUES ($1, $2, $3, $4, 'Spec', $5::"UserRole", $6, now(), now())`,
-        [`user_${suffix}_${orgId}`, orgId, `${suffix}-${orgId}@example.test`, first, role, hashPassword(SEEDED_PASSWORD)],
+        [`user_${suffix}_${orgId}`, orgId, `${suffix}-${orgId}@example.test`, first, role, hashPassword(password)],
       );
     await user("owner", "OWNER", "Nadia");
     await user("manager", "MANAGER", "Karim");
@@ -113,8 +113,8 @@ async function seedAccounts(): Promise<Accounts> {
     throw error;
   }
   return {
-    owner: { email: `owner-${orgId}@example.test`, password: SEEDED_PASSWORD },
-    nonOwner: { email: `manager-${orgId}@example.test`, password: SEEDED_PASSWORD },
+    owner: { email: `owner-${orgId}@example.test`, password },
+    nonOwner: { email: `manager-${orgId}@example.test`, password },
     cleanup: async () => {
       try {
         await db.query(`DELETE FROM "Organization" WHERE id = $1`, [orgId]);
@@ -278,7 +278,7 @@ for (const viewport of [
         await expectPopoverInViewport(page);
       }
       await reachStep(page, viewport.mobile, SERVICES, "Créez votre premier service");
-      await expect(page.locator('[data-tour="services-add"]')).toHaveClass(/driver-active-element/);
+      await expect(page.locator('[data-tour="services-add"].driver-active-element')).toBeVisible();
       await expect.poll(() => mock.writes.some((w) => w.action === "step" && w.step === "services")).toBe(true);
       expect(mock.status).toBe("IN_PROGRESS");
     });
@@ -417,7 +417,7 @@ for (const viewport of [
       await context.clearCookies();
       await login(context, baseURL!, accounts!.nonOwner!);
       await openDashboard(page, { expectRead: false });
-      await expect(page.getByRole("main")).toBeVisible({ timeout: 30_000 });
+      await expect(page.locator("main.rappel-dashboard-premium")).toBeVisible({ timeout: 30_000 });
       await page.waitForLoadState("networkidle");
 
       await expect(page.getByRole("dialog", { name: new RegExp(`${WELCOME}|${RESUME}`) })).toHaveCount(0);

@@ -106,35 +106,34 @@ const run = process.env.DATABASE_URL ? describe : describe.skip;
 run("Auth — login DB", () => {
   it("compte disabled → login refusé", async () => {
     const { authenticateUser } = await import("@/lib/db/users");
-    const { getSeedOrgId, testPool } = await import("../helpers/db");
-    const orgId = await getSeedOrgId();
-    const { rows } = await testPool.query<{ id: string; email: string }>(
-      `SELECT id, email FROM "User" WHERE "organizationId" = $1 AND role = 'OWNER' LIMIT 1`,
-      [orgId],
-    );
-    const user = rows[0];
-    expect(user).toBeTruthy();
-    await testPool.query(`UPDATE "User" SET status = 'DISABLED' WHERE id = $1`, [user!.id]);
-    expect(await authenticateUser(user!.email, "demo1234")).toBeNull();
-    await testPool.query(`UPDATE "User" SET status = 'ACTIVE' WHERE id = $1`, [user!.id]);
+    const { testPool } = await import("../helpers/db");
+    const { withInstituteAccount } = await import("../helpers/auth-fixtures");
+    await withInstituteAccount(async ({ id, email, password }) => {
+      expect((await authenticateUser(email, password))?.id).toBe(id);
+      await testPool.query(`UPDATE "User" SET status = 'DISABLED' WHERE id = $1`, [id]);
+      expect(await authenticateUser(email, password)).toBeNull();
+    });
   });
 
   it("organisation suspended → login refusé", async () => {
     const { authenticateUser } = await import("@/lib/db/users");
-    const { getSeedOrgId, testPool } = await import("../helpers/db");
-    const orgId = await getSeedOrgId();
-    const { rows } = await testPool.query<{ email: string }>(
-      `SELECT email FROM "User" WHERE "organizationId" = $1 AND role = 'OWNER' LIMIT 1`,
-      [orgId],
-    );
-    await testPool.query(`UPDATE "Organization" SET status = 'SUSPENDED' WHERE id = $1`, [orgId]);
-    expect(await authenticateUser(rows[0]!.email, "demo1234")).toBeNull();
-    await testPool.query(`UPDATE "Organization" SET status = 'ACTIVE' WHERE id = $1`, [orgId]);
+    const { testPool } = await import("../helpers/db");
+    const { withInstituteAccount } = await import("../helpers/auth-fixtures");
+    await withInstituteAccount(async ({ id, organizationId, email, password }) => {
+      expect((await authenticateUser(email, password))?.id).toBe(id);
+      await testPool.query(`UPDATE "Organization" SET status = 'SUSPENDED' WHERE id = $1`, [organizationId]);
+      expect(await authenticateUser(email, password)).toBeNull();
+    });
   });
 
   it("email platform user → authenticateUser app retourne null", async () => {
     const { authenticateUser } = await import("@/lib/db/users");
-    expect(await authenticateUser("admin@rappelbeaute.ma", "demo1234")).toBeNull();
+    const { authenticatePlatformUser } = await import("@/lib/db/platform-users");
+    const { withPlatformAccount } = await import("../helpers/auth-fixtures");
+    await withPlatformAccount(async ({ id, email, password }) => {
+      expect((await authenticatePlatformUser(email, password))?.id).toBe(id);
+      expect(await authenticateUser(email, password)).toBeNull();
+    });
   });
 });
 

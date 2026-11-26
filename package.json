@@ -91,5 +91,10 @@
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.3",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "passkit-generator": {
+      "joi": "17.13.9"
+    }
   }
 }

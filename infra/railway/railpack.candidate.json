@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "packages": { "node": "22.13.1" },
+  "buildAptPackages": ["openssl"],
+  "steps": {
+    "install": {
+      "commands": [
+        { "src": ".npmrc", "dest": ".npmrc" },
+        { "src": "package.json", "dest": "package.json" },
+        { "src": "package-lock.json", "dest": "package-lock.json" },
+        "mkdir -p node_modules/.cache",
+        "npm ci --include=dev"
+      ]
+    },
+    "build": { "commands": ["npm run build"] }
+  },
+  "deploy": {
+    "aptPackages": ["libjemalloc2", "openssl"],
+    "startCommand": "exec bash scripts/start-prod.sh"
+  }
+}

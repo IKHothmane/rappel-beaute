@@ -1,0 +1,53 @@
+name: Validation Railpack Linux
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [release/railway-stabilisation]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-linux-image:
+    if: >-
+      github.event_name == 'push' ||
+      (github.head_ref == 'release/railway-stabilisation' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Installer Railpack 0.44.0 et compiler l’image locale
+        shell: bash
+        run: |
+          buildkit="railpack-buildkit-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          trap 'docker rm -f "$buildkit" >/dev/null 2>&1 || true' EXIT
+          railpack_dir="$(mktemp -d)"
+          archive=railpack-v0.44.0-x86_64-unknown-linux-musl.tar.gz
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/railwayapp/railpack/releases/download/v0.44.0/$archive" \
+            --output "$railpack_dir/$archive"
+          printf '%s  %s\n' 50b55b6762321c4eb2a2b8850ea0ffcb70b3250f1a2b15519b4901b17ce09411 \
+            "$railpack_dir/$archive" | sha256sum --check --strict
+          tar -xzf "$railpack_dir/$archive" -C "$railpack_dir"
+          railpack="$(find "$railpack_dir" -type f -name railpack -print -quit)"
+          test -x "$railpack"
+          "$railpack" --version
+          docker run --detach --privileged --name "$buildkit" moby/buildkit:buildx-stable-1
+          export BUILDKIT_HOST="docker-container://$buildkit"
+          for i in {1..20}; do
+            if docker exec "$buildkit" buildctl debug workers >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          docker exec "$buildkit" buildctl debug workers
+          "$railpack" build --config-file infra/railway/railpack.candidate.json \
+            --name rappel-beaute-railpack:ci --platform linux/amd64 --progress plain .
+          docker image inspect rappel-beaute-railpack:ci --format '{{.Os}}/{{.Architecture}}' | grep -Fx linux/amd64
+
+      - name: Tester le démarrage, les dépendances et l’arrêt
+        run: bash infra/railway/smoke-railpack.sh rappel-beaute-railpack:ci

@@ -5,12 +5,12 @@
 Le workflow `Validation Railpack Linux` construit le candidat sur GitHub Actions lors d’un push sur `release/railway-stabilisation` et de sa PR vers `main`. Le runner utilise Railpack 0.44.0 et BuildKit. Pour reproduire avec un moteur Docker/BuildKit Linux, utiliser une copie du dépôt sans fichiers d’environnement du poste et exécuter les commandes suivantes.
 
 ```sh
-railpack prepare --config-file infra/railway/railpack.candidate.json --env RAILPACK_NODE_VERSION=22.13.1 --plan-out /tmp/rb-railpack-plan.json .
-railpack build --config-file infra/railway/railpack.candidate.json --env RAILPACK_NODE_VERSION=22.13.1 --platform linux/amd64 --name rappel-beaute-railpack:ci .
+railpack prepare --config-file infra/railway/railpack.candidate.json --plan-out /tmp/rb-railpack-plan.json .
+railpack build --config-file infra/railway/railpack.candidate.json --platform linux/amd64 --name rappel-beaute-railpack:ci .
 bash infra/railway/smoke-railpack.sh rappel-beaute-railpack:ci
 ```
 
-Définir `RAILPACK_NODE_VERSION=22.13.1` également dans la configuration du builder Railway lors de la bascule approuvée. Le premier build a affiché le pin dans son plan, mais a installé la version issue du champ `engines`. Contrôler `node --version` avant `npm ci --include=dev` puis `npm run build` (génération Prisma, Next.js et CSS). Le build ne doit contenir aucune commande de migration. Dans l’image vérifier Node 22, les binaires OpenSSL et jemalloc, les dépendances Prisma, la disponibilité de `scripts/start-prod.sh` et le chargement effectif de Sharp. La vérification Sharp peut lire `require('sharp/package.json').version`, afficher `require('sharp').versions` et produire un WebP en mémoire. Reproduire la résolution de Next si `NEXT_SHARP_PATH` est défini.
+Railpack 0.44.0 affichait le pin dans son plan, mais Mise installait la version issue de `engines.node`. La borne basse de `engines.node` correspond à la version exacte du candidat, 22.13.1. Contrôler `node --version` avant `npm ci --include=dev` puis `npm run build` (génération Prisma, Next.js et CSS). Le build ne doit contenir aucune commande de migration. Dans l’image vérifier Node 22, les binaires OpenSSL et jemalloc, les dépendances Prisma, la disponibilité de `scripts/start-prod.sh` et le chargement effectif de Sharp. La vérification Sharp peut lire `require('sharp/package.json').version`, afficher `require('sharp').versions` et produire un WebP en mémoire. Reproduire la résolution de Next si `NEXT_SHARP_PATH` est défini.
 
 1. Démarrer PostgreSQL et Redis jetables sur un réseau de validation sans références de production. Exécuter `npm run db:migrate:deploy` une fois dans un conteneur dédié au pré-déploiement. Comparer l’historique Prisma avant et après les démarrages et redémarrages.
 2. Démarrer l’image avec un volume nommé jetable monté sur `/app/uploads`. Écrire un fichier témoin dans ce volume, détruire uniquement le conteneur de test et vérifier la présence du fichier dans un nouveau conteneur. Confirmer qu’aucune migration n’apparaît dans le journal de démarrage.

@@ -46,7 +46,6 @@ jobs:
           done
           docker exec "$buildkit" buildctl debug workers
           "$railpack" build --config-file infra/railway/railpack.candidate.json \
-            --env RAILPACK_NODE_VERSION=22.13.1 \
             --name rappel-beaute-railpack:ci --platform linux/amd64 --progress plain .
           docker image inspect rappel-beaute-railpack:ci --format '{{.Os}}/{{.Architecture}}' | grep -Fx linux/amd64
 

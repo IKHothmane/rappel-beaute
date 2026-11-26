@@ -83,9 +83,13 @@ curl --fail --silent --show-error --max-time 5 -H "x-rappel-origin: $origin_secr
 
 test "$(curl --silent --show-error --max-time 5 --output /dev/null --write-out '%{http_code}' \
   -H 'Host: healthcheck.railway.app' "$health_url")" = 403
-curl --fail --silent --show-error --max-time 5 \
-  -H 'Host: rappelbeauty.com' -H "x-rappel-origin: $origin_secret" "$health_url" |
-  jq -e '.status == "ok"'
+proxy_response=$(curl --silent --show-error --max-time 5 --write-out '\n%{http_code}' \
+  -H 'Host: rappelbeauty.com' -H 'X-Forwarded-Proto: https' \
+  -H "x-rappel-origin: $origin_secret" "$health_url")
+proxy_status=${proxy_response##*$'\n'}
+printf 'Sonde via proxy HTTPS : HTTP %s\n' "$proxy_status"
+test "$proxy_status" = 200
+jq -e '.status == "ok"' <<< "${proxy_response%$'\n'*}"
 
 docker exec "$app" bash -euc '
   tr "\000" "\n" </proc/1/cmdline | grep -Ei "next|node"

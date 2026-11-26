@@ -69,7 +69,6 @@ describe("fin de période antérieure au début", () => {
 describe("routes admin : INVALID_DATE répond 400", () => {
   it("set-period et save-period renvoient 400 (pas 500) quand le service refuse la date", async () => {
     vi.resetModules();
-    vi.doUnmock("@/lib/db/pool");
     const failing = vi.fn(async () => {
       throw new Error("INVALID_DATE");
     });
@@ -78,6 +77,11 @@ describe("routes admin : INVALID_DATE répond 400", () => {
     }));
     vi.doMock("@/lib/http/route-scope", () => ({ platformRoute: <T,>(h: T) => h }));
     vi.doMock("@/lib/db/subscription-period-payment", () => ({ saveSubscriptionPeriodPayment: failing }));
+    // La notification est hors du scénario de refus et importe le module du pool.
+    vi.doMock("@/lib/subscriptions/period-change-notice", () => ({
+      snapshotPeriod: async () => null,
+      notifyPeriodChange: async () => ({ message: "" }),
+    }));
     vi.doMock("@/lib/db/admin-subscriptions", () => ({
       SUBSCRIPTION_STATUSES: ["ACTIVE"], setSubscriptionPeriodEnd: failing, changeSubscriptionPlan: vi.fn(),
       extendSubscriptionPeriod: vi.fn(), fetchAdminSubscription: vi.fn(), grantDemoTrial: vi.fn(),

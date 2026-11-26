@@ -37,7 +37,8 @@ import { usePlanFeatures } from "@/components/subscriptions/plan-features-provid
 import { OrgLogo } from "@/components/app/org-logo";
 import { isSalon3dEnabledForOrg } from "@/lib/salon-3d/access";
 import { isPostVisitUiEnabled } from "@/lib/post-visit/access";
-import { clearTutorialDeferral, restartTutorial } from "@/components/tutorial/events";
+import { clearTutorialDeferral } from "@/components/tutorial/events";
+import { RestartTutorialButton } from "@/components/tutorial/RestartTutorialButton";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -268,15 +269,11 @@ export default function OwnerSidebar({
                   );
                 })}
                 {section.title === "Pilotage" ? (
-                  <button
-                    type="button"
+                  <RestartTutorialButton
                     data-tour="help-tutorial"
                     title={collapsed ? "Revoir le tutoriel" : undefined}
                     aria-label="Revoir le tutoriel"
-                    onClick={() => {
-                      onClose();
-                      restartTutorial();
-                    }}
+                    onBeforeStart={onClose}
                     className={cn(
                       "group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink/60 transition-all duration-200 hover:bg-[#FBF4F6] hover:text-ink",
                       collapsed && "lg:justify-center lg:px-0",
@@ -289,7 +286,7 @@ export default function OwnerSidebar({
                       aria-hidden
                     />
                     <span className={cn(collapsed && "lg:hidden")}>Revoir le tutoriel</span>
-                  </button>
+                  </RestartTutorialButton>
                 ) : null}
               </div>
             </div>

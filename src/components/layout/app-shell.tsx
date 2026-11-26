@@ -14,6 +14,7 @@ import { PlanFeatureRouteGuard } from "@/components/subscriptions/PlanFeatureRou
 import { StaffColorProvider } from "@/components/agenda/staff-color-provider";
 import { NotificationPopupHost } from "@/components/notifications/notification-popup-host";
 import { cn } from "@/lib/utils";
+import { TutorialRestartProvider } from "@/components/tutorial/tutorial-restart";
 
 // Chargé à la demande, jamais rendu côté serveur : le tutoriel ne concerne que le propriétaire connecté.
 const TutorialHost = dynamic(() => import("@/components/tutorial/tutorial-host").then((m) => m.TutorialHost), {
@@ -75,8 +76,10 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   const isOwner = user.role === "OWNER";
+  const tutorialScope = JSON.stringify([user.organizationId, user.id, user.role]);
 
   return (
+    <TutorialRestartProvider key={tutorialScope}>
     <div className="min-h-dvh bg-[#F8F7FA] text-ink">
       {isOwner ? (
         <OwnerSidebar
@@ -141,5 +144,6 @@ export function AppShell({ children }: AppShellProps) {
       <NotificationPopupHost />
       {isOwner ? <TutorialHost /> : null}
     </div>
+    </TutorialRestartProvider>
   );
 }

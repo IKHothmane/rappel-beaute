@@ -1,9 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   clearTutorialDeferral,
-  restartTutorial,
   TUTORIAL_REFRESH_EVENT,
-  TUTORIAL_RESTART_EVENT,
   tutorialDeferralKey,
 } from "@/components/tutorial/events";
 import { notifyTutorialRefresh } from "@/lib/tutorial-events";
@@ -54,15 +52,6 @@ describe("report « Plus tard » (sessionStorage)", () => {
 });
 
 describe("événements du tutoriel", () => {
-  it("restartTutorial émet rb:tutorial-restart sur window", () => {
-    const dispatchEvent = vi.fn();
-    vi.stubGlobal("window", { dispatchEvent });
-    restartTutorial();
-    expect(dispatchEvent).toHaveBeenCalledTimes(1);
-    expect((dispatchEvent.mock.calls[0][0] as Event).type).toBe(TUTORIAL_RESTART_EVENT);
-    expect(TUTORIAL_RESTART_EVENT).toBe("rb:tutorial-restart");
-  });
-
   it("notifyTutorialRefresh émet rb:tutorial-refresh (action utile réussie)", () => {
     const dispatchEvent = vi.fn();
     vi.stubGlobal("window", { dispatchEvent });
@@ -72,7 +61,6 @@ describe("événements du tutoriel", () => {
   });
 
   it("sont sans effet ni erreur côté serveur (pas de window)", () => {
-    expect(() => restartTutorial()).not.toThrow();
     expect(() => notifyTutorialRefresh()).not.toThrow();
   });
 });

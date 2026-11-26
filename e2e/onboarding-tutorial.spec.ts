@@ -9,6 +9,43 @@ const password = "E2e-tutorial-owner-1234";
 const welcome = "Bienvenue sur Rappel Beauty !";
 const resume = "Reprenons votre configuration";
 
+function barrier() {
+  let release!: () => void;
+  const wait = new Promise<void>((resolve) => { release = resolve; });
+  return { wait, release };
+}
+
+function isReset(method: string, data: string | null) {
+  return method === "PATCH" && !!data && JSON.parse(data).action === "reset";
+}
+
+async function withSkippedTutorial(
+  context: BrowserContext,
+  baseURL: string | undefined,
+  run: (email: string) => Promise<void>,
+) {
+  const testEnv: NodeJS.ProcessEnv = { ...process.env, ALLOW_REMOTE_TEST_DATABASE: undefined };
+  enforceTestDatabase(testEnv);
+  if (!baseURL || !testEnv.DATABASE_URL) throw new Error("Serveur et base de test dédiés requis.");
+  const organizationId = `tutorial-e2e-${randomUUID()}`;
+  const email = `${organizationId}@example.test`;
+  const db = new Client({ connectionString: testEnv.DATABASE_URL });
+  await db.connect();
+  try {
+    await createOwner(db, organizationId, email);
+    await db.query(
+      `INSERT INTO "UserTutorialState" ("userId", "organizationId", status, "skippedAt")
+       VALUES ($1, $2, 'SKIPPED', now())`,
+      [`user_${organizationId}`, organizationId],
+    );
+    await authenticate(context, baseURL, email);
+    await run(email);
+  } finally {
+    await db.query(`DELETE FROM "Organization" WHERE id = $1`, [organizationId]);
+    await db.end();
+  }
+}
+
 async function createOwner(db: Client, organizationId: string, email: string) {
   await db.query(
     `INSERT INTO "Organization" (id, name, slug, "updatedAt") VALUES ($1, 'Institut tutoriel E2E', $1, now())`,
@@ -85,6 +122,77 @@ for (const mode of ["Bureau", "Mobile"] as const) {
     test.use(mobile
       ? { viewport: pixel.viewport, isMobile: true, hasTouch: true, deviceScaleFactor: pixel.deviceScaleFactor }
       : { viewport: { width: 1440, height: 900 } });
+
+    test("relance pendant une lecture lente, déduplique le double clic et permet de réessayer après une panne réseau", async ({ page, context, baseURL }) => {
+      const readStarted = barrier();
+      const releaseRead = barrier();
+      const resetStarted = barrier();
+      const failReset = barrier();
+      let readHeld = false;
+      let resets = 0;
+      try {
+        await withSkippedTutorial(context, baseURL, async () => {
+          await page.route(`**${tutorialEndpoint}`, async (route) => {
+            const request = route.request();
+            if (request.method() === "GET" && !readHeld) {
+              readHeld = true;
+              const response = await route.fetch();
+              readStarted.release();
+              await releaseRead.wait;
+              await route.fulfill({ response });
+            } else if (isReset(request.method(), request.postData()) && ++resets === 1) {
+              resetStarted.release();
+              await failReset.wait;
+              await route.abort("failed");
+            } else {
+              await route.continue();
+            }
+          });
+          await openDashboard(page);
+
+          const restart = page.getByRole("main").getByRole("button", { name: "Revoir le tutoriel" });
+          if (mobile) {
+            await restart.tap();
+            await restart.tap({ force: true });
+          } else {
+            await restart.dblclick();
+          }
+          await expect(page.getByRole("status").filter({ hasText: "Relance du tutoriel" })).toBeVisible();
+          await expect(restart).toBeDisabled();
+          await readStarted.wait;
+          await resetStarted.wait;
+          expect(resets).toBe(1);
+
+          const navigation = mobile ? page.locator('nav[class~="lg:hidden"]') : page.getByRole("complementary");
+          await navigation.getByRole("link", { name: "Agenda", exact: true }).click();
+          await expect(page).toHaveURL(/\/agenda\//);
+          await navigation.getByRole("link", { name: mobile ? "Accueil" : "Tableau de bord", exact: true }).click();
+          await expect(page).toHaveURL(/\/dashboard\//);
+          await expect(restart).toBeDisabled();
+          expect(resets).toBe(1);
+
+          failReset.release();
+          const retry = page.getByRole("button", { name: "Réessayer", exact: true });
+          await expect(retry).toBeVisible();
+          await expect(page.getByRole("alert").filter({ hasText: "La relance du tutoriel a échoué" })).toBeVisible();
+
+          const restarted = actionSaved(page, "reset");
+          await retry.click();
+          await restarted;
+          releaseRead.release();
+          await expectPopoverInViewport(page);
+          expect(resets).toBe(2);
+
+          await openDashboard(page);
+          await page.reload({ waitUntil: "domcontentloaded" });
+          await expect(page.getByRole("dialog", { name: resume })).toBeVisible();
+          expect(resets).toBe(2);
+        });
+      } finally {
+        releaseRead.release();
+        failReset.release();
+      }
+    });
 
     test("créer un service, retrouver son étape après reconnexion, passer et relancer", async ({ page, context, baseURL }, testInfo) => {
       test.setTimeout(180_000);

@@ -1,25 +1,27 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { restartTutorial } from "./events";
+import type { ComponentPropsWithoutRef } from "react";
+import { useTutorialRestart } from "./tutorial-restart";
 
-/** Bouton « Revoir le tutoriel » : relance le parcours via l'événement écouté par TutorialHost (réservé au propriétaire). */
 export function RestartTutorialButton({
-  className,
   children,
   onBeforeStart,
-}: {
-  className?: string;
-  children?: ReactNode;
+  ...props
+}: Omit<ComponentPropsWithoutRef<"button">, "onClick" | "type"> & {
   onBeforeStart?: () => void;
 }) {
+  const restart = useTutorialRestart();
+  const busy = restart?.status === "queued" || restart?.status === "running";
   return (
     <button
+      {...props}
       type="button"
-      className={className}
+      aria-busy={busy || undefined}
+      aria-disabled={busy || !restart || undefined}
       onClick={() => {
+        if (busy || !restart) return;
         onBeforeStart?.();
-        restartTutorial();
+        restart.request();
       }}
     >
       {children ?? "Revoir le tutoriel"}

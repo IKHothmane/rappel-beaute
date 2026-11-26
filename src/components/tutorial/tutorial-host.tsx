@@ -21,9 +21,9 @@ import {
   AGENDA_TUTORIAL_REQUEST_EVENT,
   AGENDA_TUTORIAL_STATE_EVENT,
   TUTORIAL_REFRESH_EVENT,
-  TUTORIAL_RESTART_EVENT,
   tutorialDeferralKey,
 } from "./events";
+import { useTutorialRestart } from "./tutorial-restart";
 import { acquireTourLock, isTourLockAvailable, releaseTourLock } from "./lock";
 import {
   decideNavigation,
@@ -51,7 +51,6 @@ type Actions = {
   skipAll: () => Promise<void>;
   pauseTour: () => void;
   skipStep: (id: string) => void;
-  restart: () => Promise<void>;
 };
 
 const LOCK_ID = "onboarding";
@@ -84,6 +83,12 @@ export function TutorialHost() {
   const router = useRouter();
   const pathname = usePathname();
   const { isNavEnabled, loading: planLoading } = usePlanFeatures();
+  const restartRequest = useTutorialRestart();
+  const restartStatus = restartRequest?.status;
+  const restartPending = restartStatus === "queued" || restartStatus === "running";
+  const claimRestart = restartRequest?.claim;
+  const finishRestart = restartRequest?.finish;
+  const requestRestart = restartRequest?.request;
 
   const isOwner = !!user && isAppSession(user) && user.role === "OWNER" && !user.mustChangePassword;
   const userId = user?.id ?? "";
@@ -110,7 +115,13 @@ export function TutorialHost() {
   const restoreZoom = useRef<(() => void) | null>(null);
   const persisted = useRef<string | null>(null);
   const pendingWrite = useRef<Promise<void>>(Promise.resolve());
+  const snapshotGeneration = useRef(0);
   const actionInProgress = useRef(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const markActionBusy = useCallback((busy: boolean) => {
+    actionInProgress.current = busy;
+    setActionBusy(busy);
+  }, []);
   const skipNav = useRef(false);
   const nav = useRef<NavState>(emptyNavState());
   const pushTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -157,23 +168,30 @@ export function TutorialHost() {
 
   // --- Appels serveur (tolérants : un échec ne lève jamais) ----------------------------------------------------
   // `ok` : l'écriture a abouti. Sinon (409, réseau, 503), `snapshot` est l'état relu par GET (nul si le GET échoue aussi).
+  const refreshSnapshot = useCallback(async () => {
+    const generation = snapshotGeneration.current;
+    const fresh = await getTutorial();
+    if (fresh && mounted.current && generation === snapshotGeneration.current) setSnap(fresh);
+    return fresh;
+  }, []);
+
   const act = useCallback((action: TutorialAction, step?: TutorialStepId) => {
     const request = pendingWrite.current.then(async (): Promise<ActAck> => {
       if (!mounted.current) return { ok: false, snapshot: null };
       const result = await patchTutorial(action, step);
       if (!mounted.current) return { ok: !!result, snapshot: result };
       if (result) {
+        snapshotGeneration.current += 1;
         setSnap(result);
         return { ok: true, snapshot: result };
       }
       // Le serveur a pu avancer depuis le dernier affichage.
-      const fresh = await getTutorial();
-      if (fresh && mounted.current) setSnap(fresh);
+      const fresh = await refreshSnapshot();
       return { ok: false, snapshot: fresh };
     });
     pendingWrite.current = request.then(() => undefined, () => undefined);
     return request;
-  }, []);
+  }, [refreshSnapshot]);
 
   const persistStep = useCallback(
     (id: TutorialStepId) => {
@@ -320,9 +338,9 @@ export function TutorialHost() {
 
   const finish = useCallback(async () => {
     if (actionInProgress.current) return;
-    actionInProgress.current = true;
+    markActionBusy(true);
     const result = await act("complete");
-    actionInProgress.current = false;
+    markActionBusy(false);
     if (!mounted.current) return;
     if (!result.ok) { showUnavailable(); return; }
     destroyDriver();
@@ -334,13 +352,13 @@ export function TutorialHost() {
       tone: "info",
       autoDismiss: true,
     });
-  }, [act, destroyDriver, restoreFocus, showNotice, showUnavailable]);
+  }, [act, destroyDriver, markActionBusy, restoreFocus, showNotice, showUnavailable]);
 
   const skipAll = useCallback(async () => {
     if (actionInProgress.current) return;
-    actionInProgress.current = true;
+    markActionBusy(true);
     const result = await act("skip");
-    actionInProgress.current = false;
+    markActionBusy(false);
     if (!mounted.current) return;
     if (!result.ok) { showUnavailable(); return; }
     destroyDriver();
@@ -353,7 +371,7 @@ export function TutorialHost() {
       tone: "info",
       autoDismiss: true,
     });
-  }, [act, destroyDriver, restoreFocus, setDismissed, showNotice, showUnavailable]);
+  }, [act, destroyDriver, markActionBusy, restoreFocus, setDismissed, showNotice, showUnavailable]);
 
   const pauseTour = useCallback(() => {
     if (actionInProgress.current) return;
@@ -420,24 +438,35 @@ export function TutorialHost() {
   );
 
   const restart = useCallback(async () => {
-    if (actionInProgress.current) return;
-    actionInProgress.current = true;
+    if (!finishRestart || !requestRestart) return;
+    decided.current = true;
+    const list = stepsRef.current;
+    if (list.length === 0) {
+      finishRestart(false);
+      showUnavailable();
+      return;
+    }
+    markActionBusy(true);
     destroyDriver();
     setNotice(null);
     const result = await act("reset");
-    actionInProgress.current = false;
+    markActionBusy(false);
     if (!mounted.current) return;
-    const list = stepsRef.current;
-    if (!result.ok || list.length === 0) {
-      showUnavailable();
+    finishRestart(result.ok);
+    if (!result.ok) {
+      showNotice({
+        message: "La relance du tutoriel a échoué. Vous pouvez réessayer.",
+        tone: "warning",
+        actions: [{ label: "Réessayer", onClick: requestRestart, primary: true }],
+      });
       setTick((value) => value + 1);
       return;
     }
     setDismissed(false);
     persisted.current = null;
-    const [first] = list;
+    const [first] = stepsRef.current;
     if (first) beginTour(first);
-  }, [act, beginTour, destroyDriver, setDismissed, showUnavailable]);
+  }, [act, beginTour, destroyDriver, finishRestart, markActionBusy, requestRestart, setDismissed, showNotice, showUnavailable]);
 
   const startFromDialog = useCallback(async () => {
     if (actionInProgress.current) return;
@@ -445,9 +474,9 @@ export function TutorialHost() {
     const current = snapRef.current;
     const kind = phaseRef.current;
     if (list.length === 0 || !current) return;
-    actionInProgress.current = true;
+    markActionBusy(true);
     const ack: ActAck = kind === "welcome" ? await act("start") : { ok: true, snapshot: current };
-    actionInProgress.current = false;
+    markActionBusy(false);
     if (!mounted.current) return;
     if (kind !== phaseRef.current) return;
     // 409 (déjà démarré ailleurs) : `act` a relu l'état par GET, on s'en sert au lieu d'annoncer « indisponible ».
@@ -456,22 +485,25 @@ export function TutorialHost() {
     if (outcome === "close") { setPhase("idle"); return; }
     const first = pickStart(list, ack.snapshot, ack.snapshot.tutorial?.lastStep);
     if (first) beginTour(first);
-  }, [act, beginTour, showUnavailable]);
+  }, [act, beginTour, markActionBusy, showUnavailable]);
 
-  actionsRef.current = { goTo, finish, skipAll, pauseTour, skipStep, restart };
+  actionsRef.current = { goTo, finish, skipAll, pauseTour, skipStep };
+
+  useEffect(() => {
+    if (isOwner && !planLoading && !actionBusy && !actionInProgress.current
+      && restartStatus === "queued" && claimRestart?.()) void restart();
+  }, [actionBusy, claimRestart, isOwner, planLoading, restart, restartStatus]);
 
   // --- Chargement initial et décision d'affichage ---------------------------------------------------------------
   useEffect(() => {
     if (!isOwner || loaded.current) return;
     loaded.current = true;
-    void getTutorial().then((result) => {
-      // Erreur/404/500 : `result` est null, aucun tutoriel n'est affiché et on ne réessaie pas.
-      if (result && mounted.current) setSnap(result);
-    });
-  }, [isOwner]);
+    void refreshSnapshot();
+  }, [isOwner, refreshSnapshot]);
 
   useEffect(() => {
-    if (!isOwner || phase !== "idle" || decided.current || !snap || planLoading || path.startsWith("/security/")) return;
+    if (!isOwner || phase !== "idle" || decided.current || !snap || planLoading
+      || restartPending || path.startsWith("/security/")) return;
     const tutorial = snap.tutorial;
     if (!snap.eligible || !tutorial) {
       decided.current = true;
@@ -485,7 +517,7 @@ export function TutorialHost() {
     decided.current = true;
     if (tutorial.status === "NOT_STARTED") setPhase("welcome");
     else if (tutorial.status === "IN_PROGRESS") setPhase("resume");
-  }, [isOwner, phase, snap, planLoading, path, steps.length, isDismissed]);
+  }, [isOwner, phase, snap, planLoading, path, steps.length, isDismissed, restartPending]);
 
   // --- Événements : succès d'une action, relance, visite détaillée de l'agenda ---------------------------------
   useEffect(() => {
@@ -494,12 +526,8 @@ export function TutorialHost() {
     let agendaTimer: ReturnType<typeof setTimeout> | undefined;
     const onRefresh = () => {
       clearTimeout(timer);
-      timer = setTimeout(async () => {
-        const fresh = await getTutorial();
-        if (fresh && mounted.current) setSnap(fresh);
-      }, 200);
+      timer = setTimeout(() => void refreshSnapshot(), 200);
     };
-    const onRestart = () => void actionsRef.current?.restart();
     const onAgendaState = (event: Event) => {
       // Visite externe (agenda, équipe) démarrée ou terminée : c'est elle qui fait foi, pas un délai.
       const active = (event as CustomEvent<{ active?: boolean }>).detail?.active === true;
@@ -530,18 +558,16 @@ export function TutorialHost() {
       armExternalFallback();
     };
     window.addEventListener(TUTORIAL_REFRESH_EVENT, onRefresh);
-    window.addEventListener(TUTORIAL_RESTART_EVENT, onRestart);
     window.addEventListener(AGENDA_TUTORIAL_STATE_EVENT, onAgendaState);
     window.addEventListener(AGENDA_TUTORIAL_REQUEST_EVENT, onAgendaRequest);
     return () => {
       clearTimeout(timer);
       clearTimeout(agendaTimer);
       window.removeEventListener(TUTORIAL_REFRESH_EVENT, onRefresh);
-      window.removeEventListener(TUTORIAL_RESTART_EVENT, onRestart);
       window.removeEventListener(AGENDA_TUTORIAL_STATE_EVENT, onAgendaState);
       window.removeEventListener(AGENDA_TUTORIAL_REQUEST_EVENT, onAgendaRequest);
     };
-  }, [isOwner]);
+  }, [isOwner, refreshSnapshot]);
 
   // --- Pause automatique quand un panneau / dialogue s'ouvre ---------------------------------------------------
   const wasPanelOpen = useRef(false);
@@ -571,12 +597,10 @@ export function TutorialHost() {
   useEffect(() => {
     // Panneau refermé : on relit la progression au cas où l'événement de succès aurait été manqué.
     if (wasPanelOpen.current && !panelOpen && phase === "touring") {
-      void getTutorial().then((fresh) => {
-        if (fresh && mounted.current) setSnap(fresh);
-      });
+      void refreshSnapshot();
     }
     wasPanelOpen.current = panelOpen;
-  }, [panelOpen, phase]);
+  }, [panelOpen, phase, refreshSnapshot]);
 
   // L'annonce de réussite passe par une région aria-live présente en permanence : un texte inséré en même temps que
   // son conteneur (la bulle driver.js) n'est pas annoncé de façon fiable.
@@ -766,7 +790,7 @@ export function TutorialHost() {
   };
 
   useEffect(() => {
-    if (phase !== "touring" || !activeId || panelOpen || external) return;
+    if (phase !== "touring" || !activeId || panelOpen || external || restartPending) return;
     const abort = new AbortController();
     void presentRef.current(abort.signal).catch(() => {
       /* annulation ou échec de chargement : aucun blocage */
@@ -775,7 +799,7 @@ export function TutorialHost() {
       abort.abort();
       destroyDriver();
     };
-  }, [phase, activeId, path, panelOpen, external, satisfied, tick, steps, destroyDriver]);
+  }, [phase, activeId, path, panelOpen, external, satisfied, tick, steps, destroyDriver, restartPending]);
 
   // Annonce de fin / pause : disparition automatique.
   useEffect(() => {

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Circle } from "lucide-react";

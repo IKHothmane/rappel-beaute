@@ -131,7 +131,9 @@ for (const mode of ["Bureau", "Mobile"] as const) {
         await page.getByRole("button", { name: "30 min", exact: true }).click();
         await page.getByRole("button", { name: "Créer le service" }).click();
 
-        await expect(page.getByText(/votre premier service est enregistré/i)).toBeVisible({ timeout: 20_000 });
+        await expect(
+          page.locator(".driver-popover").getByText(/votre premier service est enregistré/i),
+        ).toBeVisible({ timeout: 20_000 });
         await page.getByRole("button", { name: "Étape suivante" }).click();
         await expect(page).toHaveURL(/\/staff\//);
         await expect(page.getByText("Ajoutez une employée", { exact: true })).toBeVisible();

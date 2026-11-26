@@ -11,7 +11,7 @@ app="$prefix-app"
 
 cleanup() {
   local status=$?
-  if (( status != 0 )); then
+  if (( status != 0 )) && docker container inspect "$app" >/dev/null 2>&1; then
     docker logs "$app" 2>&1 || true
   fi
   docker rm -f "$app" "$postgres" "$redis" >/dev/null 2>&1 || true
@@ -22,7 +22,8 @@ trap cleanup EXIT
 
 docker run --rm --entrypoint bash "$image" -euc '
   openssl version
-  node -p process.versions.node | grep -Fx 22.13.1
+  node --version
+  test "$(node -p process.versions.node)" = 22.13.1
   find /usr/lib /lib -name libjemalloc.so.2 -print -quit | grep libjemalloc.so.2
   node --input-type=commonjs -e "
     const assert = require(\"node:assert/strict\");

@@ -10,6 +10,7 @@
         { "src": "package.json", "dest": "package.json" },
         { "src": "package-lock.json", "dest": "package-lock.json" },
         "mkdir -p node_modules/.cache",
+        "node --version | grep -Fx v22.13.1",
         "npm ci --include=dev"
       ]
     },

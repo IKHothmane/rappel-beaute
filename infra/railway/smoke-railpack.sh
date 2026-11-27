@@ -55,6 +55,7 @@ docker exec "$redis" redis-cli ping | grep -Fx PONG
 
 db_url='postgresql://postgres:ephemeral-railpack@postgres:5432/railpack_smoke?schema=public'
 origin_secret='railpack-smoke-fake-origin-value-0000'
+health_token='railpack-smoke-fake-health-token-0000'
 sql() {
   docker exec "$postgres" psql -X -v ON_ERROR_STOP=1 -U postgres -d railpack_smoke -Atc "$1"
 }
@@ -69,6 +70,7 @@ docker run -d --name "$app" --network "$network" --publish 127.0.0.1::8080 \
   -e DATABASE_URL="$db_url" -e REDIS_URL=redis://redis:6379 \
   -e PORT=8080 -e APP_ENV=staging -e MEMORY_DIAGNOSTICS=1 \
   -e ORIGIN_SECRET="$origin_secret" \
+  -e HEALTH_TOKEN="$health_token" \
   -e STORAGE_LOCAL_DIR=/app/uploads -e ALERT_ON_HEALTH_DEGRADED=false \
   -e SESSION_SECRET=railpack-smoke-fake-session-value-0000 "$image"
 
@@ -79,7 +81,10 @@ for i in {1..45}; do
   sleep 1
 done
 curl --fail --silent --show-error --max-time 5 -H "x-rappel-origin: $origin_secret" "$health_url" |
-  jq -e '.status == "ok" and .database == "ok" and .redis == "ok" and (.memory.heapSizeLimitMb >= 512 and .memory.heapSizeLimitMb < 640)'
+  jq -e '.status == "ok" and .database == "ok" and .redis == "ok" and (has("memory") | not)'
+curl --fail --silent --show-error --max-time 5 -H "x-rappel-origin: $origin_secret" \
+  -H "Authorization: Bearer $health_token" "$health_url" |
+  jq -e '.memory.heapSizeLimitMb >= 512 and .memory.heapSizeLimitMb < 640'
 
 test "$(curl --silent --show-error --max-time 5 --output /dev/null --write-out '%{http_code}' \
   -H 'Host: healthcheck.railway.app' "$health_url")" = 403

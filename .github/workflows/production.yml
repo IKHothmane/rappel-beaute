@@ -33,34 +33,11 @@ jobs:
     name: Verify CI
     needs: gate
     uses: ./.github/workflows/ci.yml
-    secrets: inherit
-
-  migrate:
-    name: Migrations production
-    needs: verify
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - run: npm ci
-      - run: npx prisma generate
-
-      - name: prisma migrate deploy (production)
-        run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
   deploy:
     name: Deploy Production
-    needs: migrate
+    # Railway est responsable des migrations de la base déployée.
+    needs: verify
     runs-on: ubuntu-latest
     environment:
       name: production

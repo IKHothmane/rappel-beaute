@@ -30,6 +30,7 @@ vi.mock("@/lib/db/pool", () => ({
 vi.mock("@/lib/logger", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 
 import { requireAppSession, requirePlatformSession } from "@/lib/auth/api-guard";
+import { getUserSessionState } from "@/lib/db/users";
 import {
   clearSessionRevocationCache,
   consumeOneTimeToken,
@@ -109,6 +110,41 @@ describe("requireAppSession : session déconnectée", () => {
     m.userState = { ...m.userState!, sessionVersion: 3 };
     const auth = await requireAppSession(requestWith(appToken({ jti: JTI })));
     expect(auth.ok).toBe(false);
+  });
+});
+
+describe("requireAppSession : institut du jeton comparé à la base", () => {
+  it("relit le compte avec l'institut du jeton", async () => {
+    vi.mocked(getUserSessionState).mockClear();
+    const auth = await requireAppSession(requestWith(appToken()));
+    expect(auth.ok).toBe(true);
+    expect(getUserSessionState).toHaveBeenCalledWith("u_1", "org_a");
+  });
+
+  it("institut différent en base (aucune ligne) : 401, comme une session invalide", async () => {
+    m.userState = null;
+    const auth = await requireAppSession(requestWith(appToken({ organizationId: "org_b" })));
+    expect(auth.ok).toBe(false);
+    if (!auth.ok) expect(auth.response.status).toBe(401);
+    expect(getUserSessionState).toHaveBeenLastCalledWith("u_1", "org_b");
+  });
+
+  it("jeton sans institut : filtre conservé (chaîne vide), jamais de lecture par id seul", async () => {
+    vi.mocked(getUserSessionState).mockClear();
+    m.userState = null;
+    const auth = await requireAppSession(requestWith(appToken({ organizationId: undefined })));
+    expect(auth.ok).toBe(false);
+    for (const call of vi.mocked(getUserSessionState).mock.calls) {
+      expect(call).toHaveLength(2);
+      expect(call[1]).toBe("");
+    }
+  });
+
+  it("session plateforme : jamais relue comme compte institut", async () => {
+    vi.mocked(getUserSessionState).mockClear();
+    const auth = await requirePlatformSession(requestWith(platformToken()));
+    expect(auth.ok).toBe(true);
+    expect(getUserSessionState).not.toHaveBeenCalled();
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 import { MetricCard } from "@/components/ui/metric-card";
 
-import { useMemo, useState, type ElementType, type ReactNode } from "react";
+import { useMemo, useState, type ElementType, type ReactNode, type RefObject } from "react";
 import {
   BadgeCheck,
   CalendarDays,
@@ -44,6 +44,8 @@ type Props = {
   onRefresh?: () => void | Promise<void>;
   /** Bouton « Tutoriel » affiché à côté de « Nouveau service ». */
   guide?: ReactNode;
+  /** Champ de recherche, pour le raccourci Ctrl+K. */
+  searchInputRef?: RefObject<HTMLInputElement>;
 };
 
 const PAGE_SIZE = 12;
@@ -315,6 +317,7 @@ export default function ServicesCatalogPremium({
   onDelete,
   onRefresh,
   guide,
+  searchInputRef,
 }: Props) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -451,6 +454,7 @@ export default function ServicesCatalogPremium({
         >
           <Search size={19} className="text-[#A01C50]" />
           <input
+            ref={searchInputRef}
             aria-label="Rechercher un service"
             type="search"
             value={query}

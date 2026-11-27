@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/seo";
 import { publishedArticles } from "@/lib/blog/public";
+import { chapterPath, GUIDE, GUIDE_PATH } from "@/lib/guide";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,12 @@ const entries: { path: string; priority: number; changeFrequency: "weekly" | "mo
   { path: "/contact/", priority: 0.4, changeFrequency: "monthly" },
   { path: "/mentions-legales/", priority: 0.2, changeFrequency: "monthly" },
   { path: "/confidentialite/", priority: 0.2, changeFrequency: "monthly" },
+  { path: GUIDE_PATH, priority: 0.6, changeFrequency: "monthly" },
+  ...GUIDE.chapters.map((chapter) => ({
+    path: chapterPath(chapter.slug),
+    priority: 0.5,
+    changeFrequency: "monthly" as const,
+  })),
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

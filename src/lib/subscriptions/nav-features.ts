@@ -67,6 +67,7 @@ export function pathnameToNavKey(pathname: string): string | null {
     promotions: "promotions",
     "gift-cards": "gift-cards",
     whatsapp: "whatsapp",
+    "messages-whatsapp": "whatsapp",
     "waiting-list": "waiting-list",
     reactivation: "reactivation",
     "post-visit": "post-visit",

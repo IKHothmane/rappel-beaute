@@ -41,30 +41,40 @@ export async function insertTestAppointment(opts: {
   endAt?: Date;
 }): Promise<string> {
   const id = testId("test_apt");
-  const dayOffset = Math.floor(Math.random() * 200) + 30;
-  const start =
-    opts.startAt ??
-    new Date(Date.now() + dayOffset * 24 * 3600 * 1000 + Math.random() * 3600 * 1000);
-  const end = opts.endAt ?? new Date(start.getTime() + 60 * 60 * 1000);
-  await testPool.query(
-    `INSERT INTO "Appointment" (
-      id, "organizationId", "customerId", "serviceId", "staffId", "resourceId",
-      "startAt", "endAt", price, status, "updatedAt"
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::"AppointmentStatus",NOW())`,
-    [
-      id,
-      opts.organizationId,
-      opts.customerId ?? "c1",
-      opts.serviceId ?? "s1",
-      opts.staffId ?? "e2",
-      opts.resourceId !== undefined ? opts.resourceId : "r2",
-      start,
-      end,
-      opts.price ?? 450,
-      opts.status ?? "CONFIRMED",
-    ],
-  );
-  return id;
+  // Sans horaire imposé, le créneau est tiré au hasard : il peut chevaucher un rendez-vous déjà présent pour la
+  // même employée ou ressource (contraintes d'exclusion, code 23P01) dans une base de test réutilisée. On retire.
+  const attempts = opts.startAt ? 1 : 8;
+  for (let attempt = 1; ; attempt++) {
+    const dayOffset = Math.floor(Math.random() * 200) + 30;
+    const start =
+      opts.startAt ??
+      new Date(Date.now() + dayOffset * 24 * 3600 * 1000 + Math.random() * 3600 * 1000);
+    const end = opts.endAt ?? new Date(start.getTime() + 60 * 60 * 1000);
+    try {
+      await testPool.query(
+        `INSERT INTO "Appointment" (
+          id, "organizationId", "customerId", "serviceId", "staffId", "resourceId",
+          "startAt", "endAt", price, status, "updatedAt"
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::"AppointmentStatus",NOW())`,
+        [
+          id,
+          opts.organizationId,
+          opts.customerId ?? "c1",
+          opts.serviceId ?? "s1",
+          opts.staffId ?? "e2",
+          opts.resourceId !== undefined ? opts.resourceId : "r2",
+          start,
+          end,
+          opts.price ?? 450,
+          opts.status ?? "CONFIRMED",
+        ],
+      );
+      return id;
+    } catch (error) {
+      const overlap = (error as { code?: string }).code === "23P01";
+      if (!overlap || attempt >= attempts) throw error;
+    }
+  }
 }
 
 export async function countRows(

@@ -28,7 +28,8 @@ describe("Garde-fou base de test", () => {
     };
     expect(enforceTestDatabase(env)).toBe("configured");
     expect(env.DATABASE_URL).toBe(TEST_URL);
-    expect(env.DIRECT_DATABASE_URL).toBeUndefined();
+    // Jamais l'URL applicative, et jamais vide : prisma.config.ts rechargerait sinon celle du .env.
+    expect(env.DIRECT_DATABASE_URL).toBe(TEST_URL);
   });
 
   it("DATABASE_TEST_DIRECT_URL alimente DIRECT_DATABASE_URL", () => {

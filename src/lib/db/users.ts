@@ -43,7 +43,16 @@ type UserSessionState = {
   orgStatus?: "ACTIVE" | "SUSPENDED" | "ARCHIVED";
 };
 
-export async function getUserSessionState(userId: string): Promise<UserSessionState | null> {
+/**
+ * État courant d'un compte institut. `organizationId` (institut porté par le jeton) restreint la lecture à cet
+ * institut : un jeton dont l'institut ne correspond plus à la base ne trouve aucune ligne et vaut une session
+ * invalide. Une chaîne vide ne correspond à aucun institut (échec fermé).
+ */
+export async function getUserSessionState(
+  userId: string,
+  organizationId?: string,
+): Promise<UserSessionState | null> {
+  const scoped = organizationId !== undefined;
   const { rows } = await pool.query<{
     status: "ACTIVE" | "DISABLED";
     mustChangePassword: boolean;
@@ -53,8 +62,8 @@ export async function getUserSessionState(userId: string): Promise<UserSessionSt
   }>(
     `SELECT u.status, u."mustChangePassword", u."sessionVersion", u.role, o.status AS "orgStatus"
      FROM "User" u JOIN "Organization" o ON o.id = u."organizationId"
-     WHERE u.id = $1`,
-    [userId],
+     WHERE u.id = $1${scoped ? ` AND u."organizationId" = $2` : ""}`,
+    scoped ? [userId, organizationId] : [userId],
   );
   const row = rows[0];
   if (!row) return null;

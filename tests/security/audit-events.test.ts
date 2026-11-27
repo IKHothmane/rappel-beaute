@@ -40,33 +40,20 @@ const run = process.env.DATABASE_URL ? describe : describe.skip;
 run("Audit — LOGIN écrit en DB", () => {
   it("login app crée entrée AuditLog", async () => {
     const { POST } = await import("@/app/api/auth/login/route");
-    const { getSeedOrgId, countRows, testPool } = await import("../helpers/db");
-    const orgId = await getSeedOrgId();
-    const { rows } = await testPool.query<{ email: string }>(
-      `SELECT email FROM "User" WHERE "organizationId" = $1 AND role = 'OWNER' LIMIT 1`,
-      [orgId],
-    );
+    const { countRows } = await import("../helpers/db");
+    const { withInstituteAccount } = await import("../helpers/auth-fixtures");
+    await withInstituteAccount(async ({ organizationId, email, password }) => {
+      const where = `"organizationId" = $1 AND action = 'LOGIN'`;
+      const before = await countRows("AuditLog", where, [organizationId]);
+      const req = new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-forwarded-for": "127.0.0.1" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const before = await countRows(
-      "AuditLog",
-      `"organizationId" = $1 AND action = 'LOGIN'`,
-      [orgId],
-    );
-
-    const req = new Request("http://localhost/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-forwarded-for": "127.0.0.1" },
-      body: JSON.stringify({ email: rows[0]!.email, password: "demo1234" }),
+      const res = await POST(req as import("next/server").NextRequest);
+      expect(res.status).toBe(200);
+      expect(await countRows("AuditLog", where, [organizationId])).toBeGreaterThan(before);
     });
-
-    const res = await POST(req as import("next/server").NextRequest);
-    expect(res.status).toBe(200);
-
-    const after = await countRows(
-      "AuditLog",
-      `"organizationId" = $1 AND action = 'LOGIN'`,
-      [orgId],
-    );
-    expect(after).toBeGreaterThan(before);
   });
 });

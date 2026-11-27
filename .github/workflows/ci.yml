@@ -76,7 +76,7 @@ jobs:
         run: npx prisma migrate deploy
 
       - name: Seed database
-        run: npm run db:seed
+        run: SEED_DEMO_PASSWORD="Qa9!$(openssl rand -hex 18)" npm run db:seed
 
       - name: Lint
         run: npm run lint

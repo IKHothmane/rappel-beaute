@@ -37,6 +37,7 @@ const COLUMNS = [
     icon: BookOpen,
     links: [
       { href: "/ressources/", label: "Centre d’aide" },
+      { href: "/ressources/guide/", label: "Guide d’utilisation" },
       { href: "/fonctionnalites/", label: "Découvrir le logiciel" },
       { href: "/faq/", label: "FAQ" },
       { href: "/blog/", label: "Blog — conseils & guides" },

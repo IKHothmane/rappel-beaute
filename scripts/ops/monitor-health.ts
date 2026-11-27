@@ -1,10 +1,13 @@
 /**
  * Sonde health + envoi alerte webhook (Slack / Discord / n8n).
  * Usage: HEALTH_BASE_URL=https://app-staging... ALERT_WEBHOOK_URL=... npx tsx scripts/ops/monitor-health.ts
+ *
+ * Sans secret, la surveillance ne lit que les champs publics de /api/health/ (status, database, redis).
+ * HEALTH_TOKEN (optionnel) ajoute la sonde détaillée /api/health/db/, réservée aux appels authentifiés.
  */
 import { sendAlert, type AlertSeverity } from "../../src/lib/monitoring/alerts";
 
-type Probe = { name: string; url: string; critical: boolean };
+type Probe = { name: string; url: string; critical: boolean; authorized?: boolean };
 
 // Une variable GitHub non définie est injectée comme chaîne vide, pas comme undefined.
 const configured = process.env.HEALTH_BASE_URL?.trim() || "http://127.0.0.1:3000";
@@ -17,16 +20,21 @@ if (!/^https?:\/\//.test(configured) || !URL.canParse(configured)) {
 }
 
 const base = configured.replace(/\/$/, "");
+const healthToken = process.env.HEALTH_TOKEN?.trim() || "";
 
 const probes: Probe[] = [
+  // Couvre aussi la base : le champ public `database` vient d'un SELECT 1 côté serveur.
   { name: "health", url: `${base}/api/health/`, critical: true },
-  { name: "health_db", url: `${base}/api/health/db/`, critical: true },
+  ...(healthToken
+    ? [{ name: "health_db", url: `${base}/api/health/db/`, critical: true, authorized: true }]
+    : []),
   { name: "health_redis", url: `${base}/api/health/redis/`, critical: false },
 ];
 
 async function probe(p: Probe): Promise<{ ok: boolean; detail: string }> {
   try {
-    const res = await fetch(p.url, { signal: AbortSignal.timeout(10000) });
+    const headers: Record<string, string> = p.authorized ? { Authorization: `Bearer ${healthToken}` } : {};
+    const res = await fetch(p.url, { headers, signal: AbortSignal.timeout(10000) });
     const body = (await res.json()) as Record<string, unknown>;
     const ok = res.ok && body.status !== "error" && body.database !== "error";
     return { ok, detail: JSON.stringify(body) };
@@ -37,6 +45,7 @@ async function probe(p: Probe): Promise<{ ok: boolean; detail: string }> {
 
 async function main() {
   const failures: { name: string; critical: boolean; detail: string }[] = [];
+  if (!healthToken) console.log("[monitoring] HEALTH_TOKEN absent : sonde détaillée /api/health/db/ ignorée.");
 
   for (const p of probes) {
     const { ok, detail } = await probe(p);

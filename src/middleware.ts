@@ -179,10 +179,121 @@ function publicRedirect(
   return res;
 }
 
+/**
+ * Politique de sécurité du contenu, posée ici seulement (next.config.mjs n'en définit plus : l'en-tête du
+ * middleware l'écrasait). Elle couvre les pages et les API, en développement comme en production. Les fichiers
+ * statiques (hors matcher) n'en reçoivent pas.
+ *
+ * Sans nonce (avis GHSA-ffhc-5mcf-pf4q sur Next 14), deux mots-clés restent nécessaires :
+ * - 'unsafe-inline' : scripts en ligne du rendu RSC de Next, attributs onload ajoutés par Critters
+ *   (scripts/inline-critical-css.mjs), balises HTML personnalisées de GTM ;
+ * - 'unsafe-eval' : WebAssembly du lecteur de QR (barcode-detector/zxing-wasm), variables JavaScript
+ *   personnalisées de GTM, rechargement à chaud en développement.
+ * connect-src et img-src gardent https: : le fichier WebAssembly du lecteur de QR vient de fastly.jsdelivr.net,
+ * l'hôte d'envoi Sentry dépend du DSN, les logos et photos peuvent venir d'un stockage externe.
+ */
+const CSP_DIRECTIVES: ReadonlyArray<readonly [string, string]> = [
+  ["default-src", "'self'"],
+  [
+    "script-src",
+    "'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com",
+  ],
+  ["style-src", "'self' 'unsafe-inline'"],
+  ["img-src", "'self' data: blob: https:"],
+  ["font-src", "'self' data:"],
+  ["connect-src", "'self' https:"],
+  ["frame-src", "'self' https://www.googletagmanager.com"],
+  ["object-src", "'none'"],
+  ["base-uri", "'self'"],
+  ["form-action", "'self'"],
+];
+
+function buildCsp(frameAncestors: string | null): string {
+  const directives = frameAncestors
+    ? [...CSP_DIRECTIVES, ["frame-ancestors", frameAncestors] as const]
+    : CSP_DIRECTIVES;
+  return directives.map(([name, value]) => `${name} ${value}`).join("; ");
+}
+
+/** Pages et API : aucun site ne peut les afficher dans un cadre. */
+const CONTENT_SECURITY_POLICY = buildCsp("'none'");
+
+/**
+ * Cadre de l'assistant public : même politique, sans frame-ancestors. La route ajoute son propre en-tête
+ * `frame-ancestors <domaines du widget>` ; le navigateur applique les deux politiques ensemble.
+ */
+const ASSISTANT_FRAME_CSP = buildCsp(null);
+
+const ASSISTANT_FRAME_PATH = "/api/public/assistant/frame";
+
 function withFrameDeny(response: NextResponse) {
   response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("Content-Security-Policy", "frame-ancestors 'none'");
+  response.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
   return response;
+}
+
+function matchesPathPrefix(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`);
+}
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Routes API exclues du refus des écritures inter-sites (Sec-Fetch-Site: cross-site) :
+ * - /api/public/assistant : widget intégré sur les sites des instituts (assistant.js) ; CORS par domaine
+ *   déclaré, authentification par jeton Bearer, jamais par cookie ;
+ * - /api/whatsapp/webhook : webhook Meta (signature HMAC) ;
+ * - /api/monitoring/telegram : webhook Telegram (secret d'en-tête) ;
+ * - /api/cron : tâches planifiées (secret) ;
+ * - /api/apple-wallet : service web Apple Wallet (servi avant tout contrôle, voir le début du middleware).
+ * Un appelant serveur n'envoie pas Sec-Fetch-Site : ces exclusions documentent les appels externes attendus.
+ * Les retours OAuth (/api/auth/google/callback, /api/integrations/google-calendar/callback) sont des GET.
+ */
+const CROSS_SITE_API_PREFIXES = [
+  "/api/public/assistant",
+  "/api/whatsapp/webhook",
+  "/api/monitoring/telegram",
+  "/api/cron",
+  "/api/apple-wallet",
+] as const;
+
+/**
+ * Protection CSRF commune aux API : une écriture (hors GET/HEAD/OPTIONS) envoyée par un navigateur depuis un
+ * autre site est refusée. same-origin, same-site (www/app/admin), none et l'absence d'en-tête (clients hors
+ * navigateur) passent ; les routes sensibles gardent leur contrôle checkJsonSameOrigin.
+ */
+function refuseCrossSiteApiWrite(request: NextRequest, path: string): NextResponse | null {
+  if (!path.startsWith("/api/")) return null;
+  if (SAFE_METHODS.has(request.method.toUpperCase())) return null;
+  const fetchSite = request.headers.get("sec-fetch-site")?.trim().toLowerCase();
+  if (fetchSite !== "cross-site") return null;
+  if (CROSS_SITE_API_PREFIXES.some((prefix) => matchesPathPrefix(path, prefix))) return null;
+  const res = NextResponse.json({ error: "Requête refusée : origine externe." }, { status: 403 });
+  res.headers.set("Cache-Control", "no-store");
+  return withFrameDeny(res);
+}
+
+/** Secure seulement en HTTPS (proxy ou URL) : en HTTP local, le navigateur refuserait le cookie. */
+function isHttpsRequest(request: NextRequest): boolean {
+  const forwardedProto = (request.headers.get("x-forwarded-proto") ?? "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  return forwardedProto === "https" || request.nextUrl.protocol === "https:";
+}
+
+function setHostCookie(
+  res: NextResponse,
+  request: NextRequest,
+  value: Domain,
+  persistent: boolean,
+) {
+  res.cookies.set(COOKIE_HOST, value, {
+    path: "/",
+    sameSite: "lax",
+    secure: isHttpsRequest(request),
+    ...(persistent ? { maxAge: SESSION_MAX_AGE_SEC } : {}),
+  });
 }
 
 /** /admin → /domains/admin/dashboard ; /admin/users → /domains/admin/users */
@@ -231,6 +342,9 @@ export async function middleware(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  const crossSiteRefusal = refuseCrossSiteApiWrite(request, path);
+  if (crossSiteRefusal) return crossSiteRefusal;
+
   const hostname = resolvePublicHostname(
     request.headers.get("host"),
     request.headers.get("x-forwarded-host"),
@@ -264,18 +378,17 @@ export async function middleware(request: NextRequest) {
   }
 
   if (path.startsWith("/api/")) {
-    if (path.startsWith("/api/public/assistant/frame")) return NextResponse.next();
-    const res = NextResponse.next();
-    res.headers.set("X-Frame-Options", "DENY");
-    res.headers.set("Content-Security-Policy", "frame-ancestors 'none'");
-    return res;
+    if (matchesPathPrefix(path, ASSISTANT_FRAME_PATH)) {
+      // Pas de X-Frame-Options : la page s'affiche dans un cadre sur les domaines déclarés du widget.
+      const res = NextResponse.next();
+      res.headers.set("Content-Security-Policy", ASSISTANT_FRAME_CSP);
+      return res;
+    }
+    return withFrameDeny(NextResponse.next());
   }
 
   if (path === "/assistant" || path.startsWith("/assistant/")) {
-    const res = NextResponse.next();
-    res.headers.set("X-Frame-Options", "DENY");
-    res.headers.set("Content-Security-Policy", "frame-ancestors 'none'");
-    return res;
+    return withFrameDeny(NextResponse.next());
   }
 
   const queryHost = parseDomainParam(request.nextUrl.searchParams.get(QUERY_HOST));
@@ -384,11 +497,7 @@ export async function middleware(request: NextRequest) {
     // Déjà sous /domains/admin (ré-entrée middleware après rewrite) → next, pas rewrite
     if (path.startsWith("/domains/admin")) {
       const res = withFrameDeny(NextResponse.next({ request: { headers } }));
-      res.cookies.set(COOKIE_HOST, "admin", {
-        path: "/",
-        sameSite: "lax",
-        maxAge: SESSION_MAX_AGE_SEC,
-      });
+      setHostCookie(res, request, "admin", true);
       return res;
     }
 
@@ -396,11 +505,7 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = adminInternalPath(path);
     const res = withFrameDeny(NextResponse.rewrite(url, { request: { headers } }));
-    res.cookies.set(COOKIE_HOST, "admin", {
-      path: "/",
-      sameSite: "lax",
-      maxAge: SESSION_MAX_AGE_SEC,
-    });
+    setHostCookie(res, request, "admin", true);
     return res;
   }
 
@@ -415,11 +520,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const res = withFrameDeny(NextResponse.next({ request: { headers } }));
-    if (!queryHost) {
-      res.cookies.set(COOKIE_HOST, "www", { path: "/", sameSite: "lax" });
-    } else {
-      res.cookies.set(COOKIE_HOST, queryHost, { path: "/", sameSite: "lax" });
-    }
+    setHostCookie(res, request, queryHost ?? "www", false);
     return res;
   }
 
@@ -428,13 +529,7 @@ export async function middleware(request: NextRequest) {
   // et Playwright timeout (goto qui ne finit jamais / formulaire jamais monté).
   if (path.startsWith("/domains/app")) {
     const res = withFrameDeny(NextResponse.next({ request: { headers } }));
-    if (queryHost) {
-      res.cookies.set(COOKIE_HOST, queryHost, {
-        path: "/",
-        sameSite: "lax",
-        maxAge: SESSION_MAX_AGE_SEC,
-      });
-    }
+    if (queryHost) setHostCookie(res, request, queryHost, true);
     return res;
   }
 
@@ -447,11 +542,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const res = withFrameDeny(NextResponse.rewrite(url, { request: { headers } }));
-  res.cookies.set(COOKIE_HOST, domain, {
-    path: "/",
-    sameSite: "lax",
-    maxAge: SESSION_MAX_AGE_SEC,
-  });
+  setHostCookie(res, request, domain, true);
   return res;
 }
 

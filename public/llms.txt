@@ -32,6 +32,16 @@
 - [À propos](https://rappelbeauty.com/a-propos/)
 - [Contact](https://rappelbeauty.com/contact/)
 
+## Guide d'utilisation
+
+- [Guide d'utilisation](https://rappelbeauty.com/ressources/guide/): prise en main de l'application, écran par écran, avec captures
+- [Bien démarrer](https://rappelbeauty.com/ressources/guide/bien-demarrer/): connexion, tableau de bord, réglages, usage sur téléphone
+- [Services, équipe et ressources](https://rappelbeauty.com/ressources/guide/services-et-equipe/): catalogue, équipe, planning, cabines
+- [Agenda et clientes](https://rappelbeauty.com/ressources/guide/agenda-et-clientes/): rendez-vous et fiches clientes
+- [Caisse, dépenses et stock](https://rappelbeauty.com/ressources/guide/caisse-et-stock/): encaissements, dépenses, produits, achats
+- [Fidélité, promotions et pilotage](https://rappelbeauty.com/ressources/guide/fidelite-et-pilotage/): fidélité, promotions, avis, statistiques, assistance
+- [Guide au format PDF](https://rappelbeauty.com/marketing/guide/guide-rappel-beauty.pdf): version téléchargeable
+
 ## Blog
 
 - [Blog des professionnels de la beauté](https://rappelbeauty.com/blog/): guides pratiques sur la gestion d'un institut au Maroc (logiciel, rendez-vous, WhatsApp, réservation en ligne, fidélité, stock, caisse, équipe, visibilité locale, données).

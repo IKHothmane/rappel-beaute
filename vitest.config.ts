@@ -15,7 +15,8 @@ export default defineConfig({
     testTimeout: 60_000,
     hookTimeout: 60_000,
     fileParallelism: false,
-    exclude: ["**/node_modules/**", "**/e2e/**", "**/.next/**"],
+    // .tmp et .test-db : copies de build et fichiers locaux (hors git), à ne pas exécuter comme tests unitaires.
+    exclude: ["**/node_modules/**", "**/e2e/**", "**/.next/**", "**/.next-test/**", "**/.tmp/**", "**/.test-db/**"],
   },
   resolve: {
     alias: {

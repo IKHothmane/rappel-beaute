@@ -4,7 +4,7 @@ import { authenticateUser } from "@/lib/db/users";
 import { authenticatePlatformUser } from "@/lib/db/platform-users";
 import { writeAuditLog } from "@/lib/db/audit";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
-import { createSessionCookie } from "@/lib/auth/session";
+import { cookieSecure, createSessionCookie } from "@/lib/auth/session";
 import {
   isAppSession,
   isPlatformSession,
@@ -139,6 +139,7 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
       res.cookies.set(createSessionCookie(session, platformMaxAge));
       res.cookies.set(COOKIE_HOST, "admin", {
         path: "/",
+        secure: cookieSecure(),
         sameSite: "lax",
         ...(platformMaxAge == null ? {} : { maxAge: platformMaxAge }),
       });
@@ -183,6 +184,7 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     res.cookies.set(createSessionCookie(session, sessionMaxAge));
     res.cookies.set(COOKIE_HOST, "app", {
       path: "/",
+      secure: cookieSecure(),
       sameSite: "lax",
       ...(sessionMaxAge == null ? {} : { maxAge: sessionMaxAge }),
     });

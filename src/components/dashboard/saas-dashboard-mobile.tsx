@@ -228,7 +228,7 @@ export function SaasDashboardMobile(props: SaasDashboardMobileProps) {
             icon={Package}
           />
           <MobileActionCard
-            href={platformReplyTickets > 0 ? "/whatsapp/" : "/support/"}
+            href="/support/"
             kicker="VIP"
             dark
             title={loading ? "…" : `${openTickets} message${openTickets > 1 ? "s" : ""}`}

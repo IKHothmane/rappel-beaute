@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"lib\\\\monitoring\\\\sentry-client.ts -> @sentry/nextjs\":{\"id\":\"lib\\\\monitoring\\\\sentry-client.ts -> @sentry/nextjs\",\"files\":[\"static/chunks/_app-pages-browser_node_modules_sentry_nextjs_build_esm_index_client_js.js\"]}}"

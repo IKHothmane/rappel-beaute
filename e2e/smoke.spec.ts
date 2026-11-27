@@ -15,13 +15,16 @@ test.describe("Smoke — santé & pages publiques", () => {
 });
 
 test.describe("Feature guard — STARTER stock", () => {
-  test.skip(!process.env.E2E_STARTER_EMAIL, "E2E_STARTER_EMAIL non configuré");
+  test.skip(
+    !process.env.E2E_STARTER_EMAIL || !process.env.E2E_STARTER_PASSWORD,
+    "E2E_STARTER_EMAIL / E2E_STARTER_PASSWORD non configurés",
+  );
 
   test("OWNER STARTER → API products 403", async ({ request }) => {
     const login = await request.post("/api/auth/login/", {
       data: {
         email: process.env.E2E_STARTER_EMAIL,
-        password: process.env.E2E_STARTER_PASSWORD ?? "demo1234",
+        password: process.env.E2E_STARTER_PASSWORD,
       },
     });
     expect(login.ok()).toBeTruthy();

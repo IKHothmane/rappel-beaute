@@ -44,7 +44,7 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
       { status: 401 },
     );
   }
-  const state = await getUserSessionState(auth.session.id);
+  const state = await getUserSessionState(auth.session.id, auth.session.organizationId ?? "");
   if (!state || state.status !== "ACTIVE") {
     return NextResponse.json({ error: "Session expirée." }, { status: 401 });
   }

@@ -67,6 +67,10 @@ export function enforceTestDatabase(env: Env = process.env): TestDatabaseMode {
   if (directTestUrl) {
     assertLocal(directTestUrl, "DATABASE_TEST_DIRECT_URL", env);
     env.DIRECT_DATABASE_URL = directTestUrl;
+  } else {
+    // Toujours défini : prisma.config.ts charge `.env` (dotenv) et préférerait sinon le DIRECT_DATABASE_URL
+    // applicatif pour les migrations ; dotenv ne remplace jamais une variable déjà présente.
+    env.DIRECT_DATABASE_URL = testUrl;
   }
   return "configured";
 }

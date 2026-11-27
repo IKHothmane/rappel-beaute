@@ -254,7 +254,7 @@ export function ServiceForm({
       <div data-services-tour="svc-form-products">
         <span className="mb-1.5 block text-sm font-medium">Produits consommés</span>
         <p className="mb-2 text-[12px] leading-5 text-ink/50">
-          Quantités retirées du stock automatiquement quand le rendez-vous est marqué Terminé.
+          Produits habituellement utilisés. Le stock n’est déduit que lorsque vous validez la consommation sur le rendez-vous.
         </p>
         <ServiceProductSelector
           options={options.products}

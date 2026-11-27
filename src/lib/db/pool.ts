@@ -28,7 +28,9 @@ export const pool =
 // Toujours réutiliser le pool (HMR local + multi-chargements Next).
 globalForPg.pgPool = pool;
 
-if (process.env.NEXT_PHASE !== "phase-production-build") {
+// Pas de tâches de fond sous Vitest : chargées après la fin d'un fichier de test, elles provoquaient
+// des erreurs « environment torn down » (les tests appellent ces modules directement quand il le faut).
+if (process.env.NEXT_PHASE !== "phase-production-build" && !process.env.VITEST) {
   void import("@/lib/push/scheduler").then((mod) => mod.startCustomerPushScheduler());
   void import("@/lib/loyalty/google-wallet-notify").then((mod) => mod.startGoogleWalletNotifier());
   void import("@/lib/loyalty/apple-wallet-sync").then((mod) => mod.startAppleWalletUpdates());

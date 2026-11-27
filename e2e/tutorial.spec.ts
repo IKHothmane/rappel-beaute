@@ -278,7 +278,7 @@ for (const viewport of [
         await expectPopoverInViewport(page);
       }
       await reachStep(page, viewport.mobile, SERVICES, "Créez votre premier service");
-      await expect(page.locator('[data-tour="services-add"]')).toHaveClass(/driver-active-element/);
+      await expect(page.locator('[data-tour="services-add"].driver-active-element')).toBeVisible();
       await expect.poll(() => mock.writes.some((w) => w.action === "step" && w.step === "services")).toBe(true);
       expect(mock.status).toBe("IN_PROGRESS");
     });
@@ -417,7 +417,7 @@ for (const viewport of [
       await context.clearCookies();
       await login(context, baseURL!, accounts!.nonOwner!);
       await openDashboard(page, { expectRead: false });
-      await expect(page.getByRole("main")).toBeVisible({ timeout: 30_000 });
+      await expect(page.locator("main.rappel-dashboard-premium")).toBeVisible({ timeout: 30_000 });
       await page.waitForLoadState("networkidle");
 
       await expect(page.getByRole("dialog", { name: new RegExp(`${WELCOME}|${RESUME}`) })).toHaveCount(0);

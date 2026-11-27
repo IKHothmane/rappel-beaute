@@ -609,7 +609,7 @@ export async function getAIRecommendations(
       id: "push-service",
       title: "Campagne service phare",
       detail: `Mettez en avant ${insight.kpis.topServiceName} auprès des clientes dormantes.`,
-      actionHref: "/whatsapp/",
+      actionHref: "/messages-whatsapp/",
       actionLabel: "Ouvrir WhatsApp",
     });
   }

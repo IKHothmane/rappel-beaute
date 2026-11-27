@@ -17,6 +17,7 @@ import { countRows, getSeedOrgId, testId, testPool } from "../helpers/db";
 
 // authenticateUser is in users.ts - platform in platform-users
 import { hashPassword } from "@/lib/auth/crypto";
+import { testPassword, withInstituteAccount, withPlatformAccount } from "../helpers/auth-fixtures";
 import type { PlatformSessionUser } from "@/lib/auth/types";
 
 const run = process.env.DATABASE_URL ? describe : describe.skip;
@@ -34,30 +35,27 @@ function platformActor(): PlatformSessionUser {
 }
 
 run("Super Admin — séparation Platform / Organization", () => {
-  beforeAll(async () => {
-    await testPool.query(
-      `INSERT INTO "PlatformUser" (id, email, "firstName", "lastName", role, status, "passwordHash", "updatedAt")
-       VALUES ('pu_super_admin', 'admin@rappelbeaute.ma', 'Osman', 'Benali', 'SUPER_ADMIN', 'ACTIVE', $1, NOW())
-       ON CONFLICT (email) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash", status = 'ACTIVE'`,
-      [hashPassword("demo1234")],
-    );
-  });
-
   it("PlatformUser authentifié séparément", async () => {
-    const session = await authenticatePlatformUser("admin@rappelbeaute.ma", "demo1234");
-    expect(session?.accountType).toBe("PLATFORM");
-    expect(session?.scope).toBe("platform");
+    await withPlatformAccount(async ({ email, password }) => {
+      const session = await authenticatePlatformUser(email, password);
+      expect(session?.accountType).toBe("PLATFORM");
+      expect(session?.scope).toBe("platform");
+    });
   });
 
   it("OWNER institut → login app OK, login platform refusé", async () => {
-    const app = await authenticateUser("app@beauty.ma", "demo1234");
-    expect(app?.accountType).toBe("ORGANIZATION");
-    const platform = await authenticatePlatformUser("app@beauty.ma", "demo1234");
-    expect(platform).toBeNull();
+    await withInstituteAccount(async ({ email, password }) => {
+      const app = await authenticateUser(email, password);
+      expect(app?.accountType).toBe("ORGANIZATION");
+      expect(await authenticatePlatformUser(email, password)).toBeNull();
+    });
   });
 
   it("STAFF → login platform refusé", async () => {
-    expect(await authenticatePlatformUser("sara@institutroyal.ma", "demo1234")).toBeNull();
+    await withInstituteAccount(async ({ email, password }) => {
+      expect((await authenticateUser(email, password))?.accountType).toBe("ORGANIZATION");
+      expect(await authenticatePlatformUser(email, password)).toBeNull();
+    }, "STAFF");
   });
 });
 
@@ -159,36 +157,39 @@ run("Super Admin — cycle de vie institut", () => {
     orgId = r.organizationId;
   });
 
-  it("suspension bloque login app du OWNER", async () => {
-    await suspendOrganization(platformActor(), orgId);
-    const org = await getOrganizationById(orgId);
-    expect(org?.status).toBe("SUSPENDED");
+  // Mot de passe connu du test : sans lui, les refus ci-dessous passeraient même si le blocage ne marchait plus.
+  const ownerPassword = testPassword();
 
+  it("suspension bloque login app du OWNER", async () => {
     const users = await listOrganizationUsers(orgId);
     const owner = users.find((u) => u.role === "OWNER");
     expect(owner).toBeDefined();
 
     await testPool.query(`UPDATE "User" SET "passwordHash" = $1 WHERE id = $2`, [
-      hashPassword("owner-pass-123"),
+      hashPassword(ownerPassword),
       owner!.id,
     ]);
+    expect(await authenticateUser(owner!.email, ownerPassword)).not.toBeNull();
 
-    const login = await authenticateUser(owner!.email, "owner-pass-123");
-    expect(login).toBeNull();
+    await suspendOrganization(platformActor(), orgId);
+    expect((await getOrganizationById(orgId))?.status).toBe("SUSPENDED");
+    expect(await authenticateUser(owner!.email, ownerPassword)).toBeNull();
   });
 
-  it("réactivation restaure l'accès", async () => {
+  it("réactivation restaure l’accès", async () => {
     await reactivateOrganization(platformActor(), orgId);
     expect((await getOrganizationById(orgId))?.status).toBe("ACTIVE");
+    const owner = (await listOrganizationUsers(orgId)).find((u) => u.role === "OWNER")!;
+    expect(await authenticateUser(owner.email, ownerPassword)).not.toBeNull();
   });
 
   it("utilisateur désactivé → login refusé", async () => {
     const users = await listOrganizationUsers(orgId);
     const owner = users.find((u) => u.role === "OWNER")!;
     await setOrganizationUserStatus(platformActor(), orgId, owner.id, "DISABLED");
-    const login = await authenticateUser(owner.email, "owner-pass-123");
-    expect(login).toBeNull();
+    expect(await authenticateUser(owner.email, ownerPassword)).toBeNull();
     await setOrganizationUserStatus(platformActor(), orgId, owner.id, "ACTIVE");
+    expect(await authenticateUser(owner.email, ownerPassword)).not.toBeNull();
   });
 
   it("modification abonnement + audit", async () => {

@@ -1,9 +1,70 @@
 import "dotenv/config";
+import { randomBytes } from "crypto";
 import { Pool } from "pg";
 import { hashPassword } from "../src/lib/auth/crypto";
+import { checkPasswordPolicy, PASSWORD_POLICY_MESSAGES } from "../src/lib/auth/password-policy";
+
+/**
+ * Garde : ce seed crée un SUPER_ADMIN et un propriétaire d'institut de démonstration.
+ * Il refuse de s'exécuter sur un environnement déployé (production, staging, Railway),
+ * avant toute connexion à la base, sauf SEED_ALLOW_DEMO=1 explicite.
+ */
+function deployedEnvironmentMarker(env: NodeJS.ProcessEnv): string | null {
+  if (env.NODE_ENV?.trim().toLowerCase() === "production") return "NODE_ENV=production";
+  const appEnv = env.APP_ENV?.trim().toLowerCase();
+  if (appEnv === "staging" || appEnv === "production") return `APP_ENV=${appEnv}`;
+  const railway = Object.keys(env).find((name) => name.startsWith("RAILWAY_ENVIRONMENT") && env[name]?.trim());
+  return railway ?? null;
+}
+
+const deployedMarker = deployedEnvironmentMarker(process.env);
+if (deployedMarker && process.env.SEED_ALLOW_DEMO !== "1") {
+  console.error(
+    `[seed] Refusé : environnement déployé détecté (${deployedMarker}). Ce seed crée des comptes de démonstration ` +
+      "(dont un SUPER_ADMIN). Pour l'autoriser explicitement sur une base de démonstration : SEED_ALLOW_DEMO=1 " +
+      "et SEED_DEMO_PASSWORD=<mot de passe fort>.",
+  );
+  process.exit(1);
+}
+
+/**
+ * Mot de passe des comptes de démonstration CRÉÉS par ce seed (les comptes existants gardent le leur).
+ * SEED_DEMO_PASSWORD, sinon un mot de passe aléatoire affiché une seule fois dans la console locale.
+ */
+const providedDemoPassword = process.env.SEED_DEMO_PASSWORD ?? "";
+if (providedDemoPassword) {
+  const policy = checkPasswordPolicy(providedDemoPassword);
+  if (policy) {
+    console.error(`[seed] SEED_DEMO_PASSWORD refusé : ${PASSWORD_POLICY_MESSAGES[policy]}`);
+    process.exit(1);
+  }
+} else if (deployedMarker) {
+  console.error("[seed] Refusé : SEED_DEMO_PASSWORD est obligatoire sur un environnement déployé.");
+  process.exit(1);
+}
+const demoPasswordGenerated = !providedDemoPassword;
+const demoPassword = providedDemoPassword || randomBytes(18).toString("base64url");
+const DEMO_PASSWORD_HASH = hashPassword(demoPassword);
+const createdDemoAccounts: string[] = [];
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const DEMO_PASSWORD = hashPassword("demo1234");
+
+/** Annonce, une seule fois, le mot de passe des comptes que ce seed vient de créer. */
+function reportDemoAccounts(): void {
+  if (createdDemoAccounts.length === 0) {
+    console.log("[seed] Comptes de démonstration déjà présents : mots de passe inchangés.");
+    return;
+  }
+  console.log(`[seed] Comptes de démonstration créés : ${createdDemoAccounts.join(", ")}`);
+  if (demoPasswordGenerated) {
+    console.log(
+      `[seed] Mot de passe généré (affiché une seule fois, non enregistré) : ${demoPassword}\n` +
+        "[seed] Définissez SEED_DEMO_PASSWORD pour choisir ce mot de passe lors d'un prochain seed sur une base vierge.",
+    );
+  } else {
+    console.log("[seed] Mot de passe : valeur de SEED_DEMO_PASSWORD.");
+  }
+}
 
 async function upsertOrg() {
   const { rows } = await pool.query<{ id: string }>(
@@ -27,17 +88,20 @@ async function upsertOrg() {
 }
 
 async function seedPlatformUser() {
-  await pool.query(
+  // Un compte existant garde son mot de passe et son statut : le seed ne réinitialise ni ne
+  // réactive jamais un SUPER_ADMIN (désactivé volontairement, il le reste).
+  // (xmax = 0) : vrai seulement pour une ligne insérée par cette requête.
+  const { rows } = await pool.query<{ email: string; inserted: boolean }>(
     `INSERT INTO "PlatformUser" (id, email, "firstName", "lastName", role, status, "passwordHash", "updatedAt")
      VALUES ('pu_super_admin', 'admin@rappelbeaute.ma', 'Osman', 'Benali', 'SUPER_ADMIN', 'ACTIVE', $1, NOW())
      ON CONFLICT (email) DO UPDATE SET
        "firstName" = EXCLUDED."firstName",
        "lastName" = EXCLUDED."lastName",
-       "passwordHash" = EXCLUDED."passwordHash",
-       status = 'ACTIVE',
-       "updatedAt" = NOW()`,
-    [DEMO_PASSWORD],
+       "updatedAt" = NOW()
+     RETURNING email, (xmax = 0) AS inserted`,
+    [DEMO_PASSWORD_HASH],
   );
+  for (const row of rows) if (row.inserted) createdDemoAccounts.push(row.email);
 }
 
 async function seedOrgSubscription(orgId: string) {
@@ -92,18 +156,23 @@ async function main() {
   );
 
   for (const [id, email, firstName, lastName, phone, role] of users) {
-    await pool.query(
+    // Pas de "passwordHash" dans la mise à jour : un compte existant garde son mot de passe.
+    const { rows } = await pool.query<{ email: string; inserted: boolean }>(
       `INSERT INTO "User" (id, "organizationId", email, "firstName", "lastName", phone, role, "passwordHash", "updatedAt")
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
        ON CONFLICT ("organizationId", email) DO UPDATE SET
          "firstName" = EXCLUDED."firstName",
          "lastName" = EXCLUDED."lastName",
          role = EXCLUDED.role,
-         "passwordHash" = EXCLUDED."passwordHash",
-         "updatedAt" = NOW()`,
-      [id, orgId, email, firstName, lastName, phone, role, DEMO_PASSWORD],
+         "updatedAt" = NOW()
+       RETURNING email, (xmax = 0) AS inserted`,
+      [id, orgId, email, firstName, lastName, phone, role, DEMO_PASSWORD_HASH],
     );
+    for (const row of rows) if (row.inserted) createdDemoAccounts.push(row.email);
   }
+
+  // Annoncé dès la création : si la suite du seed échoue, le mot de passe n'est pas perdu.
+  reportDemoAccounts();
 
   const customers = [
     ["c1", "Sara", "El Amrani", "0661223344", "ACTIVE", true, true, false, "Cliente fidèle depuis 2024"],

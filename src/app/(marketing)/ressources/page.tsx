@@ -11,6 +11,11 @@ export const metadata: Metadata = {
 };
 
 const LINKS = [
+  {
+    href: "/ressources/guide/",
+    title: "Guide d’utilisation",
+    text: "Prendre en main votre institut écran par écran, avec captures et PDF à télécharger.",
+  },
   { href: "/faq/", title: "FAQ", text: "Essai, WhatsApp, photos, plans, connexion." },
   {
     href: "/fonctionnalites/",
@@ -38,7 +43,7 @@ export default function RessourcesPage() {
           <Link
             key={l.href}
             href={l.href}
-            className="surface p-[var(--vt-space-1p5rem)] transition hover:border-primary/30"
+            className="surface p-[var(--vt-space-1p5rem)] transition first:sm:col-span-2 hover:border-primary/30"
           >
             <h2 className="font-display text-[length:var(--vt-text-1p25rem)]/[var(--vt-line-1p75rem)] font-semibold">{l.title}</h2>
             <p className="mt-[var(--vt-size-0p5rem)] text-[length:var(--vt-text-0p875rem)]/[var(--vt-line-1p25rem)] text-ink/65">{l.text}</p>

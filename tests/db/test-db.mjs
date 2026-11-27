@@ -46,8 +46,9 @@ function portOpen(host, port) {
 
 function run(label, args, databaseUrl) {
   const env = { ...process.env, DATABASE_URL: databaseUrl };
-  // Les migrations et le seed ne doivent viser que la base de test.
-  delete env.DIRECT_DATABASE_URL;
+  // Les migrations et le seed ne doivent viser que la base de test. La variable reste DÉFINIE :
+  // prisma.config.ts charge `.env` et y reprendrait sinon le DIRECT_DATABASE_URL applicatif.
+  env.DIRECT_DATABASE_URL = databaseUrl;
   const result = spawnSync(process.execPath, args, { cwd: ROOT, env, encoding: "utf8" });
   if (result.status !== 0) {
     throw new Error(`[test-db] ${label} a échoué :\n${result.stdout}\n${result.stderr}`);

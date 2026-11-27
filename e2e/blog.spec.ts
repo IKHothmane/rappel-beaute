@@ -33,7 +33,7 @@ test("blog : URL inconnue et API protégées", async ({ request }) => {
 test("les 110 guides sont présents dans le sitemap et accessibles", async ({ request, page }) => {
   const xml = await (await request.get("/sitemap.xml")).text();
   expect(xml).toContain("/blog/");
-  expect(xml.match(/<loc>/g)).toHaveLength(130);
+  expect(xml.match(/<loc>[^<]+\/blog\/[^/<]+\/<\/loc>/g)).toHaveLength(BLOG_DRAFTS.length);
   for (const guide of BLOG_DRAFTS) expect(xml).toContain(`/blog/${guide.slug}/`);
   for (const guide of [BLOG_DRAFTS[0], BLOG_DRAFTS[55], BLOG_DRAFTS[109]]) {
     const response = await request.get(`/blog/${guide.slug}/`);

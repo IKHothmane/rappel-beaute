@@ -172,7 +172,7 @@ export function applyAppSession(res: NextResponse, session: AppSessionUser): voi
   // Comme /api/auth/login : le cache du navigateur ne doit pas resservir une page d'avant la connexion.
   res.headers.set("Clear-Site-Data", '"cache"');
   res.cookies.set(createSessionCookie(session, SESSION_MAX_AGE_SEC));
-  res.cookies.set(COOKIE_HOST, "app", { path: "/", sameSite: "lax", maxAge: SESSION_MAX_AGE_SEC });
+  res.cookies.set(COOKIE_HOST, "app", { path: "/", sameSite: "lax", secure: cookieSecure(), maxAge: SESSION_MAX_AGE_SEC });
 }
 
 /** Codes renvoyés à la carte de sécurité (`?google_link=`) après une liaison. */

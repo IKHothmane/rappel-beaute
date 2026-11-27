@@ -8,6 +8,10 @@ vi.mock("@/lib/db/blog", () => ({ listPublishedArticles: editorial.published }))
 
 import { publishedArticles } from "@/lib/blog/public";
 import sitemap from "@/app/sitemap";
+import guide from "@/lib/guide/content.json";
+
+// 130 URL historiques + l’accueil du guide d’utilisation + une page par chapitre.
+const SITEMAP_SIZE = 130 + 1 + guide.chapters.length;
 
 beforeEach(() => {
   editorial.published.mockReset();
@@ -38,10 +42,10 @@ describe("Catalogue public", () => {
     expect(articles.every((article) => article.publishedAt === null)).toBe(true);
   });
 
-  it("génère 130 URL uniques, dont les 110 guides, sans exposer de route privée", async () => {
+  it("génère des URL uniques, dont les 110 guides, sans exposer de route privée", async () => {
     const urls = (await sitemap()).map((entry) => entry.url);
-    expect(urls).toHaveLength(130);
-    expect(new Set(urls).size).toBe(130);
+    expect(urls).toHaveLength(SITEMAP_SIZE);
+    expect(new Set(urls).size).toBe(SITEMAP_SIZE);
     expect(urls).toContain("https://rappelbeauty.com/blog/");
     for (const article of BLOG_DRAFTS) {
       expect(urls).toContain(`https://rappelbeauty.com/blog/${article.slug}/`);
@@ -58,12 +62,12 @@ describe("Catalogue public", () => {
     ).toBe(true);
   });
 
-  it("conserve les guides et leurs 130 URL si le stockage éditorial est indisponible", async () => {
+  it("conserve les guides et toutes leurs URL si le stockage éditorial est indisponible", async () => {
     editorial.published.mockRejectedValue(new Error("Stockage indisponible"));
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
       expect(await publishedArticles()).toHaveLength(110);
-      expect(await sitemap()).toHaveLength(130);
+      expect(await sitemap()).toHaveLength(SITEMAP_SIZE);
     } finally {
       warning.mockRestore();
     }
@@ -95,7 +99,7 @@ describe("Catalogue public", () => {
     editorial.published.mockResolvedValue([]);
     expect(await publishedArticles()).toHaveLength(110);
     const urls = (await sitemap()).map((entry) => entry.url);
-    expect(urls).toHaveLength(130);
+    expect(urls).toHaveLength(SITEMAP_SIZE);
     expect(urls).not.toContain(`https://rappelbeauty.com/blog/${extra.slug}/`);
   });
 

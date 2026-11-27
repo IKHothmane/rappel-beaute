@@ -55,8 +55,6 @@ export type PublicBookingInput = {
 export type PublicBookingResult = {
   appointmentId: string;
   bookingRef: string;
-  customerId: string;
-  customerCreated: boolean;
   staffId: string;
   staffName: string;
   serviceName: string;

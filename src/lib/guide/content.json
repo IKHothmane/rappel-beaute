@@ -1,0 +1,363 @@
+{
+  "title": "Guide d’utilisation Rappel Beauty",
+  "subtitle": "Prendre en main votre institut, écran par écran",
+  "intro": "Ce guide suit l’ordre dans lequel un institut s’installe : régler son identité, créer ses prestations et son équipe, prendre des rendez-vous, encaisser, puis fidéliser et piloter. Les captures proviennent d’un institut de démonstration ; les noms et coordonnées y sont fictifs.",
+  "version": "Novembre 2026",
+  "pdf": "/marketing/guide/guide-rappel-beauty.pdf",
+  "chapters": [
+    {
+      "slug": "bien-demarrer",
+      "title": "Bien démarrer",
+      "summary": "Se connecter, comprendre le tableau de bord et préparer son institut.",
+      "sections": [
+        {
+          "id": "connexion",
+          "title": "Se connecter",
+          "intro": "L’application s’utilise dans le navigateur, sur ordinateur, tablette ou téléphone.",
+          "steps": [
+            "Ouvrez rappelbeauty.com puis cliquez sur « Se connecter ».",
+            "Saisissez l’identifiant de votre compte et votre mot de passe.",
+            "Vous arrivez sur le tableau de bord de votre institut.",
+            "Pour quitter, utilisez « Se déconnecter » en bas du menu, surtout sur un appareil partagé."
+          ],
+          "tips": ["Un nouvel institut peut faire sa demande depuis « Je suis un professionnel »."],
+          "images": []
+        },
+        {
+          "id": "tableau-de-bord",
+          "title": "Le tableau de bord",
+          "intro": "C’est le résumé de votre institut : chiffre d’affaires, rendez-vous, nouvelles clientes et actions du jour.",
+          "steps": [
+            "Choisissez la période : aujourd’hui, cette semaine, ce mois ou l’année.",
+            "Consultez « À faire aujourd’hui » : rendez-vous à préparer, paiements à encaisser, stock à surveiller et messages de l’assistance.",
+            "Suivez la caisse du jour et ouvrez-la depuis le bouton dédié.",
+            "Naviguez avec le menu de gauche. Sur téléphone, ouvrez-le avec l’icône en haut à gauche."
+          ],
+          "tips": ["Le bouton « Revoir le tutoriel » relance la visite guidée à tout moment."],
+          "images": [{ "src": "tableau-de-bord", "alt": "Tableau de bord de l’institut", "caption": "Le tableau de bord" }]
+        },
+        {
+          "id": "reglages",
+          "title": "Régler son institut",
+          "intro": "Dans « Paramètres », complétez les informations affichées dans l’application et dans vos messages.",
+          "steps": [
+            "Vérifiez votre profil et changez votre mot de passe depuis « Sécurité ».",
+            "Ajoutez le logo de l’institut, l’enseigne et l’adresse.",
+            "Renseignez le numéro WhatsApp de l’institut : les messages à vos clientes partent de ce numéro.",
+            "Consultez votre abonnement. Pendant l’essai gratuit, le nombre de jours restants s’affiche en haut de l’écran."
+          ],
+          "tips": [],
+          "images": [{ "src": "reglages", "alt": "Page Paramètres avec le profil et l’institut", "caption": "Paramètres de l’institut" }]
+        },
+        {
+          "id": "ordre",
+          "title": "L’ordre conseillé pour la première journée",
+          "intro": "L’agenda a besoin de prestations, d’une équipe et d’horaires pour proposer des créneaux.",
+          "steps": [
+            "Créez vos services avec leur prix et leur durée.",
+            "Ajoutez votre équipe et attribuez les services à chaque personne.",
+            "Définissez les horaires dans le planning.",
+            "Ajoutez vos cabines, fauteuils ou machines si vous voulez éviter les doubles réservations.",
+            "Créez votre premier rendez-vous, puis encaissez-le depuis la caisse."
+          ],
+          "tips": [],
+          "images": []
+        },
+        {
+          "id": "mobile",
+          "title": "Sur téléphone",
+          "intro": "L’écran s’adapte au téléphone. La barre du bas donne accès à l’accueil, à l’agenda, aux clientes et à la caisse.",
+          "steps": [
+            "Touchez le bouton « + » au centre pour les actions rapides.",
+            "Ouvrez le menu complet avec l’icône en haut à gauche.",
+            "Faites glisser les cartes de chiffres vers la gauche pour voir la suite."
+          ],
+          "tips": [],
+          "images": [
+            { "src": "tableau-de-bord-mobile", "alt": "Tableau de bord sur téléphone", "caption": "Accueil", "mobile": true },
+            { "src": "agenda-mobile", "alt": "Agenda sur téléphone", "caption": "Agenda", "mobile": true },
+            { "src": "caisse-mobile", "alt": "Caisse sur téléphone", "caption": "Caisse", "mobile": true }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "services-et-equipe",
+      "title": "Services, équipe et ressources",
+      "summary": "Construire le catalogue, l’équipe, les horaires et les cabines.",
+      "sections": [
+        {
+          "id": "services",
+          "title": "Services et prestations",
+          "intro": "Chaque service a un prix, une durée et les personnes capables de le réaliser.",
+          "steps": [
+            "Ouvrez « Services » puis cliquez sur « Nouveau service ».",
+            "Choisissez un soin dans la liste ou saisissez son nom, puis ajoutez une description.",
+            "Indiquez le prix en dirhams et la durée.",
+            "Cochez les employées qui réalisent ce soin, et ajoutez au besoin les produits consommés.",
+            "Laissez le statut « Actif » pour que le soin soit proposé dans l’agenda, puis cliquez sur « Créer le service »."
+          ],
+          "tips": ["La recherche et les catégories permettent de retrouver rapidement un soin."],
+          "images": [
+            { "src": "services", "alt": "Catalogue des services", "caption": "Le catalogue" },
+            { "src": "form-service", "alt": "Formulaire Nouveau service", "caption": "Créer un service" }
+          ]
+        },
+        {
+          "id": "equipe",
+          "title": "Votre équipe",
+          "intro": "L’onglet « Équipe » rassemble les profils, les habilitations et les performances.",
+          "steps": [
+            "Ouvrez « Équipe & Planning » puis cliquez sur « Ajouter un employé ».",
+            "Saisissez le prénom, le nom, le téléphone, l’e-mail et le poste.",
+            "Choisissez le statut et la date d’embauche.",
+            "Cochez les services que la personne peut réaliser, puis validez avec « Créer la collaboratrice ».",
+            "Sélectionnez une personne dans la liste pour voir sa fiche et la contacter."
+          ],
+          "tips": [],
+          "images": [
+            { "src": "equipe", "alt": "Liste de l’équipe et fiche d’une collaboratrice", "caption": "L’équipe" },
+            { "src": "form-employee", "alt": "Formulaire Nouveau collaborateur", "caption": "Ajouter une collaboratrice" }
+          ]
+        },
+        {
+          "id": "planning",
+          "title": "Le planning",
+          "intro": "L’onglet « Planning » montre les horaires de chacune par jour, semaine ou mois.",
+          "steps": [
+            "Ouvrez l’onglet « Planning ».",
+            "Changez de période avec les flèches et filtrez sur une personne si besoin.",
+            "Sélectionnez une collaboratrice puis « Modifier les horaires ».",
+            "Réglez ses jours travaillés et ses heures, puis enregistrez."
+          ],
+          "tips": ["Des horaires à jour évitent de proposer un créneau pendant un repos."],
+          "images": [{ "src": "planning", "alt": "Planning hebdomadaire de l’équipe", "caption": "Le planning de la semaine" }]
+        },
+        {
+          "id": "ressources",
+          "title": "Cabines, fauteuils et machines",
+          "intro": "Les ressources empêchent de réserver deux fois le même espace ou le même appareil.",
+          "steps": [
+            "Ouvrez « Ressources » puis cliquez sur « Nouvelle ressource ».",
+            "Donnez un nom et choisissez le type : cabine, salle, fauteuil, machine…",
+            "Cochez les prestations associées, puis cliquez sur « Créer la ressource ».",
+            "Sélectionnez une ressource pour voir sa disponibilité et ses rendez-vous du jour."
+          ],
+          "tips": ["Cette étape est facultative si votre institut n’a pas de cabine ou de matériel partagé."],
+          "images": [
+            { "src": "ressources", "alt": "Liste des ressources avec leur disponibilité", "caption": "Les ressources" },
+            { "src": "form-ressource", "alt": "Formulaire Ajouter une ressource", "caption": "Ajouter une ressource" }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "agenda-et-clientes",
+      "title": "Agenda et clientes",
+      "summary": "Prendre un rendez-vous, retrouver une cliente et la contacter.",
+      "sections": [
+        {
+          "id": "agenda",
+          "title": "L’agenda",
+          "intro": "Affichez vos rendez-vous par jour, semaine ou mois.",
+          "steps": [
+            "Ouvrez « Agenda » et choisissez « Jour », « Semaine » ou « Mois ».",
+            "Passez d’une période à l’autre avec les flèches ; « Aujourd’hui » revient à la date du jour.",
+            "Filtrez par praticienne, service, cabine ou statut.",
+            "Cliquez sur un rendez-vous pour l’ouvrir et mettre à jour son statut."
+          ],
+          "tips": ["Le bouton « Tutoriel » de l’agenda montre chaque champ du formulaire sans enregistrer de rendez-vous."],
+          "images": [{ "src": "agenda", "alt": "Agenda de l’institut en vue mensuelle", "caption": "La vue Mois" }]
+        },
+        {
+          "id": "rendez-vous",
+          "title": "Créer un rendez-vous",
+          "intro": "Le formulaire propose les créneaux selon la durée, la praticienne et la cabine.",
+          "steps": [
+            "Cliquez sur « Nouveau rendez-vous ».",
+            "Choisissez une cliente existante ou créez-en une avec « Nouvelle cliente ».",
+            "Sélectionnez le service, puis l’employée et la cabine si nécessaire.",
+            "Indiquez la date et vérifiez le prix ; ajoutez un code promo le cas échéant.",
+            "Choisissez un créneau libre puis cliquez sur « Créer le rendez-vous »."
+          ],
+          "tips": ["Si aucun créneau ne convient, changez la date, la praticienne ou la cabine."],
+          "images": [{ "src": "form-rendez-vous", "alt": "Formulaire Nouveau rendez-vous", "caption": "Nouveau rendez-vous" }]
+        },
+        {
+          "id": "clientes",
+          "title": "Vos clientes",
+          "intro": "Chaque fiche regroupe les visites, les dépenses et l’historique des prestations.",
+          "steps": [
+            "Ouvrez « Clientes » puis cliquez sur « Nouvelle cliente ».",
+            "Saisissez le nom complet et le téléphone (obligatoires), et l’e-mail si vous l’avez.",
+            "Retrouvez une cliente avec la recherche, ou filtrez : actives, à relancer, VIP, nouvelles.",
+            "Depuis sa fiche, prenez un rendez-vous, encaissez ou ouvrez WhatsApp."
+          ],
+          "tips": ["WhatsApp s’ouvre avec la cliente ; c’est vous qui envoyez le message."],
+          "images": [
+            { "src": "clientes", "alt": "Liste des clientes et fiche d’une cliente", "caption": "Le répertoire" },
+            { "src": "form-cliente", "alt": "Formulaire Nouvelle cliente", "caption": "Ajouter une cliente" }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "caisse-et-stock",
+      "title": "Caisse, dépenses et stock",
+      "summary": "Encaisser, suivre les sorties d’argent et gérer les produits.",
+      "sections": [
+        {
+          "id": "caisse",
+          "title": "La caisse",
+          "intro": "Une session de caisse commence par un fond de caisse et se termine par une clôture qui compare le solde réel au solde attendu.",
+          "steps": [
+            "Ouvrez « Caisse & paiements », saisissez le fond de caisse puis « Ouvrir la caisse ».",
+            "Cliquez sur « Nouveau paiement » pour encaisser un rendez-vous ou vendre des produits.",
+            "Choisissez la méthode : espèces, carte ou virement.",
+            "Retrouvez les opérations dans le journal et filtrez par période, méthode ou personne.",
+            "En fin de journée, comptez l’argent puis clôturez la session."
+          ],
+          "tips": ["Les rendez-vous non payés apparaissent dans le journal avec le bouton « Encaisser »."],
+          "images": [
+            { "src": "caisse", "alt": "Page Caisse et paiements", "caption": "La caisse" },
+            { "src": "form-paiement", "alt": "Panneau Nouveau paiement", "caption": "Encaisser" }
+          ]
+        },
+        {
+          "id": "depenses",
+          "title": "Les dépenses",
+          "intro": "Enregistrez le loyer, les abonnements, les fournitures et les autres charges.",
+          "steps": [
+            "Ouvrez « Dépenses » puis cliquez sur « Nouvelle dépense ».",
+            "Choisissez la catégorie, le montant, la date et la méthode de règlement.",
+            "Ajoutez le fournisseur et une description, puis enregistrez."
+          ],
+          "tips": ["Pour un achat de stock, passez par « Achats » afin de ne pas compter la dépense deux fois."],
+          "images": [
+            { "src": "depenses", "alt": "Registre des dépenses", "caption": "Les dépenses" },
+            { "src": "form-depense", "alt": "Formulaire Nouvelle dépense", "caption": "Ajouter une dépense" }
+          ]
+        },
+        {
+          "id": "produits",
+          "title": "Produits et stock",
+          "intro": "Suivez les quantités, les seuils d’alerte et la valeur du stock.",
+          "steps": [
+            "Ouvrez « Produits & Stock » puis cliquez sur « Nouveau produit ».",
+            "Saisissez le nom, les prix d’achat et de vente, les stocks minimum, maximum et initial, et le fournisseur.",
+            "Utilisez les onglets Catalogue, Stock, Mouvements, Inventaire et Alertes.",
+            "Surveillez les produits sous le seuil et les ruptures."
+          ],
+          "tips": [],
+          "images": [
+            { "src": "produits", "alt": "Catalogue des produits et indicateurs de stock", "caption": "Produits et stock" },
+            { "src": "form-produit", "alt": "Formulaire Nouveau produit", "caption": "Ajouter un produit" }
+          ]
+        },
+        {
+          "id": "fournisseurs",
+          "title": "Fournisseurs et achats",
+          "intro": "Un bon de commande suit trois temps : fournisseur, commande, puis réception.",
+          "steps": [
+            "Ajoutez vos partenaires dans « Fournisseurs ». Vous pouvez les appeler ou leur écrire sur WhatsApp depuis leur fiche.",
+            "Dans « Achats », cliquez sur « Nouvelle commande ».",
+            "À la livraison, pointez les quantités réellement reçues puis validez la réception."
+          ],
+          "tips": ["Le stock n’augmente qu’après la validation des quantités reçues."],
+          "images": [
+            { "src": "fournisseurs", "alt": "Répertoire des fournisseurs", "caption": "Les fournisseurs" },
+            { "src": "achats", "alt": "Journal des commandes et contrôle de réception", "caption": "Les achats" }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "fidelite-et-pilotage",
+      "title": "Fidélité, promotions et pilotage",
+      "summary": "Faire revenir les clientes et suivre les résultats.",
+      "sections": [
+        {
+          "id": "fidelite",
+          "title": "Le programme de fidélité",
+          "intro": "La carte de fidélité compte les passages jusqu’à la récompense choisie.",
+          "steps": [
+            "Ouvrez « Fidélité » pour voir le programme actif et le QR code de l’institut.",
+            "La cliente scanne ce QR code pour obtenir sa carte (le code est flouté sur la capture).",
+            "À chaque visite, scannez sa carte avec « Ouvrir la caméra », ou cherchez-la par nom, téléphone ou code de carte.",
+            "Validez le passage ; la progression se met à jour."
+          ],
+          "tips": [],
+          "images": [{ "src": "fidelite", "alt": "Programme de fidélité de l’institut", "caption": "La fidélité" }]
+        },
+        {
+          "id": "promotions",
+          "title": "Les promotions",
+          "intro": "Créez un code de réduction ou un soin offert.",
+          "steps": [
+            "Ouvrez « Promotions » puis cliquez sur « Nouvelle promotion ».",
+            "Donnez un nom et un code.",
+            "Choisissez le type : pourcentage, montant fixe ou soin offert.",
+            "Indiquez la valeur, la prestation concernée si besoin, et l’usage : une fois ou plusieurs fois par cliente.",
+            "Enregistrez. Le code se choisit ensuite dans le rendez-vous ou à l’encaissement."
+          ],
+          "tips": [],
+          "images": [
+            { "src": "promotions", "alt": "Liste des offres et codes promo", "caption": "Les offres" },
+            { "src": "form-promotion", "alt": "Formulaire Nouvelle promotion", "caption": "Créer une promotion" }
+          ]
+        },
+        {
+          "id": "avis",
+          "title": "Les avis",
+          "intro": "Suivez la satisfaction de vos clientes.",
+          "steps": [
+            "Ouvrez « Avis » pour lire les notes et commentaires.",
+            "Traitez les avis signalés « À modérer » depuis leur menu.",
+            "Consultez la répartition des notes."
+          ],
+          "tips": [],
+          "images": [{ "src": "avis", "alt": "Avis des clientes et répartition des notes", "caption": "Les avis" }]
+        },
+        {
+          "id": "statistiques",
+          "title": "Les statistiques",
+          "intro": "« Analytics » réunit le chiffre d’affaires, les rendez-vous, les clientes et le bénéfice.",
+          "steps": [
+            "Choisissez la période : aujourd’hui, 7 jours, 30 jours, mois précédent ou 12 mois.",
+            "Comparez avec la période précédente.",
+            "Descendez pour voir la répartition des rendez-vous et des modes de paiement."
+          ],
+          "tips": [],
+          "images": [{ "src": "statistiques", "alt": "Statistiques de performance", "caption": "Analytics" }]
+        },
+        {
+          "id": "notifications",
+          "title": "Notifications et assistant",
+          "intro": "Les alertes et l’assistant vous aident à ne rien oublier.",
+          "steps": [
+            "Ouvrez « Notifications » pour traiter les urgences : rupture de stock, nouveaux rendez-vous, paiements.",
+            "Marquez les alertes comme lues une fois traitées.",
+            "Dans « Assistant IA », posez une question ou choisissez un raccourci, par exemple le panier moyen ou les risques d’absence."
+          ],
+          "tips": ["Vérifiez les réponses de l’assistant avant de prendre une décision importante."],
+          "images": [
+            { "src": "notifications", "alt": "Centre de notifications", "caption": "Les notifications" },
+            { "src": "assistant", "alt": "Assistant Rappel Beauté", "caption": "L’assistant" }
+          ]
+        },
+        {
+          "id": "assistance",
+          "title": "Demander de l’aide",
+          "intro": "L’équipe Rappel Beauty répond depuis la page « Aide & Support ».",
+          "steps": [
+            "Ouvrez « Aide & Support ».",
+            "Cliquez sur « Nouveau ticket » pour une question, ou « Signaler un bug » pour un problème.",
+            "Suivez les réponses dans la même page."
+          ],
+          "tips": [],
+          "images": [{ "src": "assistance", "alt": "Page d’assistance et tickets", "caption": "L’assistance" }]
+        }
+      ]
+    }
+  ]
+}

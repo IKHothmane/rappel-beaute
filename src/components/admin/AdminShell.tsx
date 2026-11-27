@@ -17,6 +17,7 @@ import {
   Settings,
   Shield,
   Store,
+  Target,
   Terminal,
   Users,
 } from "lucide-react";
@@ -42,6 +43,7 @@ const NAV: NavGroup[] = [
     items: [
       { href: "/dashboard/", label: "Tableau de bord", icon: LayoutDashboard },
       { href: "/organizations/", label: "Instituts", icon: Store },
+      { href: "/prospects/", label: "Prospects", icon: Target },
       { href: "/loyalty/", label: "Fidélité", icon: Gift },
       { href: "/users/", label: "Utilisateurs globaux", icon: Users },
     ],

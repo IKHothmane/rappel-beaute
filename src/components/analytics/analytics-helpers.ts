@@ -279,7 +279,7 @@ export function buildAnalyticsInsight(opts: {
       alert,
       monitors,
       cta: "Ouvrir WhatsApp",
-      ctaHref: "/whatsapp/",
+      ctaHref: "/messages-whatsapp/",
       secondaryCta: "Voir les clientes",
       secondaryHref: "/customers/",
     };

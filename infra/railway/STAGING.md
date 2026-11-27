@@ -83,12 +83,24 @@ Dans le service **Next.js** → **Variables** :
 
 1. **Deploy** → attendre build vert
 2. Vérifier les logs **Release** : `migrate deploy` sans erreur
-3. **Seed une seule fois** (CLI Railway) :
+3. **Seed une seule fois** (CLI Railway), sur la base **staging uniquement** :
+
+Le seed crée des comptes de démonstration (dont un SUPER_ADMIN). Il refuse de s'exécuter
+quand `NODE_ENV=production`, `APP_ENV=staging|production` ou une variable `RAILWAY_ENVIRONMENT*`
+est présente, sauf autorisation explicite. Sur un environnement déployé, le mot de passe
+des comptes créés doit être fourni par `SEED_DEMO_PASSWORD` (au moins 10 caractères, jamais
+un mot de passe publié). Choisissez-le dans votre gestionnaire de mots de passe et ne le
+committez pas.
 
 ```bash
 railway link          # projet rappelbeaute-staging
-railway run npm run db:seed
+read -rs SEED_DEMO_PASSWORD && export SEED_DEMO_PASSWORD   # saisie masquée, hors historique
+SEED_ALLOW_DEMO=1 railway run npm run db:seed
+unset SEED_DEMO_PASSWORD
 ```
+
+Le seed ne modifie jamais le mot de passe d'un compte déjà présent. Pour changer celui
+d'un compte existant, passer par « Mot de passe oublié » ou par le back-office.
 
 4. Health check :
 
@@ -148,8 +160,9 @@ https://app-staging.rappelbeaute.ma/login/?__host=admin
 Checklist avant production :
 
 - [ ] `GET /api/health/` → 200
-- [ ] Login OWNER seed : `app@beauty.ma` / `demo1234`
-- [ ] Login Super Admin : `admin@rappelbeaute.ma` / `demo1234`
+- [ ] Login OWNER seed : `app@beauty.ma` avec le mot de passe défini par `SEED_DEMO_PASSWORD`
+- [ ] Login Super Admin : `admin@rappelbeaute.ma` avec ce même mot de passe, puis changez-le
+- [ ] Si un compte de démonstration a déjà reçu un ancien mot de passe publié dans ce dépôt, changez-le avant toute ouverture
 - [ ] Booking public : `/book/institut-royal/?__host=app`
 - [ ] `npm run test:e2e` avec `PLAYWRIGHT_BASE_URL=https://app-staging.rappelbeaute.ma`
 - [ ] Restore Test CI vert (GitHub Actions)
@@ -179,7 +192,7 @@ Guide détaillé production : `infra/railway/PRODUCTION.md`
 |----------|--------|
 | Build échoue Prisma | Vérifier `DATABASE_URL` + `releaseCommand` logs |
 | 503 health redis | Vérifier `REDIS_URL` référencé |
-| Login OK local, KO staging | Re-seed : `railway run npm run db:seed` |
+| Login OK local, KO staging | Le seed ne réinitialise pas les mots de passe : utiliser « Mot de passe oublié » ou le back-office |
 | Domaine SSL | Cloudflare **Full (strict)** + cert Railway actif |
 
 ---

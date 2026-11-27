@@ -24,7 +24,7 @@ const ACTIONS = [
   { href: "/cash-register/", label: "+ Encaissement", icon: Wallet, key: "cash-register" },
   { href: "/expenses/", label: "+ Dépense", icon: Receipt, key: "expenses" },
   { href: "/inventory/", label: "+ Produit / Stock", icon: PackagePlus, key: "inventory" },
-  { href: "/whatsapp/", label: "Campagne WhatsApp", icon: Megaphone, key: "whatsapp" },
+  { href: "/messages-whatsapp/", label: "Campagne WhatsApp", icon: Megaphone, key: "whatsapp" },
 ] as const;
 
 export function QuickActionsDrawer({

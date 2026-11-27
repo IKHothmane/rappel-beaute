@@ -46,4 +46,6 @@ jobs:
         env:
           HEALTH_BASE_URL: ${{ vars.HEALTH_BASE_URL }}
           ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+          # Optionnel : même valeur que sur Railway, active la sonde détaillée /api/health/db/.
+          HEALTH_TOKEN: ${{ secrets.HEALTH_TOKEN }}
           APP_ENV: staging

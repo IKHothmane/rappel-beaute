@@ -2662,6 +2662,38 @@ model BlogQuestion {
   @@index([updatedAt], map: "BlogQuestion_updatedAt_idx")
 }
 
+/// Prospect commercial du back-office (table plateforme, sans institut) : institut ou salon importé
+/// d'OpenStreetMap, d'un CSV ou saisi à la main. RLS : politique platform_only (rappel_platform seul,
+/// SELECT/INSERT/UPDATE/DELETE) ; aucun droit pour rappel_app / rappel_public / rappel_job.
+/// CHECK SQL : source IN ('OSM','CSV','MANUAL'), OSM => sourceRef ; category IN ('hairdresser','barber',
+/// 'beauty','cosmetics','massage','spa','nails','other') ; status IN ('TO_CONTACT','CONTACTED','CUSTOMER',
+/// 'DECLINED') ; phone E.164 ; longueurs bornées ; coordonnées par paire et dans leurs plages.
+/// Import : INSERT ... ON CONFLICT ("source", "sourceRef") DO UPDATE (sourceRef NULL : jamais en conflit).
+/// Index SQL non modélisé : LOWER(city). updatedAt sans déclencheur : l'écrire à chaque UPDATE SQL.
+model Prospect {
+  id           String    @id @default(cuid())
+  source       String
+  sourceRef    String?
+  name         String
+  category     String
+  city         String?
+  address      String?
+  latitude     Float?
+  longitude    Float?
+  phone        String?
+  email        String?
+  website      String?
+  status       String    @default("TO_CONTACT")
+  notes        String?
+  lastSyncedAt DateTime? @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([source, sourceRef])
+  @@index([status])
+  @@index([category])
+}
+
 /// Images par défaut des soins suggérés (liste Nouveau service)
 model ServiceCatalogDefault {
   id        String   @id @default(cuid())

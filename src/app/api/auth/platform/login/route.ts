@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { authenticatePlatformUser } from "@/lib/db/platform-users";
 import {
+  cookieSecure,
   createSessionCookie,
   clearSessionCookie,
   getSessionFromRequest,
@@ -96,6 +97,7 @@ export const POST = publicRoute(async function POST(request: NextRequest) {
     res.cookies.set(createSessionCookie(session, sessionMaxAge));
     res.cookies.set(COOKIE_HOST, "admin", {
       path: "/",
+      secure: cookieSecure(),
       sameSite: "lax",
       ...(sessionMaxAge == null ? {} : { maxAge: sessionMaxAge }),
     });

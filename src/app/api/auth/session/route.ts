@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { clearSessionCookie, createSessionCookie, getSessionFromRequest } from "@/lib/auth/session";
+import { clearSessionCookie, cookieSecure, createSessionCookie, getSessionFromRequest } from "@/lib/auth/session";
 import { isAppSession, SESSION_MAX_AGE_SEC, toPublicSession } from "@/lib/auth/types";
 import { COOKIE_HOST } from "@/lib/domain";
 import { getUserSessionState } from "@/lib/db/users";
@@ -26,7 +26,8 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
   }
 
   if (isAppSession(session)) {
-    const state = await getUserSessionState(session.id);
+    // Même règle que requireAppSession : l'institut du jeton doit être celui du compte en base.
+    const state = await getUserSessionState(session.id, session.organizationId ?? "");
     if (!state || state.status !== "ACTIVE") {
       const res = NextResponse.json({ user: null }, { status: 401 });
       res.cookies.set(clearSessionCookie());
@@ -56,6 +57,7 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
     res.cookies.set(createSessionCookie(refreshed));
     res.cookies.set(COOKIE_HOST, "app", {
       path: "/",
+      secure: cookieSecure(),
       sameSite: "lax",
       maxAge: SESSION_MAX_AGE_SEC,
     });
@@ -93,6 +95,7 @@ export const GET = publicRoute(async function GET(request: NextRequest) {
   res.cookies.set(createSessionCookie(refreshed));
   res.cookies.set(COOKIE_HOST, "admin", {
     path: "/",
+    secure: cookieSecure(),
     sameSite: "lax",
     maxAge: SESSION_MAX_AGE_SEC,
   });

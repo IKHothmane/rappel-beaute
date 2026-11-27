@@ -16,24 +16,11 @@ const securityHeaders = [
           key: "Strict-Transport-Security",
           value: "max-age=63072000; includeSubDomains; preload",
         },
-        {
-          key: "Content-Security-Policy",
-          value: [
-            "default-src 'self'",
-            // Plan 3D autonome (/vendor/*.js, /salon-3d.css) — pas de CDN
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com",
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob: https:",
-            "font-src 'self' data:",
-            "connect-src 'self' https: https://cloudflareinsights.com",
-            // iframe Plan 3D (/salon-3d.html) + cartes / GTM
-            "frame-src 'self' https://www.openstreetmap.org https://www.googletagmanager.com",
-            "base-uri 'self'",
-            "form-action 'self'",
-          ].join("; "),
-        },
       ]
     : []),
+  // Content-Security-Policy : posée par src/middleware.ts (pages et API, avec l'exception du cadre de
+  // l'assistant public), en développement comme en production. Ne pas la redéfinir ici : le middleware écrase
+  // cet en-tête sur ses chemins, une seconde politique ne ferait que diverger.
 ];
 
 const nextConfig = {

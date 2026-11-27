@@ -175,9 +175,11 @@ run("Super Admin — cycle de vie institut", () => {
     expect(login).toBeNull();
   });
 
-  it("réactivation restaure l'accès", async () => {
+  it("réactivation restaure l’accès", async () => {
     await reactivateOrganization(platformActor(), orgId);
     expect((await getOrganizationById(orgId))?.status).toBe("ACTIVE");
+    const owner = (await listOrganizationUsers(orgId)).find((u) => u.role === "OWNER")!;
+    expect(await authenticateUser(owner.email, ownerPassword)).not.toBeNull();
   });
 
   it("utilisateur désactivé → login refusé", async () => {
@@ -188,6 +190,7 @@ run("Super Admin — cycle de vie institut", () => {
     const login = await authenticateUser(owner.email, ownerPassword);
     expect(login).toBeNull();
     await setOrganizationUserStatus(platformActor(), orgId, owner.id, "ACTIVE");
+    expect(await authenticateUser(owner.email, ownerPassword)).not.toBeNull();
   });
 
   it("modification abonnement + audit", async () => {

@@ -528,8 +528,8 @@ export async function insertOrganizationBooking(
   }
 
     const existingCustomerId = options?.customerId;
-    const { customerId, created } = existingCustomerId
-      ? { customerId: existingCustomerId, created: false }
+    const { customerId } = existingCustomerId
+      ? { customerId: existingCustomerId }
       : await findOrCreateCustomerByPhone(
           organizationId,
           {
@@ -607,11 +607,11 @@ export async function insertOrganizationBooking(
     );
     const apt = rowToDto(rows[0]);
 
+    // Réponse publique : ni identifiant de cliente ni indicateur de création, qui révéleraient si ce numéro est
+    // déjà cliente de l'institut.
     return {
       appointmentId,
       bookingRef,
-      customerId,
-      customerCreated: created,
       staffId: planned.staffId,
       staffName: apt.staffName,
       serviceName: service.name,

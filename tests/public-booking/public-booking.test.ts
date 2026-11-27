@@ -170,9 +170,20 @@ run("Public booking — réservation", () => {
       bookingInput({ phone, time: "14:30", staffId: "e4" }),
     );
 
-    expect(first.customerCreated).toBe(true);
-    expect(second.customerCreated).toBe(false);
-    expect(first.customerId).toBe(second.customerId);
+    // La réponse publique ne révèle pas si le numéro était déjà cliente de l'institut.
+    for (const result of [first, second]) {
+      expect(result).not.toHaveProperty("customerId");
+      expect(result).not.toHaveProperty("customerCreated");
+    }
+    // Déduplication prouvée en base : les deux rendez-vous portent la même cliente.
+    const existing = await findCustomerByPhone(await getSeedOrgId(), phone);
+    expect(existing).not.toBeNull();
+    const appointments = await testPool.query<{ customerId: string }>(
+      `SELECT "customerId" FROM "Appointment" WHERE id = ANY($1::text[])`,
+      [[first.appointmentId, second.appointmentId]],
+    );
+    expect(appointments.rows).toHaveLength(2);
+    expect(appointments.rows.every((r) => r.customerId === existing!.id)).toBe(true);
   });
 
   it("opt-in marketing enregistré séparément", async () => {

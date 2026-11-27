@@ -85,7 +85,8 @@ export async function requireAppSession(request: NextRequest): Promise<AppAuthRe
     return { ok: false, response: NextResponse.json(SESSION_REVOKED_BODY, { status: 401 }) };
   }
 
-  const state = await getUserSessionState(auth.session.id);
+  // L'institut du jeton doit être celui du compte en base ; sinon aucune ligne : session invalide.
+  const state = await getUserSessionState(auth.session.id, auth.session.organizationId ?? "");
   if (!state || state.status !== "ACTIVE") {
     return {
       ok: false,

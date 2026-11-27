@@ -77,6 +77,12 @@ next-env.d.ts
 # build d'audit typographique local (ne jamais versionner)
 /.next-typography-audit/
 
+# Autres builds Next locaux (NEXT_BUILD_DIR) : ils contiennent des clés générées au build, jamais versionnés.
+/.next-*/
+
+# Exports de cookies ou de sessions (navigateur, curl) : jamais versionnés.
+cookies*.txt
+
 # Journaux et captures générés par les outils d agents / navigateur
 .playwright-cli/
 firebase-debug.log

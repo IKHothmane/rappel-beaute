@@ -2,7 +2,7 @@ const origin = "https://rappelbeauty.com";
 const sm = await (await fetch(`${origin}/sitemap.xml`)).text();
 const locs = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 console.log("sitemap", locs.length);
-const bad = ["/connexion", "/login", "/carte/", "/admin", "/blog", "/ressources", "/assistant", "/institut/", "/salon/", "/reservation/"];
+const bad = ["/connexion", "/login", "/carte/", "/admin", "/blog", "/ressources/</loc>", "/assistant", "/institut/", "/salon/", "/reservation/"];
 console.log("forbidden in sitemap", bad.filter((b) => locs.some((u) => u.includes(b))).join(", ") || "none");
 
 const shots = {

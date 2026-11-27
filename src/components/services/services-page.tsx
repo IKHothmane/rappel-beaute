@@ -51,6 +51,7 @@ export function ServicesPageView() {
   const tourActiveRef = useRef(false);
   const [analyticsReady, setAnalyticsReady] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const desktopSearchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 250);
@@ -61,7 +62,9 @@ export function ServicesPageView() {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        searchRef.current?.focus();
+        // Les vues mobile et grand écran coexistent : on cible le champ réellement affiché.
+        const fields = [desktopSearchRef.current, searchRef.current];
+        fields.find((field) => field && field.getClientRects().length > 0)?.focus();
       }
     }
     window.addEventListener("keydown", onKey);
@@ -318,6 +321,7 @@ export function ServicesPageView() {
             if (row) void confirmDelete(row);
           }}
           onRefresh={refresh}
+          searchInputRef={desktopSearchRef}
           guide={guide}
         />
       </div>

@@ -298,7 +298,7 @@ export function LoyaltyPageView({ mergeEnabled }: { mergeEnabled: boolean }) {
   const ratio = program?.madPerPoint ?? 1;
   const engagement =
     kpiSafe.membersCount > 0 ? Math.round((kpiSafe.active30d / kpiSafe.membersCount) * 100) : 0;
-  const campaignHref = canMarketing ? "/marketing/" : canReactivation ? "/reactivation/" : "/whatsapp/";
+  const campaignHref = canMarketing ? "/marketing/" : canReactivation ? "/reactivation/" : "/messages-whatsapp/";
 
   async function saveProgram() {
     setSubmitting(true);

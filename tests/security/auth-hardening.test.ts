@@ -80,6 +80,21 @@ describe("getUserSessionState : rôle courant dans la même requête", () => {
     expect(db.calls).toHaveLength(1);
     expect(sqlOf(db.calls[0])).toContain("u.role");
   });
+
+  it("restreint la lecture à l'institut du jeton : aucune ligne, session invalide", async () => {
+    db.responders.push({ match: /FROM "User" u JOIN "Organization"/, reply: () => ({ rows: [] }) });
+    const state = await getUserSessionState("u_1", "org_autre");
+    expect(state).toBeNull();
+    expect(db.calls).toHaveLength(1);
+    expect(sqlOf(db.calls[0])).toContain('WHERE u.id = $1 AND u."organizationId" = $2');
+    expect(db.calls[0].params).toEqual(["u_1", "org_autre"]);
+  });
+
+  it("un institut vide ne désactive pas le filtre (échec fermé)", async () => {
+    await getUserSessionState("u_1", "");
+    expect(sqlOf(db.calls[0])).toContain('u."organizationId" = $2');
+    expect(db.calls[0].params).toEqual(["u_1", ""]);
+  });
 });
 
 describe("changeOwnPassword", () => {

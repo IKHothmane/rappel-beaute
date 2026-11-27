@@ -67,7 +67,13 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx prisma migrate deploy
-      - run: npm run db:seed
+      # Mot de passe aléatoire et masqué : jamais affiché dans le journal public.
+      - name: Seed
+        run: |
+          set -euo pipefail
+          password="Qa9!$(openssl rand -hex 18)"
+          printf '::add-mask::%s\n' "$password"
+          SEED_DEMO_PASSWORD="$password" npm run db:seed
 
       - name: Backup (.dump)
         run: npm run ops:backup

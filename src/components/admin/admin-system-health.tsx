@@ -148,10 +148,10 @@ export function AdminSystemHealthView() {
     setChecking(true);
     const pipelineStart = performance.now();
     try {
-      const [dash, healthRoot, db, redis] = await Promise.all([
+      // /api/health/db/ exige le jeton de surveillance : la base est suivie ici via /api/health/ et le dashboard.
+      const [dash, healthRoot, redis] = await Promise.all([
         fetchAdminDashboard().catch(() => null),
         probeEndpoint("/api/health/"),
-        probeEndpoint("/api/health/db/"),
         probeEndpoint("/api/health/redis/"),
       ]);
 
@@ -170,13 +170,10 @@ export function AdminSystemHealthView() {
         {
           path: "/api/health/db/",
           label: "/api/health/db/",
-          protocol: "GET (SELECT 1)",
-          status: db.status,
-          latencyMs: db.latencyMs,
-          detail:
-            typeof db.body?.latencyMs === "number"
-              ? `ping ${db.body.latencyMs} ms`
-              : undefined,
+          protocol: "GET (jeton de surveillance)",
+          status: "skipped",
+          latencyMs: null,
+          detail: `Sonde protégée · base ${String(healthRoot.body?.database ?? "inconnue")}`,
         },
         {
           path: "/api/health/redis/",
@@ -256,7 +253,7 @@ export function AdminSystemHealthView() {
         ],
         action: {
           label: "Inspecter DB",
-          onClick: () => void probeEndpoint("/api/health/db/").then(() => runChecks()),
+          onClick: () => void runChecks(),
         },
       },
       {

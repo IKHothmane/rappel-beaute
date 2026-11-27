@@ -12,6 +12,13 @@ test.describe("Smoke — santé & pages publiques", () => {
     await page.goto("/domains/app/login/");
     await expect(page.locator("body")).toBeVisible();
   });
+
+  test("le logo public reste chargé sans l’optimiseur Next.js", async ({ page }) => {
+    await page.goto("/");
+    const logo = page.locator('img[src="/brand/logo.webp"]').first();
+    await expect(logo).toBeVisible();
+    await expect.poll(() => logo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  });
 });
 
 test.describe("Feature guard — STARTER stock", () => {

@@ -91,6 +91,11 @@ printf 'Sonde via proxy HTTPS : HTTP %s\n' "$proxy_status"
 test "$proxy_status" = 200
 jq -e '.status == "ok"' <<< "${proxy_response%$'\n'*}"
 
+optimizer_status=$(curl --silent --show-error --max-time 5 --output /dev/null --write-out '%{http_code}' \
+  -H "x-rappel-origin: $origin_secret" "http://127.0.0.1:$port/_next/image?url=%2Ffavicon.ico&w=64&q=75")
+printf 'Optimiseur Next.js désactivé : HTTP %s\n' "$optimizer_status"
+test "$optimizer_status" = 404
+
 docker exec "$app" bash -euc '
   tr "\000" "\n" </proc/1/cmdline | grep -Ei "next|node"
   tr "\000" "\n" </proc/1/environ | grep -Fx MALLOC_ARENA_MAX=2

@@ -1,21 +1,13 @@
-# Railway — Rappel Beauté (Node.js, pas Workers)
-# https://docs.railway.app/guides/deployments
-# Important : garder builder = nixpacks (Node 22 via nixpacks.toml).
-# Ne pas basculer sur Railpack tant que Node/Prisma n'est pas validé.
+# Deployment settings for Railway services that still read this file.
+# Mirror these settings on the Railway service before the cutover.
 
 [build]
-builder = "NIXPACKS"
-# Nixpacks exécute déjà `npm ci` en phase install — ne pas le relancer (EBUSY sur .cache)
-buildCommand = "npm run build"
+builder = "RAILPACK"
+railpackVersion = "0.44.0"
 
 [deploy]
-# start = process HTTP uniquement. Les migrations passent en releaseCommand
-# (Pre-Deploy), pas au démarrage — évite double migrate et race au boot.
-# scripts/start-prod.sh : MALLOC_ARENA_MAX, VIPS, UV_THREADPOOL, jemalloc, heap 512.
+preDeployCommand = ["npx prisma migrate deploy"]
 startCommand = "bash scripts/start-prod.sh"
-# Migrations avant bascule trafic — jamais prisma db push / migrate reset en staging/prod
-releaseCommand = "npx prisma migrate deploy"
-# Un seul environnement Railway (staging). Pas de second stack production.
-# Healthcheck HTTP Railway désactivé si ORIGIN_SECRET + Cloudflare — sinon 403.
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+# The signed healthcheck through Cloudflare preserves ORIGIN_SECRET.

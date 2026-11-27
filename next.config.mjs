@@ -35,6 +35,8 @@ const nextConfig = {
     instrumentationHook: true,
   },
   images: {
+    // Désactive temporairement /_next/image tant que Next.js 14 expose le décodeur AVIF.
+    unoptimized: true,
     // Défaut Next = 60s → Sharp ré-encode en boucle (bots) et RSS monte (libvips).
     minimumCacheTTL: 31 * 24 * 60 * 60,
     // Évite les variantes 3840px inutiles sur le marketing / vitrine.

@@ -5,8 +5,8 @@
 Le workflow `Validation Railpack Linux` construit le candidat sur GitHub Actions lors d’un push sur `release/railway-stabilisation` et de sa PR vers `main`. Le runner utilise Railpack 0.44.0 et BuildKit. Pour reproduire avec un moteur Docker/BuildKit Linux, utiliser une copie du dépôt sans fichiers d’environnement du poste et exécuter les commandes suivantes.
 
 ```sh
-railpack prepare --config-file infra/railway/railpack.candidate.json --plan-out /tmp/rb-railpack-plan.json .
-railpack build --config-file infra/railway/railpack.candidate.json --platform linux/amd64 --name rappel-beaute-railpack:ci .
+railpack prepare --config-file railpack.json --plan-out /tmp/rb-railpack-plan.json .
+railpack build --config-file railpack.json --platform linux/amd64 --name rappel-beaute-railpack:ci .
 bash infra/railway/smoke-railpack.sh rappel-beaute-railpack:ci
 ```
 

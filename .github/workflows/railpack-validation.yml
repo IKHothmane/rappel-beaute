@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [release/railway-stabilisation]
+    branches: [main, release/railway-stabilisation]
 
 permissions:
   contents: read
@@ -45,7 +45,7 @@ jobs:
             sleep 1
           done
           docker exec "$buildkit" buildctl debug workers
-          "$railpack" build --config-file infra/railway/railpack.candidate.json \
+          "$railpack" build --config-file railpack.json \
             --name rappel-beaute-railpack:ci --platform linux/amd64 --progress plain .
           docker image inspect rappel-beaute-railpack:ci --format '{{.Os}}/{{.Architecture}}' | grep -Fx linux/amd64
 

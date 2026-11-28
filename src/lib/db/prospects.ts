@@ -4,6 +4,7 @@ import { newId } from "@/lib/db/ids";
 import { writePlatformAuditLog } from "@/lib/db/platform-audit";
 import { pool } from "@/lib/db/pool";
 import { withTransaction } from "@/lib/db/transaction";
+import { IMPORT_MAX_REPORTED_ERRORS, type ImportPlan, type ImportRow } from "@/lib/prospects/import-plan";
 import type { ManualProspectInput, ProspectPatch } from "@/lib/prospects/validation";
 import {
   PROSPECT_STATUSES,
@@ -216,28 +217,24 @@ ON CONFLICT ("source", "sourceRef") DO UPDATE SET
   ${MERGED_COLUMNS.map((column) => `${column} = ${NEXT_VALUES[column]}`).join(",\n  ")},
   "lastSyncedAt" = COALESCE(EXCLUDED."lastSyncedAt", "Prospect"."lastSyncedAt"),
   "updatedAt" = CASE WHEN ${DATA_CHANGED} THEN now() ELSE "Prospect"."updatedAt" END
-RETURNING (xmax = 0) AS inserted, ("updatedAt" = now()) AS touched`;
+RETURNING "sourceRef" AS ref, (xmax = 0) AS inserted, ("updatedAt" = now()) AS touched`;
 
 const UPSERT_CHUNK = 500;
 
 export type UpsertCounts = { inserted: number; updated: number; unchanged: number; total: number };
+type UpsertOutcome = { ref: string; inserted: boolean; touched: boolean };
 
-/**
- * Upsert par lots (une instruction par lot de 500). Les doublons de "sourceRef" sont retirés avant l'envoi :
- * une même instruction ne peut pas modifier deux fois la même ligne.
- * `updated` : lignes existantes retrouvées (données modifiées ou non) ; `unchanged` : parmi elles, sans changement.
- */
-export async function upsertProspectRows(
+/** Upsert par lots de 500 ; renvoie le résultat de chaque ligne (insérée, données modifiées). */
+async function upsertRowsDetailed(
   client: Queryable,
   source: Exclude<ProspectSource, "MANUAL">,
-  rows: readonly ProspectUpsertRow[],
+  unique: readonly ProspectUpsertRow[],
   syncedAt: Date | null,
-): Promise<UpsertCounts> {
-  const unique = [...new Map(rows.map((row) => [row.sourceRef, row])).values()];
-  const counts: UpsertCounts = { inserted: 0, updated: 0, unchanged: 0, total: unique.length };
+): Promise<UpsertOutcome[]> {
+  const outcomes: UpsertOutcome[] = [];
   for (let start = 0; start < unique.length; start += UPSERT_CHUNK) {
     const chunk = unique.slice(start, start + UPSERT_CHUNK);
-    const result = await client.query<{ inserted: boolean; touched: boolean }>(UPSERT_SQL, [
+    const result = await client.query<UpsertOutcome>(UPSERT_SQL, [
       source,
       chunk.map(() => newId("prsp")),
       chunk.map((row) => row.sourceRef),
@@ -252,12 +249,29 @@ export async function upsertProspectRows(
       chunk.map((row) => row.website),
       syncedAt,
     ]);
-    for (const row of result.rows) {
-      if (row.inserted) counts.inserted += 1;
-      else {
-        counts.updated += 1;
-        if (!row.touched) counts.unchanged += 1;
-      }
+    outcomes.push(...result.rows);
+  }
+  return outcomes;
+}
+
+/**
+ * Upsert par lots (une instruction par lot de 500). Les doublons de "sourceRef" sont retirés avant l'envoi :
+ * une même instruction ne peut pas modifier deux fois la même ligne.
+ * `updated` : lignes existantes retrouvées (données modifiées ou non) ; `unchanged` : parmi elles, sans changement.
+ */
+export async function upsertProspectRows(
+  client: Queryable,
+  source: Exclude<ProspectSource, "MANUAL">,
+  rows: readonly ProspectUpsertRow[],
+  syncedAt: Date | null,
+): Promise<UpsertCounts> {
+  const unique = [...new Map(rows.map((row) => [row.sourceRef, row])).values()];
+  const counts: UpsertCounts = { inserted: 0, updated: 0, unchanged: 0, total: unique.length };
+  for (const row of await upsertRowsDetailed(client, source, unique, syncedAt)) {
+    if (row.inserted) counts.inserted += 1;
+    else {
+      counts.updated += 1;
+      if (!row.touched) counts.unchanged += 1;
     }
   }
   return counts;
@@ -357,26 +371,194 @@ export async function syncOsmProspects(
  * Import CSV, création manuelle, modification du suivi
  * ---------------------------------------------------------------------------------------------------------- */
 
-export type CsvImportResult = { inserted: number; updated: number; unchanged: number };
+export type ProspectImportFormat = "csv" | "xlsx" | "google-sheet";
+export type ProspectImportResult = {
+  inserted: number;
+  updated: number;
+  unchanged: number;
+  skipped: number;
+  errors: { line: number; error: string }[];
+};
 
-/** Lignes CSV déjà validées : upsert + journal d'audit dans une seule transaction. */
-export async function importCsvProspects(
+const IMPORT_AUDIT_ACTION: Record<ProspectImportFormat, string> = {
+  csv: "PROSPECTS_CSV_IMPORTED",
+  xlsx: "PROSPECTS_XLSX_IMPORTED",
+  "google-sheet": "PROSPECTS_SHEET_IMPORTED",
+};
+
+/**
+ * Mise à jour par id : seules les valeurs non vides du fichier remplacent celles de la fiche (COALESCE).
+ * Seules les fiches réellement modifiées sont écrites ; "o" (même table) donne l'état d'avant pour compter
+ * les changements de statut.
+ */
+const UPDATE_BY_ID_SQL = `
+UPDATE "Prospect" AS p SET
+  name = COALESCE(v.name, p.name),
+  category = COALESCE(v.category, p.category),
+  city = COALESCE(v.city, p.city),
+  address = COALESCE(v.address, p.address),
+  phone = COALESCE(v.phone, p.phone),
+  email = COALESCE(v.email, p.email),
+  website = COALESCE(v.website, p.website),
+  status = COALESCE(v.status, p.status),
+  notes = COALESCE(v.notes, p.notes),
+  "updatedAt" = now()
+FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::text[], $8::text[], $9::text[], $10::text[])
+       AS v(id, name, category, city, address, phone, email, website, status, notes),
+     "Prospect" AS o
+WHERE p.id = v.id AND o.id = v.id
+  AND (COALESCE(v.name, p.name), COALESCE(v.category, p.category), COALESCE(v.city, p.city), COALESCE(v.address, p.address),
+       COALESCE(v.phone, p.phone), COALESCE(v.email, p.email), COALESCE(v.website, p.website),
+       COALESCE(v.status, p.status), COALESCE(v.notes, p.notes))
+      IS DISTINCT FROM (p.name, p.category, p.city, p.address, p.phone, p.email, p.website, p.status, p.notes)
+RETURNING p.id, (o.status IS DISTINCT FROM p.status) AS "statusChanged"`;
+
+/** Statut et notes fournis par le fichier pour une fiche retrouvée (ou créée) par sa clé de dédoublonnage. */
+const APPLY_TRACKING_SQL = `
+UPDATE "Prospect" AS p SET
+  status = COALESCE(v.status, p.status),
+  notes = COALESCE(v.notes, p.notes),
+  "updatedAt" = now()
+FROM unnest($2::text[], $3::text[], $4::text[]) AS v(ref, status, notes),
+     "Prospect" AS o
+WHERE p.source = $1 AND p."sourceRef" = v.ref AND o.id = p.id
+  AND (COALESCE(v.status, p.status), COALESCE(v.notes, p.notes)) IS DISTINCT FROM (p.status, p.notes)
+RETURNING p."sourceRef" AS ref, (o.status IS DISTINCT FROM p.status) AS "statusChanged"`;
+
+/**
+ * Import commun (CSV, .xlsx, Google Sheets), dans une seule transaction avec son journal d'audit (compteurs) :
+ * 1. lignes dont l'id désigne une fiche existante (verrouillée) : mise à jour de CETTE fiche, valeurs non vides ;
+ * 2. autres lignes (sans id ou id inconnu, jamais réutilisé) : upsert source CSV par téléphone ou nom + ville,
+ *    sans toucher statut ni notes ; puis statut / notes du fichier appliqués seulement s'ils sont fournis.
+ * `updated` : fiches existantes retrouvées ; `unchanged` : parmi elles, sans aucun changement.
+ */
+export async function importProspects(
   actor: PlatformSessionUser,
-  rows: readonly ProspectUpsertRow[],
-  report: { skipped: number; errorCount: number },
-): Promise<CsvImportResult> {
+  plan: ImportPlan,
+  format: ProspectImportFormat,
+): Promise<ProspectImportResult> {
   return withTransaction(async (client) => {
-    const counts = await upsertProspectRows(client, "CSV", rows, null);
+    let skipped = plan.skipped;
+    const errors = [...plan.errors];
+    const skip = (line: number, error: string) => {
+      skipped += 1;
+      errors.push({ line, error });
+    };
+
+    const candidateIds = [...new Set(plan.rows.map((row) => row.id).filter((id): id is string => !!id))];
+    const known = new Set<string>();
+    for (let start = 0; start < candidateIds.length; start += UPSERT_CHUNK) {
+      const { rows } = await client.query<{ id: string }>(
+        `SELECT id FROM "Prospect" WHERE id = ANY($1::text[]) FOR UPDATE`,
+        [candidateIds.slice(start, start + UPSERT_CHUNK)],
+      );
+      for (const row of rows) known.add(row.id);
+    }
+
+    const byId: ImportRow[] = [];
+    const fresh: (ImportRow & { sourceRef: string; name: string })[] = [];
+    const firstLineByRef = new Map<string, number>();
+    for (const row of plan.rows) {
+      if (row.id && known.has(row.id)) {
+        byId.push(row);
+        continue;
+      }
+      if (!row.name || !row.sourceRef) {
+        skip(row.line, "Nom manquant (identifiant inconnu).");
+        continue;
+      }
+      const first = firstLineByRef.get(row.sourceRef);
+      if (first !== undefined) {
+        skip(row.line, `Doublon de la ligne ${first}.`);
+        continue;
+      }
+      firstLineByRef.set(row.sourceRef, row.line);
+      fresh.push(row as ImportRow & { sourceRef: string; name: string });
+    }
+
+    // 1. Mise à jour par id.
+    let idChanged = 0;
+    let statusChanged = 0;
+    for (let start = 0; start < byId.length; start += UPSERT_CHUNK) {
+      const chunk = byId.slice(start, start + UPSERT_CHUNK);
+      const { rows } = await client.query<{ id: string; statusChanged: boolean }>(UPDATE_BY_ID_SQL, [
+        chunk.map((row) => row.id),
+        chunk.map((row) => row.name),
+        chunk.map((row) => row.category),
+        chunk.map((row) => row.city),
+        chunk.map((row) => row.address),
+        chunk.map((row) => row.phone),
+        chunk.map((row) => row.email),
+        chunk.map((row) => row.website),
+        chunk.map((row) => row.status),
+        chunk.map((row) => row.notes),
+      ]);
+      idChanged += rows.length;
+      statusChanged += rows.filter((row) => row.statusChanged).length;
+    }
+
+    // 2. Nouvelles fiches ou fiches retrouvées par téléphone / nom + ville.
+    const outcomes = await upsertRowsDetailed(
+      client,
+      "CSV",
+      fresh.map((row) => ({
+        sourceRef: row.sourceRef,
+        name: row.name,
+        category: row.category ?? "other",
+        city: row.city,
+        address: row.address,
+        latitude: null,
+        longitude: null,
+        phone: row.phone,
+        email: row.email,
+        website: row.website,
+      })),
+      null,
+    );
+    const insertedRefs = new Set(outcomes.filter((row) => row.inserted).map((row) => row.ref));
+    const tracked = fresh.filter((row) => row.status || row.notes);
+    const trackingChanged = new Set<string>();
+    for (let start = 0; start < tracked.length; start += UPSERT_CHUNK) {
+      const chunk = tracked.slice(start, start + UPSERT_CHUNK);
+      const { rows } = await client.query<{ ref: string; statusChanged: boolean }>(APPLY_TRACKING_SQL, [
+        "CSV",
+        chunk.map((row) => row.sourceRef),
+        chunk.map((row) => row.status),
+        chunk.map((row) => row.notes),
+      ]);
+      for (const row of rows) {
+        trackingChanged.add(row.ref);
+        if (row.statusChanged && !insertedRefs.has(row.ref)) statusChanged += 1;
+      }
+    }
+
+    const matched = outcomes.filter((row) => !row.inserted);
+    const result: ProspectImportResult = {
+      inserted: insertedRefs.size,
+      updated: byId.length + matched.length,
+      unchanged: byId.length - idChanged + matched.filter((row) => !row.touched && !trackingChanged.has(row.ref)).length,
+      skipped,
+      errors: errors.sort((a, b) => a.line - b.line).slice(0, IMPORT_MAX_REPORTED_ERRORS),
+    };
     await writePlatformAuditLog({
       client,
       platformUserId: actor.id,
       platformUserName: actorName(actor),
       entityType: "Prospect",
-      entityId: "csv-import",
-      action: "PROSPECTS_CSV_IMPORTED",
-      after: { ...counts, skipped: report.skipped, errors: report.errorCount },
+      entityId: `${format}-import`,
+      action: IMPORT_AUDIT_ACTION[format],
+      // Compteurs seulement : aucune donnée d'un prospect dans le journal.
+      after: {
+        inserted: result.inserted,
+        updated: result.updated,
+        unchanged: result.unchanged,
+        updatedById: byId.length,
+        statusChanged,
+        skipped: result.skipped,
+        errors: errors.length,
+      },
     });
-    return { inserted: counts.inserted, updated: counts.updated, unchanged: counts.unchanged };
+    return result;
   });
 }
 

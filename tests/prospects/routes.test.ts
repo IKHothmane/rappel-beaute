@@ -13,7 +13,7 @@ const h = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   sync: vi.fn(),
-  importCsv: vi.fn(),
+  importProspects: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/api-guard", () => ({
@@ -41,7 +41,7 @@ vi.mock("@/lib/db/prospects", () => {
     createManualProspect: h.create,
     updateProspectTracking: h.update,
     syncOsmProspects: h.sync,
-    importCsvProspects: h.importCsv,
+    importProspects: h.importProspects,
   };
 });
 
@@ -50,7 +50,14 @@ import { GET as listGet, POST as createPost } from "@/app/api/admin/prospects/ro
 import { PATCH as itemPatch } from "@/app/api/admin/prospects/[id]/route";
 import { POST as syncPost } from "@/app/api/admin/prospects/sync-osm/route";
 import { POST as importPost } from "@/app/api/admin/prospects/import-csv/route";
+import { POST as importFilePost } from "@/app/api/admin/prospects/import-file/route";
+import { POST as importSheetPost } from "@/app/api/admin/prospects/import-sheet/route";
 import { GET as exportGet } from "@/app/api/admin/prospects/export.csv/route";
+import { GET as exportXlsxGet } from "@/app/api/admin/prospects/export.xlsx/route";
+import { prospectsToXlsx } from "@/lib/prospects/xlsx";
+
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-Test/edit#gid=0";
+const IMPORT_RESULT = { inserted: 1, updated: 0, unchanged: 0, skipped: 0, errors: [] };
 
 const SAME_ORIGIN = { "content-type": "application/json", "sec-fetch-site": "same-origin", origin: "http://localhost" };
 
@@ -65,11 +72,12 @@ function req(path: string, init: { method?: string; body?: unknown; headers?: Re
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const ITEM = { id: "prsp_test01", name: "Salon Test A", status: "TO_CONTACT", notes: null };
 
+const networkForbidden = vi.fn(async (..._args: unknown[]): Promise<Response> => {
+  throw new Error("réseau interdit dans les tests");
+});
 beforeAll(() => {
-  // Garde-fou : aucun appel réseau réel ne doit partir de ces tests.
-  vi.stubGlobal("fetch", () => {
-    throw new Error("réseau interdit dans les tests");
-  });
+  // Garde-fou : aucun appel réseau réel ne doit partir de ces tests (Google Sheets est simulé ci-dessous).
+  vi.stubGlobal("fetch", networkForbidden);
 });
 afterAll(() => {
   vi.unstubAllGlobals();
@@ -81,7 +89,10 @@ beforeEach(() => {
   h.list.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50, cities: [], stats: {}, lastSyncedAt: null });
   h.update.mockResolvedValue(ITEM);
   h.create.mockImplementation(async (_actor: unknown, input: object) => ({ id: "prsp_new", ...input }));
-  h.importCsv.mockResolvedValue({ inserted: 1, updated: 0, unchanged: 0 });
+  h.importProspects.mockResolvedValue(IMPORT_RESULT);
+  networkForbidden.mockImplementation(async () => {
+    throw new Error("réseau interdit dans les tests");
+  });
 });
 
 describe("gardes d'accès", () => {
@@ -95,13 +106,17 @@ describe("gardes d'accès", () => {
       expect((await itemPatch(req("/api/admin/prospects/prsp_test01/", { method: "PATCH", body: { status: "CONTACTED" } }), ctx("prsp_test01"))).status).toBe(expected);
       expect((await syncPost(req("/api/admin/prospects/sync-osm/", { method: "POST", body: {} }))).status).toBe(expected);
       expect((await importPost(req("/api/admin/prospects/import-csv/", { method: "POST", body: { csv: "nom\nA\n" } }))).status).toBe(expected);
+      expect((await exportXlsxGet(req("/api/admin/prospects/export.xlsx"))).status).toBe(expected);
+      expect((await importFilePost(req("/api/admin/prospects/import-file/", { method: "POST", body: { filename: "a.csv", contentBase64: "bm9tCkE=" } }))).status).toBe(expected);
+      expect((await importSheetPost(req("/api/admin/prospects/import-sheet/", { method: "POST", body: { url: SHEET_URL } }))).status).toBe(expected);
     }
     expect(h.list).not.toHaveBeenCalled();
     expect(h.exportRows).not.toHaveBeenCalled();
     expect(h.create).not.toHaveBeenCalled();
     expect(h.update).not.toHaveBeenCalled();
     expect(h.sync).not.toHaveBeenCalled();
-    expect(h.importCsv).not.toHaveBeenCalled();
+    expect(h.importProspects).not.toHaveBeenCalled();
+    expect(networkForbidden).not.toHaveBeenCalled();
   });
 
   it("refuse les écritures inter-sites (403) et non JSON (415), avant toute lecture", async () => {
@@ -110,9 +125,12 @@ describe("gardes d'accès", () => {
     expect((await syncPost(req("/api/admin/prospects/sync-osm/", { method: "POST", body: {}, headers: crossSite }))).status).toBe(403);
     expect((await syncPost(req("/api/admin/prospects/sync-osm/", { method: "POST", headers: { "sec-fetch-site": "same-origin" } }))).status).toBe(415);
     expect((await importPost(req("/api/admin/prospects/import-csv/", { method: "POST", body: { csv: "nom\nA" }, headers: { "content-type": "application/json" } }))).status).toBe(403);
+    expect((await importFilePost(req("/api/admin/prospects/import-file/", { method: "POST", body: { filename: "a.csv", contentBase64: "bm9tCkE=" }, headers: crossSite }))).status).toBe(403);
+    expect((await importSheetPost(req("/api/admin/prospects/import-sheet/", { method: "POST", body: { url: SHEET_URL }, headers: crossSite }))).status).toBe(403);
     expect(h.create).not.toHaveBeenCalled();
     expect(h.sync).not.toHaveBeenCalled();
-    expect(h.importCsv).not.toHaveBeenCalled();
+    expect(h.importProspects).not.toHaveBeenCalled();
+    expect(networkForbidden).not.toHaveBeenCalled();
   });
 });
 
@@ -219,24 +237,120 @@ describe("POST /api/admin/prospects/import-csv", () => {
     expect((await importCsv({ csv: 12 })).status).toBe(400);
     expect((await importCsv({ csv: "ville\nVille A\n" })).status).toBe(400);
     expect((await importCsv({ csv: `nom\n${"a".repeat(2 * 1024 * 1024)}` })).status).toBe(413);
-    expect(h.importCsv).not.toHaveBeenCalled();
+    expect(h.importProspects).not.toHaveBeenCalled();
   });
 
-  it("écrit les lignes valides et liste les lignes ignorées", async () => {
-    const res = await importCsv({ csv: "nom;telephone\nSalon Test A;0600000001\n;0600000002\nSalon Test B;0600000001\n" });
+  it("transmet le plan (lignes valides et écartées) et renvoie le résultat de l'import", async () => {
+    h.importProspects.mockResolvedValueOnce({ inserted: 1, updated: 0, unchanged: 0, skipped: 2, errors: [{ line: 3, error: "Nom manquant." }] });
+    const res = await importCsv({ csv: "nom;telephone;statut\nSalon Test A;0600000001;Contacté\n;0600000002;\nSalon Test B;0600000001;\n" });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      inserted: 1, updated: 0, unchanged: 0, skipped: 2,
-      errors: [{ line: 3, error: "Nom manquant." }, { line: 4, error: "Doublon de la ligne 2." }],
-    });
-    const [, rows, report] = h.importCsv.mock.calls[0];
-    expect(rows).toEqual([expect.objectContaining({ name: "Salon Test A", sourceRef: "phone:+212600000001" })]);
-    expect(report).toEqual({ skipped: 2, errorCount: 2 });
+    expect(await res.json()).toEqual({ inserted: 1, updated: 0, unchanged: 0, skipped: 2, errors: [{ line: 3, error: "Nom manquant." }] });
+    const [actor, plan, format] = h.importProspects.mock.calls[0];
+    expect(actor).toMatchObject({ id: "padm_test" });
+    expect(format).toBe("csv");
+    expect(plan.rows).toEqual([expect.objectContaining({ name: "Salon Test A", sourceRef: "phone:+212600000001", status: "CONTACTED" })]);
+    expect(plan.errors).toEqual([{ line: 3, error: "Nom manquant." }, { line: 4, error: "Doublon de la ligne 2." }]);
+  });
+});
 
-    h.importCsv.mockClear();
-    const none = await importCsv({ csv: "nom\n\n" });
-    expect(await none.json()).toMatchObject({ inserted: 0, updated: 0, skipped: 0, errors: [] });
-    expect(h.importCsv).not.toHaveBeenCalled();
+describe("POST /api/admin/prospects/import-file", () => {
+  const importFile = (body: unknown) => importFilePost(req("/api/admin/prospects/import-file/", { method: "POST", body }));
+  const b64 = (value: string | Buffer) => Buffer.from(value).toString("base64");
+
+  it("n'accepte que .xlsx et .csv (400), 2 Mo décodés (413) et un .xlsx lisible (400)", async () => {
+    expect((await importFile({ filename: "liste.xls", contentBase64: b64("nom\nA") })).status).toBe(400);
+    expect((await importFile({ filename: "liste.ods", contentBase64: b64("nom\nA") })).status).toBe(400);
+    expect((await importFile({ filename: "liste.csv", contentBase64: "%%%" })).status).toBe(400);
+    expect((await importFile({ filename: "liste.csv" })).status).toBe(400);
+    expect((await importFile({ filename: "liste.csv", contentBase64: "A".repeat(2_796_204) })).status).toBe(413);
+    expect((await importFile({ filename: "liste.xlsx", contentBase64: b64("nom;ville\nSalon;Ville") })).status).toBe(400);
+    expect((await importFile({ filename: "liste.csv", contentBase64: b64("ville\nVille A") })).status).toBe(400);
+    const tooBig = await importFilePost(
+      req("/api/admin/prospects/import-file/", { method: "POST", body: { filename: "a.csv", contentBase64: "A".repeat(3_200_000) } }),
+    );
+    expect(tooBig.status).toBe(413);
+    expect(h.importProspects).not.toHaveBeenCalled();
+  });
+
+  it("importe un .csv (Windows-1252 accepté) et un .xlsx exporté par l'application", async () => {
+    const latin1 = Buffer.from([...Buffer.from("nom;ville\nSalon Test A;Mekn"), 0xe8, ...Buffer.from("s\n")]);
+    expect((await importFile({ filename: "liste.csv", contentBase64: latin1.toString("base64") })).status).toBe(200);
+    expect(h.importProspects.mock.calls[0][1].rows).toEqual([expect.objectContaining({ name: "Salon Test A", city: "Meknès" })]);
+    expect(h.importProspects.mock.calls[0][2]).toBe("csv");
+
+    const xlsx = await prospectsToXlsx([
+      {
+        id: "prsp_file01", source: "MANUAL", sourceRef: null, name: "Salon Test X", category: "beauty", city: "Ville Alpha",
+        address: null, latitude: null, longitude: null, phone: "+212600000011", email: null, website: null,
+        status: "CUSTOMER", notes: "Client depuis mars", lastSyncedAt: null,
+        createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+    const res = await importFile({ filename: "prospects.xlsx", contentBase64: xlsx.toString("base64") });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(IMPORT_RESULT);
+    const [, plan, format] = h.importProspects.mock.calls[1];
+    expect(format).toBe("xlsx");
+    expect(plan.rows).toEqual([
+      expect.objectContaining({ id: "prsp_file01", name: "Salon Test X", phone: "+212600000011", status: "CUSTOMER", notes: "Client depuis mars" }),
+    ]);
+  });
+});
+
+describe("POST /api/admin/prospects/import-sheet", () => {
+  const importSheet = (url: unknown) => importSheetPost(req("/api/admin/prospects/import-sheet/", { method: "POST", body: { url } }));
+
+  it("refuse tout lien qui n'est pas une feuille docs.google.com en https (400), sans appel réseau", async () => {
+    for (const url of [
+      "http://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-Test/edit",
+      "https://exemple-tiers.test/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-Test/edit",
+      "https://169.254.169.254/latest/meta-data/",
+      12,
+    ]) {
+      expect((await importSheet(url)).status).toBe(400);
+    }
+    expect(networkForbidden).not.toHaveBeenCalled();
+    expect(h.importProspects).not.toHaveBeenCalled();
+  });
+
+  it("422 pour une feuille privée, 502 si Google ne répond pas, import du CSV sinon", async () => {
+    networkForbidden.mockImplementationOnce(async () => new Response("<!DOCTYPE html><html></html>", { status: 200, headers: { "content-type": "text/html" } }));
+    const privateSheet = await importSheet(SHEET_URL);
+    expect(privateSheet.status).toBe(422);
+    expect((await privateSheet.json()).error).toBe(
+      "Feuille inaccessible. Partagez-la en lecture à « toute personne disposant du lien », ou téléchargez-la en .xlsx et importez le fichier.",
+    );
+
+    expect((await importSheet(SHEET_URL)).status).toBe(502);
+
+    networkForbidden.mockImplementationOnce(async () => new Response(null, { status: 302, headers: { location: "https://exemple-tiers.test/x" } }));
+    expect((await importSheet(SHEET_URL)).status).toBe(502);
+    expect(h.importProspects).not.toHaveBeenCalled();
+
+    networkForbidden.mockImplementationOnce(async () => new Response("nom,telephone\nSalon Test S,0600000021\n", { status: 200, headers: { "content-type": "text/csv" } }));
+    const ok = await importSheet(SHEET_URL);
+    expect(ok.status).toBe(200);
+    expect(networkForbidden.mock.calls.at(-1)?.[0]).toBe(
+      "https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-Test/export?format=csv&gid=0",
+    );
+    const [, plan, format] = h.importProspects.mock.calls[0];
+    expect(format).toBe("google-sheet");
+    expect(plan.rows).toEqual([expect.objectContaining({ name: "Salon Test S", phone: "+212600000021" })]);
+  });
+});
+
+describe("GET /api/admin/prospects/export.xlsx", () => {
+  it("renvoie un .xlsx en pièce jointe, non mis en cache", async () => {
+    h.exportRows.mockResolvedValueOnce([]);
+    const res = await exportXlsxGet(req("/api/admin/prospects/export.xlsx?city=Ville%20Alpha"));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    expect(res.headers.get("content-disposition")).toMatch(/^attachment; filename="prospects-\d{4}-\d{2}-\d{2}\.xlsx"$/);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(Buffer.from(await res.arrayBuffer()).subarray(0, 2).toString()).toBe("PK");
+    expect(h.exportRows).toHaveBeenCalledWith({ city: "Ville Alpha", sort: "name", page: 1, pageSize: 50 });
+    expect((await exportXlsxGet(req("/api/admin/prospects/export.xlsx?status=X"))).status).toBe(400);
   });
 });
 

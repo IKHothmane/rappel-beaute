@@ -308,114 +308,125 @@ export function AdminProspectsView({ initialData = null }: { initialData?: Prosp
         <Plus className="h-4 w-4 text-[#3B63D6]" aria-hidden />
         Ajouter un prospect
       </button>
-      <ProspectsDownloadMenu filters={filters} filtering={filtering} disabled={!data?.total} className="col-span-2 sm:col-span-1" />
+      <ProspectsDownloadMenu
+        filters={filters}
+        filtering={filtering}
+        disabled={!data?.total}
+        className="col-span-2 sm:col-span-1"
+        onDownloaded={(filename) => setAnnouncement(`Fichier ${filename} téléchargé.`)}
+        onError={(message) => setNotice({ tone: "error", text: `Téléchargement impossible : ${message}` })}
+      />
     </div>
   );
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5">
-      <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="min-w-0 xl:flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] sm:text-3xl">Prospects</h1>
-          <p className="mt-1.5 max-w-xl text-sm text-slate-500">
-            Instituts et salons de beauté du Maroc à démarcher : importés d&apos;OpenStreetMap, d&apos;un CSV ou ajoutés à la main.
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Dernière synchronisation OpenStreetMap :{" "}
-            <span className="font-semibold text-slate-700">{data?.lastSyncedAt ? formatDateTime(data.lastSyncedAt) : data ? "jamais" : "—"}</span>
-          </p>
-        </div>
-        {actions}
-      </header>
+    <>
+      <div className="mx-auto max-w-[1400px] space-y-5">
+        <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0 xl:flex-1">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] sm:text-3xl">Prospects</h1>
+            <p className="mt-1.5 max-w-xl text-sm text-slate-500">
+              Instituts et salons de beauté du Maroc à démarcher : importés d&apos;OpenStreetMap, d&apos;un CSV ou ajoutés à la main.
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Dernière synchronisation OpenStreetMap :{" "}
+              <span className="font-semibold text-slate-700">{data?.lastSyncedAt ? formatDateTime(data.lastSyncedAt) : data ? "jamais" : "—"}</span>
+            </p>
+          </div>
+          {actions}
+        </header>
 
-      <p className="sr-only" role="status" aria-live="polite">
-        {announcement}
-      </p>
+        <p className="sr-only" role="status" aria-live="polite">
+          {announcement}
+        </p>
 
-      {/* Bilans des actions (ajout, import, synchronisation) et erreurs d'enregistrement. */}
-      <div aria-live="polite" className="empty:hidden">
-        {notice ? (
-          <div
-            role={notice.tone === "error" ? "alert" : "status"}
-            className={cn(
-              "flex items-start justify-between gap-3 rounded-2xl p-3 text-sm ring-1",
-              notice.tone === "error" ? "bg-red-50 text-red-800 ring-red-100" : "bg-emerald-50 text-emerald-800 ring-emerald-100",
-            )}
-          >
-            <span>{notice.text}</span>
-            <button
-              type="button"
-              onClick={() => setNotice(null)}
-              className="shrink-0 rounded-md px-2 text-xs font-semibold underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-current"
+        {/* Bilans des actions (ajout, import, synchronisation) et erreurs d'enregistrement. */}
+        <div aria-live="polite" className="empty:hidden">
+          {notice ? (
+            <div
+              role={notice.tone === "error" ? "alert" : "status"}
+              className={cn(
+                "flex items-start justify-between gap-3 rounded-2xl p-3 text-sm ring-1",
+                notice.tone === "error" ? "bg-red-50 text-red-800 ring-red-100" : "bg-emerald-50 text-emerald-800 ring-emerald-100",
+              )}
             >
-              Masquer
-            </button>
-          </div>
-        ) : null}
-      </div>
+              <span>{notice.text}</span>
+              <button
+                type="button"
+                onClick={() => setNotice(null)}
+                className="shrink-0 rounded-md px-2 text-xs font-semibold underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-current"
+              >
+                Masquer
+              </button>
+            </div>
+          ) : null}
+        </div>
 
-      {data && !nothingYet ? (
-        <ProspectsStats
-          stats={data.stats}
-          activeHas={filters.has}
-          activeStatus={filters.status}
-          onHas={(has) => updateFilters({ has })}
-          onStatus={(status) => updateFilters({ status })}
-        />
-      ) : null}
-
-      {!nothingYet ? (
-        <ProspectsFilters
-          searchInput={searchInput}
-          onSearchInput={setSearchInput}
-          filters={filters}
-          cities={data?.cities ?? []}
-          onChange={updateFilters}
-          onReset={resetFilters}
-          canReset={filtering}
-        />
-      ) : null}
-
-      {error ? <ProspectsErrorBanner message={error} onRetry={reload} /> : null}
-
-      <div ref={listTopRef} className="scroll-mt-24 space-y-3">
         {data && !nothingYet ? (
-          <p className="flex items-center gap-2 text-sm text-slate-600" aria-live="polite">
-            <span>
-              <span className="font-bold text-slate-900">{nf.format(data.total)}</span> prospect{data.total > 1 ? "s" : ""}
-              {filtering ? " correspondant aux filtres" : ""}
-              {totalPages > 1 ? ` · page ${page} / ${totalPages}` : ""}
-            </span>
-            {refreshing ? (
-              <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
-                Mise à jour…
-              </span>
-            ) : null}
-          </p>
+          <ProspectsStats
+            stats={data.stats}
+            activeHas={filters.has}
+            activeStatus={filters.status}
+            onHas={(has) => updateFilters({ has })}
+            onStatus={(status) => updateFilters({ status })}
+          />
         ) : null}
 
-        {loading && !data ? (
-          <ProspectsSkeleton />
-        ) : nothingYet ? (
-          <ProspectsEmptyState
-            syncing={syncing}
-            onSync={() => openSync()}
-            onImport={() => setImportOpen(true)}
-            onCreate={() => setCreateOpen(true)}
+        {!nothingYet ? (
+          <ProspectsFilters
+            searchInput={searchInput}
+            onSearchInput={setSearchInput}
+            filters={filters}
+            cities={data?.cities ?? []}
+            onChange={updateFilters}
+            onReset={resetFilters}
+            canReset={filtering}
           />
-        ) : data && items.length === 0 ? (
-          <ProspectsNoResults onReset={resetFilters} />
-        ) : data ? (
-          <div className={cn("space-y-4 transition-opacity", refreshing && "opacity-70")}>
-            <ProspectsTable items={items} savingIds={savingIds} onStatusChange={changeStatus} onOpenDetails={openDetails} />
-            <ProspectsCards items={items} savingIds={savingIds} onStatusChange={changeStatus} onOpenDetails={openDetails} />
-            <ProspectsPagination page={page} pageSize={data.pageSize || PROSPECT_PAGE_SIZE} total={data.total} onPage={goToPage} busy={refreshing} />
-          </div>
         ) : null}
+
+        {error ? <ProspectsErrorBanner message={error} onRetry={reload} /> : null}
+
+        <div ref={listTopRef} className="scroll-mt-24 space-y-3">
+          {data && !nothingYet ? (
+            <p className="flex items-center gap-2 text-sm text-slate-600" aria-live="polite">
+              <span>
+                <span className="font-bold text-slate-900">{nf.format(data.total)}</span> prospect{data.total > 1 ? "s" : ""}
+                {filtering ? " correspondant aux filtres" : ""}
+                {totalPages > 1 ? ` · page ${page} / ${totalPages}` : ""}
+              </span>
+              {refreshing ? (
+                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
+                  Mise à jour…
+                </span>
+              ) : null}
+            </p>
+          ) : null}
+
+          {loading && !data ? (
+            <ProspectsSkeleton />
+          ) : nothingYet ? (
+            <ProspectsEmptyState
+              syncing={syncing}
+              onSync={() => openSync()}
+              onImport={() => setImportOpen(true)}
+              onCreate={() => setCreateOpen(true)}
+            />
+          ) : data && items.length === 0 ? (
+            <ProspectsNoResults onReset={resetFilters} />
+          ) : data ? (
+            <div className={cn("space-y-4 transition-opacity", refreshing && "opacity-70")}>
+              <ProspectsTable items={items} savingIds={savingIds} onStatusChange={changeStatus} onOpenDetails={openDetails} />
+              <ProspectsCards items={items} savingIds={savingIds} onStatusChange={changeStatus} onOpenDetails={openDetails} />
+              <ProspectsPagination page={page} pageSize={data.pageSize || PROSPECT_PAGE_SIZE} total={data.total} onPage={goToPage} busy={refreshing} />
+            </div>
+          ) : null}
+        </div>
+
+        <ProspectsLegalNote />
       </div>
 
-      <ProspectsLegalNote />
+      {/* Hors du conteneur space-y : sinon la marge haute décale les overlays fixed (bug visible à 390 px). */}
 
       <ProspectDetailsPanel
         open={detailsOpen}
@@ -459,6 +470,6 @@ export function AdminProspectsView({ initialData = null }: { initialData?: Prosp
       ) : null}
 
       {sync && syncDialogOpen ? <ProspectsSyncDialog state={sync} onConfirm={() => void runSync()} onClose={closeSync} /> : null}
-    </div>
+    </>
   );
 }

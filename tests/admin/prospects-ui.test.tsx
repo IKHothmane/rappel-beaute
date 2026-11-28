@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Page admin « Prospects » : balisage rendu côté serveur (pas de jsdom dans le projet) et helpers purs.
@@ -14,8 +14,13 @@ import { ProspectsStats } from "@/components/admin/prospects/prospects-stats";
 import { AdminProspectsView } from "@/components/admin/prospects/prospects-view";
 import {
   EMPTY_PROSPECT_FILTERS,
+  NOT_YET_AVAILABLE,
   buildProspectQuery,
+  downloadProspectsExport,
+  filenameFromDisposition,
   importFileExtension,
+  importProspectsFile,
+  importProspectsSheet,
   isGoogleSheetUrl,
   osmMapHref,
   osmObjectHref,
@@ -48,6 +53,49 @@ const prospect = (over: Partial<Prospect> = {}): Prospect => ({
   createdAt: "2026-01-01T10:00:00.000Z",
   updatedAt: "2026-01-02T10:00:00.000Z",
   ...over,
+});
+
+describe("appels d'import et de téléchargement (fetch simulé, aucune requête réelle)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  const respond = (status: number, body: string, type = "text/html") =>
+    vi.fn(async () => new Response(body, { status, headers: { "Content-Type": type } }));
+
+  it("route absente (404 HTML) : message « pas encore disponible » pour l'import fichier, le lien et le téléchargement", async () => {
+    const fetchMock = respond(404, "<html>Not found</html>");
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(importProspectsFile({ filename: "a.xlsx", contentBase64: "UEs=" })).rejects.toMatchObject({ status: 404, message: NOT_YET_AVAILABLE });
+    await expect(importProspectsSheet("https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOp/edit")).rejects.toMatchObject({
+      message: NOT_YET_AVAILABLE,
+    });
+    await expect(downloadProspectsExport(EMPTY_PROSPECT_FILTERS, "xlsx")).rejects.toMatchObject({ message: NOT_YET_AVAILABLE });
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/admin/prospects/import-file/");
+    expect(init).toMatchObject({ method: "POST", credentials: "include", cache: "no-store" });
+    expect(JSON.parse(String(init.body))).toEqual({ filename: "a.xlsx", contentBase64: "UEs=" });
+    expect((fetchMock.mock.calls[1] as unknown as [string])[0]).toBe("/api/admin/prospects/import-sheet/");
+    expect((fetchMock.mock.calls[2] as unknown as [string])[0]).toBe("/api/admin/prospects/export.xlsx?sort=name");
+  });
+
+  it("feuille non partagée (422) : message du serveur, sinon message d'aide au partage", async () => {
+    vi.stubGlobal("fetch", respond(422, JSON.stringify({ error: "La feuille n'est pas partagée." }), "application/json"));
+    await expect(importProspectsSheet("https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOp")).rejects.toMatchObject({
+      status: 422,
+      message: "La feuille n'est pas partagée.",
+    });
+    vi.stubGlobal("fetch", respond(422, "", "text/plain"));
+    await expect(importProspectsSheet("https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOp")).rejects.toMatchObject({
+      message: expect.stringContaining("Toute personne disposant du lien"),
+    });
+  });
+
+  it("nom du fichier téléchargé : Content-Disposition nettoyé, sinon nom par défaut", () => {
+    expect(filenameFromDisposition('attachment; filename="prospects-2026.xlsx"', "prospects.xlsx")).toBe("prospects-2026.xlsx");
+    expect(filenameFromDisposition("attachment; filename*=UTF-8''prospects%20Maroc.csv", "prospects.csv")).toBe("prospects Maroc.csv");
+    expect(filenameFromDisposition('attachment; filename="../../etc/passwd"', "prospects.csv")).toBe(".._.._etc_passwd");
+    expect(filenameFromDisposition(null, "prospects.csv")).toBe("prospects.csv");
+  });
 });
 
 describe("helpers prospects", () => {

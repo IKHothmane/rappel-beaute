@@ -3,6 +3,8 @@ import { OverpassError } from "@/lib/prospects/osm";
 
 /** Plafond du corps JSON d'un import : 2 Mo de CSV plus l'échappement JSON (guillemets, retours à la ligne). */
 export const IMPORT_BODY_MAX_BYTES = 6 * 1024 * 1024;
+/** Corps JSON d'un fichier en base64 : 2 Mo décodés font ~2,7 Mo encodés, plus le nom et l'enveloppe JSON. */
+export const FILE_IMPORT_BODY_MAX_BYTES = 3 * 1024 * 1024;
 /** Corps JSON des autres écritures (création, suivi). */
 export const SMALL_BODY_MAX_BYTES = 16 * 1024;
 

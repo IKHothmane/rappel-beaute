@@ -155,6 +155,52 @@ export function prospectsExportHref(filters: ProspectFilters, format: ProspectEx
   return `/api/admin/prospects/export.${format}${query ? `?${query}` : ""}`;
 }
 
+export function filenameFromDisposition(header: string | null, fallback: string): string {
+  if (!header) return fallback;
+  const star = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header);
+  const plain = /filename\s*=\s*"?([^";]+)"?/i.exec(header);
+  let name = fallback;
+  try {
+    name = star ? decodeURIComponent(star[1].trim()) : plain ? plain[1].trim() : fallback;
+  } catch {
+    name = plain ? plain[1].trim() : fallback;
+  }
+  // Nom de fichier simple uniquement (pas de chemin).
+  const safe = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").trim();
+  return safe || fallback;
+}
+
+/**
+ * Télécharge l'export (.xlsx ou .csv) avec les filtres courants. Passe par fetch pour afficher une erreur claire
+ * (route absente, session expirée…) au lieu d'un téléchargement échoué dans le navigateur.
+ */
+export async function downloadProspectsExport(filters: ProspectFilters, format: ProspectExportFormat): Promise<string> {
+  const href = prospectsExportHref(filters, format);
+  let res: Response;
+  try {
+    res = await fetch(href, { credentials: "include", cache: "no-store" });
+  } catch {
+    throw new ProspectsApiError(NETWORK_ERROR, 0);
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
+    const serverMessage = body && typeof body.error === "string" && body.error ? body.error : null;
+    throw new ProspectsApiError(res.status === 404 ? NOT_YET_AVAILABLE : (serverMessage ?? defaultMessage(res.status)), res.status);
+  }
+  const blob = await res.blob();
+  const filename = filenameFromDisposition(res.headers.get("content-disposition"), `prospects.${format}`);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  return filename;
+}
+
 /** Lien tel: limité aux chiffres et au « + » initial. */
 export function telHref(phone: string | null | undefined): string | null {
   if (!phone) return null;
@@ -261,6 +307,8 @@ export class ProspectsApiError extends Error {
 }
 
 const NETWORK_ERROR = "Connexion impossible. Vérifiez le réseau puis réessayez.";
+/** Route absente (404) : fonction livrée côté interface avant le serveur. */
+export const NOT_YET_AVAILABLE = "Cette fonction n'est pas encore disponible sur le serveur. Réessayez après la prochaine mise à jour.";
 
 function defaultMessage(status: number): string {
   if (status === 401) return "Session expirée. Reconnectez-vous pour continuer.";
@@ -394,7 +442,9 @@ export function importProspectsFile(input: { filename: string; contentBase64: st
   return prospectsFetch<ProspectImportResult>("/api/admin/prospects/import-file/", {
     method: "POST",
     body: input,
-    messages: { 413: "Fichier trop volumineux (2 Mo maximum)." },
+    messages: { 404: NOT_YET_AVAILABLE },
+    // Un 413 vient aussi d'un classeur trop gros une fois décompressé : le message du serveur est le plus juste.
+    fallbackMessages: { 413: "Fichier trop volumineux (2 Mo maximum)." },
   });
 }
 
@@ -412,6 +462,7 @@ export function importProspectsSheet(url: string) {
   return prospectsFetch<ProspectImportResult>("/api/admin/prospects/import-sheet/", {
     method: "POST",
     body: { url: url.trim() },
+    messages: { 404: NOT_YET_AVAILABLE },
     fallbackMessages: {
       422: "La feuille n'est pas accessible : partagez-la avec « Toute personne disposant du lien : Lecteur ».",
       502: "Google Sheets ne répond pas pour le moment. Réessayez plus tard ou envoyez le fichier.",

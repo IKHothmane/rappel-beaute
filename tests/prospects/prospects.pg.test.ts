@@ -27,16 +27,19 @@ vi.mock("@/lib/db/pool", () => ({
 
 import {
   createManualProspect,
-  importCsvProspects,
+  importProspects,
   listProspects,
+  listProspectsForExport,
   ProspectDuplicateError,
   ProspectSyncBusyError,
   syncOsmProspects,
   updateProspectTracking,
 } from "@/lib/db/prospects";
 import { planCsvImport } from "@/lib/prospects/csv";
+import { planTabularImport } from "@/lib/prospects/import-plan";
 import { OverpassError } from "@/lib/prospects/osm";
 import type { ProspectUpsertRow } from "@/lib/prospects/types";
+import { prospectsToXlsx, readXlsxRecords } from "@/lib/prospects/xlsx";
 
 const adminUrl = rolesAdminUrl();
 const ACTOR: PlatformSessionUser = {
@@ -200,15 +203,15 @@ describe.skipIf(!adminUrl)("prospects : base PostgreSQL et rôles", () => {
 
   it("import CSV : dédoublonnage par téléphone, statut et notes conservés au réimport, journal d'audit", async () => {
     const plan = planCsvImport("nom;ville;telephone;email\nPGTEST Institut E;Ville Beta;06 00 00 99 05;\nPGTEST Institut F;Ville Beta;;\n");
-    const first = await asPlatform(() => importCsvProspects(ACTOR, plan.rows, { skipped: 0, errorCount: 0 }));
-    expect(first).toEqual({ inserted: 2, updated: 0, unchanged: 0 });
+    const first = await asPlatform(() => importProspects(ACTOR, plan, "csv"));
+    expect(first).toEqual({ inserted: 2, updated: 0, unchanged: 0, skipped: 0, errors: [] });
 
     const e = await prospect("CSV", "phone:+212600009905");
     await asPlatform(() => updateProspectTracking(ACTOR, e.id, { status: "DECLINED", notes: "PGTEST pas intéressée" }));
 
     const again = planCsvImport("nom;ville;telephone;email\nPGTEST Institut E;Ville Beta;+212600009905;e@institut-test.example\n");
-    const second = await asPlatform(() => importCsvProspects(ACTOR, again.rows, { skipped: 0, errorCount: 0 }));
-    expect(second).toEqual({ inserted: 0, updated: 1, unchanged: 0 });
+    const second = await asPlatform(() => importProspects(ACTOR, again, "csv"));
+    expect(second).toEqual({ inserted: 0, updated: 1, unchanged: 0, skipped: 0, errors: [] });
     expect(await prospect("CSV", "phone:+212600009905")).toMatchObject({
       id: e.id, status: "DECLINED", notes: "PGTEST pas intéressée", email: "e@institut-test.example", "lastSyncedAt": null,
     });
@@ -216,6 +219,64 @@ describe.skipIf(!adminUrl)("prospects : base PostgreSQL et rôles", () => {
     expect(logs.rows.map((row) => row.after)).toEqual(
       expect.arrayContaining([expect.objectContaining({ inserted: 2 }), expect.objectContaining({ updated: 1 })]),
     );
+
+    // Sans colonne id : statut et notes du fichier appliqués seulement s'ils sont fournis et non vides.
+    const withStatus = planCsvImport("nom;ville;telephone;statut;notes\nPGTEST Institut E;Ville Beta;+212600009905;Client;\n");
+    expect(await asPlatform(() => importProspects(ACTOR, withStatus, "csv"))).toMatchObject({ inserted: 0, updated: 1, unchanged: 0 });
+    expect(await prospect("CSV", "phone:+212600009905")).toMatchObject({ status: "CUSTOMER", notes: "PGTEST pas intéressée" });
+    const fresh = planCsvImport("nom;ville;telephone;statut;notes\nPGTEST Institut J;Ville Beta;0600009906;Contacté;PGTEST rappel\n");
+    expect(await asPlatform(() => importProspects(ACTOR, fresh, "csv"))).toMatchObject({ inserted: 1 });
+    expect(await prospect("CSV", "phone:+212600009906")).toMatchObject({ status: "CONTACTED", notes: "PGTEST rappel" });
+  });
+
+  it("colonne id : met à jour CETTE fiche avec les seules valeurs non vides ; id inconnu → nouvelle fiche sans réutiliser l'id", async () => {
+    await sync([osmRow({ sourceRef: "node/990030", name: "PGTEST Salon K", city: "Ville Kappa", phone: "+212600009930", email: "k@salon-test.example" })]);
+    const k = await prospect("OSM", "node/990030");
+    const csv = [
+      "id;nom;categorie;ville;telephone;email;site;statut;notes",
+      `${k.id};;barbier;;;;https://salon-k.example;Refus;PGTEST refus poli`,
+      "prsp_inconnu000;PGTEST Salon L;spa;Ville Lambda;0600009931;;;Client;",
+      "prsp_inconnu001;;;;;;;Client;",
+    ].join("\n");
+    const result = await asPlatform(() => importProspects(ACTOR, planCsvImport(csv), "csv"));
+    expect(result).toEqual({
+      inserted: 1, updated: 1, unchanged: 0, skipped: 1,
+      errors: [{ line: 4, error: "Nom manquant (identifiant inconnu)." }],
+    });
+    expect(await prospect("OSM", "node/990030")).toMatchObject({
+      id: k.id, name: "PGTEST Salon K", category: "barber", city: "Ville Kappa", phone: "+212600009930",
+      email: "k@salon-test.example", website: "https://salon-k.example/", status: "DECLINED", notes: "PGTEST refus poli",
+    });
+    const l = await prospect("CSV", "phone:+212600009931");
+    expect(l).toMatchObject({ name: "PGTEST Salon L", status: "CUSTOMER", category: "spa" });
+    expect(l.id).not.toBe("prsp_inconnu000");
+    expect((await admin.query(`SELECT 1 FROM "Prospect" WHERE id LIKE 'prsp_inconnu%'`)).rowCount).toBe(0);
+
+    const audit = await admin.query(`SELECT "after" FROM "PlatformAuditLog" WHERE "platformUserId" = $1 AND action = 'PROSPECTS_CSV_IMPORTED'`, [ACTOR.id]);
+    expect(audit.rows[0].after).toMatchObject({ inserted: 1, updated: 1, updatedById: 1, statusChanged: 1, skipped: 1 });
+    expect(JSON.stringify(audit.rows)).not.toMatch(/PGTEST|600009930|salon-k/);
+  });
+
+  it("aller-retour .xlsx : export puis réimport sans perte ni doublon", async () => {
+    await sync([
+      osmRow({ sourceRef: "node/990040", name: "PGTEST =Salon M", city: "Ville Mu", phone: "+212600009940", latitude: 33.5, longitude: -7.5 }),
+      osmRow({ sourceRef: "node/990041", name: "PGTEST Salon N" }),
+    ]);
+    const m = await prospect("OSM", "node/990040");
+    await asPlatform(() => updateProspectTracking(ACTOR, m.id, { status: "CONTACTED", notes: "PGTEST ligne 1\nligne 2" }));
+    const before = (await admin.query(`SELECT * FROM "Prospect" WHERE name LIKE 'PGTEST%' ORDER BY id`)).rows;
+
+    const items = await asPlatform(() => listProspectsForExport({ search: "PGTEST", sort: "name" }));
+    expect(items).toHaveLength(2);
+    const file = await prospectsToXlsx(items);
+    const plan = planTabularImport(await readXlsxRecords(file));
+    expect(plan.errors).toEqual([]);
+    const result = await asPlatform(() => importProspects(ACTOR, plan, "xlsx"));
+    expect(result).toEqual({ inserted: 0, updated: 2, unchanged: 2, skipped: 0, errors: [] });
+
+    const after = (await admin.query(`SELECT * FROM "Prospect" WHERE name LIKE 'PGTEST%' ORDER BY id`)).rows;
+    expect(after).toEqual(before);
+    expect(after.find((row) => row.id === m.id)).toMatchObject({ phone: "+212600009940", name: "PGTEST =Salon M", notes: "PGTEST ligne 1\nligne 2" });
   });
 
   it("création manuelle, refus d'un téléphone déjà présent, filtres et compteurs de la liste", async () => {

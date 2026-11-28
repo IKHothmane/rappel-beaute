@@ -1,8 +1,13 @@
 "use client";
 
-import { ChevronDown, Download, FileSpreadsheet, FileText } from "lucide-react";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-import { prospectsExportHref, type ProspectExportFormat, type ProspectFilters } from "@/lib/admin/prospects-client";
+import { ChevronDown, Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import {
+  downloadProspectsExport,
+  prospectsExportHref,
+  type ProspectExportFormat,
+  type ProspectFilters,
+} from "@/lib/admin/prospects-client";
 import { cn } from "@/lib/utils";
 import { btnSecondary } from "./prospect-styles";
 
@@ -12,22 +17,30 @@ const ITEMS: { format: ProspectExportFormat; label: string; hint: string; icon: 
 ];
 
 /**
- * Bouton « Télécharger » : menu (motif ARIA menu button) avec les liens .xlsx et .csv portant les filtres courants.
- * Positionné en absolu sous le bouton : aucun calcul de viewport, donc indifférent à html { zoom: 0.8 }.
+ * Bouton « Télécharger » : menu (motif ARIA menu button) avec les exports .xlsx et .csv portant les filtres courants.
+ * Le clic passe par fetch pour signaler clairement une erreur (route absente, session expirée) ; le href reste
+ * utilisable (clic du milieu, « Enregistrer le lien sous »).
+ * Menu positionné en absolu sous le bouton : aucun calcul de viewport, donc indifférent à html { zoom: 0.8 }.
  */
 export function ProspectsDownloadMenu({
   filters,
   filtering,
   disabled = false,
   className,
+  onDownloaded,
+  onError,
 }: {
   filters: ProspectFilters;
   filtering: boolean;
   disabled?: boolean;
   className?: string;
+  onDownloaded?: (filename: string) => void;
+  onError?: (message: string) => void;
 }) {
   const uid = useId();
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
@@ -49,6 +62,24 @@ export function ProspectsDownloadMenu({
   function close(focusButton: boolean) {
     setOpen(false);
     if (focusButton) buttonRef.current?.focus();
+  }
+
+  async function download(e: MouseEvent<HTMLAnchorElement>, format: ProspectExportFormat) {
+    // Clic du milieu ou avec modificateur : comportement natif du lien.
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    close(true);
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      onDownloaded?.(await downloadProspectsExport(filters, format));
+    } catch (err) {
+      onError?.(err instanceof Error ? err.message : "Téléchargement impossible.");
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   }
 
   function onButtonKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
@@ -88,8 +119,10 @@ export function ProspectsDownloadMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? `${uid}-menu` : undefined}
+        aria-busy={busy || undefined}
         disabled={disabled}
         onClick={(e) => {
+          if (busy) return;
           if (open) close(false);
           // Entrée / Espace (detail 0) : le focus va directement sur le premier choix.
           else if (e.detail === 0) openAt(0);
@@ -98,36 +131,40 @@ export function ProspectsDownloadMenu({
         onKeyDown={onButtonKeyDown}
         className={cn(btnSecondary, "w-full")}
       >
-        <Download className="h-4 w-4 text-[#3B63D6]" aria-hidden />
-        Télécharger
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin text-[#3B63D6] motion-reduce:animate-none" aria-hidden />
+        ) : (
+          <Download className="h-4 w-4 text-[#3B63D6]" aria-hidden />
+        )}
+        {busy ? "Préparation…" : "Télécharger"}
         <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform", open && "rotate-180")} aria-hidden />
       </button>
       {open ? (
         <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-slate-200 sm:left-auto sm:w-72">
           <div id={`${uid}-menu`} role="menu" aria-labelledby={`${uid}-button`} onKeyDown={onMenuKeyDown}>
-          {ITEMS.map((item, i) => {
-            const Icon = item.icon;
-            return (
-              <a
-                key={item.format}
-                ref={(el) => {
-                  itemRefs.current[i] = el;
-                }}
-                role="menuitem"
-                tabIndex={-1}
-                href={prospectsExportHref(filters, item.format)}
-                download
-                onClick={() => close(true)}
-                className="flex min-h-11 items-start gap-3 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none hover:bg-slate-50 focus:bg-[#3B63D6]/10 focus-visible:ring-2 focus-visible:ring-[#3B63D6]"
-              >
-                <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[#3B63D6]" aria-hidden />
-                <span className="min-w-0">
-                  <span className="block font-semibold">{item.label}</span>
-                  <span className="block text-xs text-slate-500">{item.hint}</span>
-                </span>
-              </a>
-            );
-          })}
+            {ITEMS.map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <a
+                  key={item.format}
+                  ref={(el) => {
+                    itemRefs.current[i] = el;
+                  }}
+                  role="menuitem"
+                  tabIndex={-1}
+                  href={prospectsExportHref(filters, item.format)}
+                  download
+                  onClick={(e) => void download(e, item.format)}
+                  className="flex min-h-11 items-start gap-3 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none hover:bg-slate-50 focus:bg-[#3B63D6]/10 focus-visible:ring-2 focus-visible:ring-[#3B63D6]"
+                >
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[#3B63D6]" aria-hidden />
+                  <span className="min-w-0">
+                    <span className="block font-semibold">{item.label}</span>
+                    <span className="block text-xs text-slate-500">{item.hint}</span>
+                  </span>
+                </a>
+              );
+            })}
           </div>
           <p className="border-t border-slate-100 px-3 pb-1 pt-2 text-[11px] text-slate-500">
             {filtering ? "Avec les filtres et la recherche en cours." : "Toutes les fiches (aucun filtre)."}

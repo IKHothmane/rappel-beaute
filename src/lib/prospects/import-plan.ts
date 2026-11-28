@@ -40,7 +40,38 @@ export class ImportFormatError extends Error {
   }
 }
 
-type ImportField = "id" | "name" | "category" | "city" | "address" | "phone" | "email" | "website" | "status" | "notes";
+export const IMPORT_FILE_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Fichier envoyé en base64 { filename, contentBase64 } : extension .xlsx ou .csv seulement, base64 strict
+ * (préfixe data:…;base64, toléré), 2 Mo décodés au plus (413), estimé avant tout décodage.
+ */
+export function decodeImportFile(filename: unknown, contentBase64: unknown): { kind: "xlsx" | "csv"; bytes: Buffer } {
+  if (typeof filename !== "string" || !filename.trim() || filename.length > 255) {
+    throw new ImportFormatError("Nom de fichier manquant.");
+  }
+  const extension = /\.(xlsx|csv)$/i.exec(filename.trim())?.[1]?.toLowerCase();
+  if (extension !== "xlsx" && extension !== "csv") {
+    throw new ImportFormatError("Seuls les fichiers .xlsx et .csv sont acceptés.");
+  }
+  if (typeof contentBase64 !== "string") throw new ImportFormatError("Contenu du fichier manquant.");
+  const base64 = contentBase64.replace(/^data:[^,]{0,200};base64,/i, "").replace(/\s+/g, "");
+  if (!base64) throw new ImportFormatError("Fichier vide.");
+  if (base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+    throw new ImportFormatError("Contenu du fichier invalide (base64 attendu).");
+  }
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  if ((base64.length / 4) * 3 - padding > IMPORT_FILE_MAX_BYTES) {
+    throw new ImportFormatError("Fichier trop volumineux (2 Mo au plus).", 413);
+  }
+  const bytes = Buffer.from(base64, "base64");
+  if (bytes.length === 0) throw new ImportFormatError("Fichier vide.");
+  return { kind: extension, bytes };
+}
+
+const SHEET_ERROR = /^#(?:ERROR!|REF!|VALUE!|NAME\?|N\/A|DIV\/0!|NUM!|NULL!|SPILL!|CALC!)$/i;
+
+type ImportField ="id" | "name" | "category" | "city" | "address" | "phone" | "email" | "website" | "status" | "notes";
 
 const HEADER_ALIASES: Record<string, ImportField> = {
   id: "id",
@@ -146,7 +177,16 @@ export function planTabularImport(records: readonly TabularRecord[]): ImportPlan
   };
   const cellOf = (cells: string[], field: ImportField) => cleanText(rawOf(cells, field));
 
+  // Erreur de formule d'un tableur (ex. « +212 6… » saisi dans Google Sheets devient #ERROR!) : la ligne est
+  // signalée au lieu d'être importée avec une valeur perdue.
+  const formulaError = (cells: string[]) =>
+    Object.values(columns).some((index) => index !== undefined && SHEET_ERROR.test((cells[index] ?? "").trim()));
+
   for (const { line, cells } of data) {
+    if (formulaError(cells)) {
+      skip(line, "Erreur de formule dans la feuille : saisissez la valeur comme du texte (ex. '+212…).");
+      continue;
+    }
     const idRaw = cellOf(cells, "id");
     const id = idRaw && isProspectId(idRaw) ? idRaw : null;
 
